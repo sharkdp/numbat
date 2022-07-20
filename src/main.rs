@@ -83,8 +83,7 @@ impl Tokenizer {
             '+' => TokenKind::Plus,
             '*' => TokenKind::Times,
             '-' => {
-                if self.peek() == Some('>') {
-                    self.advance();
+                if self.match_char('>') {
                     TokenKind::Arrow
                 } else {
                     TokenKind::Minus
@@ -111,8 +110,17 @@ impl Tokenizer {
         c
     }
 
-    fn peek(&mut self) -> Option<char> {
+    fn peek(&self) -> Option<char> {
         self.input.get(self.current).copied()
+    }
+
+    fn match_char(&mut self, c: char) -> bool {
+        if self.peek() == Some(c) {
+            self.advance();
+            true
+        } else {
+            false
+        }
     }
 
     fn at_end(&self) -> bool {
