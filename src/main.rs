@@ -50,7 +50,9 @@ impl Tokenizer {
         let mut tokens = vec![];
         while !self.at_end() {
             self.token_start = self.current;
-            tokens.push(self.scan_token()?);
+            if let Some(token) = self.scan_token()? {
+                tokens.push(token);
+            }
         }
 
         tokens.push(Token {
@@ -62,7 +64,7 @@ impl Tokenizer {
         Ok(tokens)
     }
 
-    fn scan_token(&mut self) -> Result<Token> {
+    fn scan_token(&mut self) -> Result<Option<Token>> {
         let current_char = self.advance();
 
         let kind = match current_char {
@@ -78,8 +80,9 @@ impl Tokenizer {
                 }
                 TokenKind::Number
             }
-            // c if c.is_whitespace() => {
-            // }
+            ' ' | '\t' | '\r' => {
+                return Ok(None);
+            }
             '+' => TokenKind::Plus,
             '*' => TokenKind::Times,
             '-' => {
@@ -94,14 +97,11 @@ impl Tokenizer {
             }
         };
 
-        dbg!(&self.token_start);
-        dbg!(&self.current);
-
-        Ok(Token {
+        Ok(Some(Token {
             kind,
             lexeme: self.input[self.token_start..self.current].iter().collect(),
             line: self.line,
-        })
+        }))
     }
 
     fn advance(&mut self) -> char {
@@ -158,12 +158,12 @@ fn tokenize_basic() {
     };
 
     assert_eq!(
-        tokenize("12+34").unwrap(),
+        tokenize("  12 + 34  ").unwrap(),
         token_stream(&[("12", Number), ("+", Plus), ("34", Number), ("", EOF)])
     );
 
     assert_eq!(
-        tokenize("12*(3-4)").unwrap(),
+        tokenize("12 * (3 - 4)").unwrap(),
         token_stream(&[
             ("12", Number),
             ("*", Times),
@@ -177,12 +177,7 @@ fn tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize("1->2").unwrap(),
-        token_stream(&[
-            ("1", Number),
-            ("->", Arrow),
-            ("2", Number),
-            ("", EOF)
-        ])
+        tokenize("1 -> 2").unwrap(),
+        token_stream(&[("1", Number), ("->", Arrow), ("2", Number), ("", EOF)])
     );
 }
