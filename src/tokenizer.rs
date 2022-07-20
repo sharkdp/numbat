@@ -1,5 +1,7 @@
 use anyhow::Result;
 use thiserror::Error;
+use once_cell::sync::OnceCell;
+use std::collections::HashMap;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -7,7 +9,7 @@ pub enum Error {
     UnexpectedCharacter(char),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
     // Operators
     LeftParen,
@@ -74,6 +76,14 @@ impl Tokenizer {
     }
 
     fn scan_single_token(&mut self) -> Result<Option<Token>> {
+        static KEYWORDS: OnceCell<HashMap<&'static str, TokenKind>> = OnceCell::new();
+        let keywords = KEYWORDS.get_or_init(|| {
+            let mut m = HashMap::new();
+            m.insert("per", TokenKind::Divide);
+            m.insert("to", TokenKind::Arrow);
+            m
+        });
+
         let current_char = self.advance();
 
         let kind = match current_char {
@@ -108,17 +118,17 @@ impl Tokenizer {
                     TokenKind::Minus
                 }
             }
+            '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so this is a special-case identifier
             c if is_identifier_char(c) => {
                 while self.peek().map(is_identifier_char).unwrap_or(false) {
                     self.advance();
                 }
 
-                if self.lexeme() == "to" {
-                    TokenKind::Arrow
+                if let Some(kind) = keywords.get(self.lexeme().as_str()) {
+                    *kind
                 } else {
                     TokenKind::Identifier
                 }
-
             }
             c => {
                 return Err(Error::UnexpectedCharacter(c).into());
@@ -187,6 +197,11 @@ fn tokenize_basic() {
     );
 
     assert_eq!(
+        tokenize("1 2").unwrap(),
+        token_stream(&[("1", Number), ("2", Number), ("", EOF)])
+    );
+
+    assert_eq!(
         tokenize("12 × (3 - 4)").unwrap(),
         token_stream(&[
             ("12", Number),
@@ -213,6 +228,11 @@ fn tokenize_basic() {
     assert_eq!(
         tokenize("1 -> 2").unwrap(),
         token_stream(&[("1", Number), ("->", Arrow), ("2", Number), ("", EOF)])
+    );
+
+    assert_eq!(
+        tokenize("45°").unwrap(),
+        token_stream(&[("45", Number), ("°", Identifier), ("", EOF)])
     );
 
     assert!(tokenize("$").is_err());
