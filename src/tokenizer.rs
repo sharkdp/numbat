@@ -27,7 +27,7 @@ pub struct Token {
     line: usize,
 }
 
-pub struct Tokenizer {
+struct Tokenizer {
     input: Vec<char>,
     token_start: usize,
     current: usize,
@@ -39,7 +39,7 @@ fn is_identifier_char(c: char) -> bool {
 }
 
 impl Tokenizer {
-    pub fn new(input: &str) -> Self {
+    fn new(input: &str) -> Self {
         Tokenizer {
             input: input.chars().collect(),
             token_start: 0,
@@ -48,7 +48,7 @@ impl Tokenizer {
         }
     }
 
-    pub fn scan<'a>(&mut self) -> Result<Vec<Token>> {
+    fn scan<'a>(&mut self) -> Result<Vec<Token>> {
         let mut tokens = vec![];
         while !self.at_end() {
             self.token_start = self.current;
@@ -140,6 +140,11 @@ impl Tokenizer {
     }
 }
 
+pub fn tokenize(input: &str) -> Result<Vec<Token>> {
+    let mut tokenizer = Tokenizer::new(input);
+    tokenizer.scan()
+}
+
 #[cfg(test)]
 fn token_stream(input: &[(&str, TokenKind)]) -> Vec<Token> {
     input
@@ -155,11 +160,6 @@ fn token_stream(input: &[(&str, TokenKind)]) -> Vec<Token> {
 #[test]
 fn tokenize_basic() {
     use TokenKind::*;
-
-    let tokenize = |input| {
-        let mut tokenizer = Tokenizer::new(input);
-        tokenizer.scan()
-    };
 
     assert_eq!(
         tokenize("  12 + 34  ").unwrap(),
@@ -182,7 +182,12 @@ fn tokenize_basic() {
 
     assert_eq!(
         tokenize("foo->bar").unwrap(),
-        token_stream(&[("foo", Identifier), ("->", Arrow), ("bar", Identifier), ("", EOF)])
+        token_stream(&[
+            ("foo", Identifier),
+            ("->", Arrow),
+            ("bar", Identifier),
+            ("", EOF)
+        ])
     );
 
     assert_eq!(
