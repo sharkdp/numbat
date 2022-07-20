@@ -9,14 +9,21 @@ pub enum Error {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
+    // Operators
     LeftParen,
     RightParen,
-    Number,
     Plus,
     Minus,
-    Times,
+    Multiply,
+    Divide,
+    Comma,
     Arrow,
+
+    // Variable-length tokens
+    Number,
     Identifier,
+
+    // End of file
     EOF,
 }
 
@@ -90,7 +97,10 @@ impl Tokenizer {
                 return Ok(None);
             }
             '+' => TokenKind::Plus,
-            '*' => TokenKind::Times,
+            '*' | '·' | '×' => TokenKind::Multiply,
+            '/' | '÷' => TokenKind::Divide,
+            ',' => TokenKind::Comma,
+            '→' | '➞' => TokenKind::Arrow,
             '-' => {
                 if self.match_char('>') {
                     TokenKind::Arrow
@@ -102,7 +112,13 @@ impl Tokenizer {
                 while self.peek().map(is_identifier_char).unwrap_or(false) {
                     self.advance();
                 }
-                TokenKind::Identifier
+
+                if self.lexeme() == "to" {
+                    TokenKind::Arrow
+                } else {
+                    TokenKind::Identifier
+                }
+
             }
             c => {
                 return Err(Error::UnexpectedCharacter(c).into());
@@ -111,9 +127,13 @@ impl Tokenizer {
 
         Ok(Some(Token {
             kind,
-            lexeme: self.input[self.token_start..self.current].iter().collect(),
+            lexeme: self.lexeme(),
             line: self.line,
         }))
+    }
+
+    fn lexeme(&self) -> String {
+        self.input[self.token_start..self.current].iter().collect()
     }
 
     fn advance(&mut self) -> char {
@@ -167,10 +187,10 @@ fn tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize("12 * (3 - 4)").unwrap(),
+        tokenize("12 × (3 - 4)").unwrap(),
         token_stream(&[
             ("12", Number),
-            ("*", Times),
+            ("×", Multiply),
             ("(", LeftParen),
             ("3", Number),
             ("-", Minus),
@@ -181,10 +201,10 @@ fn tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize("foo->bar").unwrap(),
+        tokenize("foo to bar").unwrap(),
         token_stream(&[
             ("foo", Identifier),
-            ("->", Arrow),
+            ("to", Arrow),
             ("bar", Identifier),
             ("", EOF)
         ])
