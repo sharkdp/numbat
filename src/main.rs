@@ -16,7 +16,9 @@ pub enum TokenKind {
     RightParen,
     Number,
     Plus,
+    Minus,
     Times,
+    Arrow,
     EOF,
 }
 
@@ -76,8 +78,18 @@ impl Tokenizer {
                 }
                 TokenKind::Number
             }
+            // c if c.is_whitespace() => {
+            // }
             '+' => TokenKind::Plus,
             '*' => TokenKind::Times,
+            '-' => {
+                if self.peek() == Some('>') {
+                    self.advance();
+                    TokenKind::Arrow
+                } else {
+                    TokenKind::Minus
+                }
+            }
             c => {
                 return Err(TokenizerError::UnexpectedCharacter(c).into());
             }
@@ -118,13 +130,14 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 fn token_stream(input: &[(&str, TokenKind)]) -> Vec<Token> {
-    input.iter().map(|(lexeme, kind)| {
-            Token {
-                kind: kind.clone(),
-                lexeme: lexeme.to_string(),
-                line: 1
-            }
-    }).collect()
+    input
+        .iter()
+        .map(|(lexeme, kind)| Token {
+            kind: kind.clone(),
+            lexeme: lexeme.to_string(),
+            line: 1,
+        })
+        .collect()
 }
 
 #[test]
@@ -139,5 +152,29 @@ fn tokenize_basic() {
     assert_eq!(
         tokenize("12+34").unwrap(),
         token_stream(&[("12", Number), ("+", Plus), ("34", Number), ("", EOF)])
+    );
+
+    assert_eq!(
+        tokenize("12*(3-4)").unwrap(),
+        token_stream(&[
+            ("12", Number),
+            ("*", Times),
+            ("(", LeftParen),
+            ("3", Number),
+            ("-", Minus),
+            ("4", Number),
+            (")", RightParen),
+            ("", EOF)
+        ])
+    );
+
+    assert_eq!(
+        tokenize("1->2").unwrap(),
+        token_stream(&[
+            ("1", Number),
+            ("->", Arrow),
+            ("2", Number),
+            ("", EOF)
+        ])
     );
 }
