@@ -16,6 +16,7 @@ pub enum TokenKind {
     Minus,
     Times,
     Arrow,
+    Identifier,
     EOF,
 }
 
@@ -31,6 +32,10 @@ pub struct Tokenizer {
     token_start: usize,
     current: usize,
     line: usize,
+}
+
+fn is_identifier_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_'
 }
 
 impl Tokenizer {
@@ -92,6 +97,12 @@ impl Tokenizer {
                 } else {
                     TokenKind::Minus
                 }
+            }
+            c if is_identifier_char(c) => {
+                while self.peek().map(is_identifier_char).unwrap_or(false) {
+                    self.advance();
+                }
+                TokenKind::Identifier
             }
             c => {
                 return Err(Error::UnexpectedCharacter(c).into());
@@ -167,6 +178,11 @@ fn tokenize_basic() {
             (")", RightParen),
             ("", EOF)
         ])
+    );
+
+    assert_eq!(
+        tokenize("foo->bar").unwrap(),
+        token_stream(&[("foo", Identifier), ("->", Arrow), ("bar", Identifier), ("", EOF)])
     );
 
     assert_eq!(
