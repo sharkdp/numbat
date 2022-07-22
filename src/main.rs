@@ -1,4 +1,6 @@
 mod tokenizer;
+mod pretty_print;
+mod ast;
 
 use tokenizer::tokenize;
 
