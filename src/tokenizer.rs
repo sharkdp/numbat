@@ -118,7 +118,7 @@ impl Tokenizer {
                     TokenKind::Minus
                 }
             }
-            '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so this is a special-case identifier
+            '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so we treat it as a special case here
             c if is_identifier_char(c) => {
                 while self.peek().map(is_identifier_char).unwrap_or(false) {
                     self.advance();
