@@ -1,6 +1,6 @@
 use crate::pretty_print::PrettyPrint;
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Number(f64);
 
 impl Number {
@@ -9,7 +9,7 @@ impl Number {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BinaryOperator {
     Add,
     Sub,
@@ -32,33 +32,40 @@ impl PrettyPrint for BinaryOperator {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Scalar(Number),
     Negate(Box<Expression>),
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
 }
 
-#[macro_export]
+#[cfg(test)]
 macro_rules! scalar {
     ( $num:expr ) => {{
         Expression::Scalar(Number::from_f64($num))
     }};
 }
 
-#[macro_export]
+#[cfg(test)]
 macro_rules! negate {
     ( $rhs:expr ) => {{
         Expression::Negate(Box::new($rhs))
     }};
 }
 
-#[macro_export]
+#[cfg(test)]
 macro_rules! binop {
     ( $op:ident, $lhs:expr, $rhs: expr ) => {{
         Expression::BinaryOperator(BinaryOperator::$op, Box::new($lhs), Box::new($rhs))
     }};
 }
+
+#[cfg(test)]
+pub(crate) use binop;
+#[cfg(test)]
+pub(crate) use negate;
+#[cfg(test)]
+pub(crate) use scalar;
 
 impl PrettyPrint for Expression {
     fn pretty_print(&self) -> String {

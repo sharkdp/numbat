@@ -1,13 +1,14 @@
-use anyhow::Result;
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
-pub enum Error {
+pub enum TokenizerError {
     #[error("Unexpected character: '{0}'")]
     UnexpectedCharacter(char),
 }
+
+type Result<T> = std::result::Result<T, TokenizerError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
@@ -131,7 +132,7 @@ impl Tokenizer {
                 }
             }
             c => {
-                return Err(Error::UnexpectedCharacter(c).into());
+                return Err(TokenizerError::UnexpectedCharacter(c));
             }
         };
 

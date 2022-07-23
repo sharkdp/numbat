@@ -3,9 +3,8 @@ mod parser;
 mod pretty_print;
 mod tokenizer;
 
-use parser::Parser;
+use parser::parse;
 use pretty_print::PrettyPrint;
-use tokenizer::tokenize;
 
 use anyhow::{Context, Result};
 use rustyline::error::ReadlineError;
@@ -14,14 +13,17 @@ use rustyline::Editor;
 const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
-fn parse_and_evaluate(input: &str) -> Result<()> {
-    let tokens = tokenize(input)?;
-    // dbg!(&tokens);
-    let mut parser = Parser::new(&tokens);
-    let ast = parser.expression();
-    println!("{}", ast.pretty_print());
+fn parse_and_evaluate(input: &str) {
+    let result = parse(input).context("Error while parsing expression");
 
-    Ok(())
+    match result {
+        Ok(ast) => {
+            println!("{}", ast.pretty_print());
+        }
+        Err(e) => {
+            eprintln!("{:#}", e)
+        }
+    }
 }
 
 fn run() -> Result<()> {
@@ -33,7 +35,7 @@ fn run() -> Result<()> {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(&line);
-                parse_and_evaluate(&line).unwrap();
+                parse_and_evaluate(&line);
             }
             Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {
                 break;
@@ -50,5 +52,9 @@ fn run() -> Result<()> {
 }
 
 fn main() {
-    run().unwrap();
+    let result = run();
+
+    if let Err(e) = result {
+        eprintln!("{:#}", e);
+    }
 }
