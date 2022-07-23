@@ -7,6 +7,11 @@ impl Number {
     pub fn from_f64(n: f64) -> Self {
         Number(n)
     }
+
+    pub fn to_f64(&self) -> f64 {
+        let Number(n) = *self;
+        n
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

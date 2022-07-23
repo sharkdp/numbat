@@ -1,4 +1,5 @@
 mod ast;
+mod interpreter;
 mod parser;
 mod pretty_print;
 mod tokenizer;
@@ -17,8 +18,11 @@ fn parse_and_evaluate(input: &str) {
     let result = parse(input).context("Error while parsing expression");
 
     match result {
-        Ok(ast) => {
-            println!("{}", ast.pretty_print());
+        Ok(expression) => {
+            println!("{}", expression.pretty_print());
+            if let Err(e) = interpreter::run(&expression) {
+                eprintln!("Interpreter error: {:#}", e);
+            }
         }
         Err(e) => {
             eprintln!("{:#}", e)

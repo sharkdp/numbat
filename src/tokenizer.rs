@@ -5,7 +5,11 @@ use thiserror::Error;
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum TokenizerError {
     #[error("Unexpected character at position {pos} in line {line}: '{character}'")]
-    UnexpectedCharacter { line: usize, pos: usize, character: char },
+    UnexpectedCharacter {
+        line: usize,
+        pos: usize,
+        character: char,
+    },
 }
 
 type Result<T> = std::result::Result<T, TokenizerError>;
