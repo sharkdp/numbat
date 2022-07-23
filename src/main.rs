@@ -4,6 +4,7 @@ mod parser;
 mod pretty_print;
 mod tokenizer;
 
+use interpreter::interpret;
 use parser::parse;
 use pretty_print::PrettyPrint;
 
@@ -21,7 +22,7 @@ fn parse_and_evaluate(input: &str) {
         Ok(expression) => {
             println!();
             println!("  {}", expression.pretty_print());
-            if let Err(e) = interpreter::run(&expression) {
+            if let Err(e) = interpret(&expression) {
                 eprintln!("Interpreter error: {:#}", e);
             }
         }

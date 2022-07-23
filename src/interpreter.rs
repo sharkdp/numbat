@@ -56,7 +56,7 @@ impl<'a> Interpreter<'a> {
     }
 }
 
-pub fn run(expr: &Expression) -> Result<()> {
+pub fn interpret(expr: &Expression) -> Result<()> {
     let mut interpreter = Interpreter::new(expr);
     interpreter.run()
 }
