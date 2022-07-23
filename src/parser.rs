@@ -225,6 +225,7 @@ mod tests {
     fn parse_negation() {
         all_parse_as(&["-1", "  - 1   "], negate!(scalar!(1.0)));
         all_parse_as(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
+        all_parse_as(&["-x", " - x"], negate!(identifier!("x")));
 
         all_parse_as(
             &["-1 + 2"],
@@ -244,6 +245,21 @@ mod tests {
             &["1-2-3"],
             binop!(binop!(scalar!(1.0), Sub, scalar!(2.0)), Sub, scalar!(3.0)),
         );
+    }
+
+    #[test]
+    fn parse_multiplication_division() {
+        all_parse_as(
+            &["1*2", "  1   *  2    "],
+            binop!(scalar!(1.0), Mul, scalar!(2.0)),
+        );
+
+        all_parse_as(
+            &["1/2", "1 per 2", "  1   /  2    "],
+            binop!(scalar!(1.0), Div, scalar!(2.0)),
+        );
+
+        should_fail(&["1*@", "1*", "1 per"]);
     }
 
     #[test]
