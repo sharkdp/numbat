@@ -39,6 +39,27 @@ pub enum Expression {
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
 }
 
+#[macro_export]
+macro_rules! scalar {
+    ( $num:expr ) => {{
+        Expression::Scalar(Number::from_f64($num))
+    }};
+}
+
+#[macro_export]
+macro_rules! negate {
+    ( $rhs:expr ) => {{
+        Expression::Negate(Box::new($rhs))
+    }};
+}
+
+#[macro_export]
+macro_rules! binop {
+    ( $op:ident, $lhs:expr, $rhs: expr ) => {{
+        Expression::BinaryOperator(BinaryOperator::$op, Box::new($lhs), Box::new($rhs))
+    }};
+}
+
 impl PrettyPrint for Expression {
     fn pretty_print(&self) -> String {
         use Expression::*;
@@ -58,16 +79,10 @@ impl PrettyPrint for Expression {
 
 #[test]
 fn expression_pretty_print() {
-    let expr = Expression::BinaryOperator(
-        BinaryOperator::Mul,
-        Box::new(Expression::Scalar(Number(2.0))),
-        Box::new(Expression::BinaryOperator(
-            BinaryOperator::Add,
-            Box::new(Expression::Negate(Box::new(Expression::Scalar(Number(
-                3.0,
-            ))))),
-            Box::new(Expression::Scalar(Number(4.0))),
-        )),
+    let expr = binop!(
+        Mul,
+        scalar!(2.0),
+        binop!(Add, negate!(scalar!(3.0)), scalar!(4.0))
     );
 
     assert_eq!(expr.pretty_print(), "(2.0 × (-3.0 + 4.0))");
