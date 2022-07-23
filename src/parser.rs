@@ -190,19 +190,25 @@ mod tests {
     #[test]
     fn parse_negation() {
         all_parse_as(&["-1", "  - 1   "], negate!(scalar!(1.0)));
+        all_parse_as(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
+
+        all_parse_as(
+            &["-1 + 2"],
+            binop!(negate!(scalar!(1.0)), Add, scalar!(2.0)),
+        );
     }
 
     #[test]
     fn parse_addition_subtraction() {
         all_parse_as(
             &["1+2", "  1   +  2    "],
-            binop!(Add, scalar!(1.0), scalar!(2.0)),
+            binop!(scalar!(1.0), Add, scalar!(2.0)),
         );
 
         // Minus should be left-associative
         all_parse_as(
             &["1-2-3"],
-            binop!(Sub, binop!(Sub, scalar!(1.0), scalar!(2.0)), scalar!(3.0)),
+            binop!(binop!(scalar!(1.0), Sub, scalar!(2.0)), Sub, scalar!(3.0)),
         );
     }
 
@@ -210,15 +216,15 @@ mod tests {
     fn parse_conversion() {
         all_parse_as(
             &["1->2", "1→2"],
-            binop!(ConvertTo, scalar!(1.0), scalar!(2.0)),
+            binop!(scalar!(1.0), ConvertTo, scalar!(2.0)),
         );
 
         // Conversion is left-associative
         all_parse_as(
             &["1→2→3"],
             binop!(
+                binop!(scalar!(1.0), ConvertTo, scalar!(2.0)),
                 ConvertTo,
-                binop!(ConvertTo, scalar!(1.0), scalar!(2.0)),
                 scalar!(3.0)
             ),
         );

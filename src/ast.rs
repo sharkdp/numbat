@@ -55,7 +55,7 @@ macro_rules! negate {
 
 #[cfg(test)]
 macro_rules! binop {
-    ( $op:ident, $lhs:expr, $rhs: expr ) => {{
+    ( $lhs:expr, $op:ident, $rhs: expr ) => {{
         Expression::BinaryOperator(BinaryOperator::$op, Box::new($lhs), Box::new($rhs))
     }};
 }
@@ -87,9 +87,9 @@ impl PrettyPrint for Expression {
 #[test]
 fn expression_pretty_print() {
     let expr = binop!(
-        Mul,
         scalar!(2.0),
-        binop!(Add, negate!(scalar!(3.0)), scalar!(4.0))
+        Mul,
+        binop!(negate!(scalar!(3.0)), Add, scalar!(4.0))
     );
 
     assert_eq!(expr.pretty_print(), "(2.0 × (-3.0 + 4.0))");
