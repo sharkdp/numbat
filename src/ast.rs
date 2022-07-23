@@ -1,6 +1,6 @@
 use crate::pretty_print::PrettyPrint;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Number(f64);
 
 impl Number {
@@ -9,7 +9,7 @@ impl Number {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum BinaryOperator {
     Add,
     Sub,
@@ -32,7 +32,7 @@ impl PrettyPrint for BinaryOperator {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Expression {
     Scalar(Number),
     Negate(Box<Expression>),
