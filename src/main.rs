@@ -7,14 +7,14 @@ use parser::Parser;
 use pretty_print::PrettyPrint;
 use tokenizer::tokenize;
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-const HISTORY_FILE: &'static str = ".history";
-const PROMPT: &'static str = ">>> ";
+const HISTORY_FILE: &str = ".history";
+const PROMPT: &str = ">>> ";
 
-fn parse_and_evaluate(input: &str) -> Result<()>{
+fn parse_and_evaluate(input: &str) -> Result<()> {
     let tokens = tokenize(input)?;
     // dbg!(&tokens);
     let mut parser = Parser::new(&tokens);
@@ -45,7 +45,8 @@ fn run() -> Result<()> {
         }
     }
 
-    rl.save_history(HISTORY_FILE).context("Error while saving history to file")
+    rl.save_history(HISTORY_FILE)
+        .context("Error while saving history to file")
 }
 
 fn main() {

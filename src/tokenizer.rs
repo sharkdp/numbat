@@ -26,7 +26,7 @@ pub enum TokenKind {
     Identifier,
 
     // End of file
-    EOF,
+    Eof,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,7 +57,7 @@ impl Tokenizer {
         }
     }
 
-    fn scan<'a>(&mut self) -> Result<Vec<Token>> {
+    fn scan(&mut self) -> Result<Vec<Token>> {
         let mut tokens = vec![];
         while !self.at_end() {
             self.token_start = self.current;
@@ -67,7 +67,7 @@ impl Tokenizer {
         }
 
         tokens.push(Token {
-            kind: TokenKind::EOF,
+            kind: TokenKind::Eof,
             lexeme: "".into(),
             line: self.line,
         });
@@ -193,12 +193,12 @@ fn tokenize_basic() {
 
     assert_eq!(
         tokenize("  12 + 34  ").unwrap(),
-        token_stream(&[("12", Number), ("+", Plus), ("34", Number), ("", EOF)])
+        token_stream(&[("12", Number), ("+", Plus), ("34", Number), ("", Eof)])
     );
 
     assert_eq!(
         tokenize("1 2").unwrap(),
-        token_stream(&[("1", Number), ("2", Number), ("", EOF)])
+        token_stream(&[("1", Number), ("2", Number), ("", Eof)])
     );
 
     assert_eq!(
@@ -211,7 +211,7 @@ fn tokenize_basic() {
             ("-", Minus),
             ("4", Number),
             (")", RightParen),
-            ("", EOF)
+            ("", Eof)
         ])
     );
 
@@ -221,18 +221,18 @@ fn tokenize_basic() {
             ("foo", Identifier),
             ("to", Arrow),
             ("bar", Identifier),
-            ("", EOF)
+            ("", Eof)
         ])
     );
 
     assert_eq!(
         tokenize("1 -> 2").unwrap(),
-        token_stream(&[("1", Number), ("->", Arrow), ("2", Number), ("", EOF)])
+        token_stream(&[("1", Number), ("->", Arrow), ("2", Number), ("", Eof)])
     );
 
     assert_eq!(
         tokenize("45°").unwrap(),
-        token_stream(&[("45", Number), ("°", Identifier), ("", EOF)])
+        token_stream(&[("45", Number), ("°", Identifier), ("", Eof)])
     );
 
     assert!(tokenize("$").is_err());

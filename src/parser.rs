@@ -126,6 +126,6 @@ impl<'a> Parser<'a> {
     }
 
     fn is_at_end(&self) -> bool {
-        self.peek().kind == TokenKind::EOF
+        self.peek().kind == TokenKind::Eof
     }
 }
