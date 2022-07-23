@@ -177,12 +177,14 @@ mod tests {
 
     #[test]
     fn parse_invalid_input() {
-        assert_parse_error(&["", "+", "->", "2+", "123..", "0..", ".0.", ".", ". 2", ".."]);
+        assert_parse_error(&["", "+", "->", "§"]);
     }
 
     #[test]
-    fn parse_number() {
+    fn parse_numbers() {
         all_parse_as(&["1", "  1   "], scalar!(1.0));
+
+        assert_parse_error(&["123..", "0..", ".0.", ".", ". 2", ".."]);
     }
 
     #[test]
@@ -191,10 +193,34 @@ mod tests {
     }
 
     #[test]
-    fn parse_addition() {
+    fn parse_addition_subtraction() {
         all_parse_as(
             &["1+2", "  1   +  2    "],
             binop!(Add, scalar!(1.0), scalar!(2.0)),
+        );
+
+        // Minus should be left-associative
+        all_parse_as(
+            &["1-2-3"],
+            binop!(Sub, binop!(Sub, scalar!(1.0), scalar!(2.0)), scalar!(3.0)),
+        );
+    }
+
+    #[test]
+    fn parse_conversion() {
+        all_parse_as(
+            &["1->2", "1→2"],
+            binop!(ConvertTo, scalar!(1.0), scalar!(2.0)),
+        );
+
+        // Conversion is left-associative
+        all_parse_as(
+            &["1→2→3"],
+            binop!(
+                ConvertTo,
+                binop!(ConvertTo, scalar!(1.0), scalar!(2.0)),
+                scalar!(3.0)
+            ),
         );
     }
 }
