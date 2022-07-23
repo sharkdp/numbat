@@ -4,29 +4,45 @@ mod pretty_print;
 mod tokenizer;
 
 use parser::Parser;
-use tokenizer::tokenize;
 use pretty_print::PrettyPrint;
+use tokenizer::tokenize;
 
 use anyhow::Result;
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 
-fn main() -> Result<()> {
-    let mut args = std::env::args();
-    args.next();
-    if args.next().as_deref() == Some("-r") {
-        loop {
-            let mut input_string = String::new();
-            std::io::stdin().read_line(&mut input_string).unwrap();
+const HISTORY_FILE: &'static str = ".history";
+const PROMPT: &'static str = ">>> ";
 
-            let result = tokenize(&input_string);
-            println!("{:?}", result);
-        }
-    } else {
-        let tokens = tokenize("1 * 2 + 3 -> 4")?;
-        dbg!(&tokens);
-        let mut parser = Parser::new(&tokens);
-        let ast = parser.expression();
-        println!("{}", ast.pretty_print());
-    }
+fn parse_and_evaluate(input: &str) -> Result<()>{
+    let tokens = tokenize(input)?;
+    // dbg!(&tokens);
+    let mut parser = Parser::new(&tokens);
+    let ast = parser.expression();
+    println!("{}", ast.pretty_print());
 
     Ok(())
+}
+
+fn main() {
+    let mut rl = Editor::<()>::new();
+    rl.load_history(HISTORY_FILE).ok();
+
+    loop {
+        let readline = rl.readline(PROMPT);
+        match readline {
+            Ok(line) => {
+                rl.add_history_entry(&line);
+                parse_and_evaluate(&line).unwrap();
+            }
+            Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {
+                break;
+            }
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break;
+            }
+        }
+    }
+    rl.save_history(HISTORY_FILE).unwrap();
 }
