@@ -30,6 +30,12 @@ pub enum ParseError {
 
     #[error("Expected number")]
     ExpectedNumber,
+
+    #[error("Missing closing parenthesis ')'")]
+    MissingClosingParen,
+
+    #[error("Trailing characters: '{0}'")]
+    TrailingCharacters(String),
 }
 
 type Result<T> = std::result::Result<T, ParseError>;
@@ -42,6 +48,15 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     fn new(tokens: &'a [Token]) -> Self {
         Parser { tokens, current: 0 }
+    }
+
+    fn parse(&mut self) -> Result<Expression> {
+        let expr_or_error = self.expression();
+        if !self.is_at_end() {
+            Err(ParseError::TrailingCharacters(self.peek().lexeme.clone()))
+        } else {
+            expr_or_error
+        }
     }
 
     fn expression(&mut self) -> Result<Expression> {
@@ -105,12 +120,22 @@ impl<'a> Parser<'a> {
     }
 
     fn primary(&mut self) -> Result<Expression> {
-        let num = self
-            .match_exact(TokenKind::Number)
-            .ok_or(ParseError::ExpectedNumber)?;
-        Ok(Expression::Scalar(Number::from_f64(
-            num.lexeme.parse::<f64>().unwrap(),
-        )))
+        if self.match_exact(TokenKind::LeftParen).is_some() {
+            let inner = self.expression()?;
+
+            if !self.match_exact(TokenKind::RightParen).is_some() {
+                return Err(ParseError::MissingClosingParen);
+            }
+
+            Ok(inner)
+        } else {
+            let num = self
+                .match_exact(TokenKind::Number)
+                .ok_or(ParseError::ExpectedNumber)?;
+            Ok(Expression::Scalar(Number::from_f64(
+                num.lexeme.parse::<f64>().unwrap(),
+            )))
+        }
     }
 
     fn match_exact(&mut self, token_kind: TokenKind) -> Option<&'a Token> {
@@ -152,7 +177,7 @@ pub fn parse(input: &str) -> Result<Expression> {
 
     let tokens = tokenize(input).map_err(ParseError::TokenizerError)?;
     let mut parser = Parser::new(&tokens);
-    parser.expression()
+    parser.parse()
 }
 
 #[cfg(test)]
@@ -169,7 +194,7 @@ mod tests {
     }
 
     #[cfg(test)]
-    fn assert_parse_error(inputs: &[&str]) {
+    fn should_fail(inputs: &[&str]) {
         for input in inputs {
             assert!(parse(input).is_err());
         }
@@ -177,14 +202,14 @@ mod tests {
 
     #[test]
     fn parse_invalid_input() {
-        assert_parse_error(&["", "+", "->", "§"]);
+        should_fail(&["", "+", "->", "§"]);
     }
 
     #[test]
     fn parse_numbers() {
         all_parse_as(&["1", "  1   "], scalar!(1.0));
 
-        assert_parse_error(&["123..", "0..", ".0.", ".", ". 2", ".."]);
+        should_fail(&["123..", "0..", ".0.", ".", ". 2", ".."]);
     }
 
     #[test]
@@ -228,5 +253,17 @@ mod tests {
                 scalar!(3.0)
             ),
         );
+
+        should_fail(&["1 - > 2", "1 -> -> 2"]);
+    }
+
+    #[test]
+    fn parse_grouping() {
+        all_parse_as(
+            &["1*(2+3)", "1 * ( 2 + 3 )"],
+            binop!(scalar!(1.0), Mul, binop!(scalar!(2.0), Add, scalar!(3.0))),
+        );
+
+        should_fail(&["1 * (2 + 3", "2 + 3)"]);
     }
 }
