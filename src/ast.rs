@@ -82,7 +82,7 @@ impl PrettyPrint for Expression {
 
         match self {
             Scalar(Number(n)) => format!("{n:.1}"),
-            Identifier(name) => format!("{name}"),
+            Identifier(name) => name.clone(),
             Negate(rhs) => format!("-{rhs}", rhs = rhs.pretty_print()),
             BinaryOperator(op, lhs, rhs) => format!(
                 "({lhs} {op} {rhs})",

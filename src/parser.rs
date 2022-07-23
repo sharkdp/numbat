@@ -129,7 +129,7 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let inner = self.expression()?;
 
-            if !self.match_exact(TokenKind::RightParen).is_some() {
+            if self.match_exact(TokenKind::RightParen).is_none() {
                 return Err(ParseError::MissingClosingParen);
             }
 
@@ -250,16 +250,16 @@ mod tests {
     #[test]
     fn parse_multiplication_division() {
         all_parse_as(
-            &["1*2", "  1   *  2    "],
+            &["1*2", "  1   *  2    ", "1 · 2", "1 × 2"],
             binop!(scalar!(1.0), Mul, scalar!(2.0)),
         );
 
         all_parse_as(
-            &["1/2", "1 per 2", "  1   /  2    "],
+            &["1/2", "1 per 2", "1÷2"],
             binop!(scalar!(1.0), Div, scalar!(2.0)),
         );
 
-        should_fail(&["1*@", "1*", "1 per"]);
+        should_fail(&["1*@", "1*", "1 per", "÷", "×"]);
     }
 
     #[test]
