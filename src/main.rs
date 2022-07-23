@@ -1,7 +1,9 @@
-mod tokenizer;
-mod pretty_print;
 mod ast;
+mod parser;
+mod pretty_print;
+mod tokenizer;
 
+use parser::Parser;
 use tokenizer::tokenize;
 
 use anyhow::Result;
@@ -18,8 +20,11 @@ fn main() -> Result<()> {
             println!("{:?}", result);
         }
     } else {
-        let tokens = tokenize("12+34->foo")?;
-        println!("tokens = {:?}", tokens);
+        let tokens = tokenize("1 * 2 + 3 -> 4")?;
+        dbg!(&tokens);
+        let mut parser = Parser::new(&tokens);
+        let ast = parser.expression();
+        dbg!(ast);
     }
 
     Ok(())

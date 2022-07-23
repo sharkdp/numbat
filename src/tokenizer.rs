@@ -1,9 +1,9 @@
 use anyhow::Result;
-use thiserror::Error;
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
+use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq, Eq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum Error {
     #[error("Unexpected character: '{0}'")]
     UnexpectedCharacter(char),
@@ -31,9 +31,9 @@ pub enum TokenKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
-    kind: TokenKind,
-    lexeme: String, // TODO: could be a &'str view into the input
-    line: usize,
+    pub kind: TokenKind,
+    pub lexeme: String, // TODO: could be a &'str view into the input
+    pub line: usize,
 }
 
 struct Tokenizer {

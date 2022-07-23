@@ -3,7 +3,13 @@ use crate::pretty_print::PrettyPrint;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Number(f64);
 
-#[derive(Clone, Copy, PartialEq)]
+impl Number {
+    pub fn from_f64(n: f64) -> Self {
+        Number(n)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BinaryOperator {
     Add,
     Sub,
@@ -26,7 +32,7 @@ impl PrettyPrint for BinaryOperator {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Scalar(Number),
     Negate(Box<Expression>),
