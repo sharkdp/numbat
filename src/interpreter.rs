@@ -48,7 +48,9 @@ impl<'a> Interpreter<'a> {
 
     fn run(&mut self) -> Result<()> {
         let value = self.evaluate_expression(self.ast)?;
-        println!("  = {value:.1}", value = value);
+        println!();
+        println!("    = {value:.1}", value = value);
+        println!();
 
         Ok(())
     }

@@ -19,7 +19,8 @@ fn parse_and_evaluate(input: &str) {
 
     match result {
         Ok(expression) => {
-            println!("{}", expression.pretty_print());
+            println!();
+            println!("  {}", expression.pretty_print());
             if let Err(e) = interpreter::run(&expression) {
                 eprintln!("Interpreter error: {:#}", e);
             }
