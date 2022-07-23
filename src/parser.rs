@@ -15,7 +15,7 @@
 //! term         →   factor ( ( "+" | "-") factor ) *
 //! factor       →   unary ( ( "*" | "/") unary ) *
 //! unary        →   "-" unary | primary
-//! primary      →   number | "(" expression ")"
+//! primary      →   number | identifier | "(" expression ")"
 //! ```
 
 use crate::ast::{BinaryOperator, Expression, Number};
@@ -28,8 +28,8 @@ pub enum ParseError {
     #[error("{0:#}")]
     TokenizerError(TokenizerError),
 
-    #[error("Expected number")]
-    ExpectedNumber,
+    #[error("Expected one of: number, identifier, parenthesized expression")]
+    ExpectedPrimary,
 
     #[error("Missing closing parenthesis ')'")]
     MissingClosingParen,
@@ -120,7 +120,13 @@ impl<'a> Parser<'a> {
     }
 
     fn primary(&mut self) -> Result<Expression> {
-        if self.match_exact(TokenKind::LeftParen).is_some() {
+        if let Some(num) = self.match_exact(TokenKind::Number) {
+            Ok(Expression::Scalar(Number::from_f64(
+                num.lexeme.parse::<f64>().unwrap(),
+            )))
+        } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+            Ok(Expression::Identifier(identifier.lexeme.clone()))
+        } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let inner = self.expression()?;
 
             if !self.match_exact(TokenKind::RightParen).is_some() {
@@ -129,12 +135,7 @@ impl<'a> Parser<'a> {
 
             Ok(inner)
         } else {
-            let num = self
-                .match_exact(TokenKind::Number)
-                .ok_or(ParseError::ExpectedNumber)?;
-            Ok(Expression::Scalar(Number::from_f64(
-                num.lexeme.parse::<f64>().unwrap(),
-            )))
+            Err(ParseError::ExpectedPrimary)
         }
     }
 
@@ -183,7 +184,7 @@ pub fn parse(input: &str) -> Result<Expression> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{binop, negate, scalar};
+    use crate::ast::{binop, identifier, negate, scalar};
 
     fn all_parse_as(inputs: &[&str], expr_expected: Expression) {
         for input in inputs {
@@ -210,6 +211,14 @@ mod tests {
         all_parse_as(&["1", "  1   "], scalar!(1.0));
 
         should_fail(&["123..", "0..", ".0.", ".", ". 2", ".."]);
+    }
+
+    #[test]
+    fn parse_identifiers() {
+        all_parse_as(&["foo", "  foo   "], identifier!("foo"));
+        all_parse_as(&["foo_bar"], identifier!("foo_bar"));
+        all_parse_as(&["MeineSchöneVariable"], identifier!("MeineSchöneVariable"));
+        all_parse_as(&["°"], identifier!("°"));
     }
 
     #[test]

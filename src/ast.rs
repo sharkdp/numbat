@@ -35,6 +35,7 @@ impl PrettyPrint for BinaryOperator {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Scalar(Number),
+    Identifier(String),
     Negate(Box<Expression>),
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
 }
@@ -43,6 +44,13 @@ pub enum Expression {
 macro_rules! scalar {
     ( $num:expr ) => {{
         Expression::Scalar(Number::from_f64($num))
+    }};
+}
+
+#[cfg(test)]
+macro_rules! identifier {
+    ( $name:expr ) => {{
+        Expression::Identifier($name.into())
     }};
 }
 
@@ -59,9 +67,10 @@ macro_rules! binop {
         Expression::BinaryOperator(BinaryOperator::$op, Box::new($lhs), Box::new($rhs))
     }};
 }
-
 #[cfg(test)]
 pub(crate) use binop;
+#[cfg(test)]
+pub(crate) use identifier;
 #[cfg(test)]
 pub(crate) use negate;
 #[cfg(test)]
@@ -73,6 +82,7 @@ impl PrettyPrint for Expression {
 
         match self {
             Scalar(Number(n)) => format!("{n:.1}"),
+            Identifier(name) => format!("{name}"),
             Negate(rhs) => format!("-{rhs}", rhs = rhs.pretty_print()),
             BinaryOperator(op, lhs, rhs) => format!(
                 "({lhs} {op} {rhs})",
