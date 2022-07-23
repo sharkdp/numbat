@@ -5,6 +5,7 @@ mod tokenizer;
 
 use parser::Parser;
 use tokenizer::tokenize;
+use pretty_print::PrettyPrint;
 
 use anyhow::Result;
 
@@ -24,7 +25,7 @@ fn main() -> Result<()> {
         dbg!(&tokens);
         let mut parser = Parser::new(&tokens);
         let ast = parser.expression();
-        dbg!(ast);
+        println!("{}", ast.pretty_print());
     }
 
     Ok(())
