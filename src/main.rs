@@ -7,7 +7,7 @@ use parser::Parser;
 use pretty_print::PrettyPrint;
 use tokenizer::tokenize;
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -24,8 +24,8 @@ fn parse_and_evaluate(input: &str) -> Result<()>{
     Ok(())
 }
 
-fn main() {
-    let mut rl = Editor::<()>::new();
+fn run() -> Result<()> {
+    let mut rl = Editor::<()>::new()?;
     rl.load_history(HISTORY_FILE).ok();
 
     loop {
@@ -44,5 +44,10 @@ fn main() {
             }
         }
     }
-    rl.save_history(HISTORY_FILE).unwrap();
+
+    rl.save_history(HISTORY_FILE).context("Error while saving history to file")
+}
+
+fn main() {
+    run().unwrap();
 }
