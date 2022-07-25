@@ -2,6 +2,7 @@ mod ast;
 mod interpreter;
 mod parser;
 mod pretty_print;
+mod span;
 mod tokenizer;
 
 use interpreter::interpret;
@@ -16,7 +17,7 @@ const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
 fn parse_and_evaluate(input: &str) {
-    let result = parse(input).context("Error while parsing expression");
+    let result = parse(input);
 
     match result {
         Ok(expression) => {

@@ -1,15 +1,13 @@
+use crate::span::Span;
+
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum TokenizerError {
-    #[error("Unexpected character at position {pos} in line {line}: '{character}'")]
-    UnexpectedCharacter {
-        line: usize,
-        pos: usize,
-        character: char,
-    },
+    #[error("Unexpected character: '{character}'")]
+    UnexpectedCharacter { character: char, span: Span },
 }
 
 type Result<T> = std::result::Result<T, TokenizerError>;
@@ -38,8 +36,7 @@ pub enum TokenKind {
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String, // TODO: could be a &'str view into the input
-    pub line: usize,
-    pub position: usize,
+    pub span: Span,
 }
 
 struct Tokenizer {
@@ -82,8 +79,10 @@ impl Tokenizer {
         tokens.push(Token {
             kind: TokenKind::Eof,
             lexeme: "".into(),
-            line: self.current_line,
-            position: self.token_start_position + 1,
+            span: Span {
+                line: self.current_line,
+                position: self.token_start_position + 1,
+            },
         });
 
         Ok(tokens)
@@ -148,9 +147,11 @@ impl Tokenizer {
             }
             c => {
                 return Err(TokenizerError::UnexpectedCharacter {
-                    line: self.current_line,
-                    pos: current_position,
                     character: c,
+                    span: Span {
+                        line: self.current_line,
+                        position: current_position,
+                    },
                 });
             }
         };
@@ -158,8 +159,10 @@ impl Tokenizer {
         Ok(Some(Token {
             kind,
             lexeme: self.lexeme(),
-            line: self.current_line,
-            position: self.token_start_position,
+            span: Span {
+                line: self.current_line,
+                position: self.token_start_position,
+            },
         }))
     }
 
@@ -206,8 +209,10 @@ fn token_stream(input: &[(&str, TokenKind, (usize, usize))]) -> Vec<Token> {
         .map(|(lexeme, kind, (line, position))| Token {
             kind: kind.clone(),
             lexeme: lexeme.to_string(),
-            line: *line,
-            position: *position,
+            span: Span {
+                line: *line,
+                position: *position,
+            },
         })
         .collect()
 }

@@ -19,14 +19,15 @@
 //! ```
 
 use crate::ast::{BinaryOperator, Expression, Number};
+use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
 
 use thiserror::Error;
 
-#[derive(Debug, Error, PartialEq)]
-pub enum ParseError {
-    #[error("{0:#}")]
-    TokenizerError(TokenizerError),
+#[derive(Error, Debug, PartialEq)]
+pub enum ParseErrorKind {
+    #[error("Unexpected character '{0}'")]
+    TokenizerUnexpectedCharacter(char),
 
     #[error("Expected one of: number, identifier, parenthesized expression")]
     ExpectedPrimary,
@@ -36,6 +37,19 @@ pub enum ParseError {
 
     #[error("Trailing characters: '{0}'")]
     TrailingCharacters(String),
+}
+
+#[derive(Debug, Error)]
+#[error("Error at {span} while parsing expression: {kind}")]
+pub struct ParseError {
+    kind: ParseErrorKind,
+    span: Span,
+}
+
+impl ParseError {
+    fn new(kind: ParseErrorKind, span: Span) -> Self {
+        ParseError { kind, span }
+    }
 }
 
 type Result<T> = std::result::Result<T, ParseError>;
@@ -53,7 +67,13 @@ impl<'a> Parser<'a> {
     fn parse(&mut self) -> Result<Expression> {
         let expr_or_error = self.expression();
         if !self.is_at_end() {
-            Err(ParseError::TrailingCharacters(self.peek().lexeme.clone()))
+            Err(ParseError {
+                kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
+                span: Span {
+                    line: 0,
+                    position: 0,
+                },
+            })
         } else {
             expr_or_error
         }
@@ -130,12 +150,18 @@ impl<'a> Parser<'a> {
             let inner = self.expression()?;
 
             if self.match_exact(TokenKind::RightParen).is_none() {
-                return Err(ParseError::MissingClosingParen);
+                return Err(ParseError::new(
+                    ParseErrorKind::MissingClosingParen,
+                    self.peek().span.clone(),
+                ));
             }
 
             Ok(inner)
         } else {
-            Err(ParseError::ExpectedPrimary)
+            Err(ParseError::new(
+                ParseErrorKind::ExpectedPrimary,
+                self.peek().span.clone(),
+            ))
         }
     }
 
@@ -176,7 +202,17 @@ impl<'a> Parser<'a> {
 pub fn parse(input: &str) -> Result<Expression> {
     use crate::tokenizer::tokenize;
 
-    let tokens = tokenize(input).map_err(ParseError::TokenizerError)?;
+    let tokens = tokenize(input).map_err(
+        |TokenizerError::UnexpectedCharacter {
+             character,
+             ref span,
+         }| {
+            ParseError::new(
+                ParseErrorKind::TokenizerUnexpectedCharacter(character),
+                span.clone(),
+            )
+        },
+    )?;
     let mut parser = Parser::new(&tokens);
     parser.parse()
 }
