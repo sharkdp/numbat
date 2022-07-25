@@ -81,8 +81,8 @@ impl Tokenizer {
             lexeme: "".into(),
             span: Span {
                 line: self.current_line,
-                position: self.token_start_position + 1,
-                index: self.token_start_index + 1,
+                position: self.current_position,
+                index: self.current_index,
             },
         });
 
@@ -264,7 +264,7 @@ fn tokenize_basic() {
             ("foo", Identifier, (1, 1, 0)),
             ("to", Arrow, (1, 5, 4)),
             ("bar", Identifier, (1, 8, 7)),
-            ("", Eof, (1, 9, 8))
+            ("", Eof, (1, 11, 10))
         ])
     );
 
