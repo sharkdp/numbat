@@ -40,10 +40,10 @@ pub enum ParseErrorKind {
 }
 
 #[derive(Debug, Error)]
-#[error("Error at {span} while parsing expression: {kind}")]
+#[error("Parse error: {kind}")]
 pub struct ParseError {
     kind: ParseErrorKind,
-    span: Span,
+    pub span: Span,
 }
 
 impl ParseError {
@@ -149,7 +149,7 @@ impl<'a> Parser<'a> {
             if self.match_exact(TokenKind::RightParen).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span.clone(),
+                    self.next().span.clone(),
                 ));
             }
 
@@ -189,6 +189,14 @@ impl<'a> Parser<'a> {
 
     fn peek(&self) -> &'a Token {
         &self.tokens[self.current]
+    }
+
+    fn next(&self) -> &'a Token {
+        if self.is_at_end() {
+            self.peek()
+        } else {
+            &self.tokens[self.current + 1]
+        }
     }
 
     fn is_at_end(&self) -> bool {

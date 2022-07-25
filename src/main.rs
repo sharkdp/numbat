@@ -27,8 +27,13 @@ fn parse_and_evaluate(input: &str) {
                 eprintln!("Interpreter error: {:#}", e);
             }
         }
-        Err(e) => {
-            eprintln!("{:#}", e)
+        Err(ref e @ parser::ParseError { ref span, .. }) => {
+            let line = input.lines().nth(span.line - 1).unwrap();
+
+            eprintln!("  File \"<stdin>\", line {}", span.line);
+            eprintln!("    {line}");
+            eprintln!("    {offset}^", offset = " ".repeat(span.position - 1));
+            eprintln!("{}", e);
         }
     }
 }
