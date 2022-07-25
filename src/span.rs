@@ -5,4 +5,5 @@ use thiserror::Error;
 pub struct Span {
     pub line: usize,
     pub position: usize,
+    pub index: usize,
 }

@@ -82,6 +82,7 @@ impl Tokenizer {
             span: Span {
                 line: self.current_line,
                 position: self.token_start_position + 1,
+                index: self.token_start_index + 1,
             },
         });
 
@@ -151,6 +152,7 @@ impl Tokenizer {
                     span: Span {
                         line: self.current_line,
                         position: current_position,
+                        index: self.token_start_index,
                     },
                 });
             }
@@ -162,6 +164,7 @@ impl Tokenizer {
             span: Span {
                 line: self.current_line,
                 position: self.token_start_position,
+                index: self.token_start_index,
             },
         }))
     }
@@ -203,15 +206,16 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>> {
 }
 
 #[cfg(test)]
-fn token_stream(input: &[(&str, TokenKind, (usize, usize))]) -> Vec<Token> {
+fn token_stream(input: &[(&str, TokenKind, (usize, usize, usize))]) -> Vec<Token> {
     input
         .iter()
-        .map(|(lexeme, kind, (line, position))| Token {
+        .map(|(lexeme, kind, (line, position, index))| Token {
             kind: kind.clone(),
             lexeme: lexeme.to_string(),
             span: Span {
                 line: *line,
                 position: *position,
+                index: *index,
             },
         })
         .collect()
@@ -224,72 +228,72 @@ fn tokenize_basic() {
     assert_eq!(
         tokenize("  12 + 34  ").unwrap(),
         token_stream(&[
-            ("12", Number, (1, 3)),
-            ("+", Plus, (1, 6)),
-            ("34", Number, (1, 8)),
-            ("", Eof, (1, 12))
+            ("12", Number, (1, 3, 2)),
+            ("+", Plus, (1, 6, 5)),
+            ("34", Number, (1, 8, 7)),
+            ("", Eof, (1, 12, 11))
         ])
     );
 
     assert_eq!(
         tokenize("1 2").unwrap(),
         token_stream(&[
-            ("1", Number, (1, 1)),
-            ("2", Number, (1, 3)),
-            ("", Eof, (1, 4))
+            ("1", Number, (1, 1, 0)),
+            ("2", Number, (1, 3, 2)),
+            ("", Eof, (1, 4, 3))
         ])
     );
 
     assert_eq!(
         tokenize("12 × (3 - 4)").unwrap(),
         token_stream(&[
-            ("12", Number, (1, 1)),
-            ("×", Multiply, (1, 4)),
-            ("(", LeftParen, (1, 6)),
-            ("3", Number, (1, 7)),
-            ("-", Minus, (1, 9)),
-            ("4", Number, (1, 11)),
-            (")", RightParen, (1, 12)),
-            ("", Eof, (1, 13))
+            ("12", Number, (1, 1, 0)),
+            ("×", Multiply, (1, 4, 3)),
+            ("(", LeftParen, (1, 6, 5)),
+            ("3", Number, (1, 7, 6)),
+            ("-", Minus, (1, 9, 8)),
+            ("4", Number, (1, 11, 10)),
+            (")", RightParen, (1, 12, 11)),
+            ("", Eof, (1, 13, 12))
         ])
     );
 
     assert_eq!(
         tokenize("foo to bar").unwrap(),
         token_stream(&[
-            ("foo", Identifier, (1, 1)),
-            ("to", Arrow, (1, 5)),
-            ("bar", Identifier, (1, 8)),
-            ("", Eof, (1, 9))
+            ("foo", Identifier, (1, 1, 0)),
+            ("to", Arrow, (1, 5, 4)),
+            ("bar", Identifier, (1, 8, 7)),
+            ("", Eof, (1, 9, 8))
         ])
     );
 
     assert_eq!(
         tokenize("1 -> 2").unwrap(),
         token_stream(&[
-            ("1", Number, (1, 1)),
-            ("->", Arrow, (1, 3)),
-            ("2", Number, (1, 6)),
-            ("", Eof, (1, 7))
+            ("1", Number, (1, 1, 0)),
+            ("->", Arrow, (1, 3, 2)),
+            ("2", Number, (1, 6, 5)),
+            ("", Eof, (1, 7, 6))
         ])
     );
 
     assert_eq!(
         tokenize("45°").unwrap(),
         token_stream(&[
-            ("45", Number, (1, 1)),
-            ("°", Identifier, (1, 3)),
-            ("", Eof, (1, 4))
+            ("45", Number, (1, 1, 0)),
+            ("°", Identifier, (1, 3, 2)),
+            ("", Eof, (1, 4, 3))
         ])
     );
 
     assert_eq!(
         tokenize("1+\n  2").unwrap(),
         token_stream(&[
-            ("1", Number, (1, 1)),
-            ("+", Plus, (1, 2)),
-            ("2", Number, (2, 3)),
-            ("", Eof, (2, 4))
+            ("1", Number, (1, 1, 0)),
+            ("+", Plus, (1, 2, 1)),
+            ("2", Number, (2, 3, 5)),
+            ("", Eof, (2, 4, 6))
         ])
     );
 

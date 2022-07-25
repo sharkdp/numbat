@@ -69,10 +69,7 @@ impl<'a> Parser<'a> {
         if !self.is_at_end() {
             Err(ParseError {
                 kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
-                span: Span {
-                    line: 0,
-                    position: 0,
-                },
+                span: self.peek().span.clone(),
             })
         } else {
             expr_or_error
