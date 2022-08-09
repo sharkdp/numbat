@@ -5,7 +5,7 @@ mod pretty_print;
 mod span;
 mod tokenizer;
 
-use interpreter::interpret;
+use interpreter::{interpret, NextAction};
 use parser::parse;
 use pretty_print::PrettyPrint;
 
@@ -16,15 +16,19 @@ use rustyline::Editor;
 const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
-fn parse_and_evaluate(input: &str) {
+fn parse_and_evaluate(input: &str) -> NextAction {
     let result = parse(input);
 
     match result {
-        Ok(expression) => {
+        Ok(statement) => {
             println!();
-            println!("  {}", expression.pretty_print());
-            if let Err(e) = interpret(&expression) {
-                eprintln!("Interpreter error: {:#}", e);
+            println!("  {}", statement.pretty_print());
+            match interpret(&statement) {
+                Ok(next_action) => next_action,
+                Err(e) => {
+                    eprintln!("Interpreter error: {:#}", e);
+                    NextAction::Continue
+                }
             }
         }
         Err(ref e @ parser::ParseError { ref span, .. }) => {
@@ -34,6 +38,8 @@ fn parse_and_evaluate(input: &str) {
             eprintln!("    {line}");
             eprintln!("    {offset}^", offset = " ".repeat(span.position - 1));
             eprintln!("{}", e);
+
+            NextAction::Continue
         }
     }
 }
@@ -47,7 +53,12 @@ fn run() -> Result<()> {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(&line);
-                parse_and_evaluate(&line);
+                match parse_and_evaluate(&line) {
+                    NextAction::Continue => {}
+                    NextAction::Quit => {
+                        break;
+                    }
+                }
             }
             Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {
                 break;

@@ -109,3 +109,29 @@ fn expression_pretty_print() {
 
     assert_eq!(expr.pretty_print(), "(2.0 × (-3.0 + 4.0))");
 }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Command {
+    List,
+    Quit,
+}
+
+#[derive(PartialEq)]
+pub enum Statement {
+    Command(Command),
+    Assignment(String, Expression),
+    Expression(Expression),
+}
+
+impl PrettyPrint for Statement {
+    fn pretty_print(&self) -> String {
+        match &self {
+            Statement::Command(Command::List) => "list".into(),
+            Statement::Command(Command::Quit) => "quit".into(),
+            Statement::Assignment(identifier, expr) => {
+                format!("let {} = {}", identifier, expr.pretty_print())
+            }
+            Statement::Expression(expr) => expr.pretty_print(),
+        }
+    }
+}

@@ -10,6 +10,9 @@
 //!
 //! Grammar:
 //! ```txt
+//! statement    →   command | assignment | expression
+//! assignment   →   identifier "=" expression
+//! command      →   "list" | "quit"
 //! expression   →   conversion
 //! conversion   →   term ( "→" term ) *
 //! term         →   factor ( ( "+" | "-") factor ) *
@@ -18,7 +21,7 @@
 //! primary      →   number | identifier | "(" expression ")"
 //! ```
 
-use crate::ast::{BinaryOperator, Expression, Number};
+use crate::ast::{BinaryOperator, Command, Expression, Number, Statement};
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
 
@@ -64,15 +67,36 @@ impl<'a> Parser<'a> {
         Parser { tokens, current: 0 }
     }
 
-    fn parse(&mut self) -> Result<Expression> {
-        let expr_or_error = self.expression();
+    fn parse(&mut self) -> Result<Statement> {
+        let statement_or_error = self.statement();
         if !self.is_at_end() {
             Err(ParseError {
                 kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
                 span: self.peek().span.clone(),
             })
         } else {
-            expr_or_error
+            statement_or_error
+        }
+    }
+
+    fn statement(&mut self) -> Result<Statement> {
+        if self.match_exact(TokenKind::Quit).is_some() {
+            Ok(Statement::Command(Command::Quit))
+        } else if self.match_exact(TokenKind::List).is_some() {
+            Ok(Statement::Command(Command::List))
+        } else if self.match_exact(TokenKind::Let).is_some() {
+            if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                if self.match_exact(TokenKind::Equal).is_none() {
+                    todo!("parse error: expected '=' character");
+                } else {
+                    let expr = self.expression()?;
+                    Ok(Statement::Assignment(identifier.lexeme.clone(), expr))
+                }
+            } else {
+                todo!("parse error: expected identifier after 'let'");
+            }
+        } else {
+            Ok(Statement::Expression(self.expression()?))
         }
     }
 
@@ -204,7 +228,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-pub fn parse(input: &str) -> Result<Expression> {
+pub fn parse(input: &str) -> Result<Statement> {
     use crate::tokenizer::tokenize;
 
     let tokens = tokenize(input).map_err(
@@ -229,9 +253,13 @@ mod tests {
 
     fn all_parse_as(inputs: &[&str], expr_expected: Expression) {
         for input in inputs {
-            let expr_parsed = parse(input).expect("parse error");
+            let parsed = parse(input).expect("parse error");
 
-            assert_eq!(expr_parsed, expr_expected);
+            if let Statement::Expression(expr_parsed) = parsed {
+                assert_eq!(expr_parsed, expr_expected);
+            } else {
+                assert!(false); // TODO
+            }
         }
     }
 

@@ -23,6 +23,14 @@ pub enum TokenKind {
     Divide,
     Comma,
     Arrow,
+    Equal,
+
+    // Commands
+    List,
+    Quit,
+
+    // Other keywords
+    Let,
 
     // Variable-length tokens
     Number,
@@ -95,6 +103,9 @@ impl Tokenizer {
             let mut m = HashMap::new();
             m.insert("per", TokenKind::Divide);
             m.insert("to", TokenKind::Arrow);
+            m.insert("let", TokenKind::Let);
+            m.insert("list", TokenKind::List);
+            m.insert("quit", TokenKind::Quit);
             m
         });
 
@@ -127,6 +138,7 @@ impl Tokenizer {
             '/' | '÷' => TokenKind::Divide,
             ',' => TokenKind::Comma,
             '→' | '➞' => TokenKind::Arrow,
+            '=' => TokenKind::Equal,
             '-' => {
                 if self.match_char('>') {
                     TokenKind::Arrow

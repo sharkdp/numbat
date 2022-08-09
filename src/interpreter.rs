@@ -1,4 +1,4 @@
-use crate::ast::{BinaryOperator, Expression};
+use crate::ast::{BinaryOperator, Command, Expression, Statement};
 
 use thiserror::Error;
 
@@ -8,14 +8,19 @@ pub enum InterpreterError {
     DivisionByZero,
 }
 
+pub enum NextAction {
+    Continue,
+    Quit,
+}
+
 type Result<T> = std::result::Result<T, InterpreterError>;
 
 struct Interpreter<'a> {
-    ast: &'a Expression,
+    ast: &'a Statement,
 }
 
 impl<'a> Interpreter<'a> {
-    fn new(ast: &'a Expression) -> Self {
+    fn new(ast: &'a Statement) -> Self {
         Self { ast }
     }
 
@@ -46,17 +51,30 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    fn run(&mut self) -> Result<()> {
-        let value = self.evaluate_expression(self.ast)?;
-        println!();
-        println!("    = {value:.1}", value = value);
-        println!();
+    fn run(&mut self) -> Result<NextAction> {
+        match self.ast {
+            Statement::Expression(expr) => {
+                let value = self.evaluate_expression(expr)?;
+                println!();
+                println!("    = {value:.1}", value = value);
+                println!();
+            }
+            Statement::Command(Command::List) => {
+                println!("List of variables:");
+            }
+            Statement::Command(Command::Quit) => {
+                return Ok(NextAction::Quit);
+            }
+            Statement::Assignment(_, _) => {
+                // TODO
+            }
+        }
 
-        Ok(())
+        Ok(NextAction::Continue)
     }
 }
 
-pub fn interpret(expr: &Expression) -> Result<()> {
-    let mut interpreter = Interpreter::new(expr);
+pub fn interpret(stmt: &Statement) -> Result<NextAction> {
+    let mut interpreter = Interpreter::new(stmt);
     interpreter.run()
 }
