@@ -32,7 +32,7 @@ Example: dimensionality annotations
   kineticEnergy(m: [mass], v: [speed]): [energy] = 1/2 * m * v^2
 
   // maybe okay, since it does not clash with other identifiers?
-  kineticEnergy(m: mass, v: speed): Energy = 1/2 * m * v^2
+  kineticEnergy(m: mass, v: speed): energy = 1/2 * m * v^2
 
   // … or use case-sensitivity:
   kineticEnergy(m: Mass, v: Speed) : Energy = 1/2 * m * v^2
@@ -41,3 +41,15 @@ Example:
 
   Length l = 4 inch
   Mass m = 3 kg
+
+
+What about generic functions like:
+
+  sqr(x: $T) : $T^2 = x * x
+
+
+Resources:
+
+  https://tratt.net/laurie/blog/2020/which_parsing_approach.html
+  https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
+  https://blog.reverberate.org/2013/09/ll-and-lr-in-context-why-parsing-tools.html
