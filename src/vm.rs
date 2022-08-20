@@ -8,6 +8,7 @@ pub enum Op {
     Divide,
     Negate,
     Print,
+    List,
     Exit,
 }
 
@@ -21,6 +22,7 @@ impl Op {
             | Op::Divide
             | Op::Negate
             | Op::Print
+            | Op::List
             | Op::Exit => 0,
         }
     }
@@ -34,6 +36,7 @@ impl Op {
             Op::Divide => "Divide",
             Op::Negate => "Negate",
             Op::Print => "Print",
+            Op::List => "List",
             Op::Exit => "Exit",
         }
     }
@@ -90,38 +93,46 @@ impl Vm {
 
     pub fn run(&mut self) {
         loop {
-            let op = self.bytecode[self.ip];
-            self.ip += 1;
-            let op = unsafe { std::mem::transmute::<u8, Op>(op) };
+            let op = unsafe { std::mem::transmute::<u8, Op>(self.read_byte()) };
+
             match op {
                 Op::Constant => {
                     let constant_idx = self.read_byte();
                     self.stack.push(self.constants[constant_idx as usize]);
                 }
-                Op::Add => {
-                    let lhs = self.pop();
+                op @ (Op::Add | Op::Subtract | Op::Multiply | Op::Divide) => {
                     let rhs = self.pop();
-                    self.stack.push(lhs + rhs);
-                }
-                Op::Multiply => {
                     let lhs = self.pop();
-                    let rhs = self.pop();
-                    self.stack.push(lhs * rhs);
+                    let result = match op {
+                        Op::Add => lhs + rhs,
+                        Op::Subtract => lhs - rhs,
+                        Op::Multiply => lhs * rhs,
+                        Op::Divide => lhs / rhs,
+                        _ => unreachable!(),
+                    };
+                    self.push(result);
                 }
-                Op::Subtract | Op::Divide => {}
                 Op::Negate => {
                     let rhs = self.pop();
-                    self.stack.push(-rhs);
+                    self.push(-rhs);
                 }
                 Op::Print => {
                     let byte = self.pop();
                     println!("{}", byte);
+                }
+                Op::List => {
+                    println!("List of variables:");
+                    todo!();
                 }
                 Op::Exit => {
                     break;
                 }
             }
         }
+    }
+
+    fn push(&mut self, value: f64) {
+        self.stack.push(value);
     }
 
     fn pop(&mut self) -> f64 {
@@ -143,7 +154,7 @@ impl Vm {
         self.bytecode.push(op as u8);
     }
 
-    pub fn add_op_with_arg(&mut self, op: Op, arg: u8) {
+    pub fn add_op1(&mut self, op: Op, arg: u8) {
         self.bytecode.push(op as u8);
         self.bytecode.push(arg);
     }

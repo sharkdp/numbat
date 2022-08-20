@@ -15,7 +15,7 @@ impl BytecodeInterpreter {
         match expr {
             Expression::Scalar(n) => {
                 let index = self.vm.add_constant(n.to_f64());
-                self.vm.add_op_with_arg(Op::Constant, index);
+                self.vm.add_op1(Op::Constant, index);
             }
             Expression::Identifier(_) => todo!(),
             Expression::Negate(rhs) => {
@@ -45,10 +45,10 @@ impl BytecodeInterpreter {
                 self.compile_expression(&expr)?;
             }
             Statement::Command(Command::List) => {
-                todo!();
+                self.vm.add_op(Op::List);
             }
             Statement::Command(Command::Quit) => {
-                todo!();
+                self.vm.add_op(Op::Exit);
             }
             Statement::Assignment(_, _) => {
                 todo!();
