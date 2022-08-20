@@ -22,19 +22,18 @@ impl BytecodeInterpreter {
                 self.compile_expression(rhs)?;
                 self.vm.add_op(Op::Negate);
             }
-            Expression::BinaryOperator(op, lhs, rhs) => {
+            Expression::BinaryOperator(operator, lhs, rhs) => {
                 self.compile_expression(lhs)?;
                 self.compile_expression(rhs)?;
 
-                match op {
-                    BinaryOperator::Add => {
-                        self.vm.add_op(Op::Add);
-                    }
-                    BinaryOperator::Sub => todo!(),
-                    BinaryOperator::Mul => todo!(),
-                    BinaryOperator::Div => todo!(),
+                let op = match operator {
+                    BinaryOperator::Add => Op::Add,
+                    BinaryOperator::Sub => Op::Subtract,
+                    BinaryOperator::Mul => Op::Multiply,
+                    BinaryOperator::Div => Op::Divide,
                     BinaryOperator::ConvertTo => todo!(),
-                }
+                };
+                self.vm.add_op(op);
             }
         };
         Ok(())

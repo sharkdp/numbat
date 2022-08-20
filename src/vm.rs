@@ -3,6 +3,9 @@
 pub enum Op {
     PushConstant,
     Add,
+    Subtract,
+    Multiply,
+    Divide,
     Negate,
     Print,
     Exit,
@@ -12,7 +15,13 @@ impl Op {
     fn num_args(self) -> usize {
         match self {
             Op::PushConstant => 1,
-            Op::Add | Op::Negate | Op::Print | Op::Exit => 0,
+            Op::Add
+            | Op::Subtract
+            | Op::Multiply
+            | Op::Divide
+            | Op::Negate
+            | Op::Print
+            | Op::Exit => 0,
         }
     }
 
@@ -20,6 +29,9 @@ impl Op {
         match self {
             Op::PushConstant => "PushConstant",
             Op::Add => "Add",
+            Op::Subtract => "Subtract",
+            Op::Multiply => "Multiply",
+            Op::Divide => "Divide",
             Op::Negate => "Negate",
             Op::Print => "Print",
             Op::Exit => "Exit",
@@ -86,6 +98,12 @@ impl Vm {
                     let rhs = self.pop();
                     self.stack.push(lhs + rhs);
                 }
+                Op::Multiply => {
+                    let lhs = self.pop();
+                    let rhs = self.pop();
+                    self.stack.push(lhs * rhs);
+                }
+                Op::Subtract | Op::Divide => {}
                 Op::Negate => {
                     let rhs = self.pop();
                     self.stack.push(-rhs);
