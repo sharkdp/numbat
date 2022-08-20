@@ -8,7 +8,7 @@ mod tokenizer;
 mod treewalk_interpreter;
 mod vm;
 
-use interpreter::{Interpreter, NextAction};
+use interpreter::{Interpreter, InterpreterResult};
 use parser::parse;
 use pretty_print::PrettyPrint;
 
@@ -22,7 +22,7 @@ use treewalk_interpreter::TreewalkInterpreter;
 const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
-fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> NextAction {
+fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> bool {
     let result = parse(input);
 
     match result {
@@ -30,10 +30,17 @@ fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> NextAct
             println!();
             println!("  {}", statement.pretty_print());
             match interpreter.interpret(&statement) {
-                Ok(next_action) => next_action,
+                Ok(InterpreterResult::Value(value)) => {
+                    println!();
+                    println!("    = {value:.1}", value = value);
+                    println!();
+                    true
+                }
+                Ok(InterpreterResult::Continue) => true,
+                Ok(InterpreterResult::Exit) => false,
                 Err(e) => {
                     eprintln!("Interpreter error: {:#}", e);
-                    NextAction::Continue
+                    true
                 }
             }
         }
@@ -45,7 +52,7 @@ fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> NextAct
             eprintln!("    {offset}^", offset = " ".repeat(span.position - 1));
             eprintln!("{}", e);
 
-            NextAction::Continue
+            true
         }
     }
 }
@@ -72,11 +79,8 @@ fn run() -> Result<()> {
             match readline {
                 Ok(line) => {
                     rl.add_history_entry(&line);
-                    match parse_and_evaluate(interpreter.as_mut(), &line) {
-                        NextAction::Continue => {}
-                        NextAction::Quit => {
-                            break;
-                        }
+                    if !parse_and_evaluate(interpreter.as_mut(), &line) {
+                        break;
                     }
                 }
                 Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {

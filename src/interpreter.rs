@@ -8,13 +8,15 @@ pub enum InterpreterError {
     DivisionByZero,
 }
 
-pub enum NextAction {
+#[derive(Debug, PartialEq)]
+pub enum InterpreterResult {
+    Value(f64),
     Continue,
-    Quit,
+    Exit,
 }
 
 pub type Result<T> = std::result::Result<T, InterpreterError>;
 
 pub trait Interpreter {
-    fn interpret(&mut self, statement: &Statement) -> Result<NextAction>;
+    fn interpret(&mut self, statement: &Statement) -> Result<InterpreterResult>;
 }

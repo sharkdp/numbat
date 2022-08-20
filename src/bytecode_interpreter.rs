@@ -1,5 +1,5 @@
 use crate::ast::{BinaryOperator, Command, Expression, Statement};
-use crate::interpreter::{Interpreter, NextAction, Result};
+use crate::interpreter::{Interpreter, InterpreterResult, Result};
 use crate::vm::{Op, Vm};
 
 pub struct BytecodeInterpreter {
@@ -36,6 +36,7 @@ impl BytecodeInterpreter {
                 self.vm.add_op(op);
             }
         };
+
         Ok(())
     }
 
@@ -43,11 +44,12 @@ impl BytecodeInterpreter {
         match stmt {
             Statement::Expression(expr) => {
                 self.compile_expression(&expr)?;
+                self.vm.add_op(Op::Return);
             }
             Statement::Command(Command::List) => {
                 self.vm.add_op(Op::List);
             }
-            Statement::Command(Command::Quit) => {
+            Statement::Command(Command::Exit) => {
                 self.vm.add_op(Op::Exit);
             }
             Statement::Assignment(_, _) => {
@@ -55,23 +57,18 @@ impl BytecodeInterpreter {
             }
         }
 
-        self.vm.add_op(Op::Print);
-        self.vm.add_op(Op::Exit);
-
         Ok(())
     }
 
-    fn run(&mut self) {
+    fn run(&mut self) -> Result<InterpreterResult> {
         self.vm.disassemble();
-        self.vm.run();
+        self.vm.run()
     }
 }
 
 impl Interpreter for BytecodeInterpreter {
-    fn interpret(&mut self, stmt: &Statement) -> Result<NextAction> {
+    fn interpret(&mut self, stmt: &Statement) -> Result<InterpreterResult> {
         self.compile_statement(stmt)?;
-        self.run();
-
-        Ok(NextAction::Continue)
+        self.run()
     }
 }

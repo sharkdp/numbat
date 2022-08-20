@@ -1,3 +1,5 @@
+use crate::interpreter::{InterpreterResult, Result};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum Op {
@@ -7,7 +9,7 @@ pub enum Op {
     Multiply,
     Divide,
     Negate,
-    Print,
+    Return,
     List,
     Exit,
 }
@@ -21,7 +23,7 @@ impl Op {
             | Op::Multiply
             | Op::Divide
             | Op::Negate
-            | Op::Print
+            | Op::Return
             | Op::List
             | Op::Exit => 0,
         }
@@ -35,7 +37,7 @@ impl Op {
             Op::Multiply => "Multiply",
             Op::Divide => "Divide",
             Op::Negate => "Negate",
-            Op::Print => "Print",
+            Op::Return => "Return",
             Op::List => "List",
             Op::Exit => "Exit",
         }
@@ -91,7 +93,7 @@ impl Vm {
         println!();
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<InterpreterResult> {
         loop {
             let op = unsafe { std::mem::transmute::<u8, Op>(self.read_byte()) };
 
@@ -116,16 +118,13 @@ impl Vm {
                     let rhs = self.pop();
                     self.push(-rhs);
                 }
-                Op::Print => {
-                    let byte = self.pop();
-                    println!("{}", byte);
-                }
+                Op::Return => return Ok(InterpreterResult::Value(self.pop())),
                 Op::List => {
                     println!("List of variables:");
-                    todo!();
+                    return Ok(InterpreterResult::Continue);
                 }
                 Op::Exit => {
-                    break;
+                    return Ok(InterpreterResult::Exit);
                 }
             }
         }
@@ -162,18 +161,14 @@ impl Vm {
 
 #[test]
 fn vm_basic() {
-    let mut vm = Vm {
-        constants: vec![42., 1.],
-        #[rustfmt::skip]
-        bytecode: vec![
-            Op::Constant as u8, 0u8, // CONSTANT 0 (42.0)
-            Op::Constant as u8, 1u8, // CONSTANT 1 (1.0)
-            Op::Add as u8,           // ADD
-            Op::Print as u8,         // PRINT
-            Op::Exit as u8,          // EXIT
-        ],
-        stack: vec![],
-        ip: 0,
-    };
-    vm.run();
+    let mut vm = Vm::new();
+    vm.add_constant(42.0);
+    vm.add_constant(1.0);
+
+    vm.add_op1(Op::Constant, 0);
+    vm.add_op1(Op::Constant, 1);
+    vm.add_op(Op::Add);
+    vm.add_op(Op::Return);
+
+    assert_eq!(vm.run().unwrap(), InterpreterResult::Value(42.0 + 1.0));
 }

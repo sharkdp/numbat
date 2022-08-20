@@ -113,7 +113,7 @@ fn expression_pretty_print() {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Command {
     List,
-    Quit,
+    Exit,
 }
 
 #[derive(PartialEq)]
@@ -127,7 +127,7 @@ impl PrettyPrint for Statement {
     fn pretty_print(&self) -> String {
         match &self {
             Statement::Command(Command::List) => "list".into(),
-            Statement::Command(Command::Quit) => "quit".into(),
+            Statement::Command(Command::Exit) => "exit".into(),
             Statement::Assignment(identifier, expr) => {
                 format!("let {} = {}", identifier, expr.pretty_print())
             }

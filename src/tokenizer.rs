@@ -27,7 +27,7 @@ pub enum TokenKind {
 
     // Commands
     List,
-    Quit,
+    Exit,
 
     // Other keywords
     Let,
@@ -105,7 +105,8 @@ impl Tokenizer {
             m.insert("to", TokenKind::Arrow);
             m.insert("let", TokenKind::Let);
             m.insert("list", TokenKind::List);
-            m.insert("quit", TokenKind::Quit);
+            m.insert("quit", TokenKind::Exit);
+            m.insert("exit", TokenKind::Exit);
             m
         });
 

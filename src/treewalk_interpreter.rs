@@ -1,5 +1,5 @@
 use crate::ast::{BinaryOperator, Command, Expression, Statement};
-use crate::interpreter::{Interpreter, InterpreterError, NextAction, Result};
+use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
 
 pub struct TreewalkInterpreter {}
 
@@ -37,25 +37,21 @@ impl TreewalkInterpreter {
 }
 
 impl Interpreter for TreewalkInterpreter {
-    fn interpret(&mut self, stmt: &Statement) -> Result<NextAction> {
+    fn interpret(&mut self, stmt: &Statement) -> Result<InterpreterResult> {
         match stmt {
             Statement::Expression(expr) => {
                 let value = self.evaluate_expression(expr)?;
-                println!();
-                println!("    = {value:.1}", value = value);
-                println!();
+                Ok(InterpreterResult::Value(value))
             }
             Statement::Command(Command::List) => {
                 println!("List of variables:");
+
+                Ok(InterpreterResult::Continue)
             }
-            Statement::Command(Command::Quit) => {
-                return Ok(NextAction::Quit);
-            }
+            Statement::Command(Command::Exit) => Ok(InterpreterResult::Exit),
             Statement::Assignment(_, _) => {
-                // TODO
+                todo!()
             }
         }
-
-        Ok(NextAction::Continue)
     }
 }

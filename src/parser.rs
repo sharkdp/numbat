@@ -80,8 +80,8 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self) -> Result<Statement> {
-        if self.match_exact(TokenKind::Quit).is_some() {
-            Ok(Statement::Command(Command::Quit))
+        if self.match_exact(TokenKind::Exit).is_some() {
+            Ok(Statement::Command(Command::Exit))
         } else if self.match_exact(TokenKind::List).is_some() {
             Ok(Statement::Command(Command::List))
         } else if self.match_exact(TokenKind::Let).is_some() {
