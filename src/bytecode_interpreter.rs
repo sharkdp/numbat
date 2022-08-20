@@ -63,6 +63,7 @@ impl BytecodeInterpreter {
     }
 
     fn run(&mut self) {
+        self.vm.disassemble();
         self.vm.run();
     }
 }

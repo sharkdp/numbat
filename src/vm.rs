@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum Op {
     PushConstant,
@@ -6,6 +6,25 @@ pub enum Op {
     Negate,
     Print,
     Exit,
+}
+
+impl Op {
+    fn num_args(self) -> usize {
+        match self {
+            Op::PushConstant => 1,
+            Op::Add | Op::Negate | Op::Print | Op::Exit => 0,
+        }
+    }
+
+    fn to_string(self) -> &'static str {
+        match self {
+            Op::PushConstant => "PushConstant",
+            Op::Add => "Add",
+            Op::Negate => "Negate",
+            Op::Print => "Print",
+            Op::Exit => "Exit",
+        }
+    }
 }
 
 pub struct Vm {
@@ -25,12 +44,38 @@ impl Vm {
         }
     }
 
+    pub fn disassemble(&self) {
+        let mut i = 0;
+        while i < self.bytecode.len() {
+            let op = self.bytecode[i];
+            let op = unsafe { std::mem::transmute::<u8, Op>(op) };
+
+            let mut args = vec![];
+            for _ in 0..op.num_args() {
+                i += 1;
+                args.push(self.bytecode[i]);
+            }
+            let args_str: String = args
+                .iter()
+                .map(|b| b.to_string())
+                .collect::<Vec<String>>()
+                .join(" ");
+
+            print!("{:<15} {}", op.to_string(), args_str);
+            if op == Op::PushConstant {
+                print!("  (constant = {})", self.constants[args[0] as usize]);
+            }
+            println!();
+            i += 1;
+        }
+    }
+
     pub fn run(&mut self) {
         loop {
             let op = self.bytecode[self.ip];
             self.ip += 1;
             let op = unsafe { std::mem::transmute::<u8, Op>(op) };
-            println!("OP: {:?}", op);
+            // println!("OP: {:?}", op);
             match op {
                 Op::PushConstant => {
                     let constant_idx = self.read_byte();
