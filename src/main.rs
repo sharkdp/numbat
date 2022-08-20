@@ -51,39 +51,47 @@ fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> NextAct
 }
 
 fn run() -> Result<()> {
-    let mut rl = Editor::<()>::new()?;
-    rl.load_history(HISTORY_FILE).ok();
-
     let mut interpreter: Box<dyn Interpreter> = if false {
         Box::new(TreewalkInterpreter::new())
     } else {
         Box::new(BytecodeInterpreter::new())
     };
 
-    loop {
-        let readline = rl.readline(PROMPT);
-        match readline {
-            Ok(line) => {
-                rl.add_history_entry(&line);
-                match parse_and_evaluate(interpreter.as_mut(), &line) {
-                    NextAction::Continue => {}
-                    NextAction::Quit => {
-                        break;
+    let mut args = std::env::args();
+    args.next();
+
+    if let Some(code) = args.next() {
+        parse_and_evaluate(interpreter.as_mut(), &code);
+        Ok(())
+    } else {
+        let mut rl = Editor::<()>::new()?;
+        rl.load_history(HISTORY_FILE).ok();
+
+        loop {
+            let readline = rl.readline(PROMPT);
+            match readline {
+                Ok(line) => {
+                    rl.add_history_entry(&line);
+                    match parse_and_evaluate(interpreter.as_mut(), &line) {
+                        NextAction::Continue => {}
+                        NextAction::Quit => {
+                            break;
+                        }
                     }
                 }
-            }
-            Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {
-                break;
-            }
-            Err(err) => {
-                println!("Error: {:?}", err);
-                break;
+                Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {
+                    break;
+                }
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break;
+                }
             }
         }
-    }
 
-    rl.save_history(HISTORY_FILE)
-        .context("Error while saving history to file")
+        rl.save_history(HISTORY_FILE)
+            .context("Error while saving history to file")
+    }
 }
 
 fn main() {

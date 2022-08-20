@@ -15,7 +15,7 @@ impl BytecodeInterpreter {
         match expr {
             Expression::Scalar(n) => {
                 let index = self.vm.add_constant(n.to_f64());
-                self.vm.add_op_with_arg(Op::PushConstant, index);
+                self.vm.add_op_with_arg(Op::Constant, index);
             }
             Expression::Identifier(_) => todo!(),
             Expression::Negate(rhs) => {

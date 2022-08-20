@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum Op {
-    PushConstant,
+    Constant,
     Add,
     Subtract,
     Multiply,
@@ -12,9 +12,9 @@ pub enum Op {
 }
 
 impl Op {
-    fn num_args(self) -> usize {
+    fn num_operands(self) -> usize {
         match self {
-            Op::PushConstant => 1,
+            Op::Constant => 1,
             Op::Add
             | Op::Subtract
             | Op::Multiply
@@ -27,7 +27,7 @@ impl Op {
 
     fn to_string(self) -> &'static str {
         match self {
-            Op::PushConstant => "PushConstant",
+            Op::Constant => "Constant",
             Op::Add => "Add",
             Op::Subtract => "Subtract",
             Op::Multiply => "Multiply",
@@ -57,29 +57,35 @@ impl Vm {
     }
 
     pub fn disassemble(&self) {
-        let mut i = 0;
-        while i < self.bytecode.len() {
-            let op = self.bytecode[i];
+        println!();
+        println!(".CONSTANTS");
+        for (idx, constant) in self.constants.iter().enumerate() {
+            println!("  {:04} {}", idx, constant);
+        }
+        println!(".CODE");
+        let mut offset = 0;
+        while offset < self.bytecode.len() {
+            let op = self.bytecode[offset];
+            offset += 1;
             let op = unsafe { std::mem::transmute::<u8, Op>(op) };
 
-            let mut args = vec![];
-            for _ in 0..op.num_args() {
-                i += 1;
-                args.push(self.bytecode[i]);
-            }
-            let args_str: String = args
+            let operands = &self.bytecode[offset..(offset + op.num_operands())];
+            offset += op.num_operands();
+
+            let operands_str = operands
                 .iter()
-                .map(|b| b.to_string())
+                .map(u8::to_string)
                 .collect::<Vec<String>>()
                 .join(" ");
 
-            print!("{:<15} {}", op.to_string(), args_str);
-            if op == Op::PushConstant {
-                print!("  (constant = {})", self.constants[args[0] as usize]);
+            print!("  {:04} {:<10} {}", offset, op.to_string(), operands_str);
+
+            if op == Op::Constant {
+                print!("     (value: {})", self.constants[operands[0] as usize]);
             }
             println!();
-            i += 1;
         }
+        println!();
     }
 
     pub fn run(&mut self) {
@@ -87,9 +93,8 @@ impl Vm {
             let op = self.bytecode[self.ip];
             self.ip += 1;
             let op = unsafe { std::mem::transmute::<u8, Op>(op) };
-            // println!("OP: {:?}", op);
             match op {
-                Op::PushConstant => {
+                Op::Constant => {
                     let constant_idx = self.read_byte();
                     self.stack.push(self.constants[constant_idx as usize]);
                 }
@@ -150,11 +155,11 @@ fn vm_basic() {
         constants: vec![42., 1.],
         #[rustfmt::skip]
         bytecode: vec![
-            Op::PushConstant as u8, 0u8, // PUSH 0 (42.0)
-            Op::PushConstant as u8, 1u8, // PUSH 1 (1.0)
-            Op::Add as u8,               // ADD
-            Op::Print as u8,             // PRINT
-            Op::Exit as u8,              // EXIT
+            Op::Constant as u8, 0u8, // CONSTANT 0 (42.0)
+            Op::Constant as u8, 1u8, // CONSTANT 1 (1.0)
+            Op::Add as u8,           // ADD
+            Op::Print as u8,         // PRINT
+            Op::Exit as u8,          // EXIT
         ],
         stack: vec![],
         ip: 0,
