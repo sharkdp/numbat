@@ -1,11 +1,14 @@
 mod ast;
+mod bytecode_interpreter;
 mod interpreter;
 mod parser;
 mod pretty_print;
 mod span;
 mod tokenizer;
+mod treewalk_interpreter;
+mod vm;
 
-use interpreter::{interpret, NextAction};
+use interpreter::{Interpreter, NextAction};
 use parser::parse;
 use pretty_print::PrettyPrint;
 
@@ -13,17 +16,20 @@ use anyhow::{Context, Result};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
+use bytecode_interpreter::BytecodeInterpreter;
+use treewalk_interpreter::TreewalkInterpreter;
+
 const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
-fn parse_and_evaluate(input: &str) -> NextAction {
+fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> NextAction {
     let result = parse(input);
 
     match result {
         Ok(statement) => {
             println!();
             println!("  {}", statement.pretty_print());
-            match interpret(&statement) {
+            match interpreter.interpret(&statement) {
                 Ok(next_action) => next_action,
                 Err(e) => {
                     eprintln!("Interpreter error: {:#}", e);
@@ -48,12 +54,18 @@ fn run() -> Result<()> {
     let mut rl = Editor::<()>::new()?;
     rl.load_history(HISTORY_FILE).ok();
 
+    let mut interpreter: Box<dyn Interpreter> = if false {
+        Box::new(TreewalkInterpreter::new())
+    } else {
+        Box::new(BytecodeInterpreter::new())
+    };
+
     loop {
         let readline = rl.readline(PROMPT);
         match readline {
             Ok(line) => {
                 rl.add_history_entry(&line);
-                match parse_and_evaluate(&line) {
+                match parse_and_evaluate(interpreter.as_mut(), &line) {
                     NextAction::Continue => {}
                     NextAction::Quit => {
                         break;
