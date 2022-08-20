@@ -6,6 +6,8 @@ use thiserror::Error;
 pub enum InterpreterError {
     #[error("Division by zero")]
     DivisionByZero,
+    #[error("Unknown variable '{0}'")]
+    UnknownVariable(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -34,6 +36,8 @@ fn assert_evaluates_to(interpreter: &mut dyn Interpreter, input: &str, expected:
 
 #[cfg(test)]
 fn test_interpreter(interpreter: &mut dyn Interpreter) {
+    //  TODO: do not reuse the same interpreter context!
+
     assert_evaluates_to(interpreter, "0", 0.0);
     assert_evaluates_to(interpreter, "1", 1.0);
     assert_evaluates_to(interpreter, "1+2", 1.0 + 2.0);
@@ -47,6 +51,9 @@ fn test_interpreter(interpreter: &mut dyn Interpreter) {
     assert_evaluates_to(interpreter, "-2 * 3", -2.0 * 3.0);
     assert_evaluates_to(interpreter, "2 * -3", 2.0 * -3.0);
     assert_evaluates_to(interpreter, "2 - 3 - 4", 2.0 - 3.0 - 4.0);
+    assert_evaluates_to(interpreter, "2 - -3", 2.0 - -3.0);
+
+    // assert_evaluates_to(interpreter, "let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
 }
 
 #[test]

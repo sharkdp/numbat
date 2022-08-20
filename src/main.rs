@@ -32,7 +32,7 @@ fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> bool {
             match interpreter.interpret(&statement) {
                 Ok(InterpreterResult::Value(value)) => {
                     println!();
-                    println!("    = {value:.1}", value = value);
+                    println!("    = {value:.6}", value = value);
                     println!();
                     true
                 }

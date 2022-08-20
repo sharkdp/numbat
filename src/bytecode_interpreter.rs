@@ -17,7 +17,10 @@ impl BytecodeInterpreter {
                 let index = self.vm.add_constant(n.to_f64());
                 self.vm.add_op1(Op::Constant, index);
             }
-            Expression::Identifier(_) => todo!(),
+            Expression::Identifier(identifier) => {
+                let identifier_idx = self.vm.add_identifier(identifier);
+                self.vm.add_op1(Op::GetVariable, identifier_idx);
+            }
             Expression::Negate(rhs) => {
                 self.compile_expression(rhs)?;
                 self.vm.add_op(Op::Negate);
@@ -52,8 +55,10 @@ impl BytecodeInterpreter {
             Statement::Command(Command::Exit) => {
                 self.vm.add_op(Op::Exit);
             }
-            Statement::Assignment(_, _) => {
-                todo!();
+            Statement::Assignment(identifier, expr) => {
+                self.compile_expression(&expr)?;
+                let identifier_idx = self.vm.add_identifier(identifier);
+                self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
         }
 
@@ -62,7 +67,13 @@ impl BytecodeInterpreter {
 
     fn run(&mut self) -> Result<InterpreterResult> {
         self.vm.disassemble();
-        self.vm.run()
+        self.vm.debug();
+
+        let result = self.vm.run();
+
+        self.vm.debug();
+
+        result
     }
 }
 

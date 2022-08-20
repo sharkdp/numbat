@@ -1,23 +1,33 @@
-use crate::interpreter::{InterpreterResult, Result};
+use std::collections::HashMap;
+
+use crate::interpreter::{InterpreterError, InterpreterResult, Result};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum Op {
     Constant,
+
+    SetVariable,
+    GetVariable,
+
+    Negate,
+
     Add,
     Subtract,
     Multiply,
     Divide,
-    Negate,
+
     Return,
+
     List,
+
     Exit,
 }
 
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::Constant => 1,
+            Op::Constant | Op::SetVariable | Op::GetVariable => 1,
             Op::Add
             | Op::Subtract
             | Op::Multiply
@@ -32,11 +42,13 @@ impl Op {
     fn to_string(self) -> &'static str {
         match self {
             Op::Constant => "Constant",
+            Op::SetVariable => "SetVariable",
+            Op::GetVariable => "GetVariable",
+            Op::Negate => "Negate",
             Op::Add => "Add",
             Op::Subtract => "Subtract",
             Op::Multiply => "Multiply",
             Op::Divide => "Divide",
-            Op::Negate => "Negate",
             Op::Return => "Return",
             Op::List => "List",
             Op::Exit => "Exit",
@@ -46,8 +58,10 @@ impl Op {
 
 pub struct Vm {
     constants: Vec<f64>,
+    identifiers: Vec<String>,
     bytecode: Vec<u8>,
     stack: Vec<f64>,
+    globals: HashMap<String, f64>,
     ip: usize,
 }
 
@@ -55,8 +69,10 @@ impl Vm {
     pub fn new() -> Self {
         Self {
             constants: vec![],
+            identifiers: vec![],
             bytecode: vec![],
             stack: vec![],
+            globals: HashMap::new(),
             ip: 0,
         }
     }
@@ -66,6 +82,10 @@ impl Vm {
         println!(".CONSTANTS");
         for (idx, constant) in self.constants.iter().enumerate() {
             println!("  {:04} {}", idx, constant);
+        }
+        println!(".IDENTIFIERS");
+        for (idx, identifier) in self.identifiers.iter().enumerate() {
+            println!("  {:04} {}", idx, identifier);
         }
         println!(".CODE");
         let mut offset = 0;
@@ -101,6 +121,32 @@ impl Vm {
                 Op::Constant => {
                     let constant_idx = self.read_byte();
                     self.stack.push(self.constants[constant_idx as usize]);
+                }
+                Op::SetVariable => {
+                    let identifier_idx = self.read_byte();
+                    let value = self.pop();
+                    let identifier: String = self.identifiers[identifier_idx as usize].clone();
+
+                    self.globals.insert(identifier, value);
+
+                    return Ok(InterpreterResult::Continue);
+                }
+                Op::GetVariable => {
+                    let identifier_idx = self.read_byte();
+                    let identifier = &self.identifiers[identifier_idx as usize];
+
+                    let value = self
+                        .globals
+                        .get(identifier)
+                        .ok_or_else(|| InterpreterError::UnknownVariable(identifier.clone()))?;
+
+                    // TODO:
+                    // execute the program
+                    //   foo
+                    //   bar
+                    // => stack is not cleaned up after first error
+
+                    self.push(*value);
                 }
                 op @ (Op::Add | Op::Subtract | Op::Multiply | Op::Divide) => {
                     let rhs = self.pop();
@@ -149,6 +195,13 @@ impl Vm {
         (self.constants.len() - 1) as u8 // TODO: this can overflow
     }
 
+    pub fn add_identifier(&mut self, identifier: &str) -> u8 {
+        // TODO: do not push identifiers multiple times
+
+        self.identifiers.push(identifier.to_owned());
+        (self.identifiers.len() - 1) as u8 // TODO: this can overflow
+    }
+
     pub fn add_op(&mut self, op: Op) {
         self.bytecode.push(op as u8);
     }
@@ -156,6 +209,18 @@ impl Vm {
     pub fn add_op1(&mut self, op: Op, arg: u8) {
         self.bytecode.push(op as u8);
         self.bytecode.push(arg);
+    }
+
+    pub fn debug(&self) {
+        println!("IP = {}", self.ip);
+        println!(
+            "Stack: [{}]",
+            self.stack
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
     }
 }
 
