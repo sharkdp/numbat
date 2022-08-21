@@ -40,6 +40,12 @@ pub enum ParseErrorKind {
 
     #[error("Trailing characters: '{0}'")]
     TrailingCharacters(String),
+
+    #[error("Expected identifier after 'let' keyword")]
+    ExpectedIdentifierAfterLet,
+
+    #[error("Expected '=' after identifier in 'let' assignment")]
+    ExpectedEqualAfterLetIdentifier,
 }
 
 #[derive(Debug, Error)]
@@ -105,13 +111,19 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(TokenKind::Let).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 if self.match_exact(TokenKind::Equal).is_none() {
-                    todo!("parse error: expected '=' character");
+                    Err(ParseError {
+                        kind: ParseErrorKind::ExpectedEqualAfterLetIdentifier,
+                        span: self.peek().span.clone(),
+                    })
                 } else {
                     let expr = self.expression()?;
                     Ok(Statement::Assignment(identifier.lexeme.clone(), expr))
                 }
             } else {
-                todo!("parse error: expected identifier after 'let'");
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedIdentifierAfterLet,
+                    span: self.peek().span.clone(),
+                })
             }
         } else {
             Ok(Statement::Expression(self.expression()?))
@@ -284,18 +296,43 @@ mod tests {
         }
     }
 
-    #[cfg(test)]
     fn should_fail(inputs: &[&str]) {
         for input in inputs {
-            println!("{}", input);
             assert!(parse(input).is_err());
+        }
+    }
+
+    fn should_fail_with(inputs: &[&str], error_kind: ParseErrorKind) {
+        for input in inputs {
+            match parse(input) {
+                Err(e) => {
+                    assert_eq!(e.kind, error_kind);
+                }
+                _ => {
+                    assert!(false);
+                }
+            }
         }
     }
 
     #[test]
     fn parse_invalid_input() {
         should_fail(&["+", "->", "§"]);
-        should_fail(&["1)", "(1))"]);
+
+        should_fail_with(
+            &["1)", "(1))"],
+            ParseErrorKind::TrailingCharacters(")".into()),
+        );
+
+        should_fail_with(
+            &["let 2=3", "let (foo)=2"],
+            ParseErrorKind::ExpectedIdentifierAfterLet,
+        );
+
+        should_fail_with(
+            &["let foo 2"],
+            ParseErrorKind::ExpectedEqualAfterLetIdentifier,
+        );
     }
 
     #[test]

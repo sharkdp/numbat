@@ -63,8 +63,6 @@ fn assert_interpreter_error<I: Interpreter>(input: &str, err_expected: Interpret
 
 #[cfg(test)]
 fn test_interpreter<I: Interpreter>() {
-    //  TODO: do not reuse the same interpreter context!
-
     assert_evaluates_to::<I>("0", 0.0);
     assert_evaluates_to::<I>("1", 1.0);
     assert_evaluates_to::<I>("1+2", 1.0 + 2.0);
