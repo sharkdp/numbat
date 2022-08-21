@@ -155,7 +155,13 @@ impl Vm {
                         Op::Add => lhs + rhs,
                         Op::Subtract => lhs - rhs,
                         Op::Multiply => lhs * rhs,
-                        Op::Divide => lhs / rhs,
+                        Op::Divide => {
+                            if rhs == 0.0 {
+                                return Err(InterpreterError::DivisionByZero);
+                            } else {
+                                lhs / rhs
+                            }
+                        }
                         _ => unreachable!(),
                     };
                     self.push(result);

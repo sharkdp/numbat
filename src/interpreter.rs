@@ -25,12 +25,26 @@ pub trait Interpreter {
 }
 
 #[cfg(test)]
-fn assert_evaluates_to<I: Interpreter>(input: &str, expected: f64) {
+fn get_interpreter_result<I: Interpreter>(input: &str) -> Result<InterpreterResult> {
     let mut interpreter = I::new();
-    let statement = crate::parser::parse(input).unwrap();
+    let statement =
+        crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
+    interpreter.interpret(&statement)
+}
 
-    if let InterpreterResult::Value(actual) = interpreter.interpret(&statement).unwrap() {
+#[cfg(test)]
+fn assert_evaluates_to<I: Interpreter>(input: &str, expected: f64) {
+    if let InterpreterResult::Value(actual) = get_interpreter_result::<I>(input).unwrap() {
         assert_eq!(actual, expected);
+    } else {
+        assert!(false);
+    }
+}
+
+#[cfg(test)]
+fn assert_interpreter_error<I: Interpreter>(input: &str, err_expected: InterpreterError) {
+    if let Err(err_actual) = get_interpreter_result::<I>(input) {
+        assert_eq!(err_actual, err_expected);
     } else {
         assert!(false);
     }
@@ -56,6 +70,8 @@ fn test_interpreter<I: Interpreter>() {
     assert_evaluates_to::<I>("2 - -3", 2.0 - -3.0);
 
     // assert_evaluates_to(interpreter, "let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
+
+    assert_interpreter_error::<I>("1/0", InterpreterError::DivisionByZero);
 }
 
 #[test]
