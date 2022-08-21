@@ -17,12 +17,11 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 use bytecode_interpreter::BytecodeInterpreter;
-use treewalk_interpreter::TreewalkInterpreter;
 
 const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
-fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> bool {
+fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
     let result = parse(input);
 
     match result {
@@ -58,17 +57,18 @@ fn parse_and_evaluate(interpreter: &mut dyn Interpreter, input: &str) -> bool {
 }
 
 fn run() -> Result<()> {
-    let mut interpreter: Box<dyn Interpreter> = if false {
+    /*let mut interpreter: Box<dyn Interpreter> = if false {
         Box::new(TreewalkInterpreter::new())
     } else {
         Box::new(BytecodeInterpreter::new())
-    };
+    };*/
+    let mut interpreter = BytecodeInterpreter::new();
 
     let mut args = std::env::args();
     args.next();
 
     if let Some(code) = args.next() {
-        parse_and_evaluate(interpreter.as_mut(), &code);
+        parse_and_evaluate(&mut interpreter, &code);
         Ok(())
     } else {
         let mut rl = Editor::<()>::new()?;
@@ -79,7 +79,7 @@ fn run() -> Result<()> {
             match readline {
                 Ok(line) => {
                     rl.add_history_entry(&line);
-                    if !parse_and_evaluate(interpreter.as_mut(), &line) {
+                    if !parse_and_evaluate(&mut interpreter, &line) {
                         break;
                     }
                 }

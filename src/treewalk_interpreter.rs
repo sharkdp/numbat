@@ -4,10 +4,6 @@ use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Resul
 pub struct TreewalkInterpreter {}
 
 impl TreewalkInterpreter {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     fn evaluate_expression(&self, expr: &Expression) -> Result<f64> {
         match expr {
             Expression::Scalar(n) => Ok(n.to_f64()),
@@ -37,6 +33,10 @@ impl TreewalkInterpreter {
 }
 
 impl Interpreter for TreewalkInterpreter {
+    fn new() -> Self {
+        Self {}
+    }
+
     fn interpret(&mut self, stmt: &Statement) -> Result<InterpreterResult> {
         match stmt {
             Statement::Expression(expr) => {

@@ -7,10 +7,6 @@ pub struct BytecodeInterpreter {
 }
 
 impl BytecodeInterpreter {
-    pub fn new() -> Self {
-        Self { vm: Vm::new() }
-    }
-
     fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
         match expr {
             Expression::Scalar(n) => {
@@ -78,6 +74,10 @@ impl BytecodeInterpreter {
 }
 
 impl Interpreter for BytecodeInterpreter {
+    fn new() -> Self {
+        Self { vm: Vm::new() }
+    }
+
     fn interpret(&mut self, stmt: &Statement) -> Result<InterpreterResult> {
         self.compile_statement(stmt)?;
         self.run()
