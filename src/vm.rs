@@ -131,6 +131,7 @@ impl Vm {
 
     fn run_without_cleanup(&mut self) -> Result<InterpreterResult> {
         loop {
+            self.debug();
             let op = unsafe { std::mem::transmute::<u8, Op>(self.read_byte()) };
 
             match op {
@@ -212,7 +213,9 @@ impl Vm {
     }
 
     pub fn add_identifier(&mut self, identifier: &str) -> u8 {
-        // TODO: do not push identifiers multiple times
+        if let Some(idx) = self.identifiers.iter().position(|i| i == identifier) {
+            return idx as u8;
+        }
 
         self.identifiers.push(identifier.to_owned());
         (self.identifiers.len() - 1) as u8 // TODO: this can overflow

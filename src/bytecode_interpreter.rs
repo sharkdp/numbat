@@ -63,7 +63,6 @@ impl BytecodeInterpreter {
 
     fn run(&mut self) -> Result<InterpreterResult> {
         self.vm.disassemble();
-        self.vm.debug();
 
         let result = self.vm.run();
 
