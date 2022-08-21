@@ -67,16 +67,34 @@ impl<'a> Parser<'a> {
         Parser { tokens, current: 0 }
     }
 
-    fn parse(&mut self) -> Result<Statement> {
-        let statement_or_error = self.statement();
-        if !self.is_at_end() {
-            Err(ParseError {
-                kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
-                span: self.peek().span.clone(),
-            })
-        } else {
-            statement_or_error
+    fn parse(&mut self) -> Result<Vec<Statement>> {
+        let mut statements = vec![];
+
+        while !self.is_at_end() {
+            match self.statement() {
+                Ok(statement) => statements.push(statement),
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+
+            match self.peek().kind {
+                TokenKind::Newline => {
+                    self.advance();
+                }
+                TokenKind::Eof => {
+                    break;
+                }
+                _ => {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
+                        span: self.peek().span.clone(),
+                    });
+                }
+            }
         }
+
+        Ok(statements)
     }
 
     fn statement(&mut self) -> Result<Statement> {
@@ -228,7 +246,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-pub fn parse(input: &str) -> Result<Statement> {
+pub fn parse(input: &str) -> Result<Vec<Statement>> {
     use crate::tokenizer::tokenize;
 
     let tokens = tokenize(input).map_err(
@@ -253,10 +271,13 @@ mod tests {
 
     fn all_parse_as(inputs: &[&str], expr_expected: Expression) {
         for input in inputs {
-            let parsed = parse(input).expect("parse error");
+            let statements = parse(input).expect("parse error");
 
-            if let Statement::Expression(expr_parsed) = parsed {
-                assert_eq!(expr_parsed, expr_expected);
+            assert!(statements.len() == 1);
+            let stament = &statements[0];
+
+            if let Statement::Expression(expr_parsed) = stament {
+                assert_eq!(*expr_parsed, expr_expected);
             } else {
                 assert!(false); // TODO
             }
@@ -266,13 +287,15 @@ mod tests {
     #[cfg(test)]
     fn should_fail(inputs: &[&str]) {
         for input in inputs {
+            println!("{}", input);
             assert!(parse(input).is_err());
         }
     }
 
     #[test]
     fn parse_invalid_input() {
-        should_fail(&["", "+", "->", "§"]);
+        should_fail(&["+", "->", "§"]);
+        should_fail(&["1)", "(1))"]);
     }
 
     #[test]

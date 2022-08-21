@@ -78,8 +78,8 @@ impl Interpreter for BytecodeInterpreter {
         Self { vm: Vm::new() }
     }
 
-    fn interpret(&mut self, stmt: &Statement) -> Result<InterpreterResult> {
-        self.compile_statement(stmt)?;
+    fn interpret_statement(&mut self, statement: &Statement) -> Result<InterpreterResult> {
+        self.compile_statement(statement)?;
         self.run()
     }
 }

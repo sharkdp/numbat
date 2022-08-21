@@ -49,8 +49,8 @@ impl Interpreter for TreewalkInterpreter {
         }
     }
 
-    fn interpret(&mut self, stmt: &Statement) -> Result<InterpreterResult> {
-        match stmt {
+    fn interpret_statement(&mut self, statement: &Statement) -> Result<InterpreterResult> {
+        match statement {
             Statement::Expression(expr) => {
                 let value = self.evaluate_expression(expr)?;
                 Ok(InterpreterResult::Value(value))

@@ -8,6 +8,8 @@ pub enum InterpreterError {
     DivisionByZero,
     #[error("Unknown variable '{0}'")]
     UnknownVariable(String),
+    #[error("No statements in program")]
+    NoStatements,
 }
 
 #[derive(Debug, PartialEq)]
@@ -21,15 +23,24 @@ pub type Result<T> = std::result::Result<T, InterpreterError>;
 
 pub trait Interpreter {
     fn new() -> Self;
-    fn interpret(&mut self, statement: &Statement) -> Result<InterpreterResult>;
+
+    fn interpret_statement(&mut self, statements: &Statement) -> Result<InterpreterResult>;
+
+    fn interpret_statemets(&mut self, statements: &[Statement]) -> Result<InterpreterResult> {
+        let mut result = Err(InterpreterError::NoStatements);
+        for statement in statements {
+            result = self.interpret_statement(statement);
+        }
+        result
+    }
 }
 
 #[cfg(test)]
 fn get_interpreter_result<I: Interpreter>(input: &str) -> Result<InterpreterResult> {
     let mut interpreter = I::new();
-    let statement =
+    let statements =
         crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
-    interpreter.interpret(&statement)
+    interpreter.interpret_statemets(&statements)
 }
 
 #[cfg(test)]
@@ -69,8 +80,10 @@ fn test_interpreter<I: Interpreter>() {
     assert_evaluates_to::<I>("2 - 3 - 4", 2.0 - 3.0 - 4.0);
     assert_evaluates_to::<I>("2 - -3", 2.0 - -3.0);
 
-    // assert_evaluates_to(interpreter, "let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
+    assert_evaluates_to::<I>("2\n3", 3.0);
+    assert_evaluates_to::<I>("let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
 
+    assert_interpreter_error::<I>("", InterpreterError::NoStatements);
     assert_interpreter_error::<I>("1/0", InterpreterError::DivisionByZero);
     assert_interpreter_error::<I>("foo", InterpreterError::UnknownVariable("foo".into()));
 }

@@ -36,7 +36,8 @@ pub enum TokenKind {
     Number,
     Identifier,
 
-    // End of file
+    // Other
+    Newline,
     Eof,
 }
 
@@ -129,11 +130,7 @@ impl Tokenizer {
             ' ' | '\t' | '\r' => {
                 return Ok(None);
             }
-            '\n' => {
-                self.current_line += 1;
-                self.current_position = 1;
-                return Ok(None);
-            }
+            '\n' => TokenKind::Newline,
             '+' => TokenKind::Plus,
             '*' | '·' | '×' => TokenKind::Multiply,
             '/' | '÷' => TokenKind::Divide,
@@ -171,7 +168,7 @@ impl Tokenizer {
             }
         };
 
-        Ok(Some(Token {
+        let token = Some(Token {
             kind,
             lexeme: self.lexeme(),
             span: Span {
@@ -179,7 +176,14 @@ impl Tokenizer {
                 position: self.token_start_position,
                 index: self.token_start_index,
             },
-        }))
+        });
+
+        if kind == TokenKind::Newline {
+            self.current_line += 1;
+            self.current_position = 1;
+        }
+
+        Ok(token)
     }
 
     fn lexeme(&self) -> String {
@@ -301,12 +305,14 @@ fn tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize("1+\n  2").unwrap(),
+        tokenize("1+2\n42").unwrap(),
         token_stream(&[
             ("1", Number, (1, 1, 0)),
             ("+", Plus, (1, 2, 1)),
-            ("2", Number, (2, 3, 5)),
-            ("", Eof, (2, 4, 6))
+            ("2", Number, (1, 3, 2)),
+            ("\n", Newline, (1, 4, 3)),
+            ("42", Number, (2, 1, 4)),
+            ("", Eof, (2, 3, 6))
         ])
     );
 
