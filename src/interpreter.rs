@@ -72,6 +72,7 @@ fn test_interpreter<I: Interpreter>() {
     // assert_evaluates_to(interpreter, "let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
 
     assert_interpreter_error::<I>("1/0", InterpreterError::DivisionByZero);
+    assert_interpreter_error::<I>("foo", InterpreterError::UnknownVariable("foo".into()));
 }
 
 #[test]
