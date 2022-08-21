@@ -291,7 +291,7 @@ mod tests {
             if let Statement::Expression(expr_parsed) = stament {
                 assert_eq!(*expr_parsed, expr_expected);
             } else {
-                assert!(false); // TODO
+                assert!(false);
             }
         }
     }

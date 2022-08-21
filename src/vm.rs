@@ -90,6 +90,7 @@ impl Vm {
         println!(".CODE");
         let mut offset = 0;
         while offset < self.bytecode.len() {
+            let this_offset = offset;
             let op = self.bytecode[offset];
             offset += 1;
             let op = unsafe { std::mem::transmute::<u8, Op>(op) };
@@ -103,7 +104,12 @@ impl Vm {
                 .collect::<Vec<String>>()
                 .join(" ");
 
-            print!("  {:04} {:<10} {}", offset, op.to_string(), operands_str);
+            print!(
+                "  {:04} {:<10} {}",
+                this_offset,
+                op.to_string(),
+                operands_str
+            );
 
             if op == Op::Constant {
                 print!("     (value: {})", self.constants[operands[0] as usize]);
@@ -114,6 +120,16 @@ impl Vm {
     }
 
     pub fn run(&mut self) -> Result<InterpreterResult> {
+        let result = self.run_without_cleanup();
+        if result.is_err() {
+            // Perform cleanup: clear the stack and move IP to the end
+            self.stack.clear();
+            self.ip = self.bytecode.len();
+        }
+        result
+    }
+
+    fn run_without_cleanup(&mut self) -> Result<InterpreterResult> {
         loop {
             let op = unsafe { std::mem::transmute::<u8, Op>(self.read_byte()) };
 
@@ -139,12 +155,6 @@ impl Vm {
                         .globals
                         .get(identifier)
                         .ok_or_else(|| InterpreterError::UnknownVariable(identifier.clone()))?;
-
-                    // TODO:
-                    // execute the program
-                    //   foo
-                    //   bar
-                    // => stack is not cleaned up after first error
 
                     self.push(*value);
                 }
@@ -218,7 +228,7 @@ impl Vm {
     }
 
     pub fn debug(&self) {
-        println!("IP = {}", self.ip);
+        print!("IP = {}, ", self.ip);
         println!(
             "Stack: [{}]",
             self.stack
