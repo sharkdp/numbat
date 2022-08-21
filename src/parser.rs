@@ -21,7 +21,7 @@
 //! primary      →   number | identifier | "(" expression ")"
 //! ```
 
-use crate::ast::{BinaryOperator, Command, Expression, Number, Statement};
+use crate::ast::{BinaryOperator, Command, DimensionExpression, Expression, Number, Statement};
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
 
@@ -117,13 +117,27 @@ impl<'a> Parser<'a> {
                     })
                 } else {
                     let expr = self.expression()?;
-                    Ok(Statement::Assignment(identifier.lexeme.clone(), expr))
+                    Ok(Statement::DeclareVariable(identifier.lexeme.clone(), expr))
                 }
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedIdentifierAfterLet,
                     span: self.peek().span.clone(),
                 })
+            }
+        } else if self.match_exact(TokenKind::Dimension).is_some() {
+            if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                if self.match_exact(TokenKind::Equal).is_some() {
+                    let dexpr = self.dimension_expression()?;
+                    Ok(Statement::DeclareDimension(
+                        identifier.lexeme.clone(),
+                        Some(dexpr),
+                    ))
+                } else {
+                    Ok(Statement::DeclareDimension(identifier.lexeme.clone(), None))
+                }
+            } else {
+                todo!("Parse error: expected identifier after 'dimension'")
             }
         } else {
             Ok(Statement::Expression(self.expression()?))
@@ -216,6 +230,55 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn dimension_expression(&mut self) -> Result<DimensionExpression> {
+        self.dimension_factor()
+    }
+
+    fn dimension_factor(&mut self) -> Result<DimensionExpression> {
+        let mut expr = self.dimension_power()?;
+        while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
+            let rhs = self.dimension_power()?;
+
+            expr = if operator_token.kind == TokenKind::Multiply {
+                DimensionExpression::Multiply(Box::new(expr), Box::new(rhs))
+            } else {
+                DimensionExpression::Divide(Box::new(expr), Box::new(rhs))
+            };
+        }
+        Ok(expr)
+    }
+
+    fn dimension_power(&mut self) -> Result<DimensionExpression> {
+        let expr = self.dimension_identifier()?;
+
+        if self.match_exact(TokenKind::Power).is_some() {
+            let exponent = self.dimension_exponent()?;
+
+            Ok(DimensionExpression::Power(Box::new(expr), exponent))
+        } else {
+            Ok(expr)
+        }
+    }
+
+    fn dimension_exponent(&mut self) -> Result<i32> {
+        // TODO: allow for negative exponents, e.g. time^(-1)
+        // TODO: potentially allow for ², ³, etc.
+        if let Some(token) = self.match_exact(TokenKind::Number) {
+            // TODO: only parse integers here
+            Ok(i32::from_str_radix(&token.lexeme, 10).unwrap())
+        } else {
+            todo!("parse error: expected integer number as dimension exponent")
+        }
+    }
+
+    fn dimension_identifier(&mut self) -> Result<DimensionExpression> {
+        if let Some(token) = self.match_exact(TokenKind::Identifier) {
+            Ok(DimensionExpression::Dimension(token.lexeme.clone()))
+        } else {
+            todo!("Parse error: expected dimension identifier")
+        }
+    }
+
     fn match_exact(&mut self, token_kind: TokenKind) -> Option<&'a Token> {
         let token = self.peek();
         if token.kind == token_kind {
@@ -281,19 +344,19 @@ mod tests {
     use super::*;
     use crate::ast::{binop, identifier, negate, scalar};
 
-    fn all_parse_as(inputs: &[&str], expr_expected: Expression) {
+    fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
             let statements = parse(input).expect("parse error");
 
             assert!(statements.len() == 1);
-            let stament = &statements[0];
+            let statement = &statements[0];
 
-            if let Statement::Expression(expr_parsed) = stament {
-                assert_eq!(*expr_parsed, expr_expected);
-            } else {
-                assert!(false);
-            }
+            assert_eq!(*statement, statement_expected);
         }
+    }
+
+    fn parse_as_expression(inputs: &[&str], expr_expected: Expression) {
+        parse_as(inputs, Statement::Expression(expr_expected));
     }
 
     fn should_fail(inputs: &[&str]) {
@@ -323,40 +386,30 @@ mod tests {
             &["1)", "(1))"],
             ParseErrorKind::TrailingCharacters(")".into()),
         );
-
-        should_fail_with(
-            &["let 2=3", "let (foo)=2"],
-            ParseErrorKind::ExpectedIdentifierAfterLet,
-        );
-
-        should_fail_with(
-            &["let foo 2"],
-            ParseErrorKind::ExpectedEqualAfterLetIdentifier,
-        );
     }
 
     #[test]
     fn parse_numbers() {
-        all_parse_as(&["1", "  1   "], scalar!(1.0));
+        parse_as_expression(&["1", "  1   "], scalar!(1.0));
 
         should_fail(&["123..", "0..", ".0.", ".", ". 2", ".."]);
     }
 
     #[test]
     fn parse_identifiers() {
-        all_parse_as(&["foo", "  foo   "], identifier!("foo"));
-        all_parse_as(&["foo_bar"], identifier!("foo_bar"));
-        all_parse_as(&["MeineSchöneVariable"], identifier!("MeineSchöneVariable"));
-        all_parse_as(&["°"], identifier!("°"));
+        parse_as_expression(&["foo", "  foo   "], identifier!("foo"));
+        parse_as_expression(&["foo_bar"], identifier!("foo_bar"));
+        parse_as_expression(&["MeineSchöneVariable"], identifier!("MeineSchöneVariable"));
+        parse_as_expression(&["°"], identifier!("°"));
     }
 
     #[test]
     fn parse_negation() {
-        all_parse_as(&["-1", "  - 1   "], negate!(scalar!(1.0)));
-        all_parse_as(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
-        all_parse_as(&["-x", " - x"], negate!(identifier!("x")));
+        parse_as_expression(&["-1", "  - 1   "], negate!(scalar!(1.0)));
+        parse_as_expression(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
+        parse_as_expression(&["-x", " - x"], negate!(identifier!("x")));
 
-        all_parse_as(
+        parse_as_expression(
             &["-1 + 2"],
             binop!(negate!(scalar!(1.0)), Add, scalar!(2.0)),
         );
@@ -364,13 +417,13 @@ mod tests {
 
     #[test]
     fn parse_addition_subtraction() {
-        all_parse_as(
+        parse_as_expression(
             &["1+2", "  1   +  2    "],
             binop!(scalar!(1.0), Add, scalar!(2.0)),
         );
 
         // Minus should be left-associative
-        all_parse_as(
+        parse_as_expression(
             &["1-2-3"],
             binop!(binop!(scalar!(1.0), Sub, scalar!(2.0)), Sub, scalar!(3.0)),
         );
@@ -378,12 +431,12 @@ mod tests {
 
     #[test]
     fn parse_multiplication_division() {
-        all_parse_as(
+        parse_as_expression(
             &["1*2", "  1   *  2    ", "1 · 2", "1 × 2"],
             binop!(scalar!(1.0), Mul, scalar!(2.0)),
         );
 
-        all_parse_as(
+        parse_as_expression(
             &["1/2", "1 per 2", "1÷2"],
             binop!(scalar!(1.0), Div, scalar!(2.0)),
         );
@@ -393,13 +446,13 @@ mod tests {
 
     #[test]
     fn parse_conversion() {
-        all_parse_as(
+        parse_as_expression(
             &["1->2", "1→2"],
             binop!(scalar!(1.0), ConvertTo, scalar!(2.0)),
         );
 
         // Conversion is left-associative
-        all_parse_as(
+        parse_as_expression(
             &["1→2→3"],
             binop!(
                 binop!(scalar!(1.0), ConvertTo, scalar!(2.0)),
@@ -413,11 +466,95 @@ mod tests {
 
     #[test]
     fn parse_grouping() {
-        all_parse_as(
+        parse_as_expression(
             &["1*(2+3)", "1 * ( 2 + 3 )"],
             binop!(scalar!(1.0), Mul, binop!(scalar!(2.0), Add, scalar!(3.0))),
         );
 
         should_fail(&["1 * (2 + 3", "2 + 3)"]);
+    }
+
+    #[test]
+    fn parse_variable_declaration() {
+        parse_as(
+            &["let foo = 1", "let foo=1"],
+            Statement::DeclareVariable("foo".into(), scalar!(1.0)),
+        );
+
+        should_fail_with(
+            &["let (foo)=2", "let 2=3", "let = 2"],
+            ParseErrorKind::ExpectedIdentifierAfterLet,
+        );
+
+        should_fail_with(
+            &["let foo", "let foo 2"],
+            ParseErrorKind::ExpectedEqualAfterLetIdentifier,
+        );
+    }
+
+    #[test]
+    fn parse_dimension_declaration() {
+        parse_as(
+            &["dimension px"],
+            Statement::DeclareDimension("px".into(), None),
+        );
+
+        parse_as(
+            &[
+                "dimension area = length * length",
+                "dimension area = length × length",
+            ],
+            Statement::DeclareDimension(
+                "area".into(),
+                Some(DimensionExpression::Multiply(
+                    Box::new(DimensionExpression::Dimension("length".into())),
+                    Box::new(DimensionExpression::Dimension("length".into())),
+                )),
+            ),
+        );
+
+        parse_as(
+            &["dimension speed = length / time"],
+            Statement::DeclareDimension(
+                "speed".into(),
+                Some(DimensionExpression::Divide(
+                    Box::new(DimensionExpression::Dimension("length".into())),
+                    Box::new(DimensionExpression::Dimension("time".into())),
+                )),
+            ),
+        );
+
+        parse_as(
+            &["dimension area = length^2"],
+            Statement::DeclareDimension(
+                "area".into(),
+                Some(DimensionExpression::Power(
+                    Box::new(DimensionExpression::Dimension("length".into())),
+                    2,
+                )),
+            ),
+        );
+
+        parse_as(
+            &["dimension energy = mass * length^2 / time^2"],
+            Statement::DeclareDimension(
+                "energy".into(),
+                Some(DimensionExpression::Divide(
+                    Box::new(DimensionExpression::Multiply(
+                        Box::new(DimensionExpression::Dimension("mass".into())),
+                        Box::new(DimensionExpression::Power(
+                            Box::new(DimensionExpression::Dimension("length".into())),
+                            2,
+                        )),
+                    )),
+                    Box::new(DimensionExpression::Power(
+                        Box::new(DimensionExpression::Dimension("time".into())),
+                        2,
+                    )),
+                )),
+            ),
+        );
+
+        // TODO: should_fail_with tests
     }
 }

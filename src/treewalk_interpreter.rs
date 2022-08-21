@@ -61,12 +61,13 @@ impl Interpreter for TreewalkInterpreter {
                 Ok(InterpreterResult::Continue)
             }
             Statement::Command(Command::Exit) => Ok(InterpreterResult::Exit),
-            Statement::Assignment(identifier, expr) => {
+            Statement::DeclareVariable(identifier, expr) => {
                 let value = self.evaluate_expression(expr)?;
                 self.variables.insert(identifier.clone(), value);
 
                 Ok(InterpreterResult::Continue)
             }
+            Statement::DeclareDimension(_, _) => todo!(),
         }
     }
 }

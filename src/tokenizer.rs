@@ -20,6 +20,7 @@ pub enum TokenKind {
     Plus,
     Minus,
     Multiply,
+    Power,
     Divide,
     Comma,
     Arrow,
@@ -31,6 +32,7 @@ pub enum TokenKind {
 
     // Other keywords
     Let,
+    Dimension,
 
     // Variable-length tokens
     Number,
@@ -105,6 +107,7 @@ impl Tokenizer {
             m.insert("per", TokenKind::Divide);
             m.insert("to", TokenKind::Arrow);
             m.insert("let", TokenKind::Let);
+            m.insert("dimension", TokenKind::Dimension);
             m.insert("list", TokenKind::List);
             m.insert("quit", TokenKind::Exit);
             m.insert("exit", TokenKind::Exit);
@@ -134,6 +137,7 @@ impl Tokenizer {
             '+' => TokenKind::Plus,
             '*' | '·' | '×' => TokenKind::Multiply,
             '/' | '÷' => TokenKind::Divide,
+            '^' => TokenKind::Power,
             ',' => TokenKind::Comma,
             '→' | '➞' => TokenKind::Arrow,
             '=' => TokenKind::Equal,

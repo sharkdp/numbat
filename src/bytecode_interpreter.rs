@@ -51,10 +51,13 @@ impl BytecodeInterpreter {
             Statement::Command(Command::Exit) => {
                 self.vm.add_op(Op::Exit);
             }
-            Statement::Assignment(identifier, expr) => {
+            Statement::DeclareVariable(identifier, expr) => {
                 self.compile_expression(&expr)?;
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
+            }
+            Statement::DeclareDimension(_, _) => {
+                todo!()
             }
         }
 

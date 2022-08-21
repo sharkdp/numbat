@@ -110,28 +110,41 @@ fn expression_pretty_print() {
     assert_eq!(expr.pretty_print(), "(2.0 × (-3.0 + 4.0))");
 }
 
+#[derive(Debug, Clone, PartialEq)]
+
+pub enum DimensionExpression {
+    Dimension(String),
+    Multiply(Box<DimensionExpression>, Box<DimensionExpression>),
+    Divide(Box<DimensionExpression>, Box<DimensionExpression>),
+    Power(Box<DimensionExpression>, i32),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Command {
     List,
     Exit,
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Command(Command),
-    Assignment(String, Expression),
+    DeclareVariable(String, Expression),
     Expression(Expression),
+    DeclareDimension(String, Option<DimensionExpression>),
 }
 
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> String {
-        match &self {
+        match self {
             Statement::Command(Command::List) => "list".into(),
             Statement::Command(Command::Exit) => "exit".into(),
-            Statement::Assignment(identifier, expr) => {
+            Statement::DeclareVariable(identifier, expr) => {
                 format!("let {} = {}", identifier, expr.pretty_print())
             }
             Statement::Expression(expr) => expr.pretty_print(),
+            Statement::DeclareDimension(ident, _) => {
+                format!("dimension {} = …", ident)
+            }
         }
     }
 }
