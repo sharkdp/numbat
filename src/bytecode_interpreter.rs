@@ -57,7 +57,8 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
             Statement::DeclareDimension(_, _) => {
-                todo!()
+                //let dimension_idx = self.vm.add_dimension(name);
+                self.vm.add_op(Op::List); // TODO
             }
         }
 
