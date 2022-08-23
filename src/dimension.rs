@@ -15,8 +15,8 @@ pub enum DimensionRegistryError {
 type Result<T> = std::result::Result<T, DimensionRegistryError>;
 
 type BaseDimension = String;
-type BaseDimensionIndex = isize;
 type Exponent = i32;
+// TODO: this could be represented with a base dimension index in the first tuple component instead of a cloned string
 type BaseRepresentation = Vec<(BaseDimension, Exponent)>;
 
 #[derive(Debug, Default)]
