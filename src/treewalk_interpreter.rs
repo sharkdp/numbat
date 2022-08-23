@@ -68,6 +68,7 @@ impl Interpreter for TreewalkInterpreter {
                 Ok(InterpreterResult::Continue)
             }
             Statement::DeclareDimension(_, _) => todo!(),
+            Statement::DeclareUnit(_, _) => todo!(),
         }
     }
 }

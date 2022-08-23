@@ -78,6 +78,16 @@ impl BytecodeInterpreter {
 
                 self.vm.add_op(Op::List); // TODO
             }
+            Statement::DeclareUnit(name, expr) => {
+                let base_rep = self
+                    .registry
+                    .get_base_representation(expr)
+                    .map_err(InterpreterError::DimensionRegistryError)?;
+
+                // TODO
+
+                self.vm.add_op(Op::List); // TODO
+            }
         }
 
         Ok(())

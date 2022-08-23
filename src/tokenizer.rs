@@ -25,6 +25,7 @@ pub enum TokenKind {
     Comma,
     Arrow,
     Equal,
+    Colon,
 
     // Commands
     List,
@@ -33,6 +34,7 @@ pub enum TokenKind {
     // Other keywords
     Let,
     Dimension,
+    Unit,
 
     // Variable-length tokens
     Number,
@@ -108,6 +110,7 @@ impl Tokenizer {
             m.insert("to", TokenKind::Arrow);
             m.insert("let", TokenKind::Let);
             m.insert("dimension", TokenKind::Dimension);
+            m.insert("unit", TokenKind::Unit);
             m.insert("list", TokenKind::List);
             m.insert("quit", TokenKind::Exit);
             m.insert("exit", TokenKind::Exit);
@@ -141,6 +144,7 @@ impl Tokenizer {
             ',' => TokenKind::Comma,
             '→' | '➞' => TokenKind::Arrow,
             '=' => TokenKind::Equal,
+            ':' => TokenKind::Colon,
             '-' => {
                 if self.match_char('>') {
                     TokenKind::Arrow

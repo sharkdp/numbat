@@ -139,6 +139,17 @@ impl<'a> Parser<'a> {
             } else {
                 todo!("Parse error: expected identifier after 'dimension'")
             }
+        } else if self.match_exact(TokenKind::Unit).is_some() {
+            if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                if self.match_exact(TokenKind::Colon).is_some() {
+                    let dexpr = self.dimension_expression()?;
+                    Ok(Statement::DeclareUnit(identifier.lexeme.clone(), dexpr))
+                } else {
+                    todo!("Parse error: expected ':' afer unit identifier")
+                }
+            } else {
+                todo!("Parse error: expected identifier after 'unit'")
+            }
         } else {
             Ok(Statement::Expression(self.expression()?))
         }

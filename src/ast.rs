@@ -131,6 +131,7 @@ pub enum Statement {
     DeclareVariable(String, Expression),
     Expression(Expression),
     DeclareDimension(String, Option<DimensionExpression>),
+    DeclareUnit(String, DimensionExpression),
 }
 
 impl PrettyPrint for Statement {
@@ -147,6 +148,9 @@ impl PrettyPrint for Statement {
             }
             Statement::DeclareDimension(ident, Some(_)) => {
                 format!("dimension {} = …", ident)
+            }
+            Statement::DeclareUnit(ident, _) => {
+                format!("unit {} : …", ident)
             }
         }
     }
