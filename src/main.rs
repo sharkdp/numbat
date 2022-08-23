@@ -31,7 +31,7 @@ fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
             for statement in &statements {
                 println!("  {}", statement.pretty_print());
             }
-            match interpreter.interpret_statemets(&statements) {
+            match interpreter.interpret_statements(&statements) {
                 Ok(InterpreterResult::Value(value)) => {
                     println!();
                     println!("    = {value:.6}", value = value);
@@ -81,9 +81,11 @@ fn run() -> Result<()> {
             let readline = rl.readline(PROMPT);
             match readline {
                 Ok(line) => {
-                    rl.add_history_entry(&line);
-                    if !parse_and_evaluate(&mut interpreter, &line) {
-                        break;
+                    if !line.trim().is_empty() {
+                        rl.add_history_entry(&line);
+                        if !parse_and_evaluate(&mut interpreter, &line) {
+                            break;
+                        }
                     }
                 }
                 Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {

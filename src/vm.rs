@@ -63,6 +63,7 @@ pub struct Vm {
     stack: Vec<f64>,
     globals: HashMap<String, f64>,
     ip: usize,
+    debug: bool,
 }
 
 impl Vm {
@@ -74,10 +75,15 @@ impl Vm {
             stack: vec![],
             globals: HashMap::new(),
             ip: 0,
+            debug: false,
         }
     }
 
     pub fn disassemble(&self) {
+        if !self.debug {
+            return;
+        }
+
         println!();
         println!(".CONSTANTS");
         for (idx, constant) in self.constants.iter().enumerate() {
@@ -183,7 +189,6 @@ impl Vm {
                 }
                 Op::Return => return Ok(InterpreterResult::Value(self.pop())),
                 Op::List => {
-                    println!("List of variables:");
                     return Ok(InterpreterResult::Continue);
                 }
                 Op::Exit => {
@@ -231,6 +236,10 @@ impl Vm {
     }
 
     pub fn debug(&self) {
+        if !self.debug {
+            return;
+        }
+
         print!("IP = {}, ", self.ip);
         println!(
             "Stack: [{}]",

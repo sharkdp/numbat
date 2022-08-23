@@ -1,4 +1,4 @@
-use crate::ast::Statement;
+use crate::{ast::Statement, dimension::DimensionRegistryError};
 
 use thiserror::Error;
 
@@ -10,6 +10,8 @@ pub enum InterpreterError {
     UnknownVariable(String),
     #[error("No statements in program")]
     NoStatements,
+    #[error("{0}")]
+    DimensionRegistryError(DimensionRegistryError),
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,7 +28,7 @@ pub trait Interpreter {
 
     fn interpret_statement(&mut self, statements: &Statement) -> Result<InterpreterResult>;
 
-    fn interpret_statemets(&mut self, statements: &[Statement]) -> Result<InterpreterResult> {
+    fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult> {
         let mut result = Err(InterpreterError::NoStatements);
         for statement in statements {
             result = self.interpret_statement(statement);
@@ -40,7 +42,7 @@ fn get_interpreter_result<I: Interpreter>(input: &str) -> Result<InterpreterResu
     let mut interpreter = I::new();
     let statements =
         crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
-    interpreter.interpret_statemets(&statements)
+    interpreter.interpret_statements(&statements)
 }
 
 #[cfg(test)]

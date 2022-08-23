@@ -142,7 +142,10 @@ impl PrettyPrint for Statement {
                 format!("let {} = {}", identifier, expr.pretty_print())
             }
             Statement::Expression(expr) => expr.pretty_print(),
-            Statement::DeclareDimension(ident, _) => {
+            Statement::DeclareDimension(ident, None) => {
+                format!("dimension {}", ident)
+            }
+            Statement::DeclareDimension(ident, Some(_)) => {
                 format!("dimension {} = …", ident)
             }
         }

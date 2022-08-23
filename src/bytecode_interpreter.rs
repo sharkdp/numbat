@@ -1,9 +1,11 @@
 use crate::ast::{BinaryOperator, Command, Expression, Statement};
-use crate::interpreter::{Interpreter, InterpreterResult, Result};
+use crate::dimension::DimensionRegistry;
+use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
 use crate::vm::{Op, Vm};
 
 pub struct BytecodeInterpreter {
     vm: Vm,
+    registry: DimensionRegistry,
 }
 
 impl BytecodeInterpreter {
@@ -56,8 +58,16 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareDimension(_, _) => {
-                //let dimension_idx = self.vm.add_dimension(name);
+            Statement::DeclareDimension(name, expr) => {
+                if let Some(expr) = expr {
+                    self.registry
+                        .add_derived_dimension(name, expr)
+                        .map_err(InterpreterError::DimensionRegistryError)?;
+                } else {
+                    self.registry
+                        .add_base_dimension(name)
+                        .map_err(InterpreterError::DimensionRegistryError)?;
+                }
                 self.vm.add_op(Op::List); // TODO
             }
         }
@@ -78,7 +88,10 @@ impl BytecodeInterpreter {
 
 impl Interpreter for BytecodeInterpreter {
     fn new() -> Self {
-        Self { vm: Vm::new() }
+        Self {
+            vm: Vm::new(),
+            registry: DimensionRegistry::default(),
+        }
     }
 
     fn interpret_statement(&mut self, statement: &Statement) -> Result<InterpreterResult> {

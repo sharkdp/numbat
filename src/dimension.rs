@@ -15,10 +15,12 @@ pub enum DimensionRegistryError {
 type Result<T> = std::result::Result<T, DimensionRegistryError>;
 
 type BaseDimension = String;
-type BaseRepresentation = Vec<(BaseDimension, i32)>;
+type BaseDimensionIndex = isize;
+type Exponent = i32;
+type BaseRepresentation = Vec<(BaseDimension, Exponent)>;
 
 #[derive(Debug, Default)]
-struct DimensionRegistry {
+pub struct DimensionRegistry {
     base_dimensions: Vec<String>,
     derived_dimensions: HashMap<String, BaseRepresentation>,
 }
@@ -129,14 +131,22 @@ pub fn parse(input: &str) -> DimensionExpression {
 #[test]
 fn basic() {
     let mut registry = DimensionRegistry::default();
-    registry.add_base_dimension("length");
-    registry.add_base_dimension("time");
-    registry.add_derived_dimension("speed", &parse("length / time"));
-    registry.add_derived_dimension("acceleration", &parse("length / time^2"));
+    registry.add_base_dimension("length").unwrap();
+    registry.add_base_dimension("time").unwrap();
+    registry
+        .add_derived_dimension("speed", &parse("length / time"))
+        .unwrap();
+    registry
+        .add_derived_dimension("acceleration", &parse("length / time^2"))
+        .unwrap();
 
-    registry.add_base_dimension("mass");
-    registry.add_derived_dimension("momentum", &parse("mass * speed"));
-    registry.add_derived_dimension("energy", &parse("momentum^2 / mass"));
+    registry.add_base_dimension("mass").unwrap();
+    registry
+        .add_derived_dimension("momentum", &parse("mass * speed"))
+        .unwrap();
+    registry
+        .add_derived_dimension("energy", &parse("momentum^2 / mass"))
+        .unwrap();
 
     assert_eq!(
         registry.get_base_representation(&parse("length")),
@@ -175,7 +185,9 @@ fn basic() {
         ])
     );
 
-    registry.add_derived_dimension("momentum2", &parse("speed * mass"));
+    registry
+        .add_derived_dimension("momentum2", &parse("speed * mass"))
+        .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse("momentum2")),
         Ok(vec![
@@ -185,7 +197,9 @@ fn basic() {
         ])
     );
 
-    registry.add_derived_dimension("energy2", &parse("mass * speed^2"));
+    registry
+        .add_derived_dimension("energy2", &parse("mass * speed^2"))
+        .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse("energy2")),
         Ok(vec![
