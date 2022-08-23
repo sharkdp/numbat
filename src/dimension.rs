@@ -103,6 +103,7 @@ impl DimensionRegistry {
                 result.push((name_rhs.clone(), *exponent_rhs))
             }
         }
+        result.retain(|(_, exponent)| *exponent != 0);
         result.sort();
         result
     }
@@ -207,6 +208,14 @@ fn basic() {
             ("mass".into(), 1),
             ("time".into(), -2)
         ])
+    );
+
+    registry
+        .add_derived_dimension("speed2", &parse("momentum / mass"))
+        .unwrap();
+    assert_eq!(
+        registry.get_base_representation(&parse("speed2")),
+        Ok(vec![("length".into(), 1), ("time".into(), -1)])
     );
 }
 
