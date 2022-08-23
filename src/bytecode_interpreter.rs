@@ -68,6 +68,14 @@ impl BytecodeInterpreter {
                         .add_base_dimension(name)
                         .map_err(InterpreterError::DimensionRegistryError)?;
                 }
+
+                println!(
+                    "{:?}",
+                    self.registry.get_base_representation(
+                        &crate::ast::DimensionExpression::Dimension(name.clone())
+                    )
+                );
+
                 self.vm.add_op(Op::List); // TODO
             }
         }

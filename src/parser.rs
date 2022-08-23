@@ -261,11 +261,15 @@ impl<'a> Parser<'a> {
     }
 
     fn dimension_exponent(&mut self) -> Result<i32> {
-        // TODO: allow for negative exponents, e.g. time^(-1)
+        // TODO: allow for parens in exponents, e.g. time^(-1)
         // TODO: potentially allow for ², ³, etc.
+        // TODO: only parse integers here (TokenKind::Number will probably eventually include floats)
+
         if let Some(token) = self.match_exact(TokenKind::Number) {
-            // TODO: only parse integers here
             Ok(i32::from_str_radix(&token.lexeme, 10).unwrap())
+        } else if self.match_exact(TokenKind::Minus).is_some() {
+            let exponent = self.dimension_exponent()?;
+            Ok(-exponent)
         } else {
             todo!("parse error: expected integer number as dimension exponent")
         }
