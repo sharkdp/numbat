@@ -69,7 +69,7 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn new(tokens: &'a [Token]) -> Self {
+    pub(crate) fn new(tokens: &'a [Token]) -> Self {
         Parser { tokens, current: 0 }
     }
 
@@ -230,7 +230,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn dimension_expression(&mut self) -> Result<DimensionExpression> {
+    pub(crate) fn dimension_expression(&mut self) -> Result<DimensionExpression> {
         self.dimension_factor()
     }
 

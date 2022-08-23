@@ -1,5 +1,6 @@
 mod ast;
 mod bytecode_interpreter;
+mod dimension;
 mod interpreter;
 mod parser;
 mod pretty_print;
