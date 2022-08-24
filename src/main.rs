@@ -22,15 +22,19 @@ use bytecode_interpreter::BytecodeInterpreter;
 const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
+const PRETTY_PRINT: bool = false;
+
 fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
     let result = parse(input);
 
     match result {
         Ok(statements) => {
-            /*println!();
-            for statement in &statements {
-                println!("  {}", statement.pretty_print());
-            }*/
+            if PRETTY_PRINT {
+                println!();
+                for statement in &statements {
+                    println!("  {}", statement.pretty_print());
+                }
+            }
             match interpreter.interpret_statements(&statements) {
                 Ok(InterpreterResult::Value(value)) => {
                     println!();

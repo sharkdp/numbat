@@ -151,9 +151,24 @@ impl<'a> Parser<'a> {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 if self.match_exact(TokenKind::Colon).is_some() {
                     let dexpr = self.dimension_expression()?;
-                    Ok(Statement::DeclareUnit(identifier.lexeme.clone(), dexpr))
+                    Ok(Statement::DeclareBaseUnit(identifier.lexeme.clone(), dexpr))
+                } else if self.match_exact(TokenKind::Equal).is_some() {
+                    // New derived unit
+                    let expr = self.expression()?;
+                    let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
+                        Some(self.dimension_expression()?)
+                    } else {
+                        None
+                    };
+                    // TODO: figure out unit of 'expr' and register it
+                    Ok(Statement::DeclareDerivedUnit(
+                        identifier.lexeme.clone(),
+                        expr,
+                        dexpr,
+                    ))
                 } else {
-                    todo!("Parse error: expected ':' afer unit identifier")
+                    // TODO: maybe we should add "syntactic sugar" and allow 'unit px' to mean: 'dimension px; unit px: px'
+                    todo!("Parse error: expected '=' or ':' afer unit identifier")
                 }
             } else {
                 todo!("Parse error: expected identifier after 'unit'")

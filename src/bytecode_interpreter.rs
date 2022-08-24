@@ -64,18 +64,21 @@ impl BytecodeInterpreter {
                         .add_base_dimension(name)
                         .map_err(InterpreterError::DimensionRegistryError)?;
                 } else {
+                    self.registry
+                        .add_derived_dimension(name, &exprs[0])
+                        .map_err(InterpreterError::DimensionRegistryError)?;
+
                     let base_representation = self
                         .registry
-                        .add_derived_dimension(name, &exprs[0])
-                        .map_err(InterpreterError::DimensionRegistryError)?
-                        .clone();
+                        .get_base_representation_for_name(name)
+                        .expect("we just inserted it");
 
                     for alternative_expr in &exprs[1..] {
                         let alternative_base_representation = self
                             .registry
                             .get_base_representation(alternative_expr)
                             .map_err(InterpreterError::DimensionRegistryError)?;
-                        if alternative_base_representation != *base_representation {
+                        if alternative_base_representation != base_representation {
                             return Err(
                                 InterpreterError::IncompatibleAlternativeDimensionExpression(
                                     name.clone(),
@@ -94,14 +97,19 @@ impl BytecodeInterpreter {
 
                 self.vm.add_op(Op::List); // TODO
             }
-            Statement::DeclareUnit(name, expr) => {
+            Statement::DeclareBaseUnit(name, dexpr) => {
                 let base_rep = self
                     .registry
-                    .get_base_representation(expr)
+                    .get_base_representation(dexpr)
                     .map_err(InterpreterError::DimensionRegistryError)?;
 
                 // TODO
+                dbg!(name, base_rep);
 
+                self.vm.add_op(Op::List); // TODO
+            }
+            Statement::DeclareDerivedUnit(name, expr, _) => {
+                dbg!(name, expr);
                 self.vm.add_op(Op::List); // TODO
             }
         }

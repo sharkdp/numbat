@@ -1,7 +1,4 @@
-use crate::{
-    ast::{DimensionExpression, Statement},
-    dimension::DimensionRegistryError,
-};
+use crate::{ast::Statement, dimension::DimensionRegistryError};
 
 use thiserror::Error;
 
