@@ -68,7 +68,7 @@ impl BytecodeInterpreter {
                         .registry
                         .add_derived_dimension(name, &exprs[0])
                         .map_err(InterpreterError::DimensionRegistryError)?
-                        .clone(); // TODO: can we get rid of the .clone() call here?
+                        .clone();
 
                     for alternative_expr in &exprs[1..] {
                         let alternative_base_representation = self
