@@ -5,7 +5,7 @@ Reasons for rewriting Insect in Rust:
       - Introducing the concept of physical *dimensions* into the language
         ( see https://gist.github.com/sharkdp/5161bf9f46263c70ec91d66692c6864d )
         ( units ~ types, dimensions ~ kinds? )
-      - Experimenting with a static dimension/unit checker
+      - Experimenting with a static dimension/unit checker => that is probably not going to work: sum(kg^i, i, 1, 10)
       - Better parser errors
       - Allowing user-defined units => move all of the unit definitions to the Insect language
       - Automated tracking of significant digits
@@ -28,6 +28,7 @@ Example: dimensionality annotations
   kineticEnergy(mass, speed) = 0.5 * mass * speed^2
 
   kineticEnergy(m: $mass, v: $speed): $energy = 1/2 * m * v^2
+  kineticEnergy(m: #mass, v: #speed): #energy = 1/2 * m * v^2
 
   kineticEnergy(m: [mass], v: [speed]): [energy] = 1/2 * m * v^2
 
@@ -42,10 +43,44 @@ Example:
   Length l = 4 inch
   Mass m = 3 kg
 
+Or
+
+  reaction_time: time = 1.5 seconds
+  braking_power: acceleration = 1.5 * gravity
+
+  stopping_distance(v: speed): length = v * reaction_time + 1/2 * v^2 / braking_power
+
+  stopping_distance(50 km/h)
 
 What about generic functions like:
 
-  sqr(x: $T) : $T^2 = x * x
+  sqr(x) -> [x]^2 = x * x
+
+*Important question*: can we resolve all physical dimension checks at compile time?
+Probably not. Take this
+
+  sum(kg^i, i, 1, 10)
+
+or this:
+
+  f(l: $length, i: $scalar) = l^i
+
+
+## Other ideas
+
+include * from SI
+include inch from Imperial
+
+extern function sin :: R -> R
+
+dimension pixel
+
+unit meter : length
+
+## Possible compiler optimizations
+
+  Negate(Constant(n)) => Constant(-n)
+
 
 
 Resources:
