@@ -43,7 +43,7 @@ impl DimensionRegistry {
         &mut self,
         name: &str,
         expression: &DimensionExpression,
-    ) -> Result<()> {
+    ) -> Result<&BaseRepresentation> {
         if self.derived_dimensions.contains_key(name) {
             return Err(DimensionRegistryError::DimensionExists(name.to_owned()));
         }
@@ -53,7 +53,7 @@ impl DimensionRegistry {
         self.derived_dimensions
             .insert(name.to_owned(), derived_dimension);
 
-        Ok(())
+        Ok(self.derived_dimensions.get(name).unwrap())
     }
 
     pub fn get_base_representation(

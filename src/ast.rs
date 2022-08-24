@@ -130,7 +130,7 @@ pub enum Statement {
     Command(Command),
     DeclareVariable(String, Expression),
     Expression(Expression),
-    DeclareDimension(String, Option<DimensionExpression>),
+    DeclareDimension(String, Vec<DimensionExpression>),
     DeclareUnit(String, DimensionExpression),
 }
 
@@ -143,10 +143,10 @@ impl PrettyPrint for Statement {
                 format!("let {} = {}", identifier, expr.pretty_print())
             }
             Statement::Expression(expr) => expr.pretty_print(),
-            Statement::DeclareDimension(ident, None) => {
+            Statement::DeclareDimension(ident, vec) if vec.is_empty() => {
                 format!("dimension {}", ident)
             }
-            Statement::DeclareDimension(ident, Some(_)) => {
+            Statement::DeclareDimension(ident, _) => {
                 format!("dimension {} = …", ident)
             }
             Statement::DeclareUnit(ident, _) => {

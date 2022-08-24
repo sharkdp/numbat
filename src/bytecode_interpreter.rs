@@ -58,23 +58,39 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareDimension(name, expr) => {
-                if let Some(expr) = expr {
-                    self.registry
-                        .add_derived_dimension(name, expr)
-                        .map_err(InterpreterError::DimensionRegistryError)?;
-                } else {
+            Statement::DeclareDimension(name, exprs) => {
+                if exprs.is_empty() {
                     self.registry
                         .add_base_dimension(name)
                         .map_err(InterpreterError::DimensionRegistryError)?;
+                } else {
+                    let base_representation = self
+                        .registry
+                        .add_derived_dimension(name, &exprs[0])
+                        .map_err(InterpreterError::DimensionRegistryError)?
+                        .clone(); // TODO: can we get rid of the .clone() call here?
+
+                    for alternative_expr in &exprs[1..] {
+                        let alternative_base_representation = self
+                            .registry
+                            .get_base_representation(alternative_expr)
+                            .map_err(InterpreterError::DimensionRegistryError)?;
+                        if alternative_base_representation != *base_representation {
+                            return Err(
+                                InterpreterError::IncompatibleAlternativeDimensionExpression(
+                                    name.clone(),
+                                ),
+                            );
+                        }
+                    }
                 }
 
-                println!(
+                /*println!(
                     "{:?}",
                     self.registry.get_base_representation(
                         &crate::ast::DimensionExpression::Dimension(name.clone())
                     )
-                );
+                );*/
 
                 self.vm.add_op(Op::List); // TODO
             }

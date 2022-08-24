@@ -128,13 +128,21 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(TokenKind::Dimension).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 if self.match_exact(TokenKind::Equal).is_some() {
-                    let dexpr = self.dimension_expression()?;
+                    let mut dexprs = vec![self.dimension_expression()?];
+
+                    while self.match_exact(TokenKind::Equal).is_some() {
+                        dexprs.push(self.dimension_expression()?);
+                    }
+
                     Ok(Statement::DeclareDimension(
                         identifier.lexeme.clone(),
-                        Some(dexpr),
+                        dexprs,
                     ))
                 } else {
-                    Ok(Statement::DeclareDimension(identifier.lexeme.clone(), None))
+                    Ok(Statement::DeclareDimension(
+                        identifier.lexeme.clone(),
+                        vec![],
+                    ))
                 }
             } else {
                 todo!("Parse error: expected identifier after 'dimension'")
@@ -511,7 +519,7 @@ mod tests {
     fn parse_dimension_declaration() {
         parse_as(
             &["dimension px"],
-            Statement::DeclareDimension("px".into(), None),
+            Statement::DeclareDimension("px".into(), vec![]),
         );
 
         parse_as(
@@ -521,10 +529,10 @@ mod tests {
             ],
             Statement::DeclareDimension(
                 "area".into(),
-                Some(DimensionExpression::Multiply(
+                vec![DimensionExpression::Multiply(
                     Box::new(DimensionExpression::Dimension("length".into())),
                     Box::new(DimensionExpression::Dimension("length".into())),
-                )),
+                )],
             ),
         );
 
@@ -532,10 +540,10 @@ mod tests {
             &["dimension speed = length / time"],
             Statement::DeclareDimension(
                 "speed".into(),
-                Some(DimensionExpression::Divide(
+                vec![DimensionExpression::Divide(
                     Box::new(DimensionExpression::Dimension("length".into())),
                     Box::new(DimensionExpression::Dimension("time".into())),
-                )),
+                )],
             ),
         );
 
@@ -543,10 +551,10 @@ mod tests {
             &["dimension area = length^2"],
             Statement::DeclareDimension(
                 "area".into(),
-                Some(DimensionExpression::Power(
+                vec![DimensionExpression::Power(
                     Box::new(DimensionExpression::Dimension("length".into())),
                     2,
-                )),
+                )],
             ),
         );
 
@@ -554,7 +562,7 @@ mod tests {
             &["dimension energy = mass * length^2 / time^2"],
             Statement::DeclareDimension(
                 "energy".into(),
-                Some(DimensionExpression::Divide(
+                vec![DimensionExpression::Divide(
                     Box::new(DimensionExpression::Multiply(
                         Box::new(DimensionExpression::Dimension("mass".into())),
                         Box::new(DimensionExpression::Power(
@@ -566,7 +574,7 @@ mod tests {
                         Box::new(DimensionExpression::Dimension("time".into())),
                         2,
                     )),
-                )),
+                )],
             ),
         );
 

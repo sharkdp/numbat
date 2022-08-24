@@ -27,10 +27,10 @@ fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
 
     match result {
         Ok(statements) => {
-            println!();
+            /*println!();
             for statement in &statements {
                 println!("  {}", statement.pretty_print());
-            }
+            }*/
             match interpreter.interpret_statements(&statements) {
                 Ok(InterpreterResult::Value(value)) => {
                     println!();
