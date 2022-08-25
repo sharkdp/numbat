@@ -11,7 +11,7 @@ pub enum InterpreterError {
     #[error("No statements in program")]
     NoStatements,
     #[error("{0}")]
-    DimensionRegistryError(RegistryError),
+    RegistryError(RegistryError),
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
 }

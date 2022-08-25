@@ -1,11 +1,13 @@
 use crate::ast::{BinaryOperator, Command, Expression, Statement};
 use crate::dimension::DimensionRegistry;
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
+use crate::unit::UnitRegistry;
 use crate::vm::{Op, Vm};
 
 pub struct BytecodeInterpreter {
     vm: Vm,
-    registry: DimensionRegistry,
+    dimension_registry: DimensionRegistry,
+    unit_registry: UnitRegistry,
 }
 
 impl BytecodeInterpreter {
@@ -60,24 +62,24 @@ impl BytecodeInterpreter {
             }
             Statement::DeclareDimension(name, exprs) => {
                 if exprs.is_empty() {
-                    self.registry
+                    self.dimension_registry
                         .add_base_entry(name)
-                        .map_err(InterpreterError::DimensionRegistryError)?;
+                        .map_err(InterpreterError::RegistryError)?;
                 } else {
-                    self.registry
+                    self.dimension_registry
                         .add_derived_entry(name, &exprs[0])
-                        .map_err(InterpreterError::DimensionRegistryError)?;
+                        .map_err(InterpreterError::RegistryError)?;
 
                     let base_representation = self
-                        .registry
+                        .dimension_registry
                         .get_base_representation_for_name(name)
                         .expect("we just inserted it");
 
                     for alternative_expr in &exprs[1..] {
                         let alternative_base_representation = self
-                            .registry
+                            .dimension_registry
                             .get_base_representation(alternative_expr)
-                            .map_err(InterpreterError::DimensionRegistryError)?;
+                            .map_err(InterpreterError::RegistryError)?;
                         if alternative_base_representation != base_representation {
                             return Err(
                                 InterpreterError::IncompatibleAlternativeDimensionExpression(
@@ -97,19 +99,27 @@ impl BytecodeInterpreter {
 
                 self.vm.add_op(Op::List); // TODO
             }
-            Statement::DeclareBaseUnit(_, _) => {
-                // let base_rep = self
-                //     .registry
-                //     .get_base_representation(dexpr)
-                //     .map_err(InterpreterError::DimensionRegistryError)?;
+            Statement::DeclareBaseUnit(name, _) => {
+                self.unit_registry
+                    .add_base_entry(name)
+                    .map_err(InterpreterError::RegistryError)?;
 
-                // TODO
-                //dbg!(name, base_rep);
+                // TODO: do something with the dexpr
 
                 self.vm.add_op(Op::List); // TODO
             }
-            Statement::DeclareDerivedUnit(_, _, _) => {
-                //dbg!(name, expr);
+            Statement::DeclareDerivedUnit(name, expr, _) => {
+                self.unit_registry
+                    .add_derived_entry(name, expr)
+                    .map_err(InterpreterError::RegistryError)?;
+
+                dbg!(
+                    name,
+                    self.unit_registry
+                        .get_base_representation_for_name(name)
+                        .unwrap()
+                );
+
                 self.vm.add_op(Op::List); // TODO
             }
         }
@@ -132,7 +142,8 @@ impl Interpreter for BytecodeInterpreter {
     fn new() -> Self {
         Self {
             vm: Vm::new(),
-            registry: DimensionRegistry::default(),
+            dimension_registry: DimensionRegistry::default(),
+            unit_registry: UnitRegistry::default(),
         }
     }
 
