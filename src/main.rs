@@ -4,6 +4,7 @@ mod dimension;
 mod interpreter;
 mod parser;
 mod pretty_print;
+mod registry;
 mod span;
 mod tokenizer;
 mod treewalk_interpreter;
