@@ -18,23 +18,30 @@ type Exponent = i32;
 // TODO: this could be represented with a base index in the first tuple component instead of a cloned string
 pub type BaseRepresentation = Vec<(BaseEntry, Exponent)>;
 
-pub trait Adapter: Sized + Default {
-    type Expression;
+// TODO: turn BaseRepresentation into a proper type (strong type or proper struct) and add this as a method
+pub fn negate_base_representation(rep: &BaseRepresentation) -> BaseRepresentation {
+    rep.iter()
+        .map(|(base, exponent)| (base.clone(), -exponent))
+        .collect()
+}
+
+pub trait RegistryAdapter: Sized + Default {
+    type DerivedExpression;
 
     fn expression_to_base_representation(
         registry: &Registry<Self>,
-        expr: &Self::Expression,
+        expr: &Self::DerivedExpression,
     ) -> Result<BaseRepresentation>;
 }
 
 #[derive(Debug, Default)]
-pub struct Registry<A: Adapter> {
+pub struct Registry<A: RegistryAdapter> {
     base_entries: Vec<String>,
     derived_entries: HashMap<String, BaseRepresentation>,
     adapter: PhantomData<A>,
 }
 
-impl<A: Adapter> Registry<A> {
+impl<A: RegistryAdapter> Registry<A> {
     pub fn add_base_entry(&mut self, name: &str) -> Result<()> {
         if self.is_base_entry(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
@@ -48,7 +55,11 @@ impl<A: Adapter> Registry<A> {
         self.base_entries.iter().any(|n| n == name)
     }
 
-    pub fn add_derived_entry(&mut self, name: &str, expression: &A::Expression) -> Result<()> {
+    pub fn add_derived_entry(
+        &mut self,
+        name: &str,
+        expression: &A::DerivedExpression,
+    ) -> Result<()> {
         if self.derived_entries.contains_key(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
@@ -61,7 +72,7 @@ impl<A: Adapter> Registry<A> {
 
     pub fn get_base_representation(
         &self,
-        expression: &A::Expression,
+        expression: &A::DerivedExpression,
     ) -> Result<BaseRepresentation> {
         A::expression_to_base_representation(self, expression)
     }

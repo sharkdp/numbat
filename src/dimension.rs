@@ -1,15 +1,17 @@
 use crate::ast::DimensionExpression;
-use crate::registry::{Adapter, BaseRepresentation, Registry, Result};
+use crate::registry::{
+    negate_base_representation, BaseRepresentation, Registry, RegistryAdapter, Result,
+};
 
 #[derive(Default)]
 pub struct DimensionAdapter;
 
-impl Adapter for DimensionAdapter {
-    type Expression = DimensionExpression;
+impl RegistryAdapter for DimensionAdapter {
+    type DerivedExpression = DimensionExpression;
 
     fn expression_to_base_representation(
         registry: &Registry<Self>,
-        expression: &Self::Expression,
+        expression: &Self::DerivedExpression,
     ) -> Result<BaseRepresentation> {
         match expression {
             DimensionExpression::Dimension(name) => registry.get_base_representation_for_name(name),
@@ -21,11 +23,7 @@ impl Adapter for DimensionAdapter {
             }
             DimensionExpression::Divide(lhs, rhs) => {
                 let lhs = registry.get_base_representation(lhs)?;
-                let rhs = registry
-                    .get_base_representation(rhs)?
-                    .iter()
-                    .map(|(base, exponent)| (base.clone(), -exponent))
-                    .collect();
+                let rhs = negate_base_representation(&registry.get_base_representation(rhs)?);
 
                 Ok(registry.merge_base_representations(&lhs, &rhs))
             }
@@ -46,9 +44,11 @@ pub type DimensionRegistry = Registry<DimensionAdapter>;
 pub fn parse(input: &str) -> DimensionExpression {
     let tokens = crate::tokenizer::tokenize(input).expect("No tokenizer errors in tests");
     let mut parser = crate::parser::Parser::new(&tokens);
-    parser
+    let expr = parser
         .dimension_expression()
-        .expect("No parser errors in tests")
+        .expect("No parser errors in tests");
+    assert!(parser.is_at_end());
+    expr
 }
 
 #[test]

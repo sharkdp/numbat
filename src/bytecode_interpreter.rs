@@ -97,18 +97,18 @@ impl BytecodeInterpreter {
 
                 self.vm.add_op(Op::List); // TODO
             }
-            Statement::DeclareBaseUnit(name, dexpr) => {
-                let base_rep = self
-                    .registry
-                    .get_base_representation(dexpr)
-                    .map_err(InterpreterError::DimensionRegistryError)?;
+            Statement::DeclareBaseUnit(_, _) => {
+                // let base_rep = self
+                //     .registry
+                //     .get_base_representation(dexpr)
+                //     .map_err(InterpreterError::DimensionRegistryError)?;
 
                 // TODO
                 //dbg!(name, base_rep);
 
                 self.vm.add_op(Op::List); // TODO
             }
-            Statement::DeclareDerivedUnit(name, expr, _) => {
+            Statement::DeclareDerivedUnit(_, _, _) => {
                 //dbg!(name, expr);
                 self.vm.add_op(Op::List); // TODO
             }

@@ -8,6 +8,7 @@ mod registry;
 mod span;
 mod tokenizer;
 mod treewalk_interpreter;
+mod unit;
 mod vm;
 
 use interpreter::{Interpreter, InterpreterResult};

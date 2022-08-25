@@ -178,7 +178,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn expression(&mut self) -> Result<Expression> {
+    pub fn expression(&mut self) -> Result<Expression> {
         self.conversion()
     }
 
@@ -354,7 +354,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn is_at_end(&self) -> bool {
+    pub fn is_at_end(&self) -> bool {
         self.peek().kind == TokenKind::Eof
     }
 }
