@@ -153,14 +153,12 @@ impl<'a> Parser<'a> {
                     let dexpr = self.dimension_expression()?;
                     Ok(Statement::DeclareBaseUnit(identifier.lexeme.clone(), dexpr))
                 } else if self.match_exact(TokenKind::Equal).is_some() {
-                    // New derived unit
                     let expr = self.expression()?;
                     let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
                         Some(self.dimension_expression()?)
                     } else {
                         None
                     };
-                    // TODO: figure out unit of 'expr' and register it
                     Ok(Statement::DeclareDerivedUnit(
                         identifier.lexeme.clone(),
                         expr,
@@ -595,4 +593,6 @@ mod tests {
 
         // TODO: should_fail_with tests
     }
+
+    // TODO: tests for 'unit …' declarations
 }
