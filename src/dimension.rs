@@ -43,7 +43,7 @@ impl RegistryAdapter for DimensionAdapter {
 pub type DimensionRegistry = Registry<DimensionAdapter>;
 
 #[cfg(test)]
-pub fn parse(input: &str) -> DimensionExpression {
+pub fn parse_dexpr(input: &str) -> DimensionExpression {
     let tokens = crate::tokenizer::tokenize(input).expect("No tokenizer errors in tests");
     let mut parser = crate::parser::Parser::new(&tokens);
     let expr = parser
@@ -56,51 +56,51 @@ pub fn parse(input: &str) -> DimensionExpression {
 #[test]
 fn basic() {
     let mut registry = DimensionRegistry::default();
-    registry.add_base_entry("length").unwrap();
-    registry.add_base_entry("time").unwrap();
+    registry.add_base_entry("length", ()).unwrap();
+    registry.add_base_entry("time", ()).unwrap();
     registry
-        .add_derived_entry("speed", &parse("length / time"))
+        .add_derived_entry("speed", &parse_dexpr("length / time"), ())
         .unwrap();
     registry
-        .add_derived_entry("acceleration", &parse("length / time^2"))
+        .add_derived_entry("acceleration", &parse_dexpr("length / time^2"), ())
         .unwrap();
 
-    registry.add_base_entry("mass").unwrap();
+    registry.add_base_entry("mass", ()).unwrap();
     registry
-        .add_derived_entry("momentum", &parse("mass * speed"))
+        .add_derived_entry("momentum", &parse_dexpr("mass * speed"), ())
         .unwrap();
     registry
-        .add_derived_entry("energy", &parse("momentum^2 / mass"))
+        .add_derived_entry("energy", &parse_dexpr("momentum^2 / mass"), ())
         .unwrap();
 
     assert_eq!(
-        registry.get_base_representation(&parse("length")),
+        registry.get_base_representation(&parse_dexpr("length")),
         Ok(BaseRepresentation::from_components(&[("length".into(), 1)]))
     );
     assert_eq!(
-        registry.get_base_representation(&parse("time")),
+        registry.get_base_representation(&parse_dexpr("time")),
         Ok(BaseRepresentation::from_components(&[("time".into(), 1)]))
     );
     assert_eq!(
-        registry.get_base_representation(&parse("mass")),
+        registry.get_base_representation(&parse_dexpr("mass")),
         Ok(BaseRepresentation::from_components(&[("mass".into(), 1)]))
     );
     assert_eq!(
-        registry.get_base_representation(&parse("speed")),
+        registry.get_base_representation(&parse_dexpr("speed")),
         Ok(BaseRepresentation::from_components(&[
             ("length".into(), 1),
             ("time".into(), -1)
         ]))
     );
     assert_eq!(
-        registry.get_base_representation(&parse("acceleration")),
+        registry.get_base_representation(&parse_dexpr("acceleration")),
         Ok(BaseRepresentation::from_components(&[
             ("length".into(), 1),
             ("time".into(), -2)
         ]))
     );
     assert_eq!(
-        registry.get_base_representation(&parse("momentum")),
+        registry.get_base_representation(&parse_dexpr("momentum")),
         Ok(BaseRepresentation::from_components(&[
             ("length".into(), 1),
             ("mass".into(), 1),
@@ -108,7 +108,7 @@ fn basic() {
         ]))
     );
     assert_eq!(
-        registry.get_base_representation(&parse("energy")),
+        registry.get_base_representation(&parse_dexpr("energy")),
         Ok(BaseRepresentation::from_components(&[
             ("length".into(), 2),
             ("mass".into(), 1),
@@ -117,10 +117,10 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("momentum2", &parse("speed * mass"))
+        .add_derived_entry("momentum2", &parse_dexpr("speed * mass"), ())
         .unwrap();
     assert_eq!(
-        registry.get_base_representation(&parse("momentum2")),
+        registry.get_base_representation(&parse_dexpr("momentum2")),
         Ok(BaseRepresentation::from_components(&[
             ("length".into(), 1),
             ("mass".into(), 1),
@@ -129,10 +129,10 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("energy2", &parse("mass * speed^2"))
+        .add_derived_entry("energy2", &parse_dexpr("mass * speed^2"), ())
         .unwrap();
     assert_eq!(
-        registry.get_base_representation(&parse("energy2")),
+        registry.get_base_representation(&parse_dexpr("energy2")),
         Ok(BaseRepresentation::from_components(&[
             ("length".into(), 2),
             ("mass".into(), 1),
@@ -141,10 +141,10 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("speed2", &parse("momentum / mass"))
+        .add_derived_entry("speed2", &parse_dexpr("momentum / mass"), ())
         .unwrap();
     assert_eq!(
-        registry.get_base_representation(&parse("speed2")),
+        registry.get_base_representation(&parse_dexpr("speed2")),
         Ok(BaseRepresentation::from_components(&[
             ("length".into(), 1),
             ("time".into(), -1)
@@ -155,6 +155,6 @@ fn basic() {
 #[test]
 fn fails_if_same_dimension_is_added_twice() {
     let mut registry = DimensionRegistry::default();
-    assert!(registry.add_base_entry("length").is_ok());
-    assert!(registry.add_base_entry("length").is_err());
+    assert!(registry.add_base_entry("length", ()).is_ok());
+    assert!(registry.add_base_entry("length", ()).is_err());
 }

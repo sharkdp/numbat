@@ -16,6 +16,9 @@ pub type Result<T> = std::result::Result<T, RegistryError>;
 type BaseEntry = String;
 type Exponent = i32;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BaseIndex(isize);
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct BaseRepresentation {
     // TODO: this could be represented with a base index in the first tuple component instead of a cloned string
@@ -55,31 +58,42 @@ pub trait RegistryAdapter: Sized + Default {
     ) -> Result<BaseRepresentation>;
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Registry<A: RegistryAdapter> {
-    base_entries: Vec<String>,
+    base_entries: Vec<(String, A::Metadata)>,
     derived_entries: HashMap<String, BaseRepresentation>,
     adapter: PhantomData<A>,
 }
 
+impl<A: RegistryAdapter> Default for Registry<A> {
+    fn default() -> Self {
+        Self {
+            base_entries: vec![],
+            derived_entries: HashMap::default(),
+            adapter: PhantomData::<A>::default(),
+        }
+    }
+}
+
 impl<A: RegistryAdapter> Registry<A> {
-    pub fn add_base_entry(&mut self, name: &str) -> Result<()> {
+    pub fn add_base_entry(&mut self, name: &str, metadata: A::Metadata) -> Result<()> {
         if self.is_base_entry(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
-        self.base_entries.push(name.to_owned());
+        self.base_entries.push((name.to_owned(), metadata));
 
         Ok(())
     }
 
     pub fn is_base_entry(&self, name: &str) -> bool {
-        self.base_entries.iter().any(|n| n == name)
+        self.base_entries.iter().any(|(n, _)| n == name)
     }
 
     pub fn add_derived_entry(
         &mut self,
         name: &str,
         expression: &A::DerivedExpression,
+        metadata: A::Metadata,
     ) -> Result<()> {
         if self.derived_entries.contains_key(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
