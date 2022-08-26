@@ -7,6 +7,7 @@ pub struct DimensionAdapter;
 impl RegistryAdapter for DimensionAdapter {
     type DerivedExpression = DimensionExpression;
     type Metadata = ();
+    type Parent = ();
 
     fn expression_to_base_representation(
         registry: &Registry<Self>,
@@ -59,18 +60,18 @@ fn basic() {
     registry.add_base_entry("length", ()).unwrap();
     registry.add_base_entry("time", ()).unwrap();
     registry
-        .add_derived_entry("speed", &parse_dexpr("length / time"), ())
+        .add_derived_entry("speed", &parse_dexpr("length / time"), &(), ())
         .unwrap();
     registry
-        .add_derived_entry("acceleration", &parse_dexpr("length / time^2"), ())
+        .add_derived_entry("acceleration", &parse_dexpr("length / time^2"), &(), ())
         .unwrap();
 
     registry.add_base_entry("mass", ()).unwrap();
     registry
-        .add_derived_entry("momentum", &parse_dexpr("mass * speed"), ())
+        .add_derived_entry("momentum", &parse_dexpr("mass * speed"), &(), ())
         .unwrap();
     registry
-        .add_derived_entry("energy", &parse_dexpr("momentum^2 / mass"), ())
+        .add_derived_entry("energy", &parse_dexpr("momentum^2 / mass"), &(), ())
         .unwrap();
 
     assert_eq!(
@@ -117,7 +118,7 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("momentum2", &parse_dexpr("speed * mass"), ())
+        .add_derived_entry("momentum2", &parse_dexpr("speed * mass"), &(), ())
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("momentum2")),
@@ -129,7 +130,7 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("energy2", &parse_dexpr("mass * speed^2"), ())
+        .add_derived_entry("energy2", &parse_dexpr("mass * speed^2"), &(), ())
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("energy2")),
@@ -141,7 +142,7 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("speed2", &parse_dexpr("momentum / mass"), ())
+        .add_derived_entry("speed2", &parse_dexpr("momentum / mass"), &(), ())
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("speed2")),

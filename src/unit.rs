@@ -1,6 +1,5 @@
 use crate::ast::{BinaryOperator, DimensionExpression, Expression};
-use crate::dimension;
-use crate::parser::parse;
+use crate::dimension::DimensionRegistry;
 use crate::registry::{BaseRepresentation, Registry, RegistryAdapter, Result};
 
 #[derive(Default)]
@@ -11,6 +10,7 @@ impl RegistryAdapter for UnitAdapter {
 
     // TODO: Optimization: do not store the unevaluated DimensionExpression here, but rather a direct link to the corresponding dimension (does that always exist?!)
     type Metadata = DimensionExpression;
+    type Parent = DimensionRegistry;
 
     fn expression_to_base_representation(
         registry: &Registry<Self>,
@@ -54,14 +54,14 @@ fn basic() {
     use crate::dimension::{parse_dexpr, DimensionRegistry};
 
     let mut dimension_registry = DimensionRegistry::default();
-    dimension_registry.add_base_entry("length", ());
-    dimension_registry.add_base_entry("time", ());
-    dimension_registry.add_base_entry("mass", ());
+    dimension_registry.add_base_entry("length", ()).unwrap();
+    dimension_registry.add_base_entry("time", ()).unwrap();
+    dimension_registry.add_base_entry("mass", ()).unwrap();
     dimension_registry
-        .add_derived_entry("force", &parse_dexpr("mass * length / time^2"), ())
+        .add_derived_entry("force", &parse_dexpr("mass * length / time^2"), &(), ())
         .unwrap();
     dimension_registry
-        .add_derived_entry("energy", &parse_dexpr("force * length"), ())
+        .add_derived_entry("energy", &parse_dexpr("force * length"), &(), ())
         .unwrap();
 
     let mut registry = UnitRegistry::default();
@@ -79,6 +79,7 @@ fn basic() {
         .add_derived_entry(
             "newton",
             &parse_expr("kilogram * meter / (second * second)"),
+            &dimension_registry,
             parse_dexpr("force"),
         )
         .unwrap();
@@ -86,6 +87,7 @@ fn basic() {
         .add_derived_entry(
             "joule",
             &parse_expr("newton * meter"),
+            &dimension_registry,
             parse_dexpr("energy"),
         )
         .unwrap();

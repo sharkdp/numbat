@@ -51,6 +51,7 @@ impl BaseRepresentation {
 pub trait RegistryAdapter: Sized + Default {
     type DerivedExpression;
     type Metadata;
+    type Parent;
 
     fn expression_to_base_representation(
         registry: &Registry<Self>,
@@ -93,14 +94,21 @@ impl<A: RegistryAdapter> Registry<A> {
         &mut self,
         name: &str,
         expression: &A::DerivedExpression,
+        parent: &A::Parent,
         metadata: A::Metadata,
     ) -> Result<()> {
         if self.derived_entries.contains_key(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
 
+        let base_representation = self.get_base_representation(&expression)?;
+
+        // TODO: verify that base_representation is compatible with metadata
+        drop(parent);
+        drop(metadata);
+
         self.derived_entries
-            .insert(name.to_owned(), self.get_base_representation(&expression)?);
+            .insert(name.to_owned(), base_representation);
 
         Ok(())
     }
