@@ -23,16 +23,14 @@ impl RegistryAdapter for UnitAdapter {
             Expression::BinaryOperator(BinaryOperator::Add | BinaryOperator::Sub, lhs, _) => {
                 Self::expression_to_base_representation(registry, lhs)
             }
-            Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs) => Ok(registry
-                .merge_base_representations(
-                    &Self::expression_to_base_representation(registry, lhs)?,
-                    &Self::expression_to_base_representation(registry, rhs)?,
-                )),
-            Expression::BinaryOperator(BinaryOperator::Div, lhs, rhs) => Ok(registry
-                .merge_base_representations(
-                    &Self::expression_to_base_representation(registry, lhs)?,
-                    &Self::expression_to_base_representation(registry, rhs)?.invert(),
-                )),
+            Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs) => {
+                Ok(Self::expression_to_base_representation(registry, lhs)?
+                    .multiply(&Self::expression_to_base_representation(registry, rhs)?))
+            }
+            Expression::BinaryOperator(BinaryOperator::Div, lhs, rhs) => {
+                Ok(Self::expression_to_base_representation(registry, lhs)?
+                    .divide(&Self::expression_to_base_representation(registry, rhs)?))
+            }
             Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _) => todo!(),
         }
     }

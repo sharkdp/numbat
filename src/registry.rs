@@ -46,6 +46,38 @@ impl BaseRepresentation {
             .collect();
         BaseRepresentation::from_components(&components)
     }
+
+    pub fn multiply(&self, rhs: &BaseRepresentation) -> BaseRepresentation {
+        let mut result = self.clone();
+        for (name_rhs, exponent_rhs) in &rhs.components {
+            if let Some((_, ref mut exponent_lhs)) = result
+                .components
+                .iter_mut()
+                .find(|(name_lhs, _)| name_lhs == name_rhs)
+            {
+                *exponent_lhs += exponent_rhs;
+            } else {
+                result.components.push((name_rhs.clone(), *exponent_rhs))
+            }
+        }
+        result.components.retain(|(_, exponent)| *exponent != 0);
+        result.components.sort();
+        result
+    }
+
+    pub fn divide(&self, rhs: &BaseRepresentation) -> BaseRepresentation {
+        self.multiply(&rhs.invert())
+    }
+
+    pub fn power(&self, exponent: Exponent) -> BaseRepresentation {
+        BaseRepresentation::from_components(
+            &self
+                .components
+                .iter()
+                .map(|(name, inner_exponent)| (name.clone(), inner_exponent * exponent))
+                .collect::<Vec<_>>(),
+        )
+    }
 }
 
 pub trait RegistryAdapter: Sized + Default {
@@ -90,6 +122,14 @@ impl<A: RegistryAdapter> Registry<A> {
         self.base_entries.iter().any(|(n, _)| n == name)
     }
 
+    pub fn base_entry_metadata(&self, name: &str) -> Result<&A::Metadata> {
+        self.base_entries
+            .iter()
+            .find(|(n, _)| n == name)
+            .map(|(_, ref m)| m)
+            .ok_or_else(|| RegistryError::UnknownEntry(name.to_owned()))
+    }
+
     pub fn add_derived_entry(
         &mut self,
         name: &str,
@@ -102,6 +142,12 @@ impl<A: RegistryAdapter> Registry<A> {
         }
 
         let base_representation = self.get_base_representation(&expression)?;
+
+        let parent_base_representation: Vec<_> = base_representation
+            .components
+            .iter()
+            .map(|(base_name, exp)| self.base_entry_metadata(base_name).unwrap())
+            .collect();
 
         // TODO: verify that base_representation is compatible with metadata
         drop(parent);
@@ -118,28 +164,6 @@ impl<A: RegistryAdapter> Registry<A> {
         expression: &A::DerivedExpression,
     ) -> Result<BaseRepresentation> {
         A::expression_to_base_representation(self, expression)
-    }
-
-    pub fn merge_base_representations(
-        &self,
-        lhs: &BaseRepresentation,
-        rhs: &BaseRepresentation,
-    ) -> BaseRepresentation {
-        let mut result = lhs.clone();
-        for (name_rhs, exponent_rhs) in &rhs.components {
-            if let Some((_, ref mut exponent_lhs)) = result
-                .components
-                .iter_mut()
-                .find(|(name_lhs, _)| name_lhs == name_rhs)
-            {
-                *exponent_lhs += exponent_rhs;
-            } else {
-                result.components.push((name_rhs.clone(), *exponent_rhs))
-            }
-        }
-        result.components.retain(|(_, exponent)| *exponent != 0);
-        result.components.sort();
-        result
     }
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {

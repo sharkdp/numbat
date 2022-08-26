@@ -19,24 +19,17 @@ impl RegistryAdapter for DimensionAdapter {
                 let lhs = registry.get_base_representation(lhs)?;
                 let rhs = registry.get_base_representation(rhs)?;
 
-                Ok(registry.merge_base_representations(&lhs, &rhs))
+                Ok(lhs.multiply(&rhs))
             }
             DimensionExpression::Divide(lhs, rhs) => {
                 let lhs = registry.get_base_representation(lhs)?;
-                let rhs = registry.get_base_representation(rhs)?.invert();
+                let rhs = registry.get_base_representation(rhs)?;
 
-                Ok(registry.merge_base_representations(&lhs, &rhs))
+                Ok(lhs.divide(&rhs))
             }
-            DimensionExpression::Power(expr, outer_exponent) => {
-                let base = registry.get_base_representation(expr)?;
-                Ok(BaseRepresentation::from_components(
-                    &base
-                        .components
-                        .iter()
-                        .map(|(name, exponent)| (name.clone(), exponent * outer_exponent))
-                        .collect::<Vec<_>>(),
-                ))
-            }
+            DimensionExpression::Power(expr, outer_exponent) => Ok(registry
+                .get_base_representation(expr)?
+                .power(*outer_exponent)),
         }
     }
 }
