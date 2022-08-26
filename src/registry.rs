@@ -15,18 +15,39 @@ pub type Result<T> = std::result::Result<T, RegistryError>;
 
 type BaseEntry = String;
 type Exponent = i32;
-// TODO: this could be represented with a base index in the first tuple component instead of a cloned string
-pub type BaseRepresentation = Vec<(BaseEntry, Exponent)>;
 
-// TODO: turn BaseRepresentation into a proper type (strong type or proper struct) and add this as a method
-pub fn negate_base_representation(rep: &BaseRepresentation) -> BaseRepresentation {
-    rep.iter()
-        .map(|(base, exponent)| (base.clone(), -exponent))
-        .collect()
+#[derive(Debug, Clone, PartialEq)]
+pub struct BaseRepresentation {
+    // TODO: this could be represented with a base index in the first tuple component instead of a cloned string
+    // TODO: make this non-public, provide more convenience methods
+    pub components: Vec<(BaseEntry, Exponent)>,
+}
+
+impl BaseRepresentation {
+    // TODO: provide an IntoIter interface
+    pub fn from_components<'a>(components: &[(BaseEntry, Exponent)]) -> Self {
+        Self {
+            components: components.into_iter().cloned().collect(),
+        }
+    }
+
+    pub fn scalar() -> BaseRepresentation {
+        Self { components: vec![] }
+    }
+
+    pub fn invert(&self) -> BaseRepresentation {
+        let components: Vec<_> = self
+            .components
+            .iter()
+            .map(|(base, exponent)| (base.clone(), -exponent))
+            .collect();
+        BaseRepresentation::from_components(&components)
+    }
 }
 
 pub trait RegistryAdapter: Sized + Default {
     type DerivedExpression;
+    type Metadata;
 
     fn expression_to_base_representation(
         registry: &Registry<Self>,
@@ -83,23 +104,25 @@ impl<A: RegistryAdapter> Registry<A> {
         rhs: &BaseRepresentation,
     ) -> BaseRepresentation {
         let mut result = lhs.clone();
-        for (name_rhs, exponent_rhs) in rhs {
-            if let Some((_, ref mut exponent_lhs)) =
-                result.iter_mut().find(|(name_lhs, _)| name_lhs == name_rhs)
+        for (name_rhs, exponent_rhs) in &rhs.components {
+            if let Some((_, ref mut exponent_lhs)) = result
+                .components
+                .iter_mut()
+                .find(|(name_lhs, _)| name_lhs == name_rhs)
             {
-                *exponent_lhs += *exponent_rhs;
+                *exponent_lhs += exponent_rhs;
             } else {
-                result.push((name_rhs.clone(), *exponent_rhs))
+                result.components.push((name_rhs.clone(), *exponent_rhs))
             }
         }
-        result.retain(|(_, exponent)| *exponent != 0);
-        result.sort();
+        result.components.retain(|(_, exponent)| *exponent != 0);
+        result.components.sort();
         result
     }
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
         if self.is_base_entry(name) {
-            Ok(vec![(name.to_owned(), 1)])
+            Ok(BaseRepresentation::from_components(&[(name.to_owned(), 1)]))
         } else {
             self.derived_entries
                 .get(name)

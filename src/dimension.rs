@@ -1,13 +1,12 @@
 use crate::ast::DimensionExpression;
-use crate::registry::{
-    negate_base_representation, BaseRepresentation, Registry, RegistryAdapter, Result,
-};
+use crate::registry::{BaseRepresentation, Registry, RegistryAdapter, Result};
 
 #[derive(Default)]
 pub struct DimensionAdapter;
 
 impl RegistryAdapter for DimensionAdapter {
     type DerivedExpression = DimensionExpression;
+    type Metadata = ();
 
     fn expression_to_base_representation(
         registry: &Registry<Self>,
@@ -23,16 +22,19 @@ impl RegistryAdapter for DimensionAdapter {
             }
             DimensionExpression::Divide(lhs, rhs) => {
                 let lhs = registry.get_base_representation(lhs)?;
-                let rhs = negate_base_representation(&registry.get_base_representation(rhs)?);
+                let rhs = registry.get_base_representation(rhs)?.invert();
 
                 Ok(registry.merge_base_representations(&lhs, &rhs))
             }
             DimensionExpression::Power(expr, outer_exponent) => {
                 let base = registry.get_base_representation(expr)?;
-                Ok(base
-                    .iter()
-                    .map(|(name, exponent)| (name.clone(), exponent * outer_exponent))
-                    .collect())
+                Ok(BaseRepresentation::from_components(
+                    &base
+                        .components
+                        .iter()
+                        .map(|(name, exponent)| (name.clone(), exponent * outer_exponent))
+                        .collect::<Vec<_>>(),
+                ))
             }
         }
     }
@@ -73,39 +75,45 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse("length")),
-        Ok(vec![("length".into(), 1)])
+        Ok(BaseRepresentation::from_components(&[("length".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("time")),
-        Ok(vec![("time".into(), 1)])
+        Ok(BaseRepresentation::from_components(&[("time".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("mass")),
-        Ok(vec![("mass".into(), 1)])
+        Ok(BaseRepresentation::from_components(&[("mass".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("speed")),
-        Ok(vec![("length".into(), 1), ("time".into(), -1)])
+        Ok(BaseRepresentation::from_components(&[
+            ("length".into(), 1),
+            ("time".into(), -1)
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("acceleration")),
-        Ok(vec![("length".into(), 1), ("time".into(), -2)])
+        Ok(BaseRepresentation::from_components(&[
+            ("length".into(), 1),
+            ("time".into(), -2)
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("momentum")),
-        Ok(vec![
+        Ok(BaseRepresentation::from_components(&[
             ("length".into(), 1),
             ("mass".into(), 1),
             ("time".into(), -1)
-        ])
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("energy")),
-        Ok(vec![
+        Ok(BaseRepresentation::from_components(&[
             ("length".into(), 2),
             ("mass".into(), 1),
             ("time".into(), -2)
-        ])
+        ]))
     );
 
     registry
@@ -113,11 +121,11 @@ fn basic() {
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse("momentum2")),
-        Ok(vec![
+        Ok(BaseRepresentation::from_components(&[
             ("length".into(), 1),
             ("mass".into(), 1),
             ("time".into(), -1)
-        ])
+        ]))
     );
 
     registry
@@ -125,11 +133,11 @@ fn basic() {
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse("energy2")),
-        Ok(vec![
+        Ok(BaseRepresentation::from_components(&[
             ("length".into(), 2),
             ("mass".into(), 1),
             ("time".into(), -2)
-        ])
+        ]))
     );
 
     registry
@@ -137,7 +145,10 @@ fn basic() {
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse("speed2")),
-        Ok(vec![("length".into(), 1), ("time".into(), -1)])
+        Ok(BaseRepresentation::from_components(&[
+            ("length".into(), 1),
+            ("time".into(), -1)
+        ]))
     );
 }
 

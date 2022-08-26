@@ -1,20 +1,19 @@
 use crate::ast::{BinaryOperator, Expression};
-use crate::registry::{
-    negate_base_representation, BaseRepresentation, Registry, RegistryAdapter, Result,
-};
+use crate::registry::{BaseRepresentation, Registry, RegistryAdapter, Result};
 
 #[derive(Default)]
 pub struct UnitAdapter;
 
 impl RegistryAdapter for UnitAdapter {
     type DerivedExpression = Expression;
+    type Metadata = i32;
 
     fn expression_to_base_representation(
         registry: &Registry<Self>,
         expression: &Expression,
     ) -> Result<BaseRepresentation> {
         match expression {
-            Expression::Scalar(_) => Ok(vec![]),
+            Expression::Scalar(_) => Ok(BaseRepresentation::scalar()),
             Expression::Identifier(name) => registry.get_base_representation_for_name(name),
             Expression::Negate(expr) => Self::expression_to_base_representation(registry, expr),
             Expression::BinaryOperator(BinaryOperator::Add | BinaryOperator::Sub, lhs, _) => {
@@ -28,9 +27,7 @@ impl RegistryAdapter for UnitAdapter {
             Expression::BinaryOperator(BinaryOperator::Div, lhs, rhs) => Ok(registry
                 .merge_base_representations(
                     &Self::expression_to_base_representation(registry, lhs)?,
-                    &negate_base_representation(&Self::expression_to_base_representation(
-                        registry, rhs,
-                    )?),
+                    &Self::expression_to_base_representation(registry, rhs)?.invert(),
                 )),
             Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _) => todo!(),
         }
@@ -64,30 +61,33 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse("meter")),
-        Ok(vec![("meter".into(), 1)])
+        Ok(BaseRepresentation::from_components(&[("meter".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("second")),
-        Ok(vec![("second".into(), 1)])
+        Ok(BaseRepresentation::from_components(&[("second".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("kilogram")),
-        Ok(vec![("kilogram".into(), 1)])
+        Ok(BaseRepresentation::from_components(&[(
+            "kilogram".into(),
+            1
+        )]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("newton")),
-        Ok(vec![
+        Ok(BaseRepresentation::from_components(&[
             ("kilogram".into(), 1),
             ("meter".into(), 1),
             ("second".into(), -2)
-        ])
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse("joule")),
-        Ok(vec![
+        Ok(BaseRepresentation::from_components(&[
             ("kilogram".into(), 1),
             ("meter".into(), 2),
             ("second".into(), -2)
-        ])
+        ]))
     );
 }
