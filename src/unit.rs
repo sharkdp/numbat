@@ -34,6 +34,8 @@ impl UnitRegistry {
             Expression::Negate(expr) => self.get_base_representation(expr),
             Expression::BinaryOperator(BinaryOperator::Add | BinaryOperator::Sub, lhs, _) => {
                 self.get_base_representation(lhs)
+                // TODO: add and sub should not be allowed in unit definitions.
+                // Right now, we can set "unit x = … + 1" and the "+ 1" will just be ignored.
             }
             Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs) => Ok(self
                 .get_base_representation(lhs)?
@@ -62,36 +64,38 @@ impl UnitRegistry {
         name: &str,
         expression: &Expression,
         dimension_registry: &DimensionRegistry,
-        dexpr: &DimensionExpression,
+        dexpr: Option<&DimensionExpression>,
     ) -> Result<()> {
         let base_representation = self.get_base_representation(&expression)?;
 
-        let components: Vec<(BaseEntry, Exponent)> = base_representation
-            .components
-            .iter()
-            .flat_map(|(base_name, exp)| {
-                let dimension = self.registry.base_entry_metadata(base_name).unwrap(); // TODO: remove unwrap
+        if let Some(dexpr) = dexpr {
+            let components: Vec<(BaseEntry, Exponent)> = base_representation
+                .components
+                .iter()
+                .flat_map(|(base_name, exp)| {
+                    let dimension = self.registry.base_entry_metadata(base_name).unwrap(); // TODO: remove unwrap
 
-                dimension_registry
-                    .get_base_representation(dimension)
-                    .unwrap()
-                    .power(*exp)
-                    .components
-            })
-            .collect();
-        let dimension_base_representation_computed =
-            BaseRepresentation::from_components(&components);
+                    dimension_registry
+                        .get_base_representation(dimension)
+                        .unwrap()
+                        .power(*exp)
+                        .components
+                })
+                .collect();
+            let dimension_base_representation_computed =
+                BaseRepresentation::from_components(&components);
 
-        let dimension_base_representation_specified = dimension_registry
-            .get_base_representation(dexpr)
-            .map_err(UnitRegistryError::RegistryError)?;
+            let dimension_base_representation_specified = dimension_registry
+                .get_base_representation(dexpr)
+                .map_err(UnitRegistryError::RegistryError)?;
 
-        if dimension_base_representation_specified != dimension_base_representation_computed {
-            return Err(UnitRegistryError::IncompatibleDimension(
-                name.to_owned(),
-                dimension_base_representation_specified,
-                dimension_base_representation_computed,
-            ));
+            if dimension_base_representation_specified != dimension_base_representation_computed {
+                return Err(UnitRegistryError::IncompatibleDimension(
+                    name.to_owned(),
+                    dimension_base_representation_specified,
+                    dimension_base_representation_computed,
+                ));
+            }
         }
 
         self.registry
@@ -142,7 +146,7 @@ fn basic() {
             "newton",
             &parse_expr("kilogram * meter / (second * second)"),
             &dimension_registry,
-            &parse_dexpr("force"),
+            Some(&parse_dexpr("force")),
         )
         .unwrap();
     registry
@@ -150,7 +154,7 @@ fn basic() {
             "joule",
             &parse_expr("newton * meter"),
             &dimension_registry,
-            &parse_dexpr("energy"),
+            Some(&parse_dexpr("energy")),
         )
         .unwrap();
 
@@ -185,4 +189,13 @@ fn basic() {
             ("second".into(), -2)
         ]))
     );
+
+    assert!(registry
+        .add_derived_unit(
+            "joule2",
+            &parse_expr("newton * meter"),
+            &dimension_registry,
+            Some(&parse_dexpr("force")),
+        )
+        .is_err())
 }

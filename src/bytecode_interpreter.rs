@@ -110,20 +110,8 @@ impl BytecodeInterpreter {
             }
             Statement::DeclareDerivedUnit(name, expr, dexpr) => {
                 self.unit_registry
-                    .add_derived_unit(
-                        name,
-                        expr,
-                        &self.dimension_registry,
-                        dexpr.as_ref().unwrap(),
-                    )
+                    .add_derived_unit(name, expr, &self.dimension_registry, dexpr.as_ref())
                     .map_err(InterpreterError::UnitRegistryError)?;
-
-                dbg!(
-                    name,
-                    self.unit_registry
-                        .get_base_representation_for_name(name)
-                        .unwrap()
-                );
 
                 self.vm.add_op(Op::List); // TODO
             }
