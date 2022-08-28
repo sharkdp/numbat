@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use thiserror::Error;
 
@@ -29,9 +29,9 @@ pub struct BaseRepresentation {
 impl BaseRepresentation {
     // TODO: provide an IntoIter interface
     pub fn from_components<'a>(components: &[(BaseEntry, Exponent)]) -> Self {
-        Self {
-            components: components.into_iter().cloned().collect(),
-        }
+        let mut components: Vec<_> = components.into_iter().cloned().collect();
+        components.sort();
+        Self { components }
     }
 
     pub fn scalar() -> BaseRepresentation {
@@ -77,6 +77,15 @@ impl BaseRepresentation {
                 .map(|(name, inner_exponent)| (name.clone(), inner_exponent * exponent))
                 .collect::<Vec<_>>(),
         )
+    }
+}
+
+impl Display for BaseRepresentation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (name, exp) in &self.components {
+            write!(f, "{}^({}) ", name, exp)?;
+        }
+        Ok(())
     }
 }
 

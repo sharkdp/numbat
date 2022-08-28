@@ -102,7 +102,7 @@ impl BytecodeInterpreter {
             Statement::DeclareBaseUnit(name, dexpr) => {
                 self.unit_registry
                     .add_base_unit(name, dexpr.clone())
-                    .map_err(InterpreterError::RegistryError)?;
+                    .map_err(InterpreterError::UnitRegistryError)?;
 
                 // TODO: do something with the dexpr
 
@@ -116,7 +116,7 @@ impl BytecodeInterpreter {
                         &self.dimension_registry,
                         dexpr.as_ref().unwrap(),
                     )
-                    .map_err(InterpreterError::RegistryError)?;
+                    .map_err(InterpreterError::UnitRegistryError)?;
 
                 dbg!(
                     name,

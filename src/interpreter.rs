@@ -1,4 +1,4 @@
-use crate::{ast::Statement, registry::RegistryError};
+use crate::{ast::Statement, registry::RegistryError, unit::UnitRegistryError};
 
 use thiserror::Error;
 
@@ -12,6 +12,8 @@ pub enum InterpreterError {
     NoStatements,
     #[error("{0}")]
     RegistryError(RegistryError),
+    #[error("{0}")]
+    UnitRegistryError(UnitRegistryError),
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
 }

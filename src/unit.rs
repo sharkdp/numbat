@@ -1,6 +1,19 @@
 use crate::ast::{BinaryOperator, DimensionExpression, Expression};
 use crate::dimension::DimensionRegistry;
-use crate::registry::{BaseRepresentation, Exponent, Registry, Result};
+use crate::registry::{BaseEntry, BaseRepresentation, Exponent, Registry, RegistryError};
+
+use thiserror::Error;
+
+#[derive(Clone, Error, Debug, PartialEq)]
+pub enum UnitRegistryError {
+    #[error("{0}")]
+    RegistryError(RegistryError),
+
+    #[error("Unexpected dimension in definition of unit '{0}': '{1}' vs '{2}'.")]
+    IncompatibleDimension(String, BaseRepresentation, BaseRepresentation),
+}
+
+pub type Result<T> = std::result::Result<T, UnitRegistryError>;
 
 pub struct UnitRegistry {
     // TODO: Optimization: do not store the unevaluated DimensionExpression here, but rather a direct link to the corresponding dimension (does that always exist?!)
@@ -33,11 +46,15 @@ impl UnitRegistry {
     }
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
-        self.registry.get_base_representation_for_name(name)
+        self.registry
+            .get_base_representation_for_name(name)
+            .map_err(UnitRegistryError::RegistryError)
     }
 
     pub fn add_base_unit(&mut self, name: &str, dexpr: DimensionExpression) -> Result<()> {
-        self.registry.add_base_entry(name, dexpr)
+        self.registry
+            .add_base_entry(name, dexpr)
+            .map_err(UnitRegistryError::RegistryError)
     }
 
     pub fn add_derived_unit(
@@ -49,20 +66,37 @@ impl UnitRegistry {
     ) -> Result<()> {
         let base_representation = self.get_base_representation(&expression)?;
 
-        // let components: Vec<(, i32)> = base_representation
-        //     .components
-        //     .iter()
-        //     .flat_map(|(base_name, exp)| dimension_registry.get_base_representation_for_name(base_name).unwrap().power(*exp).components)
-        //     .collect();
-        // let dimension_base_representation_expected = BaseRepresentation::from_components(components);
+        let components: Vec<(BaseEntry, Exponent)> = base_representation
+            .components
+            .iter()
+            .flat_map(|(base_name, exp)| {
+                let dimension = self.registry.base_entry_metadata(base_name).unwrap(); // TODO: remove unwrap
 
-        // let dimension_base_representation_actual = dimension_registry.get_base_representation(dexpr)?;
+                dimension_registry
+                    .get_base_representation(dimension)
+                    .unwrap()
+                    .power(*exp)
+                    .components
+            })
+            .collect();
+        let dimension_base_representation_computed =
+            BaseRepresentation::from_components(&components);
 
-        // if dimension_base_representation_actual != dimension_base_representation_expected {
-        //     assert!(false);
-        // }
+        let dimension_base_representation_specified = dimension_registry
+            .get_base_representation(dexpr)
+            .map_err(UnitRegistryError::RegistryError)?;
 
-        self.registry.add_derived_entry(name, base_representation)?;
+        if dimension_base_representation_specified != dimension_base_representation_computed {
+            return Err(UnitRegistryError::IncompatibleDimension(
+                name.to_owned(),
+                dimension_base_representation_specified,
+                dimension_base_representation_computed,
+            ));
+        }
+
+        self.registry
+            .add_derived_entry(name, base_representation)
+            .map_err(UnitRegistryError::RegistryError)?;
 
         Ok(())
     }
