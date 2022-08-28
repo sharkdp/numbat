@@ -9,7 +9,9 @@ pub enum UnitRegistryError {
     #[error("{0}")]
     RegistryError(RegistryError),
 
-    #[error("Unexpected dimension in definition of unit '{0}': '{1}' vs '{2}'.")]
+    #[error(
+        "Unexpected dimension in definition of unit '{0}'. Specified: '{1}', computed: '{2}'."
+    )]
     IncompatibleDimension(String, BaseRepresentation, BaseRepresentation),
 }
 
