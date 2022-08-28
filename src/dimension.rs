@@ -1,40 +1,61 @@
 use crate::ast::DimensionExpression;
-use crate::registry::{BaseRepresentation, Registry, RegistryAdapter, Result};
+use crate::registry::{BaseRepresentation, Registry, Result};
 
 #[derive(Default)]
-pub struct DimensionAdapter;
+pub struct DimensionRegistry {
+    registry: Registry<()>,
+}
 
-impl RegistryAdapter for DimensionAdapter {
-    type DerivedExpression = DimensionExpression;
-    type Metadata = ();
-    type Parent = ();
+impl DimensionRegistry {
+    pub fn new() -> DimensionRegistry {
+        Self {
+            registry: Registry::<()>::default(),
+        }
+    }
 
-    fn expression_to_base_representation(
-        registry: &Registry<Self>,
-        expression: &Self::DerivedExpression,
+    pub fn get_base_representation(
+        &self,
+        expression: &DimensionExpression,
     ) -> Result<BaseRepresentation> {
         match expression {
-            DimensionExpression::Dimension(name) => registry.get_base_representation_for_name(name),
+            DimensionExpression::Dimension(name) => {
+                self.registry.get_base_representation_for_name(name)
+            }
             DimensionExpression::Multiply(lhs, rhs) => {
-                let lhs = registry.get_base_representation(lhs)?;
-                let rhs = registry.get_base_representation(rhs)?;
+                let lhs = self.get_base_representation(lhs)?;
+                let rhs = self.get_base_representation(rhs)?;
 
                 Ok(lhs.multiply(&rhs))
             }
             DimensionExpression::Divide(lhs, rhs) => {
-                let lhs = registry.get_base_representation(lhs)?;
-                let rhs = registry.get_base_representation(rhs)?;
+                let lhs = self.get_base_representation(lhs)?;
+                let rhs = self.get_base_representation(rhs)?;
 
                 Ok(lhs.divide(&rhs))
             }
-            DimensionExpression::Power(expr, outer_exponent) => Ok(registry
-                .get_base_representation(expr)?
-                .power(*outer_exponent)),
+            DimensionExpression::Power(expr, outer_exponent) => {
+                Ok(self.get_base_representation(expr)?.power(*outer_exponent))
+            }
         }
     }
-}
 
-pub type DimensionRegistry = Registry<DimensionAdapter>;
+    pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
+        self.registry.get_base_representation_for_name(name)
+    }
+
+    pub fn add_base_dimension(&mut self, name: &str) -> Result<()> {
+        self.registry.add_base_entry(name, ())
+    }
+
+    pub fn add_derived_dimension(
+        &mut self,
+        name: &str,
+        expression: &DimensionExpression,
+    ) -> Result<()> {
+        let base_representation = self.get_base_representation(expression)?;
+        self.registry.add_derived_entry(name, base_representation)
+    }
+}
 
 #[cfg(test)]
 pub fn parse_dexpr(input: &str) -> DimensionExpression {
@@ -50,21 +71,21 @@ pub fn parse_dexpr(input: &str) -> DimensionExpression {
 #[test]
 fn basic() {
     let mut registry = DimensionRegistry::default();
-    registry.add_base_entry("length", ()).unwrap();
-    registry.add_base_entry("time", ()).unwrap();
+    registry.add_base_dimension("length").unwrap();
+    registry.add_base_dimension("time").unwrap();
     registry
-        .add_derived_entry("speed", &parse_dexpr("length / time"), &(), ())
+        .add_derived_dimension("speed", &parse_dexpr("length / time"))
         .unwrap();
     registry
-        .add_derived_entry("acceleration", &parse_dexpr("length / time^2"), &(), ())
+        .add_derived_dimension("acceleration", &parse_dexpr("length / time^2"))
         .unwrap();
 
-    registry.add_base_entry("mass", ()).unwrap();
+    registry.add_base_dimension("mass").unwrap();
     registry
-        .add_derived_entry("momentum", &parse_dexpr("mass * speed"), &(), ())
+        .add_derived_dimension("momentum", &parse_dexpr("mass * speed"))
         .unwrap();
     registry
-        .add_derived_entry("energy", &parse_dexpr("momentum^2 / mass"), &(), ())
+        .add_derived_dimension("energy", &parse_dexpr("momentum^2 / mass"))
         .unwrap();
 
     assert_eq!(
@@ -111,7 +132,7 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("momentum2", &parse_dexpr("speed * mass"), &(), ())
+        .add_derived_dimension("momentum2", &parse_dexpr("speed * mass"))
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("momentum2")),
@@ -123,7 +144,7 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("energy2", &parse_dexpr("mass * speed^2"), &(), ())
+        .add_derived_dimension("energy2", &parse_dexpr("mass * speed^2"))
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("energy2")),
@@ -135,7 +156,7 @@ fn basic() {
     );
 
     registry
-        .add_derived_entry("speed2", &parse_dexpr("momentum / mass"), &(), ())
+        .add_derived_dimension("speed2", &parse_dexpr("momentum / mass"))
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("speed2")),
@@ -149,6 +170,6 @@ fn basic() {
 #[test]
 fn fails_if_same_dimension_is_added_twice() {
     let mut registry = DimensionRegistry::default();
-    assert!(registry.add_base_entry("length", ()).is_ok());
-    assert!(registry.add_base_entry("length", ()).is_err());
+    assert!(registry.add_base_dimension("length").is_ok());
+    assert!(registry.add_base_dimension("length").is_err());
 }

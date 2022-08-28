@@ -63,11 +63,11 @@ impl BytecodeInterpreter {
             Statement::DeclareDimension(name, exprs) => {
                 if exprs.is_empty() {
                     self.dimension_registry
-                        .add_base_entry(name, ())
+                        .add_base_dimension(name)
                         .map_err(InterpreterError::RegistryError)?;
                 } else {
                     self.dimension_registry
-                        .add_derived_entry(name, &exprs[0], &(), ())
+                        .add_derived_dimension(name, &exprs[0])
                         .map_err(InterpreterError::RegistryError)?;
 
                     let base_representation = self
@@ -101,7 +101,7 @@ impl BytecodeInterpreter {
             }
             Statement::DeclareBaseUnit(name, dexpr) => {
                 self.unit_registry
-                    .add_base_entry(name, dexpr.clone())
+                    .add_base_unit(name, dexpr.clone())
                     .map_err(InterpreterError::RegistryError)?;
 
                 // TODO: do something with the dexpr
@@ -110,11 +110,11 @@ impl BytecodeInterpreter {
             }
             Statement::DeclareDerivedUnit(name, expr, dexpr) => {
                 self.unit_registry
-                    .add_derived_entry(
+                    .add_derived_unit(
                         name,
                         expr,
                         &self.dimension_registry,
-                        dexpr.as_ref().unwrap().clone(),
+                        dexpr.as_ref().unwrap(),
                     )
                     .map_err(InterpreterError::RegistryError)?;
 
@@ -147,8 +147,8 @@ impl Interpreter for BytecodeInterpreter {
     fn new() -> Self {
         Self {
             vm: Vm::new(),
-            dimension_registry: DimensionRegistry::default(),
-            unit_registry: UnitRegistry::default(),
+            dimension_registry: DimensionRegistry::new(),
+            unit_registry: UnitRegistry::new(),
         }
     }
 

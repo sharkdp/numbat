@@ -1,4 +1,4 @@
-use std::{collections::HashMap, marker::PhantomData};
+use std::collections::HashMap;
 
 use thiserror::Error;
 
@@ -13,8 +13,8 @@ pub enum RegistryError {
 
 pub type Result<T> = std::result::Result<T, RegistryError>;
 
-type BaseEntry = String;
-type Exponent = i32;
+pub type BaseEntry = String;
+pub type Exponent = i32;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BaseIndex(isize);
@@ -80,36 +80,23 @@ impl BaseRepresentation {
     }
 }
 
-pub trait RegistryAdapter: Sized + Default {
-    type DerivedExpression;
-    type Metadata;
-    type Parent;
-
-    fn expression_to_base_representation(
-        registry: &Registry<Self>,
-        expr: &Self::DerivedExpression,
-    ) -> Result<BaseRepresentation>;
-}
-
 #[derive(Debug)]
-pub struct Registry<A: RegistryAdapter> {
-    base_entries: Vec<(String, A::Metadata)>,
+pub struct Registry<Metadata> {
+    base_entries: Vec<(String, Metadata)>,
     derived_entries: HashMap<String, BaseRepresentation>,
-    adapter: PhantomData<A>,
 }
 
-impl<A: RegistryAdapter> Default for Registry<A> {
+impl<T> Default for Registry<T> {
     fn default() -> Self {
         Self {
             base_entries: vec![],
             derived_entries: HashMap::default(),
-            adapter: PhantomData::<A>::default(),
         }
     }
 }
 
-impl<A: RegistryAdapter> Registry<A> {
-    pub fn add_base_entry(&mut self, name: &str, metadata: A::Metadata) -> Result<()> {
+impl<Metadata> Registry<Metadata> {
+    pub fn add_base_entry(&mut self, name: &str, metadata: Metadata) -> Result<()> {
         if self.is_base_entry(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
@@ -122,7 +109,7 @@ impl<A: RegistryAdapter> Registry<A> {
         self.base_entries.iter().any(|(n, _)| n == name)
     }
 
-    pub fn base_entry_metadata(&self, name: &str) -> Result<&A::Metadata> {
+    pub fn base_entry_metadata(&self, name: &str) -> Result<&Metadata> {
         self.base_entries
             .iter()
             .find(|(n, _)| n == name)
@@ -133,37 +120,16 @@ impl<A: RegistryAdapter> Registry<A> {
     pub fn add_derived_entry(
         &mut self,
         name: &str,
-        expression: &A::DerivedExpression,
-        parent: &A::Parent,
-        metadata: A::Metadata,
+        base_representation: BaseRepresentation,
     ) -> Result<()> {
         if self.derived_entries.contains_key(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
 
-        let base_representation = self.get_base_representation(&expression)?;
-
-        let parent_base_representation: Vec<_> = base_representation
-            .components
-            .iter()
-            .map(|(base_name, exp)| self.base_entry_metadata(base_name).unwrap())
-            .collect();
-
-        // TODO: verify that base_representation is compatible with metadata
-        drop(parent);
-        drop(metadata);
-
         self.derived_entries
             .insert(name.to_owned(), base_representation);
 
         Ok(())
-    }
-
-    pub fn get_base_representation(
-        &self,
-        expression: &A::DerivedExpression,
-    ) -> Result<BaseRepresentation> {
-        A::expression_to_base_representation(self, expression)
     }
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
