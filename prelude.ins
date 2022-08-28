@@ -15,6 +15,12 @@ dimension power = energy / time = force * speed
 dimension pressure = force / area = energy / volume
 dimension action = energy * time
 
+dimension current
+dimension charge = current * time
+dimension voltage = energy / charge = power / current
+dimension capacitance = charge / voltage
+dimension resistance = voltage / current
+
 unit meter : length
 unit second : time
 unit kilogram : mass
@@ -24,3 +30,9 @@ unit newton = kilogram * meter / (second * second) : force
 unit joule = newton * meter : energy
 unit watt = joule / second : power
 unit pascal = newton / (meter * meter) : pressure
+
+unit ampere : current
+unit coulomb = ampere * second : charge
+unit volt = kilogram *  meter * meter / (second * second * second * ampere) : voltage
+unit farad = coulomb / volt : capacitance
+unit ohm = volt / ampere : resistance
