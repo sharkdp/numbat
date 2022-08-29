@@ -90,21 +90,12 @@ impl BytecodeInterpreter {
                     }
                 }
 
-                /*println!(
-                    "{:?}",
-                    self.registry.get_base_representation(
-                        &crate::ast::DimensionExpression::Dimension(name.clone())
-                    )
-                );*/
-
                 self.vm.add_op(Op::List); // TODO
             }
             Statement::DeclareBaseUnit(name, dexpr) => {
                 self.unit_registry
                     .add_base_unit(name, dexpr.clone())
                     .map_err(InterpreterError::UnitRegistryError)?;
-
-                // TODO: do something with the dexpr
 
                 self.vm.add_op(Op::List); // TODO
             }
