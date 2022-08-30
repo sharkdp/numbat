@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::interpreter::{InterpreterError, InterpreterResult, Result};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Op {
     Constant,

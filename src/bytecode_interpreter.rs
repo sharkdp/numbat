@@ -46,7 +46,7 @@ impl BytecodeInterpreter {
     fn compile_statement(&mut self, stmt: &Statement) -> Result<()> {
         match stmt {
             Statement::Expression(expr) => {
-                self.compile_expression(&expr)?;
+                self.compile_expression(expr)?;
                 self.vm.add_op(Op::Return);
             }
             Statement::Command(Command::List) => {
@@ -56,7 +56,7 @@ impl BytecodeInterpreter {
                 self.vm.add_op(Op::Exit);
             }
             Statement::DeclareVariable(identifier, expr) => {
-                self.compile_expression(&expr)?;
+                self.compile_expression(expr)?;
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }

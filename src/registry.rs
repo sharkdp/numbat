@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Display};
 
 use thiserror::Error;
 
-#[derive(Clone, Error, Debug, PartialEq)]
+#[derive(Clone, Error, Debug, PartialEq, Eq)]
 pub enum RegistryError {
     #[error("Entry '{0}' exists already.")]
     EntryExists(String),
@@ -16,10 +16,10 @@ pub type Result<T> = std::result::Result<T, RegistryError>;
 pub type BaseEntry = String;
 pub type Exponent = i32;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BaseIndex(isize);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BaseRepresentation {
     // TODO: this could be represented with a base index in the first tuple component instead of a cloned string
     // TODO: make this non-public, provide more convenience methods
@@ -27,9 +27,7 @@ pub struct BaseRepresentation {
 }
 
 impl BaseRepresentation {
-    pub fn from_components<'a>(
-        components: impl IntoIterator<Item = (BaseEntry, Exponent)>,
-    ) -> Self {
+    pub fn from_components(components: impl IntoIterator<Item = (BaseEntry, Exponent)>) -> Self {
         let mut components: Vec<_> = components.into_iter().collect();
         components.sort();
         Self { components }

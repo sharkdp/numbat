@@ -27,7 +27,7 @@ use crate::tokenizer::{Token, TokenKind, TokenizerError};
 
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum ParseErrorKind {
     #[error("Unexpected character '{0}'")]
     TokenizerUnexpectedCharacter(char),
@@ -298,7 +298,7 @@ impl<'a> Parser<'a> {
         // TODO: only parse integers here (TokenKind::Number will probably eventually include floats)
 
         if let Some(token) = self.match_exact(TokenKind::Number) {
-            Ok(i32::from_str_radix(&token.lexeme, 10).unwrap())
+            Ok(token.lexeme.parse::<i32>().unwrap())
         } else if self.match_exact(TokenKind::Minus).is_some() {
             let exponent = self.dimension_exponent()?;
             Ok(-exponent)

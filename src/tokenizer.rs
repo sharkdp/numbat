@@ -123,9 +123,9 @@ impl Tokenizer {
         let kind = match current_char {
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
-            c if c.is_digit(10) => {
+            c if c.is_ascii_digit() => {
                 while let Some(c) = self.peek() {
-                    if c.is_digit(10) {
+                    if c.is_ascii_digit() {
                         self.advance();
                     } else {
                         break;

@@ -14,7 +14,7 @@ impl Number {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
     Add,
     Sub,
@@ -119,7 +119,7 @@ pub enum DimensionExpression {
     Power(Box<DimensionExpression>, i32),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Command {
     List,
     Exit,

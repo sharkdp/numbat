@@ -4,7 +4,7 @@ use crate::registry::{BaseRepresentation, Registry, RegistryError};
 
 use thiserror::Error;
 
-#[derive(Clone, Error, Debug, PartialEq)]
+#[derive(Clone, Error, Debug, PartialEq, Eq)]
 pub enum UnitRegistryError {
     #[error("{0}")]
     RegistryError(RegistryError),
@@ -68,7 +68,7 @@ impl UnitRegistry {
         dimension_registry: &DimensionRegistry,
         dexpr: Option<&DimensionExpression>,
     ) -> Result<()> {
-        let base_representation = self.get_base_representation(&expression)?;
+        let base_representation = self.get_base_representation(expression)?;
 
         if let Some(dexpr) = dexpr {
             let components = base_representation

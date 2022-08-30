@@ -2,7 +2,7 @@ use crate::{ast::Statement, registry::RegistryError, unit::UnitRegistryError};
 
 use thiserror::Error;
 
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum InterpreterError {
     #[error("Division by zero")]
     DivisionByZero,
