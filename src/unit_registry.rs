@@ -71,18 +71,18 @@ impl UnitRegistry {
         let base_representation = self.get_base_representation(expression)?;
 
         if let Some(dexpr) = dexpr {
-            let components = base_representation
-                .components
-                .iter()
-                .flat_map(|(base_name, exp)| {
-                    let dimension = self.registry.base_entry_metadata(base_name).unwrap(); // TODO: remove unwrap
+            let components =
+                base_representation
+                    .clone()
+                    .into_iter()
+                    .flat_map(|(base_name, exp)| {
+                        let dimension = self.registry.base_entry_metadata(&base_name).unwrap(); // TODO: remove unwrap
 
-                    dimension_registry
-                        .get_base_representation(dimension)
-                        .unwrap()
-                        .power(*exp)
-                        .components
-                });
+                        dimension_registry
+                            .get_base_representation(dimension)
+                            .unwrap()
+                            .power(exp)
+                    });
             let dimension_base_representation_computed =
                 BaseRepresentation::from_components(components);
 

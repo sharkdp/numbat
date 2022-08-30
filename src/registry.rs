@@ -22,8 +22,7 @@ pub struct BaseIndex(isize);
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BaseRepresentation {
     // TODO: this could be represented with a base index in the first tuple component instead of a cloned string
-    // TODO: make this non-public, provide more convenience methods
-    pub components: Vec<(BaseEntry, Exponent)>,
+    components: Vec<(BaseEntry, Exponent)>,
 }
 
 impl BaseRepresentation {
@@ -82,6 +81,16 @@ impl Display for BaseRepresentation {
             write!(f, "{}^({}) ", name, exp)?;
         }
         Ok(())
+    }
+}
+
+// TODO: Implement Iterator instead of IntoIterator. This allow us to remove some .clone() calls
+impl IntoIterator for BaseRepresentation {
+    type Item = (BaseEntry, Exponent);
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.components.into_iter()
     }
 }
 
