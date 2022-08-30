@@ -1,18 +1,4 @@
-use crate::pretty_print::PrettyPrint;
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Number(f64);
-
-impl Number {
-    pub fn from_f64(n: f64) -> Self {
-        Number(n)
-    }
-
-    pub fn to_f64(&self) -> f64 {
-        let Number(n) = *self;
-        n
-    }
-}
+use crate::{number::Number, pretty_print::PrettyPrint};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {

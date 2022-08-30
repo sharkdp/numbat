@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::interpreter::{InterpreterError, InterpreterResult, Result};
+use crate::{
+    interpreter::{InterpreterError, InterpreterResult, Result},
+    quantity::Quantity,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -60,8 +63,8 @@ pub struct Vm {
     constants: Vec<f64>,
     identifiers: Vec<String>,
     bytecode: Vec<u8>,
-    stack: Vec<f64>,
-    globals: HashMap<String, f64>,
+    stack: Vec<Quantity>,
+    globals: HashMap<String, Quantity>,
     ip: usize,
     debug: bool,
 }
@@ -143,14 +146,15 @@ impl Vm {
             match op {
                 Op::Constant => {
                     let constant_idx = self.read_byte();
-                    self.stack.push(self.constants[constant_idx as usize]);
+                    self.stack
+                        .push(Quantity::scalar(self.constants[constant_idx as usize]));
                 }
                 Op::SetVariable => {
                     let identifier_idx = self.read_byte();
-                    let value = self.pop();
+                    let quantity = self.pop();
                     let identifier: String = self.identifiers[identifier_idx as usize].clone();
 
-                    self.globals.insert(identifier, value);
+                    self.globals.insert(identifier, quantity);
 
                     return Ok(InterpreterResult::Continue);
                 }
@@ -158,12 +162,12 @@ impl Vm {
                     let identifier_idx = self.read_byte();
                     let identifier = &self.identifiers[identifier_idx as usize];
 
-                    let value = self
+                    let quantity = self
                         .globals
                         .get(identifier)
                         .ok_or_else(|| InterpreterError::UnknownVariable(identifier.clone()))?;
 
-                    self.push(*value);
+                    self.push(quantity.clone());
                 }
                 op @ (Op::Add | Op::Subtract | Op::Multiply | Op::Divide) => {
                     let rhs = self.pop();
@@ -173,7 +177,8 @@ impl Vm {
                         Op::Subtract => lhs - rhs,
                         Op::Multiply => lhs * rhs,
                         Op::Divide => {
-                            if rhs == 0.0 {
+                            // TODO: should this be implemented in Quantity::div?
+                            if rhs.is_zero() {
                                 return Err(InterpreterError::DivisionByZero);
                             } else {
                                 lhs / rhs
@@ -181,13 +186,13 @@ impl Vm {
                         }
                         _ => unreachable!(),
                     };
-                    self.push(result);
+                    self.push(result.map_err(InterpreterError::UnitError)?);
                 }
                 Op::Negate => {
                     let rhs = self.pop();
                     self.push(-rhs);
                 }
-                Op::Return => return Ok(InterpreterResult::Value(self.pop())),
+                Op::Return => return Ok(InterpreterResult::Quantity(self.pop())),
                 Op::List => {
                     return Ok(InterpreterResult::Continue);
                 }
@@ -198,11 +203,11 @@ impl Vm {
         }
     }
 
-    fn push(&mut self, value: f64) {
-        self.stack.push(value);
+    fn push(&mut self, quantity: Quantity) {
+        self.stack.push(quantity);
     }
 
-    fn pop(&mut self) -> f64 {
+    fn pop(&mut self) -> Quantity {
         self.stack.pop().expect("stack not empty")
     }
 
@@ -263,5 +268,8 @@ fn vm_basic() {
     vm.add_op(Op::Add);
     vm.add_op(Op::Return);
 
-    assert_eq!(vm.run().unwrap(), InterpreterResult::Value(42.0 + 1.0));
+    assert_eq!(
+        vm.run().unwrap(),
+        InterpreterResult::Quantity(Quantity::scalar(42.0 + 1.0))
+    );
 }

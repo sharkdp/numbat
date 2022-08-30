@@ -2,13 +2,16 @@ mod ast;
 mod bytecode_interpreter;
 mod dimension;
 mod interpreter;
+mod number;
 mod parser;
 mod pretty_print;
+mod quantity;
 mod registry;
 mod span;
 mod tokenizer;
 mod treewalk_interpreter;
 mod unit;
+mod unit_registry;
 mod vm;
 
 use interpreter::{Interpreter, InterpreterResult};
@@ -38,9 +41,9 @@ fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
                 }
             }
             match interpreter.interpret_statements(&statements) {
-                Ok(InterpreterResult::Value(value)) => {
+                Ok(InterpreterResult::Quantity(quantity)) => {
                     println!();
-                    println!("    = {value:.6}", value = value);
+                    println!("    = {}", quantity);
                     println!();
                     true
                 }

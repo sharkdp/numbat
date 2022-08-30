@@ -2,18 +2,19 @@ use std::collections::HashMap;
 
 use crate::ast::{BinaryOperator, Command, Expression, Statement};
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
+use crate::quantity::Quantity;
 
 pub struct TreewalkInterpreter {
-    variables: HashMap<String, f64>,
+    variables: HashMap<String, Quantity>,
 }
 
 impl TreewalkInterpreter {
-    fn evaluate_expression(&self, expr: &Expression) -> Result<f64> {
+    fn evaluate_expression(&self, expr: &Expression) -> Result<Quantity> {
         match expr {
-            Expression::Scalar(n) => Ok(n.to_f64()),
+            Expression::Scalar(n) => Ok(n.into()),
             Expression::Identifier(identifier) => {
-                if let Some(value) = self.variables.get(identifier) {
-                    Ok(*value)
+                if let Some(quantity) = self.variables.get(identifier) {
+                    Ok(quantity.clone())
                 } else {
                     Err(InterpreterError::UnknownVariable(identifier.clone()))
                 }
@@ -24,15 +25,14 @@ impl TreewalkInterpreter {
                 let rhs = self.evaluate_expression(rhs)?;
 
                 match op {
-                    BinaryOperator::Add => Ok(lhs + rhs),
-                    BinaryOperator::Sub => Ok(lhs - rhs),
-                    BinaryOperator::Mul => Ok(lhs * rhs),
+                    BinaryOperator::Add => Ok((lhs + rhs).map_err(InterpreterError::UnitError)?),
+                    BinaryOperator::Sub => Ok((lhs - rhs).map_err(InterpreterError::UnitError)?),
+                    BinaryOperator::Mul => Ok((lhs * rhs).map_err(InterpreterError::UnitError)?),
                     BinaryOperator::Div => {
-                        let result = lhs / rhs;
-                        if !result.is_finite() {
+                        if rhs.is_zero() {
                             Err(InterpreterError::DivisionByZero)
                         } else {
-                            Ok(result)
+                            Ok((lhs / rhs).map_err(InterpreterError::UnitError)?)
                         }
                     }
                     BinaryOperator::ConvertTo => todo!(),
@@ -52,8 +52,8 @@ impl Interpreter for TreewalkInterpreter {
     fn interpret_statement(&mut self, statement: &Statement) -> Result<InterpreterResult> {
         match statement {
             Statement::Expression(expr) => {
-                let value = self.evaluate_expression(expr)?;
-                Ok(InterpreterResult::Value(value))
+                let quantity = self.evaluate_expression(expr)?;
+                Ok(InterpreterResult::Quantity(quantity))
             }
             Statement::Command(Command::List) => {
                 println!("List of variables:");
@@ -62,8 +62,8 @@ impl Interpreter for TreewalkInterpreter {
             }
             Statement::Command(Command::Exit) => Ok(InterpreterResult::Exit),
             Statement::DeclareVariable(identifier, expr) => {
-                let value = self.evaluate_expression(expr)?;
-                self.variables.insert(identifier.clone(), value);
+                let quantity = self.evaluate_expression(expr)?;
+                self.variables.insert(identifier.clone(), quantity);
 
                 Ok(InterpreterResult::Continue)
             }

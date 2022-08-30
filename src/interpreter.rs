@@ -1,4 +1,9 @@
-use crate::{ast::Statement, registry::RegistryError, unit::UnitRegistryError};
+use crate::{
+    ast::Statement,
+    quantity::{Quantity, UnitError},
+    registry::RegistryError,
+    unit_registry::UnitRegistryError,
+};
 
 use thiserror::Error;
 
@@ -16,11 +21,13 @@ pub enum InterpreterError {
     UnitRegistryError(UnitRegistryError),
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
+    #[error("{0}")]
+    UnitError(UnitError),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum InterpreterResult {
-    Value(f64),
+    Quantity(Quantity),
     Continue,
     Exit,
 }
@@ -50,12 +57,17 @@ fn get_interpreter_result<I: Interpreter>(input: &str) -> Result<InterpreterResu
 }
 
 #[cfg(test)]
-fn assert_evaluates_to<I: Interpreter>(input: &str, expected: f64) {
-    if let InterpreterResult::Value(actual) = get_interpreter_result::<I>(input).unwrap() {
+fn assert_evaluates_to<I: Interpreter>(input: &str, expected: Quantity) {
+    if let InterpreterResult::Quantity(actual) = get_interpreter_result::<I>(input).unwrap() {
         assert_eq!(actual, expected);
     } else {
         assert!(false);
     }
+}
+
+#[cfg(test)]
+fn assert_evaluates_to_scalar<I: Interpreter>(input: &str, expected: f64) {
+    assert_evaluates_to::<I>(input, Quantity::scalar(expected))
 }
 
 #[cfg(test)]
@@ -69,23 +81,23 @@ fn assert_interpreter_error<I: Interpreter>(input: &str, err_expected: Interpret
 
 #[cfg(test)]
 fn test_interpreter<I: Interpreter>() {
-    assert_evaluates_to::<I>("0", 0.0);
-    assert_evaluates_to::<I>("1", 1.0);
-    assert_evaluates_to::<I>("1+2", 1.0 + 2.0);
-    assert_evaluates_to::<I>("-1", -1.0);
+    assert_evaluates_to_scalar::<I>("0", 0.0);
+    assert_evaluates_to_scalar::<I>("1", 1.0);
+    assert_evaluates_to_scalar::<I>("1+2", 1.0 + 2.0);
+    assert_evaluates_to_scalar::<I>("-1", -1.0);
 
-    assert_evaluates_to::<I>("2+3*4", 2.0 + 3.0 * 4.0);
-    assert_evaluates_to::<I>("2*3+4", 2.0 * 3.0 + 4.0);
-    assert_evaluates_to::<I>("(2+3)*4", (2.0 + 3.0) * 4.0);
+    assert_evaluates_to_scalar::<I>("2+3*4", 2.0 + 3.0 * 4.0);
+    assert_evaluates_to_scalar::<I>("2*3+4", 2.0 * 3.0 + 4.0);
+    assert_evaluates_to_scalar::<I>("(2+3)*4", (2.0 + 3.0) * 4.0);
 
-    assert_evaluates_to::<I>("(2/3)*4", (2.0 / 3.0) * 4.0);
-    assert_evaluates_to::<I>("-2 * 3", -2.0 * 3.0);
-    assert_evaluates_to::<I>("2 * -3", 2.0 * -3.0);
-    assert_evaluates_to::<I>("2 - 3 - 4", 2.0 - 3.0 - 4.0);
-    assert_evaluates_to::<I>("2 - -3", 2.0 - -3.0);
+    assert_evaluates_to_scalar::<I>("(2/3)*4", (2.0 / 3.0) * 4.0);
+    assert_evaluates_to_scalar::<I>("-2 * 3", -2.0 * 3.0);
+    assert_evaluates_to_scalar::<I>("2 * -3", 2.0 * -3.0);
+    assert_evaluates_to_scalar::<I>("2 - 3 - 4", 2.0 - 3.0 - 4.0);
+    assert_evaluates_to_scalar::<I>("2 - -3", 2.0 - -3.0);
 
-    assert_evaluates_to::<I>("2\n3", 3.0);
-    assert_evaluates_to::<I>("let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
+    assert_evaluates_to_scalar::<I>("2\n3", 3.0);
+    assert_evaluates_to_scalar::<I>("let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
 
     assert_interpreter_error::<I>("", InterpreterError::NoStatements);
     assert_interpreter_error::<I>("1/0", InterpreterError::DivisionByZero);

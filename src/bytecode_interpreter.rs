@@ -1,7 +1,7 @@
 use crate::ast::{BinaryOperator, Command, Expression, Statement};
 use crate::dimension::DimensionRegistry;
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
-use crate::unit::UnitRegistry;
+use crate::unit_registry::UnitRegistry;
 use crate::vm::{Op, Vm};
 
 pub struct BytecodeInterpreter {
