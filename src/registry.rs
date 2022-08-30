@@ -27,9 +27,10 @@ pub struct BaseRepresentation {
 }
 
 impl BaseRepresentation {
-    // TODO: provide an IntoIter interface
-    pub fn from_components<'a>(components: &[(BaseEntry, Exponent)]) -> Self {
-        let mut components: Vec<_> = components.into_iter().cloned().collect();
+    pub fn from_components<'a>(
+        components: impl IntoIterator<Item = (BaseEntry, Exponent)>,
+    ) -> Self {
+        let mut components: Vec<_> = components.into_iter().collect();
         components.sort();
         Self { components }
     }
@@ -39,12 +40,11 @@ impl BaseRepresentation {
     }
 
     pub fn invert(&self) -> BaseRepresentation {
-        let components: Vec<_> = self
-            .components
-            .iter()
-            .map(|(base, exponent)| (base.clone(), -exponent))
-            .collect();
-        BaseRepresentation::from_components(&components)
+        BaseRepresentation::from_components(
+            self.components
+                .iter()
+                .map(|(base, exponent)| (base.clone(), -exponent)),
+        )
     }
 
     pub fn multiply(&self, rhs: &BaseRepresentation) -> BaseRepresentation {
@@ -71,11 +71,9 @@ impl BaseRepresentation {
 
     pub fn power(&self, exponent: Exponent) -> BaseRepresentation {
         BaseRepresentation::from_components(
-            &self
-                .components
+            self.components
                 .iter()
-                .map(|(name, inner_exponent)| (name.clone(), inner_exponent * exponent))
-                .collect::<Vec<_>>(),
+                .map(|(name, inner_exponent)| (name.clone(), inner_exponent * exponent)),
         )
     }
 }
@@ -143,7 +141,7 @@ impl<Metadata> Registry<Metadata> {
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
         if self.is_base_entry(name) {
-            Ok(BaseRepresentation::from_components(&[(name.to_owned(), 1)]))
+            Ok(BaseRepresentation::from_components([(name.to_owned(), 1)]))
         } else {
             self.derived_entries
                 .get(name)

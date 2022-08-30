@@ -90,33 +90,33 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("length")),
-        Ok(BaseRepresentation::from_components(&[("length".into(), 1)]))
+        Ok(BaseRepresentation::from_components([("length".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("time")),
-        Ok(BaseRepresentation::from_components(&[("time".into(), 1)]))
+        Ok(BaseRepresentation::from_components([("time".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("mass")),
-        Ok(BaseRepresentation::from_components(&[("mass".into(), 1)]))
+        Ok(BaseRepresentation::from_components([("mass".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("speed")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("length".into(), 1),
             ("time".into(), -1)
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("acceleration")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("length".into(), 1),
             ("time".into(), -2)
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("momentum")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("length".into(), 1),
             ("mass".into(), 1),
             ("time".into(), -1)
@@ -124,7 +124,7 @@ fn basic() {
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("energy")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("length".into(), 2),
             ("mass".into(), 1),
             ("time".into(), -2)
@@ -136,7 +136,7 @@ fn basic() {
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("momentum2")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("length".into(), 1),
             ("mass".into(), 1),
             ("time".into(), -1)
@@ -148,7 +148,7 @@ fn basic() {
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("energy2")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("length".into(), 2),
             ("mass".into(), 1),
             ("time".into(), -2)
@@ -160,7 +160,7 @@ fn basic() {
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("speed2")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("length".into(), 1),
             ("time".into(), -1)
         ]))

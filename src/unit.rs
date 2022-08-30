@@ -1,6 +1,6 @@
 use crate::ast::{BinaryOperator, DimensionExpression, Expression};
 use crate::dimension::DimensionRegistry;
-use crate::registry::{BaseEntry, BaseRepresentation, Exponent, Registry, RegistryError};
+use crate::registry::{BaseRepresentation, Registry, RegistryError};
 
 use thiserror::Error;
 
@@ -71,7 +71,7 @@ impl UnitRegistry {
         let base_representation = self.get_base_representation(&expression)?;
 
         if let Some(dexpr) = dexpr {
-            let components: Vec<(BaseEntry, Exponent)> = base_representation
+            let components = base_representation
                 .components
                 .iter()
                 .flat_map(|(base_name, exp)| {
@@ -82,10 +82,9 @@ impl UnitRegistry {
                         .unwrap()
                         .power(*exp)
                         .components
-                })
-                .collect();
+                });
             let dimension_base_representation_computed =
-                BaseRepresentation::from_components(&components);
+                BaseRepresentation::from_components(components);
 
             let dimension_base_representation_specified = dimension_registry
                 .get_base_representation(dexpr)
@@ -162,22 +161,22 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse_expr("meter")),
-        Ok(BaseRepresentation::from_components(&[("meter".into(), 1)]))
+        Ok(BaseRepresentation::from_components([("meter".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("second")),
-        Ok(BaseRepresentation::from_components(&[("second".into(), 1)]))
+        Ok(BaseRepresentation::from_components([("second".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("kilogram")),
-        Ok(BaseRepresentation::from_components(&[(
+        Ok(BaseRepresentation::from_components([(
             "kilogram".into(),
             1
         )]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("newton")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("kilogram".into(), 1),
             ("meter".into(), 1),
             ("second".into(), -2)
@@ -185,7 +184,7 @@ fn basic() {
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("joule")),
-        Ok(BaseRepresentation::from_components(&[
+        Ok(BaseRepresentation::from_components([
             ("kilogram".into(), 1),
             ("meter".into(), 2),
             ("second".into(), -2)
