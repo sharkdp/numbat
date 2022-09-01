@@ -2,6 +2,8 @@ use std::{collections::HashMap, fmt::Display};
 
 use thiserror::Error;
 
+use crate::arithmetic::Exponent;
+
 #[derive(Clone, Error, Debug, PartialEq, Eq)]
 pub enum RegistryError {
     #[error("Entry '{0}' exists already.")]
@@ -14,7 +16,6 @@ pub enum RegistryError {
 pub type Result<T> = std::result::Result<T, RegistryError>;
 
 pub type BaseEntry = String;
-pub type Exponent = i32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BaseIndex(isize);
@@ -26,18 +27,18 @@ pub struct BaseRepresentation {
 }
 
 impl BaseRepresentation {
-    pub fn from_components(components: impl IntoIterator<Item = (BaseEntry, Exponent)>) -> Self {
+    pub fn from_factors(components: impl IntoIterator<Item = (BaseEntry, Exponent)>) -> Self {
         let mut components: Vec<_> = components.into_iter().collect();
         components.sort();
         Self { components }
     }
 
-    pub fn scalar() -> BaseRepresentation {
+    pub fn unity() -> BaseRepresentation {
         Self { components: vec![] }
     }
 
     pub fn invert(&self) -> BaseRepresentation {
-        BaseRepresentation::from_components(
+        BaseRepresentation::from_factors(
             self.components
                 .iter()
                 .map(|(base, exponent)| (base.clone(), -exponent)),
@@ -67,7 +68,7 @@ impl BaseRepresentation {
     }
 
     pub fn power(&self, exponent: Exponent) -> BaseRepresentation {
-        BaseRepresentation::from_components(
+        BaseRepresentation::from_factors(
             self.components
                 .iter()
                 .map(|(name, inner_exponent)| (name.clone(), inner_exponent * exponent)),
@@ -148,7 +149,7 @@ impl<Metadata> Registry<Metadata> {
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
         if self.is_base_entry(name) {
-            Ok(BaseRepresentation::from_components([(name.to_owned(), 1)]))
+            Ok(BaseRepresentation::from_factors([(name.to_owned(), 1)]))
         } else {
             self.derived_entries
                 .get(name)

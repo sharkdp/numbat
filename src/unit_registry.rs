@@ -31,7 +31,7 @@ impl UnitRegistry {
 
     pub fn get_base_representation(&self, expression: &Expression) -> Result<BaseRepresentation> {
         match expression {
-            Expression::Scalar(_) => Ok(BaseRepresentation::scalar()),
+            Expression::Scalar(_) => Ok(BaseRepresentation::unity()),
             Expression::Identifier(name) => self.get_base_representation_for_name(name),
             Expression::Negate(expr) => self.get_base_representation(expr),
             Expression::BinaryOperator(BinaryOperator::Add | BinaryOperator::Sub, lhs, _) => {
@@ -84,7 +84,7 @@ impl UnitRegistry {
                             .power(exp)
                     });
             let dimension_base_representation_computed =
-                BaseRepresentation::from_components(components);
+                BaseRepresentation::from_factors(components);
 
             let dimension_base_representation_specified = dimension_registry
                 .get_base_representation(dexpr)
@@ -161,22 +161,19 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse_expr("meter")),
-        Ok(BaseRepresentation::from_components([("meter".into(), 1)]))
+        Ok(BaseRepresentation::from_factors([("meter".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("second")),
-        Ok(BaseRepresentation::from_components([("second".into(), 1)]))
+        Ok(BaseRepresentation::from_factors([("second".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("kilogram")),
-        Ok(BaseRepresentation::from_components([(
-            "kilogram".into(),
-            1
-        )]))
+        Ok(BaseRepresentation::from_factors([("kilogram".into(), 1)]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("newton")),
-        Ok(BaseRepresentation::from_components([
+        Ok(BaseRepresentation::from_factors([
             ("kilogram".into(), 1),
             ("meter".into(), 1),
             ("second".into(), -2)
@@ -184,7 +181,7 @@ fn basic() {
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("joule")),
-        Ok(BaseRepresentation::from_components([
+        Ok(BaseRepresentation::from_factors([
             ("kilogram".into(), 1),
             ("meter".into(), 2),
             ("second".into(), -2)

@@ -1,3 +1,4 @@
+mod arithmetic;
 mod ast;
 mod bytecode_interpreter;
 mod dimension;
@@ -5,6 +6,7 @@ mod interpreter;
 mod number;
 mod parser;
 mod pretty_print;
+mod product;
 mod quantity;
 mod registry;
 mod span;
