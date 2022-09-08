@@ -30,7 +30,7 @@ impl Canonicalize for BaseRepresentationFactor {
     type MergeKey = BaseEntry;
 
     fn merge_key(&self) -> Self::MergeKey {
-        self.0.clone() // TODO: can the clone be prevented here?
+        self.0.clone() // TODO: can cloning be prevented here?
     }
 
     fn merge(self, other: Self) -> Self {

@@ -25,7 +25,7 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Facto
 
     fn from_vec(factors: Vec<Factor>) -> Self {
         let mut product = Self { factors };
-        product.canonicalize();
+        product.automated_canonicalize();
         product
     }
 
@@ -45,24 +45,28 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Facto
         self.factors
     }
 
-    pub fn sort_unstable(&mut self) {
-        self.factors.sort_unstable();
+    fn automated_canonicalize(&mut self) {
+        if CANONICALIZE {
+            self.canonicalize();
+        }
     }
 
-    fn canonicalize(&mut self) {
-        if CANONICALIZE {
-            self.sort_unstable();
+    pub fn canonicalize(&mut self) {
+        self.factors.sort_unstable();
 
-            // Merge adjacent
-            let mut new_factors = vec![];
-            for (_, group) in &self.factors.iter().cloned().group_by(|f1| f1.merge_key()) {
-                let merged = group.reduce(|acc, item| acc.merge(item)).unwrap();
-                if !merged.is_trivial() {
-                    new_factors.push(merged);
-                }
-            }
-            self.factors = new_factors;
-        }
+        self.factors = self
+            .factors
+            .iter()
+            .cloned()
+            .group_by(|f1| f1.merge_key())
+            .into_iter()
+            .map(|(_, group)| {
+                group
+                    .reduce(|acc, item| acc.merge(item))
+                    .expect("non zero group")
+            })
+            .filter(|factor| !factor.is_trivial())
+            .collect();
     }
 }
 
@@ -83,14 +87,14 @@ impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool>
 
     pub fn divide(self, other: Self) -> Self {
         let mut result = self.multiply(other.invert());
-        result.canonicalize();
+        result.automated_canonicalize();
         result
     }
 }
 
 impl<Factor: PartialEq, const CANONICALIZE: bool> PartialEq for Product<Factor, CANONICALIZE> {
     fn eq(&self, other: &Self) -> bool {
-        self.factors == other.factors // TODO: do we need to canonicalize first?
+        self.factors == other.factors // TODO: should we compare the canonicalized forms?
     }
 }
 
@@ -110,10 +114,10 @@ impl<'a, Factor> Iterator for ProductIter<'a, Factor> {
 
 #[cfg(test)]
 impl Canonicalize for i32 {
-    type MergeKey = i32;
+    type MergeKey = ();
 
     fn merge_key(&self) -> Self::MergeKey {
-        *self
+        () // merge everything
     }
 
     fn merge(self, other: Self) -> Self {
@@ -221,11 +225,8 @@ fn test_iter() {
 }
 
 #[test]
-fn test_sort_unstable() {
+fn test_canonicalize() {
     let mut product = Product::<i32>::from_factors([5, 2, 3]);
-    product.sort_unstable();
-    assert_eq!(
-        product.iter().cloned().collect::<Vec<_>>().as_slice(),
-        [2, 3, 5]
-    );
+    product.canonicalize();
+    assert_eq!(product.iter().cloned().collect::<Vec<_>>().as_slice(), [30]);
 }
