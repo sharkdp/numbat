@@ -93,21 +93,24 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("length")),
-        Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("length".into(), 1)
-        ]))
+        Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
+            "length".into(),
+            1
+        )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("time")),
-        Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("time".into(), 1)
-        ]))
+        Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
+            "time".into(),
+            1
+        )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("mass")),
-        Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("mass".into(), 1)
-        ]))
+        Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
+            "mass".into(),
+            1
+        )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("speed")),

@@ -161,21 +161,24 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse_expr("meter")),
-        Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("meter".into(), 1)
-        ]))
+        Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
+            "meter".into(),
+            1
+        )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("second")),
-        Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("second".into(), 1)
-        ]))
+        Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
+            "second".into(),
+            1
+        )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("kilogram")),
-        Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("kilogram".into(), 1)
-        ]))
+        Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
+            "kilogram".into(),
+            1
+        )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("newton")),

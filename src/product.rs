@@ -23,6 +23,12 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Facto
         Self::from_vec(factors.into_iter().collect())
     }
 
+    pub fn from_factor(factor: Factor) -> Self {
+        Self {
+            factors: vec![factor],
+        }
+    }
+
     fn from_vec(factors: Vec<Factor>) -> Self {
         let mut product = Self { factors };
         product.automated_canonicalize();
@@ -169,7 +175,7 @@ fn test_multiply_canonicalize() {
         TestUnit("meter".into(), 1),
         TestUnit("second".into(), 1),
     ]);
-    let product2 = Product::from_factors([TestUnit("meter".into(), 2)]);
+    let product2 = Product::from_factor(TestUnit("meter".into(), 2));
     let result = product1.multiply(product2);
     assert_eq!(
         result.into_vec(),
@@ -224,7 +230,7 @@ fn test_divide() {
         TestUnit("meter".into(), 1),
         TestUnit("second".into(), 1),
     ]);
-    let product2 = Product::from_factors([TestUnit("second".into(), 1)]);
+    let product2 = Product::from_factor(TestUnit("second".into(), 1));
     let result = product1.divide(product2);
     assert_eq!(
         result.into_vec(),

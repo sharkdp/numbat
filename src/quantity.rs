@@ -22,6 +22,13 @@ impl Quantity {
         }
     }
 
+    pub fn unit(unit: Unit) -> Quantity {
+        Quantity {
+            value: Number::from_f64(1.0),
+            unit,
+        }
+    }
+
     pub fn is_zero(&self) -> bool {
         self.value.to_f64() == 0.0
     }
@@ -62,7 +69,7 @@ impl std::ops::Mul for Quantity {
     fn mul(self, rhs: Self) -> Self::Output {
         Ok(Quantity {
             value: self.value * rhs.value,
-            unit: Unit::scalar(),
+            unit: self.unit.multiply(rhs.unit),
         })
     }
 }
@@ -73,7 +80,7 @@ impl std::ops::Div for Quantity {
     fn div(self, rhs: Self) -> Self::Output {
         Ok(Quantity {
             value: self.value / rhs.value,
-            unit: Unit::scalar(),
+            unit: self.unit.divide(rhs.unit),
         })
     }
 }
@@ -91,6 +98,6 @@ impl std::ops::Neg for Quantity {
 
 impl std::fmt::Display for Quantity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:.6} ?TODO?", self.value.to_f64())
+        write!(f, "{:.6} {}", self.value.to_f64(), self.unit)
     }
 }

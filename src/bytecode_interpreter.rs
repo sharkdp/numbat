@@ -1,8 +1,9 @@
 use crate::ast::{BinaryOperator, Command, Expression, Statement};
 use crate::dimension::DimensionRegistry;
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
+use crate::unit::{Unit, UnitFactor};
 use crate::unit_registry::UnitRegistry;
-use crate::vm::{Op, Vm};
+use crate::vm::{Constant, Op, Vm};
 
 pub struct BytecodeInterpreter {
     vm: Vm,
@@ -14,7 +15,7 @@ impl BytecodeInterpreter {
     fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
         match expr {
             Expression::Scalar(n) => {
-                let index = self.vm.add_constant(n.to_f64());
+                let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
                 self.vm.add_op1(Op::Constant, index);
             }
             Expression::Identifier(identifier) => {
@@ -97,7 +98,15 @@ impl BytecodeInterpreter {
                     .add_base_unit(name, dexpr.clone())
                     .map_err(InterpreterError::UnitRegistryError)?;
 
-                self.vm.add_op(Op::List); // TODO
+                let constant_idx =
+                    self.vm
+                        .add_constant(Constant::Unit(Unit::from_factor(UnitFactor(
+                            name.clone(),
+                            1,
+                        ))));
+                self.vm.add_op1(Op::Constant, constant_idx);
+                let identifier_idx = self.vm.add_identifier(name);
+                self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
             Statement::DeclareDerivedUnit(name, expr, dexpr) => {
                 self.unit_registry

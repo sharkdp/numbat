@@ -115,9 +115,10 @@ impl<Metadata> Registry<Metadata> {
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
         if self.is_base_entry(name) {
-            Ok(BaseRepresentation::from_factors([
-                BaseRepresentationFactor(name.to_owned(), 1),
-            ]))
+            Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
+                name.to_owned(),
+                1,
+            )))
         } else {
             self.derived_entries
                 .get(name)

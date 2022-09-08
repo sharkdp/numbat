@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::{
     interpreter::{InterpreterError, InterpreterResult, Result},
     quantity::Quantity,
+    unit::Unit,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,8 +60,31 @@ impl Op {
     }
 }
 
+pub enum Constant {
+    Scalar(f64),
+    Unit(Unit),
+}
+
+impl Constant {
+    fn to_quantity(&self) -> Quantity {
+        match self {
+            Constant::Scalar(n) => Quantity::scalar(*n),
+            Constant::Unit(u) => Quantity::unit(u.clone()),
+        }
+    }
+}
+
+impl Display for Constant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Constant::Scalar(n) => write!(f, "{}", n),
+            Constant::Unit(unit) => write!(f, "{}", unit),
+        }
+    }
+}
+
 pub struct Vm {
-    constants: Vec<f64>,
+    constants: Vec<Constant>,
     identifiers: Vec<String>,
     bytecode: Vec<u8>,
     stack: Vec<Quantity>,
@@ -78,7 +102,7 @@ impl Vm {
             stack: vec![],
             globals: HashMap::new(),
             ip: 0,
-            debug: false,
+            debug: true,
         }
     }
 
@@ -147,7 +171,7 @@ impl Vm {
                 Op::Constant => {
                     let constant_idx = self.read_byte();
                     self.stack
-                        .push(Quantity::scalar(self.constants[constant_idx as usize]));
+                        .push(self.constants[constant_idx as usize].to_quantity());
                 }
                 Op::SetVariable => {
                     let identifier_idx = self.read_byte();
@@ -217,8 +241,8 @@ impl Vm {
         byte
     }
 
-    pub fn add_constant(&mut self, x: f64) -> u8 {
-        self.constants.push(x);
+    pub fn add_constant(&mut self, constant: Constant) -> u8 {
+        self.constants.push(constant);
         (self.constants.len() - 1) as u8 // TODO: this can overflow
     }
 
@@ -260,8 +284,8 @@ impl Vm {
 #[test]
 fn vm_basic() {
     let mut vm = Vm::new();
-    vm.add_constant(42.0);
-    vm.add_constant(1.0);
+    vm.add_constant(Constant::Scalar(42.0));
+    vm.add_constant(Constant::Scalar(1.0));
 
     vm.add_op1(Op::Constant, 0);
     vm.add_op1(Op::Constant, 1);
