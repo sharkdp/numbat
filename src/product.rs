@@ -158,7 +158,7 @@ fn test_multiply() {
     let product2 = Product::<i32>::from_factors([6, 8]);
     let result = product1.multiply(product2);
     assert_eq!(
-        result.iter().cloned().collect::<Vec<_>>().as_slice(),
+        result.into_iter().collect::<Vec<_>>().as_slice(),
         [5, 2, 3, 6, 8]
     );
 }
@@ -251,5 +251,5 @@ fn test_iter() {
 fn test_canonicalize() {
     let mut product = Product::<i32>::from_factors([5, 2, 3]);
     product.canonicalize();
-    assert_eq!(product.iter().cloned().collect::<Vec<_>>().as_slice(), [30]);
+    assert_eq!(product.into_iter().collect::<Vec<_>>().as_slice(), [30]);
 }
