@@ -115,3 +115,15 @@ fn test_treewalk_interpreter() {
     use crate::treewalk_interpreter::TreewalkInterpreter;
     test_interpreter::<TreewalkInterpreter>();
 }
+
+// TODO: generalize these to both interpreters
+#[test]
+fn test_advanced_bytecode_interpreter() {
+    use crate::unit::{Unit, UnitFactor};
+
+    assert_evaluates_to::<crate::bytecode_interpreter::BytecodeInterpreter>(
+        "dimension length\nunit meter : length\n2 * meter",
+        (Quantity::scalar(2.0) * Quantity::unit(Unit::from_factor(UnitFactor("meter".into(), 1))))
+            .unwrap(),
+    );
+}
