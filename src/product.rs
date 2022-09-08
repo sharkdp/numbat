@@ -1,10 +1,24 @@
 use crate::arithmetic::{Exponent, Power};
+use itertools::Itertools;
 
-pub struct Product<Factor, const CANONICALIZE: bool = false> {
-    factors: Vec<Factor>,
+pub trait Canonicalize {
+    type MergeKey: PartialEq;
+
+    fn merge_key(&self) -> Self::MergeKey;
+    fn merge(self, other: Self) -> Self;
+    fn is_trivial(&self) -> bool;
 }
 
-impl<Factor: Ord, const CANONICALIZE: bool> Product<Factor, CANONICALIZE> {
+#[derive(Debug, Clone)]
+pub struct Product<Factor, const CANONICALIZE: bool = false> {
+    pub factors: Vec<Factor>, // TODO: make this private
+}
+
+impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Factor, CANONICALIZE> {
+    pub fn unity() -> Self {
+        Self::from_factors([])
+    }
+
     pub fn from_factors(factors: impl IntoIterator<Item = Factor>) -> Self {
         Self::from_vec(factors.into_iter().collect())
     }
@@ -39,17 +53,30 @@ impl<Factor: Ord, const CANONICALIZE: bool> Product<Factor, CANONICALIZE> {
         if CANONICALIZE {
             self.sort_unstable();
 
+            // Merge adjacent
+            let mut new_factors = vec![];
+            for (_, group) in &self.factors.iter().cloned().group_by(|f1| f1.merge_key()) {
+                let merged = group.reduce(|acc, item| acc.merge(item)).unwrap();
+                if !merged.is_trivial() {
+                    new_factors.push(merged);
+                }
+            }
+            self.factors = new_factors;
         }
     }
 }
 
-impl<Factor: Power + Ord, const CANONICALIZE: bool> Power for Product<Factor, CANONICALIZE> {
+impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool> Power
+    for Product<Factor, CANONICALIZE>
+{
     fn power(self, exp: Exponent) -> Self {
         Product::from_factors(self.factors.into_iter().map(|f| f.power(exp)))
     }
 }
 
-impl<Factor: Power + Ord, const CANONICALIZE: bool> Product<Factor, CANONICALIZE> {
+impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool>
+    Product<Factor, CANONICALIZE>
+{
     pub fn invert(self) -> Self {
         self.power(-1)
     }
@@ -61,6 +88,14 @@ impl<Factor: Power + Ord, const CANONICALIZE: bool> Product<Factor, CANONICALIZE
     }
 }
 
+impl<Factor: PartialEq, const CANONICALIZE: bool> PartialEq for Product<Factor, CANONICALIZE> {
+    fn eq(&self, other: &Self) -> bool {
+        self.factors == other.factors // TODO: do we need to canonicalize first?
+    }
+}
+
+impl<Factor: PartialEq, const CANONICALIZE: bool> Eq for Product<Factor, CANONICALIZE> {}
+
 pub struct ProductIter<'a, Factor> {
     inner: std::slice::Iter<'a, Factor>,
 }
@@ -70,6 +105,23 @@ impl<'a, Factor> Iterator for ProductIter<'a, Factor> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()
+    }
+}
+
+#[cfg(test)]
+impl Canonicalize for i32 {
+    type MergeKey = i32;
+
+    fn merge_key(&self) -> Self::MergeKey {
+        *self
+    }
+
+    fn merge(self, other: Self) -> Self {
+        self * other
+    }
+
+    fn is_trivial(&self) -> bool {
+        *self == 1
     }
 }
 
@@ -94,17 +146,30 @@ fn test_multiply_canonicalize() {
     let result = product1.multiply(product2);
     assert_eq!(
         result.into_vec(),
-        &[
-            TestUnit("meter".into(), 1),
-            TestUnit("meter".into(), 2), // TODO: more aggressive canonicalization (merge consecutive)
-            TestUnit("second".into(), 1)
-        ]
+        &[TestUnit("meter".into(), 3), TestUnit("second".into(), 1)]
     );
 }
 
 #[cfg(test)]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct TestUnit(String, Exponent);
+
+#[cfg(test)]
+impl Canonicalize for TestUnit {
+    type MergeKey = String;
+
+    fn merge_key(&self) -> Self::MergeKey {
+        self.0.clone()
+    }
+
+    fn merge(self, other: Self) -> Self {
+        TestUnit(self.0, self.1 + other.1)
+    }
+
+    fn is_trivial(&self) -> bool {
+        self.1 == 0
+    }
+}
 
 #[cfg(test)]
 impl Power for TestUnit {
@@ -143,7 +208,6 @@ fn test_divide() {
         ]
     );
 }
-
 
 #[test]
 fn test_iter() {

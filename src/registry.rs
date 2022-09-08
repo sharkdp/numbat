@@ -2,7 +2,10 @@ use std::{collections::HashMap, fmt::Display};
 
 use thiserror::Error;
 
-use crate::arithmetic::Exponent;
+use crate::{
+    arithmetic::{Exponent, Power},
+    product::{Canonicalize, Product},
+};
 
 #[derive(Clone, Error, Debug, PartialEq, Eq)]
 pub enum RegistryError {
@@ -20,65 +23,38 @@ pub type BaseEntry = String;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BaseIndex(isize);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BaseRepresentation {
-    // TODO: this could be represented with a base index in the first tuple component instead of a cloned string
-    components: Vec<(BaseEntry, Exponent)>,
-}
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BaseRepresentationFactor(pub BaseEntry, pub Exponent);
 
-impl BaseRepresentation {
-    pub fn from_factors(components: impl IntoIterator<Item = (BaseEntry, Exponent)>) -> Self {
-        let mut components: Vec<_> = components.into_iter().collect();
-        components.sort();
-        Self { components }
+impl Canonicalize for BaseRepresentationFactor {
+    type MergeKey = BaseEntry;
+
+    fn merge_key(&self) -> Self::MergeKey {
+        self.0.clone() // TODO: can the clone be prevented here?
     }
 
-    pub fn unity() -> BaseRepresentation {
-        Self { components: vec![] }
+    fn merge(self, other: Self) -> Self {
+        BaseRepresentationFactor(self.0, self.1 + other.1)
     }
 
-    pub fn invert(&self) -> BaseRepresentation {
-        BaseRepresentation::from_factors(
-            self.components
-                .iter()
-                .map(|(base, exponent)| (base.clone(), -exponent)),
-        )
-    }
-
-    pub fn multiply(&self, rhs: &BaseRepresentation) -> BaseRepresentation {
-        let mut result = self.clone();
-        for (name_rhs, exponent_rhs) in &rhs.components {
-            if let Some((_, ref mut exponent_lhs)) = result
-                .components
-                .iter_mut()
-                .find(|(name_lhs, _)| name_lhs == name_rhs)
-            {
-                *exponent_lhs += exponent_rhs;
-            } else {
-                result.components.push((name_rhs.clone(), *exponent_rhs))
-            }
-        }
-        result.components.retain(|(_, exponent)| *exponent != 0);
-        result.components.sort();
-        result
-    }
-
-    pub fn divide(&self, rhs: &BaseRepresentation) -> BaseRepresentation {
-        self.multiply(&rhs.invert())
-    }
-
-    pub fn power(&self, exponent: Exponent) -> BaseRepresentation {
-        BaseRepresentation::from_factors(
-            self.components
-                .iter()
-                .map(|(name, inner_exponent)| (name.clone(), inner_exponent * exponent)),
-        )
+    fn is_trivial(&self) -> bool {
+        self.1 == 0
     }
 }
+
+impl Power for BaseRepresentationFactor {
+    fn power(self, e: Exponent) -> Self {
+        let BaseRepresentationFactor(entry, exp) = self;
+        BaseRepresentationFactor(entry, exp * e)
+    }
+}
+
+// TODO: this could be represented with a base index in the first tuple component instead of a cloned string
+pub type BaseRepresentation = Product<BaseRepresentationFactor, true>;
 
 impl Display for BaseRepresentation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (name, exp) in &self.components {
+        for BaseRepresentationFactor(name, exp) in &self.factors {
             write!(f, "{}^({}) ", name, exp)?;
         }
         Ok(())
@@ -87,11 +63,11 @@ impl Display for BaseRepresentation {
 
 // TODO: Implement Iterator instead of IntoIterator. This allow us to remove some .clone() calls
 impl IntoIterator for BaseRepresentation {
-    type Item = (BaseEntry, Exponent);
+    type Item = BaseRepresentationFactor;
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.components.into_iter()
+        self.factors.into_iter()
     }
 }
 
@@ -149,7 +125,9 @@ impl<Metadata> Registry<Metadata> {
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
         if self.is_base_entry(name) {
-            Ok(BaseRepresentation::from_factors([(name.to_owned(), 1)]))
+            Ok(BaseRepresentation::from_factors([
+                BaseRepresentationFactor(name.to_owned(), 1),
+            ]))
         } else {
             self.derived_entries
                 .get(name)

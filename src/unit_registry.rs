@@ -1,6 +1,7 @@
+use crate::arithmetic::Power;
 use crate::ast::{BinaryOperator, DimensionExpression, Expression};
 use crate::dimension::DimensionRegistry;
-use crate::registry::{BaseRepresentation, Registry, RegistryError};
+use crate::registry::{BaseRepresentation, BaseRepresentationFactor, Registry, RegistryError};
 
 use thiserror::Error;
 
@@ -41,10 +42,10 @@ impl UnitRegistry {
             }
             Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs) => Ok(self
                 .get_base_representation(lhs)?
-                .multiply(&self.get_base_representation(rhs)?)),
+                .multiply(self.get_base_representation(rhs)?)),
             Expression::BinaryOperator(BinaryOperator::Div, lhs, rhs) => Ok(self
                 .get_base_representation(lhs)?
-                .divide(&self.get_base_representation(rhs)?)),
+                .divide(self.get_base_representation(rhs)?)),
             Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _) => todo!(),
         }
     }
@@ -71,18 +72,16 @@ impl UnitRegistry {
         let base_representation = self.get_base_representation(expression)?;
 
         if let Some(dexpr) = dexpr {
-            let components =
-                base_representation
-                    .clone()
-                    .into_iter()
-                    .flat_map(|(base_name, exp)| {
-                        let dimension = self.registry.base_entry_metadata(&base_name).unwrap(); // TODO: remove unwrap
+            let components = base_representation.clone().into_iter().flat_map(
+                |BaseRepresentationFactor(base_name, exp)| {
+                    let dimension = self.registry.base_entry_metadata(&base_name).unwrap(); // TODO: remove unwrap
 
-                        dimension_registry
-                            .get_base_representation(dimension)
-                            .unwrap()
-                            .power(exp)
-                    });
+                    dimension_registry
+                        .get_base_representation(dimension)
+                        .unwrap()
+                        .power(exp)
+                },
+            );
             let dimension_base_representation_computed =
                 BaseRepresentation::from_factors(components);
 
@@ -161,30 +160,36 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse_expr("meter")),
-        Ok(BaseRepresentation::from_factors([("meter".into(), 1)]))
+        Ok(BaseRepresentation::from_factors([
+            BaseRepresentationFactor("meter".into(), 1)
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("second")),
-        Ok(BaseRepresentation::from_factors([("second".into(), 1)]))
+        Ok(BaseRepresentation::from_factors([
+            BaseRepresentationFactor("second".into(), 1)
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("kilogram")),
-        Ok(BaseRepresentation::from_factors([("kilogram".into(), 1)]))
+        Ok(BaseRepresentation::from_factors([
+            BaseRepresentationFactor("kilogram".into(), 1)
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("newton")),
         Ok(BaseRepresentation::from_factors([
-            ("kilogram".into(), 1),
-            ("meter".into(), 1),
-            ("second".into(), -2)
+            BaseRepresentationFactor("kilogram".into(), 1),
+            BaseRepresentationFactor("meter".into(), 1),
+            BaseRepresentationFactor("second".into(), -2)
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_expr("joule")),
         Ok(BaseRepresentation::from_factors([
-            ("kilogram".into(), 1),
-            ("meter".into(), 2),
-            ("second".into(), -2)
+            BaseRepresentationFactor("kilogram".into(), 1),
+            BaseRepresentationFactor("meter".into(), 2),
+            BaseRepresentationFactor("second".into(), -2)
         ]))
     );
 

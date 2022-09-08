@@ -1,3 +1,4 @@
+use crate::arithmetic::Power;
 use crate::ast::DimensionExpression;
 use crate::registry::{BaseRepresentation, Registry, Result};
 
@@ -25,13 +26,13 @@ impl DimensionRegistry {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
-                Ok(lhs.multiply(&rhs))
+                Ok(lhs.multiply(rhs))
             }
             DimensionExpression::Divide(lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
-                Ok(lhs.divide(&rhs))
+                Ok(lhs.divide(rhs))
             }
             DimensionExpression::Power(expr, outer_exponent) => {
                 Ok(self.get_base_representation(expr)?.power(*outer_exponent))
@@ -70,6 +71,8 @@ pub fn parse_dexpr(input: &str) -> DimensionExpression {
 
 #[test]
 fn basic() {
+    use crate::registry::BaseRepresentationFactor;
+
     let mut registry = DimensionRegistry::default();
     registry.add_base_dimension("length").unwrap();
     registry.add_base_dimension("time").unwrap();
@@ -90,44 +93,50 @@ fn basic() {
 
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("length")),
-        Ok(BaseRepresentation::from_factors([("length".into(), 1)]))
+        Ok(BaseRepresentation::from_factors([
+            BaseRepresentationFactor("length".into(), 1)
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("time")),
-        Ok(BaseRepresentation::from_factors([("time".into(), 1)]))
+        Ok(BaseRepresentation::from_factors([
+            BaseRepresentationFactor("time".into(), 1)
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("mass")),
-        Ok(BaseRepresentation::from_factors([("mass".into(), 1)]))
+        Ok(BaseRepresentation::from_factors([
+            BaseRepresentationFactor("mass".into(), 1)
+        ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("speed")),
         Ok(BaseRepresentation::from_factors([
-            ("length".into(), 1),
-            ("time".into(), -1)
+            BaseRepresentationFactor("length".into(), 1),
+            BaseRepresentationFactor("time".into(), -1)
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("acceleration")),
         Ok(BaseRepresentation::from_factors([
-            ("length".into(), 1),
-            ("time".into(), -2)
+            BaseRepresentationFactor("length".into(), 1),
+            BaseRepresentationFactor("time".into(), -2)
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("momentum")),
         Ok(BaseRepresentation::from_factors([
-            ("length".into(), 1),
-            ("mass".into(), 1),
-            ("time".into(), -1)
+            BaseRepresentationFactor("length".into(), 1),
+            BaseRepresentationFactor("mass".into(), 1),
+            BaseRepresentationFactor("time".into(), -1)
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("energy")),
         Ok(BaseRepresentation::from_factors([
-            ("length".into(), 2),
-            ("mass".into(), 1),
-            ("time".into(), -2)
+            BaseRepresentationFactor("length".into(), 2),
+            BaseRepresentationFactor("mass".into(), 1),
+            BaseRepresentationFactor("time".into(), -2)
         ]))
     );
 
@@ -137,9 +146,9 @@ fn basic() {
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("momentum2")),
         Ok(BaseRepresentation::from_factors([
-            ("length".into(), 1),
-            ("mass".into(), 1),
-            ("time".into(), -1)
+            BaseRepresentationFactor("length".into(), 1),
+            BaseRepresentationFactor("mass".into(), 1),
+            BaseRepresentationFactor("time".into(), -1)
         ]))
     );
 
@@ -149,9 +158,9 @@ fn basic() {
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("energy2")),
         Ok(BaseRepresentation::from_factors([
-            ("length".into(), 2),
-            ("mass".into(), 1),
-            ("time".into(), -2)
+            BaseRepresentationFactor("length".into(), 2),
+            BaseRepresentationFactor("mass".into(), 1),
+            BaseRepresentationFactor("time".into(), -2)
         ]))
     );
 
@@ -161,8 +170,8 @@ fn basic() {
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("speed2")),
         Ok(BaseRepresentation::from_factors([
-            ("length".into(), 1),
-            ("time".into(), -1)
+            BaseRepresentationFactor("length".into(), 1),
+            BaseRepresentationFactor("time".into(), -1)
         ]))
     );
 }
