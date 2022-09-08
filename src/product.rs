@@ -100,12 +100,35 @@ impl<Factor: PartialEq, const CANONICALIZE: bool> PartialEq for Product<Factor, 
 
 impl<Factor: PartialEq, const CANONICALIZE: bool> Eq for Product<Factor, CANONICALIZE> {}
 
+impl<Factor, const CANONICALIZE: bool> IntoIterator for Product<Factor, CANONICALIZE> {
+    type IntoIter = ProductIntoIter<Factor>;
+    type Item = Factor;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ProductIntoIter {
+            inner: self.factors.into_iter(),
+        }
+    }
+}
+
 pub struct ProductIter<'a, Factor> {
     inner: std::slice::Iter<'a, Factor>,
 }
 
 impl<'a, Factor> Iterator for ProductIter<'a, Factor> {
     type Item = &'a Factor;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
+    }
+}
+
+pub struct ProductIntoIter<Factor> {
+    inner: std::vec::IntoIter<Factor>,
+}
+
+impl<Factor> Iterator for ProductIntoIter<Factor> {
+    type Item = Factor;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()

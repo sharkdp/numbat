@@ -61,16 +61,6 @@ impl Display for BaseRepresentation {
     }
 }
 
-// TODO: Implement Iterator instead of IntoIterator. This allow us to remove some .clone() calls
-impl IntoIterator for BaseRepresentation {
-    type Item = BaseRepresentationFactor;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.factors.into_iter()
-    }
-}
-
 #[derive(Debug)]
 pub struct Registry<Metadata> {
     base_entries: Vec<(String, Metadata)>,
