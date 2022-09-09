@@ -19,7 +19,7 @@ pub enum UnitRegistryError {
 pub type Result<T> = std::result::Result<T, UnitRegistryError>;
 
 pub struct UnitRegistry {
-    // TODO: Optimization: do not store the unevaluated DimensionExpression here, but rather a direct link to the corresponding dimension (does that always exist?!)
+    // TODO(minor): Optimization: do not store the unevaluated DimensionExpression here, but rather a direct link to the corresponding dimension (does that always exist?!)
     registry: Registry<DimensionExpression>,
 }
 
@@ -37,7 +37,7 @@ impl UnitRegistry {
             Expression::Negate(expr) => self.get_base_representation(expr),
             Expression::BinaryOperator(BinaryOperator::Add | BinaryOperator::Sub, lhs, _) => {
                 self.get_base_representation(lhs)
-                // TODO: add and sub should not be allowed in unit definitions.
+                // TODO(minor): add and sub should not be allowed in unit definitions.
                 // Right now, we can set "unit x = … + 1" and the "+ 1" will just be ignored.
             }
             Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs) => Ok(self
@@ -46,7 +46,7 @@ impl UnitRegistry {
             Expression::BinaryOperator(BinaryOperator::Div, lhs, rhs) => Ok(self
                 .get_base_representation(lhs)?
                 .divide(self.get_base_representation(rhs)?)),
-            Expression::BinaryOperator(BinaryOperator::Power, _lhs, _rhs) => unimplemented!(),
+            Expression::BinaryOperator(BinaryOperator::Power, _lhs, _rhs) => todo!(),
             Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _) => todo!(),
         }
     }
@@ -77,7 +77,7 @@ impl UnitRegistry {
                 base_representation
                     .iter()
                     .flat_map(|BaseRepresentationFactor(base_name, exp)| {
-                        let dimension = self.registry.base_entry_metadata(&base_name).unwrap(); // TODO: remove unwrap
+                        let dimension = self.registry.base_entry_metadata(&base_name).unwrap(); // TODO(minor): remove unwrap
 
                         dimension_registry
                             .get_base_representation(dimension)
