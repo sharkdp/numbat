@@ -28,13 +28,13 @@ unit second : time
 unit kilogram : mass
 
 unit hertz = 1 / second : frequency
-unit newton = kilogram * meter / (second * second) : force
+unit newton = kilogram * meter / second^2 : force
 unit joule = newton * meter : energy
 unit watt = joule / second : power
-unit pascal = newton / (meter * meter) : pressure
+unit pascal = newton / meter^2 : pressure
 
 unit ampere : current
 unit coulomb = ampere * second : charge
-unit volt = kilogram *  meter * meter / (second * second * second * ampere) : voltage
+unit volt = kilogram *  meter^2 / (second^3 * ampere) : voltage
 unit farad = coulomb / volt : capacitance
 unit ohm = volt / ampere : resistance

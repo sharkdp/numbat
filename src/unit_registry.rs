@@ -46,7 +46,12 @@ impl UnitRegistry {
             Expression::BinaryOperator(BinaryOperator::Div, lhs, rhs) => Ok(self
                 .get_base_representation(lhs)?
                 .divide(self.get_base_representation(rhs)?)),
-            Expression::BinaryOperator(BinaryOperator::Power, _lhs, _rhs) => todo!(),
+            Expression::BinaryOperator(BinaryOperator::Power, lhs, rhs) => match rhs.as_ref() {
+                Expression::Scalar(n) => {
+                    Ok(self.get_base_representation(lhs)?.power(n.to_f64() as i32))
+                }
+                _ => todo!("Return some error"),
+            },
             Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _) => todo!(),
         }
     }
