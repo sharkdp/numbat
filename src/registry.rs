@@ -54,7 +54,7 @@ pub type BaseRepresentation = Product<BaseRepresentationFactor, true>;
 
 impl Display for BaseRepresentation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for BaseRepresentationFactor(name, exp) in &self.factors {
+        for BaseRepresentationFactor(name, exp) in self.iter() {
             write!(f, "{}^({}) ", name, exp)?;
         }
         Ok(())

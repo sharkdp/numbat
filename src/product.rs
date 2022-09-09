@@ -11,7 +11,7 @@ pub trait Canonicalize {
 
 #[derive(Debug, Clone)]
 pub struct Product<Factor, const CANONICALIZE: bool = false> {
-    pub factors: Vec<Factor>, // TODO: make this private
+    factors: Vec<Factor>,
 }
 
 impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Factor, CANONICALIZE> {
