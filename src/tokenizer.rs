@@ -48,7 +48,7 @@ pub enum TokenKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
-    pub lexeme: String, // TODO: could be a &'str view into the input
+    pub lexeme: String, // TODO(minor): could be a &'str view into the input
     pub span: Span,
 }
 

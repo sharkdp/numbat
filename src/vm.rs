@@ -22,10 +22,10 @@ pub enum Op {
     Divide,
     Power,
 
+    ConvertTo,
+
     Return,
-
     List,
-
     Exit,
 }
 
@@ -38,6 +38,7 @@ impl Op {
             | Op::Multiply
             | Op::Divide
             | Op::Power
+            | Op::ConvertTo
             | Op::Negate
             | Op::Return
             | Op::List
@@ -56,6 +57,7 @@ impl Op {
             Op::Multiply => "Multiply",
             Op::Divide => "Divide",
             Op::Power => "Power",
+            Op::ConvertTo => "ConvertTo",
             Op::Return => "Return",
             Op::List => "List",
             Op::Exit => "Exit",
@@ -71,8 +73,8 @@ pub enum Constant {
 impl Constant {
     fn to_quantity(&self) -> Quantity {
         match self {
-            Constant::Scalar(n) => Quantity::scalar(*n),
-            Constant::Unit(u) => Quantity::unit(u.clone()),
+            Constant::Scalar(n) => Quantity::from_scalar(*n),
+            Constant::Unit(u) => Quantity::from_unit(u.clone()),
         }
     }
 }
@@ -196,7 +198,12 @@ impl Vm {
 
                     self.push(quantity.clone());
                 }
-                op @ (Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Power) => {
+                op @ (Op::Add
+                | Op::Subtract
+                | Op::Multiply
+                | Op::Divide
+                | Op::Power
+                | Op::ConvertTo) => {
                     let rhs = self.pop();
                     let lhs = self.pop();
                     let result = match op {
@@ -212,6 +219,7 @@ impl Vm {
                             }
                         }
                         Op::Power => lhs.power(rhs),
+                        Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         _ => unreachable!(),
                     };
                     self.push(result.map_err(InterpreterError::UnitError)?);
@@ -298,6 +306,6 @@ fn vm_basic() {
 
     assert_eq!(
         vm.run().unwrap(),
-        InterpreterResult::Quantity(Quantity::scalar(42.0 + 1.0))
+        InterpreterResult::Quantity(Quantity::from_scalar(42.0 + 1.0))
     );
 }

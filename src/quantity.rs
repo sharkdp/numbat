@@ -23,12 +23,16 @@ impl Quantity {
         Quantity { value, unit }
     }
 
-    pub fn scalar(value: f64) -> Quantity {
+    pub fn from_scalar(value: f64) -> Quantity {
         Quantity::new(Number::from_f64(value), Unit::scalar())
     }
 
-    pub fn unit(unit: Unit) -> Quantity {
+    pub fn from_unit(unit: Unit) -> Quantity {
         Quantity::new(Number::from_f64(1.0), unit)
+    }
+
+    pub fn unit(&self) -> &Unit {
+        &self.unit
     }
 
     pub fn is_zero(&self) -> bool {
@@ -61,11 +65,11 @@ impl Quantity {
 
 impl From<&Number> for Quantity {
     fn from(n: &Number) -> Self {
-        Quantity::scalar(n.to_f64())
+        Quantity::from_scalar(n.to_f64())
     }
 }
 
-// TODO: do we want to implement this for references instead of values?
+// TODO(minor): do we want to implement this for references instead of values?
 impl std::ops::Add for Quantity {
     type Output = Result<Quantity>;
 

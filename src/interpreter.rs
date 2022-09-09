@@ -67,7 +67,7 @@ fn assert_evaluates_to<I: Interpreter>(input: &str, expected: Quantity) {
 
 #[cfg(test)]
 fn assert_evaluates_to_scalar<I: Interpreter>(input: &str, expected: f64) {
-    assert_evaluates_to::<I>(input, Quantity::scalar(expected))
+    assert_evaluates_to::<I>(input, Quantity::from_scalar(expected))
 }
 
 #[cfg(test)]
@@ -125,6 +125,6 @@ fn test_advanced_bytecode_interpreter() {
 
     assert_evaluates_to::<crate::bytecode_interpreter::BytecodeInterpreter>(
         "dimension length\nunit meter : length\n2 * meter",
-        (Quantity::scalar(2.0) * Quantity::unit(Unit::from_name("meter"))).unwrap(),
+        (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::from_name("meter"))).unwrap(),
     );
 }

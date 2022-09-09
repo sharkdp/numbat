@@ -24,22 +24,21 @@ impl TreewalkInterpreter {
                 let lhs = self.evaluate_expression(lhs)?;
                 let rhs = self.evaluate_expression(rhs)?;
 
-                match op {
-                    BinaryOperator::Add => Ok((lhs + rhs).map_err(InterpreterError::UnitError)?),
-                    BinaryOperator::Sub => Ok((lhs - rhs).map_err(InterpreterError::UnitError)?),
-                    BinaryOperator::Mul => Ok((lhs * rhs).map_err(InterpreterError::UnitError)?),
+                let result = match op {
+                    BinaryOperator::Add => lhs + rhs,
+                    BinaryOperator::Sub => lhs - rhs,
+                    BinaryOperator::Mul => lhs * rhs,
                     BinaryOperator::Div => {
                         if rhs.is_zero() {
-                            Err(InterpreterError::DivisionByZero)
+                            return Err(InterpreterError::DivisionByZero);
                         } else {
-                            Ok((lhs / rhs).map_err(InterpreterError::UnitError)?)
+                            lhs / rhs
                         }
                     }
-                    BinaryOperator::Power => {
-                        Ok((lhs.power(rhs)).map_err(InterpreterError::UnitError)?)
-                    }
-                    BinaryOperator::ConvertTo => todo!(),
-                }
+                    BinaryOperator::Power => lhs.power(rhs),
+                    BinaryOperator::ConvertTo => lhs.convert_to(rhs.unit()),
+                };
+                Ok(result.map_err(InterpreterError::UnitError)?)
             }
         }
     }

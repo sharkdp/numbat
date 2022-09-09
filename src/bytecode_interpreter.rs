@@ -36,7 +36,7 @@ impl BytecodeInterpreter {
                     BinaryOperator::Mul => Op::Multiply,
                     BinaryOperator::Div => Op::Divide,
                     BinaryOperator::Power => Op::Power,
-                    BinaryOperator::ConvertTo => todo!(),
+                    BinaryOperator::ConvertTo => Op::ConvertTo,
                 };
                 self.vm.add_op(op);
             }

@@ -30,7 +30,7 @@ impl Canonicalize for BaseRepresentationFactor {
     type MergeKey = BaseEntry;
 
     fn merge_key(&self) -> Self::MergeKey {
-        self.0.clone() // TODO: can cloning be prevented here?
+        self.0.clone() // TODO(minor): can cloning be prevented here?
     }
 
     fn merge(self, other: Self) -> Self {
@@ -49,7 +49,7 @@ impl Power for BaseRepresentationFactor {
     }
 }
 
-// TODO: this could be represented with a base index in the first tuple component instead of a cloned string
+// TODO(minor): this could be represented with a base index in the first tuple component instead of a cloned string
 pub type BaseRepresentation = Product<BaseRepresentationFactor, true>;
 
 impl Display for BaseRepresentation {
