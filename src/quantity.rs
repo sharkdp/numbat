@@ -1,3 +1,4 @@
+use crate::arithmetic::Power;
 use crate::number::Number;
 use crate::unit::Unit;
 
@@ -5,7 +6,7 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum ConversionError {
-    #[error("Conversion error: '{1}' is not compatible with '{1}'")]
+    #[error("Conversion error: unit '{0}' can not be converted to '{1}'")]
     IncompatibleUnits(Unit, Unit),
 }
 
@@ -50,9 +51,10 @@ impl Quantity {
     }
 
     pub fn power(self, exp: Quantity) -> Result<Self> {
+        let exponent_as_scalar = exp.as_scalar()?.to_f64();
         Ok(Quantity::new(
-            Number::from_f64(self.value.to_f64().powf(exp.as_scalar()?.to_f64())),
-            self.unit, // TODO: exponentiate unit
+            Number::from_f64(self.value.to_f64().powf(exponent_as_scalar)),
+            self.unit.power(exponent_as_scalar as i32), // TODO: rational or even decimal exponents
         ))
     }
 }
@@ -68,9 +70,10 @@ impl std::ops::Add for Quantity {
     type Output = Result<Quantity>;
 
     fn add(self, rhs: Self) -> Self::Output {
+        rhs.convert_to(&self.unit)?;
         Ok(Quantity {
             value: self.value + rhs.value,
-            unit: Unit::scalar(), // TODO
+            unit: self.unit,
         })
     }
 }
@@ -79,9 +82,10 @@ impl std::ops::Sub for Quantity {
     type Output = Result<Quantity>;
 
     fn sub(self, rhs: Self) -> Self::Output {
+        rhs.convert_to(&self.unit)?;
         Ok(Quantity {
             value: self.value - rhs.value,
-            unit: Unit::scalar(), // TODO
+            unit: self.unit,
         })
     }
 }
