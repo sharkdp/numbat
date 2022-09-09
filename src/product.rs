@@ -74,6 +74,12 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Facto
             .filter(|factor| !factor.is_trivial())
             .collect();
     }
+
+    fn canonicalized(&self) -> Self {
+        let mut result = self.clone();
+        result.canonicalize();
+        result
+    }
 }
 
 impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool> Power
@@ -98,13 +104,18 @@ impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool>
     }
 }
 
-impl<Factor: PartialEq, const CANONICALIZE: bool> PartialEq for Product<Factor, CANONICALIZE> {
+impl<Factor: Clone + Ord + PartialEq + Canonicalize, const CANONICALIZE: bool> PartialEq
+    for Product<Factor, CANONICALIZE>
+{
     fn eq(&self, other: &Self) -> bool {
-        self.factors == other.factors // TODO: should we compare the canonicalized forms?
+        self.canonicalized().factors == other.canonicalized().factors
     }
 }
 
-impl<Factor: PartialEq, const CANONICALIZE: bool> Eq for Product<Factor, CANONICALIZE> {}
+impl<Factor: Clone + Ord + Canonicalize + Eq, const CANONICALIZE: bool> Eq
+    for Product<Factor, CANONICALIZE>
+{
+}
 
 impl<Factor, const CANONICALIZE: bool> IntoIterator for Product<Factor, CANONICALIZE> {
     type IntoIter = ProductIntoIter<Factor>;

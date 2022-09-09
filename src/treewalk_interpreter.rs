@@ -35,6 +35,9 @@ impl TreewalkInterpreter {
                             Ok((lhs / rhs).map_err(InterpreterError::UnitError)?)
                         }
                     }
+                    BinaryOperator::Power => {
+                        Ok((lhs.power(rhs)).map_err(InterpreterError::UnitError)?)
+                    }
                     BinaryOperator::ConvertTo => todo!(),
                 }
             }

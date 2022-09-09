@@ -3,10 +3,13 @@ use crate::unit::Unit;
 
 use thiserror::Error;
 
-#[derive(Clone, Error, Debug, PartialEq, Eq)]
-pub enum UnitError {}
+#[derive(Clone, Debug, Error, PartialEq, Eq)]
+pub enum ConversionError {
+    #[error("Conversion error: '{1}' is not compatible with '{1}'")]
+    IncompatibleUnits(Unit, Unit),
+}
 
-pub type Result<T> = std::result::Result<T, UnitError>;
+pub type Result<T> = std::result::Result<T, ConversionError>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Quantity {
@@ -15,22 +18,42 @@ pub struct Quantity {
 }
 
 impl Quantity {
+    fn new(value: Number, unit: Unit) -> Self {
+        Quantity { value, unit }
+    }
+
     pub fn scalar(value: f64) -> Quantity {
-        Quantity {
-            value: Number::from_f64(value),
-            unit: Unit::scalar(),
-        }
+        Quantity::new(Number::from_f64(value), Unit::scalar())
     }
 
     pub fn unit(unit: Unit) -> Quantity {
-        Quantity {
-            value: Number::from_f64(1.0),
-            unit,
-        }
+        Quantity::new(Number::from_f64(1.0), unit)
     }
 
     pub fn is_zero(&self) -> bool {
         self.value.to_f64() == 0.0
+    }
+
+    pub fn convert_to(&self, unit: &Unit) -> Result<Quantity> {
+        if &self.unit == unit || self.is_zero() {
+            Ok(Quantity::new(self.value.clone(), unit.clone()))
+        } else {
+            Err(ConversionError::IncompatibleUnits(
+                self.unit.clone(),
+                unit.clone(),
+            ))
+        }
+    }
+
+    pub fn as_scalar(&self) -> Result<Number> {
+        Ok(self.convert_to(&Unit::scalar())?.value)
+    }
+
+    pub fn power(self, exp: Quantity) -> Result<Self> {
+        Ok(Quantity::new(
+            Number::from_f64(self.value.to_f64().powf(exp.as_scalar()?.to_f64())),
+            self.unit, // TODO: exponentiate unit
+        ))
     }
 }
 
@@ -47,7 +70,7 @@ impl std::ops::Add for Quantity {
     fn add(self, rhs: Self) -> Self::Output {
         Ok(Quantity {
             value: self.value + rhs.value,
-            unit: Unit::scalar(),
+            unit: Unit::scalar(), // TODO
         })
     }
 }
@@ -58,7 +81,7 @@ impl std::ops::Sub for Quantity {
     fn sub(self, rhs: Self) -> Self::Output {
         Ok(Quantity {
             value: self.value - rhs.value,
-            unit: Unit::scalar(),
+            unit: Unit::scalar(), // TODO
         })
     }
 }
@@ -103,4 +126,13 @@ impl std::fmt::Display for Quantity {
         unit_canonicalized.canonicalize();
         write!(f, "{:.6} {}", self.value.to_f64(), unit_canonicalized)
     }
+}
+
+#[test]
+fn test_convert() {
+    let q = Quantity::new(Number::from_f64(2.0), Unit::from_name("meter"));
+    assert!(q.convert_to(&Unit::from_name("meter")).is_ok());
+
+    assert!(q.convert_to(&Unit::from_name("second")).is_err());
+    assert!(q.convert_to(&Unit::scalar()).is_err());
 }

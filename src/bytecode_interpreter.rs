@@ -1,7 +1,7 @@
 use crate::ast::{BinaryOperator, Command, Expression, Statement};
 use crate::dimension::DimensionRegistry;
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
-use crate::unit::{Unit, UnitFactor};
+use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
 use crate::vm::{Constant, Op, Vm};
 
@@ -35,6 +35,7 @@ impl BytecodeInterpreter {
                     BinaryOperator::Sub => Op::Subtract,
                     BinaryOperator::Mul => Op::Multiply,
                     BinaryOperator::Div => Op::Divide,
+                    BinaryOperator::Power => Op::Power,
                     BinaryOperator::ConvertTo => todo!(),
                 };
                 self.vm.add_op(op);
@@ -98,12 +99,7 @@ impl BytecodeInterpreter {
                     .add_base_unit(name, dexpr.clone())
                     .map_err(InterpreterError::UnitRegistryError)?;
 
-                let constant_idx =
-                    self.vm
-                        .add_constant(Constant::Unit(Unit::from_factor(UnitFactor(
-                            name.clone(),
-                            1,
-                        ))));
+                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::from_name(name)));
                 self.vm.add_op1(Op::Constant, constant_idx);
                 let identifier_idx = self.vm.add_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);

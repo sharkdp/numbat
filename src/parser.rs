@@ -17,7 +17,8 @@
 //! conversion   →   term ( "→" term ) *
 //! term         →   factor ( ( "+" | "-") factor ) *
 //! factor       →   unary ( ( "*" | "/") unary ) *
-//! unary        →   "-" unary | primary
+//! unary        →   "-" unary | power
+//! power        →   primary ( "^" power ) *
 //! primary      →   number | identifier | "(" expression ")"
 //! ```
 
@@ -233,8 +234,18 @@ impl<'a> Parser<'a> {
 
             Ok(Expression::Negate(Box::new(rhs)))
         } else {
-            self.primary()
+            self.power()
         }
+    }
+
+    fn power(&mut self) -> Result<Expression> {
+        let mut expr = self.primary()?;
+        while self.match_exact(TokenKind::Power).is_some() {
+            let rhs = self.power()?;
+
+            expr = Expression::BinaryOperator(BinaryOperator::Power, Box::new(expr), Box::new(rhs));
+        }
+        Ok(expr)
     }
 
     fn primary(&mut self) -> Result<Expression> {
@@ -479,6 +490,34 @@ mod tests {
         );
 
         should_fail(&["1*@", "1*", "1 per", "÷", "×"]);
+    }
+
+    #[test]
+    fn parse_exponentiation() {
+        parse_as_expression(
+            &["2^3", "  2   ^  3    "],
+            binop!(scalar!(2.0), Power, scalar!(3.0)),
+        );
+
+        parse_as_expression(
+            &["2^3^4", "  2   ^  3   ^ 4 "],
+            binop!(
+                scalar!(2.0),
+                Power,
+                binop!(scalar!(3.0), Power, scalar!(4.0))
+            ),
+        );
+
+        parse_as_expression(
+            &["(2^3)^4"],
+            binop!(
+                binop!(scalar!(2.0), Power, scalar!(3.0)),
+                Power,
+                scalar!(4.0)
+            ),
+        );
+
+        should_fail(&["1^", "1^^2"]);
     }
 
     #[test]

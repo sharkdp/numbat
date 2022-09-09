@@ -1,6 +1,6 @@
 use crate::{
     ast::Statement,
-    quantity::{Quantity, UnitError},
+    quantity::{ConversionError, Quantity},
     registry::RegistryError,
     unit_registry::UnitRegistryError,
 };
@@ -22,7 +22,7 @@ pub enum InterpreterError {
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
     #[error("{0}")]
-    UnitError(UnitError),
+    UnitError(ConversionError),
 }
 
 #[derive(Debug, PartialEq)]
@@ -96,6 +96,8 @@ fn test_interpreter<I: Interpreter>() {
     assert_evaluates_to_scalar::<I>("2 - 3 - 4", 2.0 - 3.0 - 4.0);
     assert_evaluates_to_scalar::<I>("2 - -3", 2.0 - -3.0);
 
+    assert_evaluates_to_scalar::<I>("2^3", 2.0f64.powf(3.0));
+
     assert_evaluates_to_scalar::<I>("2\n3", 3.0);
     assert_evaluates_to_scalar::<I>("let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
 
@@ -119,11 +121,10 @@ fn test_treewalk_interpreter() {
 // TODO: generalize these to both interpreters
 #[test]
 fn test_advanced_bytecode_interpreter() {
-    use crate::unit::{Unit, UnitFactor};
+    use crate::unit::Unit;
 
     assert_evaluates_to::<crate::bytecode_interpreter::BytecodeInterpreter>(
         "dimension length\nunit meter : length\n2 * meter",
-        (Quantity::scalar(2.0) * Quantity::unit(Unit::from_factor(UnitFactor("meter".into(), 1))))
-            .unwrap(),
+        (Quantity::scalar(2.0) * Quantity::unit(Unit::from_name("meter"))).unwrap(),
     );
 }

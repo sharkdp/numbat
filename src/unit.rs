@@ -35,8 +35,12 @@ impl Power for UnitFactor {
 pub type Unit = Product<UnitFactor, false>;
 
 impl Unit {
-    pub fn scalar() -> Unit {
-        Unit::unity()
+    pub fn scalar() -> Self {
+        Self::unity()
+    }
+
+    pub fn from_name(name: &str) -> Self {
+        Unit::from_factor(UnitFactor(name.into(), 1))
     }
 }
 

@@ -6,6 +6,7 @@ pub enum BinaryOperator {
     Sub,
     Mul,
     Div,
+    Power,
     ConvertTo,
 }
 
@@ -18,6 +19,7 @@ impl PrettyPrint for BinaryOperator {
             Sub => "-".into(),
             Mul => "×".into(),
             Div => "/".into(),
+            Power => "^".into(),
             ConvertTo => "→".into(),
         }
     }

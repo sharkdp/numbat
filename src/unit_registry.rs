@@ -46,6 +46,7 @@ impl UnitRegistry {
             Expression::BinaryOperator(BinaryOperator::Div, lhs, rhs) => Ok(self
                 .get_base_representation(lhs)?
                 .divide(self.get_base_representation(rhs)?)),
+            Expression::BinaryOperator(BinaryOperator::Power, _lhs, _rhs) => unimplemented!(),
             Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _) => todo!(),
         }
     }

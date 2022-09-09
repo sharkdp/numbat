@@ -20,6 +20,7 @@ pub enum Op {
     Subtract,
     Multiply,
     Divide,
+    Power,
 
     Return,
 
@@ -36,6 +37,7 @@ impl Op {
             | Op::Subtract
             | Op::Multiply
             | Op::Divide
+            | Op::Power
             | Op::Negate
             | Op::Return
             | Op::List
@@ -53,6 +55,7 @@ impl Op {
             Op::Subtract => "Subtract",
             Op::Multiply => "Multiply",
             Op::Divide => "Divide",
+            Op::Power => "Power",
             Op::Return => "Return",
             Op::List => "List",
             Op::Exit => "Exit",
@@ -193,7 +196,7 @@ impl Vm {
 
                     self.push(quantity.clone());
                 }
-                op @ (Op::Add | Op::Subtract | Op::Multiply | Op::Divide) => {
+                op @ (Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Power) => {
                     let rhs = self.pop();
                     let lhs = self.pop();
                     let result = match op {
@@ -208,6 +211,7 @@ impl Vm {
                                 lhs / rhs
                             }
                         }
+                        Op::Power => lhs.power(rhs),
                         _ => unreachable!(),
                     };
                     self.push(result.map_err(InterpreterError::UnitError)?);
