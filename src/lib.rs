@@ -11,7 +11,7 @@ mod quantity;
 mod registry;
 mod span;
 mod tokenizer;
-mod treewalk_interpreter;
+pub mod treewalk_interpreter;
 mod unit;
 mod unit_registry;
 mod vm;
