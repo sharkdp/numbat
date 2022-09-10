@@ -1,30 +1,11 @@
-mod arithmetic;
-mod ast;
-mod bytecode_interpreter;
-mod dimension;
-mod interpreter;
-mod number;
-mod parser;
-mod pretty_print;
-mod product;
-mod quantity;
-mod registry;
-mod span;
-mod tokenizer;
-mod treewalk_interpreter;
-mod unit;
-mod unit_registry;
-mod vm;
-
-use interpreter::{Interpreter, InterpreterResult};
-use parser::parse;
-use pretty_print::PrettyPrint;
+use insect::bytecode_interpreter::BytecodeInterpreter;
+use insect::interpreter::{Interpreter, InterpreterResult};
+use insect::parser::{parse, ParseError};
+use insect::pretty_print::PrettyPrint;
 
 use anyhow::{Context, Result};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
-
-use bytecode_interpreter::BytecodeInterpreter;
 
 const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
@@ -57,7 +38,7 @@ fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
                 }
             }
         }
-        Err(ref e @ parser::ParseError { ref span, .. }) => {
+        Err(ref e @ ParseError { ref span, .. }) => {
             let line = input.lines().nth(span.line - 1).unwrap();
 
             eprintln!("  File \"<stdin>\", line {}", span.line);

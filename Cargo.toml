@@ -1,5 +1,6 @@
 [package]
-name = "insect-rs"
+authors = ["David Peter <mail@david-peter.de>"]
+name = "insect"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,3 +10,7 @@ thiserror = "1"
 once_cell = "1"
 rustyline = "10"
 itertools = "0.10"
+
+[[bin]]
+name = "insect"
+path = "src/cli/main.rs"
