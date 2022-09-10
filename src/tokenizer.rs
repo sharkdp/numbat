@@ -127,6 +127,14 @@ impl Tokenizer {
                 while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
                     self.advance();
                 }
+
+                // decimal part
+                if self.match_char('.') {
+                    while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                        self.advance();
+                    }
+                }
+
                 TokenKind::Number
             }
             ' ' | '\t' | '\r' => {

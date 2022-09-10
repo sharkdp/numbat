@@ -443,6 +443,8 @@ mod tests {
     #[test]
     fn parse_numbers() {
         parse_as_expression(&["1", "  1   "], scalar!(1.0));
+        parse_as_expression(&["123.456"], scalar!(123.456));
+        parse_as_expression(&["1."], scalar!(1.0));
 
         should_fail(&["123..", "0..", ".0.", ".", ". 2", ".."]);
     }
