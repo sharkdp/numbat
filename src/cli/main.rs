@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use insect::bytecode_interpreter::BytecodeInterpreter;
 use insect::interpreter::{Interpreter, InterpreterResult};
@@ -20,7 +20,7 @@ const PRETTY_PRINT: bool = false;
 #[clap(version, about)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 struct Cli {
-    /// Path to file with Insect code. If none is given, an interactive
+    /// Path to source file with Insect code. If none is given, an interactive
     /// session is started.
     file: Option<PathBuf>,
 
@@ -28,7 +28,11 @@ struct Cli {
     #[clap(short, long, value_name = "CODE", conflicts_with = "file")]
     expression: Option<String>,
 
-    /// Turn on debug mode (e.g. disassembler output)
+    /// Do not load Insects prelude with predefined physical dimensions and units.
+    #[clap(long, action)]
+    no_prelude: bool,
+
+    /// Turn on debug mode (e.g. disassembler output).
     #[clap(long, action)]
     debug: bool,
 }
@@ -75,13 +79,21 @@ fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
 fn run() -> Result<()> {
     let args = Cli::parse();
 
-    let code: Option<String> = if let Some(path) = args.file {
-        Some(fs::read_to_string(path)?)
+    let code: Option<String> = if let Some(ref path) = args.file {
+        Some(fs::read_to_string(path).context(format!(
+            "Could not load source file '{}'",
+            path.to_string_lossy()
+        ))?)
     } else {
         args.expression
     };
 
     let mut interpreter = BytecodeInterpreter::new(args.debug);
+
+    if !args.no_prelude {
+        let prelude_code = fs::read_to_string("prelude.ins")?; // TODO
+        parse_and_evaluate(&mut interpreter, &prelude_code);
+    }
 
     if let Some(code) = code {
         parse_and_evaluate(&mut interpreter, &code);
