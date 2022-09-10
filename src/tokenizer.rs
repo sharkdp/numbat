@@ -124,12 +124,8 @@ impl Tokenizer {
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
             c if c.is_ascii_digit() => {
-                while let Some(c) = self.peek() {
-                    if c.is_ascii_digit() {
-                        self.advance();
-                    } else {
-                        break;
-                    }
+                while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                    self.advance();
                 }
                 TokenKind::Number
             }
