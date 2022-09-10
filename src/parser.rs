@@ -78,6 +78,9 @@ impl<'a> Parser<'a> {
     fn parse(&mut self) -> Result<Vec<Statement>> {
         let mut statements = vec![];
 
+        // Skip over empty lines
+        while self.match_exact(TokenKind::Newline).is_some() {}
+
         while !self.is_at_end() {
             match self.statement() {
                 Ok(statement) => statements.push(statement),
@@ -88,7 +91,8 @@ impl<'a> Parser<'a> {
 
             match self.peek().kind {
                 TokenKind::Newline => {
-                    self.advance();
+                    // Skip over empty lines
+                    while self.match_exact(TokenKind::Newline).is_some() {}
                 }
                 TokenKind::Eof => {
                     break;
