@@ -1,9 +1,13 @@
+use std::fs;
+use std::path::{Path, PathBuf};
+
 use insect::bytecode_interpreter::BytecodeInterpreter;
 use insect::interpreter::{Interpreter, InterpreterResult};
 use insect::parser::{parse, ParseError};
 use insect::pretty_print::PrettyPrint;
 
 use anyhow::{Context, Result};
+use clap::{AppSettings, Parser};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -11,6 +15,23 @@ const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
 const PRETTY_PRINT: bool = false;
+
+#[derive(Parser, Debug)]
+#[clap(version, about)]
+#[clap(global_setting(AppSettings::DeriveDisplayOrder))]
+struct Cli {
+    /// Path to file with Insect code. If none is given, an interactive
+    /// session is started.
+    file: Option<PathBuf>,
+
+    /// Evaluate a single expression
+    #[clap(short, long, value_name = "CODE", conflicts_with = "file")]
+    expression: Option<String>,
+
+    /// Turn on debug mode (e.g. disassembler output)
+    #[clap(long, action)]
+    debug: bool,
+}
 
 fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
     let result = parse(input);
@@ -52,17 +73,17 @@ fn parse_and_evaluate(interpreter: &mut impl Interpreter, input: &str) -> bool {
 }
 
 fn run() -> Result<()> {
-    /*let mut interpreter: Box<dyn Interpreter> = if false {
-        Box::new(TreewalkInterpreter::new())
+    let args = Cli::parse();
+
+    let code: Option<String> = if let Some(path) = args.file {
+        Some(fs::read_to_string(path)?)
     } else {
-        Box::new(BytecodeInterpreter::new())
-    };*/
-    let mut interpreter = BytecodeInterpreter::new();
+        args.expression
+    };
 
-    let mut args = std::env::args();
-    args.next();
+    let mut interpreter = BytecodeInterpreter::new(args.debug);
 
-    if let Some(code) = args.next() {
+    if let Some(code) = code {
         parse_and_evaluate(&mut interpreter, &code);
         Ok(())
     } else {

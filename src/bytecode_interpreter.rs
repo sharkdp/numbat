@@ -128,9 +128,9 @@ impl BytecodeInterpreter {
 }
 
 impl Interpreter for BytecodeInterpreter {
-    fn new() -> Self {
+    fn new(debug: bool) -> Self {
         Self {
-            vm: Vm::new(),
+            vm: Vm::new(debug),
             dimension_registry: DimensionRegistry::new(),
             unit_registry: UnitRegistry::new(),
         }

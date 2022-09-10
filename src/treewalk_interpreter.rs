@@ -45,7 +45,7 @@ impl TreewalkInterpreter {
 }
 
 impl Interpreter for TreewalkInterpreter {
-    fn new() -> Self {
+    fn new(_debug: bool) -> Self {
         Self {
             variables: HashMap::new(),
         }

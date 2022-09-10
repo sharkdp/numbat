@@ -35,7 +35,7 @@ pub enum InterpreterResult {
 pub type Result<T> = std::result::Result<T, InterpreterError>;
 
 pub trait Interpreter {
-    fn new() -> Self;
+    fn new(debug: bool) -> Self;
 
     fn interpret_statement(&mut self, statements: &Statement) -> Result<InterpreterResult>;
 
@@ -50,7 +50,7 @@ pub trait Interpreter {
 
 #[cfg(test)]
 fn get_interpreter_result<I: Interpreter>(input: &str) -> Result<InterpreterResult> {
-    let mut interpreter = I::new();
+    let mut interpreter = I::new(false);
     let statements =
         crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
     interpreter.interpret_statements(&statements)

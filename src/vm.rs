@@ -99,7 +99,7 @@ pub struct Vm {
 }
 
 impl Vm {
-    pub fn new() -> Self {
+    pub fn new(debug: bool) -> Self {
         Self {
             constants: vec![],
             identifiers: vec![],
@@ -107,7 +107,7 @@ impl Vm {
             stack: vec![],
             globals: HashMap::new(),
             ip: 0,
-            debug: true,
+            debug,
         }
     }
 
@@ -295,7 +295,7 @@ impl Vm {
 
 #[test]
 fn vm_basic() {
-    let mut vm = Vm::new();
+    let mut vm = Vm::new(false);
     vm.add_constant(Constant::Scalar(42.0));
     vm.add_constant(Constant::Scalar(1.0));
 
