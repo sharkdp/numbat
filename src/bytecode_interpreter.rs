@@ -109,7 +109,10 @@ impl BytecodeInterpreter {
                     .add_derived_unit(name, expr, &self.dimension_registry, dexpr.as_ref())
                     .map_err(InterpreterError::UnitRegistryError)?;
 
-                self.vm.add_op(Op::List); // TODO
+                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::from_name(name)));
+                self.vm.add_op1(Op::Constant, constant_idx);
+                let identifier_idx = self.vm.add_identifier(name);
+                self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
         }
 

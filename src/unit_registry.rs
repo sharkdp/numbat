@@ -35,10 +35,10 @@ impl UnitRegistry {
             Expression::Scalar(_) => Ok(BaseRepresentation::unity()),
             Expression::Identifier(name) => self.get_base_representation_for_name(name),
             Expression::Negate(expr) => self.get_base_representation(expr),
-            Expression::BinaryOperator(BinaryOperator::Add | BinaryOperator::Sub, lhs, _) => {
-                self.get_base_representation(lhs)
-                // TODO(minor): add and sub should not be allowed in unit definitions.
-                // Right now, we can set "unit x = … + 1" and the "+ 1" will just be ignored.
+            Expression::BinaryOperator(BinaryOperator::Add | BinaryOperator::Sub, _lhs, _rhs) => {
+                todo!()
+                // TODO(minor): add and sub should probably not be allowed in unit definitions,
+                // unless we want to allow for something like `unit year = 12 months + …`.
             }
             Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs) => Ok(self
                 .get_base_representation(lhs)?
