@@ -92,7 +92,11 @@ fn run() -> Result<()> {
 
     if !args.no_prelude {
         let prelude_code = fs::read_to_string("prelude.ins")?; // TODO
-        parse_and_evaluate(&mut interpreter, &prelude_code);
+
+        let statements = parse(&prelude_code).context("Parse error in prelude")?;
+        interpreter
+            .interpret_statements(&statements)
+            .context("Interpreter error in prelude")?;
     }
 
     if let Some(code) = code {

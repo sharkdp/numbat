@@ -41,8 +41,12 @@ pub trait Interpreter {
 
     fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult> {
         let mut result = Err(InterpreterError::NoStatements);
+        if statements.is_empty() {
+            return result;
+        }
+
         for statement in statements {
-            result = self.interpret_statement(statement);
+            result = Ok(self.interpret_statement(statement)?);
         }
         result
     }
