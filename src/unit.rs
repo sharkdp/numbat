@@ -2,10 +2,36 @@ use std::fmt::{Display, Write};
 
 use crate::{
     arithmetic::{Exponent, Power},
+    number::Number,
     product::{Canonicalize, Product},
 };
 
-pub type BaseUnit = String;
+pub type ConversionFactor = Number;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UnitType {
+    Standard,
+    NonStandard(ConversionFactor, Unit),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BaseUnit {
+    long_name: String,
+    short_name: Option<String>,
+    unit_type: UnitType,
+}
+
+impl PartialOrd for BaseUnit {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.long_name.partial_cmp(&other.long_name)
+    }
+}
+
+impl Ord for BaseUnit {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.long_name.cmp(&other.long_name)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct UnitFactor(pub BaseUnit, pub Exponent);
@@ -40,15 +66,22 @@ impl Unit {
     }
 
     pub fn from_name(name: &str) -> Self {
-        Unit::from_factor(UnitFactor(name.into(), 1))
+        Unit::from_factor(UnitFactor(
+            BaseUnit {
+                long_name: name.into(),
+                short_name: None,
+                unit_type: UnitType::Standard,
+            },
+            1,
+        ))
     }
 }
 
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
-        for &UnitFactor(ref name, exp) in self.iter() {
-            result.push_str(name);
+        for &UnitFactor(ref base_unit, exp) in self.iter() {
+            result.push_str(&base_unit.long_name);
 
             match exp {
                 1 => {}
@@ -65,12 +98,40 @@ impl Display for Unit {
 
 #[test]
 fn unit_basic() {
-    let meter = Unit::from_factor(UnitFactor("meter".into(), 1));
-    let second = Unit::from_factor(UnitFactor("second".into(), 1));
+    let meter = Unit::from_factor(UnitFactor(
+        BaseUnit {
+            long_name: "meter".into(),
+            short_name: None,
+            unit_type: UnitType::Standard,
+        },
+        1,
+    ));
+    let second = Unit::from_factor(UnitFactor(
+        BaseUnit {
+            long_name: "second".into(),
+            short_name: None,
+            unit_type: UnitType::Standard,
+        },
+        1,
+    ));
 
     let meter_per_second = Unit::from_factors([
-        UnitFactor("meter".into(), 1),
-        UnitFactor("second".into(), -1),
+        UnitFactor(
+            BaseUnit {
+                long_name: "meter".into(),
+                short_name: None,
+                unit_type: UnitType::Standard,
+            },
+            1,
+        ),
+        UnitFactor(
+            BaseUnit {
+                long_name: "second".into(),
+                short_name: None,
+                unit_type: UnitType::Standard,
+            },
+            -1,
+        ),
     ]);
 
     assert_eq!(meter.divide(second), meter_per_second);

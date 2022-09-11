@@ -1,6 +1,8 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct Number(pub f64);
 
+impl Eq for Number {}
+
 impl Number {
     pub fn from_f64(n: f64) -> Self {
         Number(n)
