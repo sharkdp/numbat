@@ -117,6 +117,13 @@ impl Tokenizer {
             m
         });
 
+        if self.peek() == Some('#') {
+            // skip over comment until newline
+            while self.peek() != Some('\n') {
+                self.advance();
+            }
+        }
+
         let current_position = self.current_position;
         let current_char = self.advance();
 
