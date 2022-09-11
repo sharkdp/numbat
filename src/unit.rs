@@ -65,12 +65,23 @@ impl Unit {
         Self::unity()
     }
 
-    pub fn from_name(name: &str) -> Self {
+    pub fn new_standard(name: &str) -> Self {
         Unit::from_factor(UnitFactor(
             BaseUnit {
                 long_name: name.into(),
                 short_name: None,
                 unit_type: UnitType::Standard,
+            },
+            1,
+        ))
+    }
+
+    pub fn new_non_standard(name: &str, factor: ConversionFactor, standard_unit: Unit) -> Self {
+        Unit::from_factor(UnitFactor(
+            BaseUnit {
+                long_name: name.into(),
+                short_name: None,
+                unit_type: UnitType::NonStandard(factor, standard_unit),
             },
             1,
         ))

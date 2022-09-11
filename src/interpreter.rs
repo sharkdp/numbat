@@ -125,6 +125,6 @@ fn test_advanced_bytecode_interpreter() {
 
     assert_evaluates_to::<crate::bytecode_interpreter::BytecodeInterpreter>(
         "dimension length\nunit meter : length\n2 * meter",
-        (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::from_name("meter"))).unwrap(),
+        (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_standard("meter"))).unwrap(),
     );
 }

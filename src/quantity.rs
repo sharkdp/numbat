@@ -138,9 +138,9 @@ impl std::fmt::Display for Quantity {
 
 #[test]
 fn test_convert() {
-    let q = Quantity::new(Number::from_f64(2.0), Unit::from_name("meter"));
-    assert!(q.convert_to(&Unit::from_name("meter")).is_ok());
+    let q = Quantity::new(Number::from_f64(2.0), Unit::new_standard("meter"));
+    assert!(q.convert_to(&Unit::new_standard("meter")).is_ok());
 
-    assert!(q.convert_to(&Unit::from_name("second")).is_err());
+    assert!(q.convert_to(&Unit::new_standard("second")).is_err());
     assert!(q.convert_to(&Unit::scalar()).is_err());
 }

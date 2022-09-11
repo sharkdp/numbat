@@ -99,7 +99,9 @@ impl BytecodeInterpreter {
                     .add_base_unit(name, dexpr.clone())
                     .map_err(InterpreterError::UnitRegistryError)?;
 
-                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::from_name(name)));
+                let constant_idx = self
+                    .vm
+                    .add_constant(Constant::Unit(Unit::new_standard(name)));
                 self.vm.add_op1(Op::Constant, constant_idx);
                 let identifier_idx = self.vm.add_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
@@ -109,7 +111,9 @@ impl BytecodeInterpreter {
                     .add_derived_unit(name, expr, &self.dimension_registry, dexpr.as_ref())
                     .map_err(InterpreterError::UnitRegistryError)?;
 
-                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::from_name(name)));
+                let constant_idx = self
+                    .vm
+                    .add_constant(Constant::Unit(Unit::new_standard(name)));
                 self.vm.add_op1(Op::Constant, constant_idx);
                 let identifier_idx = self.vm.add_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
