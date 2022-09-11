@@ -119,8 +119,14 @@ impl Tokenizer {
 
         if self.peek() == Some('#') {
             // skip over comment until newline
-            while self.peek() != Some('\n') {
-                self.advance();
+            loop {
+                match self.peek() {
+                    None => return Ok(None),
+                    Some('\n') => break,
+                    _ => {
+                        self.advance();
+                    }
+                }
             }
         }
 
