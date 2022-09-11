@@ -33,7 +33,7 @@ struct Cli {
     no_prelude: bool,
 
     /// Turn on debug mode (e.g. disassembler output).
-    #[clap(long, action)]
+    #[clap(long, short, action)]
     debug: bool,
 }
 

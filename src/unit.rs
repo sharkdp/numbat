@@ -16,20 +16,19 @@ pub enum UnitType {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BaseUnit {
-    long_name: String,
-    short_name: Option<String>,
+    name: String,
     unit_type: UnitType,
 }
 
 impl PartialOrd for BaseUnit {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.long_name.partial_cmp(&other.long_name)
+        self.name.partial_cmp(&other.name)
     }
 }
 
 impl Ord for BaseUnit {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.long_name.cmp(&other.long_name)
+        self.name.cmp(&other.name)
     }
 }
 
@@ -68,8 +67,7 @@ impl Unit {
     pub fn new_standard(name: &str) -> Self {
         Unit::from_factor(UnitFactor(
             BaseUnit {
-                long_name: name.into(),
-                short_name: None,
+                name: name.into(),
                 unit_type: UnitType::Standard,
             },
             1,
@@ -79,8 +77,7 @@ impl Unit {
     pub fn new_non_standard(name: &str, factor: ConversionFactor, standard_unit: Unit) -> Self {
         Unit::from_factor(UnitFactor(
             BaseUnit {
-                long_name: name.into(),
-                short_name: None,
+                name: name.into(),
                 unit_type: UnitType::NonStandard(factor, standard_unit),
             },
             1,
@@ -92,7 +89,7 @@ impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
         for &UnitFactor(ref base_unit, exp) in self.iter() {
-            result.push_str(&base_unit.long_name);
+            result.push_str(&base_unit.name);
 
             match exp {
                 1 => {}
@@ -111,16 +108,14 @@ impl Display for Unit {
 fn unit_basic() {
     let meter = Unit::from_factor(UnitFactor(
         BaseUnit {
-            long_name: "meter".into(),
-            short_name: None,
+            name: "meter".into(),
             unit_type: UnitType::Standard,
         },
         1,
     ));
     let second = Unit::from_factor(UnitFactor(
         BaseUnit {
-            long_name: "second".into(),
-            short_name: None,
+            name: "second".into(),
             unit_type: UnitType::Standard,
         },
         1,
@@ -129,16 +124,14 @@ fn unit_basic() {
     let meter_per_second = Unit::from_factors([
         UnitFactor(
             BaseUnit {
-                long_name: "meter".into(),
-                short_name: None,
+                name: "meter".into(),
                 unit_type: UnitType::Standard,
             },
             1,
         ),
         UnitFactor(
             BaseUnit {
-                long_name: "second".into(),
-                short_name: None,
+                name: "second".into(),
                 unit_type: UnitType::Standard,
             },
             -1,
