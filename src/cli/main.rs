@@ -8,6 +8,7 @@ use insect::pretty_print::PrettyPrint;
 
 use anyhow::{Context, Result};
 use clap::{AppSettings, Parser};
+use insect::typechecker::typecheck;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -67,8 +68,9 @@ impl Insect {
             let prelude_code = fs::read_to_string("prelude.ins")?; // TODO
 
             let statements = parse(&prelude_code).context("Parse error in prelude")?;
+            let statements_checked = typecheck(statements);
             self.interpreter
-                .interpret_statements(&statements)
+                .interpret_statements(&statements_checked)
                 .context("Interpreter error in prelude")?;
         }
 
@@ -116,7 +118,10 @@ impl Insect {
                         println!("  {}", statement.pretty_print());
                     }
                 }
-                match self.interpreter.interpret_statements(&statements) {
+
+                let statements_checked = typecheck(statements);
+
+                match self.interpreter.interpret_statements(&statements_checked) {
                     Ok(InterpreterResult::Quantity(quantity)) => {
                         println!();
                         println!("    = {}", quantity);

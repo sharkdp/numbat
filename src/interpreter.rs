@@ -1,8 +1,7 @@
 use crate::{
-    ast::Statement,
     quantity::{ConversionError, Quantity},
     registry::RegistryError,
-    unit::Unit,
+    typed_ast::Statement,
     unit_registry::UnitRegistryError,
 };
 
@@ -55,10 +54,13 @@ pub trait Interpreter {
 
 #[cfg(test)]
 fn get_interpreter_result<I: Interpreter>(input: &str) -> Result<InterpreterResult> {
+    use crate::typechecker::typecheck;
+
     let mut interpreter = I::new(false);
     let statements =
         crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
-    interpreter.interpret_statements(&statements)
+    let statements_typechecked = typecheck(statements);
+    interpreter.interpret_statements(&statements_typechecked)
 }
 
 #[cfg(test)]

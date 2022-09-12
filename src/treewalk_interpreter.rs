@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::ast::{BinaryOperator, Command, Expression, Statement};
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
 use crate::quantity::Quantity;
+use crate::typed_ast::{BinaryOperator, Command, Expression, Statement};
 
 pub struct TreewalkInterpreter {
     variables: HashMap<String, Quantity>,

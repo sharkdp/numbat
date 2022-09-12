@@ -12,6 +12,8 @@ mod registry;
 mod span;
 mod tokenizer;
 pub mod treewalk_interpreter;
+pub mod typechecker;
+mod typed_ast;
 mod unit;
 mod unit_registry;
 mod vm;

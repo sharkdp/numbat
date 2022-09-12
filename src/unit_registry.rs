@@ -1,7 +1,7 @@
 use crate::arithmetic::Power;
-use crate::ast::{BinaryOperator, DimensionExpression, Expression};
 use crate::dimension::DimensionRegistry;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, Registry, RegistryError};
+use crate::typed_ast::{BinaryOperator, DimensionExpression, Expression};
 
 use thiserror::Error;
 
@@ -115,11 +115,15 @@ impl UnitRegistry {
 
 #[cfg(test)]
 pub fn parse_expr(input: &str) -> Expression {
+    use crate::typechecker::TypeChecker;
+
     let tokens = crate::tokenizer::tokenize(input).expect("No tokenizer errors in tests");
     let mut parser = crate::parser::Parser::new(&tokens);
     let expr = parser.expression().expect("No parser errors in tests");
     assert!(parser.is_at_end());
-    expr
+
+    let typechecker = TypeChecker::new();
+    typechecker.check_expression(expr)
 }
 
 #[test]
