@@ -116,7 +116,7 @@ pub enum Command {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Command(Command),
-    DeclareVariable(String, Expression),
+    DeclareVariable(String, Expression, Option<DimensionExpression>),
     Expression(Expression),
     DeclareDimension(String, Vec<DimensionExpression>),
     DeclareBaseUnit(String, DimensionExpression),
@@ -128,7 +128,8 @@ impl PrettyPrint for Statement {
         match self {
             Statement::Command(Command::List) => "list".into(),
             Statement::Command(Command::Exit) => "exit".into(),
-            Statement::DeclareVariable(identifier, expr) => {
+            Statement::DeclareVariable(identifier, expr, _dexpr) => {
+                // TODO: print optional dexpr
                 format!("let {} = {}", identifier, expr.pretty_print())
             }
             Statement::Expression(expr) => expr.pretty_print(),

@@ -57,7 +57,7 @@ impl BytecodeInterpreter {
             Statement::Command(Command::Exit) => {
                 self.vm.add_op(Op::Exit);
             }
-            Statement::DeclareVariable(identifier, expr) => {
+            Statement::DeclareVariable(identifier, expr, _dexpr) => {
                 self.compile_expression(expr)?;
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);

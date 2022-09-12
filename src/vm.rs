@@ -222,7 +222,7 @@ impl Vm {
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         _ => unreachable!(),
                     };
-                    self.push(result.map_err(InterpreterError::UnitError)?);
+                    self.push(result.map_err(InterpreterError::ConversionError)?);
                 }
                 Op::Negate => {
                     let rhs = self.pop();

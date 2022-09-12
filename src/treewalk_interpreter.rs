@@ -38,7 +38,7 @@ impl TreewalkInterpreter {
                     BinaryOperator::Power => lhs.power(rhs),
                     BinaryOperator::ConvertTo => lhs.convert_to(rhs.unit()),
                 };
-                Ok(result.map_err(InterpreterError::UnitError)?)
+                Ok(result.map_err(InterpreterError::ConversionError)?)
             }
         }
     }
@@ -63,7 +63,7 @@ impl Interpreter for TreewalkInterpreter {
                 Ok(InterpreterResult::Continue)
             }
             Statement::Command(Command::Exit) => Ok(InterpreterResult::Exit),
-            Statement::DeclareVariable(identifier, expr) => {
+            Statement::DeclareVariable(identifier, expr, _dexpr) => {
                 let quantity = self.evaluate_expression(expr)?;
                 self.variables.insert(identifier.clone(), quantity);
 

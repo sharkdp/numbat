@@ -2,6 +2,7 @@ use crate::{
     ast::Statement,
     quantity::{ConversionError, Quantity},
     registry::RegistryError,
+    unit::Unit,
     unit_registry::UnitRegistryError,
 };
 
@@ -22,7 +23,7 @@ pub enum InterpreterError {
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
     #[error("{0}")]
-    UnitError(ConversionError),
+    ConversionError(ConversionError),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -134,7 +135,10 @@ fn test_advanced_bytecode_interpreter() {
         dimension mass
 
         dimension speed = length / time
-        dimension momentum = mass * speed";
+        dimension momentum = mass * speed
+        
+        unit meter : length
+        unit second : time";
 
     assert_evaluates_to::<BytecodeInterpreter>(
         "dimension length

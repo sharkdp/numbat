@@ -46,8 +46,8 @@ pub enum ParseErrorKind {
     #[error("Expected identifier after 'let' keyword")]
     ExpectedIdentifierAfterLet,
 
-    #[error("Expected '=' after identifier in 'let' assignment")]
-    ExpectedEqualAfterLetIdentifier,
+    #[error("Expected '=' or ':' after identifier in 'let' assignment")]
+    ExpectedEqualOrColonAfterLetIdentifier,
 }
 
 #[derive(Debug, Error)]
@@ -116,14 +116,24 @@ impl<'a> Parser<'a> {
             Ok(Statement::Command(Command::List))
         } else if self.match_exact(TokenKind::Let).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
+                    Some(self.dimension_expression()?)
+                } else {
+                    None
+                };
+
                 if self.match_exact(TokenKind::Equal).is_none() {
                     Err(ParseError {
-                        kind: ParseErrorKind::ExpectedEqualAfterLetIdentifier,
+                        kind: ParseErrorKind::ExpectedEqualOrColonAfterLetIdentifier,
                         span: self.peek().span.clone(),
                     })
                 } else {
                     let expr = self.expression()?;
-                    Ok(Statement::DeclareVariable(identifier.lexeme.clone(), expr))
+                    Ok(Statement::DeclareVariable(
+                        identifier.lexeme.clone(),
+                        expr,
+                        dexpr,
+                    ))
                 }
             } else {
                 Err(ParseError {
@@ -560,7 +570,16 @@ mod tests {
     fn parse_variable_declaration() {
         parse_as(
             &["let foo = 1", "let foo=1"],
-            Statement::DeclareVariable("foo".into(), scalar!(1.0)),
+            Statement::DeclareVariable("foo".into(), scalar!(1.0), None),
+        );
+
+        parse_as(
+            &["let x: length = 1 * meter"],
+            Statement::DeclareVariable(
+                "x".into(),
+                binop!(scalar!(1.0), Mul, identifier!("meter")),
+                Some(DimensionExpression::Dimension("length".into())),
+            ),
         );
 
         should_fail_with(
@@ -570,7 +589,7 @@ mod tests {
 
         should_fail_with(
             &["let foo", "let foo 2"],
-            ParseErrorKind::ExpectedEqualAfterLetIdentifier,
+            ParseErrorKind::ExpectedEqualOrColonAfterLetIdentifier,
         );
     }
 
