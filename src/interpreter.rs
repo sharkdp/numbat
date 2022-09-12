@@ -125,10 +125,42 @@ fn test_treewalk_interpreter() {
 // TODO: generalize these to both interpreters
 #[test]
 fn test_advanced_bytecode_interpreter() {
+    use crate::bytecode_interpreter::BytecodeInterpreter;
     use crate::unit::Unit;
 
-    assert_evaluates_to::<crate::bytecode_interpreter::BytecodeInterpreter>(
-        "dimension length\nunit meter : length\n2 * meter",
+    let mini_prelude = "
+        dimension length
+        dimension time
+        dimension mass
+
+        dimension speed = length / time
+        dimension momentum = mass * speed";
+
+    assert_evaluates_to::<BytecodeInterpreter>(
+        "dimension length
+         unit meter : length
+         2 * meter",
         (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_standard("meter"))).unwrap(),
+    );
+
+    assert_evaluates_to::<BytecodeInterpreter>(
+        &format!(
+            "{mini_prelude}
+             dimension energy = mass * speed^2 = momentum^2 / mass
+             1",
+            mini_prelude = mini_prelude
+        ),
+        Quantity::from_scalar(1.0),
+    );
+
+    assert_interpreter_error::<BytecodeInterpreter>(
+        &format!(
+            "{mini_prelude}
+             # wrong alternative expression: should be momentum^2 / mass
+             dimension energy = mass * speed^2 = momentum^2 * mass
+             1",
+            mini_prelude = mini_prelude
+        ),
+        InterpreterError::IncompatibleAlternativeDimensionExpression("energy".into()),
     );
 }
