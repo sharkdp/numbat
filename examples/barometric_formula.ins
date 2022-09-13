@@ -1,0 +1,11 @@
+dimension Temperature
+unit kelvin : Temperature
+
+let p0 = 101325 * pascal
+let t0 = 288.15 * kelvin
+let tempGradient = 0.65 * kelvin / (100 * meter)
+let height = 1500 * meter
+
+let pressure: Pressure = p0 * (1 - tempGradient * height / t0)^5.255 -> pascal
+
+pressure
