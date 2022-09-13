@@ -12,15 +12,15 @@ impl TreewalkInterpreter {
     fn evaluate_expression(&self, expr: &Expression) -> Result<Quantity> {
         match expr {
             Expression::Scalar(n) => Ok(n.into()),
-            Expression::Identifier(identifier) => {
+            Expression::Identifier(identifier, _type) => {
                 if let Some(quantity) = self.variables.get(identifier) {
                     Ok(quantity.clone())
                 } else {
                     Err(InterpreterError::UnknownVariable(identifier.clone()))
                 }
             }
-            Expression::Negate(rhs) => self.evaluate_expression(rhs).map(|v| -v),
-            Expression::BinaryOperator(op, lhs, rhs) => {
+            Expression::Negate(rhs, _type) => self.evaluate_expression(rhs).map(|v| -v),
+            Expression::BinaryOperator(op, lhs, rhs, _type) => {
                 let lhs = self.evaluate_expression(lhs)?;
                 let rhs = self.evaluate_expression(rhs)?;
 

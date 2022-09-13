@@ -18,15 +18,15 @@ impl BytecodeInterpreter {
                 let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
                 self.vm.add_op1(Op::Constant, index);
             }
-            Expression::Identifier(identifier) => {
+            Expression::Identifier(identifier, _type) => {
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::GetVariable, identifier_idx);
             }
-            Expression::Negate(rhs) => {
+            Expression::Negate(rhs, _type) => {
                 self.compile_expression(rhs)?;
                 self.vm.add_op(Op::Negate);
             }
-            Expression::BinaryOperator(operator, lhs, rhs) => {
+            Expression::BinaryOperator(operator, lhs, rhs, _type) => {
                 self.compile_expression(lhs)?;
                 self.compile_expression(rhs)?;
 

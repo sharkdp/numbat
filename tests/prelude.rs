@@ -9,7 +9,7 @@ use std::fs;
 fn prelude_can_be_parsed_and_interpreted() {
     let prelude_code = fs::read_to_string("prelude.ins").unwrap();
     let statements = parse(&prelude_code).unwrap();
-    let statements_checked = typecheck(statements);
+    let statements_checked = typecheck(statements).unwrap();
 
     let mut interpreter = BytecodeInterpreter::new(false);
 

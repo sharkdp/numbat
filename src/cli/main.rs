@@ -8,7 +8,7 @@ use insect::pretty_print::PrettyPrint;
 
 use anyhow::{Context, Result};
 use clap::{AppSettings, Parser};
-use insect::typechecker::typecheck;
+use insect::typechecker::{typecheck, TypeChecker};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -42,6 +42,7 @@ struct Args {
 
 struct Insect {
     args: Args,
+    typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
 }
 
@@ -50,6 +51,7 @@ impl Insect {
         let args = Args::parse();
         Self {
             interpreter: BytecodeInterpreter::new(args.debug),
+            typechecker: TypeChecker::new(),
             args,
         }
     }
@@ -68,7 +70,7 @@ impl Insect {
             let prelude_code = fs::read_to_string("prelude.ins")?; // TODO
 
             let statements = parse(&prelude_code).context("Parse error in prelude")?;
-            let statements_checked = typecheck(statements);
+            let statements_checked = self.typechecker.check_statements(statements)?;
             self.interpreter
                 .interpret_statements(&statements_checked)
                 .context("Interpreter error in prelude")?;
@@ -119,19 +121,25 @@ impl Insect {
                     }
                 }
 
-                let statements_checked = typecheck(statements);
-
-                match self.interpreter.interpret_statements(&statements_checked) {
-                    Ok(InterpreterResult::Quantity(quantity)) => {
-                        println!();
-                        println!("    = {}", quantity);
-                        println!();
-                        true
+                match self.typechecker.check_statements(statements) {
+                    Ok(statements_checked) => {
+                        match self.interpreter.interpret_statements(&statements_checked) {
+                            Ok(InterpreterResult::Quantity(quantity)) => {
+                                println!();
+                                println!("    = {}", quantity);
+                                println!();
+                                true
+                            }
+                            Ok(InterpreterResult::Continue) => true,
+                            Ok(InterpreterResult::Exit) => false,
+                            Err(e) => {
+                                eprintln!("Interpreter error: {:#}", e);
+                                true
+                            }
+                        }
                     }
-                    Ok(InterpreterResult::Continue) => true,
-                    Ok(InterpreterResult::Exit) => false,
                     Err(e) => {
-                        eprintln!("Interpreter error: {:#}", e);
+                        eprintln!("Type check error: {:#}", e);
                         true
                     }
                 }
