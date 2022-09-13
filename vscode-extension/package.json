@@ -1,0 +1,25 @@
+{
+    "name": "insect",
+    "displayName": "Insect",
+    "description": "Syntax highlighting for the Insect programming language",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.71.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "insect",
+            "aliases": ["Insect", "insect"],
+            "extensions": [".ins"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "insect",
+            "scopeName": "source.insect",
+            "path": "./syntaxes/insect.tmLanguage.json"
+        }]
+    }
+}
