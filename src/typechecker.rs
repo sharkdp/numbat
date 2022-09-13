@@ -5,7 +5,6 @@ use crate::ast;
 use crate::dimension::DimensionRegistry;
 use crate::registry::BaseRepresentation;
 use crate::typed_ast::{self, Type};
-use crate::unit::Unit;
 
 use thiserror::Error;
 
@@ -67,7 +66,9 @@ impl TypeChecker {
                         };
                         lhs.get_type().power(exponent)
                     }
-                    typed_ast::BinaryOperator::ConvertTo => todo!(),
+                    typed_ast::BinaryOperator::ConvertTo => {
+                        rhs.get_type()// TODO!
+                    },
                 };
 
                 typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), _type)
