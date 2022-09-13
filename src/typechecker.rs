@@ -52,9 +52,19 @@ impl TypeChecker {
                 let lhs = self.check_expression(*lhs)?;
                 let rhs = self.check_expression(*rhs)?;
 
+                let get_type_and_assert_equality = || {
+                    let lhs_type = lhs.get_type();
+                    let rhs_type = rhs.get_type();
+                    if lhs_type != rhs_type {
+                        Err(TypeCheckError::IncompatibleDimensions(lhs_type, rhs_type))
+                    } else {
+                        Ok(lhs_type)
+                    }
+                };
+
                 let _type = match op {
-                    typed_ast::BinaryOperator::Add => lhs.get_type(), // TODO
-                    typed_ast::BinaryOperator::Sub => lhs.get_type(), // TODO
+                    typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
+                    typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
                     typed_ast::BinaryOperator::Mul => lhs.get_type().multiply(rhs.get_type()),
                     typed_ast::BinaryOperator::Div => lhs.get_type().divide(rhs.get_type()),
                     typed_ast::BinaryOperator::Power => {
@@ -67,7 +77,7 @@ impl TypeChecker {
                         lhs.get_type().power(exponent)
                     }
                     typed_ast::BinaryOperator::ConvertTo => {
-                        rhs.get_type()// TODO!
+                        get_type_and_assert_equality()?
                     },
                 };
 
