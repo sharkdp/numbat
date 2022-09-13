@@ -55,7 +55,7 @@
 			"patterns": [
 				{
 					"name": "variable.name",
-					"match": "\\b\\p{Ll}+\\b"
+					"match": "\\b\\p{Ll}\\w+\\b"
 				}
 			]
 		}
