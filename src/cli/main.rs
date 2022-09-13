@@ -8,7 +8,7 @@ use insect::pretty_print::PrettyPrint;
 
 use anyhow::{Context, Result};
 use clap::{AppSettings, Parser};
-use insect::typechecker::{typecheck, TypeChecker};
+use insect::typechecker::TypeChecker;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
