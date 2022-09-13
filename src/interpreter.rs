@@ -25,7 +25,7 @@ pub enum InterpreterError {
     UnitError(ConversionError),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum InterpreterResult {
     Quantity(Quantity),
     Continue,

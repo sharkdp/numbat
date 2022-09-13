@@ -12,7 +12,7 @@ pub enum ConversionError {
 
 pub type Result<T> = std::result::Result<T, ConversionError>;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Quantity {
     value: Number,
     unit: Unit,

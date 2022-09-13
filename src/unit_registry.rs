@@ -82,7 +82,7 @@ impl UnitRegistry {
                 base_representation
                     .iter()
                     .flat_map(|BaseRepresentationFactor(base_name, exp)| {
-                        let dimension = self.registry.base_entry_metadata(&base_name).unwrap(); // TODO(minor): remove unwrap
+                        let dimension = self.registry.base_entry_metadata(base_name).unwrap(); // TODO(minor): remove unwrap
 
                         dimension_registry
                             .get_base_representation(dimension)

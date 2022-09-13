@@ -157,7 +157,7 @@ impl Canonicalize for i32 {
     type MergeKey = ();
 
     fn merge_key(&self) -> Self::MergeKey {
-        () // merge everything
+        // merge everything
     }
 
     fn merge(self, other: Self) -> Self {

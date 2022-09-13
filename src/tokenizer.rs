@@ -252,7 +252,7 @@ fn token_stream(input: &[(&str, TokenKind, (usize, usize, usize))]) -> Vec<Token
     input
         .iter()
         .map(|(lexeme, kind, (line, position, index))| Token {
-            kind: kind.clone(),
+            kind: *kind,
             lexeme: lexeme.to_string(),
             span: Span {
                 line: *line,
