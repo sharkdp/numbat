@@ -76,9 +76,7 @@ impl TypeChecker {
                         };
                         lhs.get_type().power(exponent)
                     }
-                    typed_ast::BinaryOperator::ConvertTo => {
-                        get_type_and_assert_equality()?
-                    },
+                    typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
                 };
 
                 typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), _type)
@@ -92,7 +90,7 @@ impl TypeChecker {
                 let expr = self.check_expression(expr)?;
                 let inferred_type = expr.get_type();
                 if let Some(ref dexpr) = optional_dexpr {
-                    let specified_type = self.registry.get_base_representation(&dexpr).unwrap();
+                    let specified_type = self.registry.get_base_representation(dexpr).unwrap();
                     if inferred_type != specified_type {
                         return Err(TypeCheckError::IncompatibleDimensions(
                             specified_type,
