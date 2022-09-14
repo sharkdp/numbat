@@ -153,15 +153,4 @@ fn test_advanced_bytecode_interpreter() {
         ),
         Quantity::from_scalar(1.0),
     );
-
-    // assert_interpreter_error::<BytecodeInterpreter>(
-    //     &format!(
-    //         "{mini_prelude}
-    //          # wrong alternative expression: should be momentum^2 / mass
-    //          dimension energy = mass * speed^2 = momentum^2 * mass
-    //          1",
-    //         mini_prelude = mini_prelude
-    //     ),
-    //     InterpreterError::IncompatibleAlternativeDimensionExpression("energy".into()),
-    // );
 }

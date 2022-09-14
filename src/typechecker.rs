@@ -10,8 +10,6 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
-    // #[error("Wrong dimension: unit '{0}' is not of dimension '{1}'")]
-    // IncompatibleDimension(Unit, String),
     #[error("Incompatible dimensions: '{0}' and '{1}'")]
     IncompatibleDimensions(BaseRepresentation, BaseRepresentation),
     #[error("{0}")]
@@ -74,9 +72,7 @@ impl TypeChecker {
                     typed_ast::BinaryOperator::Power => {
                         let exponent = match &rhs {
                             typed_ast::Expression::Scalar(n) => n.to_f64() as i32, // TODO!
-                            typed_ast::Expression::Identifier(_, _) => todo!(),
-                            typed_ast::Expression::Negate(_, _) => todo!(),
-                            typed_ast::Expression::BinaryOperator(_, _, _, _) => todo!(),
+                            _ => todo!(),
                         };
                         lhs.get_type().power(exponent)
                     }
@@ -197,4 +193,71 @@ pub fn typecheck(
 ) -> Result<Vec<typed_ast::Statement>> {
     let mut typechecker = TypeChecker::new();
     typechecker.check_statements(statements)
+}
+
+#[cfg(test)]
+fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
+    let statements =
+        crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
+
+    let mut typechecker = TypeChecker::new();
+    typechecker
+        .check_statements(statements)
+        .map(|mut statements_checked| statements_checked.pop().unwrap())
+}
+
+#[cfg(test)]
+fn assert_successful_typecheck(input: &str) {
+    assert!(run_typecheck(input).is_ok());
+}
+
+#[cfg(test)]
+fn assert_typecheck_error(input: &str, err: TypeCheckError) {
+    assert!(run_typecheck(input) == Err(err));
+}
+
+#[test]
+fn basic() {
+    use crate::registry::BaseRepresentationFactor;
+
+    let mini_prelude = "dimension A
+                        dimension B
+                        dimension C = A * B
+                        unit a: A
+                        unit b: B
+                        unit c: C = a * b";
+
+    assert_successful_typecheck(&format!(
+        "{mini_prelude}
+         let x: C = a * b",
+        mini_prelude = mini_prelude
+    ));
+
+    assert_successful_typecheck(&format!(
+        "{mini_prelude}
+         let x: C = 2 * a * b^2 / b",
+        mini_prelude = mini_prelude
+    ));
+
+    assert_typecheck_error(
+        &format!(
+            "{mini_prelude}
+             a + b",
+            mini_prelude = mini_prelude
+        ),
+        TypeCheckError::IncompatibleDimensions(
+            BaseRepresentation::from_factor(BaseRepresentationFactor("A".into(), 1)),
+            BaseRepresentation::from_factor(BaseRepresentationFactor("B".into(), 1)),
+        ),
+    );
+
+    assert_typecheck_error(
+        &format!(
+            "{mini_prelude}
+             # wrong alternative expression: C / B^2
+             dimension D = A / B = C / B^3",
+            mini_prelude = mini_prelude
+        ),
+        TypeCheckError::IncompatibleAlternativeDimensionExpression("D".into()),
+    );
 }

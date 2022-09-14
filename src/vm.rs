@@ -256,7 +256,7 @@ impl Vm {
     pub fn add_constant(&mut self, constant: Constant) -> u8 {
         self.constants.push(constant);
         assert!(self.constants.len() <= u8::MAX as usize);
-        (self.constants.len() - 1) as u8 // TODO: this can overflow, see aove
+        (self.constants.len() - 1) as u8 // TODO: this can overflow, see above
     }
 
     pub fn add_identifier(&mut self, identifier: &str) -> u8 {
