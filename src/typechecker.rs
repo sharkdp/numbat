@@ -109,8 +109,9 @@ impl TypeChecker {
                         ));
                     }
                 }
-                self.types_for_identifier.insert(name.clone(), type_deduced);
-                typed_ast::Statement::DeclareVariable(name, expr, optional_dexpr)
+                self.types_for_identifier
+                    .insert(name.clone(), type_deduced.clone());
+                typed_ast::Statement::DeclareVariable(name, expr, type_deduced)
             }
             ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr) => {
                 // TODO: this is the *exact same code* that we have above for
@@ -130,8 +131,9 @@ impl TypeChecker {
                         ));
                     }
                 }
-                self.types_for_identifier.insert(name.clone(), type_deduced);
-                typed_ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr)
+                self.types_for_identifier
+                    .insert(name.clone(), type_deduced.clone());
+                typed_ast::Statement::DeclareDerivedUnit(name, expr, type_deduced)
             }
             ast::Statement::Command(command) => typed_ast::Statement::Command(command),
             ast::Statement::DeclareDimension(name, dexprs) => {
@@ -163,15 +165,16 @@ impl TypeChecker {
                         .add_base_dimension(&name)
                         .map_err(TypeCheckError::RegistryError)?;
                 }
-                typed_ast::Statement::DeclareDimension(name, dexprs)
+                typed_ast::Statement::DeclareDimension(name)
             }
             ast::Statement::DeclareBaseUnit(name, dexpr) => {
-                let type_ = self
+                let type_specified = self
                     .registry
                     .get_base_representation(&dexpr)
                     .map_err(TypeCheckError::RegistryError)?;
-                self.types_for_identifier.insert(name.clone(), type_);
-                typed_ast::Statement::DeclareBaseUnit(name, dexpr)
+                self.types_for_identifier
+                    .insert(name.clone(), type_specified.clone());
+                typed_ast::Statement::DeclareBaseUnit(name, type_specified)
             }
         })
     }

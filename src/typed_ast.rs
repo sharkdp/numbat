@@ -14,11 +14,11 @@ pub enum Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Command(Command),
-    DeclareVariable(String, Expression, Option<DimensionExpression>),
+    DeclareVariable(String, Expression, Type),
     Expression(Expression),
-    DeclareDimension(String, Vec<DimensionExpression>),
-    DeclareBaseUnit(String, DimensionExpression),
-    DeclareDerivedUnit(String, Expression, Option<DimensionExpression>),
+    DeclareDimension(String),
+    DeclareBaseUnit(String, Type),
+    DeclareDerivedUnit(String, Expression, Type),
 }
 
 impl Expression {

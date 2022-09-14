@@ -1,6 +1,6 @@
 use crate::arithmetic::Power;
 use crate::registry::{BaseRepresentation, Registry, RegistryError};
-use crate::typed_ast::{BinaryOperator, DimensionExpression, Expression};
+use crate::typed_ast::{BinaryOperator, Expression, Type};
 
 use thiserror::Error;
 
@@ -18,14 +18,13 @@ pub enum UnitRegistryError {
 pub type Result<T> = std::result::Result<T, UnitRegistryError>;
 
 pub struct UnitRegistry {
-    // TODO(minor): Optimization: do not store the unevaluated DimensionExpression here, but rather a direct link to the corresponding dimension (does that always exist?!)
-    registry: Registry<DimensionExpression>,
+    registry: Registry<Type>,
 }
 
 impl UnitRegistry {
     pub fn new() -> Self {
         Self {
-            registry: Registry::<DimensionExpression>::default(),
+            registry: Registry::<Type>::default(),
         }
     }
 
@@ -68,9 +67,9 @@ impl UnitRegistry {
             .map_err(UnitRegistryError::RegistryError)
     }
 
-    pub fn add_base_unit(&mut self, name: &str, dexpr: DimensionExpression) -> Result<()> {
+    pub fn add_base_unit(&mut self, name: &str, type_: Type) -> Result<()> {
         self.registry
-            .add_base_entry(name, dexpr)
+            .add_base_entry(name, type_)
             .map_err(UnitRegistryError::RegistryError)
     }
 
