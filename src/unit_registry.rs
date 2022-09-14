@@ -1,6 +1,5 @@
 use crate::arithmetic::Power;
-use crate::dimension::DimensionRegistry;
-use crate::registry::{BaseRepresentation, BaseRepresentationFactor, Registry, RegistryError};
+use crate::registry::{BaseRepresentation, Registry, RegistryError};
 use crate::typed_ast::{BinaryOperator, DimensionExpression, Expression};
 
 use thiserror::Error;
@@ -75,42 +74,8 @@ impl UnitRegistry {
             .map_err(UnitRegistryError::RegistryError)
     }
 
-    pub fn add_derived_unit(
-        &mut self,
-        name: &str,
-        expression: &Expression,
-        dimension_registry: &DimensionRegistry,
-        dexpr: Option<&DimensionExpression>,
-    ) -> Result<()> {
+    pub fn add_derived_unit(&mut self, name: &str, expression: &Expression) -> Result<()> {
         let base_representation = self.get_base_representation(expression)?;
-
-        if let Some(dexpr) = dexpr {
-            let components =
-                base_representation
-                    .iter()
-                    .flat_map(|BaseRepresentationFactor(base_name, exp)| {
-                        let dimension = self.registry.base_entry_metadata(base_name).unwrap(); // TODO(minor): remove unwrap
-
-                        dimension_registry
-                            .get_base_representation(dimension)
-                            .unwrap()
-                            .power(*exp)
-                    });
-            let dimension_base_representation_computed =
-                BaseRepresentation::from_factors(components);
-
-            let dimension_base_representation_specified = dimension_registry
-                .get_base_representation(dexpr)
-                .map_err(UnitRegistryError::RegistryError)?;
-
-            if dimension_base_representation_specified != dimension_base_representation_computed {
-                return Err(UnitRegistryError::IncompatibleDimension(
-                    name.to_owned(),
-                    dimension_base_representation_specified,
-                    dimension_base_representation_computed,
-                ));
-            }
-        }
 
         self.registry
             .add_derived_entry(name, base_representation)

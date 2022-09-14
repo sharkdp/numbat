@@ -1,6 +1,5 @@
 use crate::{
     quantity::{ConversionError, Quantity},
-    registry::RegistryError,
     typed_ast::Statement,
     unit_registry::UnitRegistryError,
 };
@@ -16,11 +15,7 @@ pub enum InterpreterError {
     #[error("No statements in program")]
     NoStatements,
     #[error("{0}")]
-    RegistryError(RegistryError),
-    #[error("{0}")]
     UnitRegistryError(UnitRegistryError),
-    #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
-    IncompatibleAlternativeDimensionExpression(String),
     #[error("{0}")]
     ConversionError(ConversionError),
 }
@@ -159,14 +154,14 @@ fn test_advanced_bytecode_interpreter() {
         Quantity::from_scalar(1.0),
     );
 
-    assert_interpreter_error::<BytecodeInterpreter>(
-        &format!(
-            "{mini_prelude}
-             # wrong alternative expression: should be momentum^2 / mass
-             dimension energy = mass * speed^2 = momentum^2 * mass
-             1",
-            mini_prelude = mini_prelude
-        ),
-        InterpreterError::IncompatibleAlternativeDimensionExpression("energy".into()),
-    );
+    // assert_interpreter_error::<BytecodeInterpreter>(
+    //     &format!(
+    //         "{mini_prelude}
+    //          # wrong alternative expression: should be momentum^2 / mass
+    //          dimension energy = mass * speed^2 = momentum^2 * mass
+    //          1",
+    //         mini_prelude = mini_prelude
+    //     ),
+    //     InterpreterError::IncompatibleAlternativeDimensionExpression("energy".into()),
+    // );
 }

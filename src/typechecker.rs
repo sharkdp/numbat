@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::arithmetic::Power;
 use crate::ast;
 use crate::dimension::DimensionRegistry;
-use crate::registry::BaseRepresentation;
+use crate::registry::{BaseRepresentation, RegistryError};
 use crate::typed_ast::{self, Type};
 
 use thiserror::Error;
@@ -14,6 +14,10 @@ pub enum TypeCheckError {
     // IncompatibleDimension(Unit, String),
     #[error("Incompatible dimensions: '{0}' and '{1}'")]
     IncompatibleDimensions(BaseRepresentation, BaseRepresentation),
+    #[error("{0}")]
+    RegistryError(RegistryError),
+    #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
+    IncompatibleAlternativeDimensionExpression(String),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -86,44 +90,86 @@ impl TypeChecker {
 
     pub fn check_statement(&mut self, ast: ast::Statement) -> Result<typed_ast::Statement> {
         Ok(match ast {
-            ast::Statement::DeclareVariable(name, expr, optional_dexpr) => {
-                let expr = self.check_expression(expr)?;
-                let inferred_type = expr.get_type();
-                if let Some(ref dexpr) = optional_dexpr {
-                    let specified_type = self.registry.get_base_representation(dexpr).unwrap();
-                    if inferred_type != specified_type {
-                        return Err(TypeCheckError::IncompatibleDimensions(
-                            specified_type,
-                            inferred_type,
-                        ));
-                    }
-                }
-                self.types_for_identifier
-                    .insert(name.clone(), inferred_type);
-                typed_ast::Statement::DeclareVariable(name, expr, optional_dexpr)
-            }
             ast::Statement::Expression(expr) => {
                 typed_ast::Statement::Expression(self.check_expression(expr)?)
             }
-            ast::Statement::DeclareDerivedUnit(name, expr, dexpr) => {
-                // TODO: check against dexpr
+            ast::Statement::DeclareVariable(name, expr, optional_dexpr) => {
                 let expr = self.check_expression(expr)?;
-                let type_ = expr.get_type();
-                self.types_for_identifier.insert(name.clone(), type_);
-                typed_ast::Statement::DeclareDerivedUnit(name, expr, dexpr)
+                let type_deduced = expr.get_type();
+
+                if let Some(ref dexpr) = optional_dexpr {
+                    let type_specified = self
+                        .registry
+                        .get_base_representation(dexpr)
+                        .map_err(TypeCheckError::RegistryError)?;
+                    if type_deduced != type_specified {
+                        return Err(TypeCheckError::IncompatibleDimensions(
+                            type_specified,
+                            type_deduced,
+                        ));
+                    }
+                }
+                self.types_for_identifier.insert(name.clone(), type_deduced);
+                typed_ast::Statement::DeclareVariable(name, expr, optional_dexpr)
             }
-            // Trivial cases:
+            ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr) => {
+                // TODO: this is the *exact same code* that we have above for
+                // variable declarations => deduplicate this somehow
+                let expr = self.check_expression(expr)?;
+                let type_deduced = expr.get_type();
+
+                if let Some(ref dexpr) = optional_dexpr {
+                    let type_specified = self
+                        .registry
+                        .get_base_representation(dexpr)
+                        .map_err(TypeCheckError::RegistryError)?;
+                    if type_deduced != type_specified {
+                        return Err(TypeCheckError::IncompatibleDimensions(
+                            type_specified,
+                            type_deduced,
+                        ));
+                    }
+                }
+                self.types_for_identifier.insert(name.clone(), type_deduced);
+                typed_ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr)
+            }
             ast::Statement::Command(command) => typed_ast::Statement::Command(command),
             ast::Statement::DeclareDimension(name, dexprs) => {
                 if let Some(dexpr) = dexprs.first() {
-                    self.registry.add_derived_dimension(&name, dexpr).unwrap(); // TODO
+                    self.registry
+                        .add_derived_dimension(&name, dexpr)
+                        .map_err(TypeCheckError::RegistryError)?;
+
+                    let base_representation = self
+                        .registry
+                        .get_base_representation_for_name(&name)
+                        .expect("we just inserted it");
+
+                    for alternative_expr in &dexprs[1..] {
+                        let alternative_base_representation = self
+                            .registry
+                            .get_base_representation(alternative_expr)
+                            .map_err(TypeCheckError::RegistryError)?;
+                        if alternative_base_representation != base_representation {
+                            return Err(
+                                TypeCheckError::IncompatibleAlternativeDimensionExpression(
+                                    name.clone(),
+                                ),
+                            );
+                        }
+                    }
                 } else {
-                    self.registry.add_base_dimension(&name).unwrap(); // TODO
+                    self.registry
+                        .add_base_dimension(&name)
+                        .map_err(TypeCheckError::RegistryError)?;
                 }
                 typed_ast::Statement::DeclareDimension(name, dexprs)
             }
             ast::Statement::DeclareBaseUnit(name, dexpr) => {
-                let type_ = self.registry.get_base_representation(&dexpr).unwrap(); // TODO
+                let type_ = self
+                    .registry
+                    .get_base_representation(&dexpr)
+                    .map_err(TypeCheckError::RegistryError)?;
                 self.types_for_identifier.insert(name.clone(), type_);
                 typed_ast::Statement::DeclareBaseUnit(name, dexpr)
             }

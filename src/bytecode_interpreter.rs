@@ -1,4 +1,3 @@
-use crate::dimension::DimensionRegistry;
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
 use crate::typed_ast::{BinaryOperator, Command, Expression, Statement};
 use crate::unit::Unit;
@@ -7,7 +6,6 @@ use crate::vm::{Constant, Op, Vm};
 
 pub struct BytecodeInterpreter {
     vm: Vm,
-    dimension_registry: DimensionRegistry,
     unit_registry: UnitRegistry,
 }
 
@@ -62,36 +60,7 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareDimension(name, exprs) => {
-                if exprs.is_empty() {
-                    self.dimension_registry
-                        .add_base_dimension(name)
-                        .map_err(InterpreterError::RegistryError)?;
-                } else {
-                    self.dimension_registry
-                        .add_derived_dimension(name, &exprs[0])
-                        .map_err(InterpreterError::RegistryError)?;
-
-                    let base_representation = self
-                        .dimension_registry
-                        .get_base_representation_for_name(name)
-                        .expect("we just inserted it");
-
-                    for alternative_expr in &exprs[1..] {
-                        let alternative_base_representation = self
-                            .dimension_registry
-                            .get_base_representation(alternative_expr)
-                            .map_err(InterpreterError::RegistryError)?;
-                        if alternative_base_representation != base_representation {
-                            return Err(
-                                InterpreterError::IncompatibleAlternativeDimensionExpression(
-                                    name.clone(),
-                                ),
-                            );
-                        }
-                    }
-                }
-
+            Statement::DeclareDimension(_name, _exprs) => {
                 self.vm.add_op(Op::List); // TODO
             }
             Statement::DeclareBaseUnit(name, dexpr) => {
@@ -106,9 +75,9 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareDerivedUnit(name, expr, dexpr) => {
+            Statement::DeclareDerivedUnit(name, expr, _dexpr) => {
                 self.unit_registry
-                    .add_derived_unit(name, expr, &self.dimension_registry, dexpr.as_ref())
+                    .add_derived_unit(name, expr)
                     .map_err(InterpreterError::UnitRegistryError)?;
 
                 let constant_idx = self
@@ -138,7 +107,6 @@ impl Interpreter for BytecodeInterpreter {
     fn new(debug: bool) -> Self {
         Self {
             vm: Vm::new(debug),
-            dimension_registry: DimensionRegistry::new(),
             unit_registry: UnitRegistry::new(),
         }
     }

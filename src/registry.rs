@@ -90,14 +90,6 @@ impl<Metadata> Registry<Metadata> {
         self.base_entries.iter().any(|(n, _)| n == name)
     }
 
-    pub fn base_entry_metadata(&self, name: &str) -> Result<&Metadata> {
-        self.base_entries
-            .iter()
-            .find(|(n, _)| n == name)
-            .map(|(_, ref m)| m)
-            .ok_or_else(|| RegistryError::UnknownEntry(name.to_owned()))
-    }
-
     pub fn add_derived_entry(
         &mut self,
         name: &str,
