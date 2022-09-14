@@ -44,17 +44,25 @@ impl DimensionRegistry {
         self.registry.get_base_representation_for_name(name)
     }
 
-    pub fn add_base_dimension(&mut self, name: &str) -> Result<()> {
-        self.registry.add_base_entry(name, ())
+    pub fn add_base_dimension(&mut self, name: &str) -> Result<BaseRepresentation> {
+        self.registry.add_base_entry(name, ())?;
+        Ok(self
+            .registry
+            .get_base_representation_for_name(name)
+            .unwrap())
     }
 
     pub fn add_derived_dimension(
         &mut self,
         name: &str,
         expression: &DimensionExpression,
-    ) -> Result<()> {
+    ) -> Result<BaseRepresentation> {
         let base_representation = self.get_base_representation(expression)?;
-        self.registry.add_derived_entry(name, base_representation)
+        self.registry.add_derived_entry(name, base_representation)?;
+        Ok(self
+            .registry
+            .get_base_representation_for_name(name)
+            .unwrap())
     }
 }
 

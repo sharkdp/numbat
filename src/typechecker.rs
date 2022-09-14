@@ -10,6 +10,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
+    #[error("Unknown identifier '{0}'")]
+    UnknownIdentifier(String),
     #[error("Incompatible dimensions: '{0}' and '{1}'")]
     IncompatibleDimensions(BaseRepresentation, BaseRepresentation),
     #[error("{0}")]
@@ -33,15 +35,17 @@ impl TypeChecker {
         }
     }
 
-    fn type_for_identifier(&self, name: &str) -> &Type {
-        self.types_for_identifier.get(name).unwrap()
+    fn type_for_identifier(&self, name: &str) -> Result<&Type> {
+        self.types_for_identifier
+            .get(name)
+            .ok_or_else(|| TypeCheckError::UnknownIdentifier(name.into()))
     }
 
     pub(crate) fn check_expression(&self, ast: ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
             ast::Expression::Scalar(n) => typed_ast::Expression::Scalar(n),
             ast::Expression::Identifier(name) => {
-                let type_ = self.type_for_identifier(&name).clone();
+                let type_ = self.type_for_identifier(&name)?.clone();
 
                 typed_ast::Expression::Identifier(name, type_)
             }
