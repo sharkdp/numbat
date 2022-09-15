@@ -116,8 +116,8 @@ pub enum Command {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Command(Command),
-    DeclareVariable(String, Expression, Option<DimensionExpression>),
     Expression(Expression),
+    DeclareVariable(String, Expression, Option<DimensionExpression>),
     DeclareDimension(String, Vec<DimensionExpression>),
     DeclareBaseUnit(String, DimensionExpression),
     DeclareDerivedUnit(String, Expression, Option<DimensionExpression>),
