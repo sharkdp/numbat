@@ -12,8 +12,14 @@ use thiserror::Error;
 pub enum TypeCheckError {
     #[error("Unknown identifier '{0}'")]
     UnknownIdentifier(String),
-    #[error("Incompatible dimensions: '{0}' and '{1}'")]
-    IncompatibleDimensions(BaseRepresentation, BaseRepresentation),
+    #[error("Incompatible dimensions in {0}:\n    {1}: {2}\n    {3}: {4}")]
+    IncompatibleDimensions(
+        &'static str,
+        &'static str,
+        BaseRepresentation,
+        &'static str,
+        BaseRepresentation,
+    ),
     #[error("{0}")]
     RegistryError(RegistryError),
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
@@ -22,6 +28,7 @@ pub enum TypeCheckError {
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
 
+#[derive(Clone)]
 pub struct TypeChecker {
     types_for_identifier: HashMap<String, Type>,
     registry: DimensionRegistry,
@@ -62,7 +69,13 @@ impl TypeChecker {
                     let lhs_type = lhs.get_type();
                     let rhs_type = rhs.get_type();
                     if lhs_type != rhs_type {
-                        Err(TypeCheckError::IncompatibleDimensions(lhs_type, rhs_type))
+                        Err(TypeCheckError::IncompatibleDimensions(
+                            "binary operator",
+                            " left hand side",
+                            lhs_type,
+                            "right hand side",
+                            rhs_type,
+                        ))
                     } else {
                         Ok(lhs_type)
                     }
@@ -104,7 +117,10 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions(
+                            "variable declaration",
+                            "specified dimension",
                             type_specified,
+                            "   actual dimension",
                             type_deduced,
                         ));
                     }
@@ -126,7 +142,10 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions(
+                            "derived unit declaration",
+                            "specified dimension",
                             type_specified,
+                            "   actual dimension",
                             type_deduced,
                         ));
                     }
@@ -134,6 +153,51 @@ impl TypeChecker {
                 self.types_for_identifier
                     .insert(name.clone(), type_deduced.clone());
                 typed_ast::Statement::DeclareDerivedUnit(name, expr, type_deduced)
+            }
+            ast::Statement::DeclareFunction(
+                function_name,
+                parameters,
+                expr,
+                optional_return_type_dexpr,
+            ) => {
+                let mut typechecker_fn = self.clone();
+                let mut typed_parameters = vec![];
+                for (parameter, optional_dexpr) in parameters {
+                    let parameter_type = typechecker_fn
+                        .registry
+                        .get_base_representation(&optional_dexpr.unwrap())
+                        .unwrap(); // TODO: error handling and parameter type deduction, in case it is not specified
+                    typechecker_fn
+                        .types_for_identifier
+                        .insert(parameter.clone(), parameter_type.clone());
+                    typed_parameters.push((parameter.clone(), parameter_type));
+                }
+                let expr = typechecker_fn.check_expression(expr).unwrap();
+
+                let return_type_deduced = expr.get_type();
+                if let Some(ref return_type_dexpr) = optional_return_type_dexpr {
+                    let return_type_specified = typechecker_fn
+                        .registry
+                        .get_base_representation(return_type_dexpr)
+                        .map_err(TypeCheckError::RegistryError)?;
+
+                    if return_type_deduced != return_type_specified {
+                        return Err(TypeCheckError::IncompatibleDimensions(
+                            "function return type",
+                            "specified return type",
+                            return_type_specified,
+                            "   actual return type",
+                            return_type_deduced,
+                        ));
+                    }
+                }
+
+                typed_ast::Statement::DeclareFunction(
+                    function_name,
+                    typed_parameters,
+                    expr,
+                    return_type_deduced,
+                )
             }
             ast::Statement::Command(command) => typed_ast::Statement::Command(command),
             ast::Statement::DeclareDimension(name, dexprs) => {

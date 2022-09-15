@@ -61,7 +61,7 @@ impl Display for BaseRepresentation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Registry<Metadata> {
     base_entries: Vec<(String, Metadata)>,
     derived_entries: HashMap<String, BaseRepresentation>,

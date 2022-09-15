@@ -33,6 +33,7 @@ pub enum TokenKind {
 
     // Other keywords
     Let,
+    Fn,
     Dimension,
     Unit,
 
@@ -109,6 +110,7 @@ impl Tokenizer {
             m.insert("per", TokenKind::Divide);
             m.insert("to", TokenKind::Arrow);
             m.insert("let", TokenKind::Let);
+            m.insert("fn", TokenKind::Fn);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
             m.insert("list", TokenKind::List);

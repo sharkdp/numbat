@@ -60,6 +60,9 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
+            Statement::DeclareFunction(name, parameters, expr, _return_type) => {
+                self.vm.add_op(Op::List); // TODO
+            }
             Statement::DeclareDimension(_name) => {
                 self.vm.add_op(Op::List); // TODO
             }

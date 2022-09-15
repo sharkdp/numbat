@@ -118,6 +118,12 @@ pub enum Statement {
     Command(Command),
     Expression(Expression),
     DeclareVariable(String, Expression, Option<DimensionExpression>),
+    DeclareFunction(
+        String,
+        Vec<(String, Option<DimensionExpression>)>,
+        Expression,
+        Option<DimensionExpression>,
+    ),
     DeclareDimension(String, Vec<DimensionExpression>),
     DeclareBaseUnit(String, DimensionExpression),
     DeclareDerivedUnit(String, Expression, Option<DimensionExpression>),
@@ -131,6 +137,10 @@ impl PrettyPrint for Statement {
             Statement::DeclareVariable(identifier, expr, _dexpr) => {
                 // TODO: print optional dexpr
                 format!("let {} = {}", identifier, expr.pretty_print())
+            }
+            Statement::DeclareFunction(identifier, _args, expr, _dexpr) => {
+                // TODO: print args
+                format!("fn {}(…) = {}", identifier, expr.pretty_print())
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DeclareDimension(ident, vec) if vec.is_empty() => {

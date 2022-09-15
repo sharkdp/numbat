@@ -17,3 +17,8 @@ fn prelude_can_be_parsed_and_interpreted() {
 
     assert!(result.is_ok());
 }
+
+#[test]
+fn examples_can_be_parsed_and_interpreted() {
+    // TODO
+}

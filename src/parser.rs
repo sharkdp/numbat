@@ -22,6 +22,8 @@
 //! primary      →   number | identifier | "(" expression ")"
 //! ```
 
+use std::option;
+
 use crate::ast::{BinaryOperator, Command, DimensionExpression, Expression, Statement};
 use crate::number::Number;
 use crate::span::Span;
@@ -48,6 +50,12 @@ pub enum ParseErrorKind {
 
     #[error("Expected '=' or ':' after identifier in 'let' assignment")]
     ExpectedEqualOrColonAfterLetIdentifier,
+
+    #[error("Expected identifier after 'fn' keyword")]
+    ExpectedIdentifierAfterFn,
+
+    #[error("Expected '=' in function declaration")]
+    ExpectedEqualInFunctionDeclaration,
 }
 
 #[derive(Debug, Error)]
@@ -138,6 +146,62 @@ impl<'a> Parser<'a> {
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedIdentifierAfterLet,
+                    span: self.peek().span.clone(),
+                })
+            }
+        } else if self.match_exact(TokenKind::Fn).is_some() {
+            if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
+                if !self.match_exact(TokenKind::LeftParen).is_some() {
+                    todo!("Parse error");
+                }
+
+                let mut parameters = vec![];
+                loop {
+                    if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
+                        let param_type_dexpr = if self.match_exact(TokenKind::Colon).is_some() {
+                            Some(self.dimension_expression()?)
+                        } else {
+                            None
+                        };
+
+                        parameters.push((param_name.lexeme.to_string(), param_type_dexpr));
+
+                        if self.match_exact(TokenKind::Comma).is_some() {
+                            // continue parsing parameters
+                        } else if self.match_exact(TokenKind::RightParen).is_some() {
+                            break;
+                        } else {
+                            todo!("Parse error");
+                        }
+                    } else {
+                        todo!("Parse error");
+                    }
+                }
+
+                let optional_return_type_dexpr = if self.match_exact(TokenKind::Arrow).is_some() {
+                    // Parse return type
+                    Some(self.dimension_expression()?)
+                } else {
+                    None
+                };
+
+                if self.match_exact(TokenKind::Equal).is_none() {
+                    Err(ParseError {
+                        kind: ParseErrorKind::ExpectedEqualInFunctionDeclaration,
+                        span: self.peek().span.clone(),
+                    })
+                } else {
+                    let expr = self.expression()?;
+                    Ok(Statement::DeclareFunction(
+                        fn_name.lexeme.clone(),
+                        parameters,
+                        expr,
+                        optional_return_type_dexpr,
+                    ))
+                }
+            } else {
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedIdentifierAfterFn,
                     span: self.peek().span.clone(),
                 })
             }

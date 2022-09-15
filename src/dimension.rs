@@ -2,7 +2,7 @@ use crate::arithmetic::Power;
 use crate::ast::DimensionExpression;
 use crate::registry::{BaseRepresentation, Registry, Result};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct DimensionRegistry {
     registry: Registry<()>,
 }
