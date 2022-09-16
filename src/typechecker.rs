@@ -314,7 +314,10 @@ fn basic() {
             mini_prelude = mini_prelude
         ),
         TypeCheckError::IncompatibleDimensions(
+            "binary operator",
+            " left hand side",
             BaseRepresentation::from_factor(BaseRepresentationFactor("A".into(), 1)),
+            "right hand side",
             BaseRepresentation::from_factor(BaseRepresentationFactor("B".into(), 1)),
         ),
     );
