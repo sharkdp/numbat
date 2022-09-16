@@ -22,7 +22,7 @@
 //! primary      →   number | identifier | "(" expression ")"
 //! ```
 
-use std::option;
+
 
 use crate::ast::{BinaryOperator, Command, DimensionExpression, Expression, Statement};
 use crate::number::Number;
@@ -151,7 +151,7 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::Fn).is_some() {
             if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
-                if !self.match_exact(TokenKind::LeftParen).is_some() {
+                if self.match_exact(TokenKind::LeftParen).is_none() {
                     todo!("Parse error");
                 }
 
