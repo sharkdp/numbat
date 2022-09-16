@@ -51,7 +51,7 @@ impl Insect {
         let args = Args::parse();
         Self {
             interpreter: BytecodeInterpreter::new(args.debug),
-            typechecker: TypeChecker::new(),
+            typechecker: TypeChecker::default(),
             args,
         }
     }

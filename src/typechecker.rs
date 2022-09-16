@@ -28,20 +28,13 @@ pub enum TypeCheckError {
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct TypeChecker {
     types_for_identifier: HashMap<String, Type>,
     registry: DimensionRegistry,
 }
 
 impl TypeChecker {
-    pub fn new() -> Self {
-        Self {
-            types_for_identifier: HashMap::default(),
-            registry: DimensionRegistry::new(),
-        }
-    }
-
     fn type_for_identifier(&self, name: &str) -> Result<&Type> {
         self.types_for_identifier
             .get(name)
@@ -259,7 +252,7 @@ impl TypeChecker {
 pub fn typecheck(
     statements: impl IntoIterator<Item = ast::Statement>,
 ) -> Result<Vec<typed_ast::Statement>> {
-    let mut typechecker = TypeChecker::new();
+    let mut typechecker = TypeChecker::default();
     typechecker.check_statements(statements)
 }
 
@@ -268,7 +261,7 @@ fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
     let statements =
         crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
 
-    let mut typechecker = TypeChecker::new();
+    let mut typechecker = TypeChecker::default();
     typechecker
         .check_statements(statements)
         .map(|mut statements_checked| statements_checked.pop().unwrap())

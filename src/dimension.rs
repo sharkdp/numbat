@@ -8,12 +8,6 @@ pub struct DimensionRegistry {
 }
 
 impl DimensionRegistry {
-    pub fn new() -> DimensionRegistry {
-        Self {
-            registry: Registry::<()>::default(),
-        }
-    }
-
     pub fn get_base_representation(
         &self,
         expression: &DimensionExpression,
