@@ -38,10 +38,9 @@ impl BytecodeInterpreter {
                 };
                 self.vm.add_op(op);
             }
-            Expression::FunctionCall(_name, _args, _type) => {
-                // TODO!
-                let index = self.vm.add_constant(Constant::Scalar(42.0));
-                self.vm.add_op1(Op::LoadConstant, index);
+            Expression::FunctionCall(name, _args, _type) => {
+                let idx = self.vm.get_function_idx(name);
+                self.vm.add_op1(Op::Call, idx);
             }
         };
 
@@ -68,6 +67,7 @@ impl BytecodeInterpreter {
             Statement::DeclareFunction(name, _parameters, expr, _return_type) => {
                 self.vm.begin_function(&name);
                 self.compile_expression(expr)?;
+                self.vm.add_op(Op::Return);
                 self.vm.end_function();
             }
             Statement::DeclareDimension(_name) => {

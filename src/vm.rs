@@ -34,6 +34,9 @@ pub enum Op {
     /// Similar to Add.
     ConvertTo,
 
+    /// Call the specified function.
+    Call,
+
     Return,
     List,
     Exit,
@@ -42,14 +45,14 @@ pub enum Op {
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::LoadConstant | Op::SetVariable | Op::GetVariable => 1,
-            Op::Add
+            Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::Call => 1,
+            Op::Negate
+            | Op::Add
             | Op::Subtract
             | Op::Multiply
             | Op::Divide
             | Op::Power
             | Op::ConvertTo
-            | Op::Negate
             | Op::Return
             | Op::List
             | Op::Exit => 0,
@@ -68,6 +71,7 @@ impl Op {
             Op::Divide => "Divide",
             Op::Power => "Power",
             Op::ConvertTo => "ConvertTo",
+            Op::Call => "Call",
             Op::Return => "Return",
             Op::List => "List",
             Op::Exit => "Exit",
@@ -98,6 +102,29 @@ impl Display for Constant {
     }
 }
 
+struct CallFrame {
+    /// The function being executed, index into [Vm]s `bytecode` vector.
+    function_idx: usize,
+
+    /// Instruction "pointer". An index into the bytecode of the currently
+    /// executed function.
+    ip: usize,
+
+    /// Frame "pointer". Where on the stack do arguments and local variables
+    /// start?
+    fp: usize,
+}
+
+impl CallFrame {
+    fn root() -> Self {
+        CallFrame {
+            function_idx: 0,
+            ip: 0,
+            fp: 0,
+        }
+    }
+}
+
 pub struct Vm {
     /// The actual code of the program, structured by function name. The code
     /// for the global scope is at index 0 under the function name `<main>`.
@@ -116,12 +143,11 @@ pub struct Vm {
     /// A dictionary of global variables and their respective values.
     globals: HashMap<String, Quantity>,
 
+    /// TODO: doc
+    frames: Vec<CallFrame>,
+
     /// The stack of the VM. Each entry is a [Quantity], i.e. something like `3.4 m/s²`.
     stack: Vec<Quantity>,
-
-    /// Instruction "pointer". An index into the bytecode of the currently executed
-    /// function.
-    ip: usize,
 
     /// Whether or not to run in debug mode.
     debug: bool,
@@ -135,8 +161,8 @@ impl Vm {
             constants: vec![],
             identifiers: vec![],
             globals: HashMap::new(),
+            frames: vec![CallFrame::root()],
             stack: vec![],
-            ip: 0,
             debug,
         }
     }
@@ -183,6 +209,12 @@ impl Vm {
         self.current_chunk_index = 0;
     }
 
+    pub(crate) fn get_function_idx(&self, name: &str) -> u8 {
+        let position = self.bytecode.iter().position(|(n, _)| n == name).unwrap();
+        assert!(position <= u8::MAX as usize);
+        position as u8
+    }
+
     pub fn disassemble(&self) {
         if !self.debug {
             return;
@@ -197,8 +229,8 @@ impl Vm {
         for (idx, identifier) in self.identifiers.iter().enumerate() {
             println!("  {:04} {}", idx, identifier);
         }
-        for (function_name, bytecode) in &self.bytecode {
-            println!(".CODE ({})", function_name);
+        for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
+            println!(".CODE {idx} ({name})", idx = idx, name = function_name);
             let mut offset = 0;
             while offset < bytecode.len() {
                 let this_offset = offset;
@@ -224,6 +256,8 @@ impl Vm {
 
                 if op == Op::LoadConstant {
                     print!("     (value: {})", self.constants[operands[0] as usize]);
+                } else if op == Op::Call {
+                    print!("     ({})", self.bytecode[operands[0] as usize].0);
                 }
                 println!();
             }
@@ -233,9 +267,18 @@ impl Vm {
 
     // The following functions are helpers for the actual execution of the code
 
+    fn current_frame(&self) -> &CallFrame {
+        self.frames.last().expect("Call stack is not empty")
+    }
+
+    fn current_frame_mut(&mut self) -> &mut CallFrame {
+        self.frames.last_mut().expect("Call stack is not empty")
+    }
+
     fn read_byte(&mut self) -> u8 {
-        let byte = self.bytecode[0].1[self.ip]; // TODO
-        self.ip += 1;
+        let frame = self.current_frame();
+        let byte = self.bytecode[frame.function_idx].1[frame.ip];
+        self.current_frame_mut().ip += 1;
         byte
     }
 
@@ -250,15 +293,21 @@ impl Vm {
     pub fn run(&mut self) -> Result<InterpreterResult> {
         let result = self.run_without_cleanup();
         if result.is_err() {
-            // Perform cleanup: clear the stack and move IP to the end
+            // Perform cleanup: clear the stack and move IP to the end.
+            // This is useful for the REPL.
+            //
+            // TODO(minor): is this really enough? Shouln't we also remove
+            // the bytecode?
             self.stack.clear();
-            self.ip = self.bytecode[0].1.len();
+            self.frames.clear(); // TODO
+            self.frames.push(CallFrame::root());
+            self.frames[0].ip = self.bytecode[0].1.len();
         }
         result
     }
 
     fn run_without_cleanup(&mut self) -> Result<InterpreterResult> {
-        if self.ip >= self.bytecode[0].1.len() {
+        if self.current_frame().ip >= self.bytecode[self.current_frame().function_idx].1.len() {
             return Ok(InterpreterResult::Continue);
         }
 
@@ -323,7 +372,21 @@ impl Vm {
                     let rhs = self.pop();
                     self.push(-rhs);
                 }
-                Op::Return => return Ok(InterpreterResult::Quantity(self.pop())),
+                Op::Call => {
+                    let function_idx = self.read_byte() as usize;
+                    self.frames.push(CallFrame {
+                        function_idx,
+                        ip: 0,
+                        fp: self.stack.len() - 1,
+                    })
+                }
+                Op::Return => {
+                    if self.frames.len() == 1 {
+                        return Ok(InterpreterResult::Quantity(self.pop()));
+                    } else {
+                        self.frames.pop();
+                    }
+                }
                 Op::List => {
                     return Ok(InterpreterResult::Continue);
                 }
@@ -339,7 +402,11 @@ impl Vm {
             return;
         }
 
-        print!("IP = {}, ", self.ip);
+        let frame = self.current_frame();
+        print!(
+            "FRAME = {}, IP = {}, ",
+            self.bytecode[frame.function_idx].0, frame.ip
+        );
         println!(
             "Stack: [{}]",
             self.stack
