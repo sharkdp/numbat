@@ -17,6 +17,11 @@ pub enum Op {
     /// Push the value of the specified variable onto the stack
     GetVariable,
 
+    /// Push the value of the specified local variable onto the
+    /// stack (even though it is already on the stack, somewhere
+    /// lower down).
+    GetLocal,
+
     /// Negate the top of the stack
     Negate,
 
@@ -45,7 +50,7 @@ pub enum Op {
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::Call => 1,
+            Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::GetLocal | Op::Call => 1,
             Op::Negate
             | Op::Add
             | Op::Subtract
@@ -64,6 +69,7 @@ impl Op {
             Op::LoadConstant => "LoadConstant",
             Op::SetVariable => "SetVariable",
             Op::GetVariable => "GetVariable",
+            Op::GetLocal => "GetLocal",
             Op::Negate => "Negate",
             Op::Add => "Add",
             Op::Subtract => "Subtract",
@@ -137,8 +143,8 @@ pub struct Vm {
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
     constants: Vec<Constant>,
 
-    /// Identifiers are the names of variables or the names of [Unit]s.
-    identifiers: Vec<String>,
+    /// The names of global variables or [Unit]s.
+    global_identifiers: Vec<String>,
 
     /// A dictionary of global variables and their respective values.
     globals: HashMap<String, Quantity>,
@@ -159,7 +165,7 @@ impl Vm {
             bytecode: vec![("<main>".into(), vec![])],
             current_chunk_index: 0,
             constants: vec![],
-            identifiers: vec![],
+            global_identifiers: vec![],
             globals: HashMap::new(),
             frames: vec![CallFrame::root()],
             stack: vec![],
@@ -189,14 +195,14 @@ impl Vm {
         (self.constants.len() - 1) as u8 // TODO: this can overflow, see above
     }
 
-    pub fn add_identifier(&mut self, identifier: &str) -> u8 {
-        if let Some(idx) = self.identifiers.iter().position(|i| i == identifier) {
+    pub fn add_global_identifier(&mut self, identifier: &str) -> u8 {
+        if let Some(idx) = self.global_identifiers.iter().position(|i| i == identifier) {
             return idx as u8;
         }
 
-        self.identifiers.push(identifier.to_owned());
-        assert!(self.identifiers.len() <= u8::MAX as usize);
-        (self.identifiers.len() - 1) as u8 // TODO: this can overflow, see above
+        self.global_identifiers.push(identifier.to_owned());
+        assert!(self.global_identifiers.len() <= u8::MAX as usize);
+        (self.global_identifiers.len() - 1) as u8 // TODO: this can overflow, see above
     }
 
     pub(crate) fn begin_function(&mut self, name: &str) {
@@ -226,7 +232,7 @@ impl Vm {
             println!("  {:04} {}", idx, constant);
         }
         println!(".IDENTIFIERS");
-        for (idx, identifier) in self.identifiers.iter().enumerate() {
+        for (idx, identifier) in self.global_identifiers.iter().enumerate() {
             println!("  {:04} {}", idx, identifier);
         }
         for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
@@ -325,7 +331,8 @@ impl Vm {
                 Op::SetVariable => {
                     let identifier_idx = self.read_byte();
                     let quantity = self.pop();
-                    let identifier: String = self.identifiers[identifier_idx as usize].clone();
+                    let identifier: String =
+                        self.global_identifiers[identifier_idx as usize].clone();
 
                     self.globals.insert(identifier, quantity);
 
@@ -333,7 +340,7 @@ impl Vm {
                 }
                 Op::GetVariable => {
                     let identifier_idx = self.read_byte();
-                    let identifier = &self.identifiers[identifier_idx as usize];
+                    let identifier = &self.global_identifiers[identifier_idx as usize];
 
                     let quantity = self
                         .globals
@@ -341,6 +348,11 @@ impl Vm {
                         .ok_or_else(|| InterpreterError::UnknownVariable(identifier.clone()))?;
 
                     self.push(quantity.clone());
+                }
+                Op::GetLocal => {
+                    let slot_idx = self.read_byte() as usize;
+                    let stack_idx = self.current_frame().fp - slot_idx;
+                    self.push(self.stack[stack_idx].clone());
                 }
                 op @ (Op::Add
                 | Op::Subtract
@@ -385,6 +397,7 @@ impl Vm {
                         return Ok(InterpreterResult::Quantity(self.pop()));
                     } else {
                         self.frames.pop();
+                        // TODO: pop function call arguments from the stack
                     }
                 }
                 Op::List => {

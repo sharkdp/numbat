@@ -1,0 +1,11 @@
+dimension Length
+dimension Time
+dimension Speed = Length / Time
+
+unit meter: Length
+unit second: Time
+
+fn speed(s: Length, t: Time) -> Speed = s/t
+
+speed(3 *  meter, 2 * second) # okay
+speed(3 *  meter, 2 * meter)  # type check error

@@ -97,6 +97,9 @@ impl TypeChecker {
                     .into_iter()
                     .map(|a| self.check_expression(a))
                     .collect::<Result<Vec<_>>>()?;
+
+                // TODO: verify args against parameters
+
                 typed_ast::Expression::FunctionCall(
                     function_name,
                     args_checked,
@@ -197,6 +200,8 @@ impl TypeChecker {
                     }
                 }
 
+                // TODO: store this somewhere else. also store the types of the
+                // arguments
                 self.types_for_identifier
                     .insert(function_name.clone(), return_type_deduced.clone());
 

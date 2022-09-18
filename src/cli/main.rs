@@ -112,6 +112,10 @@ impl Insect {
     fn parse_and_evaluate(&mut self, input: &str) -> bool {
         let result = parse(input);
 
+        if self.args.debug {
+            println!("{:#?}", &result);
+        }
+
         match result {
             Ok(statements) => {
                 if self.args.pretty_print {

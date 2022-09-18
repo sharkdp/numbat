@@ -335,18 +335,31 @@ impl<'a> Parser<'a> {
         let primary = self.primary()?;
 
         if self.match_exact(TokenKind::LeftParen).is_some() {
-            let args: Vec<Expression> = vec![];
-            loop {
-                if self.match_exact(TokenKind::RightParen).is_some() {
-                    if let Expression::Identifier(function_name) = primary {
-                        return Ok(Expression::FunctionCall(function_name, args));
-                    } else {
-                        todo!("Parse error: can not call …");
-                    }
+            let function_name = if let Expression::Identifier(name) = primary {
+                name
+            } else {
+                todo!("Parse error: can not call …");
+            };
+
+            if self.match_exact(TokenKind::RightParen).is_some() {
+                return Ok(Expression::FunctionCall(function_name, vec![]));
+            } else {
+                let args = self.arguments()?;
+                if !self.match_exact(TokenKind::RightParen).is_some() {
+                    todo!("Parse error");
                 }
+                return Ok(Expression::FunctionCall(function_name, args));
             }
         }
         Ok(primary)
+    }
+
+    fn arguments(&mut self) -> Result<Vec<Expression>> {
+        let mut args: Vec<Expression> = vec![self.expression()?];
+        while self.match_exact(TokenKind::Comma).is_some() {
+            args.push(self.expression()?);
+        }
+        Ok(args)
     }
 
     fn primary(&mut self) -> Result<Expression> {

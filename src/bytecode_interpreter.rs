@@ -7,6 +7,8 @@ use crate::vm::{Constant, Op, Vm};
 pub struct BytecodeInterpreter {
     vm: Vm,
     unit_registry: UnitRegistry,
+    /// List of local variables currently in scope
+    local_variables: Vec<(String, usize)>,
 }
 
 impl BytecodeInterpreter {
@@ -17,8 +19,17 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(identifier, _type) => {
-                let identifier_idx = self.vm.add_identifier(identifier);
-                self.vm.add_op1(Op::GetVariable, identifier_idx);
+                if let Some(position) = self
+                    .local_variables
+                    .iter()
+                    .position(|(n, _)| n == identifier)
+                {
+                    let slot_idx = self.local_variables[position].1;
+                    self.vm.add_op1(Op::GetLocal, slot_idx as u8); // TODO: check overflow
+                } else {
+                    let identifier_idx = self.vm.add_global_identifier(identifier);
+                    self.vm.add_op1(Op::GetVariable, identifier_idx);
+                }
             }
             Expression::Negate(rhs, _type) => {
                 self.compile_expression(rhs)?;
@@ -38,8 +49,12 @@ impl BytecodeInterpreter {
                 };
                 self.vm.add_op(op);
             }
-            Expression::FunctionCall(name, _args, _type) => {
+            Expression::FunctionCall(name, args, _type) => {
                 let idx = self.vm.get_function_idx(name);
+                // Put all arguments on top of the stacak
+                for arg in args {
+                    self.compile_expression(arg)?;
+                }
                 self.vm.add_op1(Op::Call, idx);
             }
         };
@@ -61,13 +76,21 @@ impl BytecodeInterpreter {
             }
             Statement::DeclareVariable(identifier, expr, _dexpr) => {
                 self.compile_expression(expr)?;
-                let identifier_idx = self.vm.add_identifier(identifier);
+                let identifier_idx = self.vm.add_global_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareFunction(name, _parameters, expr, _return_type) => {
+            Statement::DeclareFunction(name, parameters, expr, _return_type) => {
+                let arity = parameters.len();
                 self.vm.begin_function(&name);
+                for (i, parameter) in parameters.iter().enumerate() {
+                    let slot_idx = arity - i - 1;
+                    self.local_variables.push((parameter.0.clone(), slot_idx));
+                }
                 self.compile_expression(expr)?;
                 self.vm.add_op(Op::Return);
+                for _ in parameters {
+                    self.local_variables.pop();
+                }
                 self.vm.end_function();
             }
             Statement::DeclareDimension(_name) => {
@@ -83,7 +106,7 @@ impl BytecodeInterpreter {
                     .vm
                     .add_constant(Constant::Unit(Unit::new_standard(name)));
                 self.vm.add_op1(Op::LoadConstant, constant_idx);
-                let identifier_idx = self.vm.add_identifier(name);
+                let identifier_idx = self.vm.add_global_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
             Statement::DeclareDerivedUnit(name, expr, _dexpr) => {
@@ -95,7 +118,7 @@ impl BytecodeInterpreter {
                     .vm
                     .add_constant(Constant::Unit(Unit::new_standard(name)));
                 self.vm.add_op1(Op::LoadConstant, constant_idx);
-                let identifier_idx = self.vm.add_identifier(name);
+                let identifier_idx = self.vm.add_global_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
         }
@@ -119,6 +142,7 @@ impl Interpreter for BytecodeInterpreter {
         Self {
             vm: Vm::new(debug),
             unit_registry: UnitRegistry::new(),
+            local_variables: vec![],
         }
     }
 
