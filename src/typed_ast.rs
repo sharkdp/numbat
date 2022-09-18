@@ -9,6 +9,7 @@ pub enum Expression {
     Identifier(String, Type),
     Negate(Box<Expression>, Type),
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>, Type),
+    FunctionCall(String, Vec<Expression>, Type),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -29,6 +30,7 @@ impl Expression {
             Expression::Identifier(_, type_) => type_.clone(),
             Expression::Negate(_, type_) => type_.clone(),
             Expression::BinaryOperator(_, _, _, type_) => type_.clone(),
+            Expression::FunctionCall(_, _, type_) => type_.clone(),
         }
     }
 }

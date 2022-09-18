@@ -14,7 +14,7 @@ impl BytecodeInterpreter {
         match expr {
             Expression::Scalar(n) => {
                 let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
-                self.vm.add_op1(Op::Constant, index);
+                self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(identifier, _type) => {
                 let identifier_idx = self.vm.add_identifier(identifier);
@@ -38,6 +38,11 @@ impl BytecodeInterpreter {
                 };
                 self.vm.add_op(op);
             }
+            Expression::FunctionCall(_name, _args, _type) => {
+                // TODO!
+                let index = self.vm.add_constant(Constant::Scalar(42.0));
+                self.vm.add_op1(Op::LoadConstant, index);
+            }
         };
 
         Ok(())
@@ -60,11 +65,14 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareFunction(_name, _parameters, _expr, _return_type) => {
-                self.vm.add_op(Op::List); // TODO
+            Statement::DeclareFunction(name, _parameters, expr, _return_type) => {
+                self.vm.begin_function(&name);
+                self.compile_expression(expr)?;
+                self.vm.end_function();
             }
             Statement::DeclareDimension(_name) => {
-                self.vm.add_op(Op::List); // TODO
+                // Declaring a dimension is like introducing a new type. The information
+                // is only relevant for the type checker. Nothing happens at run time.
             }
             Statement::DeclareBaseUnit(name, dexpr) => {
                 self.unit_registry
@@ -74,7 +82,7 @@ impl BytecodeInterpreter {
                 let constant_idx = self
                     .vm
                     .add_constant(Constant::Unit(Unit::new_standard(name)));
-                self.vm.add_op1(Op::Constant, constant_idx);
+                self.vm.add_op1(Op::LoadConstant, constant_idx);
                 let identifier_idx = self.vm.add_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
@@ -86,7 +94,7 @@ impl BytecodeInterpreter {
                 let constant_idx = self
                     .vm
                     .add_constant(Constant::Unit(Unit::new_standard(name)));
-                self.vm.add_op1(Op::Constant, constant_idx);
+                self.vm.add_op1(Op::LoadConstant, constant_idx);
                 let identifier_idx = self.vm.add_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }

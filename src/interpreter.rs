@@ -120,7 +120,7 @@ fn test_treewalk_interpreter() {
     test_interpreter::<TreewalkInterpreter>();
 }
 
-// TODO: generalize these to both interpreters
+// TODO(minor): generalize these tests to both interpreters
 #[test]
 fn test_advanced_bytecode_interpreter() {
     use crate::bytecode_interpreter::BytecodeInterpreter;

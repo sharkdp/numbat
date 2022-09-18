@@ -91,6 +91,18 @@ impl TypeChecker {
 
                 typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), _type)
             }
+            ast::Expression::FunctionCall(function_name, args) => {
+                let return_type = self.type_for_identifier(&function_name)?;
+                let args_checked = args
+                    .into_iter()
+                    .map(|a| self.check_expression(a))
+                    .collect::<Result<Vec<_>>>()?;
+                typed_ast::Expression::FunctionCall(
+                    function_name,
+                    args_checked,
+                    return_type.clone(),
+                )
+            }
         })
     }
 
@@ -184,6 +196,9 @@ impl TypeChecker {
                         ));
                     }
                 }
+
+                self.types_for_identifier
+                    .insert(function_name.clone(), return_type_deduced.clone());
 
                 typed_ast::Statement::DeclareFunction(
                     function_name,

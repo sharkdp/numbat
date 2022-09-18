@@ -31,6 +31,7 @@ pub enum Expression {
     Identifier(String),
     Negate(Box<Expression>),
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
+    FunctionCall(String, Vec<Expression>),
 }
 
 #[cfg(test)]
@@ -82,6 +83,15 @@ impl PrettyPrint for Expression {
                 lhs = lhs.pretty_print(),
                 op = op.pretty_print(),
                 rhs = rhs.pretty_print()
+            ),
+            FunctionCall(name, args) => format!(
+                "{name}({args})",
+                name = name,
+                args = args
+                    .iter()
+                    .map(|e| e.pretty_print())
+                    .collect::<Vec<_>>()
+                    .join(",")
             ),
         }
     }
@@ -135,11 +145,11 @@ impl PrettyPrint for Statement {
             Statement::Command(Command::List) => "list".into(),
             Statement::Command(Command::Exit) => "exit".into(),
             Statement::DeclareVariable(identifier, expr, _dexpr) => {
-                // TODO: print optional dexpr
+                // TODO(minor): print optional dexpr
                 format!("let {} = {}", identifier, expr.pretty_print())
             }
             Statement::DeclareFunction(identifier, _args, expr, _dexpr) => {
-                // TODO: print args
+                // TODO(minor): print args
                 format!("fn {}(…) = {}", identifier, expr.pretty_print())
             }
             Statement::Expression(expr) => expr.pretty_print(),

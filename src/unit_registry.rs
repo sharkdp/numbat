@@ -58,6 +58,7 @@ impl UnitRegistry {
                 }
             }
             Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _, _type) => todo!(),
+            Expression::FunctionCall(_, _, _) => todo!(), // Not allowed here?
         }
     }
 

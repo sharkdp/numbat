@@ -18,7 +18,9 @@
 //! term         →   factor ( ( "+" | "-") factor ) *
 //! factor       →   unary ( ( "*" | "/") unary ) *
 //! unary        →   "-" unary | power
-//! power        →   primary ( "^" power ) *
+//! power        →   call ( "^" power ) *
+//! call         →   primary ( "(" arguments? ")" ) ?
+//! arguments    →   expression ( "," expression ) *
 //! primary      →   number | identifier | "(" expression ")"
 //! ```
 
@@ -172,7 +174,12 @@ impl<'a> Parser<'a> {
                             todo!("Parse error");
                         }
                     } else {
-                        todo!("Parse error");
+                        // TODO: unify code with if-part
+                        if self.match_exact(TokenKind::RightParen).is_some() {
+                            break;
+                        } else {
+                            todo!("Parse error");
+                        }
                     }
                 }
 
@@ -315,13 +322,31 @@ impl<'a> Parser<'a> {
     }
 
     fn power(&mut self) -> Result<Expression> {
-        let mut expr = self.primary()?;
+        let mut expr = self.call()?;
         while self.match_exact(TokenKind::Power).is_some() {
             let rhs = self.power()?;
 
             expr = Expression::BinaryOperator(BinaryOperator::Power, Box::new(expr), Box::new(rhs));
         }
         Ok(expr)
+    }
+
+    fn call(&mut self) -> Result<Expression> {
+        let primary = self.primary()?;
+
+        if self.match_exact(TokenKind::LeftParen).is_some() {
+            let args: Vec<Expression> = vec![];
+            loop {
+                if self.match_exact(TokenKind::RightParen).is_some() {
+                    if let Expression::Identifier(function_name) = primary {
+                        return Ok(Expression::FunctionCall(function_name, args));
+                    } else {
+                        todo!("Parse error: can not call …");
+                    }
+                }
+            }
+        }
+        Ok(primary)
     }
 
     fn primary(&mut self) -> Result<Expression> {
