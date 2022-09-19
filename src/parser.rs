@@ -419,7 +419,7 @@ impl<'a> Parser<'a> {
     }
 
     fn dimension_exponent(&mut self) -> Result<i32> {
-        // TODO: allow for parens in exponents, e.g. time^(-1)
+        // TODO: allow for parens in exponents, e.g. Time^(-1)
         // TODO: potentially allow for ², ³, etc.
         // TODO: only parse integers here (TokenKind::Number will probably eventually include floats)
 
@@ -674,11 +674,11 @@ mod tests {
         );
 
         parse_as(
-            &["let x: length = 1 * meter"],
+            &["let x: Length = 1 * meter"],
             Statement::DeclareVariable(
                 "x".into(),
                 binop!(scalar!(1.0), Mul, identifier!("meter")),
-                Some(DimensionExpression::Dimension("length".into())),
+                Some(DimensionExpression::Dimension("Length".into())),
             ),
         );
 
@@ -702,54 +702,54 @@ mod tests {
 
         parse_as(
             &[
-                "dimension area = length * length",
-                "dimension area = length × length",
+                "dimension Area = Length * Length",
+                "dimension Area = Length × Length",
             ],
             Statement::DeclareDimension(
-                "area".into(),
+                "Area".into(),
                 vec![DimensionExpression::Multiply(
-                    Box::new(DimensionExpression::Dimension("length".into())),
-                    Box::new(DimensionExpression::Dimension("length".into())),
+                    Box::new(DimensionExpression::Dimension("Length".into())),
+                    Box::new(DimensionExpression::Dimension("Length".into())),
                 )],
             ),
         );
 
         parse_as(
-            &["dimension speed = length / time"],
+            &["dimension Speed = Length / Time"],
             Statement::DeclareDimension(
-                "speed".into(),
+                "Speed".into(),
                 vec![DimensionExpression::Divide(
-                    Box::new(DimensionExpression::Dimension("length".into())),
-                    Box::new(DimensionExpression::Dimension("time".into())),
+                    Box::new(DimensionExpression::Dimension("Length".into())),
+                    Box::new(DimensionExpression::Dimension("Time".into())),
                 )],
             ),
         );
 
         parse_as(
-            &["dimension area = length^2"],
+            &["dimension Area = Length^2"],
             Statement::DeclareDimension(
-                "area".into(),
+                "Area".into(),
                 vec![DimensionExpression::Power(
-                    Box::new(DimensionExpression::Dimension("length".into())),
+                    Box::new(DimensionExpression::Dimension("Length".into())),
                     2,
                 )],
             ),
         );
 
         parse_as(
-            &["dimension energy = mass * length^2 / time^2"],
+            &["dimension Energy = Mass * Length^2 / Time^2"],
             Statement::DeclareDimension(
-                "energy".into(),
+                "Energy".into(),
                 vec![DimensionExpression::Divide(
                     Box::new(DimensionExpression::Multiply(
-                        Box::new(DimensionExpression::Dimension("mass".into())),
+                        Box::new(DimensionExpression::Dimension("Mass".into())),
                         Box::new(DimensionExpression::Power(
-                            Box::new(DimensionExpression::Dimension("length".into())),
+                            Box::new(DimensionExpression::Dimension("Length".into())),
                             2,
                         )),
                     )),
                     Box::new(DimensionExpression::Power(
-                        Box::new(DimensionExpression::Dimension("time".into())),
+                        Box::new(DimensionExpression::Dimension("Time".into())),
                         2,
                     )),
                 )],

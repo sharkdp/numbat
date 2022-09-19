@@ -127,19 +127,19 @@ fn test_advanced_bytecode_interpreter() {
     use crate::unit::Unit;
 
     let mini_prelude = "
-        dimension length
-        dimension time
-        dimension mass
+        dimension Length
+        dimension Time
+        dimension Mass
 
-        dimension speed = length / time
-        dimension momentum = mass * speed
+        dimension Speed = Length / Time
+        dimension Momentum = Mass * Speed
         
-        unit meter : length
-        unit second : time";
+        unit meter : Length
+        unit second : Time";
 
     assert_evaluates_to::<BytecodeInterpreter>(
-        "dimension length
-         unit meter : length
+        "dimension Length
+         unit meter : Length
          2 * meter",
         (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_standard("meter"))).unwrap(),
     );
@@ -147,7 +147,7 @@ fn test_advanced_bytecode_interpreter() {
     assert_evaluates_to::<BytecodeInterpreter>(
         &format!(
             "{mini_prelude}
-             dimension energy = mass * speed^2 = momentum^2 / mass
+             dimension Energy = Mass * Speed^2 = Momentum^2 / Mass
              1",
             mini_prelude = mini_prelude
         ),
