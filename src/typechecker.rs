@@ -12,16 +12,22 @@ use thiserror::Error;
 pub enum TypeCheckError {
     #[error("Unknown identifier '{0}'")]
     UnknownIdentifier(String),
+
+    #[error("Unknown function '{0}'")]
+    UnknownFunction(String),
+
     #[error("Incompatible dimensions in {0}:\n    {1}: {2}\n    {3}: {4}")]
     IncompatibleDimensions(
-        &'static str,
+        String,
         &'static str,
         BaseRepresentation,
         &'static str,
         BaseRepresentation,
     ),
+
     #[error("{0}")]
     RegistryError(RegistryError),
+
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
 }
@@ -31,6 +37,7 @@ type Result<T> = std::result::Result<T, TypeCheckError>;
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     types_for_identifier: HashMap<String, Type>,
+    function_signatures: HashMap<String, (Vec<Type>, Type)>,
     registry: DimensionRegistry,
 }
 
@@ -63,7 +70,7 @@ impl TypeChecker {
                     let rhs_type = rhs.get_type();
                     if lhs_type != rhs_type {
                         Err(TypeCheckError::IncompatibleDimensions(
-                            "binary operator",
+                            "binary operator".into(),
                             " left hand side",
                             lhs_type,
                             "right hand side",
@@ -104,17 +111,38 @@ impl TypeChecker {
                 typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), type_)
             }
             ast::Expression::FunctionCall(function_name, args) => {
-                let return_type = self.type_for_identifier(&function_name)?;
-                let args_checked = args
+                let (parameter_types, return_type) =
+                    self.function_signatures
+                        .get(&function_name)
+                        .ok_or_else(|| TypeCheckError::UnknownFunction(function_name.clone()))?;
+
+                let arguments_checked = args
                     .into_iter()
                     .map(|a| self.check_expression(a))
                     .collect::<Result<Vec<_>>>()?;
+                let argument_types = arguments_checked.iter().map(|e| e.get_type());
 
-                // TODO: verify args against parameters
+                for (idx, (parameter_type, argument_type)) in
+                    parameter_types.iter().zip(argument_types).enumerate()
+                {
+                    if *parameter_type != argument_type {
+                        return Err(TypeCheckError::IncompatibleDimensions(
+                            format!(
+                                "argument {num} of function call to '{name}'",
+                                num = idx + 1,
+                                name = function_name
+                            ),
+                            "parameter type",
+                            parameter_type.clone(),
+                            " argument type",
+                            argument_type,
+                        ));
+                    }
+                }
 
                 typed_ast::Expression::FunctionCall(
                     function_name,
-                    args_checked,
+                    arguments_checked,
                     return_type.clone(),
                 )
             }
@@ -137,7 +165,7 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions(
-                            "variable declaration",
+                            "variable declaration".into(),
                             "specified dimension",
                             type_specified,
                             "   actual dimension",
@@ -162,7 +190,7 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions(
-                            "derived unit declaration",
+                            "derived unit declaration".into(),
                             "specified dimension",
                             type_specified,
                             "   actual dimension",
@@ -203,7 +231,7 @@ impl TypeChecker {
 
                     if return_type_deduced != return_type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions(
-                            "function return type",
+                            "function return type".into(),
                             "specified return type",
                             return_type_specified,
                             "   actual return type",
@@ -212,10 +240,11 @@ impl TypeChecker {
                     }
                 }
 
-                // TODO: store this somewhere else. also store the types of the
-                // arguments
-                self.types_for_identifier
-                    .insert(function_name.clone(), return_type_deduced.clone());
+                let parameter_types = typed_parameters.iter().map(|(_, t)| t.clone()).collect();
+                self.function_signatures.insert(
+                    function_name.clone(),
+                    (parameter_types, return_type_deduced.clone()),
+                );
 
                 typed_ast::Statement::DeclareFunction(
                     function_name,
@@ -289,9 +318,19 @@ pub fn typecheck(
 }
 
 #[cfg(test)]
+const TEST_PRELUDE: &'static str = "
+dimension A
+dimension B
+dimension C = A * B
+unit a: A
+unit b: B
+unit c: C = a * b";
+
+#[cfg(test)]
 fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
+    let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
     let statements =
-        crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
+        crate::parser::parse(code).expect("No parse errors for inputs in this test suite");
 
     let mut typechecker = TypeChecker::default();
     typechecker
@@ -305,82 +344,61 @@ fn assert_successful_typecheck(input: &str) {
 }
 
 #[cfg(test)]
-fn assert_typecheck_error(input: &str, err: TypeCheckError) {
-    assert!(dbg!(run_typecheck(input)) == Err(err));
+fn get_typecheck_error(input: &str) -> TypeCheckError {
+    if let Err(err) = run_typecheck(input) {
+        err
+    } else {
+        panic!("Input was expected to yield a type check error");
+    }
 }
 
 #[test]
 fn basic() {
     use crate::registry::BaseRepresentationFactor;
 
-    let mini_prelude = "dimension A
-                        dimension B
-                        dimension C = A * B
-                        unit a: A
-                        unit b: B
-                        unit c: C = a * b";
+    let type_a = BaseRepresentation::from_factor(BaseRepresentationFactor("A".into(), 1));
+    let type_b = BaseRepresentation::from_factor(BaseRepresentationFactor("B".into(), 1));
+    let type_c = type_a.clone().multiply(type_b.clone());
 
-    assert_successful_typecheck(&format!(
-        "{mini_prelude}
-         let x: C = a * b",
-        mini_prelude = mini_prelude
+    assert_successful_typecheck(
+        "let x: A = a\n\
+                                 let y: B = b",
+    );
+    assert_successful_typecheck("let x: C = a * b");
+    assert_successful_typecheck("let x: C = 2 * a * b^2 / b");
+    assert_successful_typecheck("let x: A^3 = a^20 * a^(-17)");
+
+    assert_successful_typecheck("a * b");
+    assert_successful_typecheck("a / b");
+
+    assert_successful_typecheck("fn f(x: A) -> A = x");
+    assert_successful_typecheck("fn f(x: A) -> A·B = 2 * x * b");
+    assert_successful_typecheck("fn f(x: A, y: B) -> C = x * y");
+
+    assert!(matches!(
+        get_typecheck_error("a + b"),
+        TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a && t2 == type_b
     ));
 
-    assert_successful_typecheck(&format!(
-        "{mini_prelude}
-         let x: C = 2 * a * b^2 / b",
-        mini_prelude = mini_prelude
+    assert!(matches!(
+        get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
+        TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_c && t2 == type_a.clone().divide(type_b.clone())
     ));
 
-    assert_successful_typecheck(&format!(
-        "{mini_prelude}
-         let x: A^3 = a^20 * a^(-17)",
-        mini_prelude = mini_prelude
+    assert!(matches!(
+        get_typecheck_error("fn f(x: A) -> A = a\n\
+                             f(b)"),
+        TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a && t2 == type_b
     ));
+}
 
-    assert_typecheck_error(
-        &format!(
-            "{mini_prelude}
-             a + b",
-            mini_prelude = mini_prelude
+#[test]
+fn detects_wrong_alternative_expression() {
+    assert!(matches!(
+        get_typecheck_error(
+            "# wrong alternative expression: C / B^2
+             dimension D = A / B = C / B^3"
         ),
-        TypeCheckError::IncompatibleDimensions(
-            "binary operator",
-            " left hand side",
-            BaseRepresentation::from_factor(BaseRepresentationFactor("A".into(), 1)),
-            "right hand side",
-            BaseRepresentation::from_factor(BaseRepresentationFactor("B".into(), 1)),
-        ),
-    );
-
-    assert_typecheck_error(
-        &format!(
-            "{mini_prelude}
-             # wrong alternative expression: C / B^2
-             dimension D = A / B = C / B^3",
-            mini_prelude = mini_prelude
-        ),
-        TypeCheckError::IncompatibleAlternativeDimensionExpression("D".into()),
-    );
-
-    assert_typecheck_error(
-        &format!(
-            "{mini_prelude}
-            fn speed(a: A, b: B) -> C = a / b",
-            mini_prelude = mini_prelude
-        ),
-        TypeCheckError::IncompatibleDimensions(
-            "function return type",
-            "specified return type",
-            BaseRepresentation::from_factors([
-                BaseRepresentationFactor("A".into(), 1),
-                BaseRepresentationFactor("B".into(), 1),
-            ]),
-            "   actual return type",
-            BaseRepresentation::from_factors([
-                BaseRepresentationFactor("A".into(), 1),
-                BaseRepresentationFactor("B".into(), -1),
-            ]),
-        ),
-    );
+        TypeCheckError::IncompatibleAlternativeDimensionExpression(t) if t == "D",
+    ));
 }
