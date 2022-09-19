@@ -74,14 +74,26 @@ impl TypeChecker {
                     }
                 };
 
-                let _type = match op {
+                let to_integer_exponent = |exponent_f64: f64| -> i32 {
+                    let exponent_i32 = exponent_f64 as i32;
+                    assert!(f64::abs(exponent_i32 as f64 - exponent_f64) < f64::EPSILON);
+                    exponent_i32
+                };
+
+                let type_ = match op {
                     typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
                     typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
                     typed_ast::BinaryOperator::Mul => lhs.get_type().multiply(rhs.get_type()),
                     typed_ast::BinaryOperator::Div => lhs.get_type().divide(rhs.get_type()),
                     typed_ast::BinaryOperator::Power => {
                         let exponent = match &rhs {
-                            typed_ast::Expression::Scalar(n) => n.to_f64() as i32, // TODO!
+                            typed_ast::Expression::Scalar(n) => to_integer_exponent(n.to_f64()),
+                            typed_ast::Expression::Negate(expr, _) => match expr.as_ref() {
+                                typed_ast::Expression::Scalar(n) => {
+                                    to_integer_exponent(-n.to_f64())
+                                }
+                                _ => todo!(),
+                            },
                             _ => todo!(),
                         };
                         lhs.get_type().power(exponent)
@@ -89,7 +101,7 @@ impl TypeChecker {
                     typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
                 };
 
-                typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), _type)
+                typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), type_)
             }
             ast::Expression::FunctionCall(function_name, args) => {
                 let return_type = self.type_for_identifier(&function_name)?;
@@ -317,6 +329,12 @@ fn basic() {
     assert_successful_typecheck(&format!(
         "{mini_prelude}
          let x: C = 2 * a * b^2 / b",
+        mini_prelude = mini_prelude
+    ));
+
+    assert_successful_typecheck(&format!(
+        "{mini_prelude}
+         let x: A^3 = a^20 * a^(-17)",
         mini_prelude = mini_prelude
     ));
 
