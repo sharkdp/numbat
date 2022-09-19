@@ -294,7 +294,7 @@ fn assert_successful_typecheck(input: &str) {
 
 #[cfg(test)]
 fn assert_typecheck_error(input: &str, err: TypeCheckError) {
-    assert!(run_typecheck(input) == Err(err));
+    assert!(dbg!(run_typecheck(input)) == Err(err));
 }
 
 #[test]
@@ -343,5 +343,26 @@ fn basic() {
             mini_prelude = mini_prelude
         ),
         TypeCheckError::IncompatibleAlternativeDimensionExpression("D".into()),
+    );
+
+    assert_typecheck_error(
+        &format!(
+            "{mini_prelude}
+            fn speed(a: A, b: B) -> C = a / b",
+            mini_prelude = mini_prelude
+        ),
+        TypeCheckError::IncompatibleDimensions(
+            "function return type",
+            "specified return type",
+            BaseRepresentation::from_factors([
+                BaseRepresentationFactor("A".into(), 1),
+                BaseRepresentationFactor("B".into(), 1),
+            ]),
+            "   actual return type",
+            BaseRepresentation::from_factors([
+                BaseRepresentationFactor("A".into(), 1),
+                BaseRepresentationFactor("B".into(), -1),
+            ]),
+        ),
     );
 }

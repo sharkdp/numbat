@@ -153,4 +153,18 @@ fn test_advanced_bytecode_interpreter() {
         ),
         Quantity::from_scalar(1.0),
     );
+
+    assert_evaluates_to::<BytecodeInterpreter>(
+        &format!(
+            "{mini_prelude}
+             fn speed(distance: Length, time: Time) -> Speed = distance / time
+             speed(10 * meter, 2 * second)",
+            mini_prelude = mini_prelude
+        ),
+        (Quantity::from_scalar(5.0)
+            * (Quantity::from_unit(Unit::new_standard("meter"))
+                / Quantity::from_unit(Unit::new_standard("second")))
+            .unwrap())
+        .unwrap(),
+    );
 }
