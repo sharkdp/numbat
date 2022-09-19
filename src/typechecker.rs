@@ -180,7 +180,7 @@ impl TypeChecker {
                         .insert(parameter.clone(), parameter_type.clone());
                     typed_parameters.push((parameter.clone(), parameter_type));
                 }
-                let expr = typechecker_fn.check_expression(expr).unwrap();
+                let expr = typechecker_fn.check_expression(expr)?;
 
                 let return_type_deduced = expr.get_type();
                 if let Some(ref return_type_dexpr) = optional_return_type_dexpr {
