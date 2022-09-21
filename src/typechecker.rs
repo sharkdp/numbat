@@ -31,6 +31,9 @@ pub enum TypeCheckError {
 
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
+
+    #[error("Function '{0}' called with {2} arguments(s), but needs {1}.")]
+    WrongArity(String, usize, usize),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -123,6 +126,10 @@ impl TypeChecker {
                     self.function_signatures
                         .get(&function_name)
                         .ok_or_else(|| TypeCheckError::UnknownFunction(function_name.clone()))?;
+
+                if parameter_types.len() != args.len() {
+                    return Err(TypeCheckError::WrongArity(function_name.clone(), parameter_types.len(), args.len()));
+                }
 
                 let arguments_checked = args
                     .into_iter()
