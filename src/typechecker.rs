@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::f32::consts::E;
 
 use crate::arithmetic::Power;
 use crate::ast;
@@ -93,17 +94,24 @@ impl TypeChecker {
                     typed_ast::BinaryOperator::Mul => lhs.get_type().multiply(rhs.get_type()),
                     typed_ast::BinaryOperator::Div => lhs.get_type().divide(rhs.get_type()),
                     typed_ast::BinaryOperator::Power => {
-                        let exponent = match &rhs {
-                            typed_ast::Expression::Scalar(n) => to_integer_exponent(n.to_f64()),
-                            typed_ast::Expression::Negate(expr, _) => match expr.as_ref() {
-                                typed_ast::Expression::Scalar(n) => {
-                                    to_integer_exponent(-n.to_f64())
-                                }
+                        let t = lhs.get_type();
+                        if t == Type::unity() {
+                            // Skip computing the exponent if the type is a scalar. This allows
+                            // for arbitrary decimal exponents, if the base is a scalar.
+                            t
+                        } else {
+                            let exponent = match &rhs {
+                                typed_ast::Expression::Scalar(n) => to_integer_exponent(n.to_f64()),
+                                typed_ast::Expression::Negate(expr, _) => match expr.as_ref() {
+                                    typed_ast::Expression::Scalar(n) => {
+                                        to_integer_exponent(-n.to_f64())
+                                    }
+                                    _ => todo!(),
+                                },
                                 _ => todo!(),
-                            },
-                            _ => todo!(),
-                        };
-                        lhs.get_type().power(exponent)
+                            };
+                            t.power(exponent)
+                        }
                     }
                     typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
                 };
