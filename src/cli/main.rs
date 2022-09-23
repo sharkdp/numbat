@@ -61,8 +61,6 @@ impl Insect {
         println!("├┼─┬┤─┼─┬─┤└┐  version 0.1");
         println!("││││├─│┴┤─┤┌┤  enter '?' for help");
         println!("└┴┴─┴─┴─┴─┴─┘");
-        
-
 
         let code: Option<String> = if let Some(ref path) = self.args.file {
             Some(fs::read_to_string(path).context(format!(

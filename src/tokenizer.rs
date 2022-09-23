@@ -26,6 +26,7 @@ pub enum TokenKind {
     Arrow,
     Equal,
     Colon,
+    PostfixApply,
 
     // Commands
     List,
@@ -158,7 +159,14 @@ impl Tokenizer {
             '\n' => TokenKind::Newline,
             '+' => TokenKind::Plus,
             '*' | '·' | '×' => TokenKind::Multiply,
-            '/' | '÷' => TokenKind::Divide,
+            '/' => {
+                if self.match_char('/') {
+                    TokenKind::PostfixApply
+                } else {
+                    TokenKind::Divide
+                }
+            }
+            '÷' => TokenKind::Divide,
             '^' => TokenKind::Power,
             ',' => TokenKind::Comma,
             '→' | '➞' => TokenKind::Arrow,

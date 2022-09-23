@@ -10,18 +10,19 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement    →   command | assignment | expression
-//! assignment   →   identifier "=" expression
-//! command      →   "list" | "quit"
-//! expression   →   conversion
-//! conversion   →   term ( "→" term ) *
-//! term         →   factor ( ( "+" | "-") factor ) *
-//! factor       →   unary ( ( "*" | "/") unary ) *
-//! unary        →   "-" unary | power
-//! power        →   call ( "^" power ) *
-//! call         →   primary ( "(" arguments? ")" ) ?
-//! arguments    →   expression ( "," expression ) *
-//! primary      →   number | identifier | "(" expression ")"
+//! statement       →   command | assignment | expression
+//! assignment      →   identifier "=" expression
+//! command         →   "list" | "quit"
+//! expression      →   postfix_apply
+//! postfix_apply   →   conversion ( "//" primary ) *
+//! conversion      →   term ( "→" term ) *
+//! term            →   factor ( ( "+" | "-") factor ) *
+//! factor          →   unary ( ( "*" | "/") unary ) *
+//! unary           →   "-" unary | power
+//! power           →   call ( "^" power ) *
+//! call            →   primary ( "(" arguments? ")" ) ?
+//! arguments       →   expression ( "," expression ) *
+//! primary         →   number | identifier | "(" expression ")"
 //! ```
 
 use crate::ast::{BinaryOperator, Command, DimensionExpression, Expression, Statement};
@@ -262,7 +263,24 @@ impl<'a> Parser<'a> {
     }
 
     pub fn expression(&mut self) -> Result<Expression> {
-        self.conversion()
+        self.postfix_apply()
+    }
+
+    fn function_name_from_primary(&self, primary: Expression) -> String {
+        if let Expression::Identifier(name) = primary {
+            name
+        } else {
+            todo!("Parse error: can not call …");
+        }
+    }
+
+    pub fn postfix_apply(&mut self) -> Result<Expression> {
+        let mut expr = self.conversion()?;
+        while self.match_exact(TokenKind::PostfixApply).is_some() {
+            let primary = self.primary()?;
+            expr = Expression::FunctionCall(self.function_name_from_primary(primary), vec![expr]);
+        }
+        Ok(expr)
     }
 
     fn conversion(&mut self) -> Result<Expression> {

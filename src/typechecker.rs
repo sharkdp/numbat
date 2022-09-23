@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::f32::consts::E;
 
 use crate::arithmetic::Power;
 use crate::ast;
@@ -128,7 +127,11 @@ impl TypeChecker {
                         .ok_or_else(|| TypeCheckError::UnknownFunction(function_name.clone()))?;
 
                 if parameter_types.len() != args.len() {
-                    return Err(TypeCheckError::WrongArity(function_name.clone(), parameter_types.len(), args.len()));
+                    return Err(TypeCheckError::WrongArity(
+                        function_name.clone(),
+                        parameter_types.len(),
+                        args.len(),
+                    ));
                 }
 
                 let arguments_checked = args
