@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::arithmetic::Power;
+use crate::arithmetic::{Exponent, Power};
 use crate::ast;
 use crate::dimension::DimensionRegistry;
 use crate::registry::{BaseRepresentation, RegistryError};
@@ -36,9 +36,53 @@ pub enum TypeCheckError {
 
     #[error("Function '{0}' called with {2} arguments(s), but needs {1}.")]
     WrongArity(String, usize, usize),
+
+    #[error("Unsupported expression in const-evaluation of exponent: {0}")]
+    UnsupportedConstExpression(&'static str),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
+
+fn to_rational_exponent(exponent_f64: f64) -> i32 {
+    // TODO: for now, this only supports integers
+    let exponent_i32 = exponent_f64 as i32;
+    assert!(f64::abs(exponent_i32 as f64 - exponent_f64) < f64::EPSILON);
+    exponent_i32
+}
+
+/// Evaluates a limited set of expressions *at compile time*. This is needed to support
+/// type checking of expressions like `(2 * meter)^(2*3 - 4)` where we need to know not
+/// just the *type* but also the *value* of the exponent.
+fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
+    match expr {
+        typed_ast::Expression::Scalar(n) => Ok(to_rational_exponent(n.to_f64())),
+        typed_ast::Expression::Negate(ref expr, _) => Ok(-evaluate_const_expr(expr)?),
+        typed_ast::Expression::BinaryOperator(op, lhs_expr, rhs_expr, _) => {
+            let lhs = evaluate_const_expr(lhs_expr)?;
+            let rhs = evaluate_const_expr(rhs_expr)?;
+            match op {
+                typed_ast::BinaryOperator::Add => Ok(lhs + rhs),
+                typed_ast::BinaryOperator::Sub => Ok(lhs - rhs),
+                typed_ast::BinaryOperator::Mul => Ok(lhs * rhs),
+                typed_ast::BinaryOperator::Div => {
+                    Err(TypeCheckError::UnsupportedConstExpression("division"))
+                }
+                typed_ast::BinaryOperator::Power => {
+                    Err(TypeCheckError::UnsupportedConstExpression("exponentiation"))
+                }
+                typed_ast::BinaryOperator::ConvertTo => {
+                    Err(TypeCheckError::UnsupportedConstExpression("conversion"))
+                }
+            }
+        }
+        typed_ast::Expression::Identifier(_, _) => {
+            Err(TypeCheckError::UnsupportedConstExpression("identifier"))
+        }
+        typed_ast::Expression::FunctionCall(_, _, _) => {
+            Err(TypeCheckError::UnsupportedConstExpression("function call"))
+        }
+    }
+}
 
 #[derive(Clone, Default)]
 pub struct TypeChecker {
@@ -87,12 +131,6 @@ impl TypeChecker {
                     }
                 };
 
-                let to_integer_exponent = |exponent_f64: f64| -> i32 {
-                    let exponent_i32 = exponent_f64 as i32;
-                    assert!(f64::abs(exponent_i32 as f64 - exponent_f64) < f64::EPSILON);
-                    exponent_i32
-                };
-
                 let type_ = match op {
                     typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
                     typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
@@ -111,16 +149,7 @@ impl TypeChecker {
 
                             base_type
                         } else {
-                            let exponent = match &rhs {
-                                typed_ast::Expression::Scalar(n) => to_integer_exponent(n.to_f64()),
-                                typed_ast::Expression::Negate(expr, _) => match expr.as_ref() {
-                                    typed_ast::Expression::Scalar(n) => {
-                                        to_integer_exponent(-n.to_f64())
-                                    }
-                                    _ => todo!(),
-                                },
-                                _ => todo!(),
-                            };
+                            let exponent = evaluate_const_expr(&rhs)?;
                             base_type.power(exponent)
                         }
                     }
