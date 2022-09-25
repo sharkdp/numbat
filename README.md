@@ -1,13 +1,77 @@
-Reasons for rewriting Insect in Rust:
+# Insect
+
+Insect is a statically typed programming language for scientific computations with
+first class support for physical units.
+
+## Key features
+
+  * Statically typed: the 
+  * Type inference
+  * Strict syntax
+  * Customizable: the whole system of physical dimensions and units is written in Insect itself and can be modified or replaced
+  * (Modular)
+
+## Type system
+
+Insects treats *physical dimensions* like length or time as *types*. A value of `5 meter` is of type `Length`. A value of `2.5 inch`
+is also of type `Length`.
+
+
+### Limitations
+
+Let's look at an exponentiation expression like
+```
+expr1 ^ expr2
+```
+where `expr1` and `expr2` are arbitrary expressions. In order for that expression
+to properly type check, the *type* of `expr2` must be `Scalar` — something like
+`2^meter` does not make any sense. *If* the type of `expr1` is also `Scalar`,
+everything is well and the type of the total expression is also `Scalar`. An example
+for this trivial case is an expression like `e^(-x²/σ²)`. As long as the type
+of `x` is the same as the type of `σ`, this is fine.
+
+A more interesting case arises if `expr1` is dimensionfull, as in `meter^3`. Here,
+things become difficult: in order to compute the *type* of the total expression
+`expr1 ^ expr2`, we need to know the *value* of `expr2`. For the `meter^3` example,
+the answer is `Length^3`. This seems straightforward. However, the syntax of the
+language allows arbitrary expressions in the exponent. This is important to support
+use cases like the above `e^(-x²/σ²)`. But it poses a problem for the type checker.
+In order to compute the type of `expr1 ^ expr2`, we need to fully *evaluate*
+`expr2` at compile time. This is not going to work in general. Just think of a
+hypothetical expression like `meter^f()` where `f()` could do *anything*. Maybe even
+get some input from the user at runtime.
+
+Insects solution to this problem looks like this: If `expr1` is *not* dimensionless, 
+we restrict `expr2` to a small subset of allowed operations that can be fully
+evaluated at compile time (similar to `constexpr` expressions in C++, `const`
+expressions in Rust, etc). Expressions like `meter^(2 * (2 + 1) / 3)` are completely
+fine and can be typechecked (`Length^2`), but things like function calls are not
+allowed and will lead to a compile time error.
+
+To summarize: Given an exponentiation expression like `expr1 ^ expr2`, the type checker
+requires that:
+
+  * `expr2` is of type `Scalar`
+  * One of the following:
+    * `expr1` is also of type `Scalar`
+    * `expr2` can be *evaluated at compile time* and yields a rational number.
+
+#### Remark
+
+We would probably need to enter the world of *dependent types* if we wanted to fully
+support exponentiation expressions without the limitations above. For example, consider
+the function `f(x, n) = x^n`. The return type of that function *depends on the value*
+of the parameter `n`.
+
+
+## Reasons for rewriting Insect in Rust:
 
   - Rust is much more popular amongst developers => more possible contributors
   - A redesign from scratch would allow me to focus on areas of improvement:
       - Introducing the concept of physical *dimensions* into the language
-        ( see https://gist.github.com/sharkdp/5161bf9f46263c70ec91d66692c6864d )
-        ( units ~ types, dimensions ~ kinds? )
-      - Experimenting with a static dimension/unit checker => that is probably not going to work: sum(kg^i, i, 1, 10)
-      - Better parser errors
+      - Experimenting with a static dimension/unit checker
       - Allowing user-defined units => move all of the unit definitions to the Insect language
+      - Better parser errors
       - Automated tracking of significant digits
       - Support for rational numbers? Complex numbers? Intervals?
       - Support for binary and hexadecimal numbers, bitwise operators, etc
@@ -15,76 +79,3 @@ Reasons for rewriting Insect in Rust:
   - The PureScript implementation is *slow*. A Rust-based parser & interpreter could be much faster. Not just
     on the command-line (startup speed!) but also on the Web (via WASM)
   - It would be a nice playground for a WASM project
-
-
-
-See also:
-  https://gist.github.com/sharkdp/c8203cf594fe16fea7962b2adbd54a87
-
-
-Example: dimensionality annotations
-
-  kineticEnergy ∷ (Mass, Speed) ➞ Energy
-  kineticEnergy(mass, speed) = 0.5 * mass * speed^2
-
-  kineticEnergy(m: $mass, v: $speed): $energy = 1/2 * m * v^2
-  kineticEnergy(m: #mass, v: #speed): #energy = 1/2 * m * v^2
-
-  kineticEnergy(m: [mass], v: [speed]): [energy] = 1/2 * m * v^2
-
-  // maybe okay, since it does not clash with other identifiers?
-  kineticEnergy(m: mass, v: speed): energy = 1/2 * m * v^2
-
-  // … or use case-sensitivity:
-  kineticEnergy(m: Mass, v: Speed) : Energy = 1/2 * m * v^2
-
-Example:
-
-  Length l = 4 inch
-  Mass m = 3 kg
-
-Or
-
-  reaction_time: time = 1.5 seconds
-  braking_power: acceleration = 1.5 * gravity
-
-  stopping_distance(v: speed): length = v * reaction_time + 1/2 * v^2 / braking_power
-
-  stopping_distance(50 km/h)
-
-What about generic functions like:
-
-  sqr(x) -> [x]^2 = x * x
-
-*Important question*: can we resolve all physical dimension checks at compile time?
-Probably not. Take this
-
-  sum(kg^i, i, 1, 10)
-
-or this:
-
-  f(l: $length, i: $scalar) = l^i
-
-
-## Other ideas
-
-include * from SI
-include inch from Imperial
-
-extern function sin :: R -> R
-
-dimension pixel
-
-unit meter : length
-
-## Possible compiler optimizations
-
-  Negate(Constant(n)) => Constant(-n)
-
-
-
-Resources:
-
-  https://tratt.net/laurie/blog/2020/which_parsing_approach.html
-  https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
-  https://blog.reverberate.org/2013/09/ll-and-lr-in-context-why-parsing-tools.html
