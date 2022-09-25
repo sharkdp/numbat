@@ -25,6 +25,9 @@ pub enum TypeCheckError {
         BaseRepresentation,
     ),
 
+    #[error("Got dimension {0}, but exponent must be dimensionless.")]
+    NonScalarExponent(BaseRepresentation),
+
     #[error("{0}")]
     RegistryError(RegistryError),
 
@@ -96,11 +99,17 @@ impl TypeChecker {
                     typed_ast::BinaryOperator::Mul => lhs.get_type().multiply(rhs.get_type()),
                     typed_ast::BinaryOperator::Div => lhs.get_type().divide(rhs.get_type()),
                     typed_ast::BinaryOperator::Power => {
-                        let t = lhs.get_type();
-                        if t == Type::unity() {
-                            // Skip computing the exponent if the type is a scalar. This allows
-                            // for arbitrary decimal exponents, if the base is a scalar.
-                            t
+                        let exponent_type = rhs.get_type();
+                        if exponent_type != Type::unity() {
+                            return Err(TypeCheckError::NonScalarExponent(exponent_type.clone()));
+                        }
+
+                        let base_type = lhs.get_type();
+                        if base_type == Type::unity() {
+                            // Skip evaluating the exponent if the lhs is a scalar. This allows
+                            // for arbitrary (decimal) exponents, if the base is a scalar.
+
+                            base_type
                         } else {
                             let exponent = match &rhs {
                                 typed_ast::Expression::Scalar(n) => to_integer_exponent(n.to_f64()),
@@ -112,7 +121,7 @@ impl TypeChecker {
                                 },
                                 _ => todo!(),
                             };
-                            t.power(exponent)
+                            base_type.power(exponent)
                         }
                     }
                     typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
