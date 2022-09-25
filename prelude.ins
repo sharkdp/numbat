@@ -26,6 +26,9 @@ dimension Resistance = Voltage / Current
 
 dimension Temperature
 
+# TODO: this is a hack. Currently, dimension expressions can only contain operators and identifiers, not something like "1"
+dimension Scalar = Length^0
+
 ### SI Units
 
 unit meter: Length
@@ -59,3 +62,12 @@ let e = 2.71828182845904523536028747135266250
 ### Physical constants
 
 let gravity = 9.80665 * meter / second^2
+
+## Mathematical functions
+
+# TODO: implement as external functions?
+# TODO: generalize some of these functions once we have generics
+
+fn sqrt(x: Scalar) -> Scalar = x^(1/2)
+fn sum(x: Scalar, y: Scalar) -> Scalar = x + y
+fn exp(x: Scalar) -> Scalar = e^x
