@@ -57,10 +57,12 @@ impl Insect {
     }
 
     fn run(&mut self) -> Result<()> {
-        println!("┌┐  ┌─┐   ┌┐ ");
-        println!("├┼─┬┤─┼─┬─┤└┐  version 0.1");
-        println!("││││├─│┴┤─┤┌┤  enter '?' for help");
-        println!("└┴┴─┴─┴─┴─┴─┘");
+        println!(r" _                     _   ");
+        println!(r"(_)_ __  ___  ___  ___| |_ ");
+        println!(r"| | '_ \/ __|/ _ \/ __| __|   version 0.1");
+        println!(r"| | | | \__ \  __/ (__| |_    enter '?' for help");
+        println!(r"|_|_| |_|___/\___|\___|\__|");
+        println!();
 
         let code: Option<String> = if let Some(ref path) = self.args.file {
             Some(fs::read_to_string(path).context(format!(
