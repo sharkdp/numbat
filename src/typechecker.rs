@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
-use crate::arithmetic::{Exponent, Power};
+use crate::arithmetic::{Exponent, Power, Rational};
 use crate::ast;
 use crate::dimension::DimensionRegistry;
 use crate::registry::{BaseRepresentation, RegistryError};
 use crate::typed_ast::{self, Type};
 
+use num_traits::FromPrimitive;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -43,11 +44,8 @@ pub enum TypeCheckError {
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
 
-fn to_rational_exponent(exponent_f64: f64) -> i32 {
-    // TODO: for now, this only supports integers
-    let exponent_i32 = exponent_f64 as i32;
-    assert!(f64::abs(exponent_i32 as f64 - exponent_f64) < f64::EPSILON);
-    exponent_i32
+fn to_rational_exponent(exponent_f64: f64) -> Exponent {
+    Rational::from_f64(exponent_f64).unwrap() // TODO
 }
 
 /// Evaluates a limited set of expressions *at compile time*. This is needed to support
@@ -64,9 +62,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 typed_ast::BinaryOperator::Add => Ok(lhs + rhs),
                 typed_ast::BinaryOperator::Sub => Ok(lhs - rhs),
                 typed_ast::BinaryOperator::Mul => Ok(lhs * rhs),
-                typed_ast::BinaryOperator::Div => {
-                    Err(TypeCheckError::UnsupportedConstExpression("division"))
-                }
+                typed_ast::BinaryOperator::Div => Ok(lhs / rhs), // TODO: type check error if rhs is zero
                 typed_ast::BinaryOperator::Power => {
                     Err(TypeCheckError::UnsupportedConstExpression("exponentiation"))
                 }
@@ -412,8 +408,14 @@ fn get_typecheck_error(input: &str) -> TypeCheckError {
 fn basic() {
     use crate::registry::BaseRepresentationFactor;
 
-    let type_a = BaseRepresentation::from_factor(BaseRepresentationFactor("A".into(), 1));
-    let type_b = BaseRepresentation::from_factor(BaseRepresentationFactor("B".into(), 1));
+    let type_a = BaseRepresentation::from_factor(BaseRepresentationFactor(
+        "A".into(),
+        Rational::from_integer(1),
+    ));
+    let type_b = BaseRepresentation::from_factor(BaseRepresentationFactor(
+        "B".into(),
+        Rational::from_integer(1),
+    ));
     let type_c = type_a.clone().multiply(type_b.clone());
 
     assert_successful_typecheck(

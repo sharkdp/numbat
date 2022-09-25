@@ -25,11 +25,13 @@
 //! primary         →   number | identifier | "(" expression ")"
 //! ```
 
+use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{BinaryOperator, Command, DimensionExpression, Expression, Statement};
 use crate::number::Number;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
 
+use num_traits::FromPrimitive;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -436,13 +438,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn dimension_exponent(&mut self) -> Result<i32> {
+    fn dimension_exponent(&mut self) -> Result<Exponent> {
         // TODO: allow for parens in exponents, e.g. Time^(-1)
         // TODO: potentially allow for ², ³, etc.
-        // TODO: only parse integers here (TokenKind::Number will probably eventually include floats)
+        // TODO: only parse rationals here (TokenKind::Number will probably eventually include floats)
 
         if let Some(token) = self.match_exact(TokenKind::Number) {
-            Ok(token.lexeme.parse::<i32>().unwrap())
+            Ok(Rational::from_f64(token.lexeme.parse::<f64>().unwrap()).unwrap())
         } else if self.match_exact(TokenKind::Minus).is_some() {
             let exponent = self.dimension_exponent()?;
             Ok(-exponent)
@@ -749,7 +751,7 @@ mod tests {
                 "Area".into(),
                 vec![DimensionExpression::Power(
                     Box::new(DimensionExpression::Dimension("Length".into())),
-                    2,
+                    Rational::from_integer(2),
                 )],
             ),
         );
@@ -763,12 +765,12 @@ mod tests {
                         Box::new(DimensionExpression::Dimension("Mass".into())),
                         Box::new(DimensionExpression::Power(
                             Box::new(DimensionExpression::Dimension("Length".into())),
-                            2,
+                            Rational::from_integer(2),
                         )),
                     )),
                     Box::new(DimensionExpression::Power(
                         Box::new(DimensionExpression::Dimension("Time".into())),
-                        2,
+                        Rational::from_integer(2),
                     )),
                 )],
             ),

@@ -1,7 +1,8 @@
-use crate::arithmetic::Power;
+use crate::arithmetic::{Power, Rational};
 use crate::registry::{BaseRepresentation, Registry, RegistryError};
 use crate::typed_ast::{BinaryOperator, Expression, Type};
 
+use num_traits::FromPrimitive;
 use thiserror::Error;
 
 #[derive(Clone, Error, Debug, PartialEq, Eq)]
@@ -52,7 +53,9 @@ impl UnitRegistry {
             Expression::BinaryOperator(BinaryOperator::Power, lhs, rhs, _type) => {
                 match rhs.as_ref() {
                     Expression::Scalar(n) => {
-                        Ok(self.get_base_representation(lhs)?.power(n.to_f64() as i32))
+                        Ok(self
+                            .get_base_representation(lhs)?
+                            .power(Rational::from_f64(n.to_f64()).unwrap())) // TODO
                     }
                     _ => todo!("Return some error"),
                 }

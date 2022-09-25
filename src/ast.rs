@@ -1,4 +1,4 @@
-use crate::{number::Number, pretty_print::PrettyPrint};
+use crate::{arithmetic::Exponent, number::Number, pretty_print::PrettyPrint};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
@@ -114,7 +114,7 @@ pub enum DimensionExpression {
     Dimension(String),
     Multiply(Box<DimensionExpression>, Box<DimensionExpression>),
     Divide(Box<DimensionExpression>, Box<DimensionExpression>),
-    Power(Box<DimensionExpression>, i32),
+    Power(Box<DimensionExpression>, Exponent),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

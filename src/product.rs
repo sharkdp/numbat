@@ -1,4 +1,4 @@
-use crate::arithmetic::{Exponent, Power};
+use crate::arithmetic::{Exponent, Power, Rational};
 use itertools::Itertools;
 
 pub trait Canonicalize {
@@ -94,7 +94,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool>
     Product<Factor, CANONICALIZE>
 {
     pub fn invert(self) -> Self {
-        self.power(-1)
+        self.power(Rational::from_integer(-1))
     }
 
     pub fn divide(self, other: Self) -> Self {
@@ -183,14 +183,17 @@ fn test_multiply() {
 #[test]
 fn test_multiply_canonicalize() {
     let product1 = Product::<TestUnit, true>::from_factors([
-        TestUnit("meter".into(), 1),
-        TestUnit("second".into(), 1),
+        TestUnit("meter".into(), Rational::from_integer(1)),
+        TestUnit("second".into(), Rational::from_integer(1)),
     ]);
-    let product2 = Product::from_factor(TestUnit("meter".into(), 2));
+    let product2 = Product::from_factor(TestUnit("meter".into(), Rational::from_integer(2)));
     let result = product1.multiply(product2);
     assert_eq!(
         result.into_vec(),
-        &[TestUnit("meter".into(), 3), TestUnit("second".into(), 1)]
+        &[
+            TestUnit("meter".into(), Rational::from_integer(3)),
+            TestUnit("second".into(), Rational::from_integer(1))
+        ]
     );
 }
 
@@ -211,7 +214,8 @@ impl Canonicalize for TestUnit {
     }
 
     fn is_trivial(&self) -> bool {
-        self.1 == 0
+        use num_traits::Zero;
+        self.1 == Rational::zero()
     }
 }
 
@@ -225,30 +229,33 @@ impl Power for TestUnit {
 #[test]
 fn test_power() {
     let product = Product::<TestUnit>::from_factors([
-        TestUnit("meter".into(), 1),
-        TestUnit("second".into(), -2),
+        TestUnit("meter".into(), Rational::from_integer(1)),
+        TestUnit("second".into(), Rational::from_integer(-2)),
     ]);
-    let result = product.power(3);
+    let result = product.power(Rational::from_integer(3));
     assert_eq!(
         result.into_vec(),
-        &[TestUnit("meter".into(), 3), TestUnit("second".into(), -6)]
+        &[
+            TestUnit("meter".into(), Rational::from_integer(3)),
+            TestUnit("second".into(), Rational::from_integer(-6))
+        ]
     );
 }
 
 #[test]
 fn test_divide() {
     let product1 = Product::<TestUnit>::from_factors([
-        TestUnit("meter".into(), 1),
-        TestUnit("second".into(), 1),
+        TestUnit("meter".into(), Rational::from_integer(1)),
+        TestUnit("second".into(), Rational::from_integer(1)),
     ]);
-    let product2 = Product::from_factor(TestUnit("second".into(), 1));
+    let product2 = Product::from_factor(TestUnit("second".into(), Rational::from_integer(1)));
     let result = product1.divide(product2);
     assert_eq!(
         result.into_vec(),
         &[
-            TestUnit("meter".into(), 1),
-            TestUnit("second".into(), 1),
-            TestUnit("second".into(), -1)
+            TestUnit("meter".into(), Rational::from_integer(1)),
+            TestUnit("second".into(), Rational::from_integer(1)),
+            TestUnit("second".into(), Rational::from_integer(-1))
         ]
     );
 }

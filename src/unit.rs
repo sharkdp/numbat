@@ -1,7 +1,9 @@
 use std::fmt::{Display, Write};
 
+use num_traits::Zero;
+
 use crate::{
-    arithmetic::{Exponent, Power},
+    arithmetic::{Exponent, Power, Rational},
     number::Number,
     product::{Canonicalize, Product},
 };
@@ -47,7 +49,7 @@ impl Canonicalize for UnitFactor {
     }
 
     fn is_trivial(&self) -> bool {
-        self.1 == 0
+        self.1 == Rational::zero()
     }
 }
 
@@ -70,7 +72,7 @@ impl Unit {
                 name: name.into(),
                 unit_type: UnitType::Standard,
             },
-            1,
+            Rational::from_integer(1),
         ))
     }
 
@@ -80,7 +82,7 @@ impl Unit {
                 name: name.into(),
                 unit_type: UnitType::NonStandard(factor, standard_unit),
             },
-            1,
+            Rational::from_integer(1),
         ))
     }
 }
@@ -91,12 +93,13 @@ impl Display for Unit {
         for &UnitFactor(ref base_unit, exp) in self.iter() {
             result.push_str(&base_unit.name);
 
-            match exp {
-                1 => {}
-                2 => result.push('²'),
-                3 => result.push('³'),
-                e => write!(result, "^{}", e).unwrap(),
-            }
+            // match exp {
+            //     1 => {}
+            //     2 => result.push('²'),
+            //     3 => result.push('³'),
+            //     e => write!(result, "^{}", e).unwrap(),
+            // }
+            write!(result, "^{}", exp).unwrap();
             result.push('·');
         }
 
@@ -111,14 +114,14 @@ fn unit_basic() {
             name: "meter".into(),
             unit_type: UnitType::Standard,
         },
-        1,
+        Rational::from_integer(1),
     ));
     let second = Unit::from_factor(UnitFactor(
         BaseUnit {
             name: "second".into(),
             unit_type: UnitType::Standard,
         },
-        1,
+        Rational::from_integer(1),
     ));
 
     let meter_per_second = Unit::from_factors([
@@ -127,14 +130,14 @@ fn unit_basic() {
                 name: "meter".into(),
                 unit_type: UnitType::Standard,
             },
-            1,
+            Rational::from_integer(1),
         ),
         UnitFactor(
             BaseUnit {
                 name: "second".into(),
                 unit_type: UnitType::Standard,
             },
-            -1,
+            Rational::from_integer(-1),
         ),
     ]);
 

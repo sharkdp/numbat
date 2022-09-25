@@ -73,6 +73,7 @@ pub fn parse_dexpr(input: &str) -> DimensionExpression {
 
 #[test]
 fn basic() {
+    use crate::arithmetic::Rational;
     use crate::registry::BaseRepresentationFactor;
 
     let mut registry = DimensionRegistry::default();
@@ -97,51 +98,51 @@ fn basic() {
         registry.get_base_representation(&parse_dexpr("Length")),
         Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
             "Length".into(),
-            1
+            Rational::from_integer(1),
         )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Time")),
         Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
             "Time".into(),
-            1
+            Rational::from_integer(1)
         )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Mass")),
         Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
             "Mass".into(),
-            1
+            Rational::from_integer(1)
         )))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Speed")),
         Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("Length".into(), 1),
-            BaseRepresentationFactor("Time".into(), -1)
+            BaseRepresentationFactor("Length".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Time".into(), Rational::from_integer(-1))
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Acceleration")),
         Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("Length".into(), 1),
-            BaseRepresentationFactor("Time".into(), -2)
+            BaseRepresentationFactor("Length".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Time".into(), Rational::from_integer(-2))
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Momentum")),
         Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("Length".into(), 1),
-            BaseRepresentationFactor("Mass".into(), 1),
-            BaseRepresentationFactor("Time".into(), -1)
+            BaseRepresentationFactor("Length".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Mass".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Time".into(), Rational::from_integer(-1))
         ]))
     );
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Energy")),
         Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("Length".into(), 2),
-            BaseRepresentationFactor("Mass".into(), 1),
-            BaseRepresentationFactor("Time".into(), -2)
+            BaseRepresentationFactor("Length".into(), Rational::from_integer(2)),
+            BaseRepresentationFactor("Mass".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Time".into(), Rational::from_integer(-2))
         ]))
     );
 
@@ -151,9 +152,9 @@ fn basic() {
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Momentum2")),
         Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("Length".into(), 1),
-            BaseRepresentationFactor("Mass".into(), 1),
-            BaseRepresentationFactor("Time".into(), -1)
+            BaseRepresentationFactor("Length".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Mass".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Time".into(), Rational::from_integer(-1))
         ]))
     );
 
@@ -163,9 +164,9 @@ fn basic() {
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Energy2")),
         Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("Length".into(), 2),
-            BaseRepresentationFactor("Mass".into(), 1),
-            BaseRepresentationFactor("Time".into(), -2)
+            BaseRepresentationFactor("Length".into(), Rational::from_integer(2)),
+            BaseRepresentationFactor("Mass".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Time".into(), Rational::from_integer(-2))
         ]))
     );
 
@@ -175,8 +176,8 @@ fn basic() {
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Speed2")),
         Ok(BaseRepresentation::from_factors([
-            BaseRepresentationFactor("Length".into(), 1),
-            BaseRepresentationFactor("Time".into(), -1)
+            BaseRepresentationFactor("Length".into(), Rational::from_integer(1)),
+            BaseRepresentationFactor("Time".into(), Rational::from_integer(-1))
         ]))
     );
 }

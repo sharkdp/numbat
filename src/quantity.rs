@@ -1,7 +1,8 @@
-use crate::arithmetic::Power;
+use crate::arithmetic::{Power, Rational};
 use crate::number::Number;
 use crate::unit::Unit;
 
+use num_traits::FromPrimitive;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
@@ -58,7 +59,8 @@ impl Quantity {
         let exponent_as_scalar = exp.as_scalar()?.to_f64();
         Ok(Quantity::new(
             Number::from_f64(self.value.to_f64().powf(exponent_as_scalar)),
-            self.unit.power(exponent_as_scalar as i32), // TODO: rational or even decimal exponents
+            self.unit
+                .power(Rational::from_f64(exponent_as_scalar).unwrap()), // TODO: error handling; can this really handle rational exponents?
         ))
     }
 }

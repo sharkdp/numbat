@@ -1,9 +1,10 @@
 use std::{collections::HashMap, fmt::Display};
 
+use num_traits::Zero;
 use thiserror::Error;
 
 use crate::{
-    arithmetic::{Exponent, Power},
+    arithmetic::{Exponent, Power, Rational},
     product::{Canonicalize, Product},
 };
 
@@ -38,7 +39,7 @@ impl Canonicalize for BaseRepresentationFactor {
     }
 
     fn is_trivial(&self) -> bool {
-        self.1 == 0
+        self.1 == Rational::zero()
     }
 }
 
@@ -109,7 +110,7 @@ impl<Metadata> Registry<Metadata> {
         if self.is_base_entry(name) {
             Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
                 name.to_owned(),
-                1,
+                Rational::from_integer(1),
             )))
         } else {
             self.derived_entries
