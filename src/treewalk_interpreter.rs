@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
 use crate::quantity::Quantity;
-use crate::typed_ast::{BinaryOperator, Command, Expression, Statement};
+use crate::typed_ast::{BinaryOperator, Expression, Statement};
 
 pub struct TreewalkInterpreter {
     variables: HashMap<String, Quantity>,
@@ -58,12 +58,6 @@ impl Interpreter for TreewalkInterpreter {
                 let quantity = self.evaluate_expression(expr)?;
                 Ok(InterpreterResult::Quantity(quantity))
             }
-            Statement::Command(Command::List) => {
-                println!("List of variables:");
-
-                Ok(InterpreterResult::Continue)
-            }
-            Statement::Command(Command::Exit) => Ok(InterpreterResult::Exit),
             Statement::DeclareVariable(identifier, expr, _dexpr) => {
                 let quantity = self.evaluate_expression(expr)?;
                 self.variables.insert(identifier.clone(), quantity);

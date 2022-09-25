@@ -28,11 +28,7 @@ pub enum TokenKind {
     Colon,
     PostfixApply,
 
-    // Commands
-    List,
-    Exit,
-
-    // Other keywords
+    // Keywords
     Let,
     Fn,
     Dimension,
@@ -114,9 +110,6 @@ impl Tokenizer {
             m.insert("fn", TokenKind::Fn);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
-            m.insert("list", TokenKind::List);
-            m.insert("quit", TokenKind::Exit);
-            m.insert("exit", TokenKind::Exit);
             m
         });
 

@@ -42,9 +42,8 @@ pub enum Op {
     /// Call the specified function.
     Call,
 
+    /// Return from the current function
     Return,
-    List,
-    Exit,
 }
 
 impl Op {
@@ -58,9 +57,7 @@ impl Op {
             | Op::Divide
             | Op::Power
             | Op::ConvertTo
-            | Op::Return
-            | Op::List
-            | Op::Exit => 0,
+            | Op::Return => 0,
         }
     }
 
@@ -79,8 +76,6 @@ impl Op {
             Op::ConvertTo => "ConvertTo",
             Op::Call => "Call",
             Op::Return => "Return",
-            Op::List => "List",
-            Op::Exit => "Exit",
         }
     }
 }
@@ -399,12 +394,6 @@ impl Vm {
                         self.frames.pop();
                         // TODO: pop function call arguments from the stack
                     }
-                }
-                Op::List => {
-                    return Ok(InterpreterResult::Continue);
-                }
-                Op::Exit => {
-                    return Ok(InterpreterResult::Exit);
                 }
             }
         }

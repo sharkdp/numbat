@@ -305,7 +305,6 @@ impl TypeChecker {
                     return_type_deduced,
                 )
             }
-            ast::Statement::Command(command) => typed_ast::Statement::Command(command),
             ast::Statement::DeclareDimension(name, dexprs) => {
                 if let Some(dexpr) = dexprs.first() {
                     self.registry

@@ -117,15 +117,8 @@ pub enum DimensionExpression {
     Power(Box<DimensionExpression>, Exponent),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Command {
-    List,
-    Exit,
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    Command(Command),
     Expression(Expression),
     DeclareVariable(String, Expression, Option<DimensionExpression>),
     DeclareFunction(
@@ -142,8 +135,6 @@ pub enum Statement {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> String {
         match self {
-            Statement::Command(Command::List) => "list".into(),
-            Statement::Command(Command::Exit) => "exit".into(),
             Statement::DeclareVariable(identifier, expr, _dexpr) => {
                 // TODO(minor): print optional dexpr
                 format!("let {} = {}", identifier, expr.pretty_print())

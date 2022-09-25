@@ -1,5 +1,5 @@
 use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
-use crate::typed_ast::{BinaryOperator, Command, Expression, Statement};
+use crate::typed_ast::{BinaryOperator, Expression, Statement};
 use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
 use crate::vm::{Constant, Op, Vm};
@@ -67,12 +67,6 @@ impl BytecodeInterpreter {
             Statement::Expression(expr) => {
                 self.compile_expression(expr)?;
                 self.vm.add_op(Op::Return);
-            }
-            Statement::Command(Command::List) => {
-                self.vm.add_op(Op::List);
-            }
-            Statement::Command(Command::Exit) => {
-                self.vm.add_op(Op::Exit);
             }
             Statement::DeclareVariable(identifier, expr, _dexpr) => {
                 self.compile_expression(expr)?;
