@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::arithmetic::{Exponent, Power, Rational};
 use crate::ast;
 use crate::dimension::DimensionRegistry;
-use crate::registry::{BaseRepresentation, RegistryError};
+use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::typed_ast::{self, Type};
 
 use num_traits::FromPrimitive;
@@ -83,7 +83,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     types_for_identifier: HashMap<String, Type>,
-    function_signatures: HashMap<String, (Vec<Type>, Type)>,
+    function_signatures: HashMap<String, (Vec<String>, Vec<Type>, Type)>,
     registry: DimensionRegistry,
 }
 
@@ -155,10 +155,10 @@ impl TypeChecker {
                 typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), type_)
             }
             ast::Expression::FunctionCall(function_name, args) => {
-                let (parameter_types, return_type) =
-                    self.function_signatures
-                        .get(&function_name)
-                        .ok_or_else(|| TypeCheckError::UnknownFunction(function_name.clone()))?;
+                let (type_parameters, parameter_types, return_type) = self
+                    .function_signatures
+                    .get(&function_name)
+                    .ok_or_else(|| TypeCheckError::UnknownFunction(function_name.clone()))?;
 
                 if parameter_types.len() != args.len() {
                     return Err(TypeCheckError::WrongArity(
@@ -174,10 +174,69 @@ impl TypeChecker {
                     .collect::<Result<Vec<_>>>()?;
                 let argument_types = arguments_checked.iter().map(|e| e.get_type());
 
+                let mut substitutions: Vec<(String, Type)> = vec![];
+
+                let substitute = |substitutions: &[(String, Type)], type_: &Type| -> Type {
+                    let mut result_type = type_.clone();
+                    for (name, substituted_type) in substitutions {
+                        if let Some(factor @ BaseRepresentationFactor(_, exp)) = type_
+                            .clone() // TODO: remove this .clone() somehow?
+                            .iter()
+                            .find(|BaseRepresentationFactor(n, _)| n == name)
+                        {
+                            result_type = result_type
+                                .divide(Type::from_factor((*factor).clone()))
+                                .multiply(substituted_type.clone().power(*exp));
+                        }
+                    }
+                    result_type
+                };
+
                 for (idx, (parameter_type, argument_type)) in
                     parameter_types.iter().zip(argument_types).enumerate()
                 {
-                    if *parameter_type != argument_type {
+                    let mut parameter_type = substitute(&substitutions, parameter_type);
+
+                    let remaining_generic_subtypes: Vec<_> = parameter_type
+                        .iter()
+                        .filter(|BaseRepresentationFactor(name, _)| type_parameters.contains(name))
+                        .collect();
+
+                    if remaining_generic_subtypes.len() > 1 {
+                        todo!(
+                            "Error: multiple unresolved generic parameters in a single function \
+                               parameter type are not yet supported. Consider reordering the \
+                               function parameters"
+                        );
+                    }
+
+                    if let Some(&generic_subtype_factor) = remaining_generic_subtypes.first() {
+                        let generic_subtype = Type::from_factor(generic_subtype_factor.clone());
+
+                        // The type of the idx-th parameter of the called function has a generic type
+                        // parameter inside. We can now instantiate that generic parameter by solving
+                        // the equation "parameter_type == argument_type" for the generic parameter.
+                        // In order to do this, let's assume `generic_subtype = D^alpha`, then we have
+                        //
+                        //                                parameter_type == argument_type
+                        //    parameter_type / generic_subtype * D^alpha == argument_type
+                        //                                       D^alpha == argument_type / (parameter_type / generic_subtype)
+                        //                                             D == [argument_type / (parameter_type / generic_subtype)]^(1/alpha)
+                        //
+
+                        let alpha = Rational::from_integer(1) / generic_subtype_factor.1;
+                        let d = argument_type
+                            .clone()
+                            .divide(parameter_type.clone().divide(generic_subtype))
+                            .power(alpha);
+
+                        // We can now substitute that generic parameter in all subsequent expressions
+                        substitutions.push((generic_subtype_factor.0.clone(), d));
+
+                        parameter_type = substitute(&substitutions, &parameter_type);
+                    }
+
+                    if parameter_type != argument_type {
                         return Err(TypeCheckError::IncompatibleDimensions(
                             format!(
                                 "argument {num} of function call to '{name}'",
@@ -192,11 +251,11 @@ impl TypeChecker {
                     }
                 }
 
-                typed_ast::Expression::FunctionCall(
-                    function_name,
-                    arguments_checked,
-                    return_type.clone(),
-                )
+                // TODO: Make sure all generic parameters have been substituted
+
+                let return_type = substitute(&substitutions, return_type);
+
+                typed_ast::Expression::FunctionCall(function_name, arguments_checked, return_type)
             }
         })
     }
@@ -262,12 +321,22 @@ impl TypeChecker {
                 optional_return_type_dexpr,
             ) => {
                 let mut typechecker_fn = self.clone();
+
+                for type_parameter in &type_parameters {
+                    typechecker_fn
+                        .registry
+                        .add_base_dimension(type_parameter)
+                        .map_err(TypeCheckError::RegistryError)?;
+                }
+
                 let mut typed_parameters = vec![];
                 for (parameter, optional_dexpr) in parameters {
                     let parameter_type = typechecker_fn
                         .registry
-                        .get_base_representation(&optional_dexpr.unwrap())
-                        .unwrap(); // TODO: error handling and parameter type deduction, in case it is not specified
+                        .get_base_representation(
+                            &optional_dexpr.expect("Parameter types can not be deduced."),
+                        ) // TODO
+                        .map_err(TypeCheckError::RegistryError)?;
                     typechecker_fn
                         .types_for_identifier
                         .insert(parameter.clone(), parameter_type.clone());
@@ -296,7 +365,11 @@ impl TypeChecker {
                 let parameter_types = typed_parameters.iter().map(|(_, t)| t.clone()).collect();
                 self.function_signatures.insert(
                     function_name.clone(),
-                    (parameter_types, return_type_deduced.clone()),
+                    (
+                        type_parameters,
+                        parameter_types,
+                        return_type_deduced.clone(),
+                    ),
                 );
 
                 typed_ast::Statement::DeclareFunction(

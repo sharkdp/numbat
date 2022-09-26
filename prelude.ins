@@ -65,8 +65,8 @@ let gravity = 9.80665 * meter / second^2
 
 ## Mathematical functions
 
-# TODO: implement as external functions?
-# TODO: generalize some of these functions once we have generics
+# TODO: implement these as external functions?
 
-fn sqrt(x: Scalar) -> Scalar = x^(1/2)
+fn sqrt<D>(x: D^2) -> D = x^(1/2)
+fn sqr<D>(x: D) -> D^2 = x^2
 fn exp(x: Scalar) -> Scalar = e^x
