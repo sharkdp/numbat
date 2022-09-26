@@ -8,7 +8,7 @@ pub struct BytecodeInterpreter {
     vm: Vm,
     unit_registry: UnitRegistry,
     /// List of local variables currently in scope
-    local_variables: Vec<(String, usize)>,
+    local_variables: Vec<String>,
 }
 
 impl BytecodeInterpreter {
@@ -19,13 +19,8 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(identifier, _type) => {
-                if let Some(position) = self
-                    .local_variables
-                    .iter()
-                    .position(|(n, _)| n == identifier)
-                {
-                    let slot_idx = self.local_variables[position].1;
-                    self.vm.add_op1(Op::GetLocal, slot_idx as u8); // TODO: check overflow
+                if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
+                    self.vm.add_op1(Op::GetLocal, position as u8); // TODO: check overflow
                 } else {
                     let identifier_idx = self.vm.add_global_identifier(identifier);
                     self.vm.add_op1(Op::GetVariable, identifier_idx);
@@ -55,7 +50,7 @@ impl BytecodeInterpreter {
                 for arg in args {
                     self.compile_expression(arg)?;
                 }
-                self.vm.add_op1(Op::Call, idx);
+                self.vm.add_op2(Op::Call, idx, args.len() as u8); // TODO: check overflow
             }
         };
 
@@ -74,11 +69,9 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
             Statement::DeclareFunction(name, parameters, expr, _return_type) => {
-                let arity = parameters.len();
                 self.vm.begin_function(&name);
-                for (i, parameter) in parameters.iter().enumerate() {
-                    let slot_idx = arity - i - 1;
-                    self.local_variables.push((parameter.0.clone(), slot_idx));
+                for parameter in parameters.iter() {
+                    self.local_variables.push(parameter.0.clone());
                 }
                 self.compile_expression(expr)?;
                 self.vm.add_op(Op::Return);

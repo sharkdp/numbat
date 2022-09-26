@@ -39,7 +39,7 @@ pub enum Op {
     /// Similar to Add.
     ConvertTo,
 
-    /// Call the specified function.
+    /// Call the specified function with the specified number of arguments
     Call,
 
     /// Return from the current function
@@ -49,7 +49,8 @@ pub enum Op {
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::GetLocal | Op::Call => 1,
+            Op::Call => 2,
+            Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::GetLocal => 1,
             Op::Negate
             | Op::Add
             | Op::Subtract
@@ -184,6 +185,13 @@ impl Vm {
         current_chunk.push(arg);
     }
 
+    pub(crate) fn add_op2(&mut self, op: Op, arg1: u8, arg2: u8) {
+        let current_chunk = self.current_chunk_mut();
+        current_chunk.push(op as u8);
+        current_chunk.push(arg1);
+        current_chunk.push(arg2);
+    }
+
     pub fn add_constant(&mut self, constant: Constant) -> u8 {
         self.constants.push(constant);
         assert!(self.constants.len() <= u8::MAX as usize);
@@ -258,7 +266,10 @@ impl Vm {
                 if op == Op::LoadConstant {
                     print!("     (value: {})", self.constants[operands[0] as usize]);
                 } else if op == Op::Call {
-                    print!("     ({})", self.bytecode[operands[0] as usize].0);
+                    print!(
+                        "   ({}, num_args={})",
+                        self.bytecode[operands[0] as usize].0, operands[1] as usize
+                    );
                 }
                 println!();
             }
@@ -346,7 +357,7 @@ impl Vm {
                 }
                 Op::GetLocal => {
                     let slot_idx = self.read_byte() as usize;
-                    let stack_idx = self.current_frame().fp - slot_idx;
+                    let stack_idx = self.current_frame().fp + slot_idx;
                     self.push(self.stack[stack_idx].clone());
                 }
                 op @ (Op::Add
@@ -381,18 +392,29 @@ impl Vm {
                 }
                 Op::Call => {
                     let function_idx = self.read_byte() as usize;
+                    let num_args = self.read_byte() as usize;
                     self.frames.push(CallFrame {
                         function_idx,
                         ip: 0,
-                        fp: self.stack.len() - 1,
+                        fp: self.stack.len() - num_args,
                     })
                 }
                 Op::Return => {
                     if self.frames.len() == 1 {
                         return Ok(InterpreterResult::Quantity(self.pop()));
                     } else {
-                        self.frames.pop();
-                        // TODO: pop function call arguments from the stack
+                        let discarded_frame = self.frames.pop().unwrap();
+
+                        // Remember the return value which is currently on top of the stack
+                        let return_value = self.stack.pop().unwrap();
+
+                        // Pop off arguments from previous call
+                        while self.stack.len() > discarded_frame.fp {
+                            self.stack.pop();
+                        }
+
+                        // Push the return value back on top of the stack
+                        self.stack.push(return_value);
                     }
                 }
             }
