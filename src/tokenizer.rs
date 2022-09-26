@@ -14,9 +14,13 @@ type Result<T> = std::result::Result<T, TokenizerError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
-    // Operators
+    // Brackets
     LeftParen,
     RightParen,
+    LeftAngleBracket,
+    RightAngleBracket,
+
+    // Operators
     Plus,
     Minus,
     Multiply,
@@ -132,6 +136,8 @@ impl Tokenizer {
         let kind = match current_char {
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
+            '<' => TokenKind::LeftAngleBracket,
+            '>' => TokenKind::RightAngleBracket,
             c if c.is_ascii_digit() => {
                 while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
                     self.advance();

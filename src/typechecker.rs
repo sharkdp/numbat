@@ -256,6 +256,7 @@ impl TypeChecker {
             }
             ast::Statement::DeclareFunction(
                 function_name,
+                type_parameters,
                 parameters,
                 expr,
                 optional_return_type_dexpr,

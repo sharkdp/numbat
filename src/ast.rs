@@ -122,9 +122,15 @@ pub enum Statement {
     Expression(Expression),
     DeclareVariable(String, Expression, Option<DimensionExpression>),
     DeclareFunction(
+        /// Function name
         String,
+        /// Introduced type parameters
+        Vec<String>,
+        /// Arguments, optionally with type annotations
         Vec<(String, Option<DimensionExpression>)>,
+        /// Function body
         Expression,
+        /// Return type, optionally with a type annotation
         Option<DimensionExpression>,
     ),
     DeclareDimension(String, Vec<DimensionExpression>),
@@ -139,7 +145,7 @@ impl PrettyPrint for Statement {
                 // TODO(minor): print optional dexpr
                 format!("let {} = {}", identifier, expr.pretty_print())
             }
-            Statement::DeclareFunction(identifier, _args, expr, _dexpr) => {
+            Statement::DeclareFunction(identifier, _type_variables, _parameters, expr, _dexpr) => {
                 // TODO(minor): print args
                 format!("fn {}(…) = {}", identifier, expr.pretty_print())
             }

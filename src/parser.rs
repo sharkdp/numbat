@@ -149,12 +149,29 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::Fn).is_some() {
             if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
+                let mut type_parameters = vec![];
+                if self.match_exact(TokenKind::LeftAngleBracket).is_some() {
+                    while self.match_exact(TokenKind::RightAngleBracket).is_none() {
+                        if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
+                            type_parameters.push(param_name.lexeme.to_string());
+
+                            if self.match_exact(TokenKind::Comma).is_none()
+                                && self.peek().kind != TokenKind::RightAngleBracket
+                            {
+                                todo!("Parse error: expected ',' or '>'.");
+                            }
+                        } else {
+                            todo!("Parse error: expected identifier.");
+                        }
+                    }
+                }
+
                 if self.match_exact(TokenKind::LeftParen).is_none() {
                     todo!("Parse error");
                 }
 
                 let mut parameters = vec![];
-                loop {
+                while self.match_exact(TokenKind::RightParen).is_none() {
                     if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
                         let param_type_dexpr = if self.match_exact(TokenKind::Colon).is_some() {
                             Some(self.dimension_expression()?)
@@ -164,20 +181,13 @@ impl<'a> Parser<'a> {
 
                         parameters.push((param_name.lexeme.to_string(), param_type_dexpr));
 
-                        if self.match_exact(TokenKind::Comma).is_some() {
-                            // continue parsing parameters
-                        } else if self.match_exact(TokenKind::RightParen).is_some() {
-                            break;
-                        } else {
-                            todo!("Parse error");
+                        if self.match_exact(TokenKind::Comma).is_none()
+                            && self.peek().kind != TokenKind::RightParen
+                        {
+                            todo!("Parse error: expected ',' or ')'.");
                         }
                     } else {
-                        // TODO: unify code with if-part
-                        if self.match_exact(TokenKind::RightParen).is_some() {
-                            break;
-                        } else {
-                            todo!("Parse error");
-                        }
+                        todo!("Parse error: expected identifier.");
                     }
                 }
 
@@ -197,6 +207,7 @@ impl<'a> Parser<'a> {
                     let expr = self.expression()?;
                     Ok(Statement::DeclareFunction(
                         fn_name.lexeme.clone(),
+                        type_parameters,
                         parameters,
                         expr,
                         optional_return_type_dexpr,
@@ -772,6 +783,91 @@ mod tests {
         );
 
         // TODO: should_fail_with tests
+    }
+
+    #[test]
+    fn parse_function_declaration() {
+        parse_as(
+            &["fn foo() = 1"],
+            Statement::DeclareFunction("foo".into(), vec![], vec![], scalar!(1.0), None),
+        );
+
+        parse_as(
+            &["fn foo() -> Scalar = 1"],
+            Statement::DeclareFunction(
+                "foo".into(),
+                vec![],
+                vec![],
+                scalar!(1.0),
+                Some(DimensionExpression::Dimension("Scalar".into())),
+            ),
+        );
+
+        parse_as(
+            &["fn foo(x) = 1"],
+            Statement::DeclareFunction(
+                "foo".into(),
+                vec![],
+                vec![("x".into(), None)],
+                scalar!(1.0),
+                None,
+            ),
+        );
+
+        parse_as(
+            &["fn foo(x, y, z) = 1"],
+            Statement::DeclareFunction(
+                "foo".into(),
+                vec![],
+                vec![("x".into(), None), ("y".into(), None), ("z".into(), None)],
+                scalar!(1.0),
+                None,
+            ),
+        );
+
+        parse_as(
+            &["fn foo(x: Length, y: Time, z: Length^3 · Time^2) -> Scalar = 1"],
+            Statement::DeclareFunction(
+                "foo".into(),
+                vec![],
+                vec![
+                    (
+                        "x".into(),
+                        Some(DimensionExpression::Dimension("Length".into())),
+                    ),
+                    (
+                        "y".into(),
+                        Some(DimensionExpression::Dimension("Time".into())),
+                    ),
+                    (
+                        "z".into(),
+                        Some(DimensionExpression::Multiply(
+                            Box::new(DimensionExpression::Power(
+                                Box::new(DimensionExpression::Dimension("Length".into())),
+                                Rational::new(3, 1),
+                            )),
+                            Box::new(DimensionExpression::Power(
+                                Box::new(DimensionExpression::Dimension("Time".into())),
+                                Rational::new(2, 1),
+                            )),
+                        )),
+                    ),
+                ],
+                scalar!(1.0),
+                Some(DimensionExpression::Dimension("Scalar".into())),
+            ),
+        );
+
+        parse_as(
+            &["fn foo<X>(x: X) = 1"],
+            Statement::DeclareFunction(
+                "foo".into(),
+                vec!["X".into()],
+                vec![("x".into(), Some(DimensionExpression::Dimension("X".into())))],
+                scalar!(1.0),
+                None,
+            ),
+        );
     }
 
     // TODO: tests for 'unit …' declarations
