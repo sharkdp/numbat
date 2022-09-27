@@ -46,6 +46,9 @@ pub enum TypeCheckError {
 
     #[error("Could not infer the following type parameters in function call: {0}.")]
     CanNotInferTypeParameters(String),
+
+    #[error("Multiple unresolved generic parameters in a single function parameter type are not (yet) supported. Consider reordering the function parameters")]
+    MultipleUnresolvedTypeParameters
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -209,11 +212,7 @@ impl TypeChecker {
                         .collect();
 
                     if remaining_generic_subtypes.len() > 1 {
-                        todo!(
-                            "Error: multiple unresolved generic parameters in a single function \
-                               parameter type are not yet supported. Consider reordering the \
-                               function parameters"
-                        );
+                        return Err(TypeCheckError::MultipleUnresolvedTypeParameters);
                     }
 
                     if let Some(&generic_subtype_factor) = remaining_generic_subtypes.first() {
