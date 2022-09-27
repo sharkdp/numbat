@@ -26,7 +26,8 @@
 //! factor          →   unary ( ( "*" | "/") unary ) *
 //! unary           →   "-" unary | ifactor
 //! ifactor         →   power ( " " power ) *
-//! power           →   call ( "^" power ) *
+//! power           →   unicode_power ( "^" power )
+//! unicode_power   →   call ( "⁻" ? ("¹" | "²" | "³" | "⁴" | "⁵" ) ) ?
 //! call            →   primary ( "(" arguments? ")" ) ?
 //! arguments       →   expression ( "," expression ) *
 //! primary         →   number | identifier | "(" expression ")"
@@ -45,6 +46,9 @@ use thiserror::Error;
 pub enum ParseErrorKind {
     #[error("Unexpected character '{0}'")]
     TokenizerUnexpectedCharacter(char),
+
+    #[error("Unexpected character in negative exponent")]
+    TokenizerUnexpectedCharacterInNegativeExponent(Option<char>),
 
     #[error("Expected one of: number, identifier, parenthesized expression")]
     ExpectedPrimary,
@@ -380,12 +384,42 @@ impl<'a> Parser<'a> {
     }
 
     fn power(&mut self) -> Result<Expression> {
-        let mut expr = self.call()?;
-        while self.match_exact(TokenKind::Power).is_some() {
+        let mut expr = self.unicode_power()?;
+        if self.match_exact(TokenKind::Power).is_some() {
             let rhs = self.power()?;
 
             expr = Expression::BinaryOperator(BinaryOperator::Power, Box::new(expr), Box::new(rhs));
         }
+        Ok(expr)
+    }
+
+    fn unicode_power(&mut self) -> Result<Expression> {
+        let mut expr = self.call()?;
+
+        if let Some(exponent) = self.match_exact(TokenKind::UnicodeExponent) {
+            let exp = match exponent.lexeme.as_str() {
+                "⁻¹" => -1,
+                "⁻²" => -2,
+                "⁻³" => -3,
+                "⁻⁴" => -4,
+                "⁻⁵" => -5,
+                "¹" => 1,
+                "²" => 2,
+                "³" => 3,
+                "⁴" => 4,
+                "⁵" => 5,
+                _ => unreachable!(
+                    "Tokenizer should not generate unicode exponent tokens for anything else"
+                ),
+            };
+
+            expr = Expression::BinaryOperator(
+                BinaryOperator::Power,
+                Box::new(expr),
+                Box::new(Expression::Scalar(Number::from_f64(exp as f64))),
+            );
+        }
+
         Ok(expr)
     }
 
@@ -445,7 +479,8 @@ impl<'a> Parser<'a> {
     }
 
     /// Returns true iff the upcoming token indicates the beginning
-    /// of a 'primary' expression.
+    /// of a 'power' expression (which needs to start with a 'primary'
+    /// expression).
     fn next_token_could_start_power_expression(&self) -> bool {
         // This function needs to be kept in sync with `primary` above.
 
@@ -553,17 +588,21 @@ impl<'a> Parser<'a> {
 pub fn parse(input: &str) -> Result<Vec<Statement>> {
     use crate::tokenizer::tokenize;
 
-    let tokens = tokenize(input).map_err(
-        |TokenizerError::UnexpectedCharacter {
-             character,
-             ref span,
-         }| {
+    let tokens = tokenize(input).map_err(|e| match e {
+        TokenizerError::UnexpectedCharacter {
+            character,
+            ref span,
+        } => ParseError::new(
+            ParseErrorKind::TokenizerUnexpectedCharacter(character),
+            span.clone(),
+        ),
+        TokenizerError::UnexpectedCharacterInNegativeExponent { character, span } => {
             ParseError::new(
-                ParseErrorKind::TokenizerUnexpectedCharacter(character),
+                ParseErrorKind::TokenizerUnexpectedCharacterInNegativeExponent(character),
                 span.clone(),
             )
-        },
-    )?;
+        }
+    })?;
     let mut parser = Parser::new(&tokens);
     parser.parse()
 }
@@ -714,6 +753,33 @@ mod tests {
         );
 
         should_fail(&["1^", "1^^2"]);
+    }
+
+    #[test]
+    fn parse_unicode_exponentiation() {
+        parse_as_expression(&["2³"], binop!(scalar!(2.0), Power, scalar!(3.0)));
+
+        parse_as_expression(&["2⁻⁴"], binop!(scalar!(2.0), Power, scalar!(-4.0)));
+
+        parse_as_expression(
+            &["(2^3)²"],
+            binop!(
+                binop!(scalar!(2.0), Power, scalar!(3.0)),
+                Power,
+                scalar!(2.0)
+            ),
+        );
+
+        parse_as_expression(
+            &["2⁵^4"],
+            binop!(
+                binop!(scalar!(2.0), Power, scalar!(5.0)),
+                Power,
+                scalar!(4.0)
+            ),
+        );
+
+        should_fail(&["1²³", "2⁻", "2⁻3"]);
     }
 
     #[test]

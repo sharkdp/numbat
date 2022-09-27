@@ -8,6 +8,9 @@ use thiserror::Error;
 pub enum TokenizerError {
     #[error("Unexpected character: '{character}'")]
     UnexpectedCharacter { character: char, span: Span },
+
+    #[error("Unexpected character after '")]
+    UnexpectedCharacterInNegativeExponent { character: Option<char>, span: Span },
 }
 
 type Result<T> = std::result::Result<T, TokenizerError>;
@@ -31,6 +34,7 @@ pub enum TokenKind {
     Equal,
     Colon,
     PostfixApply,
+    UnicodeExponent,
 
     // Keywords
     Let,
@@ -65,8 +69,12 @@ struct Tokenizer {
     current_position: usize,
 }
 
+fn is_exponent_char(c: char) -> bool {
+    matches!(c, '¹' | '²' | '³' | '⁴' | '⁵')
+}
+
 fn is_identifier_char(c: char) -> bool {
-    c.is_alphanumeric() || c == '_'
+    (c.is_alphanumeric() || c == '_') && !is_exponent_char(c)
 }
 
 impl Tokenizer {
@@ -178,6 +186,23 @@ impl Tokenizer {
                     TokenKind::Minus
                 }
             }
+            '⁻' => {
+                let c = self.peek();
+                if c.map(is_exponent_char).unwrap_or(false) {
+                    self.advance();
+                    TokenKind::UnicodeExponent
+                } else {
+                    return Err(TokenizerError::UnexpectedCharacterInNegativeExponent {
+                        character: c,
+                        span: Span {
+                            line: self.current_line,
+                            position: current_position,
+                            index: self.token_start_index,
+                        },
+                    });
+                }
+            }
+            '¹' | '²' | '³' | '⁴' | '⁵' => TokenKind::UnicodeExponent,
             '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so we treat it as a special case here
             c if is_identifier_char(c) => {
                 while self.peek().map(is_identifier_char).unwrap_or(false) {
