@@ -11,10 +11,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
-    #[error("Unknown identifier '{0}'")]
+    #[error("Unknown identifier '{0}'.")]
     UnknownIdentifier(String),
 
-    #[error("Unknown function '{0}'")]
+    #[error("Unknown function '{0}'.")]
     UnknownFunction(String),
 
     #[error("Incompatible dimensions in {0}:\n    {1}: {2}\n    {3}: {4}")]
@@ -38,8 +38,11 @@ pub enum TypeCheckError {
     #[error("Function '{0}' called with {2} arguments(s), but needs {1}.")]
     WrongArity(String, usize, usize),
 
-    #[error("Unsupported expression in const-evaluation of exponent: {0}")]
+    #[error("Unsupported expression in const-evaluation of exponent: {0}.")]
     UnsupportedConstExpression(&'static str),
+
+    #[error("'{0}' can not be used as a type parameter because it is also an existing dimension identifier.")]
+    TypeParameterNameClash(String),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -323,10 +326,13 @@ impl TypeChecker {
                 let mut typechecker_fn = self.clone();
 
                 for type_parameter in &type_parameters {
-                    typechecker_fn
-                        .registry
-                        .add_base_dimension(type_parameter)
-                        .map_err(TypeCheckError::RegistryError)?;
+                    match typechecker_fn.registry.add_base_dimension(type_parameter) {
+                        Err(RegistryError::EntryExists(name)) => {
+                            return Err(TypeCheckError::TypeParameterNameClash(name))
+                        }
+                        Err(err) => return Err(TypeCheckError::RegistryError(err)),
+                        _ => {}
+                    }
                 }
 
                 let mut typed_parameters = vec![];
