@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::arithmetic::{Exponent, Power, Rational};
 use crate::ast;
@@ -43,6 +43,9 @@ pub enum TypeCheckError {
 
     #[error("'{0}' can not be used as a type parameter because it is also an existing dimension identifier.")]
     TypeParameterNameClash(String),
+
+    #[error("Could not infer the following type parameters in function call: {0}.")]
+    CanNotInferTypeParameters(String),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -254,7 +257,18 @@ impl TypeChecker {
                     }
                 }
 
-                // TODO: Make sure all generic parameters have been substituted
+                if substitutions.len() != type_parameters.len() {
+                    let parameters: HashSet<String> = type_parameters.iter().cloned().collect();
+                    let inferred_parameters: HashSet<String> =
+                        substitutions.iter().map(|t| t.0.clone()).collect();
+
+                    let remaining: Vec<_> = (&parameters - &inferred_parameters)
+                        .iter()
+                        .cloned()
+                        .collect();
+
+                    return Err(TypeCheckError::CanNotInferTypeParameters(remaining.join(", ")));
+                }
 
                 let return_type = substitute(&substitutions, return_type);
 
