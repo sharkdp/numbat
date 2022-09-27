@@ -1,6 +1,6 @@
-let reaction_time: Time = 0.5 * second
-let braking_power: Acceleration = 0.8 * gravity
+let reaction_time: Time = 0.5 second
+let braking_power: Acceleration = 0.8 gravity
 
-fn stopping_distance(v: Speed) -> Length = v * reaction_time + 1/2 * v^2 / braking_power
+fn stopping_distance(v: Speed) -> Length = v · reaction_time + 1/2 · v^2 / braking_power
 
-stopping_distance(35 * meter / second)
+stopping_distance(35 meter / second)

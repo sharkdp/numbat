@@ -1,8 +1,8 @@
-let p0: Pressure = 101325 · pascal
-let t0: Temperature = 288.15 · kelvin
+let p0: Pressure = 101325 pascal
+let t0: Temperature = 288.15 kelvin
 
-let temperature_gradient = 0.65 · kelvin / (100 · meter)
+let temperature_gradient = 0.65 kelvin / (100 meter)
 
 fn pressure(height: Length) -> Pressure = p0 · (1 - temperature_gradient · height / t0)^5.255
 
-pressure(1500 · meter)
+pressure(1500 meter)

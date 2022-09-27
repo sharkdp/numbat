@@ -1,12 +1,14 @@
 //! Insect Parser
 //!
 //! Operator precedence, low to high
-//! * conversion
-//! * addition
-//! * subtraction
-//! * multiplication
-//! * division
-//! * unary
+//! * postfix apply ("//")
+//! * conversion ("->")
+//! * addition ("+")
+//! * subtraction ("-")
+//! * multiplication ("*")
+//! * division ("/")
+//! * exponentiation ("^")
+//! * unary minus ("-")
 //!
 //! Grammar:
 //! ```txt
@@ -22,7 +24,8 @@
 //! conversion      →   term ( "→" term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
 //! factor          →   unary ( ( "*" | "/") unary ) *
-//! unary           →   "-" unary | power
+//! unary           →   "-" unary | ifactor
+//! ifactor         →   power ( " " power ) *
 //! power           →   call ( "^" power ) *
 //! call            →   primary ( "(" arguments? ")" ) ?
 //! arguments       →   expression ( "," expression ) *
@@ -361,8 +364,19 @@ impl<'a> Parser<'a> {
 
             Ok(Expression::Negate(Box::new(rhs)))
         } else {
-            self.power()
+            self.ifactor()
         }
+    }
+
+    fn ifactor(&mut self) -> Result<Expression> {
+        let mut expr = self.power()?;
+
+        while self.next_token_could_start_power_expression() {
+            let rhs = self.power()?;
+            expr = Expression::BinaryOperator(BinaryOperator::Mul, Box::new(expr), Box::new(rhs));
+        }
+
+        Ok(expr)
     }
 
     fn power(&mut self) -> Result<Expression> {
@@ -379,11 +393,7 @@ impl<'a> Parser<'a> {
         let primary = self.primary()?;
 
         if self.match_exact(TokenKind::LeftParen).is_some() {
-            let function_name = if let Expression::Identifier(name) = primary {
-                name
-            } else {
-                todo!("Parse error: can not call …");
-            };
+            let function_name = self.function_name_from_primary(primary);
 
             if self.match_exact(TokenKind::RightParen).is_some() {
                 return Ok(Expression::FunctionCall(function_name, vec![]));
@@ -407,6 +417,8 @@ impl<'a> Parser<'a> {
     }
 
     fn primary(&mut self) -> Result<Expression> {
+        // This function needs to be kept in sync with `next_token_could_start_primary` below.
+
         if let Some(num) = self.match_exact(TokenKind::Number) {
             Ok(Expression::Scalar(Number::from_f64(
                 num.lexeme.parse::<f64>().unwrap(),
@@ -430,6 +442,17 @@ impl<'a> Parser<'a> {
                 self.peek().span.clone(),
             ))
         }
+    }
+
+    /// Returns true iff the upcoming token indicates the beginning
+    /// of a 'primary' expression.
+    fn next_token_could_start_power_expression(&self) -> bool {
+        // This function needs to be kept in sync with `primary` above.
+
+        matches!(
+            self.peek().kind,
+            TokenKind::Number | TokenKind::Identifier | TokenKind::LeftParen
+        )
     }
 
     pub(crate) fn dimension_expression(&mut self) -> Result<DimensionExpression> {
@@ -650,6 +673,19 @@ mod tests {
         );
 
         should_fail(&["1*@", "1*", "1 per", "÷", "×"]);
+    }
+
+    #[test]
+    fn parse_implicit_multiplication() {
+        parse_as_expression(
+            &["1 2", "  1     2    "],
+            binop!(scalar!(1.0), Mul, scalar!(2.0)),
+        );
+
+        parse_as_expression(
+            &["2 meter"],
+            binop!(scalar!(2.0), Mul, identifier!("meter")),
+        );
     }
 
     #[test]
