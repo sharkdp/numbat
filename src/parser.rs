@@ -10,10 +10,15 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       →   assignment | expression
-//! assignment      →   identifier "=" expression
+//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl
+//!
+//! variable_decl   →   TODO
+//! function_decl   →   TODO
+//! dimension_decl  →   TODO
+//! unit_decl       →   TODO
+//!
 //! expression      →   postfix_apply
-//! postfix_apply   →   conversion ( "//" primary ) *
+//! postfix_apply   →   conversion ( "//" identifier ) *
 //! conversion      →   term ( "→" term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
 //! factor          →   unary ( ( "*" | "/") unary ) *
@@ -58,6 +63,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected '=' in function declaration")]
     ExpectedEqualInFunctionDeclaration,
+
+    #[error("Expected function name after '//' operator")]
+    ExpectedIdentifierInPostfixApply,
 }
 
 #[derive(Debug, Error)]
@@ -282,11 +290,21 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn identifier(&mut self) -> Result<String> {
+        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+            Ok(identifier.lexeme.clone())
+        } else {
+            Err(ParseError::new(
+                ParseErrorKind::ExpectedIdentifierInPostfixApply,
+                self.peek().span.clone(),
+            ))
+        }
+    }
+
     pub fn postfix_apply(&mut self) -> Result<Expression> {
         let mut expr = self.conversion()?;
         while self.match_exact(TokenKind::PostfixApply).is_some() {
-            let primary = self.primary()?;
-            expr = Expression::FunctionCall(self.function_name_from_primary(primary), vec![expr]);
+            expr = Expression::FunctionCall(self.identifier()?, vec![expr]);
         }
         Ok(expr)
     }
@@ -870,5 +888,12 @@ mod tests {
         );
     }
 
+    #[test]
+    fn parse_postfix_apply() {
+        parse_as_expression(
+            &["1 + 1 // foo"],
+            Expression::FunctionCall("foo".into(), vec![binop!(scalar!(1.0), Add, scalar!(1.0))]),
+        );
+    }
     // TODO: tests for 'unit …' declarations
 }
