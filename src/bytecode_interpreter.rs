@@ -69,7 +69,7 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
             Statement::DeclareFunction(name, parameters, expr, _return_type) => {
-                self.vm.begin_function(&name);
+                self.vm.begin_function(name);
                 for parameter in parameters.iter() {
                     self.local_variables.push(parameter.0.clone());
                 }

@@ -144,7 +144,7 @@ impl TypeChecker {
                     typed_ast::BinaryOperator::Power => {
                         let exponent_type = rhs.get_type();
                         if exponent_type != Type::unity() {
-                            return Err(TypeCheckError::NonScalarExponent(exponent_type.clone()));
+                            return Err(TypeCheckError::NonScalarExponent(exponent_type));
                         }
 
                         let base_type = lhs.get_type();
@@ -464,7 +464,7 @@ pub fn typecheck(
 }
 
 #[cfg(test)]
-const TEST_PRELUDE: &'static str = "
+const TEST_PRELUDE: &str = "
 dimension A
 dimension B
 dimension C = A * B

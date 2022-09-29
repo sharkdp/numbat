@@ -433,7 +433,7 @@ impl<'a> Parser<'a> {
                 return Ok(Expression::FunctionCall(function_name, vec![]));
             } else {
                 let args = self.arguments()?;
-                if !self.match_exact(TokenKind::RightParen).is_some() {
+                if self.match_exact(TokenKind::RightParen).is_none() {
                     todo!("Parse error");
                 }
                 return Ok(Expression::FunctionCall(function_name, args));
@@ -599,7 +599,7 @@ pub fn parse(input: &str) -> Result<Vec<Statement>> {
         TokenizerError::UnexpectedCharacterInNegativeExponent { character, span } => {
             ParseError::new(
                 ParseErrorKind::TokenizerUnexpectedCharacterInNegativeExponent(character),
-                span.clone(),
+                span,
             )
         }
     })?;

@@ -7,7 +7,7 @@ use std::ffi::OsStr;
 use std::fs;
 
 fn assert_typechecks_and_runs(code: &str) {
-    let statements = parse(&code).unwrap();
+    let statements = parse(code).unwrap();
     let statements_checked = typecheck(statements).unwrap();
     assert!(BytecodeInterpreter::new(false)
         .interpret_statements(&statements_checked)
@@ -15,12 +15,12 @@ fn assert_typechecks_and_runs(code: &str) {
 }
 
 fn assert_typecheck_error(code: &str) {
-    let statements = parse(&code).unwrap();
+    let statements = parse(code).unwrap();
     assert!(typecheck(statements).is_err());
 }
 
 fn assert_interpreter_error(code: &str) {
-    let statements = parse(&code).unwrap();
+    let statements = parse(code).unwrap();
     let statements_checked = typecheck(statements).unwrap();
     assert!(BytecodeInterpreter::new(false)
         .interpret_statements(&statements_checked)
@@ -33,7 +33,7 @@ fn prelude_can_be_parsed_and_interpreted() {
     assert_typechecks_and_runs(&prelude_code);
 }
 
-fn run_for_each_insect_file_in(folder: &str, f: impl Fn(&str) -> ()) {
+fn run_for_each_insect_file_in(folder: &str, f: impl Fn(&str)) {
     let prelude_code = fs::read_to_string("prelude.ins").unwrap();
     for entry in fs::read_dir(folder).unwrap() {
         let path = entry.unwrap().path();
@@ -41,7 +41,7 @@ fn run_for_each_insect_file_in(folder: &str, f: impl Fn(&str) -> ()) {
             continue;
         }
 
-        println!("Testing example {:?}", example = path);
+        println!("Testing example {example:?}", example = path);
         let example_code = fs::read_to_string(path).unwrap();
         f(&format!(
             "{prelude}\n\
