@@ -5,10 +5,10 @@ use insect::bytecode_interpreter::BytecodeInterpreter;
 use insect::interpreter::{Interpreter, InterpreterResult};
 use insect::parser::{parse, ParseError};
 use insect::pretty_print::PrettyPrint;
+use insect::typechecker::TypeChecker;
 
 use anyhow::{Context, Result};
 use clap::{AppSettings, Parser};
-use insect::typechecker::TypeChecker;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 

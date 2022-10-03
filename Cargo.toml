@@ -1,6 +1,9 @@
 [workspace]
-
 members = [
     "insect",
     "insect-cli",
+]
+
+exclude = [
+    "insect-wasm"
 ]
