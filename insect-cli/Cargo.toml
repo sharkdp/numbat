@@ -1,0 +1,19 @@
+[package]
+name = "insect-cli"
+description = "A high precision scientific calculator with full support for physical units."
+authors = ["David Peter <mail@david-peter.de>"]
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+rustyline = "10"
+insect = { path = "../insect" }
+
+[dependencies.clap]
+version = "3"
+features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
+
+[[bin]]
+name = "insect"
+path = "src/main.rs"
