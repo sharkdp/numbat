@@ -172,7 +172,7 @@ impl Insect {
                     .current_filename
                     .as_deref()
                     .map(|p| p.to_string_lossy())
-                    .unwrap_or("<input>".into());
+                    .unwrap_or_else(|| "<input>".into());
                 eprintln!(
                     "File {filename}:{line_number}:{position}",
                     filename = filename,
@@ -189,7 +189,7 @@ impl Insect {
     }
 
     fn get_prelude_path(&self) -> PathBuf {
-        let config_dir = dirs_next::config_dir().unwrap_or(PathBuf::from("."));
+        let config_dir = dirs_next::config_dir().unwrap_or_else(|| PathBuf::from("."));
         config_dir.join("insect").join("prelude.ins") // TODO: allow for preludes in system paths, user paths, …
     }
 }
