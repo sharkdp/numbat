@@ -39,12 +39,6 @@ struct Args {
     debug: bool,
 }
 
-pub enum Input {
-    SimpleExpression(String),
-    FromFile(PathBuf),
-    None,
-}
-
 struct Insect {
     args: Args,
     typechecker: TypeChecker,
