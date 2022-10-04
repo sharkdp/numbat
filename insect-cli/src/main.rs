@@ -68,7 +68,10 @@ impl Insect {
             let prelude_path = self.get_prelude_path();
 
             self.current_filename = Some(prelude_path.clone());
-            let prelude_code = fs::read_to_string(prelude_path)?;
+            let prelude_code = fs::read_to_string(&prelude_path).context(format!(
+                "Error while reading prelude from {}",
+                prelude_path.to_string_lossy()
+            ))?;
             self.parse_and_evaluate(&prelude_code);
         }
 
@@ -186,7 +189,8 @@ impl Insect {
     }
 
     fn get_prelude_path(&self) -> PathBuf {
-        "prelude.ins".into() // TODO: allow for preludes in system paths, user paths, …
+        let config_dir = dirs_next::config_dir().unwrap_or(PathBuf::from("."));
+        config_dir.join("insect").join("prelude.ins") // TODO: allow for preludes in system paths, user paths, …
     }
 }
 
@@ -196,5 +200,6 @@ fn main() {
 
     if let Err(e) = result {
         eprintln!("{:#}", e);
+        std::process::exit(1);
     }
 }
