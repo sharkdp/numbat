@@ -39,10 +39,17 @@ struct Args {
     debug: bool,
 }
 
+pub enum Input {
+    SimpleExpression(String),
+    FromFile(PathBuf),
+    None,
+}
+
 struct Insect {
     args: Args,
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
+    current_filename: Option<PathBuf>,
 }
 
 impl Insect {
@@ -52,28 +59,29 @@ impl Insect {
             interpreter: BytecodeInterpreter::new(args.debug),
             typechecker: TypeChecker::default(),
             args,
+            current_filename: None,
         }
     }
 
     fn run(&mut self) -> Result<()> {
+        if !self.args.no_prelude {
+            let prelude_path = self.get_prelude_path();
+
+            self.current_filename = Some(prelude_path.clone());
+            let prelude_code = fs::read_to_string(prelude_path)?;
+            self.parse_and_evaluate(&prelude_code);
+        }
+
         let code: Option<String> = if let Some(ref path) = self.args.file {
+            self.current_filename = Some(path.clone());
             Some(fs::read_to_string(path).context(format!(
                 "Could not load source file '{}'",
                 path.to_string_lossy()
             ))?)
         } else {
+            self.current_filename = None;
             self.args.expression.clone()
         };
-
-        if !self.args.no_prelude {
-            let prelude_code = fs::read_to_string("prelude.ins")?; // TODO
-
-            let statements = parse(&prelude_code).context("Parse error in prelude")?;
-            let statements_checked = self.typechecker.check_statements(statements)?;
-            self.interpreter
-                .interpret_statements(&statements_checked)
-                .context("Interpreter error in prelude")?;
-        }
 
         if let Some(code) = code {
             self.parse_and_evaluate(&code);
@@ -157,7 +165,17 @@ impl Insect {
             Err(ref e @ ParseError { ref span, .. }) => {
                 let line = input.lines().nth(span.line - 1).unwrap();
 
-                eprintln!("  File \"<stdin>\", line {}", span.line);
+                let filename = self
+                    .current_filename
+                    .as_deref()
+                    .map(|p| p.to_string_lossy())
+                    .unwrap_or("<input>".into());
+                eprintln!(
+                    "File {filename}:{line_number}:{position}",
+                    filename = filename,
+                    line_number = span.line,
+                    position = span.position
+                );
                 eprintln!("    {line}");
                 eprintln!("    {offset}^", offset = " ".repeat(span.position - 1));
                 eprintln!("{}", e);
@@ -165,6 +183,10 @@ impl Insect {
                 true
             }
         }
+    }
+
+    fn get_prelude_path(&self) -> PathBuf {
+        "prelude.ins".into() // TODO: allow for preludes in system paths, user paths, …
     }
 }
 
