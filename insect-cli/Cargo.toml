@@ -11,7 +11,7 @@ rustyline = "10"
 insect = { path = "../insect" }
 
 [dependencies.clap]
-version = "3"
+version = "4"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [[bin]]

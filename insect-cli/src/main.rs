@@ -8,7 +8,7 @@ use insect::pretty_print::PrettyPrint;
 use insect::typechecker::TypeChecker;
 
 use anyhow::{Context, Result};
-use clap::{AppSettings, Parser};
+use clap::Parser;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -16,27 +16,26 @@ const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
 #[derive(Parser, Debug)]
-#[clap(version, about)]
-#[clap(global_setting(AppSettings::DeriveDisplayOrder))]
+#[command(version, about)]
 struct Args {
     /// Path to source file with Insect code. If none is given, an interactive
     /// session is started.
     file: Option<PathBuf>,
 
     /// Evaluate a single expression
-    #[clap(short, long, value_name = "CODE", conflicts_with = "file")]
+    #[arg(short, long, value_name = "CODE", conflicts_with = "file")]
     expression: Option<String>,
 
     /// Do not load Insects prelude with predefined physical dimensions and units.
-    #[clap(long, action)]
+    #[arg(long)]
     no_prelude: bool,
 
     /// Whether or not to pretty-print every input expression.
-    #[clap(long, action)]
+    #[arg(long)]
     pretty_print: bool,
 
     /// Turn on debug mode (e.g. disassembler output).
-    #[clap(long, short, action)]
+    #[arg(long, short)]
     debug: bool,
 }
 
