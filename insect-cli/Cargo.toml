@@ -12,7 +12,7 @@ insect = { path = "../insect" }
 
 [dependencies.clap]
 version = "4"
-features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
+features = ["suggestions", "color", "wrap_help", "derive"]
 
 [[bin]]
 name = "insect"

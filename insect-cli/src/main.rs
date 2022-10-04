@@ -16,7 +16,7 @@ const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
 #[derive(Parser, Debug)]
-#[command(version, about)]
+#[command(version, about, name("insect"))]
 struct Args {
     /// Path to source file with Insect code. If none is given, an interactive
     /// session is started.
