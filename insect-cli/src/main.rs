@@ -12,7 +12,6 @@ use clap::Parser;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-const HISTORY_FILE: &str = ".history";
 const PROMPT: &str = ">>> ";
 
 #[derive(Parser, Debug)]
@@ -91,8 +90,10 @@ impl Insect {
             println!(r"|_|_| |_|___/\___|\___|\__|");
             println!();
 
+            let history_path = self.get_history_path()?;
+
             let mut rl = Editor::<()>::new()?;
-            rl.load_history(HISTORY_FILE).ok();
+            rl.load_history(&history_path).ok();
 
             loop {
                 let readline = rl.readline(PROMPT);
@@ -115,8 +116,10 @@ impl Insect {
                 }
             }
 
-            rl.save_history(HISTORY_FILE)
-                .context("Error while saving history to file")
+            rl.save_history(&history_path).context(format!(
+                "Error while saving history to '{}'",
+                history_path.to_string_lossy()
+            ))
         }
     }
 
@@ -185,6 +188,14 @@ impl Insect {
     fn get_prelude_path(&self) -> PathBuf {
         let config_dir = dirs_next::config_dir().unwrap_or_else(|| PathBuf::from("."));
         config_dir.join("insect").join("prelude.ins") // TODO: allow for preludes in system paths, user paths, …
+    }
+
+    fn get_history_path(&self) -> Result<PathBuf> {
+        let data_dir = dirs_next::data_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("insect");
+        fs::create_dir(&data_dir).context("Error while creating directory for history")?;
+        Ok(data_dir.join("history"))
     }
 }
 
