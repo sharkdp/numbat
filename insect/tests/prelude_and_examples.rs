@@ -14,6 +14,10 @@ fn assert_typechecks_and_runs(code: &str) {
         .is_ok());
 }
 
+fn assert_parse_error(code: &str) {
+    assert!(parse(code).is_err());
+}
+
 fn assert_typecheck_error(code: &str) {
     let statements = parse(code).unwrap();
     assert!(typecheck(statements).is_err());
@@ -55,6 +59,11 @@ fn run_for_each_insect_file_in(folder: &str, f: impl Fn(&str)) {
 #[test]
 fn examples_can_be_parsed_and_interpreted() {
     run_for_each_insect_file_in("../examples/", assert_typechecks_and_runs);
+}
+
+#[test]
+fn parse_error_examples_fail_as_expected() {
+    run_for_each_insect_file_in("../examples/parse_error", assert_parse_error);
 }
 
 #[test]
