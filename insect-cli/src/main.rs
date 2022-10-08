@@ -194,7 +194,7 @@ impl Insect {
         let data_dir = dirs_next::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join("insect");
-        fs::create_dir(&data_dir).context("Error while creating directory for history")?;
+        fs::create_dir(&data_dir).ok();
         Ok(data_dir.join("history"))
     }
 }
