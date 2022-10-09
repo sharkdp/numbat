@@ -96,7 +96,7 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_global_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareDerivedUnit(name, expr, _dexpr) => {
+            Statement::DeclareDerivedUnit(name, expr) => {
                 self.unit_registry
                     .add_derived_unit(name, expr)
                     .map_err(InterpreterError::UnitRegistryError)?;

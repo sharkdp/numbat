@@ -19,7 +19,7 @@ pub enum Statement {
     DeclareFunction(String, Vec<(String, Type)>, Expression, Type),
     DeclareDimension(String),
     DeclareBaseUnit(String, Type),
-    DeclareDerivedUnit(String, Expression, Type),
+    DeclareDerivedUnit(String, Expression),
 }
 
 impl Expression {

@@ -1,4 +1,4 @@
-use crate::registry::{BaseRepresentation, Registry, RegistryError};
+use crate::registry::{Registry, RegistryError};
 use crate::typed_ast::{Expression, Type};
 
 use thiserror::Error;
@@ -7,11 +7,6 @@ use thiserror::Error;
 pub enum UnitRegistryError {
     #[error("{0}")]
     RegistryError(RegistryError),
-
-    #[error(
-        "Unexpected dimension in definition of unit '{0}'. Specified: '{1}', computed: '{2}'."
-    )]
-    IncompatibleDimension(String, BaseRepresentation, BaseRepresentation),
 }
 
 pub type Result<T> = std::result::Result<T, UnitRegistryError>;

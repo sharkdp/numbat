@@ -328,8 +328,8 @@ impl TypeChecker {
                     }
                 }
                 self.types_for_identifier
-                    .insert(name.clone(), type_deduced.clone());
-                typed_ast::Statement::DeclareDerivedUnit(name, expr, type_deduced)
+                    .insert(name.clone(), type_deduced);
+                typed_ast::Statement::DeclareDerivedUnit(name, expr)
             }
             ast::Statement::DeclareFunction(
                 function_name,
