@@ -75,7 +75,7 @@ pub enum ParseErrorKind {
     ExpectedIdentifierInPostfixApply,
 
     #[error("Expected dimension identifier")]
-    ExpectedDimensionIdentifier,
+    ExpectedDimensionIdentifierOrUnity,
 
     #[error("Expected ',' or '>'")]
     ExpectedCommaOrRightAngleBracket,
@@ -595,13 +595,20 @@ impl<'a> Parser<'a> {
     }
 
     fn dimension_identifier(&mut self) -> Result<DimensionExpression> {
+        let e = Err(ParseError::new(
+            ParseErrorKind::ExpectedDimensionIdentifierOrUnity,
+            self.peek().span.clone(),
+        ));
         if let Some(token) = self.match_exact(TokenKind::Identifier) {
             Ok(DimensionExpression::Dimension(token.lexeme.clone()))
+        } else if let Some(number) = self.match_exact(TokenKind::Number) {
+            if number.lexeme != "1" {
+                e
+            } else {
+            Ok(DimensionExpression::Unity)
+            }
         } else {
-            Err(ParseError::new(
-                ParseErrorKind::ExpectedDimensionIdentifier,
-                self.peek().span.clone(),
-            ))
+            e
         }
     }
 

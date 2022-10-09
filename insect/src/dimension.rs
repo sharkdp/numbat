@@ -13,6 +13,9 @@ impl DimensionRegistry {
         expression: &DimensionExpression,
     ) -> Result<BaseRepresentation> {
         match expression {
+            DimensionExpression::Unity => {
+                Ok(BaseRepresentation::unity())
+            }
             DimensionExpression::Dimension(name) => {
                 self.registry.get_base_representation_for_name(name)
             }

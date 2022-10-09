@@ -111,6 +111,7 @@ fn expression_pretty_print() {
 #[derive(Debug, Clone, PartialEq)]
 
 pub enum DimensionExpression {
+    Unity,
     Dimension(String),
     Multiply(Box<DimensionExpression>, Box<DimensionExpression>),
     Divide(Box<DimensionExpression>, Box<DimensionExpression>),
@@ -120,6 +121,7 @@ pub enum DimensionExpression {
 impl PrettyPrint for DimensionExpression {
     fn pretty_print(&self) -> String {
         match self {
+            DimensionExpression::Unity => "1".into(),
             DimensionExpression::Dimension(ident) => ident.clone(),
             DimensionExpression::Multiply(lhs, rhs) => {
                 format!("{} × {}", lhs.pretty_print(), rhs.pretty_print())
