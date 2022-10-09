@@ -117,6 +117,21 @@ pub enum DimensionExpression {
     Power(Box<DimensionExpression>, Exponent),
 }
 
+impl PrettyPrint for DimensionExpression {
+    fn pretty_print(&self) -> String {
+        match self {
+            DimensionExpression::Dimension(ident) => ident.clone(),
+            DimensionExpression::Multiply(lhs, rhs) => {
+                format!("{} × {}", lhs.pretty_print(), rhs.pretty_print())
+            }
+            DimensionExpression::Divide(lhs, rhs) => {
+                format!("{} / ({})", lhs.pretty_print(), rhs.pretty_print())
+            }
+            DimensionExpression::Power(dexpr, exp) => format!("({})^{}", dexpr.pretty_print(), exp),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
@@ -141,9 +156,17 @@ pub enum Statement {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> String {
         match self {
-            Statement::DeclareVariable(identifier, expr, _dexpr) => {
-                // TODO(minor): print optional dexpr
-                format!("let {} = {}", identifier, expr.pretty_print())
+            Statement::DeclareVariable(identifier, expr, dexpr) => {
+                format!(
+                    "let {}{} = {}",
+                    identifier,
+                    if let Some(dexpr) = dexpr {
+                        format!(": {}", dexpr.pretty_print())
+                    } else {
+                        "".into()
+                    },
+                    expr.pretty_print()
+                )
             }
             Statement::DeclareFunction(identifier, _type_variables, _parameters, expr, _dexpr) => {
                 // TODO(minor): print args
@@ -153,17 +176,23 @@ impl PrettyPrint for Statement {
             Statement::DeclareDimension(ident, vec) if vec.is_empty() => {
                 format!("dimension {}", ident)
             }
-            Statement::DeclareDimension(ident, _) => {
-                format!("dimension {} = …", ident)
+            Statement::DeclareDimension(ident, dexpr) => {
+                format!("dimension {} = {}", ident, dexpr[0].pretty_print())
             }
-            Statement::DeclareBaseUnit(ident, _) => {
-                format!("unit {} : …", ident)
+            Statement::DeclareBaseUnit(ident, dexpr) => {
+                format!("unit {}: {}", ident, dexpr.pretty_print())
             }
-            Statement::DeclareDerivedUnit(ident, expr, None) => {
-                format!("unit {} = {}", ident, expr.pretty_print())
-            }
-            Statement::DeclareDerivedUnit(ident, expr, Some(_)) => {
-                format!("unit {} = {} : …", ident, expr.pretty_print())
+            Statement::DeclareDerivedUnit(ident, expr, dexpr) => {
+                format!(
+                    "unit {}: {} = {}",
+                    ident,
+                    if let Some(dexpr) = dexpr {
+                        format!(": {}", dexpr.pretty_print())
+                    } else {
+                        "".into()
+                    },
+                    expr.pretty_print()
+                )
             }
         }
     }
