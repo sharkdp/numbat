@@ -275,7 +275,7 @@ impl<'a> Parser<'a> {
                     Ok(Statement::DeclareBaseUnit(identifier.lexeme.clone(), dexpr))
                 } else {
                     // TODO: maybe we should add "syntactic sugar" and allow 'unit px' to mean: 'dimension px; unit px: px'
-                    todo!("Parse error: expected '=' or ':' afer unit identifier")
+                    todo!("Parse error: expected '=' or ':' after unit identifier")
                 }
             } else {
                 todo!("Parse error: expected identifier after 'unit'")
