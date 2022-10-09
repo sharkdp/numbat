@@ -39,7 +39,7 @@ use crate::number::Number;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
 
-use num_traits::FromPrimitive;
+use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -103,6 +103,9 @@ pub enum ParseErrorKind {
 
     #[error("Only functions can be called")]
     CanOnlyCallIdentifier,
+
+    #[error("Division by zero in dimension exponent")]
+    DivisionByZeroInDimensionExponent,
 }
 
 #[derive(Debug, Error)]
@@ -580,15 +583,41 @@ impl<'a> Parser<'a> {
     }
 
     fn dimension_exponent(&mut self) -> Result<Exponent> {
-        // TODO: allow for parens in exponents, e.g. Time^(-1)
         // TODO: potentially allow for ², ³, etc.
-        // TODO: only parse integer exponents (or rationals) here
 
         if let Some(token) = self.match_exact(TokenKind::Number) {
+            // TODO: only parse integers here
             Ok(Rational::from_f64(token.lexeme.parse::<f64>().unwrap()).unwrap())
         } else if self.match_exact(TokenKind::Minus).is_some() {
             let exponent = self.dimension_exponent()?;
             Ok(-exponent)
+        } else if self.match_exact(TokenKind::LeftParen).is_some() {
+            let exponent = self.dimension_exponent()?;
+            if self.match_exact(TokenKind::RightParen).is_some() {
+                Ok(exponent)
+            } else if self.match_exact(TokenKind::Divide).is_some() {
+                let rhs = self.dimension_exponent()?;
+                if rhs == Rational::zero() {
+                    Err(ParseError::new(
+                        ParseErrorKind::DivisionByZeroInDimensionExponent,
+                        self.last().unwrap().span.clone(),
+                    ))
+                } else {
+                    if self.match_exact(TokenKind::RightParen).is_none() {
+                        Err(ParseError::new(
+                            ParseErrorKind::MissingClosingParen,
+                            self.peek().span.clone(),
+                        ))
+                    } else {
+                        Ok(exponent / rhs)
+                    }
+                }
+            } else {
+                Err(ParseError::new(
+                    ParseErrorKind::MissingClosingParen,
+                    self.peek().span.clone(),
+                ))
+            }
         } else {
             todo!("parse error: expected integer number as dimension exponent")
         }
@@ -605,7 +634,7 @@ impl<'a> Parser<'a> {
             if number.lexeme != "1" {
                 e
             } else {
-            Ok(DimensionExpression::Unity)
+                Ok(DimensionExpression::Unity)
             }
         } else {
             e
@@ -639,6 +668,10 @@ impl<'a> Parser<'a> {
 
     fn peek(&self) -> &'a Token {
         &self.tokens[self.current]
+    }
+
+    fn last(&self) -> Option<&'a Token> {
+        self.tokens.get(self.current - 1)
     }
 
     fn next(&self) -> &'a Token {

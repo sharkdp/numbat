@@ -6,7 +6,7 @@ use crate::dimension::DimensionRegistry;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::typed_ast::{self, Type};
 
-use num_traits::FromPrimitive;
+use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -49,6 +49,9 @@ pub enum TypeCheckError {
 
     #[error("Multiple unresolved generic parameters in a single function parameter type are not (yet) supported. Consider reordering the function parameters")]
     MultipleUnresolvedTypeParameters,
+
+    #[error("Division by zero in dimension exponent")]
+    DivisionByZero,
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -71,7 +74,13 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 typed_ast::BinaryOperator::Add => Ok(lhs + rhs),
                 typed_ast::BinaryOperator::Sub => Ok(lhs - rhs),
                 typed_ast::BinaryOperator::Mul => Ok(lhs * rhs),
-                typed_ast::BinaryOperator::Div => Ok(lhs / rhs), // TODO: type check error if rhs is zero
+                typed_ast::BinaryOperator::Div => {
+                    if rhs == Rational::zero() {
+                        Err(TypeCheckError::DivisionByZero)
+                    } else {
+                        Ok(lhs / rhs)
+                    }
+                }
                 typed_ast::BinaryOperator::Power => {
                     Err(TypeCheckError::UnsupportedConstExpression("exponentiation"))
                 }

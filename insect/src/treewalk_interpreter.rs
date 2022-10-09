@@ -40,7 +40,7 @@ impl TreewalkInterpreter {
                 };
                 Ok(result.map_err(InterpreterError::ConversionError)?)
             }
-            Expression::FunctionCall(_, _, _) => todo!(),
+            Expression::FunctionCall(_, _, _) => unimplemented!(),
         }
     }
 }
@@ -64,7 +64,7 @@ impl Interpreter for TreewalkInterpreter {
 
                 Ok(InterpreterResult::Continue)
             }
-            _ => todo!(),
+            _ => unimplemented!(),
         }
     }
 }
