@@ -85,6 +85,18 @@ pub enum ParseErrorKind {
 
     #[error("Expected opening parenthesis '(' in function definition")]
     ExpectedLeftParenInFunctionDefinition,
+
+    #[error("Expected ',' or ')' in function parameter list")]
+    ExpectedCommaOrRightParenInFunctionDefinition,
+
+    #[error("Expected parameter name in function definition")]
+    ExpectedParameterNameInFunctionDefinition,
+
+    #[error("Expected identifier (dimension name)")]
+    ExpectedIdentifierAfterDimension,
+
+    #[error("Expected identifier (unit name)")]
+    ExpectedIdentifierAfterUnit,
 }
 
 #[derive(Debug, Error)]
@@ -220,10 +232,16 @@ impl<'a> Parser<'a> {
                         if self.match_exact(TokenKind::Comma).is_none()
                             && self.peek().kind != TokenKind::RightParen
                         {
-                            todo!("Parse error: expected ',' or ')'.");
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedCommaOrRightParenInFunctionDefinition,
+                                span: self.peek().span.clone(),
+                            });
                         }
                     } else {
-                        todo!("Parse error: expected identifier.");
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedParameterNameInFunctionDefinition,
+                            span: self.peek().span.clone(),
+                        });
                     }
                 }
 
@@ -275,7 +293,10 @@ impl<'a> Parser<'a> {
                     ))
                 }
             } else {
-                todo!("Parse error: expected identifier after 'dimension'")
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedIdentifierAfterDimension,
+                    span: self.peek().span.clone(),
+                })
             }
         } else if self.match_exact(TokenKind::Unit).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
@@ -299,7 +320,10 @@ impl<'a> Parser<'a> {
                     todo!("Parse error: expected '=' or ':' after unit identifier")
                 }
             } else {
-                todo!("Parse error: expected identifier after 'unit'")
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedIdentifierAfterUnit,
+                    span: self.peek().span.clone(),
+                })
             }
         } else {
             Ok(Statement::Expression(self.expression()?))
@@ -544,7 +568,7 @@ impl<'a> Parser<'a> {
     fn dimension_exponent(&mut self) -> Result<Exponent> {
         // TODO: allow for parens in exponents, e.g. Time^(-1)
         // TODO: potentially allow for ², ³, etc.
-        // TODO: only parse rationals here (TokenKind::Number will probably eventually include floats)
+        // TODO: only parse integer exponents (or rationals) here
 
         if let Some(token) = self.match_exact(TokenKind::Number) {
             Ok(Rational::from_f64(token.lexeme.parse::<f64>().unwrap()).unwrap())
