@@ -76,6 +76,15 @@ pub enum ParseErrorKind {
 
     #[error("Expected dimension identifier")]
     ExpectedDimensionIdentifier,
+
+    #[error("Expected ',' or '>'")]
+    ExpectedCommaOrRightAngleBracket,
+
+    #[error("Expected identifier (type parameter name)")]
+    ExpectedTypeParameterName,
+
+    #[error("Expected opening parenthesis '(' in function definition")]
+    ExpectedLeftParenInFunctionDefinition,
 }
 
 #[derive(Debug, Error)]
@@ -176,16 +185,25 @@ impl<'a> Parser<'a> {
                             if self.match_exact(TokenKind::Comma).is_none()
                                 && self.peek().kind != TokenKind::RightAngleBracket
                             {
-                                todo!("Parse error: expected ',' or '>'.");
+                                return Err(ParseError {
+                                    kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
+                                    span: self.peek().span.clone(),
+                                });
                             }
                         } else {
-                            todo!("Parse error: expected identifier.");
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedTypeParameterName,
+                                span: self.peek().span.clone(),
+                            });
                         }
                     }
                 }
 
                 if self.match_exact(TokenKind::LeftParen).is_none() {
-                    todo!("Parse error");
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedLeftParenInFunctionDefinition,
+                        span: self.peek().span.clone(),
+                    });
                 }
 
                 let mut parameters = vec![];
