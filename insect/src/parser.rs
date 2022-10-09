@@ -14,10 +14,10 @@
 //! ```txt
 //! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl
 //!
-//! variable_decl   →   TODO
-//! function_decl   →   TODO
-//! dimension_decl  →   TODO
-//! unit_decl       →   TODO
+//! variable_decl   →   …
+//! function_decl   →   …
+//! dimension_decl  →   …
+//! unit_decl       →   …
 //!
 //! expression      →   postfix_apply
 //! postfix_apply   →   conversion ( "//" identifier ) *
@@ -97,6 +97,12 @@ pub enum ParseErrorKind {
 
     #[error("Expected identifier (unit name)")]
     ExpectedIdentifierAfterUnit,
+
+    #[error("Expected '=' or ':' after identifier in unit definition")]
+    ExpectedColonOrEqualAfterUnitIdentifier,
+
+    #[error("Only functions can be called")]
+    CanOnlyCallIdentifier,
 }
 
 #[derive(Debug, Error)]
@@ -316,8 +322,10 @@ impl<'a> Parser<'a> {
                 } else if let Some(dexpr) = dexpr {
                     Ok(Statement::DeclareBaseUnit(identifier.lexeme.clone(), dexpr))
                 } else {
-                    // TODO: maybe we should add "syntactic sugar" and allow 'unit px' to mean: 'dimension px; unit px: px'
-                    todo!("Parse error: expected '=' or ':' after unit identifier")
+                    Err(ParseError {
+                        kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
+                        span: self.peek().span.clone(),
+                    })
                 }
             } else {
                 Err(ParseError {
@@ -334,11 +342,14 @@ impl<'a> Parser<'a> {
         self.postfix_apply()
     }
 
-    fn function_name_from_primary(&self, primary: Expression) -> String {
+    fn function_name_from_primary(&self, primary: Expression) -> Result<String> {
         if let Expression::Identifier(name) = primary {
-            name
+            Ok(name)
         } else {
-            todo!("Parse error: can not call …");
+            Err(ParseError::new(
+                ParseErrorKind::CanOnlyCallIdentifier,
+                self.peek().span.clone(),
+            ))
         }
     }
 
@@ -472,14 +483,17 @@ impl<'a> Parser<'a> {
         let primary = self.primary()?;
 
         if self.match_exact(TokenKind::LeftParen).is_some() {
-            let function_name = self.function_name_from_primary(primary);
+            let function_name = self.function_name_from_primary(primary)?;
 
             if self.match_exact(TokenKind::RightParen).is_some() {
                 return Ok(Expression::FunctionCall(function_name, vec![]));
             } else {
                 let args = self.arguments()?;
                 if self.match_exact(TokenKind::RightParen).is_none() {
-                    todo!("Parse error");
+                    return Err(ParseError::new(
+                        ParseErrorKind::MissingClosingParen,
+                        self.next().span.clone(),
+                    ));
                 }
                 return Ok(Expression::FunctionCall(function_name, args));
             }
@@ -949,8 +963,6 @@ mod tests {
                 )],
             ),
         );
-
-        // TODO: should_fail_with tests
     }
 
     #[test]
@@ -1045,5 +1057,4 @@ mod tests {
             Expression::FunctionCall("foo".into(), vec![binop!(scalar!(1.0), Add, scalar!(1.0))]),
         );
     }
-    // TODO: tests for 'unit …' declarations
 }

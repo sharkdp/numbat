@@ -327,8 +327,7 @@ impl TypeChecker {
                         ));
                     }
                 }
-                self.types_for_identifier
-                    .insert(name.clone(), type_deduced);
+                self.types_for_identifier.insert(name.clone(), type_deduced);
                 typed_ast::Statement::DeclareDerivedUnit(name, expr)
             }
             ast::Statement::DeclareFunction(
