@@ -105,7 +105,7 @@ fn expression_pretty_print() {
         binop!(negate!(scalar!(3.0)), Add, scalar!(4.0))
     );
 
-    assert_eq!(expr.pretty_print(), "(2.0 × (-3.0 + 4.0))");
+    assert_eq!(expr.pretty_print(), "(2 × (-3 + 4))");
 }
 
 #[derive(Debug, Clone, PartialEq)]
