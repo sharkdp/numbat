@@ -73,6 +73,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected function name after '//' operator")]
     ExpectedIdentifierInPostfixApply,
+
+    #[error("Expected dimension identifier")]
+    ExpectedDimensionIdentifier,
 }
 
 #[derive(Debug, Error)]
@@ -539,7 +542,10 @@ impl<'a> Parser<'a> {
         if let Some(token) = self.match_exact(TokenKind::Identifier) {
             Ok(DimensionExpression::Dimension(token.lexeme.clone()))
         } else {
-            todo!("Parse error: expected dimension identifier")
+            Err(ParseError::new(
+                ParseErrorKind::ExpectedDimensionIdentifier,
+                self.peek().span.clone(),
+            ))
         }
     }
 

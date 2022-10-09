@@ -176,8 +176,8 @@ impl PrettyPrint for Statement {
             Statement::DeclareDimension(ident, vec) if vec.is_empty() => {
                 format!("dimension {}", ident)
             }
-            Statement::DeclareDimension(ident, dexpr) => {
-                format!("dimension {} = {}", ident, dexpr[0].pretty_print())
+            Statement::DeclareDimension(ident, dexprs) => {
+                format!("dimension {} = {}", ident, dexprs[0].pretty_print()) // TODO: print all dexprs
             }
             Statement::DeclareBaseUnit(ident, dexpr) => {
                 format!("unit {}: {}", ident, dexpr.pretty_print())
