@@ -311,7 +311,10 @@ impl Vm {
             // TODO(minor): is this really enough? Shouln't we also remove
             // the bytecode?
             self.stack.clear();
-            self.frames.clear(); // TODO
+
+            // Reset the call stack
+            // TODO: move the following to a function?
+            self.frames.clear();
             self.frames.push(CallFrame::root());
             self.frames[0].ip = self.bytecode[0].1.len();
         }
