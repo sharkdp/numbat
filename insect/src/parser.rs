@@ -602,15 +602,13 @@ impl<'a> Parser<'a> {
                         ParseErrorKind::DivisionByZeroInDimensionExponent,
                         self.last().unwrap().span.clone(),
                     ))
+                } else if self.match_exact(TokenKind::RightParen).is_none() {
+                    Err(ParseError::new(
+                        ParseErrorKind::MissingClosingParen,
+                        self.peek().span.clone(),
+                    ))
                 } else {
-                    if self.match_exact(TokenKind::RightParen).is_none() {
-                        Err(ParseError::new(
-                            ParseErrorKind::MissingClosingParen,
-                            self.peek().span.clone(),
-                        ))
-                    } else {
-                        Ok(exponent / rhs)
-                    }
+                    Ok(exponent / rhs)
                 }
             } else {
                 Err(ParseError::new(
