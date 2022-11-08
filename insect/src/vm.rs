@@ -145,7 +145,7 @@ pub struct Vm {
     /// A dictionary of global variables and their respective values.
     globals: HashMap<String, Quantity>,
 
-    /// TODO: doc
+    /// The call stack
     frames: Vec<CallFrame>,
 
     /// The stack of the VM. Each entry is a [Quantity], i.e. something like `3.4 m/s²`.
