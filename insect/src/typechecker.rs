@@ -364,7 +364,7 @@ impl TypeChecker {
                         .registry
                         .get_base_representation(
                             &optional_dexpr.expect("Parameter types can not be deduced."),
-                        ) // TODO
+                        ) // TODO: add type inference, see https://github.com/sharkdp/insect-rs/issues/29
                         .map_err(TypeCheckError::RegistryError)?;
                     typechecker_fn
                         .types_for_identifier
