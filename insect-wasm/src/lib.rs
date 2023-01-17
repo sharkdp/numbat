@@ -1,9 +1,6 @@
 mod utils;
 
-use insect::bytecode_interpreter::BytecodeInterpreter;
-use insect::interpreter::{Interpreter, InterpreterResult};
-use insect::parser::parse;
-use insect::typechecker::TypeChecker;
+use insect::{Insect, InterpreterResult};
 
 use wasm_bindgen::prelude::*;
 
@@ -17,13 +14,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn interpret(code: &str) -> String {
     utils::set_panic_hook();
 
-    let code = format!("{}\n{}", include_str!("../../prelude.ins"), code); // TODO
-
-    let statements = parse(&code).unwrap();
-    let mut typechecker = TypeChecker::default();
-    let statements = typechecker.check_statements(statements).unwrap();
-    let mut interpreter = BytecodeInterpreter::new(true);
-    let result = interpreter.interpret_statements(&statements).unwrap();
+    let mut insect = Insect::new();
+    let result = insect.interpret(&code).unwrap();
 
     match result {
         InterpreterResult::Quantity(q) => format!("{}", q),
