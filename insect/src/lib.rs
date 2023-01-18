@@ -20,11 +20,13 @@ mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, InterpreterError};
-use parser::{parse, ParseError};
+use parser::parse;
 use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
+use ast::Statement;
 pub use interpreter::InterpreterResult;
+pub use parser::ParseError;
 
 #[derive(Debug, Error)]
 pub enum InsectError {
@@ -44,32 +46,32 @@ pub struct Insect {
 }
 
 impl Insect {
-    pub fn new_without_prelude() -> Self {
+    pub fn new_without_prelude(debug: bool) -> Self {
         Insect {
             typechecker: TypeChecker::default(),
-            interpreter: BytecodeInterpreter::new(false),
+            interpreter: BytecodeInterpreter::new(debug),
         }
     }
 
-    pub fn new() -> Self {
-        let mut insect = Self::new_without_prelude();
+    pub fn new(debug: bool) -> Self {
+        let mut insect = Self::new_without_prelude(debug);
         insect
             .interpret(include_str!("../../prelude.ins"))
             .expect("Error while running prelude"); // TODO: read prelude dynamically, error handling
         insect
     }
 
-    pub fn interpret(&mut self, code: &str) -> Result<InterpreterResult> {
+    pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
         let statements = parse(&code).map_err(InsectError::ParseError)?;
-        let statements = self
+        let typed_statements = self
             .typechecker
-            .check_statements(statements)
+            .check_statements(statements.clone()) // TODO: get rid of clone?
             .map_err(InsectError::TypeCheckError)?;
         let result = self
             .interpreter
-            .interpret_statements(&statements)
+            .interpret_statements(&typed_statements)
             .map_err(InsectError::InterpreterError)?;
 
-        Ok(result)
+        Ok((statements, result))
     }
 }

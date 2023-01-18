@@ -1,11 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use insect::bytecode_interpreter::BytecodeInterpreter;
-use insect::interpreter::{Interpreter, InterpreterResult};
-use insect::parser::{parse, ParseError};
 use insect::pretty_print::PrettyPrint;
-use insect::typechecker::TypeChecker;
+use insect::{Insect, InterpreterResult, InsectError, ParseError};
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -40,8 +37,7 @@ struct Args {
 
 struct CLI {
     args: Args,
-    typechecker: TypeChecker,
-    interpreter: BytecodeInterpreter,
+    insect: Insect,
     current_filename: Option<PathBuf>,
 }
 
@@ -49,8 +45,7 @@ impl CLI {
     fn new() -> Self {
         let args = Args::parse();
         Self {
-            interpreter: BytecodeInterpreter::new(args.debug),
-            typechecker: TypeChecker::default(),
+            insect: Insect::new(args.debug),
             args,
             current_filename: None,
         }
@@ -124,14 +119,10 @@ impl CLI {
     }
 
     fn parse_and_evaluate(&mut self, input: &str) -> bool {
-        let result = parse(input);
-
-        if self.args.debug {
-            println!("{:#?}", &result);
-        }
+        let result = self.insect.interpret(input);
 
         match result {
-            Ok(statements) => {
+            Ok((statements, interpreter_result)) => {
                 if self.args.pretty_print {
                     println!();
                     for statement in &statements {
@@ -139,30 +130,19 @@ impl CLI {
                     }
                 }
 
-                match self.typechecker.check_statements(statements) {
-                    Ok(statements_checked) => {
-                        match self.interpreter.interpret_statements(&statements_checked) {
-                            Ok(InterpreterResult::Quantity(quantity)) => {
-                                println!();
-                                println!("    = {}", quantity);
-                                println!();
-                                true
-                            }
-                            Ok(InterpreterResult::Continue) => true,
-                            Ok(InterpreterResult::Exit) => false,
-                            Err(e) => {
-                                eprintln!("Interpreter error: {:#}", e);
-                                true
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("Type check error: {:#}", e);
+                match interpreter_result {
+                    InterpreterResult::Quantity(quantity) => {
+                        println!();
+                        println!("    = {}", quantity);
+                        println!();
                         true
                     }
+                    InterpreterResult::Continue => true,
+                    InterpreterResult::Exit => false,
+                    
                 }
             }
-            Err(ref e @ ParseError { ref span, .. }) => {
+            Err(InsectError::ParseError(ref e @ ParseError { ref span, .. })) => {
                 let line = input.lines().nth(span.line - 1).unwrap();
 
                 let filename = self
@@ -180,6 +160,14 @@ impl CLI {
                 eprintln!("    {offset}^", offset = " ".repeat(span.position - 1));
                 eprintln!("{}", e);
 
+                true
+            }
+            Err(InsectError::TypeCheckError(e)) => {
+                eprintln!("Type check error: {:#}", e);
+                true
+            }
+            Err(InsectError::InterpreterError(e)) => {
+                eprintln!("Interpreter error: {:#}", e);
                 true
             }
         }

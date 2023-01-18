@@ -14,8 +14,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn interpret(code: &str) -> String {
     utils::set_panic_hook();
 
-    let mut insect = Insect::new();
-    let result = insect.interpret(&code).unwrap();
+    let mut insect = Insect::new(false);
+    let (_, result) = insect.interpret(&code).unwrap();
 
     match result {
         InterpreterResult::Quantity(q) => format!("{}", q),
