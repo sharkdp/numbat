@@ -147,7 +147,7 @@ pub enum Statement {
         Vec<(String, Option<DimensionExpression>)>,
         /// Function body
         Expression,
-        /// Return type, optionally with a type annotation
+        /// Optional annotated return type
         Option<DimensionExpression>,
     ),
     DeclareDimension(String, Vec<DimensionExpression>),
