@@ -46,7 +46,7 @@ impl BytecodeInterpreter {
             }
             Expression::FunctionCall(name, args, _type) => {
                 let idx = self.vm.get_function_idx(name);
-                // Put all arguments on top of the stacak
+                // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg)?;
                 }
