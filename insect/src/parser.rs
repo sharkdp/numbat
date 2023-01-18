@@ -540,9 +540,8 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Returns true iff the upcoming token indicates the beginning
-    /// of a 'power' expression (which needs to start with a 'primary'
-    /// expression).
+    /// Returns true iff the upcoming token indicates the beginning of a 'power'
+    /// expression (which needs to start with a 'primary' expression).
     fn next_token_could_start_power_expression(&self) -> bool {
         // This function needs to be kept in sync with `primary` above.
 

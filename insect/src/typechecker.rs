@@ -60,9 +60,9 @@ fn to_rational_exponent(exponent_f64: f64) -> Exponent {
     Rational::from_f64(exponent_f64).unwrap() // TODO
 }
 
-/// Evaluates a limited set of expressions *at compile time*. This is needed to support
-/// type checking of expressions like `(2 * meter)^(2*3 - 4)` where we need to know not
-/// just the *type* but also the *value* of the exponent.
+/// Evaluates a limited set of expressions *at compile time*. This is needed to
+/// support type checking of expressions like `(2 * meter)^(2*3 - 4)` where we
+/// need to know not just the *type* but also the *value* of the exponent.
 fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     match expr {
         typed_ast::Expression::Scalar(n) => Ok(to_rational_exponent(n.to_f64())),

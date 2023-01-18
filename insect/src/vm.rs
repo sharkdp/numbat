@@ -17,16 +17,14 @@ pub enum Op {
     /// Push the value of the specified variable onto the stack
     GetVariable,
 
-    /// Push the value of the specified local variable onto the
-    /// stack (even though it is already on the stack, somewhere
-    /// lower down).
+    /// Push the value of the specified local variable onto the stack (even
+    /// though it is already on the stack, somewhere lower down).
     GetLocal,
 
     /// Negate the top of the stack
     Negate,
 
-    /// Pop two values off the stack, add them, push the result onto
-    /// the stack.
+    /// Pop two values off the stack, add them, push the result onto the stack.
     Add,
     /// Similar to Add.
     Subtract,
@@ -148,7 +146,8 @@ pub struct Vm {
     /// The call stack
     frames: Vec<CallFrame>,
 
-    /// The stack of the VM. Each entry is a [Quantity], i.e. something like `3.4 m/s²`.
+    /// The stack of the VM. Each entry is a [Quantity], i.e. something like
+    /// `3.4 m/s²`.
     stack: Vec<Quantity>,
 
     /// Whether or not to run in debug mode.
