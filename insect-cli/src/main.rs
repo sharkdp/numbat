@@ -46,7 +46,7 @@ impl CLI {
     fn new() -> Self {
         let args = Args::parse();
         Self {
-            insect: Insect::new(args.debug),
+            insect: Insect::new_without_prelude(args.debug),
             args,
             current_filename: None,
         }
