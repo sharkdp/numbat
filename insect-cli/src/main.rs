@@ -38,14 +38,14 @@ struct Args {
     debug: bool,
 }
 
-struct Insect {
+struct CLI {
     args: Args,
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
     current_filename: Option<PathBuf>,
 }
 
-impl Insect {
+impl CLI {
     fn new() -> Self {
         let args = Args::parse();
         Self {
@@ -200,10 +200,9 @@ impl Insect {
 }
 
 fn main() {
-    let mut insect = Insect::new();
-    let result = insect.run();
+    let mut cli = CLI::new();
 
-    if let Err(e) = result {
+    if let Err(e) = cli.run() {
         eprintln!("{:#}", e);
         std::process::exit(1);
     }
