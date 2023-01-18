@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
+    foreign_function::ForeignFunction,
     interpreter::{InterpreterResult, Result, RuntimeError},
     quantity::Quantity,
     unit::Unit,
@@ -39,6 +40,8 @@ pub enum Op {
 
     /// Call the specified function with the specified number of arguments
     Call,
+    /// Same as above, but call a foreign/native function
+    CallForeign,
 
     /// Return from the current function
     Return,
@@ -48,7 +51,11 @@ impl Op {
     fn num_operands(self) -> usize {
         match self {
             Op::Call => 2,
-            Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::GetLocal => 1,
+            Op::LoadConstant
+            | Op::SetVariable
+            | Op::GetVariable
+            | Op::GetLocal
+            | Op::CallForeign => 1,
             Op::Negate
             | Op::Add
             | Op::Subtract
@@ -74,6 +81,7 @@ impl Op {
             Op::Power => "Power",
             Op::ConvertTo => "ConvertTo",
             Op::Call => "Call",
+            Op::CallForeign => "CallForeign",
             Op::Return => "Return",
         }
     }
@@ -143,6 +151,9 @@ pub struct Vm {
     /// A dictionary of global variables and their respective values.
     globals: HashMap<String, Quantity>,
 
+    /// List of registered native/foreign functions
+    foreign_functions: Vec<ForeignFunction>,
+
     /// The call stack
     frames: Vec<CallFrame>,
 
@@ -162,6 +173,7 @@ impl Vm {
             constants: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
+            foreign_functions: vec![],
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug,
@@ -221,6 +233,28 @@ impl Vm {
         let position = self.bytecode.iter().position(|(n, _)| n == name).unwrap();
         assert!(position <= u8::MAX as usize);
         position as u8
+    }
+
+    pub(crate) fn add_foreign_function(&mut self, name: &str, arity: usize) {
+        self.foreign_functions.push(ForeignFunction {
+            name: name.into(),
+            arity,
+            function: match name {
+                "sin" => crate::foreign_function::sin,
+                "atan2" => crate::foreign_function::atan2,
+                _ => unimplemented!(), // TODO
+            },
+        });
+    }
+
+    pub(crate) fn get_foreign_function_idx(&self, name: &str) -> Option<u8> {
+        // TODO: this is a linear search that can certainly be optimized
+        let position = self
+            .foreign_functions
+            .iter()
+            .position(|ff| ff.name == name)?;
+        assert!(position <= u8::MAX as usize);
+        Some(position as u8)
     }
 
     pub fn disassemble(&self) {
@@ -400,6 +434,20 @@ impl Vm {
                         ip: 0,
                         fp: self.stack.len() - num_args,
                     })
+                }
+                Op::CallForeign => {
+                    let function_idx = self.read_byte() as usize;
+                    let foreign_function = &self.foreign_functions[function_idx];
+
+                    let mut args = vec![];
+                    for _ in 0..foreign_function.arity {
+                        args.push(self.pop());
+                    }
+                    args.reverse(); // TODO: use a deque?
+
+                    let result = (self.foreign_functions[function_idx].function)(&args[..]);
+
+                    self.push(result);
                 }
                 Op::Return => {
                     if self.frames.len() == 1 {

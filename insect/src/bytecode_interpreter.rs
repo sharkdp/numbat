@@ -45,12 +45,18 @@ impl BytecodeInterpreter {
                 self.vm.add_op(op);
             }
             Expression::FunctionCall(name, args, _type) => {
-                let idx = self.vm.get_function_idx(name);
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg)?;
                 }
-                self.vm.add_op2(Op::Call, idx, args.len() as u8); // TODO: check overflow
+
+                if let Some(idx) = self.vm.get_foreign_function_idx(name) {
+                    self.vm.add_op1(Op::CallForeign, idx);
+                } else {
+                    let idx = self.vm.get_function_idx(name);
+
+                    self.vm.add_op2(Op::Call, idx, args.len() as u8); // TODO: check overflow
+                }
             }
         };
 
@@ -68,7 +74,7 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_global_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareFunction(name, parameters, expr, _return_type) => {
+            Statement::DeclareFunction(name, parameters, Some(expr), _return_type) => {
                 self.vm.begin_function(name);
                 for parameter in parameters.iter() {
                     self.local_variables.push(parameter.0.clone());
@@ -79,6 +85,12 @@ impl BytecodeInterpreter {
                     self.local_variables.pop();
                 }
                 self.vm.end_function();
+            }
+            Statement::DeclareFunction(name, parameters, None, _return_type) => {
+                // Declaring a foreign function does not generate any bytecode. But we register
+                // its name and arity here to be able to distinguish it from normal functions.
+
+                self.vm.add_foreign_function(name, parameters.len());
             }
             Statement::DeclareDimension(_name) => {
                 // Declaring a dimension is like introducing a new type. The information

@@ -17,6 +17,7 @@ mod typed_ast;
 mod unit;
 mod unit_registry;
 mod vm;
+mod foreign_function;
 
 use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, RuntimeError};

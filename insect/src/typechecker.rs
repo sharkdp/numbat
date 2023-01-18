@@ -52,6 +52,9 @@ pub enum TypeCheckError {
 
     #[error("Division by zero in dimension exponent")]
     DivisionByZero,
+
+    #[error("Foreign function definition '{0}' needs a return type annotation.")]
+    ForeignFunctionNeedsReturnTypeAnnotation(String),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -343,7 +346,7 @@ impl TypeChecker {
                 function_name,
                 type_parameters,
                 parameters,
-                expr,
+                body,
                 optional_return_type_dexpr,
             ) => {
                 let mut typechecker_fn = self.clone();
@@ -364,48 +367,62 @@ impl TypeChecker {
                         .registry
                         .get_base_representation(
                             &optional_dexpr.expect("Parameter types can not be deduced."),
-                        ) // TODO: add type inference, see https://github.com/sharkdp/insect-rs/issues/29
+                        )
+                        // TODO: add type inference, see https://github.com/sharkdp/insect-rs/issues/29
+                        // TODO: once we add type inference, make sure that annotations are required for foreign functions
                         .map_err(TypeCheckError::RegistryError)?;
                     typechecker_fn
                         .types_for_identifier
                         .insert(parameter.clone(), parameter_type.clone());
                     typed_parameters.push((parameter.clone(), parameter_type));
                 }
-                let expr = typechecker_fn.check_expression(expr)?;
 
-                let return_type_deduced = expr.get_type();
-                if let Some(ref return_type_dexpr) = optional_return_type_dexpr {
-                    let return_type_specified = typechecker_fn
-                        .registry
-                        .get_base_representation(return_type_dexpr)
-                        .map_err(TypeCheckError::RegistryError)?;
+                let return_type_specified = optional_return_type_dexpr
+                    .map(|ref return_type_dexpr| {
+                        typechecker_fn
+                            .registry
+                            .get_base_representation(return_type_dexpr)
+                            .map_err(TypeCheckError::RegistryError)
+                    })
+                    .transpose()?;
 
-                    if return_type_deduced != return_type_specified {
-                        return Err(TypeCheckError::IncompatibleDimensions(
-                            "function return type".into(),
-                            "specified return type",
-                            return_type_specified,
-                            "   actual return type",
-                            return_type_deduced,
-                        ));
+                let body = body
+                    .map(|expr| typechecker_fn.check_expression(expr))
+                    .transpose()?;
+
+                let return_type = if let Some(ref expr) = body {
+                    let return_type_deduced = expr.get_type();
+                    if let Some(return_type_specified) = return_type_specified {
+                        if return_type_deduced != return_type_specified {
+                            return Err(TypeCheckError::IncompatibleDimensions(
+                                "function return type".into(),
+                                "specified return type",
+                                return_type_specified,
+                                "   actual return type",
+                                return_type_deduced,
+                            ));
+                        }
                     }
-                }
+                    return_type_deduced
+                } else {
+                    return_type_specified.ok_or_else(|| {
+                        TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(
+                            function_name.clone(),
+                        )
+                    })?
+                };
 
                 let parameter_types = typed_parameters.iter().map(|(_, t)| t.clone()).collect();
                 self.function_signatures.insert(
                     function_name.clone(),
-                    (
-                        type_parameters,
-                        parameter_types,
-                        return_type_deduced.clone(),
-                    ),
+                    (type_parameters, parameter_types, return_type.clone()),
                 );
 
                 typed_ast::Statement::DeclareFunction(
                     function_name,
                     typed_parameters,
-                    expr,
-                    return_type_deduced,
+                    body,
+                    return_type,
                 )
             }
             ast::Statement::DeclareDimension(name, dexprs) => {

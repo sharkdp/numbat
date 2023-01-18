@@ -145,8 +145,8 @@ pub enum Statement {
         Vec<String>,
         /// Arguments, optionally with type annotations
         Vec<(String, Option<DimensionExpression>)>,
-        /// Function body
-        Expression,
+        /// Function body. If it is absent, the function is implemented via FFI
+        Option<Expression>,
         /// Optional annotated return type
         Option<DimensionExpression>,
     ),
@@ -170,9 +170,17 @@ impl PrettyPrint for Statement {
                     expr.pretty_print()
                 )
             }
-            Statement::DeclareFunction(identifier, _type_variables, _parameters, expr, _dexpr) => {
+            Statement::DeclareFunction(identifier, _type_variables, _parameters, body, _dexpr) => {
                 // TODO(minor): print args
-                format!("fn {}(…) = {}", identifier, expr.pretty_print())
+                format!(
+                    "fn {}(…) {}",
+                    identifier,
+                    if let Some(expr) = body {
+                        format!("= {}", expr.pretty_print())
+                    } else {
+                        "".into()
+                    }
+                )
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DeclareDimension(ident, vec) if vec.is_empty() => {

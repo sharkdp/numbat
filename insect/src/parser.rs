@@ -68,9 +68,6 @@ pub enum ParseErrorKind {
     #[error("Expected identifier after 'fn' keyword")]
     ExpectedIdentifierAfterFn,
 
-    #[error("Expected '=' in function declaration")]
-    ExpectedEqualInFunctionDeclaration,
-
     #[error("Expected function name after '//' operator")]
     ExpectedIdentifierInPostfixApply,
 
@@ -261,21 +258,18 @@ impl<'a> Parser<'a> {
                     None
                 };
 
-                if self.match_exact(TokenKind::Equal).is_none() {
-                    Err(ParseError {
-                        kind: ParseErrorKind::ExpectedEqualInFunctionDeclaration,
-                        span: self.peek().span.clone(),
-                    })
+                let body = if self.match_exact(TokenKind::Equal).is_none() {
+                    None
                 } else {
-                    let expr = self.expression()?;
-                    Ok(Statement::DeclareFunction(
-                        fn_name.lexeme.clone(),
-                        type_parameters,
-                        parameters,
-                        expr,
-                        optional_return_type_dexpr,
-                    ))
-                }
+                    Some(self.expression()?)
+                };
+                Ok(Statement::DeclareFunction(
+                    fn_name.lexeme.clone(),
+                    type_parameters,
+                    parameters,
+                    body,
+                    optional_return_type_dexpr,
+                ))
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedIdentifierAfterFn,
@@ -1006,7 +1000,7 @@ mod tests {
     fn parse_function_declaration() {
         parse_as(
             &["fn foo() = 1"],
-            Statement::DeclareFunction("foo".into(), vec![], vec![], scalar!(1.0), None),
+            Statement::DeclareFunction("foo".into(), vec![], vec![], Some(scalar!(1.0)), None),
         );
 
         parse_as(
@@ -1015,7 +1009,7 @@ mod tests {
                 "foo".into(),
                 vec![],
                 vec![],
-                scalar!(1.0),
+                Some(scalar!(1.0)),
                 Some(DimensionExpression::Dimension("Scalar".into())),
             ),
         );
@@ -1026,7 +1020,7 @@ mod tests {
                 "foo".into(),
                 vec![],
                 vec![("x".into(), None)],
-                scalar!(1.0),
+                Some(scalar!(1.0)),
                 None,
             ),
         );
@@ -1037,7 +1031,7 @@ mod tests {
                 "foo".into(),
                 vec![],
                 vec![("x".into(), None), ("y".into(), None), ("z".into(), None)],
-                scalar!(1.0),
+                Some(scalar!(1.0)),
                 None,
             ),
         );
@@ -1070,7 +1064,7 @@ mod tests {
                         )),
                     ),
                 ],
-                scalar!(1.0),
+                Some(scalar!(1.0)),
                 Some(DimensionExpression::Dimension("Scalar".into())),
             ),
         );
@@ -1081,7 +1075,7 @@ mod tests {
                 "foo".into(),
                 vec!["X".into()],
                 vec![("x".into(), Some(DimensionExpression::Dimension("X".into())))],
-                scalar!(1.0),
+                Some(scalar!(1.0)),
                 None,
             ),
         );
