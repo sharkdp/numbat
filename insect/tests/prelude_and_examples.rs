@@ -1,34 +1,22 @@
-use insect::bytecode_interpreter::BytecodeInterpreter;
-use insect::interpreter::Interpreter;
-use insect::parser::parse;
-use insect::typechecker::typecheck;
+use insect::{Insect, InsectError};
 
 use std::ffi::OsStr;
 use std::fs;
 
 fn assert_typechecks_and_runs(code: &str) {
-    let statements = parse(code).unwrap();
-    let statements_checked = typecheck(statements).unwrap();
-    assert!(BytecodeInterpreter::new(false)
-        .interpret_statements(&statements_checked)
-        .is_ok());
+    assert!(Insect::new_without_prelude(false).interpret(code).is_ok())
 }
 
 fn assert_parse_error(code: &str) {
-    assert!(parse(code).is_err());
+    assert!(matches!(Insect::new_without_prelude(false).interpret(code), Err(InsectError::ParseError(_))));
 }
 
 fn assert_typecheck_error(code: &str) {
-    let statements = parse(code).unwrap();
-    assert!(typecheck(statements).is_err());
+    assert!(matches!(Insect::new_without_prelude(false).interpret(code), Err(InsectError::TypeCheckError(_))));
 }
 
 fn assert_interpreter_error(code: &str) {
-    let statements = parse(code).unwrap();
-    let statements_checked = typecheck(statements).unwrap();
-    assert!(BytecodeInterpreter::new(false)
-        .interpret_statements(&statements_checked)
-        .is_err());
+    assert!(matches!(Insect::new_without_prelude(false).interpret(code), Err(InsectError::InterpreterError(_))));
 }
 
 #[test]

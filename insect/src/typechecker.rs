@@ -464,6 +464,7 @@ impl TypeChecker {
     }
 }
 
+#[cfg(test)]
 pub fn typecheck(
     statements: impl IntoIterator<Item = ast::Statement>,
 ) -> Result<Vec<typed_ast::Statement>> {
