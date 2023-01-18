@@ -7,7 +7,7 @@ use crate::{
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
-pub enum InterpreterError {
+pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
     #[error("Unknown variable '{0}'")]
@@ -27,7 +27,7 @@ pub enum InterpreterResult {
     Exit,
 }
 
-pub type Result<T> = std::result::Result<T, InterpreterError>;
+pub type Result<T> = std::result::Result<T, RuntimeError>;
 
 pub trait Interpreter {
     fn new(debug: bool) -> Self;
@@ -35,7 +35,7 @@ pub trait Interpreter {
     fn interpret_statement(&mut self, statements: &Statement) -> Result<InterpreterResult>;
 
     fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult> {
-        let mut result = Err(InterpreterError::NoStatements);
+        let mut result = Err(RuntimeError::NoStatements);
         if statements.is_empty() {
             return result;
         }
@@ -73,7 +73,7 @@ fn assert_evaluates_to_scalar<I: Interpreter>(input: &str, expected: f64) {
 }
 
 #[cfg(test)]
-fn assert_interpreter_error<I: Interpreter>(input: &str, err_expected: InterpreterError) {
+fn assert_runtime_error<I: Interpreter>(input: &str, err_expected: RuntimeError) {
     if let Err(err_actual) = get_interpreter_result::<I>(input) {
         assert_eq!(err_actual, err_expected);
     } else {
@@ -103,9 +103,9 @@ fn test_interpreter<I: Interpreter>() {
     assert_evaluates_to_scalar::<I>("2\n3", 3.0);
     assert_evaluates_to_scalar::<I>("let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
 
-    assert_interpreter_error::<I>("", InterpreterError::NoStatements);
-    assert_interpreter_error::<I>("1/0", InterpreterError::DivisionByZero);
-    //assert_interpreter_error::<I>("foo", InterpreterError::UnknownVariable("foo".into()));
+    assert_runtime_error::<I>("", RuntimeError::NoStatements);
+    assert_runtime_error::<I>("1/0", RuntimeError::DivisionByZero);
+    //assert_runtime_error::<I>("foo", InterpreterError::UnknownVariable("foo".into()));
 }
 
 #[test]

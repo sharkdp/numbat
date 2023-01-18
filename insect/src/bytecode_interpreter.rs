@@ -1,4 +1,4 @@
-use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
+use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::typed_ast::{BinaryOperator, Expression, Statement};
 use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
@@ -87,7 +87,7 @@ impl BytecodeInterpreter {
             Statement::DeclareBaseUnit(name, dexpr) => {
                 self.unit_registry
                     .add_base_unit(name, dexpr.clone())
-                    .map_err(InterpreterError::UnitRegistryError)?;
+                    .map_err(RuntimeError::UnitRegistryError)?;
 
                 let constant_idx = self
                     .vm
@@ -99,7 +99,7 @@ impl BytecodeInterpreter {
             Statement::DeclareDerivedUnit(name, expr) => {
                 self.unit_registry
                     .add_derived_unit(name, expr)
-                    .map_err(InterpreterError::UnitRegistryError)?;
+                    .map_err(RuntimeError::UnitRegistryError)?;
 
                 let constant_idx = self
                     .vm

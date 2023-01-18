@@ -8,15 +8,24 @@ fn assert_typechecks_and_runs(code: &str) {
 }
 
 fn assert_parse_error(code: &str) {
-    assert!(matches!(Insect::new_without_prelude(false).interpret(code), Err(InsectError::ParseError(_))));
+    assert!(matches!(
+        Insect::new_without_prelude(false).interpret(code),
+        Err(InsectError::ParseError(_))
+    ));
 }
 
 fn assert_typecheck_error(code: &str) {
-    assert!(matches!(Insect::new_without_prelude(false).interpret(code), Err(InsectError::TypeCheckError(_))));
+    assert!(matches!(
+        Insect::new_without_prelude(false).interpret(code),
+        Err(InsectError::TypeCheckError(_))
+    ));
 }
 
-fn assert_interpreter_error(code: &str) {
-    assert!(matches!(Insect::new_without_prelude(false).interpret(code), Err(InsectError::InterpreterError(_))));
+fn assert_runtime_error(code: &str) {
+    assert!(matches!(
+        Insect::new_without_prelude(false).interpret(code),
+        Err(InsectError::RuntimeError(_))
+    ));
 }
 
 #[test]
@@ -60,6 +69,6 @@ fn typecheck_error_examples_fail_as_expected() {
 }
 
 #[test]
-fn interpreter_error_examples_fail_as_expected() {
-    run_for_each_insect_file_in("../examples/interpreter_error", assert_interpreter_error);
+fn runtime_error_examples_fail_as_expected() {
+    run_for_each_insect_file_in("../examples/runtime_error", assert_runtime_error);
 }

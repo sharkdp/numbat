@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
-    interpreter::{InterpreterError, InterpreterResult, Result},
+    interpreter::{InterpreterResult, Result, RuntimeError},
     quantity::Quantity,
     unit::Unit,
 };
@@ -354,7 +354,7 @@ impl Vm {
                     let quantity = self
                         .globals
                         .get(identifier)
-                        .ok_or_else(|| InterpreterError::UnknownVariable(identifier.clone()))?;
+                        .ok_or_else(|| RuntimeError::UnknownVariable(identifier.clone()))?;
 
                     self.push(quantity.clone());
                 }
@@ -378,7 +378,7 @@ impl Vm {
                         Op::Divide => {
                             // TODO: should this be implemented in Quantity::div?
                             if rhs.is_zero() {
-                                return Err(InterpreterError::DivisionByZero);
+                                return Err(RuntimeError::DivisionByZero);
                             } else {
                                 lhs / rhs
                             }
@@ -387,7 +387,7 @@ impl Vm {
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         _ => unreachable!(),
                     };
-                    self.push(result.map_err(InterpreterError::ConversionError)?);
+                    self.push(result.map_err(RuntimeError::ConversionError)?);
                 }
                 Op::Negate => {
                     let rhs = self.pop();

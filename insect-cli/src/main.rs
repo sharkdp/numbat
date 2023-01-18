@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use insect::pretty_print::PrettyPrint;
-use insect::{Insect, InterpreterResult, InsectError, ParseError};
+use insect::{Insect, InsectError, InterpreterResult, ParseError};
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -139,7 +139,6 @@ impl CLI {
                     }
                     InterpreterResult::Continue => true,
                     InterpreterResult::Exit => false,
-                    
                 }
             }
             Err(InsectError::ParseError(ref e @ ParseError { ref span, .. })) => {
@@ -166,8 +165,8 @@ impl CLI {
                 eprintln!("Type check error: {:#}", e);
                 true
             }
-            Err(InsectError::InterpreterError(e)) => {
-                eprintln!("Interpreter error: {:#}", e);
+            Err(InsectError::RuntimeError(e)) => {
+                eprintln!("Runtime error: {:#}", e);
                 true
             }
         }

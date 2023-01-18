@@ -19,7 +19,7 @@ mod unit_registry;
 mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
-use interpreter::{Interpreter, InterpreterError};
+use interpreter::{Interpreter, RuntimeError};
 use parser::parse;
 use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
@@ -35,7 +35,7 @@ pub enum InsectError {
     #[error("{0}")]
     TypeCheckError(TypeCheckError),
     #[error("{0}")]
-    InterpreterError(InterpreterError),
+    RuntimeError(RuntimeError),
 }
 
 pub type Result<T> = std::result::Result<T, InsectError>;
@@ -70,7 +70,7 @@ impl Insect {
         let result = self
             .interpreter
             .interpret_statements(&typed_statements)
-            .map_err(InsectError::InterpreterError)?;
+            .map_err(InsectError::RuntimeError)?;
 
         Ok((statements, result))
     }

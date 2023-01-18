@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::interpreter::{Interpreter, InterpreterError, InterpreterResult, Result};
+use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::quantity::Quantity;
 use crate::typed_ast::{BinaryOperator, Expression, Statement};
 
@@ -16,7 +16,7 @@ impl TreewalkInterpreter {
                 if let Some(quantity) = self.variables.get(identifier) {
                     Ok(quantity.clone())
                 } else {
-                    Err(InterpreterError::UnknownVariable(identifier.clone()))
+                    Err(RuntimeError::UnknownVariable(identifier.clone()))
                 }
             }
             Expression::Negate(rhs, _type) => self.evaluate_expression(rhs).map(|v| -v),
@@ -30,7 +30,7 @@ impl TreewalkInterpreter {
                     BinaryOperator::Mul => lhs * rhs,
                     BinaryOperator::Div => {
                         if rhs.is_zero() {
-                            return Err(InterpreterError::DivisionByZero);
+                            return Err(RuntimeError::DivisionByZero);
                         } else {
                             lhs / rhs
                         }
@@ -38,7 +38,7 @@ impl TreewalkInterpreter {
                     BinaryOperator::Power => lhs.power(rhs),
                     BinaryOperator::ConvertTo => lhs.convert_to(rhs.unit()),
                 };
-                Ok(result.map_err(InterpreterError::ConversionError)?)
+                Ok(result.map_err(RuntimeError::ConversionError)?)
             }
             Expression::FunctionCall(_, _, _) => unimplemented!(),
         }
