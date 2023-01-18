@@ -1,4 +1,5 @@
 use std::fs;
+use std::ops::ControlFlow;
 use std::path::PathBuf;
 
 use insect::pretty_print::PrettyPrint;
@@ -96,7 +97,7 @@ impl CLI {
                     Ok(line) => {
                         if !line.trim().is_empty() {
                             rl.add_history_entry(&line);
-                            if !self.parse_and_evaluate(&line) {
+                            if self.parse_and_evaluate(&line).is_break() {
                                 break;
                             }
                         }
@@ -118,7 +119,7 @@ impl CLI {
         }
     }
 
-    fn parse_and_evaluate(&mut self, input: &str) -> bool {
+    fn parse_and_evaluate(&mut self, input: &str) -> ControlFlow<()> {
         let result = self.insect.interpret(input);
 
         match result {
@@ -135,10 +136,11 @@ impl CLI {
                         println!();
                         println!("    = {}", quantity);
                         println!();
-                        true
+
+                        ControlFlow::Continue(())
                     }
-                    InterpreterResult::Continue => true,
-                    InterpreterResult::Exit => false,
+                    InterpreterResult::Continue => ControlFlow::Continue(()),
+                    InterpreterResult::Exit => ControlFlow::Break(()),
                 }
             }
             Err(InsectError::ParseError(ref e @ ParseError { ref span, .. })) => {
@@ -159,15 +161,15 @@ impl CLI {
                 eprintln!("    {offset}^", offset = " ".repeat(span.position - 1));
                 eprintln!("{}", e);
 
-                true
+                ControlFlow::Continue(())
             }
             Err(InsectError::TypeCheckError(e)) => {
                 eprintln!("Type check error: {:#}", e);
-                true
+                ControlFlow::Continue(())
             }
             Err(InsectError::RuntimeError(e)) => {
                 eprintln!("Runtime error: {:#}", e);
-                true
+                ControlFlow::Continue(())
             }
         }
     }
