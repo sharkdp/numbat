@@ -486,6 +486,7 @@ mod tests {
     use super::*;
 
     const TEST_PRELUDE: &str = "
+    dimension Scalar = 1
     dimension A
     dimension B
     dimension C = A * B
@@ -551,6 +552,16 @@ mod tests {
     }
 
     #[test]
+    fn power_operator() {
+        assert_successful_typecheck("a^2");
+
+        assert!(matches!(
+            get_typecheck_error("2^a"),
+            TypeCheckError::NonScalarExponent(t) if t == type_a()
+        ));
+    }
+
+    #[test]
     fn variable_declarations() {
         assert_successful_typecheck(
             "let x: A = a
@@ -589,13 +600,56 @@ mod tests {
     }
 
     #[test]
-    fn wrong_alternative_expression() {
+    fn unknown_identifier() {
+        assert!(matches!(
+            get_typecheck_error("a + d"),
+            TypeCheckError::UnknownIdentifier(ident) if ident == "d"
+        ));
+    }
+
+    #[test]
+    fn unknown_function() {
+        assert!(matches!(
+            get_typecheck_error("foo(2)"),
+            TypeCheckError::UnknownFunction(name) if name == "foo"
+        ));
+    }
+
+    #[test]
+    fn incompatible_alternative_dimension_expression() {
         assert!(matches!(
             get_typecheck_error(
                 "# wrong alternative expression: C / B^2
                  dimension D = A / B = C / B^3"
             ),
             TypeCheckError::IncompatibleAlternativeDimensionExpression(t) if t == "D",
+        ));
+    }
+
+    #[test]
+    fn wrong_arity() {
+        assert!(matches!(
+            get_typecheck_error("
+                fn f() = 1
+                f(1)
+            "),
+            TypeCheckError::WrongArity(name, 0, 1) if name == "f"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("
+                fn f(x: Scalar) = x
+                f()
+            "),
+            TypeCheckError::WrongArity(name, 1, 0) if name == "f"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("
+                fn f(x: Scalar) = x
+                f(2, 3)
+            "),
+            TypeCheckError::WrongArity(name, 1, 2) if name == "f"
         ));
     }
 }
