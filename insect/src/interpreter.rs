@@ -67,7 +67,9 @@ mod tests {
         unit meter : Length
         unit second : Time
         
-        unit hertz: Frequency = 1 / second";
+        unit hertz: Frequency = 1 / second
+        
+        fn sin(x: Scalar) -> Scalar";
 
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
         let full_code = format!("{prelude}\n{input}", prelude = MINI_PRELUDE, input = input);
@@ -153,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiline_code() {
+    fn test_multiline_input_yields_result_of_last_line() {
         assert_evaluates_to_scalar("2\n3", 3.0);
     }
 
@@ -165,6 +167,11 @@ mod tests {
     #[test]
     fn test_function_declarations() {
         assert_evaluates_to_scalar("fn f(x: Scalar) = 2 * x + 3\nf(5)", 2.0 * 5.0 + 3.0);
+    }
+
+    #[test]
+    fn test_foreign_functions() {
+        assert_evaluates_to_scalar("sin(1)", 1.0f64.sin());
     }
 
     #[test]
