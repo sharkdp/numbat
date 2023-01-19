@@ -49,30 +49,33 @@ pub trait Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use crate::bytecode_interpreter::BytecodeInterpreter;
+    use crate::{bytecode_interpreter::BytecodeInterpreter, registry::RegistryError};
 
     use super::*;
 
     static MINI_PRELUDE: &'static str = "
+        dimension Scalar = 1
+
         dimension Length
         dimension Time
         dimension Mass
 
         dimension Speed = Length / Time
         dimension Momentum = Mass * Speed
+        dimension Frequency = 1 / Time
 
         unit meter : Length
-        unit second : Time";
+        unit second : Time
+        
+        unit hertz: Frequency = 1 / second";
 
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
-        use crate::typechecker::typecheck;
-
-        let mut interpreter = BytecodeInterpreter::new(false);
-        let statements =
-            crate::parser::parse(input).expect("No parse errors for inputs in this test suite");
-        let statements_typechecked =
-            typecheck(statements).expect("No type check errors for inputs in this test suite");
-        interpreter.interpret_statements(&statements_typechecked)
+        let full_code = format!("{prelude}\n{input}", prelude = MINI_PRELUDE, input = input);
+        let statements = crate::parser::parse(&full_code)
+            .expect("No parse errors for inputs in this test suite");
+        let statements_typechecked = crate::typechecker::typecheck(statements)
+            .expect("No type check errors for inputs in this test suite");
+        BytecodeInterpreter::new(false).interpret_statements(&statements_typechecked)
     }
 
     fn assert_evaluates_to(input: &str, expected: Quantity) {
@@ -118,20 +121,22 @@ mod tests {
         use crate::unit::Unit;
 
         assert_evaluates_to(
-            "dimension Length
-             unit meter : Length
-             2 * meter",
-            (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_standard("meter")))
+            "2 meter + 3 meter",
+            (Quantity::from_scalar(2.0 + 3.0) * Quantity::from_unit(Unit::new_standard("meter")))
                 .unwrap(),
         );
 
         assert_evaluates_to(
-            &format!(
-                "{mini_prelude}
-                 fn speed(distance: Length, time: Time) -> Speed = distance / time
-                 speed(10 * meter, 2 * second)",
-                mini_prelude = MINI_PRELUDE
-            ),
+            "dimension Pixel
+             unit pixel : Pixel
+             2 * pixel",
+            (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_standard("pixel")))
+                .unwrap(),
+        );
+
+        assert_evaluates_to(
+            "fn speed(distance: Length, time: Time) -> Speed = distance / time
+             speed(10 * meter, 2 * second)",
             (Quantity::from_scalar(5.0)
                 * (Quantity::from_unit(Unit::new_standard("meter"))
                     / Quantity::from_unit(Unit::new_standard("second")))
@@ -158,12 +163,28 @@ mod tests {
     }
 
     #[test]
+    fn test_function_declarations() {
+        assert_evaluates_to_scalar("fn f(x: Scalar) = 2 * x + 3\nf(5)", 2.0 * 5.0 + 3.0);
+    }
+
+    #[test]
     fn test_division_by_zero_raises_runtime_error() {
         assert_runtime_error("1/0", RuntimeError::DivisionByZero);
     }
 
     #[test]
-    fn test_no_statements_raise_runtime_error() {
-        assert_runtime_error("", RuntimeError::NoStatements);
+    fn test_redefinition_of_unit_raises_runtime_error() {
+        assert_runtime_error(
+            "unit meter: Length",
+            RuntimeError::UnitRegistryError(UnitRegistryError::RegistryError(
+                RegistryError::EntryExists("meter".into()),
+            )),
+        );
+        assert_runtime_error(
+            "unit hertz: Frequency = 1/second",
+            RuntimeError::UnitRegistryError(UnitRegistryError::RegistryError(
+                RegistryError::EntryExists("hertz".into()),
+            )),
+        );
     }
 }

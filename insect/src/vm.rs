@@ -387,7 +387,7 @@ impl Vm {
                     let quantity = self
                         .globals
                         .get(identifier)
-                        .ok_or_else(|| RuntimeError::UnknownVariable(identifier.clone()))?;
+                        .ok_or_else(|| RuntimeError::UnknownVariable(identifier.clone()))?; // TODO: can this even be triggered? Shouldn't that be covered in the type checker?
 
                     self.push(quantity.clone());
                 }
