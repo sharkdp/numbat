@@ -53,7 +53,7 @@ mod tests {
 
     use super::*;
 
-    static MINI_PRELUDE: &'static str = "
+    static TEST_PRELUDE: &'static str = "
         dimension Scalar = 1
 
         dimension Length
@@ -72,7 +72,7 @@ mod tests {
         fn sin(x: Scalar) -> Scalar";
 
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
-        let full_code = format!("{prelude}\n{input}", prelude = MINI_PRELUDE, input = input);
+        let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
         let statements = crate::parser::parse(&full_code)
             .expect("No parse errors for inputs in this test suite");
         let statements_typechecked = crate::typechecker::typecheck(statements)
