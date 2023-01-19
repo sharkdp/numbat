@@ -740,7 +740,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_invalid_input() {
+    fn invalid_input() {
         should_fail(&["+", "->", "§"]);
 
         should_fail_with(
@@ -750,7 +750,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_numbers() {
+    fn numbers() {
         parse_as_expression(&["1", "  1   "], scalar!(1.0));
         parse_as_expression(&["123.456"], scalar!(123.456));
         parse_as_expression(&["1."], scalar!(1.0));
@@ -759,7 +759,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_identifiers() {
+    fn identifiers() {
         parse_as_expression(&["foo", "  foo   "], identifier!("foo"));
         parse_as_expression(&["foo_bar"], identifier!("foo_bar"));
         parse_as_expression(&["MeineSchöneVariable"], identifier!("MeineSchöneVariable"));
@@ -767,7 +767,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_negation() {
+    fn negation() {
         parse_as_expression(&["-1", "  - 1   "], negate!(scalar!(1.0)));
         parse_as_expression(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
         parse_as_expression(&["-x", " - x"], negate!(identifier!("x")));
@@ -779,7 +779,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_addition_subtraction() {
+    fn addition_subtraction() {
         parse_as_expression(
             &["1+2", "  1   +  2    "],
             binop!(scalar!(1.0), Add, scalar!(2.0)),
@@ -793,7 +793,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_multiplication_division() {
+    fn multiplication_division() {
         parse_as_expression(
             &["1*2", "  1   *  2    ", "1 · 2", "1 × 2"],
             binop!(scalar!(1.0), Mul, scalar!(2.0)),
@@ -808,7 +808,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_implicit_multiplication() {
+    fn implicit_multiplication() {
         parse_as_expression(
             &["1 2", "  1     2    "],
             binop!(scalar!(1.0), Mul, scalar!(2.0)),
@@ -821,7 +821,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_exponentiation() {
+    fn exponentiation() {
         parse_as_expression(
             &["2^3", "  2   ^  3    "],
             binop!(scalar!(2.0), Power, scalar!(3.0)),
@@ -849,7 +849,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_unicode_exponentiation() {
+    fn unicode_exponentiation() {
         parse_as_expression(&["2³"], binop!(scalar!(2.0), Power, scalar!(3.0)));
 
         parse_as_expression(&["2⁻⁴"], binop!(scalar!(2.0), Power, scalar!(-4.0)));
@@ -876,7 +876,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_conversion() {
+    fn conversion() {
         parse_as_expression(
             &["1->2", "1→2"],
             binop!(scalar!(1.0), ConvertTo, scalar!(2.0)),
@@ -896,7 +896,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_grouping() {
+    fn grouping() {
         parse_as_expression(
             &["1*(2+3)", "1 * ( 2 + 3 )"],
             binop!(scalar!(1.0), Mul, binop!(scalar!(2.0), Add, scalar!(3.0))),
@@ -906,7 +906,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_variable_declaration() {
+    fn variable_declaration() {
         parse_as(
             &["let foo = 1", "let foo=1"],
             Statement::DeclareVariable("foo".into(), scalar!(1.0), None),
@@ -933,7 +933,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_dimension_declaration() {
+    fn dimension_declaration() {
         parse_as(
             &["dimension px"],
             Statement::DeclareDimension("px".into(), vec![]),
@@ -997,7 +997,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_function_declaration() {
+    fn function_declaration() {
         parse_as(
             &["fn foo() = 1"],
             Statement::DeclareFunction("foo".into(), vec![], vec![], Some(scalar!(1.0)), None),
@@ -1082,7 +1082,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_postfix_apply() {
+    fn postfix_apply() {
         parse_as_expression(
             &["1 + 1 // foo"],
             Expression::FunctionCall("foo".into(), vec![binop!(scalar!(1.0), Add, scalar!(1.0))]),

@@ -101,7 +101,7 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_arithmetic() {
+    fn simple_arithmetic() {
         assert_evaluates_to_scalar("0", 0.0);
         assert_evaluates_to_scalar("1", 1.0);
         assert_evaluates_to_scalar("1+2", 1.0 + 2.0);
@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn test_arithmetic_with_units() {
+    fn arithmetic_with_units() {
         use crate::unit::Unit;
 
         assert_evaluates_to(
@@ -148,39 +148,39 @@ mod tests {
     }
 
     #[test]
-    fn test_power_operator() {
+    fn power_operator() {
         assert_evaluates_to_scalar("2^3", 2.0f64.powf(3.0));
         assert_evaluates_to_scalar("-2^4", -(2.0f64.powf(4.0)));
         assert_evaluates_to_scalar("2^(-3)", 2.0f64.powf(-3.0));
     }
 
     #[test]
-    fn test_multiline_input_yields_result_of_last_line() {
+    fn multiline_input_yields_result_of_last_line() {
         assert_evaluates_to_scalar("2\n3", 3.0);
     }
 
     #[test]
-    fn test_variable_declarations() {
+    fn variable_declarations() {
         assert_evaluates_to_scalar("let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
     }
 
     #[test]
-    fn test_function_declarations() {
+    fn function_declarations() {
         assert_evaluates_to_scalar("fn f(x: Scalar) = 2 * x + 3\nf(5)", 2.0 * 5.0 + 3.0);
     }
 
     #[test]
-    fn test_foreign_functions() {
+    fn foreign_functions() {
         assert_evaluates_to_scalar("sin(1)", 1.0f64.sin());
     }
 
     #[test]
-    fn test_division_by_zero_raises_runtime_error() {
+    fn division_by_zero_raises_runtime_error() {
         assert_runtime_error("1/0", RuntimeError::DivisionByZero);
     }
 
     #[test]
-    fn test_redefinition_of_unit_raises_runtime_error() {
+    fn redefinition_of_unit_raises_runtime_error() {
         assert_runtime_error(
             "unit meter: Length",
             RuntimeError::UnitRegistryError(UnitRegistryError::RegistryError(

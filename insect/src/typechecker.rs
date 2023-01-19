@@ -534,7 +534,7 @@ mod tests {
     }
 
     #[test]
-    fn test_basic_arithmetic() {
+    fn basic_arithmetic() {
         assert_successful_typecheck("2 a + a");
         assert_successful_typecheck("2 a - a");
 
@@ -551,7 +551,7 @@ mod tests {
     }
 
     #[test]
-    fn test_variable_declarations() {
+    fn variable_declarations() {
         assert_successful_typecheck(
             "let x: A = a
              let y: B = b",
@@ -569,7 +569,7 @@ mod tests {
     }
 
     #[test]
-    fn test_function_declarations() {
+    fn function_declarations() {
         assert_successful_typecheck("fn f(x: A) -> A = x");
         assert_successful_typecheck("fn f(x: A) -> A·B = 2 * x * b");
         assert_successful_typecheck("fn f(x: A, y: B) -> C = x * y");
@@ -589,7 +589,7 @@ mod tests {
     }
 
     #[test]
-    fn test_wrong_alternative_expression() {
+    fn wrong_alternative_expression() {
         assert!(matches!(
             get_typecheck_error(
                 "# wrong alternative expression: C / B^2

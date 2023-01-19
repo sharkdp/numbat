@@ -170,7 +170,7 @@ impl Canonicalize for i32 {
 }
 
 #[test]
-fn test_multiply() {
+fn multiply() {
     let product1 = Product::<i32>::from_factors([5, 2, 3]);
     let product2 = Product::<i32>::from_factors([6, 8]);
     let result = product1.multiply(product2);
@@ -181,7 +181,7 @@ fn test_multiply() {
 }
 
 #[test]
-fn test_multiply_canonicalize() {
+fn multiply_canonicalize() {
     let product1 = Product::<TestUnit, true>::from_factors([
         TestUnit("meter".into(), Rational::from_integer(1)),
         TestUnit("second".into(), Rational::from_integer(1)),
@@ -227,7 +227,7 @@ impl Power for TestUnit {
 }
 
 #[test]
-fn test_power() {
+fn power() {
     let product = Product::<TestUnit>::from_factors([
         TestUnit("meter".into(), Rational::from_integer(1)),
         TestUnit("second".into(), Rational::from_integer(-2)),
@@ -243,7 +243,7 @@ fn test_power() {
 }
 
 #[test]
-fn test_divide() {
+fn divide() {
     let product1 = Product::<TestUnit>::from_factors([
         TestUnit("meter".into(), Rational::from_integer(1)),
         TestUnit("second".into(), Rational::from_integer(1)),
@@ -261,7 +261,7 @@ fn test_divide() {
 }
 
 #[test]
-fn test_iter() {
+fn iter() {
     let product = Product::<i32>::from_factors([5, 2, 3]);
     let mut iter = product.iter();
     assert_eq!(iter.next(), Some(&5));
@@ -272,7 +272,7 @@ fn test_iter() {
 }
 
 #[test]
-fn test_canonicalize() {
+fn canonicalize() {
     let mut product = Product::<i32>::from_factors([5, 2, 3]);
     product.canonicalize();
     assert_eq!(product.into_iter().collect::<Vec<_>>().as_slice(), [30]);
