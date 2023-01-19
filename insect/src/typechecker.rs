@@ -85,7 +85,13 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                     }
                 }
                 typed_ast::BinaryOperator::Power => {
-                    Err(TypeCheckError::UnsupportedConstExpression("exponentiation"))
+                    if rhs.is_integer() {
+                        Ok(lhs.pow(rhs.to_integer() as i32)) // TODO: dangerous cast
+                    } else {
+                        Err(TypeCheckError::UnsupportedConstExpression(
+                            "exponentiation with non-integer exponent",
+                        ))
+                    }
                 }
                 typed_ast::BinaryOperator::ConvertTo => {
                     Err(TypeCheckError::UnsupportedConstExpression("conversion"))
@@ -553,7 +559,15 @@ mod tests {
 
     #[test]
     fn power_operator() {
+        assert_successful_typecheck("2^2");
+        assert_successful_typecheck("2^(2^2)");
+
         assert_successful_typecheck("a^2");
+        assert_successful_typecheck("a^(2+3)");
+        assert_successful_typecheck("a^(2-3)");
+        assert_successful_typecheck("a^(2*3)");
+        assert_successful_typecheck("a^(2/3)");
+        assert_successful_typecheck("a^(2^3)");
 
         assert!(matches!(
             get_typecheck_error("2^a"),
