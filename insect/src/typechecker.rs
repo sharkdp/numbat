@@ -482,101 +482,120 @@ impl TypeChecker {
 }
 
 #[cfg(test)]
-pub fn typecheck(
-    statements: impl IntoIterator<Item = ast::Statement>,
-) -> Result<Vec<typed_ast::Statement>> {
-    let mut typechecker = TypeChecker::default();
-    typechecker.check_statements(statements)
-}
+mod tests {
+    use super::*;
 
-#[cfg(test)]
-const TEST_PRELUDE: &str = "
-dimension A
-dimension B
-dimension C = A * B
-unit a: A
-unit b: B
-unit c: C = a * b";
+    const TEST_PRELUDE: &str = "
+    dimension A
+    dimension B
+    dimension C = A * B
+    unit a: A
+    unit b: B
+    unit c: C = a * b";
 
-#[cfg(test)]
-fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
-    let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
-    let statements =
-        crate::parser::parse(code).expect("No parse errors for inputs in this test suite");
-
-    let mut typechecker = TypeChecker::default();
-    typechecker
-        .check_statements(statements)
-        .map(|mut statements_checked| statements_checked.pop().unwrap())
-}
-
-#[cfg(test)]
-fn assert_successful_typecheck(input: &str) {
-    assert!(run_typecheck(input).is_ok());
-}
-
-#[cfg(test)]
-fn get_typecheck_error(input: &str) -> TypeCheckError {
-    if let Err(err) = run_typecheck(input) {
-        err
-    } else {
-        panic!("Input was expected to yield a type check error");
+    fn type_a() -> BaseRepresentation {
+        BaseRepresentation::from_factor(BaseRepresentationFactor(
+            "A".into(),
+            Rational::from_integer(1),
+        ))
     }
-}
 
-#[test]
-fn basic() {
-    use crate::registry::BaseRepresentationFactor;
+    fn type_b() -> BaseRepresentation {
+        BaseRepresentation::from_factor(BaseRepresentationFactor(
+            "B".into(),
+            Rational::from_integer(1),
+        ))
+    }
 
-    let type_a = BaseRepresentation::from_factor(BaseRepresentationFactor(
-        "A".into(),
-        Rational::from_integer(1),
-    ));
-    let type_b = BaseRepresentation::from_factor(BaseRepresentationFactor(
-        "B".into(),
-        Rational::from_integer(1),
-    ));
-    let type_c = type_a.clone().multiply(type_b.clone());
+    fn type_c() -> BaseRepresentation {
+        type_a().multiply(type_b())
+    }
 
-    assert_successful_typecheck(
-        "let x: A = a\n\
-                                 let y: B = b",
-    );
-    assert_successful_typecheck("let x: C = a * b");
-    assert_successful_typecheck("let x: C = 2 * a * b^2 / b");
-    assert_successful_typecheck("let x: A^3 = a^20 * a^(-17)");
+    fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
+        let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
+        let statements =
+            crate::parser::parse(code).expect("No parse errors for inputs in this test suite");
 
-    assert_successful_typecheck("a * b");
-    assert_successful_typecheck("a / b");
+        TypeChecker::default()
+            .check_statements(statements)
+            .map(|mut statements_checked| statements_checked.pop().unwrap())
+    }
 
-    assert_successful_typecheck("fn f(x: A) -> A = x");
-    assert_successful_typecheck("fn f(x: A) -> A·B = 2 * x * b");
-    assert_successful_typecheck("fn f(x: A, y: B) -> C = x * y");
+    fn assert_successful_typecheck(input: &str) {
+        assert!(run_typecheck(input).is_ok());
+    }
 
-    assert!(matches!(
-        get_typecheck_error("a + b"),
-        TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a && t2 == type_b
-    ));
+    fn get_typecheck_error(input: &str) -> TypeCheckError {
+        if let Err(err) = run_typecheck(input) {
+            err
+        } else {
+            panic!("Input was expected to yield a type check error");
+        }
+    }
 
-    assert!(matches!(
-        get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
-        TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_c && t2 == type_a.clone().divide(type_b.clone())
-    ));
+    #[test]
+    fn test_basic_arithmetic() {
+        assert_successful_typecheck("2 a + a");
+        assert_successful_typecheck("2 a - a");
 
-    assert!(matches!(
-        get_typecheck_error("fn f(x: A) -> A = a\n\
-                             f(b)"),
-        TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a && t2 == type_b
-    ));
-}
+        assert_successful_typecheck("a * b");
+        assert_successful_typecheck("a / b");
 
-#[test]
-fn detects_wrong_alternative_expression() {
-    assert!(matches!(
-        get_typecheck_error(
-            "# wrong alternative expression: C / B^2
-             dimension D = A / B = C / B^3"
-        ),
-        TypeCheckError::IncompatibleAlternativeDimensionExpression(t) if t == "D",
-    ));
+        assert_successful_typecheck("a * b + 2 c");
+        assert_successful_typecheck("c / a + b");
+
+        assert!(matches!(
+            get_typecheck_error("a + b"),
+            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+        ));
+    }
+
+    #[test]
+    fn test_variable_declarations() {
+        assert_successful_typecheck(
+            "let x: A = a
+             let y: B = b",
+        );
+        assert_successful_typecheck("let x: C = a * b");
+        assert_successful_typecheck("let x: C = 2 * a * b^2 / b");
+        assert_successful_typecheck("let x: A^3 = a^20 * a^(-17)");
+
+        assert_successful_typecheck("let x: A = c / b");
+
+        assert!(matches!(
+            get_typecheck_error("let x: A = b"),
+            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+        ));
+    }
+
+    #[test]
+    fn test_function_declarations() {
+        assert_successful_typecheck("fn f(x: A) -> A = x");
+        assert_successful_typecheck("fn f(x: A) -> A·B = 2 * x * b");
+        assert_successful_typecheck("fn f(x: A, y: B) -> C = x * y");
+
+        assert_successful_typecheck("fn f(x: A) = x");
+
+        assert!(matches!(
+            get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
+            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_c() && t2 == type_a().divide(type_b())
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("fn f(x: A) -> A = a\n\
+                                 f(b)"),
+            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+        ));
+    }
+
+    #[test]
+    fn test_wrong_alternative_expression() {
+        assert!(matches!(
+            get_typecheck_error(
+                "# wrong alternative expression: C / B^2
+                 dimension D = A / B = C / B^3"
+            ),
+            TypeCheckError::IncompatibleAlternativeDimensionExpression(t) if t == "D",
+        ));
+    }
 }

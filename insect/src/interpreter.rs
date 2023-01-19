@@ -75,7 +75,7 @@ mod tests {
         let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
         let statements = crate::parser::parse(&full_code)
             .expect("No parse errors for inputs in this test suite");
-        let statements_typechecked = crate::typechecker::typecheck(statements)
+        let statements_typechecked = crate::typechecker::TypeChecker::default().check_statements(statements)
             .expect("No type check errors for inputs in this test suite");
         BytecodeInterpreter::new(false).interpret_statements(&statements_typechecked)
     }
