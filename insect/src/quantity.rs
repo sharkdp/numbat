@@ -55,6 +55,10 @@ impl Quantity {
         Ok(self.convert_to(&Unit::scalar())?.value)
     }
 
+    pub fn unsafe_value(&self) -> &Number {
+        &self.value
+    }
+
     pub fn power(self, exp: Quantity) -> Result<Self> {
         let exponent_as_scalar = exp.as_scalar()?.to_f64();
         Ok(Quantity::new(

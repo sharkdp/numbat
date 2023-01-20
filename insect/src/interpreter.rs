@@ -69,7 +69,8 @@ mod tests {
         
         unit hertz: Frequency = 1 / second
         
-        fn sin(x: Scalar) -> Scalar";
+        fn sin(x: Scalar) -> Scalar
+        fn atan2<T>(y: T, x: T) -> Scalar";
 
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
         let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
@@ -173,6 +174,7 @@ mod tests {
     #[test]
     fn foreign_functions() {
         assert_evaluates_to_scalar("sin(1)", 1.0f64.sin());
+        assert_evaluates_to_scalar("atan2(2 meter, 1 meter)", 2.0f64.atan2(1.0f64));
     }
 
     #[test]
