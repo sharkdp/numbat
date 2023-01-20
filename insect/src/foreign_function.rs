@@ -1,9 +1,16 @@
-use crate::quantity::Quantity;
+use crate::{quantity::Quantity, number::Number};
 
 pub(crate) struct ForeignFunction {
     pub(crate) name: String,
     pub(crate) arity: usize,
     pub(crate) function: fn(&[Quantity]) -> Quantity,
+}
+
+pub(crate) fn abs(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let value = args[0].unsafe_value().to_f64();
+    Quantity::new(Number::from_f64(value.abs()), args[0].unit().clone())
 }
 
 pub(crate) fn sin(args: &[Quantity]) -> Quantity {

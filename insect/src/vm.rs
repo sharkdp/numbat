@@ -240,6 +240,7 @@ impl Vm {
             name: name.into(),
             arity,
             function: match name {
+                "abs" => crate::foreign_function::abs,
                 "sin" => crate::foreign_function::sin,
                 "atan2" => crate::foreign_function::atan2,
                 _ => unimplemented!(), // TODO

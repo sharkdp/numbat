@@ -20,7 +20,7 @@ pub struct Quantity {
 }
 
 impl Quantity {
-    fn new(value: Number, unit: Unit) -> Self {
+    pub fn new(value: Number, unit: Unit) -> Self {
         Quantity { value, unit }
     }
 
