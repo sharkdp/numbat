@@ -33,7 +33,7 @@ pub enum TypeCheckError {
     UnsupportedConstEvalExpression(&'static str),
 
     #[error("Division by zero in dimension exponent")]
-    DivisionByZeroInConstEval,
+    DivisionByZeroInConstEvalExpression,
 
     #[error("{0}")]
     RegistryError(RegistryError),
@@ -47,8 +47,8 @@ pub enum TypeCheckError {
     #[error("'{0}' can not be used as a type parameter because it is also an existing dimension identifier.")]
     TypeParameterNameClash(String),
 
-    #[error("Could not infer the following type parameters in function call: {0}.")]
-    CanNotInferTypeParameters(String),
+    #[error("Could not infer the type parameters {0} in the function call '{1}'.")]
+    CanNotInferTypeParameters(String, String),
 
     #[error("Multiple unresolved generic parameters in a single function parameter type are not (yet) supported. Consider reordering the function parameters")]
     MultipleUnresolvedTypeParameters,
@@ -79,7 +79,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 typed_ast::BinaryOperator::Mul => Ok(lhs * rhs),
                 typed_ast::BinaryOperator::Div => {
                     if rhs == Rational::zero() {
-                        Err(TypeCheckError::DivisionByZeroInConstEval)
+                        Err(TypeCheckError::DivisionByZeroInConstEvalExpression)
                     } else {
                         Ok(lhs / rhs)
                     }
@@ -285,6 +285,7 @@ impl TypeChecker {
                         .collect();
 
                     return Err(TypeCheckError::CanNotInferTypeParameters(
+                        function_name.clone(),
                         remaining.join(", "),
                     ));
                 }
@@ -500,18 +501,19 @@ mod tests {
     unit b: B
     unit c: C = a * b";
 
-    fn type_a() -> BaseRepresentation {
+    fn base_type(name: &str) -> BaseRepresentation {
         BaseRepresentation::from_factor(BaseRepresentationFactor(
-            "A".into(),
+            name.into(),
             Rational::from_integer(1),
         ))
     }
 
+    fn type_a() -> BaseRepresentation {
+        base_type("A")
+    }
+
     fn type_b() -> BaseRepresentation {
-        BaseRepresentation::from_factor(BaseRepresentationFactor(
-            "B".into(),
-            Rational::from_integer(1),
-        ))
+        base_type("B")
     }
 
     fn type_c() -> BaseRepresentation {
@@ -533,7 +535,7 @@ mod tests {
     }
 
     fn get_typecheck_error(input: &str) -> TypeCheckError {
-        if let Err(err) = run_typecheck(input) {
+        if let Err(err) = dbg!(run_typecheck(input)) {
             err
         } else {
             panic!("Input was expected to yield a type check error");
@@ -586,17 +588,16 @@ mod tests {
             TypeCheckError::NonScalarExponent(t) if t == type_b()
         ));
 
+        // TODO: if we add ("constexpr") constants later, it would be great to support those in exponents.
         assert!(matches!(
-            get_typecheck_error("
-                let x=2
-                a^x
-            "),
+            get_typecheck_error("let x=2
+                                 a^x"),
             TypeCheckError::UnsupportedConstEvalExpression(desc) if desc == "identifier"
-        )); // TODO: if we add ("constexpr") constants later, it would be great to support those in exponents.
+        ));
 
         assert!(matches!(
             get_typecheck_error("a^(3/(1-1))"),
-            TypeCheckError::DivisionByZeroInConstEval
+            TypeCheckError::DivisionByZeroInConstEvalExpression
         ));
     }
 
@@ -635,6 +636,89 @@ mod tests {
             get_typecheck_error("fn f(x: A) -> A = a\n\
                                  f(b)"),
             TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+        ));
+    }
+
+    #[test]
+    fn generics_basic() {
+        assert_successful_typecheck(
+            "
+            fn f<D>(x: D) -> D = x
+            f(2)
+            f(2 a)
+            ",
+        );
+        assert_successful_typecheck(
+            "
+            fn f<D>(x: D) -> D^2 = x*x
+            f(2)
+            f(2 a)
+            ",
+        );
+        assert_successful_typecheck(
+            "
+            fn f<D0, D1>(x: D0, y: D1) -> D0/D1^2 = x/y^2
+            f(2, 3)
+            f(2 a, 2 b)
+            ",
+        );
+
+        assert!(matches!(
+            get_typecheck_error("fn f<T1, T2>(x: T1, y: T2) -> T2/T1 = x/y"),
+            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2)
+                if t1 == base_type("T2").divide(base_type("T1")) &&
+                   t2 == base_type("T1").divide(base_type("T2"))
+        ));
+    }
+
+    #[test]
+    fn generics_multiple_unresolved_type_parameters() {
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn foo<D1, D2>(x: D1*D2) = 1
+                foo(2)
+            "
+            ),
+            TypeCheckError::MultipleUnresolvedTypeParameters
+        ));
+    }
+
+    #[test]
+    fn generics_unused_type_parameter() {
+        assert!(matches!(
+            get_typecheck_error("
+                fn foo<D0>(x: Scalar) -> Scalar = 1
+                foo(2)
+            "),
+            TypeCheckError::CanNotInferTypeParameters(function_name, parameters) if function_name == "foo" && parameters == "D0"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("
+                fn foo<D0, D1>(x: D0, y: D0) -> Scalar = 1
+                foo(2, 3)
+            "),
+            TypeCheckError::CanNotInferTypeParameters(function_name, parameters) if function_name == "foo" && parameters == "D1"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("
+                fn foo<D0, D1>(x: Scalar, y: Scalar) -> Scalar = 1
+                foo(2, 3)
+            "),
+            TypeCheckError::CanNotInferTypeParameters(function_name, parameters) if function_name == "foo" && (parameters == "D1, D0" || parameters == "D0, D1")
+        ));
+    }
+
+    #[test]
+    fn generics_type_parameter_name_clash() {
+        assert!(matches!(
+            get_typecheck_error("
+                dimension Existing
+                fn f<Existing>(x: Existing) = 1
+            "),
+            TypeCheckError::TypeParameterNameClash(name) if name == "Existing"
         ));
     }
 
@@ -689,6 +773,14 @@ mod tests {
                 f(2, 3)
             "),
             TypeCheckError::WrongArity(name, 1, 2) if name == "f"
+        ));
+    }
+
+    #[test]
+    fn foreign_function_with_missing_return_type() {
+        assert!(matches!(
+            get_typecheck_error("fn sin(x: Scalar)"),
+            TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(name) if name == "sin"
         ));
     }
 }
