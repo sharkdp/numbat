@@ -620,6 +620,17 @@ mod tests {
     }
 
     #[test]
+    fn unit_declarations() {
+        assert_successful_typecheck("unit my_c: C = a * b");
+        assert_successful_typecheck("unit foo: A*B^2 = a b^2");
+
+        assert!(matches!(
+            get_typecheck_error("unit my_c: C = a"),
+            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_c() && t2 == type_a()
+        ));
+    }
+
+    #[test]
     fn function_declarations() {
         assert_successful_typecheck("fn f(x: A) -> A = x");
         assert_successful_typecheck("fn f(x: A) -> A·B = 2 * x * b");
