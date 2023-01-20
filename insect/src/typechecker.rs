@@ -29,6 +29,12 @@ pub enum TypeCheckError {
     #[error("Got dimension {0}, but exponent must be dimensionless.")]
     NonScalarExponent(BaseRepresentation),
 
+    #[error("Unsupported expression in const-evaluation of exponent: {0}.")]
+    UnsupportedConstEvalExpression(&'static str),
+
+    #[error("Division by zero in dimension exponent")]
+    DivisionByZeroInConstEval,
+
     #[error("{0}")]
     RegistryError(RegistryError),
 
@@ -38,9 +44,6 @@ pub enum TypeCheckError {
     #[error("Function '{0}' called with {2} arguments(s), but needs {1}.")]
     WrongArity(String, usize, usize),
 
-    #[error("Unsupported expression in const-evaluation of exponent: {0}.")]
-    UnsupportedConstExpression(&'static str),
-
     #[error("'{0}' can not be used as a type parameter because it is also an existing dimension identifier.")]
     TypeParameterNameClash(String),
 
@@ -49,9 +52,6 @@ pub enum TypeCheckError {
 
     #[error("Multiple unresolved generic parameters in a single function parameter type are not (yet) supported. Consider reordering the function parameters")]
     MultipleUnresolvedTypeParameters,
-
-    #[error("Division by zero in dimension exponent")]
-    DivisionByZero,
 
     #[error("Foreign function definition '{0}' needs a return type annotation.")]
     ForeignFunctionNeedsReturnTypeAnnotation(String),
@@ -79,7 +79,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 typed_ast::BinaryOperator::Mul => Ok(lhs * rhs),
                 typed_ast::BinaryOperator::Div => {
                     if rhs == Rational::zero() {
-                        Err(TypeCheckError::DivisionByZero)
+                        Err(TypeCheckError::DivisionByZeroInConstEval)
                     } else {
                         Ok(lhs / rhs)
                     }
@@ -88,22 +88,22 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                     if rhs.is_integer() {
                         Ok(lhs.pow(rhs.to_integer() as i32)) // TODO: dangerous cast
                     } else {
-                        Err(TypeCheckError::UnsupportedConstExpression(
+                        Err(TypeCheckError::UnsupportedConstEvalExpression(
                             "exponentiation with non-integer exponent",
                         ))
                     }
                 }
                 typed_ast::BinaryOperator::ConvertTo => {
-                    Err(TypeCheckError::UnsupportedConstExpression("conversion"))
+                    Err(TypeCheckError::UnsupportedConstEvalExpression("conversion"))
                 }
             }
         }
         typed_ast::Expression::Identifier(_, _) => {
-            Err(TypeCheckError::UnsupportedConstExpression("identifier"))
+            Err(TypeCheckError::UnsupportedConstEvalExpression("identifier"))
         }
-        typed_ast::Expression::FunctionCall(_, _, _) => {
-            Err(TypeCheckError::UnsupportedConstExpression("function call"))
-        }
+        typed_ast::Expression::FunctionCall(_, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression("function call"),
+        ),
     }
 }
 
@@ -558,10 +558,22 @@ mod tests {
     }
 
     #[test]
-    fn power_operator() {
+    fn power_operator_with_scalar_base() {
         assert_successful_typecheck("2^2");
         assert_successful_typecheck("2^(2^2)");
 
+        assert!(matches!(
+            get_typecheck_error("2^a"),
+            TypeCheckError::NonScalarExponent(t) if t == type_a()
+        ));
+        assert!(matches!(
+            get_typecheck_error("2^(c/b)"),
+            TypeCheckError::NonScalarExponent(t) if t == type_a()
+        ));
+    }
+
+    #[test]
+    fn power_operator_with_dimensionful_base() {
         assert_successful_typecheck("a^2");
         assert_successful_typecheck("a^(2+3)");
         assert_successful_typecheck("a^(2-3)");
@@ -570,8 +582,21 @@ mod tests {
         assert_successful_typecheck("a^(2^3)");
 
         assert!(matches!(
-            get_typecheck_error("2^a"),
-            TypeCheckError::NonScalarExponent(t) if t == type_a()
+            get_typecheck_error("a^b"),
+            TypeCheckError::NonScalarExponent(t) if t == type_b()
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("
+                let x=2
+                a^x
+            "),
+            TypeCheckError::UnsupportedConstEvalExpression(desc) if desc == "identifier"
+        )); // TODO: if we add ("constexpr") constants later, it would be great to support those in exponents.
+
+        assert!(matches!(
+            get_typecheck_error("a^(3/(1-1))"),
+            TypeCheckError::DivisionByZeroInConstEval
         ));
     }
 
