@@ -32,6 +32,14 @@ pub(crate) fn macros() -> &'static HashMap<MacroKind, ForeignFunction> {
                 callable: Callable::Macro(print),
             },
         );
+        m.insert(
+            MacroKind::AssertEq,
+            ForeignFunction {
+                name: "assert_eq".into(),
+                arity: 2,
+                callable: Callable::Macro(assert_eq),
+            },
+        );
 
         m
     })
@@ -74,6 +82,12 @@ fn print(args: &[Quantity]) {
     assert!(args.len() == 1);
 
     println!("{}", args[0]);
+}
+
+fn assert_eq(args: &[Quantity]) {
+    assert!(args.len() == 2);
+
+    // TODO
 }
 
 fn abs(args: &[Quantity]) -> Quantity {

@@ -330,10 +330,21 @@ impl<'a> Parser<'a> {
                     span: self.peek().span.clone(),
                 })
             }
-        } else if self.match_exact(TokenKind::MacroPrint).is_some() {
-            Ok(Statement::MacroCall(MacroKind::Print, self.arguments()?))
-        } else if self.match_exact(TokenKind::MacroAssertEq).is_some() {
-            Ok(Statement::MacroCall(MacroKind::AssertEq, self.arguments()?))
+        } else if self
+            .match_any(&[TokenKind::MacroPrint, TokenKind::MacroAssertEq])
+            .is_some()
+        {
+            let macro_kind = match self.last().unwrap().kind {
+                TokenKind::MacroPrint => MacroKind::Print,
+                TokenKind::MacroAssertEq => MacroKind::AssertEq,
+                _ => unreachable!(),
+            };
+
+            if self.match_exact(TokenKind::LeftParen).is_none() {
+                todo!()
+            }
+
+            Ok(Statement::MacroCall(macro_kind, self.arguments()?))
         } else {
             Ok(Statement::Expression(self.expression()?))
         }
@@ -486,27 +497,29 @@ impl<'a> Parser<'a> {
         if self.match_exact(TokenKind::LeftParen).is_some() {
             let function_name = self.function_name_from_primary(primary)?;
 
-            if self.match_exact(TokenKind::RightParen).is_some() {
-                return Ok(Expression::FunctionCall(function_name, vec![]));
-            } else {
-                let args = self.arguments()?;
-                if self.match_exact(TokenKind::RightParen).is_none() {
-                    return Err(ParseError::new(
-                        ParseErrorKind::MissingClosingParen,
-                        self.next().span.clone(),
-                    ));
-                }
-                return Ok(Expression::FunctionCall(function_name, args));
-            }
+            let args = self.arguments()?;
+            return Ok(Expression::FunctionCall(function_name, args));
         }
         Ok(primary)
     }
 
     fn arguments(&mut self) -> Result<Vec<Expression>> {
+        if self.match_exact(TokenKind::RightParen).is_some() {
+            return Ok(vec![]);
+        }
+
         let mut args: Vec<Expression> = vec![self.expression()?];
         while self.match_exact(TokenKind::Comma).is_some() {
             args.push(self.expression()?);
         }
+
+        if self.match_exact(TokenKind::RightParen).is_none() {
+            return Err(ParseError::new(
+                ParseErrorKind::MissingClosingParen,
+                self.next().span.clone(),
+            ));
+        }
+
         Ok(args)
     }
 
