@@ -41,7 +41,7 @@ pub enum Op {
     /// Call the specified function with the specified number of arguments
     Call,
     /// Same as above, but call a foreign/native function
-    CallForeign,
+    FFICallFunction,
 
     /// Return from the current function
     Return,
@@ -55,7 +55,7 @@ impl Op {
             | Op::SetVariable
             | Op::GetVariable
             | Op::GetLocal
-            | Op::CallForeign => 1,
+            | Op::FFICallFunction => 1,
             Op::Negate
             | Op::Add
             | Op::Subtract
@@ -81,7 +81,7 @@ impl Op {
             Op::Power => "Power",
             Op::ConvertTo => "ConvertTo",
             Op::Call => "Call",
-            Op::CallForeign => "CallForeign",
+            Op::FFICallFunction => "FFICallFunction",
             Op::Return => "Return",
         }
     }
@@ -436,7 +436,7 @@ impl Vm {
                         fp: self.stack.len() - num_args,
                     })
                 }
-                Op::CallForeign => {
+                Op::FFICallFunction => {
                     let function_idx = self.read_byte() as usize;
                     let foreign_function = &self.foreign_functions[function_idx];
 

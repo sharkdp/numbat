@@ -52,7 +52,7 @@ impl BytecodeInterpreter {
                 }
 
                 if let Some(idx) = self.vm.get_foreign_function_idx(name) {
-                    self.vm.add_op1(Op::CallForeign, idx);
+                    self.vm.add_op1(Op::FFICallFunction, idx);
                 } else {
                     let idx = self.vm.get_function_idx(name);
 
@@ -132,7 +132,7 @@ impl BytecodeInterpreter {
                 };
 
                 let idx = self.vm.get_foreign_function_idx(name).unwrap();
-                self.vm.add_op1(Op::CallForeign, idx);
+                self.vm.add_op1(Op::FFICallFunction, idx);
             }
         }
 
