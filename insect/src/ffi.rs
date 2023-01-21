@@ -1,9 +1,19 @@
 use crate::{number::Number, quantity::Quantity};
 
+pub(crate) enum Callable {
+    Function(fn(&[Quantity]) -> Quantity),
+    Macro(fn(&[Quantity]) -> ()),
+}
+
 pub(crate) struct ForeignFunction {
     pub(crate) name: String,
     pub(crate) arity: usize,
-    pub(crate) function: fn(&[Quantity]) -> Quantity,
+    pub(crate) callable: Callable,
+}
+
+pub(crate) fn print(args: &[Quantity]) {
+    assert!(args.len() == 1);
+    println!("{}", args[0]);
 }
 
 pub(crate) fn abs(args: &[Quantity]) -> Quantity {

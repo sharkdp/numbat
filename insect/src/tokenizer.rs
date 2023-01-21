@@ -43,6 +43,7 @@ pub enum TokenKind {
     Unit,
 
     // Macro calls
+    MacroPrint,
     MacroAssertEq,
 
     // Variable-length tokens
@@ -77,7 +78,7 @@ fn is_exponent_char(c: char) -> bool {
 }
 
 fn is_identifier_char(c: char) -> bool {
-    (c.is_alphanumeric() || c == '_') && !is_exponent_char(c)
+    (c.is_alphanumeric() || c == '_' || c == '!') && !is_exponent_char(c)
 }
 
 impl Tokenizer {
@@ -125,6 +126,8 @@ impl Tokenizer {
             m.insert("fn", TokenKind::Fn);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
+            m.insert("print!", TokenKind::MacroPrint);
+            m.insert("assert_eq!", TokenKind::MacroAssertEq);
             m
         });
 

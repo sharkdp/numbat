@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
-    ffi::ForeignFunction,
+    ffi::{Callable, ForeignFunction},
     interpreter::{InterpreterResult, Result, RuntimeError},
     quantity::Quantity,
     unit::Unit,
@@ -42,6 +42,8 @@ pub enum Op {
     Call,
     /// Same as above, but call a foreign/native function
     FFICallFunction,
+    /// Same as above, but call a macro which does not return anything (does not push a value onto the stack)
+    FFICallMacro,
 
     /// Return from the current function
     Return,
@@ -55,7 +57,8 @@ impl Op {
             | Op::SetVariable
             | Op::GetVariable
             | Op::GetLocal
-            | Op::FFICallFunction => 1,
+            | Op::FFICallFunction
+            | Op::FFICallMacro => 1,
             Op::Negate
             | Op::Add
             | Op::Subtract
@@ -82,6 +85,7 @@ impl Op {
             Op::ConvertTo => "ConvertTo",
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
+            Op::FFICallMacro => "FFICallMacro",
             Op::Return => "Return",
         }
     }
@@ -173,7 +177,11 @@ impl Vm {
             constants: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
-            foreign_functions: vec![],
+            foreign_functions: vec![ForeignFunction {
+                name: "print!".into(),
+                arity: 1,
+                callable: Callable::Macro(crate::ffi::print),
+            }],
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug,
@@ -239,10 +247,10 @@ impl Vm {
         self.foreign_functions.push(ForeignFunction {
             name: name.into(),
             arity,
-            function: match name {
-                "abs" => crate::ffi::abs,
-                "sin" => crate::ffi::sin,
-                "atan2" => crate::ffi::atan2,
+            callable: match name {
+                "abs" => Callable::Function(crate::ffi::abs),
+                "sin" => Callable::Function(crate::ffi::sin),
+                "atan2" => Callable::Function(crate::ffi::atan2),
                 _ => unimplemented!(), // TODO
             },
         });
@@ -333,7 +341,7 @@ impl Vm {
     }
 
     fn pop(&mut self) -> Quantity {
-        self.stack.pop().expect("stack not empty")
+        self.stack.pop().expect("stack should not be empty")
     }
 
     pub fn run(&mut self) -> Result<InterpreterResult> {
@@ -436,7 +444,7 @@ impl Vm {
                         fp: self.stack.len() - num_args,
                     })
                 }
-                Op::FFICallFunction => {
+                Op::FFICallFunction | Op::FFICallMacro => {
                     let function_idx = self.read_byte() as usize;
                     let foreign_function = &self.foreign_functions[function_idx];
 
@@ -446,9 +454,16 @@ impl Vm {
                     }
                     args.reverse(); // TODO: use a deque?
 
-                    let result = (self.foreign_functions[function_idx].function)(&args[..]);
-
-                    self.push(result);
+                    match self.foreign_functions[function_idx].callable {
+                        Callable::Function(function) => {
+                            let result = (function)(&args[..]);
+                            self.push(result);
+                        }
+                        Callable::Macro(macro_) => {
+                            (macro_)(&args[..]);
+                            return Ok(InterpreterResult::Continue);
+                        }
+                    }
                 }
                 Op::Return => {
                     if self.frames.len() == 1 {

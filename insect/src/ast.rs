@@ -136,6 +136,7 @@ impl PrettyPrint for DimensionExpression {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MacroKind {
+    Print,
     AssertEq,
 }
 

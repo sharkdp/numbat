@@ -128,11 +128,12 @@ impl BytecodeInterpreter {
                 }
 
                 let name = match kind {
-                    MacroKind::AssertEq => "assert_eq",
-                };
+                    MacroKind::Print => "print!",
+                    MacroKind::AssertEq => "assert_eq!",
+                }; // TODO: this is ugly. Don't go from enums to strings.
 
                 let idx = self.vm.get_foreign_function_idx(name).unwrap();
-                self.vm.add_op1(Op::FFICallFunction, idx);
+                self.vm.add_op1(Op::FFICallMacro, idx);
             }
         }
 

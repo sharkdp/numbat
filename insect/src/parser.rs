@@ -330,6 +330,8 @@ impl<'a> Parser<'a> {
                     span: self.peek().span.clone(),
                 })
             }
+        } else if self.match_exact(TokenKind::MacroPrint).is_some() {
+            Ok(Statement::MacroCall(MacroKind::Print, self.arguments()?))
         } else if self.match_exact(TokenKind::MacroAssertEq).is_some() {
             Ok(Statement::MacroCall(MacroKind::AssertEq, self.arguments()?))
         } else {
