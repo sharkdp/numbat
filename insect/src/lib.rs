@@ -2,7 +2,7 @@ mod arithmetic;
 mod ast;
 mod bytecode_interpreter;
 mod dimension;
-mod foreign_function;
+mod ffi;
 mod interpreter;
 mod number;
 mod parser;

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
-    foreign_function::ForeignFunction,
+    ffi::ForeignFunction,
     interpreter::{InterpreterResult, Result, RuntimeError},
     quantity::Quantity,
     unit::Unit,
@@ -240,9 +240,9 @@ impl Vm {
             name: name.into(),
             arity,
             function: match name {
-                "abs" => crate::foreign_function::abs,
-                "sin" => crate::foreign_function::sin,
-                "atan2" => crate::foreign_function::atan2,
+                "abs" => crate::ffi::abs,
+                "sin" => crate::ffi::sin,
+                "atan2" => crate::ffi::atan2,
                 _ => unimplemented!(), // TODO
             },
         });

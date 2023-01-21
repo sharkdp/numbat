@@ -1,4 +1,4 @@
-use crate::{quantity::Quantity, number::Number};
+use crate::{number::Number, quantity::Quantity};
 
 pub(crate) struct ForeignFunction {
     pub(crate) name: String,
