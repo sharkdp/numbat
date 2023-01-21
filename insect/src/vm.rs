@@ -156,7 +156,7 @@ pub struct Vm {
     globals: HashMap<String, Quantity>,
 
     /// List of registered native/foreign functions
-    foreign_functions: Vec<ForeignFunction>,
+    ffi_callables: Vec<ForeignFunction>,
 
     /// The call stack
     frames: Vec<CallFrame>,
@@ -177,7 +177,7 @@ impl Vm {
             constants: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
-            foreign_functions: ffi::macros().iter().map(|(_, ff)| ff.clone()).collect(),
+            ffi_callables: ffi::macros().iter().map(|(_, ff)| ff.clone()).collect(),
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug,
@@ -242,15 +242,12 @@ impl Vm {
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: usize) {
         let ff = ffi::functions().get(name).unwrap().clone();
         assert!(ff.arity == arity);
-        self.foreign_functions.push(ff);
+        self.ffi_callables.push(ff);
     }
 
-    pub(crate) fn get_foreign_function_idx(&self, name: &str) -> Option<u8> {
+    pub(crate) fn get_ffi_callable_idx(&self, name: &str) -> Option<u8> {
         // TODO: this is a linear search that can certainly be optimized
-        let position = self
-            .foreign_functions
-            .iter()
-            .position(|ff| ff.name == name)?;
+        let position = self.ffi_callables.iter().position(|ff| ff.name == name)?;
         assert!(position <= u8::MAX as usize);
         Some(position as u8)
     }
@@ -435,7 +432,7 @@ impl Vm {
                 }
                 Op::FFICallFunction | Op::FFICallMacro => {
                     let function_idx = self.read_byte() as usize;
-                    let foreign_function = &self.foreign_functions[function_idx];
+                    let foreign_function = &self.ffi_callables[function_idx];
 
                     let mut args = vec![];
                     for _ in 0..foreign_function.arity {
@@ -443,7 +440,7 @@ impl Vm {
                     }
                     args.reverse(); // TODO: use a deque?
 
-                    match self.foreign_functions[function_idx].callable {
+                    match self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
                             let result = (function)(&args[..]);
                             self.push(result);

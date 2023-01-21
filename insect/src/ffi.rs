@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use once_cell::sync::OnceCell;
 
-use crate::{number::Number, quantity::Quantity};
+use crate::{ast::MacroKind, number::Number, quantity::Quantity};
 
 #[derive(Clone)]
 pub(crate) enum Callable {
@@ -17,17 +17,15 @@ pub(crate) struct ForeignFunction {
     pub(crate) callable: Callable,
 }
 
-type CallableRegistry = HashMap<&'static str, ForeignFunction>;
+static FFI_MACROS: OnceCell<HashMap<MacroKind, ForeignFunction>> = OnceCell::new();
+static FFI_FUNCTIONS: OnceCell<HashMap<&'static str, ForeignFunction>> = OnceCell::new();
 
-static FFI_MACROS: OnceCell<CallableRegistry> = OnceCell::new();
-static FFI_FUNCTIONS: OnceCell<CallableRegistry> = OnceCell::new();
-
-pub(crate) fn macros() -> &'static CallableRegistry {
+pub(crate) fn macros() -> &'static HashMap<MacroKind, ForeignFunction> {
     FFI_MACROS.get_or_init(|| {
         let mut m = HashMap::new();
 
         m.insert(
-            "print",
+            MacroKind::Print,
             ForeignFunction {
                 name: "print".into(),
                 arity: 1,
@@ -39,7 +37,7 @@ pub(crate) fn macros() -> &'static CallableRegistry {
     })
 }
 
-pub(crate) fn functions() -> &'static CallableRegistry {
+pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
     FFI_FUNCTIONS.get_or_init(|| {
         let mut m = HashMap::new();
 

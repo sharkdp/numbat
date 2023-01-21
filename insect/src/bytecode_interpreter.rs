@@ -1,4 +1,4 @@
-use crate::ast::MacroKind;
+use crate::ffi;
 use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::typed_ast::{BinaryOperator, Expression, Statement};
 use crate::unit::Unit;
@@ -51,7 +51,7 @@ impl BytecodeInterpreter {
                     self.compile_expression(arg)?;
                 }
 
-                if let Some(idx) = self.vm.get_foreign_function_idx(name) {
+                if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
                     self.vm.add_op1(Op::FFICallFunction, idx);
                 } else {
                     let idx = self.vm.get_function_idx(name);
@@ -127,12 +127,9 @@ impl BytecodeInterpreter {
                     self.compile_expression(arg)?;
                 }
 
-                let name = match kind {
-                    MacroKind::Print => "print",
-                    MacroKind::AssertEq => "assert_eq",
-                }; // TODO: this is ugly. Don't go from enums to strings.
+                let name = &ffi::macros().get(kind).unwrap().name;
 
-                let idx = self.vm.get_foreign_function_idx(name).unwrap();
+                let idx = self.vm.get_ffi_callable_idx(name).unwrap();
                 self.vm.add_op1(Op::FFICallMacro, idx);
             }
         }
