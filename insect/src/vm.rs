@@ -177,11 +177,7 @@ impl Vm {
             constants: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
-            foreign_functions: ffi::registry()
-                .iter()
-                .map(|(_, ff)| ff.clone())
-                .filter(|ff| ff.is_macro())
-                .collect(),
+            foreign_functions: ffi::macros().iter().map(|(_, ff)| ff.clone()).collect(),
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug,
@@ -244,7 +240,7 @@ impl Vm {
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: usize) {
-        let ff = ffi::registry().get(name).unwrap().clone();
+        let ff = ffi::functions().get(name).unwrap().clone();
         assert!(ff.arity == arity);
         self.foreign_functions.push(ff);
     }

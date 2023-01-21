@@ -16,21 +16,16 @@ pub(crate) struct ForeignFunction {
     pub(crate) arity: usize,
     pub(crate) callable: Callable,
 }
-impl ForeignFunction {
-    pub(crate) fn is_macro(&self) -> bool {
-        matches!(self.callable, Callable::Macro(_))
-    }
-}
 
 type CallableRegistry = HashMap<&'static str, ForeignFunction>;
 
-static FFI_REGISTRY: OnceCell<CallableRegistry> = OnceCell::new();
+static FFI_MACROS: OnceCell<CallableRegistry> = OnceCell::new();
+static FFI_FUNCTIONS: OnceCell<CallableRegistry> = OnceCell::new();
 
-pub(crate) fn registry() -> &'static CallableRegistry {
-    FFI_REGISTRY.get_or_init(|| {
+pub(crate) fn macros() -> &'static CallableRegistry {
+    FFI_MACROS.get_or_init(|| {
         let mut m = HashMap::new();
 
-        // Macros
         m.insert(
             "print",
             ForeignFunction {
@@ -40,7 +35,14 @@ pub(crate) fn registry() -> &'static CallableRegistry {
             },
         );
 
-        // Functions
+        m
+    })
+}
+
+pub(crate) fn functions() -> &'static CallableRegistry {
+    FFI_FUNCTIONS.get_or_init(|| {
+        let mut m = HashMap::new();
+
         m.insert(
             "abs",
             ForeignFunction {
