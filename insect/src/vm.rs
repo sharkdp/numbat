@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
-    ffi::{Callable, ForeignFunction},
+    ffi::{self, Callable, ForeignFunction},
     interpreter::{InterpreterResult, Result, RuntimeError},
     quantity::Quantity,
     unit::Unit,
@@ -177,11 +177,11 @@ impl Vm {
             constants: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
-            foreign_functions: vec![ForeignFunction {
-                name: "print".into(),
-                arity: 1,
-                callable: Callable::Macro(crate::ffi::print),
-            }],
+            foreign_functions: ffi::registry()
+                .iter()
+                .map(|(_, ff)| ff.clone())
+                .filter(|ff| ff.is_macro())
+                .collect(),
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug,
@@ -244,16 +244,9 @@ impl Vm {
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: usize) {
-        self.foreign_functions.push(ForeignFunction {
-            name: name.into(),
-            arity,
-            callable: match name {
-                "abs" => Callable::Function(crate::ffi::abs),
-                "sin" => Callable::Function(crate::ffi::sin),
-                "atan2" => Callable::Function(crate::ffi::atan2),
-                _ => unimplemented!(), // TODO
-            },
-        });
+        let ff = ffi::registry().get(name).unwrap().clone();
+        assert!(ff.arity == arity);
+        self.foreign_functions.push(ff);
     }
 
     pub(crate) fn get_foreign_function_idx(&self, name: &str) -> Option<u8> {
