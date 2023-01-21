@@ -128,8 +128,8 @@ impl BytecodeInterpreter {
                 }
 
                 let name = match kind {
-                    MacroKind::Print => "print!",
-                    MacroKind::AssertEq => "assert_eq!",
+                    MacroKind::Print => "print",
+                    MacroKind::AssertEq => "assert_eq",
                 }; // TODO: this is ugly. Don't go from enums to strings.
 
                 let idx = self.vm.get_foreign_function_idx(name).unwrap();

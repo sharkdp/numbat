@@ -178,7 +178,7 @@ impl Vm {
             global_identifiers: vec![],
             globals: HashMap::new(),
             foreign_functions: vec![ForeignFunction {
-                name: "print!".into(),
+                name: "print".into(),
                 arity: 1,
                 callable: Callable::Macro(crate::ffi::print),
             }],
