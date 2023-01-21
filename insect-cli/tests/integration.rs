@@ -37,6 +37,15 @@ fn read_code_from_file() {
 }
 
 #[test]
+fn print_calls() {
+    insect()
+        .arg("../examples/print.ins")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("1.000000 \n2.000000 meter^1"));
+}
+
+#[test]
 fn without_prelude() {
     insect()
         .arg("--no-prelude")
