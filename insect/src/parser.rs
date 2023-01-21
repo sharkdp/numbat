@@ -12,7 +12,7 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl
+//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl | macro_call
 //!
 //! variable_decl   →   …
 //! function_decl   →   …
@@ -34,7 +34,7 @@
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
-use crate::ast::{BinaryOperator, DimensionExpression, Expression, Statement};
+use crate::ast::{BinaryOperator, DimensionExpression, Expression, Statement, MacroKind};
 use crate::number::Number;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
@@ -330,6 +330,8 @@ impl<'a> Parser<'a> {
                     span: self.peek().span.clone(),
                 })
             }
+        } else if self.match_exact(TokenKind::MacroAssertEq).is_some() {
+            Ok(Statement::MacroCall(MacroKind::AssertEq, self.arguments()?))
         } else {
             Ok(Statement::Expression(self.expression()?))
         }

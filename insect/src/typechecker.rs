@@ -472,6 +472,13 @@ impl TypeChecker {
                     .insert(name.clone(), type_specified.clone());
                 typed_ast::Statement::DeclareBaseUnit(name, type_specified)
             }
+            ast::Statement::MacroCall(kind, args) => {
+                let checked_args = args
+                    .into_iter()
+                    .map(|e| self.check_expression(e))
+                    .collect::<Result<Vec<typed_ast::Expression>>>()?;
+                typed_ast::Statement::MacroCall(kind, checked_args)
+            }
         })
     }
 

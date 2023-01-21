@@ -1,3 +1,4 @@
+use crate::ast::MacroKind;
 use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::typed_ast::{BinaryOperator, Expression, Statement};
 use crate::unit::Unit;
@@ -119,6 +120,19 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, constant_idx);
                 let identifier_idx = self.vm.add_global_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
+            }
+            Statement::MacroCall(kind, args) => {
+                // Put all arguments on top of the stack
+                for arg in args {
+                    self.compile_expression(arg)?;
+                }
+
+                let name = match kind {
+                    MacroKind::AssertEq => "assert_eq",
+                };
+
+                let idx = self.vm.get_foreign_function_idx(name).unwrap();
+                self.vm.add_op1(Op::CallForeign, idx);
             }
         }
 

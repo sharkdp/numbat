@@ -42,6 +42,9 @@ pub enum TokenKind {
     Dimension,
     Unit,
 
+    // Macro calls
+    MacroAssertEq,
+
     // Variable-length tokens
     Number,
     Identifier,

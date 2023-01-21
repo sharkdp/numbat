@@ -20,6 +20,7 @@ pub enum Statement {
     DeclareDimension(String),
     DeclareBaseUnit(String, Type),
     DeclareDerivedUnit(String, Expression),
+    MacroCall(crate::ast::MacroKind, Vec<Expression>),
 }
 
 impl Expression {
