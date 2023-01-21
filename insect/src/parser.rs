@@ -103,6 +103,9 @@ pub enum ParseErrorKind {
 
     #[error("Division by zero in dimension exponent")]
     DivisionByZeroInDimensionExponent,
+
+    #[error("Expected opening parenthesis '(' after macro name")]
+    ExpectedLeftParenAfterMacroName,
 }
 
 #[derive(Debug, Error)]
@@ -341,10 +344,13 @@ impl<'a> Parser<'a> {
             };
 
             if self.match_exact(TokenKind::LeftParen).is_none() {
-                todo!()
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedLeftParenAfterMacroName,
+                    span: self.peek().span.clone(),
+                })
+            } else {
+                Ok(Statement::MacroCall(macro_kind, self.arguments()?))
             }
-
-            Ok(Statement::MacroCall(macro_kind, self.arguments()?))
         } else {
             Ok(Statement::Expression(self.expression()?))
         }
@@ -1103,6 +1109,27 @@ mod tests {
         parse_as_expression(
             &["1 + 1 // foo"],
             Expression::FunctionCall("foo".into(), vec![binop!(scalar!(1.0), Add, scalar!(1.0))]),
+        );
+    }
+
+    #[test]
+    fn macro_call() {
+        parse_as(
+            &["print(2)"],
+            Statement::MacroCall(MacroKind::Print, vec![scalar!(2.0)]),
+        );
+
+        parse_as(
+            &["print(2, 3, 4)"],
+            Statement::MacroCall(
+                MacroKind::Print,
+                vec![scalar!(2.0), scalar!(3.0), scalar!(4.0)],
+            ),
+        );
+
+        should_fail_with(
+            &["print", "print 2"],
+            ParseErrorKind::ExpectedLeftParenAfterMacroName,
         );
     }
 }
