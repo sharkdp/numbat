@@ -12,7 +12,7 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl
+//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl | procedure_call
 //!
 //! variable_decl   →   …
 //! function_decl   →   …
@@ -34,7 +34,7 @@
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
-use crate::ast::{BinaryOperator, DimensionExpression, Expression, Statement};
+use crate::ast::{BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement};
 use crate::number::Number;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
@@ -65,7 +65,7 @@ pub enum ParseErrorKind {
     #[error("Expected '=' or ':' after identifier in 'let' assignment")]
     ExpectedEqualOrColonAfterLetIdentifier,
 
-    #[error("Expected identifier after 'fn' keyword")]
+    #[error("Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names.")]
     ExpectedIdentifierAfterFn,
 
     #[error("Expected function name after '//' operator")]
@@ -103,6 +103,12 @@ pub enum ParseErrorKind {
 
     #[error("Division by zero in dimension exponent")]
     DivisionByZeroInDimensionExponent,
+
+    #[error("Expected opening parenthesis '(' after procedure name")]
+    ExpectedLeftParenAfterProcedureName,
+
+    #[error("Procedures can not be used inside an expression")]
+    InlineProcedureUsage,
 }
 
 #[derive(Debug, Error)]
@@ -330,6 +336,24 @@ impl<'a> Parser<'a> {
                     span: self.peek().span.clone(),
                 })
             }
+        } else if self
+            .match_any(&[TokenKind::ProcedurePrint, TokenKind::ProcedureAssertEq])
+            .is_some()
+        {
+            let procedure_kind = match self.last().unwrap().kind {
+                TokenKind::ProcedurePrint => ProcedureKind::Print,
+                TokenKind::ProcedureAssertEq => ProcedureKind::AssertEq,
+                _ => unreachable!(),
+            };
+
+            if self.match_exact(TokenKind::LeftParen).is_none() {
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
+                    span: self.peek().span.clone(),
+                })
+            } else {
+                Ok(Statement::ProcedureCall(procedure_kind, self.arguments()?))
+            }
         } else {
             Ok(Statement::Expression(self.expression()?))
         }
@@ -482,27 +506,29 @@ impl<'a> Parser<'a> {
         if self.match_exact(TokenKind::LeftParen).is_some() {
             let function_name = self.function_name_from_primary(primary)?;
 
-            if self.match_exact(TokenKind::RightParen).is_some() {
-                return Ok(Expression::FunctionCall(function_name, vec![]));
-            } else {
-                let args = self.arguments()?;
-                if self.match_exact(TokenKind::RightParen).is_none() {
-                    return Err(ParseError::new(
-                        ParseErrorKind::MissingClosingParen,
-                        self.next().span.clone(),
-                    ));
-                }
-                return Ok(Expression::FunctionCall(function_name, args));
-            }
+            let args = self.arguments()?;
+            return Ok(Expression::FunctionCall(function_name, args));
         }
         Ok(primary)
     }
 
     fn arguments(&mut self) -> Result<Vec<Expression>> {
+        if self.match_exact(TokenKind::RightParen).is_some() {
+            return Ok(vec![]);
+        }
+
         let mut args: Vec<Expression> = vec![self.expression()?];
         while self.match_exact(TokenKind::Comma).is_some() {
             args.push(self.expression()?);
         }
+
+        if self.match_exact(TokenKind::RightParen).is_none() {
+            return Err(ParseError::new(
+                ParseErrorKind::MissingClosingParen,
+                self.next().span.clone(),
+            ));
+        }
+
         Ok(args)
     }
 
@@ -527,10 +553,20 @@ impl<'a> Parser<'a> {
 
             Ok(inner)
         } else {
-            Err(ParseError::new(
-                ParseErrorKind::ExpectedPrimary,
-                self.peek().span.clone(),
-            ))
+            if matches!(
+                self.peek().kind,
+                TokenKind::ProcedurePrint | TokenKind::ProcedureAssertEq
+            ) {
+                Err(ParseError::new(
+                    ParseErrorKind::InlineProcedureUsage,
+                    self.peek().span.clone(),
+                ))
+            } else {
+                Err(ParseError::new(
+                    ParseErrorKind::ExpectedPrimary,
+                    self.peek().span.clone(),
+                ))
+            }
         }
     }
 
@@ -1086,6 +1122,34 @@ mod tests {
         parse_as_expression(
             &["1 + 1 // foo"],
             Expression::FunctionCall("foo".into(), vec![binop!(scalar!(1.0), Add, scalar!(1.0))]),
+        );
+    }
+
+    #[test]
+    fn procedure_call() {
+        parse_as(
+            &["print(2)"],
+            Statement::ProcedureCall(ProcedureKind::Print, vec![scalar!(2.0)]),
+        );
+
+        parse_as(
+            &["print(2, 3, 4)"],
+            Statement::ProcedureCall(
+                ProcedureKind::Print,
+                vec![scalar!(2.0), scalar!(3.0), scalar!(4.0)],
+            ),
+        );
+
+        should_fail_with(
+            &["print", "print 2"],
+            ParseErrorKind::ExpectedLeftParenAfterProcedureName,
+        );
+
+        should_fail_with(&["1+print(2)"], ParseErrorKind::InlineProcedureUsage);
+
+        should_fail_with(
+            &["fn print() = 1"],
+            ParseErrorKind::ExpectedIdentifierAfterFn,
         );
     }
 }

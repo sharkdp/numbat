@@ -1,3 +1,4 @@
+use crate::ffi;
 use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::typed_ast::{BinaryOperator, Expression, Statement};
 use crate::unit::Unit;
@@ -50,8 +51,8 @@ impl BytecodeInterpreter {
                     self.compile_expression(arg)?;
                 }
 
-                if let Some(idx) = self.vm.get_foreign_function_idx(name) {
-                    self.vm.add_op1(Op::CallForeign, idx);
+                if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
+                    self.vm.add_op1(Op::FFICallFunction, idx);
                 } else {
                     let idx = self.vm.get_function_idx(name);
 
@@ -119,6 +120,17 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, constant_idx);
                 let identifier_idx = self.vm.add_global_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
+            }
+            Statement::ProcedureCall(kind, args) => {
+                // Put all arguments on top of the stack
+                for arg in args {
+                    self.compile_expression(arg)?;
+                }
+
+                let name = &ffi::procedures().get(kind).unwrap().name;
+
+                let idx = self.vm.get_ffi_callable_idx(name).unwrap();
+                self.vm.add_op1(Op::FFICallProcedure, idx);
             }
         }
 

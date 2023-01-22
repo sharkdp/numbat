@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
-    foreign_function::ForeignFunction,
+    ffi::{self, Callable, ForeignFunction},
     interpreter::{InterpreterResult, Result, RuntimeError},
     quantity::Quantity,
     unit::Unit,
@@ -41,7 +41,9 @@ pub enum Op {
     /// Call the specified function with the specified number of arguments
     Call,
     /// Same as above, but call a foreign/native function
-    CallForeign,
+    FFICallFunction,
+    /// Same as above, but call a procedure which does not return anything (does not push a value onto the stack)
+    FFICallProcedure,
 
     /// Return from the current function
     Return,
@@ -55,7 +57,8 @@ impl Op {
             | Op::SetVariable
             | Op::GetVariable
             | Op::GetLocal
-            | Op::CallForeign => 1,
+            | Op::FFICallFunction
+            | Op::FFICallProcedure => 1,
             Op::Negate
             | Op::Add
             | Op::Subtract
@@ -81,7 +84,8 @@ impl Op {
             Op::Power => "Power",
             Op::ConvertTo => "ConvertTo",
             Op::Call => "Call",
-            Op::CallForeign => "CallForeign",
+            Op::FFICallFunction => "FFICallFunction",
+            Op::FFICallProcedure => "FFICallProcedure",
             Op::Return => "Return",
         }
     }
@@ -152,7 +156,7 @@ pub struct Vm {
     globals: HashMap<String, Quantity>,
 
     /// List of registered native/foreign functions
-    foreign_functions: Vec<ForeignFunction>,
+    ffi_callables: Vec<ForeignFunction>,
 
     /// The call stack
     frames: Vec<CallFrame>,
@@ -173,7 +177,7 @@ impl Vm {
             constants: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
-            foreign_functions: vec![],
+            ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff.clone()).collect(),
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug,
@@ -236,24 +240,14 @@ impl Vm {
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: usize) {
-        self.foreign_functions.push(ForeignFunction {
-            name: name.into(),
-            arity,
-            function: match name {
-                "abs" => crate::foreign_function::abs,
-                "sin" => crate::foreign_function::sin,
-                "atan2" => crate::foreign_function::atan2,
-                _ => unimplemented!(), // TODO
-            },
-        });
+        let ff = ffi::functions().get(name).unwrap().clone();
+        assert!(ff.arity == arity);
+        self.ffi_callables.push(ff);
     }
 
-    pub(crate) fn get_foreign_function_idx(&self, name: &str) -> Option<u8> {
+    pub(crate) fn get_ffi_callable_idx(&self, name: &str) -> Option<u8> {
         // TODO: this is a linear search that can certainly be optimized
-        let position = self
-            .foreign_functions
-            .iter()
-            .position(|ff| ff.name == name)?;
+        let position = self.ffi_callables.iter().position(|ff| ff.name == name)?;
         assert!(position <= u8::MAX as usize);
         Some(position as u8)
     }
@@ -333,7 +327,7 @@ impl Vm {
     }
 
     fn pop(&mut self) -> Quantity {
-        self.stack.pop().expect("stack not empty")
+        self.stack.pop().expect("stack should not be empty")
     }
 
     pub fn run(&mut self) -> Result<InterpreterResult> {
@@ -436,9 +430,9 @@ impl Vm {
                         fp: self.stack.len() - num_args,
                     })
                 }
-                Op::CallForeign => {
+                Op::FFICallFunction | Op::FFICallProcedure => {
                     let function_idx = self.read_byte() as usize;
-                    let foreign_function = &self.foreign_functions[function_idx];
+                    let foreign_function = &self.ffi_callables[function_idx];
 
                     let mut args = vec![];
                     for _ in 0..foreign_function.arity {
@@ -446,9 +440,24 @@ impl Vm {
                     }
                     args.reverse(); // TODO: use a deque?
 
-                    let result = (self.foreign_functions[function_idx].function)(&args[..]);
+                    match self.ffi_callables[function_idx].callable {
+                        Callable::Function(function) => {
+                            let result = (function)(&args[..]);
+                            self.push(result);
+                        }
+                        Callable::Procedure(procedure) => {
+                            let result = (procedure)(&args[..]);
 
-                    self.push(result);
+                            match result {
+                                std::ops::ControlFlow::Continue(()) => {
+                                    return Ok(InterpreterResult::Continue);
+                                }
+                                std::ops::ControlFlow::Break(exit_status) => {
+                                    return Ok(InterpreterResult::Exit(exit_status))
+                                }
+                            }
+                        }
+                    }
                 }
                 Op::Return => {
                     if self.frames.len() == 1 {

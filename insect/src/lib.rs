@@ -2,7 +2,7 @@ mod arithmetic;
 mod ast;
 mod bytecode_interpreter;
 mod dimension;
-mod foreign_function;
+mod ffi;
 mod interpreter;
 mod number;
 mod parser;
@@ -25,6 +25,7 @@ use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
 use ast::Statement;
+pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
 pub use parser::ParseError;
 

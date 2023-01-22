@@ -42,6 +42,10 @@ pub enum TokenKind {
     Dimension,
     Unit,
 
+    // Procedure calls
+    ProcedurePrint,
+    ProcedureAssertEq,
+
     // Variable-length tokens
     Number,
     Identifier,
@@ -122,6 +126,8 @@ impl Tokenizer {
             m.insert("fn", TokenKind::Fn);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
+            m.insert("print", TokenKind::ProcedurePrint);
+            m.insert("assert_eq", TokenKind::ProcedureAssertEq);
             m
         });
 
