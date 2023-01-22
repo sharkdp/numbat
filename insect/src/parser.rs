@@ -786,12 +786,69 @@ mod tests {
     }
 
     #[test]
-    fn numbers() {
-        parse_as_expression(&["1", "  1   "], scalar!(1.0));
-        parse_as_expression(&["123.456"], scalar!(123.456));
-        parse_as_expression(&["1."], scalar!(1.0));
+    fn numbers_simple() {
+        parse_as_expression(
+            &[
+                "1",
+                "1.0",
+                "  1   ",
+                " 1.0000   ",
+                "1.",
+                // " +1.0   ", "+1", TODO
+            ],
+            scalar!(1.0),
+        );
 
-        should_fail(&["123..", "0..", ".0.", ".", ". 2", ".."]);
+        parse_as_expression(
+            &[
+                "0.2", "  0.2  ", // ".2", "+.2", "+0.2 ", TODO
+            ],
+            scalar!(0.2),
+        );
+
+        parse_as_expression(
+            &[
+                "3.5", "  3.5  ", "3.50",
+                // "+3.5", // TODO
+            ],
+            scalar!(3.5),
+        );
+
+        parse_as_expression(
+            &[
+                "0.05", // , ".05" TODO
+            ],
+            scalar!(0.05),
+        );
+
+        parse_as_expression(&["123.456"], scalar!(123.456));
+
+        should_fail(&["123..", "0..", ".0.", ".", ". 2", "..2", ".."]);
+    }
+
+    #[test]
+    fn large_numbers() {
+        parse_as_expression(
+            &[
+                "1234567890000000",
+                "1234567890000000.0",
+                // "+1234567890000000.0", TODO
+            ],
+            scalar!(1234567890000000.0),
+        );
+    }
+
+    #[test]
+    fn negation() {
+        parse_as_expression(&["-1", "  - 1   "], negate!(scalar!(1.0)));
+        parse_as_expression(&["-123.45"], negate!(scalar!(123.45)));
+        parse_as_expression(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
+        parse_as_expression(&["-x", " - x"], negate!(identifier!("x")));
+
+        parse_as_expression(
+            &["-1 + 2"],
+            binop!(negate!(scalar!(1.0)), Add, scalar!(2.0)),
+        );
     }
 
     #[test]
@@ -803,19 +860,7 @@ mod tests {
     }
 
     #[test]
-    fn negation() {
-        parse_as_expression(&["-1", "  - 1   "], negate!(scalar!(1.0)));
-        parse_as_expression(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
-        parse_as_expression(&["-x", " - x"], negate!(identifier!("x")));
-
-        parse_as_expression(
-            &["-1 + 2"],
-            binop!(negate!(scalar!(1.0)), Add, scalar!(2.0)),
-        );
-    }
-
-    #[test]
-    fn addition_subtraction() {
+    fn addition_and_subtraction() {
         parse_as_expression(
             &["1+2", "  1   +  2    "],
             binop!(scalar!(1.0), Add, scalar!(2.0)),
@@ -823,13 +868,15 @@ mod tests {
 
         // Minus should be left-associative
         parse_as_expression(
-            &["1-2-3"],
+            &["1-2-3", "1 - 2 - 3", "(1-2)-3"],
             binop!(binop!(scalar!(1.0), Sub, scalar!(2.0)), Sub, scalar!(3.0)),
         );
+
+        should_fail(&["1+", "1-"]);
     }
 
     #[test]
-    fn multiplication_division() {
+    fn multiplication_and_division() {
         parse_as_expression(
             &["1*2", "  1   *  2    ", "1 · 2", "1 × 2"],
             binop!(scalar!(1.0), Mul, scalar!(2.0)),
