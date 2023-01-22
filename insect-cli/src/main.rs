@@ -37,6 +37,21 @@ struct Args {
     debug: bool,
 }
 
+enum ExecutionMode {
+    Normal,
+    Interactive,
+}
+
+impl ExecutionMode {
+    fn exit_status_in_case_of_error(&self) -> ControlFlow {
+        if matches!(self, ExecutionMode::Normal) {
+            ControlFlow::Break(ExitStatus::Error)
+        } else {
+            ControlFlow::Continue(())
+        }
+    }
+}
+
 struct CLI {
     args: Args,
     insect: Insect,
@@ -62,7 +77,7 @@ impl CLI {
                 "Error while reading prelude from {}",
                 prelude_path.to_string_lossy()
             ))?;
-            self.parse_and_evaluate(&prelude_code);
+            self.parse_and_evaluate(&prelude_code, ExecutionMode::Normal);
         }
 
         let code: Option<String> = if let Some(ref path) = self.args.file {
@@ -77,7 +92,7 @@ impl CLI {
         };
 
         if let Some(code) = code {
-            let result = self.parse_and_evaluate(&code);
+            let result = self.parse_and_evaluate(&code, ExecutionMode::Normal);
 
             match result {
                 std::ops::ControlFlow::Continue(()) => Ok(()),
@@ -121,7 +136,7 @@ impl CLI {
                 Ok(line) => {
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line);
-                        let result = self.parse_and_evaluate(&line);
+                        let result = self.parse_and_evaluate(&line, ExecutionMode::Interactive);
 
                         match result {
                             std::ops::ControlFlow::Continue(()) => {}
@@ -145,7 +160,7 @@ impl CLI {
         }
     }
 
-    fn parse_and_evaluate(&mut self, input: &str) -> ControlFlow {
+    fn parse_and_evaluate(&mut self, input: &str, execution_mode: ExecutionMode) -> ControlFlow {
         let result = self.insect.interpret(input);
 
         match result {
@@ -187,15 +202,15 @@ impl CLI {
                 eprintln!("    {offset}^", offset = " ".repeat(span.position - 1));
                 eprintln!("{}", e);
 
-                ControlFlow::Continue(())
+                execution_mode.exit_status_in_case_of_error()
             }
             Err(InsectError::TypeCheckError(e)) => {
                 eprintln!("Type check error: {:#}", e);
-                ControlFlow::Continue(())
+                execution_mode.exit_status_in_case_of_error()
             }
             Err(InsectError::RuntimeError(e)) => {
                 eprintln!("Runtime error: {:#}", e);
-                ControlFlow::Continue(())
+                execution_mode.exit_status_in_case_of_error()
             }
         }
     }

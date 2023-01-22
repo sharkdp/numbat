@@ -17,8 +17,22 @@ fn pass_expression_on_command_line() {
         .arg("--expression")
         .arg("2 ++ 3")
         .assert()
-        // .failure()
+        .failure()
         .stderr(predicates::str::contains("Parse error"));
+
+    insect()
+        .arg("--expression")
+        .arg("2 meter + 3 second")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("Type check error"));
+
+    insect()
+        .arg("--expression")
+        .arg("1/0")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("Runtime error"));
 }
 
 #[test]
@@ -32,7 +46,7 @@ fn read_code_from_file() {
     insect()
         .arg("../examples/parse_error/trailing_characters.ins")
         .assert()
-        // .failure()    TODO
+        .failure()
         .stderr(predicates::str::contains("Parse error"));
 }
 
