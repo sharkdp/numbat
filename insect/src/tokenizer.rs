@@ -42,9 +42,9 @@ pub enum TokenKind {
     Dimension,
     Unit,
 
-    // Macro calls
-    MacroPrint,
-    MacroAssertEq,
+    // Procedure calls
+    ProcedurePrint,
+    ProcedureAssertEq,
 
     // Variable-length tokens
     Number,
@@ -126,8 +126,8 @@ impl Tokenizer {
             m.insert("fn", TokenKind::Fn);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
-            m.insert("print", TokenKind::MacroPrint);
-            m.insert("assert_eq", TokenKind::MacroAssertEq);
+            m.insert("print", TokenKind::ProcedurePrint);
+            m.insert("assert_eq", TokenKind::ProcedureAssertEq);
             m
         });
 

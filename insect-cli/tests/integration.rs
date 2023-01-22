@@ -60,7 +60,7 @@ fn print_calls() {
 }
 
 #[test]
-fn assert_eq_macro() {
+fn assert_eq_procedure() {
     insect()
         .arg("../examples/assert_eq_success.ins")
         .assert()

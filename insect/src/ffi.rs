@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use once_cell::sync::OnceCell;
 
 use crate::interpreter::ExitStatus;
-use crate::{ast::MacroKind, number::Number, quantity::Quantity};
+use crate::{ast::ProcedureKind, number::Number, quantity::Quantity};
 
 type ControlFlow = std::ops::ControlFlow<ExitStatus>;
 
 #[derive(Clone)]
 pub(crate) enum Callable {
     Function(fn(&[Quantity]) -> Quantity),
-    Macro(fn(&[Quantity]) -> ControlFlow),
+    Procedure(fn(&[Quantity]) -> ControlFlow),
 }
 
 #[derive(Clone)]
@@ -20,27 +20,27 @@ pub(crate) struct ForeignFunction {
     pub(crate) callable: Callable,
 }
 
-static FFI_MACROS: OnceCell<HashMap<MacroKind, ForeignFunction>> = OnceCell::new();
+static FFI_PROCEDURES: OnceCell<HashMap<ProcedureKind, ForeignFunction>> = OnceCell::new();
 static FFI_FUNCTIONS: OnceCell<HashMap<&'static str, ForeignFunction>> = OnceCell::new();
 
-pub(crate) fn macros() -> &'static HashMap<MacroKind, ForeignFunction> {
-    FFI_MACROS.get_or_init(|| {
+pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
+    FFI_PROCEDURES.get_or_init(|| {
         let mut m = HashMap::new();
 
         m.insert(
-            MacroKind::Print,
+            ProcedureKind::Print,
             ForeignFunction {
                 name: "print".into(),
                 arity: 1,
-                callable: Callable::Macro(print),
+                callable: Callable::Procedure(print),
             },
         );
         m.insert(
-            MacroKind::AssertEq,
+            ProcedureKind::AssertEq,
             ForeignFunction {
                 name: "assert_eq".into(),
                 arity: 2,
-                callable: Callable::Macro(assert_eq),
+                callable: Callable::Procedure(assert_eq),
             },
         );
 

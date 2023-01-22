@@ -12,7 +12,7 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl | macro_call
+//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl | procedure_call
 //!
 //! variable_decl   →   …
 //! function_decl   →   …
@@ -34,7 +34,7 @@
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
-use crate::ast::{BinaryOperator, DimensionExpression, Expression, MacroKind, Statement};
+use crate::ast::{BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement};
 use crate::number::Number;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
@@ -104,11 +104,11 @@ pub enum ParseErrorKind {
     #[error("Division by zero in dimension exponent")]
     DivisionByZeroInDimensionExponent,
 
-    #[error("Expected opening parenthesis '(' after macro name")]
-    ExpectedLeftParenAfterMacroName,
+    #[error("Expected opening parenthesis '(' after procedure name")]
+    ExpectedLeftParenAfterProcedureName,
 
-    #[error("Macros can not be used inside an expression")]
-    InlineMacroUsage,
+    #[error("Procedures can not be used inside an expression")]
+    InlineProcedureUsage,
 }
 
 #[derive(Debug, Error)]
@@ -337,22 +337,22 @@ impl<'a> Parser<'a> {
                 })
             }
         } else if self
-            .match_any(&[TokenKind::MacroPrint, TokenKind::MacroAssertEq])
+            .match_any(&[TokenKind::ProcedurePrint, TokenKind::ProcedureAssertEq])
             .is_some()
         {
-            let macro_kind = match self.last().unwrap().kind {
-                TokenKind::MacroPrint => MacroKind::Print,
-                TokenKind::MacroAssertEq => MacroKind::AssertEq,
+            let procedure_kind = match self.last().unwrap().kind {
+                TokenKind::ProcedurePrint => ProcedureKind::Print,
+                TokenKind::ProcedureAssertEq => ProcedureKind::AssertEq,
                 _ => unreachable!(),
             };
 
             if self.match_exact(TokenKind::LeftParen).is_none() {
                 Err(ParseError {
-                    kind: ParseErrorKind::ExpectedLeftParenAfterMacroName,
+                    kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
                     span: self.peek().span.clone(),
                 })
             } else {
-                Ok(Statement::MacroCall(macro_kind, self.arguments()?))
+                Ok(Statement::ProcedureCall(procedure_kind, self.arguments()?))
             }
         } else {
             Ok(Statement::Expression(self.expression()?))
@@ -555,10 +555,10 @@ impl<'a> Parser<'a> {
         } else {
             if matches!(
                 self.peek().kind,
-                TokenKind::MacroPrint | TokenKind::MacroAssertEq
+                TokenKind::ProcedurePrint | TokenKind::ProcedureAssertEq
             ) {
                 Err(ParseError::new(
-                    ParseErrorKind::InlineMacroUsage,
+                    ParseErrorKind::InlineProcedureUsage,
                     self.peek().span.clone(),
                 ))
             } else {
@@ -1126,25 +1126,25 @@ mod tests {
     }
 
     #[test]
-    fn macro_call() {
+    fn procedure_call() {
         parse_as(
             &["print(2)"],
-            Statement::MacroCall(MacroKind::Print, vec![scalar!(2.0)]),
+            Statement::ProcedureCall(ProcedureKind::Print, vec![scalar!(2.0)]),
         );
 
         parse_as(
             &["print(2, 3, 4)"],
-            Statement::MacroCall(
-                MacroKind::Print,
+            Statement::ProcedureCall(
+                ProcedureKind::Print,
                 vec![scalar!(2.0), scalar!(3.0), scalar!(4.0)],
             ),
         );
 
         should_fail_with(
             &["print", "print 2"],
-            ParseErrorKind::ExpectedLeftParenAfterMacroName,
+            ParseErrorKind::ExpectedLeftParenAfterProcedureName,
         );
 
-        should_fail_with(&["1+print(2)"], ParseErrorKind::InlineMacroUsage);
+        should_fail_with(&["1+print(2)"], ParseErrorKind::InlineProcedureUsage);
     }
 }

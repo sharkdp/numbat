@@ -121,16 +121,16 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_global_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::MacroCall(kind, args) => {
+            Statement::ProcedureCall(kind, args) => {
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg)?;
                 }
 
-                let name = &ffi::macros().get(kind).unwrap().name;
+                let name = &ffi::procedures().get(kind).unwrap().name;
 
                 let idx = self.vm.get_ffi_callable_idx(name).unwrap();
-                self.vm.add_op1(Op::FFICallMacro, idx);
+                self.vm.add_op1(Op::FFICallProcedure, idx);
             }
         }
 

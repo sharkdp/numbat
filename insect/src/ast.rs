@@ -135,7 +135,7 @@ impl PrettyPrint for DimensionExpression {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MacroKind {
+pub enum ProcedureKind {
     Print,
     AssertEq,
 }
@@ -159,7 +159,7 @@ pub enum Statement {
     DeclareDimension(String, Vec<DimensionExpression>),
     DeclareBaseUnit(String, DimensionExpression),
     DeclareDerivedUnit(String, Expression, Option<DimensionExpression>),
-    MacroCall(MacroKind, Vec<Expression>),
+    ProcedureCall(ProcedureKind, Vec<Expression>),
 }
 
 impl PrettyPrint for Statement {
@@ -211,7 +211,7 @@ impl PrettyPrint for Statement {
                     expr.pretty_print()
                 )
             }
-            Statement::MacroCall(_kind, _args) => "".into(),
+            Statement::ProcedureCall(_kind, _args) => "".into(),
         }
     }
 }

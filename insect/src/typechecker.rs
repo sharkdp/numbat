@@ -41,9 +41,9 @@ pub enum TypeCheckError {
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
 
-    #[error("Function or macro '{0}' called with {2} arguments(s), but needs {1}.")]
+    #[error("Function or procedure '{0}' called with {2} arguments(s), but needs {1}.")]
     WrongArity(
-        /// Function/macro name
+        /// Function/procedure name
         String,
         /// Expected number of arguments
         usize,
@@ -479,12 +479,12 @@ impl TypeChecker {
                     .insert(name.clone(), type_specified.clone());
                 typed_ast::Statement::DeclareBaseUnit(name, type_specified)
             }
-            ast::Statement::MacroCall(kind, args) => {
-                let macro_ = ffi::macros().get(&kind).unwrap();
-                if macro_.arity != args.len() {
+            ast::Statement::ProcedureCall(kind, args) => {
+                let procedure = ffi::procedures().get(&kind).unwrap();
+                if procedure.arity != args.len() {
                     return Err(TypeCheckError::WrongArity(
-                        macro_.name.clone(),
-                        macro_.arity,
+                        procedure.name.clone(),
+                        procedure.arity,
                         args.len(),
                     ));
                 }
@@ -494,7 +494,7 @@ impl TypeChecker {
                     .map(|e| self.check_expression(e))
                     .collect::<Result<Vec<typed_ast::Expression>>>()?;
 
-                typed_ast::Statement::MacroCall(kind, checked_args)
+                typed_ast::Statement::ProcedureCall(kind, checked_args)
             }
         })
     }
@@ -820,7 +820,7 @@ mod tests {
     }
 
     #[test]
-    fn wrong_arity_in_macro_call() {
+    fn wrong_arity_in_procedure_call() {
         assert!(matches!(
             get_typecheck_error("assert_eq(1)"),
             TypeCheckError::WrongArity(name, 2, 1) if name == "assert_eq"

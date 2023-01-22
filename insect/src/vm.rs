@@ -42,8 +42,8 @@ pub enum Op {
     Call,
     /// Same as above, but call a foreign/native function
     FFICallFunction,
-    /// Same as above, but call a macro which does not return anything (does not push a value onto the stack)
-    FFICallMacro,
+    /// Same as above, but call a procedure which does not return anything (does not push a value onto the stack)
+    FFICallProcedure,
 
     /// Return from the current function
     Return,
@@ -58,7 +58,7 @@ impl Op {
             | Op::GetVariable
             | Op::GetLocal
             | Op::FFICallFunction
-            | Op::FFICallMacro => 1,
+            | Op::FFICallProcedure => 1,
             Op::Negate
             | Op::Add
             | Op::Subtract
@@ -85,7 +85,7 @@ impl Op {
             Op::ConvertTo => "ConvertTo",
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
-            Op::FFICallMacro => "FFICallMacro",
+            Op::FFICallProcedure => "FFICallProcedure",
             Op::Return => "Return",
         }
     }
@@ -177,7 +177,7 @@ impl Vm {
             constants: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
-            ffi_callables: ffi::macros().iter().map(|(_, ff)| ff.clone()).collect(),
+            ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff.clone()).collect(),
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug,
@@ -430,7 +430,7 @@ impl Vm {
                         fp: self.stack.len() - num_args,
                     })
                 }
-                Op::FFICallFunction | Op::FFICallMacro => {
+                Op::FFICallFunction | Op::FFICallProcedure => {
                     let function_idx = self.read_byte() as usize;
                     let foreign_function = &self.ffi_callables[function_idx];
 
@@ -445,8 +445,8 @@ impl Vm {
                             let result = (function)(&args[..]);
                             self.push(result);
                         }
-                        Callable::Macro(macro_) => {
-                            let result = (macro_)(&args[..]);
+                        Callable::Procedure(procedure) => {
+                            let result = (procedure)(&args[..]);
 
                             match result {
                                 std::ops::ControlFlow::Continue(()) => {
