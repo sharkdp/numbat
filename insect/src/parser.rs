@@ -65,7 +65,7 @@ pub enum ParseErrorKind {
     #[error("Expected '=' or ':' after identifier in 'let' assignment")]
     ExpectedEqualOrColonAfterLetIdentifier,
 
-    #[error("Expected identifier after 'fn' keyword")]
+    #[error("Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names.")]
     ExpectedIdentifierAfterFn,
 
     #[error("Expected function name after '//' operator")]
@@ -1146,5 +1146,10 @@ mod tests {
         );
 
         should_fail_with(&["1+print(2)"], ParseErrorKind::InlineProcedureUsage);
+
+        should_fail_with(
+            &["fn print() = 1"],
+            ParseErrorKind::ExpectedIdentifierAfterFn,
+        );
     }
 }
