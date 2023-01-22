@@ -211,9 +211,7 @@ impl PrettyPrint for Statement {
                     expr.pretty_print()
                 )
             }
-            Statement::MacroCall(_kind, _args) => {
-                "macro!(…)".into() // TODO
-            }
+            Statement::MacroCall(_kind, _args) => "".into(),
         }
     }
 }

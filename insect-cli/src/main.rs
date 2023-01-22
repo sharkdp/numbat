@@ -168,7 +168,10 @@ impl CLI {
                 if self.args.pretty_print {
                     println!();
                     for statement in &statements {
-                        println!("  {}", statement.pretty_print());
+                        let repr = statement.pretty_print();
+                        if !repr.is_empty() {
+                            println!("  {}", repr);
+                        }
                     }
                 }
 
