@@ -106,6 +106,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected opening parenthesis '(' after macro name")]
     ExpectedLeftParenAfterMacroName,
+
+    #[error("Macros can not be used inside an expression")]
+    InlineMacroUsage,
 }
 
 #[derive(Debug, Error)]
@@ -550,10 +553,20 @@ impl<'a> Parser<'a> {
 
             Ok(inner)
         } else {
-            Err(ParseError::new(
-                ParseErrorKind::ExpectedPrimary,
-                self.peek().span.clone(),
-            ))
+            if matches!(
+                self.peek().kind,
+                TokenKind::MacroPrint | TokenKind::MacroAssertEq
+            ) {
+                Err(ParseError::new(
+                    ParseErrorKind::InlineMacroUsage,
+                    self.peek().span.clone(),
+                ))
+            } else {
+                Err(ParseError::new(
+                    ParseErrorKind::ExpectedPrimary,
+                    self.peek().span.clone(),
+                ))
+            }
         }
     }
 
@@ -1131,5 +1144,7 @@ mod tests {
             &["print", "print 2"],
             ParseErrorKind::ExpectedLeftParenAfterMacroName,
         );
+
+        should_fail_with(&["1+print(2)"], ParseErrorKind::InlineMacroUsage);
     }
 }
