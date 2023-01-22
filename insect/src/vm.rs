@@ -446,8 +446,16 @@ impl Vm {
                             self.push(result);
                         }
                         Callable::Macro(macro_) => {
-                            (macro_)(&args[..]);
-                            return Ok(InterpreterResult::Continue);
+                            let result = (macro_)(&args[..]);
+
+                            match result {
+                                std::ops::ControlFlow::Continue(()) => {
+                                    return Ok(InterpreterResult::Continue);
+                                }
+                                std::ops::ControlFlow::Break(exit_status) => {
+                                    return Ok(InterpreterResult::Exit(exit_status))
+                                }
+                            }
                         }
                     }
                 }

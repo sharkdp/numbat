@@ -17,7 +17,7 @@ fn pass_expression_on_command_line() {
         .arg("--expression")
         .arg("2 ++ 3")
         .assert()
-        // .failure()   TODO
+        // .failure()
         .stderr(predicates::str::contains("Parse error"));
 }
 
@@ -43,6 +43,22 @@ fn print_calls() {
         .assert()
         .success()
         .stdout(predicates::str::contains("1.000000 \n2.000000 meter^1"));
+}
+
+#[test]
+fn assert_eq_macro() {
+    insect()
+        .arg("../examples/assert_eq_success.ins")
+        .assert()
+        .success();
+
+    insect()
+        .arg("../examples/assert_eq_failure.ins")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "the following two quantities are not the same",
+        ));
 }
 
 #[test]

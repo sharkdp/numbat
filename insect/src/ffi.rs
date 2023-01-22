@@ -2,12 +2,15 @@ use std::collections::HashMap;
 
 use once_cell::sync::OnceCell;
 
+use crate::interpreter::ExitStatus;
 use crate::{ast::MacroKind, number::Number, quantity::Quantity};
+
+type ControlFlow = std::ops::ControlFlow<ExitStatus>;
 
 #[derive(Clone)]
 pub(crate) enum Callable {
     Function(fn(&[Quantity]) -> Quantity),
-    Macro(fn(&[Quantity]) -> ()),
+    Macro(fn(&[Quantity]) -> ControlFlow),
 }
 
 #[derive(Clone)]
@@ -78,16 +81,25 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
     })
 }
 
-fn print(args: &[Quantity]) {
+fn print(args: &[Quantity]) -> ControlFlow {
     assert!(args.len() == 1);
 
     println!("{}", args[0]);
+
+    ControlFlow::Continue(())
 }
 
-fn assert_eq(args: &[Quantity]) {
+fn assert_eq(args: &[Quantity]) -> ControlFlow {
     assert!(args.len() == 2);
 
-    // TODO
+    if args[0] == args[1] {
+        ControlFlow::Continue(())
+    } else {
+        eprintln!("Assertion failed: the following two quantities are not the same:");
+        eprintln!("  {}", args[0]);
+        eprintln!("  {}", args[1]);
+        ControlFlow::Break(ExitStatus::Error)
+    }
 }
 
 fn abs(args: &[Quantity]) -> Quantity {

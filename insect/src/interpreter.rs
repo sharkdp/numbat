@@ -21,10 +21,16 @@ pub enum RuntimeError {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub enum ExitStatus {
+    Success,
+    Error,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum InterpreterResult {
     Quantity(Quantity),
     Continue,
-    Exit,
+    Exit(ExitStatus),
 }
 
 pub type Result<T> = std::result::Result<T, RuntimeError>;

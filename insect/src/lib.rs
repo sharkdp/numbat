@@ -25,6 +25,7 @@ use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
 use ast::Statement;
+pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
 pub use parser::ParseError;
 

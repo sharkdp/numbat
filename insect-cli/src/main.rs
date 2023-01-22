@@ -1,14 +1,15 @@
 use std::fs;
-use std::ops::ControlFlow;
 use std::path::PathBuf;
 
 use insect::pretty_print::PrettyPrint;
-use insect::{Insect, InsectError, InterpreterResult, ParseError};
+use insect::{ExitStatus, Insect, InsectError, InterpreterResult, ParseError};
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+
+type ControlFlow = std::ops::ControlFlow<insect::ExitStatus>;
 
 const PROMPT: &str = ">>> ";
 
@@ -76,50 +77,75 @@ impl CLI {
         };
 
         if let Some(code) = code {
-            self.parse_and_evaluate(&code);
-            Ok(())
-        } else {
-            println!(r" _                     _   ");
-            println!(r"(_)_ __  ___  ___  ___| |_ ");
-            println!(r"| | '_ \/ __|/ _ \/ __| __|   version 0.1");
-            println!(r"| | | | \__ \  __/ (__| |_    enter '?' for help");
-            println!(r"|_|_| |_|___/\___|\___|\__|");
-            println!();
+            let result = self.parse_and_evaluate(&code);
 
-            let history_path = self.get_history_path()?;
-
-            let mut rl = Editor::<()>::new()?;
-            rl.load_history(&history_path).ok();
-
-            loop {
-                let readline = rl.readline(PROMPT);
-                match readline {
-                    Ok(line) => {
-                        if !line.trim().is_empty() {
-                            rl.add_history_entry(&line);
-                            if self.parse_and_evaluate(&line).is_break() {
-                                break;
-                            }
-                        }
-                    }
-                    Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {
-                        break;
-                    }
-                    Err(err) => {
-                        println!("Error: {:?}", err);
-                        break;
-                    }
+            match result {
+                std::ops::ControlFlow::Continue(()) => Ok(()),
+                std::ops::ControlFlow::Break(ExitStatus::Success) => Ok(()),
+                std::ops::ControlFlow::Break(ExitStatus::Error) => {
+                    bail!("Interpreter stopped due to error")
                 }
             }
-
-            rl.save_history(&history_path).context(format!(
-                "Error while saving history to '{}'",
-                history_path.to_string_lossy()
-            ))
+        } else {
+            self.repl()
         }
     }
 
-    fn parse_and_evaluate(&mut self, input: &str) -> ControlFlow<()> {
+    fn repl(&mut self) -> Result<()> {
+        println!(r" _                     _   ");
+        println!(r"(_)_ __  ___  ___  ___| |_ ");
+        println!(r"| | '_ \/ __|/ _ \/ __| __|   version 0.1");
+        println!(r"| | | | \__ \  __/ (__| |_    enter '?' for help");
+        println!(r"|_|_| |_|___/\___|\___|\__|");
+        println!();
+
+        let history_path = self.get_history_path()?;
+
+        let mut rl = Editor::<()>::new()?;
+        rl.load_history(&history_path).ok();
+
+        let result = self.repl_loop(&mut rl);
+
+        rl.save_history(&history_path).context(format!(
+            "Error while saving history to '{}'",
+            history_path.to_string_lossy()
+        ))?;
+
+        result
+    }
+
+    fn repl_loop(&mut self, rl: &mut Editor<()>) -> Result<()> {
+        loop {
+            let readline = rl.readline(PROMPT);
+            match readline {
+                Ok(line) => {
+                    if !line.trim().is_empty() {
+                        rl.add_history_entry(&line);
+                        let result = self.parse_and_evaluate(&line);
+
+                        match result {
+                            std::ops::ControlFlow::Continue(()) => {}
+                            std::ops::ControlFlow::Break(ExitStatus::Success) => {
+                                return Ok(());
+                            }
+                            std::ops::ControlFlow::Break(ExitStatus::Error) => {
+                                bail!("Interpreter stopped due to error")
+                            }
+                        }
+                    }
+                }
+                Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {
+                    return Ok(());
+                }
+                Err(err) => {
+                    eprintln!("Error: {:?}", err);
+                    todo!()
+                }
+            }
+        }
+    }
+
+    fn parse_and_evaluate(&mut self, input: &str) -> ControlFlow {
         let result = self.insect.interpret(input);
 
         match result {
@@ -140,7 +166,7 @@ impl CLI {
                         ControlFlow::Continue(())
                     }
                     InterpreterResult::Continue => ControlFlow::Continue(()),
-                    InterpreterResult::Exit => ControlFlow::Break(()),
+                    InterpreterResult::Exit(exit_status) => ControlFlow::Break(exit_status),
                 }
             }
             Err(InsectError::ParseError(ref e @ ParseError { ref span, .. })) => {
