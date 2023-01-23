@@ -33,10 +33,21 @@ pub enum ExitStatus {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[must_use]
 pub enum InterpreterResult {
     Quantity(Quantity),
     Continue,
     Exit(ExitStatus),
+}
+
+impl InterpreterResult {
+    pub(crate) fn is_success(&self) -> bool {
+        match self {
+            Self::Quantity(_) => true,
+            Self::Continue => true,
+            Self::Exit(_) => false,
+        }
+    }
 }
 
 pub type Result<T> = std::result::Result<T, RuntimeError>;

@@ -56,9 +56,11 @@ impl Insect {
 
     pub fn new(debug: bool) -> Self {
         let mut insect = Self::new_without_prelude(debug);
-        insect
+        assert!(insect
             .interpret(include_str!("../../prelude.ins"))
-            .expect("Error while running prelude"); // TODO: read prelude dynamically, error handling
+            .expect("Error while running prelude")
+            .1
+            .is_success()); // TODO: read prelude dynamically, error handling
         insect
     }
 
