@@ -65,7 +65,7 @@ impl Insect {
     }
 
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
-        let statements = parse(&code).map_err(InsectError::ParseError)?;
+        let statements = parse(code).map_err(InsectError::ParseError)?;
         let typed_statements = self
             .typechecker
             .check_statements(statements.clone()) // TODO: get rid of clone?

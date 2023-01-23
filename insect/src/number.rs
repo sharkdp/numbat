@@ -8,8 +8,8 @@ impl Number {
         Number(n)
     }
 
-    pub fn to_f64(&self) -> f64 {
-        let Number(n) = *self;
+    pub fn to_f64(self) -> f64 {
+        let Number(n) = self;
         n
     }
 }

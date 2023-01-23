@@ -42,7 +42,7 @@ impl Quantity {
 
     pub fn convert_to(&self, unit: &Unit) -> Result<Quantity> {
         if &self.unit == unit || self.is_zero() {
-            Ok(Quantity::new(self.value.clone(), unit.clone()))
+            Ok(Quantity::new(self.value, unit.clone()))
         } else {
             Err(ConversionError::IncompatibleUnits(
                 self.unit.clone(),

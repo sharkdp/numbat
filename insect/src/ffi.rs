@@ -105,18 +105,16 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
                 args[1].clone(),
             ))
         }
+    } else if (&args[0] - &args[1]).unwrap().unsafe_value().to_f64().abs()
+        < args[2].unsafe_value().to_f64()
+    {
+        ControlFlow::Continue(())
     } else {
-        if (&args[0] - &args[1]).unwrap().unsafe_value().to_f64().abs()
-            < args[2].unsafe_value().to_f64()
-        {
-            ControlFlow::Continue(())
-        } else {
-            ControlFlow::Break(RuntimeError::AssertEq3Failed(
-                args[0].clone(),
-                args[1].clone(),
-                args[1].clone(),
-            ))
-        }
+        ControlFlow::Break(RuntimeError::AssertEq3Failed(
+            args[0].clone(),
+            args[1].clone(),
+            args[1].clone(),
+        ))
     }
 }
 

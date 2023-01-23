@@ -52,13 +52,13 @@ impl ExecutionMode {
     }
 }
 
-struct CLI {
+struct Cli {
     args: Args,
     insect: Insect,
     current_filename: Option<PathBuf>,
 }
 
-impl CLI {
+impl Cli {
     fn new() -> Self {
         let args = Args::parse();
         Self {
@@ -233,7 +233,7 @@ impl CLI {
 }
 
 fn main() {
-    let mut cli = CLI::new();
+    let mut cli = Cli::new();
 
     if let Err(e) = cli.run() {
         eprintln!("{:#}", e);

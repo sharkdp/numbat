@@ -552,21 +552,19 @@ impl<'a> Parser<'a> {
             }
 
             Ok(inner)
+        } else if matches!(
+            self.peek().kind,
+            TokenKind::ProcedurePrint | TokenKind::ProcedureAssertEq
+        ) {
+            Err(ParseError::new(
+                ParseErrorKind::InlineProcedureUsage,
+                self.peek().span.clone(),
+            ))
         } else {
-            if matches!(
-                self.peek().kind,
-                TokenKind::ProcedurePrint | TokenKind::ProcedureAssertEq
-            ) {
-                Err(ParseError::new(
-                    ParseErrorKind::InlineProcedureUsage,
-                    self.peek().span.clone(),
-                ))
-            } else {
-                Err(ParseError::new(
-                    ParseErrorKind::ExpectedPrimary,
-                    self.peek().span.clone(),
-                ))
-            }
+            Err(ParseError::new(
+                ParseErrorKind::ExpectedPrimary,
+                self.peek().span.clone(),
+            ))
         }
     }
 
