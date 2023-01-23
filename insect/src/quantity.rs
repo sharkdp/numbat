@@ -75,27 +75,26 @@ impl From<&Number> for Quantity {
     }
 }
 
-// TODO(minor): do we want to implement this for references instead of values?
-impl std::ops::Add for Quantity {
+impl std::ops::Add for &Quantity {
     type Output = Result<Quantity>;
 
     fn add(self, rhs: Self) -> Self::Output {
         rhs.convert_to(&self.unit)?;
         Ok(Quantity {
             value: self.value + rhs.value,
-            unit: self.unit,
+            unit: self.unit.clone(),
         })
     }
 }
 
-impl std::ops::Sub for Quantity {
+impl std::ops::Sub for &Quantity {
     type Output = Result<Quantity>;
 
     fn sub(self, rhs: Self) -> Self::Output {
         rhs.convert_to(&self.unit)?;
         Ok(Quantity {
             value: self.value - rhs.value,
-            unit: self.unit,
+            unit: self.unit.clone(),
         })
     }
 }

@@ -92,15 +92,33 @@ fn print(args: &[Quantity]) -> ControlFlow {
 }
 
 fn assert_eq(args: &[Quantity]) -> ControlFlow {
-    assert!(args.len() == 2);
+    assert!(args.len() == 2 || args.len() == 3);
 
-    if args[0] == args[1] {
-        ControlFlow::Continue(())
+    // TODO: make sure that phys. dimension line up
+
+    if args.len() == 2 {
+        if args[0] == args[1] {
+            ControlFlow::Continue(())
+        } else {
+            eprintln!("Assertion failed: the following two quantities are not the same:");
+            eprintln!("  {}", args[0]);
+            eprintln!("  {}", args[1]);
+            ControlFlow::Break(ExitStatus::Error)
+        }
     } else {
-        eprintln!("Assertion failed: the following two quantities are not the same:");
-        eprintln!("  {}", args[0]);
-        eprintln!("  {}", args[1]);
-        ControlFlow::Break(ExitStatus::Error)
+        if (&args[0] - &args[1]).unwrap().unsafe_value().to_f64().abs()
+            < args[2].unsafe_value().to_f64()
+        {
+            ControlFlow::Continue(())
+        } else {
+            eprintln!(
+                "Assertion failed: the following two quantities differ by more than {}:",
+                args[2]
+            );
+            eprintln!("  {}", args[0]);
+            eprintln!("  {}", args[1]);
+            ControlFlow::Break(ExitStatus::Error)
+        }
     }
 }
 

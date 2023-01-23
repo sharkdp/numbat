@@ -395,8 +395,8 @@ impl Vm {
                     let rhs = self.pop();
                     let lhs = self.pop();
                     let result = match op {
-                        Op::Add => lhs + rhs,
-                        Op::Subtract => lhs - rhs,
+                        Op::Add => &lhs + &rhs,
+                        Op::Subtract => &lhs - &rhs,
                         Op::Multiply => lhs * rhs,
                         Op::Divide => {
                             // TODO: should this be implemented in Quantity::div?
