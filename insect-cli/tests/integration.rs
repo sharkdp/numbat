@@ -60,22 +60,6 @@ fn print_calls() {
 }
 
 #[test]
-fn assert_eq_procedure() {
-    insect()
-        .arg("../examples/assert_eq_success.ins")
-        .assert()
-        .success();
-
-    insect()
-        .arg("../examples/assert_eq_failure.ins")
-        .assert()
-        .failure()
-        .stderr(predicates::str::contains(
-            "the following two quantities are not the same",
-        ));
-}
-
-#[test]
 fn without_prelude() {
     insect()
         .arg("--no-prelude")

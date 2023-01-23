@@ -18,6 +18,12 @@ pub enum RuntimeError {
     UnitRegistryError(UnitRegistryError),
     #[error("{0}")]
     ConversionError(ConversionError),
+    #[error(
+        "Assertion failed because the following two quantities are not the same:\n  {0}\n  {1}"
+    )]
+    AssertEq2Failed(Quantity, Quantity),
+    #[error("Assertion failed because the following two quantities differ by more than {2}:\n  {0}\n  {1}")]
+    AssertEq3Failed(Quantity, Quantity, Quantity),
 }
 
 #[derive(Debug, PartialEq, Eq)]

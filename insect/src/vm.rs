@@ -450,8 +450,8 @@ impl Vm {
                                 std::ops::ControlFlow::Continue(()) => {
                                     return Ok(InterpreterResult::Continue);
                                 }
-                                std::ops::ControlFlow::Break(exit_status) => {
-                                    return Ok(InterpreterResult::Exit(exit_status))
+                                std::ops::ControlFlow::Break(runtime_error) => {
+                                    return Err(runtime_error);
                                 }
                             }
                         }

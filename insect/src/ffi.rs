@@ -2,10 +2,10 @@ use std::collections::HashMap;
 
 use once_cell::sync::OnceCell;
 
-use crate::interpreter::ExitStatus;
+use crate::interpreter::RuntimeError;
 use crate::{ast::ProcedureKind, number::Number, quantity::Quantity};
 
-type ControlFlow = std::ops::ControlFlow<ExitStatus>;
+type ControlFlow = std::ops::ControlFlow<RuntimeError>;
 
 pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
 
@@ -100,10 +100,10 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
         if args[0] == args[1] {
             ControlFlow::Continue(())
         } else {
-            eprintln!("Assertion failed: the following two quantities are not the same:");
-            eprintln!("  {}", args[0]);
-            eprintln!("  {}", args[1]);
-            ControlFlow::Break(ExitStatus::Error)
+            ControlFlow::Break(RuntimeError::AssertEq2Failed(
+                args[0].clone(),
+                args[1].clone(),
+            ))
         }
     } else {
         if (&args[0] - &args[1]).unwrap().unsafe_value().to_f64().abs()
@@ -111,13 +111,11 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
         {
             ControlFlow::Continue(())
         } else {
-            eprintln!(
-                "Assertion failed: the following two quantities differ by more than {}:",
-                args[2]
-            );
-            eprintln!("  {}", args[0]);
-            eprintln!("  {}", args[1]);
-            ControlFlow::Break(ExitStatus::Error)
+            ControlFlow::Break(RuntimeError::AssertEq3Failed(
+                args[0].clone(),
+                args[1].clone(),
+                args[1].clone(),
+            ))
         }
     }
 }

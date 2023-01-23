@@ -1,10 +1,15 @@
-use insect::{Insect, InsectError};
+use insect::{Insect, InsectError, InterpreterResult};
 
 use std::ffi::OsStr;
 use std::fs;
 
 fn assert_typechecks_and_runs(code: &str) {
-    assert!(Insect::new_without_prelude(false).interpret(code).is_ok())
+    let result = Insect::new_without_prelude(false).interpret(code);
+    assert!(result.is_ok());
+    assert!(matches!(
+        result.unwrap().1,
+        InterpreterResult::Quantity(_) | InterpreterResult::Continue
+    ));
 }
 
 fn assert_parse_error(code: &str) {
