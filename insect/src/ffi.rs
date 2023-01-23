@@ -7,6 +7,8 @@ use crate::{ast::ProcedureKind, number::Number, quantity::Quantity};
 
 type ControlFlow = std::ops::ControlFlow<ExitStatus>;
 
+pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
+
 #[derive(Clone)]
 pub(crate) enum Callable {
     Function(fn(&[Quantity]) -> Quantity),
@@ -16,7 +18,7 @@ pub(crate) enum Callable {
 #[derive(Clone)]
 pub(crate) struct ForeignFunction {
     pub(crate) name: String,
-    pub(crate) arity: usize,
+    pub(crate) arity: ArityRange,
     pub(crate) callable: Callable,
 }
 
@@ -31,7 +33,7 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
             ProcedureKind::Print,
             ForeignFunction {
                 name: "print".into(),
-                arity: 1,
+                arity: 1..=1,
                 callable: Callable::Procedure(print),
             },
         );
@@ -39,7 +41,7 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
             ProcedureKind::AssertEq,
             ForeignFunction {
                 name: "assert_eq".into(),
-                arity: 2,
+                arity: 2..=3,
                 callable: Callable::Procedure(assert_eq),
             },
         );
@@ -56,7 +58,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
             "abs",
             ForeignFunction {
                 name: "abs".into(),
-                arity: 1,
+                arity: 1..=1,
                 callable: Callable::Function(abs),
             },
         );
@@ -64,7 +66,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
             "sin",
             ForeignFunction {
                 name: "sin".into(),
-                arity: 1,
+                arity: 1..=1,
                 callable: Callable::Function(sin),
             },
         );
@@ -72,7 +74,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
             "atan2",
             ForeignFunction {
                 name: "atan2".into(),
-                arity: 2,
+                arity: 2..=2,
                 callable: Callable::Function(atan2),
             },
         );

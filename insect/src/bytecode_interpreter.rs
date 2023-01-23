@@ -52,7 +52,8 @@ impl BytecodeInterpreter {
                 }
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
-                    self.vm.add_op1(Op::FFICallFunction, idx);
+                    // TODO: check overflow:
+                    self.vm.add_op2(Op::FFICallFunction, idx, args.len() as u8);
                 } else {
                     let idx = self.vm.get_function_idx(name);
 
@@ -91,7 +92,8 @@ impl BytecodeInterpreter {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
 
-                self.vm.add_foreign_function(name, parameters.len());
+                self.vm
+                    .add_foreign_function(name, parameters.len()..=parameters.len());
             }
             Statement::DeclareDimension(_name) => {
                 // Declaring a dimension is like introducing a new type. The information
@@ -130,7 +132,7 @@ impl BytecodeInterpreter {
                 let name = &ffi::procedures().get(kind).unwrap().name;
 
                 let idx = self.vm.get_ffi_callable_idx(name).unwrap();
-                self.vm.add_op1(Op::FFICallProcedure, idx);
+                self.vm.add_op2(Op::FFICallProcedure, idx, args.len() as u8); // TODO: check overflow
             }
         }
 

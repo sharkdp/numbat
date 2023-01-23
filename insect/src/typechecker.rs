@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::arithmetic::{Exponent, Power, Rational};
 use crate::dimension::DimensionRegistry;
+use crate::ffi::ArityRange;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::typed_ast::{self, Type};
 use crate::{ast, ffi};
@@ -41,15 +42,13 @@ pub enum TypeCheckError {
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(String),
 
-    #[error("Function or procedure '{0}' called with {2} arguments(s), but needs {1}.")]
-    WrongArity(
-        /// Function/procedure name
-        String,
-        /// Expected number of arguments
-        usize,
-        /// Given number of arguments
-        usize,
-    ),
+    #[error("Function or procedure '{callable_name}' called with {num_args} arguments(s), but needs {}..{}", arity.start(), arity.end())]
+    // TODO: better formatting of the arity range (e.g. in case it includes just one number)
+    WrongArity {
+        callable_name: String,
+        arity: ArityRange,
+        num_args: usize,
+    },
 
     #[error("'{0}' can not be used as a type parameter because it is also an existing dimension identifier.")]
     TypeParameterNameClash(String),
@@ -195,11 +194,11 @@ impl TypeChecker {
                     .ok_or_else(|| TypeCheckError::UnknownFunction(function_name.clone()))?;
 
                 if parameter_types.len() != args.len() {
-                    return Err(TypeCheckError::WrongArity(
-                        function_name.clone(),
-                        parameter_types.len(),
-                        args.len(),
-                    ));
+                    return Err(TypeCheckError::WrongArity {
+                        callable_name: function_name.clone(),
+                        arity: parameter_types.len()..=parameter_types.len(),
+                        num_args: args.len(),
+                    });
                 }
 
                 let arguments_checked = args
@@ -481,12 +480,12 @@ impl TypeChecker {
             }
             ast::Statement::ProcedureCall(kind, args) => {
                 let procedure = ffi::procedures().get(&kind).unwrap();
-                if procedure.arity != args.len() {
-                    return Err(TypeCheckError::WrongArity(
-                        procedure.name.clone(),
-                        procedure.arity,
-                        args.len(),
-                    ));
+                if !procedure.arity.contains(&args.len()) {
+                    return Err(TypeCheckError::WrongArity {
+                        callable_name: procedure.name.clone(),
+                        arity: procedure.arity.clone(),
+                        num_args: args.len(),
+                    });
                 }
 
                 let checked_args = args
@@ -791,7 +790,7 @@ mod tests {
                 fn f() = 1
                 f(1)
             "),
-            TypeCheckError::WrongArity(name, 0, 1) if name == "f"
+            TypeCheckError::WrongArity{callable_name, arity, num_args: 1} if arity == (0..=0) && callable_name == "f"
         ));
 
         assert!(matches!(
@@ -799,7 +798,7 @@ mod tests {
                 fn f(x: Scalar) = x
                 f()
             "),
-            TypeCheckError::WrongArity(name, 1, 0) if name == "f"
+            TypeCheckError::WrongArity{callable_name, arity, num_args: 0} if arity == (1..=1) && callable_name == "f"
         ));
 
         assert!(matches!(
@@ -807,7 +806,7 @@ mod tests {
                 fn f(x: Scalar) = x
                 f(2, 3)
             "),
-            TypeCheckError::WrongArity(name, 1, 2) if name == "f"
+            TypeCheckError::WrongArity{callable_name, arity, num_args: 2} if arity == (1..=1) && callable_name == "f"
         ));
     }
 
@@ -820,10 +819,16 @@ mod tests {
     }
 
     #[test]
-    fn wrong_arity_in_procedure_call() {
+    fn arity_checks_in_procedure_calls() {
         assert!(matches!(
             get_typecheck_error("assert_eq(1)"),
-            TypeCheckError::WrongArity(name, 2, 1) if name == "assert_eq"
+            TypeCheckError::WrongArity{callable_name, arity, num_args: 1} if arity == (2..=3) && callable_name == "assert_eq"
+        ));
+        assert_successful_typecheck("assert_eq(1,2)");
+        assert_successful_typecheck("assert_eq(1,2,3)");
+        assert!(matches!(
+            get_typecheck_error("assert_eq(1,2,3,4)"),
+            TypeCheckError::WrongArity{callable_name, arity, num_args: 4} if arity == (2..=3) && callable_name == "assert_eq"
         ));
     }
 }

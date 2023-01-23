@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use crate::{
-    ffi::{self, Callable, ForeignFunction},
+    ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, Result, RuntimeError},
     quantity::Quantity,
     unit::Unit,
@@ -52,13 +52,8 @@ pub enum Op {
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::Call => 2,
-            Op::LoadConstant
-            | Op::SetVariable
-            | Op::GetVariable
-            | Op::GetLocal
-            | Op::FFICallFunction
-            | Op::FFICallProcedure => 1,
+            Op::Call | Op::FFICallFunction | Op::FFICallProcedure => 2,
+            Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::GetLocal => 1,
             Op::Negate
             | Op::Add
             | Op::Subtract
@@ -239,7 +234,7 @@ impl Vm {
         position as u8
     }
 
-    pub(crate) fn add_foreign_function(&mut self, name: &str, arity: usize) {
+    pub(crate) fn add_foreign_function(&mut self, name: &str, arity: ArityRange) {
         let ff = ffi::functions().get(name).unwrap().clone();
         assert!(ff.arity == arity);
         self.ffi_callables.push(ff);
@@ -432,10 +427,13 @@ impl Vm {
                 }
                 Op::FFICallFunction | Op::FFICallProcedure => {
                     let function_idx = self.read_byte() as usize;
+                    let num_args = self.read_byte() as usize;
                     let foreign_function = &self.ffi_callables[function_idx];
 
+                    assert!(foreign_function.arity.contains(&num_args));
+
                     let mut args = vec![];
-                    for _ in 0..foreign_function.arity {
+                    for _ in 0..num_args {
                         args.push(self.pop());
                     }
                     args.reverse(); // TODO: use a deque?
