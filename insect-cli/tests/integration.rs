@@ -56,7 +56,7 @@ fn print_calls() {
         .arg("../examples/print.ins")
         .assert()
         .success()
-        .stdout(predicates::str::contains("1.000000 \n2.000000 meter^1"));
+        .stdout(predicates::str::contains("1.000000 \n2.000000 meter"));
 }
 
 #[test]

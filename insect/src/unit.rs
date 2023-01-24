@@ -1,5 +1,6 @@
 use std::fmt::{Display, Write};
 
+use num_rational::Ratio;
 use num_traits::Zero;
 
 use crate::{
@@ -93,13 +94,33 @@ impl Display for Unit {
         for &UnitFactor(ref base_unit, exp) in self.iter() {
             result.push_str(&base_unit.name);
 
-            // match exp {
-            //     1 => {}
-            //     2 => result.push('²'),
-            //     3 => result.push('³'),
-            //     e => write!(result, "^{}", e).unwrap(),
-            // }
-            write!(result, "^{}", exp).unwrap();
+            if exp == Ratio::from_integer(5) {
+                result.push('⁵');
+            } else if exp == Ratio::from_integer(4) {
+                result.push('⁴');
+            } else if exp == Ratio::from_integer(3) {
+                result.push('³');
+            } else if exp == Ratio::from_integer(2) {
+                result.push('²');
+            } else if exp == Ratio::from_integer(1) {
+            } else if exp == Ratio::from_integer(-1) {
+                result.push('⁻');
+                result.push('¹');
+            } else if exp == Ratio::from_integer(-2) {
+                result.push('⁻');
+                result.push('²');
+            } else if exp == Ratio::from_integer(-3) {
+                result.push('⁻');
+                result.push('³');
+            } else if exp == Ratio::from_integer(-4) {
+                result.push('⁻');
+                result.push('⁴');
+            } else if exp == Ratio::from_integer(-5) {
+                result.push('⁻');
+                result.push('⁵');
+            } else {
+                write!(result, "^{}", exp).unwrap();
+            };
             result.push('·');
         }
 
