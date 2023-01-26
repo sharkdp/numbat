@@ -113,7 +113,7 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
         ControlFlow::Break(RuntimeError::AssertEq3Failed(
             args[0].clone(),
             args[1].clone(),
-            args[1].clone(),
+            args[2].clone(),
         ))
     }
 }
