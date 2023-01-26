@@ -40,14 +40,25 @@ impl Quantity {
         self.value.to_f64() == 0.0
     }
 
-    pub fn convert_to(&self, unit: &Unit) -> Result<Quantity> {
-        if &self.unit == unit || self.is_zero() {
-            Ok(Quantity::new(self.value, unit.clone()))
+    pub fn convert_to(&self, target_unit: &Unit) -> Result<Quantity> {
+        if &self.unit == target_unit || self.is_zero() {
+            Ok(Quantity::new(self.value, target_unit.clone()))
         } else {
-            Err(ConversionError::IncompatibleUnits(
-                self.unit.clone(),
-                unit.clone(),
-            ))
+            let (target_unit_standard, factor) = target_unit.to_standard_representation();
+            let quantity_standard = self.to_standard();
+            let unit_standard = quantity_standard.unit();
+
+            if unit_standard == &target_unit_standard {
+                Ok(Quantity::new(
+                    *quantity_standard.unsafe_value() / factor,
+                    target_unit.clone(),
+                ))
+            } else {
+                Err(ConversionError::IncompatibleUnits(
+                    self.unit.clone(),
+                    target_unit.clone(),
+                ))
+            }
         }
     }
 
@@ -66,6 +77,11 @@ impl Quantity {
             self.unit
                 .power(Rational::from_f64(exponent_as_scalar).unwrap()), // TODO: error handling; can this really handle rational exponents?
         ))
+    }
+
+    fn to_standard(&self) -> Quantity {
+        let (unit, factor) = self.unit.to_standard_representation();
+        Quantity::new(self.value * factor, unit)
     }
 }
 
@@ -142,10 +158,36 @@ impl std::fmt::Display for Quantity {
 }
 
 #[test]
-fn test_convert() {
-    let q = Quantity::new(Number::from_f64(2.0), Unit::new_standard("meter"));
-    assert!(q.convert_to(&Unit::new_standard("meter")).is_ok());
+fn test_conversion_trivial() {
+    let meter = Unit::new_standard("meter");
+    let second = Unit::new_standard("second");
 
-    assert!(q.convert_to(&Unit::new_standard("second")).is_err());
-    assert!(q.convert_to(&Unit::scalar()).is_err());
+    let length = Quantity::new(Number::from_f64(2.0), meter.clone());
+
+    assert!(length.convert_to(&meter).is_ok());
+
+    assert!(length.convert_to(&second).is_err());
+    assert!(length.convert_to(&Unit::scalar()).is_err());
+}
+
+#[test]
+fn test_conversion_basic() {
+    use approx::assert_relative_eq;
+
+    let meter = Unit::new_standard("meter");
+    let foot = Unit::new_non_standard("foot", Number::from_f64(0.3048), meter.clone());
+
+    let length = Quantity::new(Number::from_f64(2.0), meter.clone());
+
+    let length_in_foot = length.convert_to(&foot).expect("conversion succeeds");
+    assert_eq!(length_in_foot.unsafe_value().to_f64(), 2.0 / 0.3048);
+
+    let length_converted_back_to_meter = length_in_foot
+        .convert_to(&meter)
+        .expect("conversion succeeds");
+    assert_relative_eq!(
+        length_converted_back_to_meter.unsafe_value().to_f64(),
+        2.0,
+        epsilon = 1e-6
+    );
 }

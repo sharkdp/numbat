@@ -1,7 +1,7 @@
 use std::fmt::{Display, Write};
 
 use num_rational::Ratio;
-use num_traits::Zero;
+use num_traits::{ToPrimitive, Zero};
 
 use crate::{
     arithmetic::{Exponent, Power, Rational},
@@ -21,6 +21,22 @@ pub enum UnitType {
 pub struct BaseUnit {
     name: String,
     unit_type: UnitType,
+}
+
+impl BaseUnit {
+    fn to_standard(&self) -> Unit {
+        match &self.unit_type {
+            UnitType::Standard => Unit::new_standard(&self.name),
+            UnitType::NonStandard(_, unit) => unit.clone(),
+        }
+    }
+
+    fn conversion_factor(&self) -> Number {
+        match &self.unit_type {
+            UnitType::Standard => Number::from_f64(1.0),
+            UnitType::NonStandard(factor, _) => factor.clone(),
+        }
+    }
 }
 
 impl PartialOrd for BaseUnit {
@@ -85,6 +101,24 @@ impl Unit {
             },
             Rational::from_integer(1),
         ))
+    }
+
+    pub fn to_standard_representation(&self) -> (Self, ConversionFactor) {
+        let standardized_unit = self
+            .iter()
+            .map(|UnitFactor(base_unit, exponent)| base_unit.to_standard().power(*exponent))
+            .product();
+
+        let factor = self
+            .iter()
+            .map(|UnitFactor(base_unit, exponent)| {
+                base_unit
+                    .conversion_factor()
+                    .pow(&Number::from_f64(exponent.to_f64().unwrap()))
+            }) // TODO: reduce wrapping/unwrapping; do we want to use exponent.to_f64?
+            .product();
+
+        (standardized_unit, factor)
     }
 }
 
