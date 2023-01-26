@@ -128,6 +128,28 @@ impl<Factor, const CANONICALIZE: bool> IntoIterator for Product<Factor, CANONICA
     }
 }
 
+impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> std::iter::Product<Factor>
+    for Product<Factor, CANONICALIZE>
+{
+    fn product<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Factor>,
+    {
+        Self::from_factors(iter)
+    }
+}
+
+impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> std::iter::Product
+    for Product<Factor, CANONICALIZE>
+{
+    fn product<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Self>,
+    {
+        iter.fold(Product::unity(), |acc, prod| acc.multiply(prod))
+    }
+}
+
 pub struct ProductIter<'a, Factor> {
     inner: std::slice::Iter<'a, Factor>,
 }
