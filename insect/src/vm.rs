@@ -12,6 +12,14 @@ use crate::{
 pub enum Op {
     /// Push the value of the specified constant onto the stack
     LoadConstant,
+    /// This is a special operation for declaring derived units.
+    /// It takes two operands: a global identifier index and a
+    /// constant index.
+    /// It pops the current quantity from the stack and creates
+    /// a new derived unit whose name is specified by the global
+    /// identifier index. It then proceeds to assign a value of
+    /// `1 <new_unit>` to the constant with the given index.
+    SetUnitConstant,
 
     /// Set the specified variable to the value on top of the stack
     SetVariable,
@@ -52,7 +60,7 @@ pub enum Op {
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::Call | Op::FFICallFunction | Op::FFICallProcedure => 2,
+            Op::SetUnitConstant | Op::Call | Op::FFICallFunction | Op::FFICallProcedure => 2,
             Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::GetLocal => 1,
             Op::Negate
             | Op::Add
@@ -68,6 +76,7 @@ impl Op {
     fn to_string(self) -> &'static str {
         match self {
             Op::LoadConstant => "LoadConstant",
+            Op::SetUnitConstant => "SetUnitConstant",
             Op::SetVariable => "SetVariable",
             Op::GetVariable => "GetVariable",
             Op::GetLocal => "GetLocal",
@@ -359,6 +368,24 @@ impl Vm {
                     let constant_idx = self.read_byte();
                     self.stack
                         .push(self.constants[constant_idx as usize].to_quantity());
+                }
+                Op::SetUnitConstant => {
+                    let identifier_idx = self.read_byte();
+                    let constant_idx = self.read_byte();
+
+                    let conversion_value = self.pop();
+
+                    let unit_name = &self.global_identifiers[identifier_idx as usize];
+                    let base_unit = conversion_value.unit();
+
+                    let (base_unit_standard_representation, factor) =
+                        base_unit.to_standard_representation();
+
+                    self.constants[constant_idx as usize] = Constant::Unit(Unit::new_non_standard(
+                        unit_name,
+                        conversion_value.unsafe_value().clone() * factor,
+                        base_unit_standard_representation,
+                    ));
                 }
                 Op::SetVariable => {
                     let identifier_idx = self.read_byte();

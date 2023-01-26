@@ -7,7 +7,7 @@ use crate::vm::{Constant, Op, Vm};
 
 pub struct BytecodeInterpreter {
     vm: Vm,
-    unit_registry: UnitRegistry,
+    unit_registry: UnitRegistry, // TODO: do we even need the unit registry here?
     /// List of local variables currently in scope
     local_variables: Vec<String>,
 }
@@ -111,16 +111,21 @@ impl BytecodeInterpreter {
                 let identifier_idx = self.vm.add_global_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareDerivedUnit(name, expr) => {
+            Statement::DeclareDerivedUnit(unit_name, expr) => {
                 self.unit_registry
-                    .add_derived_unit(name, expr)
+                    .add_derived_unit(unit_name, expr)
                     .map_err(RuntimeError::UnitRegistryError)?;
 
                 let constant_idx = self
                     .vm
-                    .add_constant(Constant::Unit(Unit::new_standard(name)));
+                    .add_constant(Constant::Unit(Unit::new_standard("<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
+                let identifier_idx = self.vm.add_global_identifier(unit_name);
+
+                self.compile_expression(expr)?;
+                self.vm
+                    .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
+
                 self.vm.add_op1(Op::LoadConstant, constant_idx);
-                let identifier_idx = self.vm.add_global_identifier(name);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
             Statement::ProcedureCall(kind, args) => {
