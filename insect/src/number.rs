@@ -1,3 +1,5 @@
+use num_traits::Pow;
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)] // TODO: we probably want to remove 'Copy' once we move to a more sophisticated numerical type
 pub struct Number(pub f64);
 
@@ -11,6 +13,10 @@ impl Number {
     pub fn to_f64(self) -> f64 {
         let Number(n) = self;
         n
+    }
+
+    pub fn pow(self, other: &Number) -> Self {
+        Number::from_f64(self.to_f64().pow(other.to_f64()))
     }
 }
 
@@ -51,5 +57,11 @@ impl std::ops::Neg for Number {
 
     fn neg(self) -> Self::Output {
         Number(-self.0)
+    }
+}
+
+impl std::iter::Product for Number {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Number::from_f64(1.0), |acc, n| acc * n)
     }
 }
