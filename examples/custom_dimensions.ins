@@ -5,4 +5,5 @@ dimension Person
 unit person: Person
 
 let lunch_cost = 85 euro
-lunch_cost / (4 person) -> euro / person
+
+assert_eq(lunch_cost / (4 person), 21.25 euro / person, 0.01 euro / person)

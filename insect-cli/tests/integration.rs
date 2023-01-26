@@ -37,11 +37,7 @@ fn pass_expression_on_command_line() {
 
 #[test]
 fn read_code_from_file() {
-    insect()
-        .arg("../examples/pendulum.ins")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("1.098956 second"));
+    insect().arg("../examples/pendulum.ins").assert().success();
 
     insect()
         .arg("../examples/parse_error/trailing_characters.ins")

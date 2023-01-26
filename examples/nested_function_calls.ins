@@ -2,4 +2,4 @@ fn f3(x: Scalar) = 2 x
 fn f2(y1: Scalar, y2: Scalar) = 3 × f3(y1 + y2)
 fn f1(z: Scalar) = f2(z, 4) + 5
 
-f1(1)
+assert_eq(f1(1), 35)

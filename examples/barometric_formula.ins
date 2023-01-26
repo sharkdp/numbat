@@ -5,4 +5,4 @@ let temperature_gradient = 0.65 kelvin / (100 meter)
 
 fn pressure(height: Length) -> Pressure = p0 · (1 - temperature_gradient · height / t0)^5.255
 
-pressure(1500 meter)
+assert_eq(pressure(1500 meter), 84558.6 pascal, 0.1 pascal) 
