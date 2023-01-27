@@ -95,9 +95,8 @@ impl std::ops::Add for &Quantity {
     type Output = Result<Quantity>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        rhs.convert_to(&self.unit)?;
         Ok(Quantity {
-            value: self.value + rhs.value,
+            value: self.value + rhs.convert_to(&self.unit)?.value,
             unit: self.unit.clone(),
         })
     }
@@ -107,9 +106,8 @@ impl std::ops::Sub for &Quantity {
     type Output = Result<Quantity>;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        rhs.convert_to(&self.unit)?;
         Ok(Quantity {
-            value: self.value - rhs.value,
+            value: self.value - rhs.convert_to(&self.unit)?.value,
             unit: self.unit.clone(),
         })
     }
