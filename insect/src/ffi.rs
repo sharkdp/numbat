@@ -110,6 +110,10 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
 
         match result {
             Ok(diff) => {
+                if let Err(e) = args[2].convert_to(diff.unit()) {
+                    return ControlFlow::Break(RuntimeError::ConversionError(e));
+                }
+
                 if diff.unsafe_value().to_f64().abs() < args[2].unsafe_value().to_f64() {
                     ControlFlow::Continue(())
                 } else {
