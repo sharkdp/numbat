@@ -128,3 +128,8 @@ fn exp(x: Scalar) -> Scalar = e^x
 fn abs<T>(x: T) -> T
 fn sin(x: Scalar) -> Scalar
 fn atan2<T>(y: T, x: T) -> Scalar
+
+### Physics functions
+
+fn fromCelsius(t_celsius: Scalar) -> Temperature = (t_celsius + 273.15) kelvin
+fn toCelsius(t_kelvin: Temperature) -> Scalar = t_kelvin / kelvin - 273.15
