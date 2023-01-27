@@ -69,6 +69,12 @@ unit day: Time = 24 hour
 unit year: Time = 365.2425 day
 unit month: Time = year / 12
 
+### Other units
+
+dimension Bit
+unit bit: Bit
+unit byte: Bit = 8 bit
+
 ### Short versions of units (TODO)
 
 let m = meter
@@ -93,8 +99,12 @@ let min = minute
 
 ### Prefixes light (TODO)
 
-let milli = 0.001
-let kilo = 1000
+let nano = 10^(-9)
+let micro = 10^(-6)
+let milli = 10^(-3)
+let kilo = 10^3
+let mega = 10^6
+let giga = 10^9
 
 ### Imperial units
 
