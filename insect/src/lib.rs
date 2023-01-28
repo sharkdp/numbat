@@ -17,6 +17,8 @@ mod typed_ast;
 mod unit;
 mod unit_registry;
 mod vm;
+mod prefix;
+mod prefix_parser;
 
 use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, RuntimeError};
