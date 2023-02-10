@@ -330,6 +330,15 @@ impl TypeChecker {
                 self.identifiers.insert(name.clone(), type_deduced.clone());
                 typed_ast::Statement::DeclareVariable(name, expr, type_deduced)
             }
+            ast::Statement::DeclareBaseUnit(name, dexpr) => {
+                let type_specified = self
+                    .registry
+                    .get_base_representation(&dexpr)
+                    .map_err(TypeCheckError::RegistryError)?;
+                self.identifiers
+                    .insert(name.clone(), type_specified.clone());
+                typed_ast::Statement::DeclareBaseUnit(name, type_specified)
+            }
             ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr) => {
                 // TODO: this is the *exact same code* that we have above for
                 // variable declarations => deduplicate this somehow
@@ -467,15 +476,6 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                 }
                 typed_ast::Statement::DeclareDimension(name)
-            }
-            ast::Statement::DeclareBaseUnit(name, dexpr) => {
-                let type_specified = self
-                    .registry
-                    .get_base_representation(&dexpr)
-                    .map_err(TypeCheckError::RegistryError)?;
-                self.identifiers
-                    .insert(name.clone(), type_specified.clone());
-                typed_ast::Statement::DeclareBaseUnit(name, type_specified)
             }
             ast::Statement::ProcedureCall(kind, args) => {
                 let procedure = ffi::procedures().get(&kind).unwrap();
