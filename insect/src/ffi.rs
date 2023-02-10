@@ -139,7 +139,7 @@ fn abs(args: &[Quantity]) -> Quantity {
 fn sin(args: &[Quantity]) -> Quantity {
     assert!(args.len() == 1);
 
-    let input = args[0].as_scalar().unwrap().to_f64();
+    let input = args[0].unsafe_value().to_f64();
     Quantity::from_scalar(input.sin())
 }
 
