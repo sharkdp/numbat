@@ -115,14 +115,14 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
 
 #[derive(Clone, Default)]
 pub struct TypeChecker {
-    types_for_identifier: HashMap<String, Type>,
+    identifiers: HashMap<String, Type>,
     function_signatures: HashMap<String, (Vec<String>, Vec<Type>, Type)>,
     registry: DimensionRegistry,
 }
 
 impl TypeChecker {
     fn type_for_identifier(&self, name: &str) -> Result<&Type> {
-        self.types_for_identifier
+        self.identifiers
             .get(name)
             .ok_or_else(|| TypeCheckError::UnknownIdentifier(name.into()))
     }
@@ -327,8 +327,7 @@ impl TypeChecker {
                         ));
                     }
                 }
-                self.types_for_identifier
-                    .insert(name.clone(), type_deduced.clone());
+                self.identifiers.insert(name.clone(), type_deduced.clone());
                 typed_ast::Statement::DeclareVariable(name, expr, type_deduced)
             }
             ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr) => {
@@ -352,7 +351,7 @@ impl TypeChecker {
                         ));
                     }
                 }
-                self.types_for_identifier.insert(name.clone(), type_deduced);
+                self.identifiers.insert(name.clone(), type_deduced);
                 typed_ast::Statement::DeclareDerivedUnit(name, expr)
             }
             ast::Statement::DeclareFunction(
@@ -385,7 +384,7 @@ impl TypeChecker {
                         // TODO: once we add type inference, make sure that annotations are required for foreign functions
                         .map_err(TypeCheckError::RegistryError)?;
                     typechecker_fn
-                        .types_for_identifier
+                        .identifiers
                         .insert(parameter.clone(), parameter_type.clone());
                     typed_parameters.push((parameter.clone(), parameter_type));
                 }
@@ -474,7 +473,7 @@ impl TypeChecker {
                     .registry
                     .get_base_representation(&dexpr)
                     .map_err(TypeCheckError::RegistryError)?;
-                self.types_for_identifier
+                self.identifiers
                     .insert(name.clone(), type_specified.clone());
                 typed_ast::Statement::DeclareBaseUnit(name, type_specified)
             }
