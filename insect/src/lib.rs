@@ -6,6 +6,7 @@ mod ffi;
 mod interpreter;
 mod number;
 mod parser;
+mod prefixes;
 pub mod pretty_print;
 mod product;
 mod quantity;

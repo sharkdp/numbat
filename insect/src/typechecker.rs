@@ -5,7 +5,7 @@ use crate::dimension::DimensionRegistry;
 use crate::ffi::ArityRange;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::typed_ast::{self, Type};
-use crate::{ast, ffi};
+use crate::{ast, ffi, prefixes};
 
 use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
@@ -125,6 +125,22 @@ impl TypeChecker {
         self.identifiers
             .get(name)
             .ok_or_else(|| TypeCheckError::UnknownIdentifier(name.into()))
+    }
+
+    fn add_identifiers_for_unit(&mut self, name: &str, type_: &Type) -> Result<()> {
+        self.identifiers.insert(name.into(), type_.clone());
+        for (prefix_long, _, _) in prefixes::prefixes() {
+            self.identifiers.insert(
+                format!(
+                    "{prefix_long}{name}",
+                    prefix_long = prefix_long,
+                    name = name
+                ),
+                type_.clone(),
+            );
+        }
+
+        Ok(())
     }
 
     pub(crate) fn check_expression(&self, ast: ast::Expression) -> Result<typed_ast::Expression> {
@@ -335,8 +351,7 @@ impl TypeChecker {
                     .registry
                     .get_base_representation(&dexpr)
                     .map_err(TypeCheckError::RegistryError)?;
-                self.identifiers
-                    .insert(name.clone(), type_specified.clone());
+                self.add_identifiers_for_unit(&name, &type_specified)?;
                 typed_ast::Statement::DeclareBaseUnit(name, type_specified)
             }
             ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr) => {
@@ -360,7 +375,7 @@ impl TypeChecker {
                         ));
                     }
                 }
-                self.identifiers.insert(name.clone(), type_deduced);
+                self.add_identifiers_for_unit(&name, &type_deduced)?;
                 typed_ast::Statement::DeclareDerivedUnit(name, expr)
             }
             ast::Statement::DeclareFunction(
