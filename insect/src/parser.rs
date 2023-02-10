@@ -315,15 +315,12 @@ impl<'a> Parser<'a> {
                     None
                 };
 
+                let unit_name = identifier.lexeme.clone();
                 if self.match_exact(TokenKind::Equal).is_some() {
                     let expr = self.expression()?;
-                    Ok(Statement::DeclareDerivedUnit(
-                        identifier.lexeme.clone(),
-                        expr,
-                        dexpr,
-                    ))
+                    Ok(Statement::DeclareDerivedUnit(unit_name, expr, dexpr))
                 } else if let Some(dexpr) = dexpr {
-                    Ok(Statement::DeclareBaseUnit(identifier.lexeme.clone(), dexpr))
+                    Ok(Statement::DeclareBaseUnit(unit_name, dexpr))
                 } else {
                     Err(ParseError {
                         kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
