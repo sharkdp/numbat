@@ -6,6 +6,9 @@ mod ffi;
 mod interpreter;
 mod number;
 mod parser;
+mod prefix;
+mod prefix_parser;
+mod prefix_transformer;
 pub mod pretty_print;
 mod product;
 mod quantity;
@@ -17,12 +20,11 @@ mod typed_ast;
 mod unit;
 mod unit_registry;
 mod vm;
-mod prefix;
-mod prefix_parser;
 
 use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, RuntimeError};
 use parser::parse;
+use prefix_transformer::Transformer;
 use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
@@ -44,6 +46,7 @@ pub enum InsectError {
 pub type Result<T> = std::result::Result<T, InsectError>;
 
 pub struct Insect {
+    prefix_transformer: Transformer,
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
 }
@@ -51,6 +54,7 @@ pub struct Insect {
 impl Insect {
     pub fn new_without_prelude(debug: bool) -> Self {
         Insect {
+            prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(debug),
         }
@@ -68,15 +72,16 @@ impl Insect {
 
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
         let statements = parse(code).map_err(InsectError::ParseError)?;
+        let transformed_statements = self.prefix_transformer.transform(&statements[..]);
         let typed_statements = self
             .typechecker
-            .check_statements(statements.clone()) // TODO: get rid of clone?
+            .check_statements(transformed_statements.clone()) // TODO: get rid of clone?
             .map_err(InsectError::TypeCheckError)?;
         let result = self
             .interpreter
             .interpret_statements(&typed_statements)
             .map_err(InsectError::RuntimeError)?;
 
-        Ok((statements, result))
+        Ok((transformed_statements, result))
     }
 }

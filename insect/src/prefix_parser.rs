@@ -4,23 +4,24 @@ use crate::prefix::Prefix;
 
 static PREFIXES: OnceCell<Vec<(&'static str, &'static str, Prefix)>> = OnceCell::new();
 
-struct PrefixParser {
+#[derive(Debug)]
+pub struct PrefixParser {
     prefixable_units: Vec<(String, String)>,
 }
 
 impl PrefixParser {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             prefixable_units: vec![],
         }
     }
 
-    fn add_prefixable_unit(&mut self, unit_long: &str, unit_short: &str) {
+    pub fn add_prefixable_unit(&mut self, unit_long: &str, unit_short: &str) {
         self.prefixable_units
-            .push((unit_long.into(), unit_short.into()))
+            .push((unit_long.into(), unit_short.into())) // TODO: check for duplicates here?
     }
 
-    fn parse(&self, input: &str) -> (Option<Prefix>, String) {
+    pub fn parse(&self, input: &str) -> (Option<Prefix>, String) {
         let prefixes = PREFIXES.get_or_init(|| {
             vec![
                 ("nano", "n", Prefix::Decimal(-9)),
