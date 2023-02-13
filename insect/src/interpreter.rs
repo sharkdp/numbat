@@ -72,7 +72,10 @@ pub trait Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bytecode_interpreter::BytecodeInterpreter, registry::RegistryError};
+    use crate::{
+        bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer,
+        registry::RegistryError,
+    };
 
     use super::*;
 
@@ -99,8 +102,9 @@ mod tests {
         let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
         let statements = crate::parser::parse(&full_code)
             .expect("No parse errors for inputs in this test suite");
+        let statements_transformed = Transformer::new().transform(statements);
         let statements_typechecked = crate::typechecker::TypeChecker::default()
-            .check_statements(statements)
+            .check_statements(statements_transformed)
             .expect("No type check errors for inputs in this test suite");
         BytecodeInterpreter::new(false).interpret_statements(&statements_typechecked)
     }

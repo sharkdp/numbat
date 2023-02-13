@@ -1,15 +1,13 @@
 use crate::{
     ast::{Expression, Statement},
-    number::Number,
-    prefix::Prefix,
-    prefix_parser::PrefixParser,
-    typed_ast::BinaryOperator,
+    prefix_parser::{PrefixParser, PrefixParserResult},
 };
 
 pub struct Transformer {
     prefix_parser: PrefixParser,
 }
 
+// TODO: generalize this to a general-purpose transformer (not just for prefixes, could also be used for optimization)
 impl Transformer {
     pub fn new() -> Self {
         Self {
@@ -17,38 +15,74 @@ impl Transformer {
         }
     }
 
-    fn transform_statement(&mut self, statement: &Statement) -> Statement {
-        match statement {
-            statement @ Statement::Expression(Expression::Identifier(identifier)) => {
-                if let (Some(Prefix::Decimal(decimal_prefix)), unit_name) =
+    fn transform_expression(&self, expression: Expression) -> Expression {
+        match expression {
+            expr @ Expression::Scalar(_) => expr,
+            Expression::Identifier(identifier) => {
+                if let PrefixParserResult::UnitIdentifier(prefix, unit_name) =
                     self.prefix_parser.parse(&identifier)
                 {
-                    Statement::Expression(Expression::BinaryOperator(
-                        BinaryOperator::Mul,
-                        Box::new(Expression::Scalar(Number::from_f64(
-                            10.0f64.powi(decimal_prefix),
-                        ))),
-                        Box::new(Expression::Identifier(unit_name)),
-                    ))
+                    Expression::UnitIdentifier(prefix, unit_name)
                 } else {
-                    statement.clone()
+                    Expression::Identifier(identifier)
                 }
             }
-            statement @ Statement::DeclareBaseUnit(name, _) => {
-                self.prefix_parser.add_prefixable_unit(name, "TODO");
-                statement.clone()
+            Expression::UnitIdentifier(_, _) => {
+                unreachable!("Prefixed identifiers should not exist prior to this stage")
             }
-            statement @ Statement::DeclareDerivedUnit(name, _, _) => {
-                self.prefix_parser.add_prefixable_unit(name, "TODO");
-                statement.clone()
+            Expression::Negate(expr) => {
+                Expression::Negate(Box::new(self.transform_expression(*expr)))
             }
-            statement => statement.clone(),
+            Expression::BinaryOperator(op, expr_lhs, expr_rhs) => Expression::BinaryOperator(
+                op,
+                Box::new(self.transform_expression(*expr_lhs)),
+                Box::new(self.transform_expression(*expr_rhs)),
+            ),
+            Expression::FunctionCall(name, args) => Expression::FunctionCall(
+                name,
+                args.into_iter()
+                    .map(|arg| self.transform_expression(arg))
+                    .collect(),
+            ),
         }
     }
 
-    pub fn transform(&mut self, statements: &[Statement]) -> Vec<Statement> {
+    fn transform_statement(&mut self, statement: Statement) -> Statement {
+        match statement {
+            Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
+            Statement::DeclareBaseUnit(name, dexpr) => {
+                self.prefix_parser.add_prefixable_unit(&name, "TODO");
+                Statement::DeclareBaseUnit(name, dexpr)
+            }
+            Statement::DeclareDerivedUnit(name, expr, dexpr) => {
+                self.prefix_parser.add_prefixable_unit(&name, "TODO");
+                Statement::DeclareDerivedUnit(name, self.transform_expression(expr), dexpr)
+            }
+            Statement::DeclareVariable(name, expr, dexpr) => {
+                Statement::DeclareVariable(name, self.transform_expression(expr), dexpr)
+            }
+            Statement::DeclareFunction(name, type_params, args, body, return_type) => {
+                Statement::DeclareFunction(
+                    name,
+                    type_params,
+                    args,
+                    body.map(|expr| self.transform_expression(expr)),
+                    return_type,
+                )
+            }
+            statement @ Statement::DeclareDimension(_, _) => statement,
+            Statement::ProcedureCall(procedure, args) => Statement::ProcedureCall(
+                procedure,
+                args.into_iter()
+                    .map(|arg| self.transform_expression(arg))
+                    .collect(),
+            ),
+        }
+    }
+
+    pub fn transform(&mut self, statements: impl IntoIterator<Item = Statement>) -> Vec<Statement> {
         statements
-            .iter()
+            .into_iter()
             .map(|statement| self.transform_statement(statement))
             .collect()
     }

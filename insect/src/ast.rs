@@ -1,4 +1,4 @@
-use crate::{arithmetic::Exponent, number::Number, pretty_print::PrettyPrint};
+use crate::{arithmetic::Exponent, number::Number, prefix::Prefix, pretty_print::PrettyPrint};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
@@ -29,6 +29,7 @@ impl PrettyPrint for BinaryOperator {
 pub enum Expression {
     Scalar(Number),
     Identifier(String),
+    UnitIdentifier(Prefix, String),
     Negate(Box<Expression>),
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
     FunctionCall(String, Vec<Expression>),
@@ -77,6 +78,7 @@ impl PrettyPrint for Expression {
         match self {
             Scalar(Number(n)) => format!("{n}"),
             Identifier(name) => name.clone(),
+            UnitIdentifier(prefix, name) => format!("{}{}", prefix, name),
             Negate(rhs) => format!("-{rhs}", rhs = rhs.pretty_print()),
             BinaryOperator(op, lhs, rhs) => format!(
                 "({lhs} {op} {rhs})",

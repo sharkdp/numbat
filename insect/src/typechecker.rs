@@ -107,6 +107,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         typed_ast::Expression::Identifier(_, _) => {
             Err(TypeCheckError::UnsupportedConstEvalExpression("identifier"))
         }
+        typed_ast::Expression::UnitIdentifier(_, _, _) => {
+            Err(TypeCheckError::UnsupportedConstEvalExpression("identifier"))
+        }
         typed_ast::Expression::FunctionCall(_, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression("function call"),
         ),
@@ -134,6 +137,11 @@ impl TypeChecker {
                 let type_ = self.type_for_identifier(&name)?.clone();
 
                 typed_ast::Expression::Identifier(name, type_)
+            }
+            ast::Expression::UnitIdentifier(prefix, name) => {
+                let type_ = self.type_for_identifier(&name)?.clone();
+
+                typed_ast::Expression::UnitIdentifier(prefix, name, type_)
             }
             ast::Expression::Negate(expr) => {
                 let checked_expr = self.check_expression(*expr)?;

@@ -13,6 +13,30 @@ impl Prefix {
             Prefix::Decimal(exp) => Number::from_f64(10.0f64.powi(*exp)),
         }
     }
+
+    pub fn none() -> Self {
+        Prefix::Decimal(0)
+    }
+
+    #[cfg(test)]
+    pub fn milli() -> Self {
+        Prefix::Decimal(-3)
+    }
+
+    #[cfg(test)]
+    pub fn centi() -> Self {
+        Prefix::Decimal(-2)
+    }
+
+    #[cfg(test)]
+    pub fn deci() -> Self {
+        Prefix::Decimal(-1)
+    }
+
+    #[cfg(test)]
+    pub fn kilo() -> Self {
+        Prefix::Decimal(3)
+    }
 }
 
 impl Display for Prefix {

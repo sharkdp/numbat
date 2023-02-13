@@ -386,6 +386,8 @@ impl Vm {
                         conversion_value.unsafe_value().clone() * factor,
                         base_unit_standard_representation,
                     ));
+
+                    return Ok(InterpreterResult::Continue);
                 }
                 Op::SetVariable => {
                     let identifier_idx = self.read_byte();

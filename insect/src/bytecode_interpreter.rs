@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ffi;
 use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::typed_ast::{BinaryOperator, Expression, Statement};
@@ -10,6 +12,8 @@ pub struct BytecodeInterpreter {
     unit_registry: UnitRegistry, // TODO: do we even need the unit registry here?
     /// List of local variables currently in scope
     local_variables: Vec<String>,
+    // Maps names of units to indices of the respective constants in the VM
+    unit_name_to_constant_index: HashMap<String, u8>,
 }
 
 impl BytecodeInterpreter {
@@ -26,6 +30,10 @@ impl BytecodeInterpreter {
                     let identifier_idx = self.vm.add_global_identifier(identifier);
                     self.vm.add_op1(Op::GetVariable, identifier_idx);
                 }
+            }
+            Expression::UnitIdentifier(prefix, unit_name, _type) => {
+                let index = self.unit_name_to_constant_index.get(unit_name).unwrap(); // TODO
+                self.vm.add_op1(Op::LoadConstant, *index);
             }
             Expression::Negate(rhs, _type) => {
                 self.compile_expression(rhs)?;
@@ -99,17 +107,16 @@ impl BytecodeInterpreter {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DeclareBaseUnit(name, dexpr) => {
+            Statement::DeclareBaseUnit(unit_name, dexpr) => {
                 self.unit_registry
-                    .add_base_unit(name, dexpr.clone())
+                    .add_base_unit(unit_name, dexpr.clone())
                     .map_err(RuntimeError::UnitRegistryError)?;
 
                 let constant_idx = self
                     .vm
-                    .add_constant(Constant::Unit(Unit::new_standard(name)));
-                self.vm.add_op1(Op::LoadConstant, constant_idx);
-                let identifier_idx = self.vm.add_global_identifier(name);
-                self.vm.add_op1(Op::SetVariable, identifier_idx);
+                    .add_constant(Constant::Unit(Unit::new_standard(unit_name)));
+                self.unit_name_to_constant_index
+                    .insert(unit_name.into(), constant_idx);
             }
             Statement::DeclareDerivedUnit(unit_name, expr) => {
                 self.unit_registry
@@ -119,14 +126,13 @@ impl BytecodeInterpreter {
                 let constant_idx = self
                     .vm
                     .add_constant(Constant::Unit(Unit::new_standard("<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
-                let identifier_idx = self.vm.add_global_identifier(unit_name);
+                let identifier_idx = self.vm.add_global_identifier(unit_name); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 
                 self.compile_expression(expr)?;
                 self.vm
                     .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
-
-                self.vm.add_op1(Op::LoadConstant, constant_idx);
-                self.vm.add_op1(Op::SetVariable, identifier_idx);
+                self.unit_name_to_constant_index
+                    .insert(unit_name.into(), constant_idx);
             }
             Statement::ProcedureCall(kind, args) => {
                 // Put all arguments on top of the stack
@@ -161,6 +167,7 @@ impl Interpreter for BytecodeInterpreter {
             vm: Vm::new(debug),
             unit_registry: UnitRegistry::new(),
             local_variables: vec![],
+            unit_name_to_constant_index: HashMap::new(),
         }
     }
 

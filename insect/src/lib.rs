@@ -72,7 +72,7 @@ impl Insect {
 
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
         let statements = parse(code).map_err(InsectError::ParseError)?;
-        let transformed_statements = self.prefix_transformer.transform(&statements[..]);
+        let transformed_statements = self.prefix_transformer.transform(statements);
         let typed_statements = self
             .typechecker
             .check_statements(transformed_statements.clone()) // TODO: get rid of clone?
