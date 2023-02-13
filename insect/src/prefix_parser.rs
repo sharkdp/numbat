@@ -4,6 +4,12 @@ use crate::prefix::Prefix;
 
 static PREFIXES: OnceCell<Vec<(&'static str, &'static str, Prefix)>> = OnceCell::new();
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum PrefixParserResult {
+    Identifier(String),
+    UnitIdentifier(Prefix, String),
+}
+
 #[derive(Debug)]
 pub struct PrefixParser {
     prefixable_units: Vec<(String, String)>,
@@ -21,7 +27,15 @@ impl PrefixParser {
             .push((unit_long.into(), unit_short.into())) // TODO: check for duplicates here?
     }
 
-    pub fn parse(&self, input: &str) -> (Option<Prefix>, String) {
+    pub fn parse(&self, input: &str) -> PrefixParserResult {
+        if self
+            .prefixable_units
+            .iter()
+            .any(|u| u.0 == input || u.1 == input)
+        {
+            return PrefixParserResult::UnitIdentifier(Prefix::none(), input.into());
+        }
+
         let prefixes = PREFIXES.get_or_init(|| {
             vec![
                 ("nano", "n", Prefix::Decimal(-9)),
@@ -43,7 +57,10 @@ impl PrefixParser {
                     .iter()
                     .any(|u| u.0 == &input[prefix_long.len()..])
             {
-                return (Some(prefix.clone()), input[prefix_long.len()..].into());
+                return PrefixParserResult::UnitIdentifier(
+                    prefix.clone(),
+                    input[prefix_long.len()..].into(),
+                );
             }
 
             if input.starts_with(prefix_short)
@@ -52,11 +69,14 @@ impl PrefixParser {
                     .iter()
                     .any(|u| u.1 == &input[prefix_short.len()..])
             {
-                return (Some(prefix.clone()), input[prefix_short.len()..].into());
+                return PrefixParserResult::UnitIdentifier(
+                    prefix.clone(),
+                    input[prefix_short.len()..].into(),
+                );
             }
         }
 
-        (None, input.into())
+        PrefixParserResult::Identifier(input.into())
     }
 }
 
@@ -69,40 +89,52 @@ mod tests {
         let mut prefix_parser = PrefixParser::new();
         prefix_parser.add_prefixable_unit("meter", "m");
 
-        assert_eq!(prefix_parser.parse("meter"), (None, "meter".to_string()));
-        assert_eq!(prefix_parser.parse("m"), (None, "m".to_string()));
+        assert_eq!(
+            prefix_parser.parse("meter"),
+            PrefixParserResult::UnitIdentifier(Prefix::none(), "meter".into())
+        );
+        assert_eq!(
+            prefix_parser.parse("m"),
+            PrefixParserResult::UnitIdentifier(Prefix::none(), "m".into())
+        );
         assert_eq!(
             prefix_parser.parse("kilometer"),
-            (Some(Prefix::Decimal(3)), "meter".to_string())
+            PrefixParserResult::UnitIdentifier(Prefix::kilo(), "meter".into())
         );
         assert_eq!(
             prefix_parser.parse("km"),
-            (Some(Prefix::Decimal(3)), "m".to_string())
+            PrefixParserResult::UnitIdentifier(Prefix::kilo(), "m".into())
         );
         assert_eq!(
             prefix_parser.parse("millimeter"),
-            (Some(Prefix::Decimal(-3)), "meter".to_string())
+            PrefixParserResult::UnitIdentifier(Prefix::milli(), "meter".into())
         );
         assert_eq!(
             prefix_parser.parse("mm"),
-            (Some(Prefix::Decimal(-3)), "m".to_string())
+            PrefixParserResult::UnitIdentifier(Prefix::milli(), "m".into())
         );
 
         assert_eq!(
             prefix_parser.parse("kilomete"),
-            (None, "kilomete".to_string())
+            PrefixParserResult::Identifier("kilomete".into())
         );
         assert_eq!(
             prefix_parser.parse("kilometerr"),
-            (None, "kilometerr".to_string())
+            PrefixParserResult::Identifier("kilometerr".into())
         );
 
         assert_eq!(
             prefix_parser.parse("foometer"),
-            (None, "foometer".to_string())
+            PrefixParserResult::Identifier("foometer".into())
         );
 
-        assert_eq!(prefix_parser.parse("kilom"), (None, "kilom".to_string()));
-        assert_eq!(prefix_parser.parse("kmeter"), (None, "kmeter".to_string()));
+        assert_eq!(
+            prefix_parser.parse("kilom"),
+            PrefixParserResult::Identifier("kilom".into())
+        );
+        assert_eq!(
+            prefix_parser.parse("kmeter"),
+            PrefixParserResult::Identifier("kmeter".into())
+        );
     }
 }
