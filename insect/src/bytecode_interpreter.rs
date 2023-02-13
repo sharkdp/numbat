@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::ffi;
 use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
+use crate::prefix::Prefix;
 use crate::typed_ast::{BinaryOperator, Expression, Statement};
 use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
@@ -13,7 +14,7 @@ pub struct BytecodeInterpreter {
     /// List of local variables currently in scope
     local_variables: Vec<String>,
     // Maps names of units to indices of the respective constants in the VM
-    unit_name_to_constant_index: HashMap<String, u8>,
+    unit_name_to_constant_index: HashMap<(Prefix, String), u8>,
 }
 
 impl BytecodeInterpreter {
@@ -32,8 +33,30 @@ impl BytecodeInterpreter {
                 }
             }
             Expression::UnitIdentifier(prefix, unit_name, _type) => {
-                let index = self.unit_name_to_constant_index.get(unit_name).unwrap(); // TODO
-                self.vm.add_op1(Op::LoadConstant, *index);
+                if let Some(index) = self
+                    .unit_name_to_constant_index
+                    .get(&(*prefix, unit_name.clone()))
+                // TODO: (1) resolve the unwrap (2) can we get rid of the clone?
+                {
+                    self.vm.add_op1(Op::LoadConstant, *index);
+                } else {
+                    if prefix.is_none() {
+                        todo!("Error: unit not found")
+                    }
+                    let index_prefixless = self
+                        .unit_name_to_constant_index
+                        .get(&(Prefix::none(), unit_name.clone()))
+                        .unwrap();
+                    if let Constant::Unit(ref unit) = self.vm.constants[*index_prefixless as usize]
+                    {
+                        let index = self
+                            .vm
+                            .add_constant(Constant::Unit(unit.clone().with_prefix(*prefix)));
+                        self.vm.add_op1(Op::LoadConstant, index);
+                    } else {
+                        unreachable!()
+                    }
+                }
             }
             Expression::Negate(rhs, _type) => {
                 self.compile_expression(rhs)?;
@@ -116,7 +139,7 @@ impl BytecodeInterpreter {
                     .vm
                     .add_constant(Constant::Unit(Unit::new_standard(unit_name)));
                 self.unit_name_to_constant_index
-                    .insert(unit_name.into(), constant_idx);
+                    .insert((Prefix::none(), unit_name.into()), constant_idx);
             }
             Statement::DeclareDerivedUnit(unit_name, expr) => {
                 self.unit_registry
@@ -132,7 +155,7 @@ impl BytecodeInterpreter {
                 self.vm
                     .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
                 self.unit_name_to_constant_index
-                    .insert(unit_name.into(), constant_idx);
+                    .insert((Prefix::none(), unit_name.into()), constant_idx);
             }
             Statement::ProcedureCall(kind, args) => {
                 // Put all arguments on top of the stack

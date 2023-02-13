@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::number::Number;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Prefix {
     Decimal(i32),
 }
@@ -36,6 +36,13 @@ impl Prefix {
     #[cfg(test)]
     pub fn kilo() -> Self {
         Prefix::Decimal(3)
+    }
+
+    pub fn is_none(&self) -> bool {
+        match self {
+            Prefix::Decimal(0) => true,
+            Prefix::Decimal(_) => false,
+        }
     }
 }
 

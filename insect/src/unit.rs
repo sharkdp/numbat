@@ -135,8 +135,8 @@ impl Unit {
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
-        for &UnitFactor(_prefix, ref base_unit, exp) in self.iter() {
-            // TODO: render prefix
+        for &UnitFactor(prefix, ref base_unit, exp) in self.iter() {
+            result.push_str(&format!("{}", prefix));
             result.push_str(&base_unit.name);
 
             if exp == Ratio::from_integer(5) {

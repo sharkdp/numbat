@@ -151,7 +151,7 @@ pub struct Vm {
     current_chunk_index: usize,
 
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
-    constants: Vec<Constant>,
+    pub constants: Vec<Constant>,
 
     /// The names of global variables or [Unit]s.
     global_identifiers: Vec<String>,
