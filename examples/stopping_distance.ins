@@ -3,4 +3,4 @@ let braking_power: Acceleration = 0.8 gravity
 
 fn stopping_distance(v: Speed) -> Length = v × reaction_time + ½ v² / braking_power
 
-assert_eq(stopping_distance(30 meter/second), 72.359 meter, 0.001 meter) # TODO: use km/h once we have prefixes
+assert_eq(stopping_distance(50 kilometer/hour), 19.2385 meter, 0.001 meter)
