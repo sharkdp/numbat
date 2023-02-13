@@ -99,7 +99,17 @@ unit min = minute
 
 ### Imperial units
 
+unit inch: Length = 0.0254 meter
+
 unit foot: Length = 0.3048 meter
+assert_eq(1 foot, 12 inch, 0.001 inch)
+
+unit yard: Length = 0.9144 meter
+assert_eq(1 yard, 3 foot, 0.001 foot)
+
+unit mile: Length = 1609.344 meter
+assert_eq(1 mile, 1760 yard, 0.001 yard)
+
 
 ### Physical constants
 

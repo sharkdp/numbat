@@ -72,10 +72,7 @@ pub trait Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer,
-        registry::RegistryError,
-    };
+    use crate::{bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer};
 
     use super::*;
 
