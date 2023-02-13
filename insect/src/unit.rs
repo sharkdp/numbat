@@ -6,6 +6,7 @@ use num_traits::{ToPrimitive, Zero};
 use crate::{
     arithmetic::{Exponent, Power, Rational},
     number::Number,
+    prefix::Prefix,
     product::{Canonicalize, Product},
 };
 
@@ -52,27 +53,27 @@ impl Ord for BaseUnit {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
-pub struct UnitFactor(pub BaseUnit, pub Exponent);
+pub struct UnitFactor(pub Prefix, pub BaseUnit, pub Exponent);
 
 impl Canonicalize for UnitFactor {
     type MergeKey = BaseUnit;
 
     fn merge_key(&self) -> Self::MergeKey {
-        self.0.clone()
+        self.1.clone()
     }
 
     fn merge(self, other: Self) -> Self {
-        UnitFactor(self.0, self.1 + other.1)
+        UnitFactor(self.0, self.1, self.2 + other.2)
     }
 
     fn is_trivial(&self) -> bool {
-        self.1 == Rational::zero()
+        self.2 == Rational::zero()
     }
 }
 
 impl Power for UnitFactor {
     fn power(self, e: Exponent) -> Self {
-        UnitFactor(self.0, self.1 * e)
+        UnitFactor(self.0, self.1, self.2 * e)
     }
 }
 
@@ -84,7 +85,12 @@ impl Unit {
     }
 
     pub fn new_standard(name: &str) -> Self {
+        Self::new_standard_with_prefix(name, Prefix::Decimal(0))
+    }
+
+    pub fn new_standard_with_prefix(name: &str, prefix: Prefix) -> Self {
         Unit::from_factor(UnitFactor(
+            prefix,
             BaseUnit {
                 name: name.into(),
                 unit_type: UnitType::Standard,
@@ -95,6 +101,7 @@ impl Unit {
 
     pub fn new_non_standard(name: &str, factor: ConversionFactor, standard_unit: Unit) -> Self {
         Unit::from_factor(UnitFactor(
+            Prefix::Decimal(0),
             BaseUnit {
                 name: name.into(),
                 unit_type: UnitType::NonStandard(factor, standard_unit),
@@ -106,14 +113,13 @@ impl Unit {
     pub fn to_standard_representation(&self) -> (Self, ConversionFactor) {
         let standardized_unit = self
             .iter()
-            .map(|UnitFactor(base_unit, exponent)| base_unit.to_standard().power(*exponent))
+            .map(|UnitFactor(_, base_unit, exponent)| base_unit.to_standard().power(*exponent))
             .product();
 
         let factor = self
             .iter()
-            .map(|UnitFactor(base_unit, exponent)| {
-                base_unit
-                    .conversion_factor()
+            .map(|UnitFactor(prefix, base_unit, exponent)| {
+                (prefix.factor() * base_unit.conversion_factor())
                     .pow(&Number::from_f64(exponent.to_f64().unwrap()))
             }) // TODO: reduce wrapping/unwrapping; do we want to use exponent.to_f64?
             .product();
@@ -125,7 +131,8 @@ impl Unit {
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
-        for &UnitFactor(ref base_unit, exp) in self.iter() {
+        for &UnitFactor(_prefix, ref base_unit, exp) in self.iter() {
+            // TODO: render prefix
             result.push_str(&base_unit.name);
 
             if exp == Ratio::from_integer(5) {
@@ -165,6 +172,7 @@ impl Display for Unit {
 #[test]
 fn unit_basic() {
     let meter = Unit::from_factor(UnitFactor(
+        Prefix::Decimal(0),
         BaseUnit {
             name: "meter".into(),
             unit_type: UnitType::Standard,
@@ -172,6 +180,7 @@ fn unit_basic() {
         Rational::from_integer(1),
     ));
     let second = Unit::from_factor(UnitFactor(
+        Prefix::Decimal(0),
         BaseUnit {
             name: "second".into(),
             unit_type: UnitType::Standard,
@@ -181,6 +190,7 @@ fn unit_basic() {
 
     let meter_per_second = Unit::from_factors([
         UnitFactor(
+            Prefix::Decimal(0),
             BaseUnit {
                 name: "meter".into(),
                 unit_type: UnitType::Standard,
@@ -188,6 +198,7 @@ fn unit_basic() {
             Rational::from_integer(1),
         ),
         UnitFactor(
+            Prefix::Decimal(0),
             BaseUnit {
                 name: "second".into(),
                 unit_type: UnitType::Standard,

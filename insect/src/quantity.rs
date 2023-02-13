@@ -189,3 +189,49 @@ fn test_conversion_basic() {
         epsilon = 1e-6
     );
 }
+
+#[test]
+fn test_prefixes() {
+    use crate::prefix::Prefix;
+
+    use approx::assert_relative_eq;
+    use num_rational::Ratio;
+
+    let meter = Unit::new_standard("meter");
+    let centimeter = Unit::new_standard_with_prefix("meter", Prefix::Decimal(-2));
+
+    let length = Quantity::new(Number::from_f64(2.5), meter.clone());
+    {
+        let length_in_centimeter = length.convert_to(&centimeter).expect("conversion succeeds");
+        assert_relative_eq!(
+            length_in_centimeter.unsafe_value().to_f64(),
+            250.0,
+            epsilon = 1e-6
+        );
+
+        let length_converted_back_to_meter = length_in_centimeter
+            .convert_to(&meter)
+            .expect("conversion succeeds");
+        assert_relative_eq!(
+            length_converted_back_to_meter.unsafe_value().to_f64(),
+            2.5,
+            epsilon = 1e-6
+        );
+    }
+    {
+        let volume = length
+            .power(Quantity::from_scalar(3.0))
+            .expect("exponent is scalar");
+
+        println!("{}", &volume);
+
+        let volume_in_centimeter3 = volume
+            .convert_to(&centimeter.power(Ratio::from_integer(3)))
+            .expect("conversion succeeds");
+        assert_relative_eq!(
+            volume_in_centimeter3.unsafe_value().to_f64(),
+            15_625_000.0,
+            epsilon = 1e-6
+        );
+    }
+}
