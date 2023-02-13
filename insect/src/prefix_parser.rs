@@ -38,8 +38,11 @@ impl PrefixParser {
 
         let prefixes = PREFIXES.get_or_init(|| {
             vec![
+                ("atto", "a", Prefix::Decimal(-18)),
+                ("femto", "f", Prefix::Decimal(-15)),
+                ("pico", "p", Prefix::Decimal(-12)),
                 ("nano", "n", Prefix::Decimal(-9)),
-                ("micro", "µ", Prefix::Decimal(-6)), // TODO
+                ("micro", "µ", Prefix::Decimal(-6)), // TODO: support 'u' as well. and other unicode characters
                 ("milli", "m", Prefix::Decimal(-3)),
                 ("centi", "c", Prefix::Decimal(-2)),
                 ("deci", "d", Prefix::Decimal(-1)),
@@ -47,6 +50,7 @@ impl PrefixParser {
                 ("kilo", "k", Prefix::Decimal(3)),
                 ("mega", "M", Prefix::Decimal(6)),
                 ("giga", "G", Prefix::Decimal(9)),
+                ("tera", "T", Prefix::Decimal(12)),
             ]
         });
 
