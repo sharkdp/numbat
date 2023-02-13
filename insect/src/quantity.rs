@@ -198,7 +198,7 @@ fn test_prefixes() {
     use num_rational::Ratio;
 
     let meter = Unit::new_standard("meter");
-    let centimeter = Unit::new_standard_with_prefix("meter", Prefix::Decimal(-2));
+    let centimeter = Unit::new_standard("meter").with_prefix(Prefix::centi());
 
     let length = Quantity::new(Number::from_f64(2.5), meter.clone());
     {

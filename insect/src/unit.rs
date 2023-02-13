@@ -85,12 +85,8 @@ impl Unit {
     }
 
     pub fn new_standard(name: &str) -> Self {
-        Self::new_standard_with_prefix(name, Prefix::Decimal(0))
-    }
-
-    pub fn new_standard_with_prefix(name: &str, prefix: Prefix) -> Self {
         Unit::from_factor(UnitFactor(
-            prefix,
+            Prefix::none(),
             BaseUnit {
                 name: name.into(),
                 unit_type: UnitType::Standard,
@@ -101,13 +97,21 @@ impl Unit {
 
     pub fn new_non_standard(name: &str, factor: ConversionFactor, standard_unit: Unit) -> Self {
         Unit::from_factor(UnitFactor(
-            Prefix::Decimal(0),
+            Prefix::none(),
             BaseUnit {
                 name: name.into(),
                 unit_type: UnitType::NonStandard(factor, standard_unit),
             },
             Rational::from_integer(1),
         ))
+    }
+
+    pub fn with_prefix(self, prefix: Prefix) -> Self {
+        let mut factors: Vec<_> = self.into_iter().collect();
+        assert!(!factors.is_empty());
+        assert!(factors[0].0 == Prefix::none());
+        factors[0].0 = prefix;
+        Self::from_factors(factors)
     }
 
     pub fn to_standard_representation(&self) -> (Self, ConversionFactor) {
@@ -172,7 +176,7 @@ impl Display for Unit {
 #[test]
 fn unit_basic() {
     let meter = Unit::from_factor(UnitFactor(
-        Prefix::Decimal(0),
+        Prefix::none(),
         BaseUnit {
             name: "meter".into(),
             unit_type: UnitType::Standard,
@@ -180,7 +184,7 @@ fn unit_basic() {
         Rational::from_integer(1),
     ));
     let second = Unit::from_factor(UnitFactor(
-        Prefix::Decimal(0),
+        Prefix::none(),
         BaseUnit {
             name: "second".into(),
             unit_type: UnitType::Standard,
@@ -190,7 +194,7 @@ fn unit_basic() {
 
     let meter_per_second = Unit::from_factors([
         UnitFactor(
-            Prefix::Decimal(0),
+            Prefix::none(),
             BaseUnit {
                 name: "meter".into(),
                 unit_type: UnitType::Standard,
@@ -198,7 +202,7 @@ fn unit_basic() {
             Rational::from_integer(1),
         ),
         UnitFactor(
-            Prefix::Decimal(0),
+            Prefix::none(),
             BaseUnit {
                 name: "second".into(),
                 unit_type: UnitType::Standard,
