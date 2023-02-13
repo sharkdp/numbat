@@ -1,7 +1,10 @@
 use crate::{
     ast::{Expression, Statement},
+    name_resolution::NameResolutionError,
     prefix_parser::{PrefixParser, PrefixParserResult},
 };
+
+type Result<T> = std::result::Result<T, NameResolutionError>;
 
 pub struct Transformer {
     prefix_parser: PrefixParser,
@@ -47,21 +50,23 @@ impl Transformer {
         }
     }
 
-    fn transform_statement(&mut self, statement: Statement) -> Statement {
-        match statement {
+    fn transform_statement(&mut self, statement: Statement) -> Result<Statement> {
+        Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
             Statement::DeclareBaseUnit(name, dexpr) => {
-                self.prefix_parser.add_prefixable_unit(&name, "TODO");
+                self.prefix_parser.add_prefixable_unit(&name)?;
                 Statement::DeclareBaseUnit(name, dexpr)
             }
             Statement::DeclareDerivedUnit(name, expr, dexpr) => {
-                self.prefix_parser.add_prefixable_unit(&name, "TODO");
+                self.prefix_parser.add_prefixable_unit(&name)?;
                 Statement::DeclareDerivedUnit(name, self.transform_expression(expr), dexpr)
             }
             Statement::DeclareVariable(name, expr, dexpr) => {
+                self.prefix_parser.add_other_identifier(&name)?;
                 Statement::DeclareVariable(name, self.transform_expression(expr), dexpr)
             }
             Statement::DeclareFunction(name, type_params, args, body, return_type) => {
+                self.prefix_parser.add_other_identifier(&name)?;
                 Statement::DeclareFunction(
                     name,
                     type_params,
@@ -77,10 +82,13 @@ impl Transformer {
                     .map(|arg| self.transform_expression(arg))
                     .collect(),
             ),
-        }
+        })
     }
 
-    pub fn transform(&mut self, statements: impl IntoIterator<Item = Statement>) -> Vec<Statement> {
+    pub fn transform(
+        &mut self,
+        statements: impl IntoIterator<Item = Statement>,
+    ) -> Result<Vec<Statement>> {
         statements
             .into_iter()
             .map(|statement| self.transform_statement(statement))

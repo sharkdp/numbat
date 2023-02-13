@@ -4,6 +4,7 @@ mod bytecode_interpreter;
 mod dimension;
 mod ffi;
 mod interpreter;
+mod name_resolution;
 mod number;
 mod parser;
 mod prefix;
@@ -23,6 +24,7 @@ mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, RuntimeError};
+use name_resolution::NameResolutionError;
 use parser::parse;
 use prefix_transformer::Transformer;
 use thiserror::Error;
@@ -37,6 +39,8 @@ pub use parser::ParseError;
 pub enum InsectError {
     #[error("{0}")]
     ParseError(ParseError),
+    #[error("{0}")]
+    NameResolutionError(NameResolutionError),
     #[error("{0}")]
     TypeCheckError(TypeCheckError),
     #[error("{0}")]
@@ -72,7 +76,10 @@ impl Insect {
 
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
         let statements = parse(code).map_err(InsectError::ParseError)?;
-        let transformed_statements = self.prefix_transformer.transform(statements);
+        let transformed_statements = self
+            .prefix_transformer
+            .transform(statements)
+            .map_err(InsectError::NameResolutionError)?;
         let typed_statements = self
             .typechecker
             .check_statements(transformed_statements.clone()) // TODO: get rid of clone?

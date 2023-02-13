@@ -1,6 +1,8 @@
+use std::collections::HashSet;
+
 use once_cell::sync::OnceCell;
 
-use crate::prefix::Prefix;
+use crate::{name_resolution::NameResolutionError, prefix::Prefix};
 
 static PREFIXES: OnceCell<Vec<(&'static str, &'static str, Prefix)>> = OnceCell::new();
 
@@ -10,29 +12,53 @@ pub enum PrefixParserResult {
     UnitIdentifier(Prefix, String),
 }
 
+type Result<T> = std::result::Result<T, NameResolutionError>;
+
 #[derive(Debug)]
 pub struct PrefixParser {
-    prefixable_units: Vec<(String, String)>,
+    prefixable_units: HashSet<String>,
+    other_identifiers: HashSet<String>,
 }
 
 impl PrefixParser {
     pub fn new() -> Self {
         Self {
-            prefixable_units: vec![],
+            prefixable_units: HashSet::new(),
+            other_identifiers: HashSet::new(),
         }
     }
 
-    pub fn add_prefixable_unit(&mut self, unit_long: &str, unit_short: &str) {
-        self.prefixable_units
-            .push((unit_long.into(), unit_short.into())) // TODO: check for duplicates here?
+    pub fn add_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
+        if self.other_identifiers.contains(unit_name) {
+            return Err(NameResolutionError::IdentifierClash(unit_name.into()));
+        }
+
+        if self.prefixable_units.contains(unit_name) {
+            return Err(NameResolutionError::IdentifierClash(unit_name.into()));
+        }
+
+        self.prefixable_units.insert(unit_name.into());
+
+        Ok(())
+    }
+
+    pub fn add_other_identifier(&mut self, identifier: &str) -> Result<()> {
+        match self.parse(identifier) {
+            PrefixParserResult::Identifier(_) => {}
+            PrefixParserResult::UnitIdentifier(_, _) => {
+                return Err(NameResolutionError::IdentifierClash(identifier.into()));
+            }
+        }
+
+        if self.other_identifiers.insert(identifier.into()) {
+            Ok(())
+        } else {
+            Err(NameResolutionError::IdentifierClash(identifier.into()))
+        }
     }
 
     pub fn parse(&self, input: &str) -> PrefixParserResult {
-        if self
-            .prefixable_units
-            .iter()
-            .any(|u| u.0 == input || u.1 == input)
-        {
+        if self.prefixable_units.iter().any(|u| u == input) {
             return PrefixParserResult::UnitIdentifier(Prefix::none(), input.into());
         }
 
@@ -54,28 +80,16 @@ impl PrefixParser {
             ]
         });
 
-        for (prefix_long, prefix_short, prefix) in prefixes {
+        for (prefix_long, _prefix_short, prefix) in prefixes {
             if input.starts_with(prefix_long)
                 && self
                     .prefixable_units
                     .iter()
-                    .any(|u| u.0 == &input[prefix_long.len()..])
+                    .any(|u| u == &input[prefix_long.len()..])
             {
                 return PrefixParserResult::UnitIdentifier(
                     prefix.clone(),
                     input[prefix_long.len()..].into(),
-                );
-            }
-
-            if input.starts_with(prefix_short)
-                && self
-                    .prefixable_units
-                    .iter()
-                    .any(|u| u.1 == &input[prefix_short.len()..])
-            {
-                return PrefixParserResult::UnitIdentifier(
-                    prefix.clone(),
-                    input[prefix_short.len()..].into(),
                 );
             }
         }
@@ -91,31 +105,19 @@ mod tests {
     #[test]
     fn basic() {
         let mut prefix_parser = PrefixParser::new();
-        prefix_parser.add_prefixable_unit("meter", "m");
+        prefix_parser.add_prefixable_unit("meter").unwrap();
 
         assert_eq!(
             prefix_parser.parse("meter"),
             PrefixParserResult::UnitIdentifier(Prefix::none(), "meter".into())
         );
         assert_eq!(
-            prefix_parser.parse("m"),
-            PrefixParserResult::UnitIdentifier(Prefix::none(), "m".into())
-        );
-        assert_eq!(
             prefix_parser.parse("kilometer"),
             PrefixParserResult::UnitIdentifier(Prefix::kilo(), "meter".into())
         );
         assert_eq!(
-            prefix_parser.parse("km"),
-            PrefixParserResult::UnitIdentifier(Prefix::kilo(), "m".into())
-        );
-        assert_eq!(
             prefix_parser.parse("millimeter"),
             PrefixParserResult::UnitIdentifier(Prefix::milli(), "meter".into())
-        );
-        assert_eq!(
-            prefix_parser.parse("mm"),
-            PrefixParserResult::UnitIdentifier(Prefix::milli(), "m".into())
         );
 
         assert_eq!(
@@ -130,15 +132,6 @@ mod tests {
         assert_eq!(
             prefix_parser.parse("foometer"),
             PrefixParserResult::Identifier("foometer".into())
-        );
-
-        assert_eq!(
-            prefix_parser.parse("kilom"),
-            PrefixParserResult::Identifier("kilom".into())
-        );
-        assert_eq!(
-            prefix_parser.parse("kmeter"),
-            PrefixParserResult::Identifier("kmeter".into())
         );
     }
 }

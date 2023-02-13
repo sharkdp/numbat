@@ -102,7 +102,9 @@ mod tests {
         let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
         let statements = crate::parser::parse(&full_code)
             .expect("No parse errors for inputs in this test suite");
-        let statements_transformed = Transformer::new().transform(statements);
+        let statements_transformed = Transformer::new()
+            .transform(statements)
+            .expect("No name resolution errors for inputs in this test suite");
         let statements_typechecked = crate::typechecker::TypeChecker::default()
             .check_statements(statements_transformed)
             .expect("No type check errors for inputs in this test suite");
@@ -207,21 +209,5 @@ mod tests {
     #[test]
     fn division_by_zero_raises_runtime_error() {
         assert_runtime_error("1/0", RuntimeError::DivisionByZero);
-    }
-
-    #[test]
-    fn redefinition_of_unit_raises_runtime_error() {
-        assert_runtime_error(
-            "unit meter: Length",
-            RuntimeError::UnitRegistryError(UnitRegistryError::RegistryError(
-                RegistryError::EntryExists("meter".into()),
-            )),
-        );
-        assert_runtime_error(
-            "unit hertz: Frequency = 1/second",
-            RuntimeError::UnitRegistryError(UnitRegistryError::RegistryError(
-                RegistryError::EntryExists("hertz".into()),
-            )),
-        );
     }
 }

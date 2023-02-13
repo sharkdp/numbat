@@ -10,7 +10,7 @@ use crate::vm::{Constant, Op, Vm};
 
 pub struct BytecodeInterpreter {
     vm: Vm,
-    unit_registry: UnitRegistry, // TODO: do we even need the unit registry here?
+    unit_registry: UnitRegistry, // TODO(minor): do we even need the unit registry here?
     /// List of local variables currently in scope
     local_variables: Vec<String>,
     // Maps names of units to indices of the respective constants in the VM
@@ -40,13 +40,10 @@ impl BytecodeInterpreter {
                 {
                     self.vm.add_op1(Op::LoadConstant, *index);
                 } else {
-                    if prefix.is_none() {
-                        todo!("Error: unit not found")
-                    }
                     let index_prefixless = self
                         .unit_name_to_constant_index
                         .get(&(Prefix::none(), unit_name.clone()))
-                        .unwrap();
+                        .expect("Unit has been defined");
                     if let Constant::Unit(ref unit) = self.vm.constants[*index_prefixless as usize]
                     {
                         let index = self
@@ -54,7 +51,7 @@ impl BytecodeInterpreter {
                             .add_constant(Constant::Unit(unit.clone().with_prefix(*prefix)));
                         self.vm.add_op1(Op::LoadConstant, index);
                     } else {
-                        unreachable!()
+                        unreachable!() // TODO(minor): this is a bit ugly. maybe store the units here instead of extracting them again from the VM constants?
                     }
                 }
             }

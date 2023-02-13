@@ -520,6 +520,9 @@ impl TypeChecker {
 
 #[cfg(test)]
 mod tests {
+    use crate::parser::parse;
+    use crate::prefix_transformer::Transformer;
+
     use super::*;
 
     const TEST_PRELUDE: &str = "
@@ -552,11 +555,13 @@ mod tests {
 
     fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
         let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
-        let statements =
-            crate::parser::parse(code).expect("No parse errors for inputs in this test suite");
+        let statements = parse(code).expect("No parse errors for inputs in this test suite");
+        let transformed_statements = Transformer::new()
+            .transform(statements)
+            .expect("No name resolution errors for inputs in this test suite");
 
         TypeChecker::default()
-            .check_statements(statements)
+            .check_statements(transformed_statements)
             .map(|mut statements_checked| statements_checked.pop().unwrap())
     }
 

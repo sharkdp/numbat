@@ -19,6 +19,13 @@ fn assert_parse_error(code: &str) {
     ));
 }
 
+fn assert_name_resolution_error(code: &str) {
+    assert!(matches!(
+        Insect::new_without_prelude(false).interpret(code),
+        Err(InsectError::NameResolutionError(_))
+    ));
+}
+
 fn assert_typecheck_error(code: &str) {
     assert!(matches!(
         Insect::new_without_prelude(false).interpret(code),
@@ -66,6 +73,14 @@ fn examples_can_be_parsed_and_interpreted() {
 #[test]
 fn parse_error_examples_fail_as_expected() {
     run_for_each_insect_file_in("../examples/parse_error", assert_parse_error);
+}
+
+#[test]
+fn name_resolution_error_examples_fail_as_expected() {
+    run_for_each_insect_file_in(
+        "../examples/name_resolution_error",
+        assert_name_resolution_error,
+    );
 }
 
 #[test]
