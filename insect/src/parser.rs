@@ -34,9 +34,8 @@
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
-use crate::ast::{
-    BinaryOperator, Decorator, DimensionExpression, Expression, ProcedureKind, Statement,
-};
+use crate::ast::{BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement};
+use crate::decorator::Decorator;
 use crate::number::Number;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};

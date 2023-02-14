@@ -1,6 +1,7 @@
 mod arithmetic;
 mod ast;
 mod bytecode_interpreter;
+mod decorator;
 mod dimension;
 mod ffi;
 mod interpreter;

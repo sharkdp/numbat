@@ -1,4 +1,7 @@
-use crate::{arithmetic::Exponent, number::Number, prefix::Prefix, pretty_print::PrettyPrint};
+use crate::{
+    arithmetic::Exponent, decorator::Decorator, number::Number, prefix::Prefix,
+    pretty_print::PrettyPrint,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
@@ -140,12 +143,6 @@ impl PrettyPrint for DimensionExpression {
 pub enum ProcedureKind {
     Print,
     AssertEq,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Decorator {
-    MetricPrefixes,
-    Aliases(Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

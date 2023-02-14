@@ -1,8 +1,8 @@
 use crate::{
     ast::{Expression, Statement},
+    decorator::{self, Decorator},
     name_resolution::NameResolutionError,
     prefix_parser::{PrefixParser, PrefixParserResult},
-    typed_ast::Decorator,
 };
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
@@ -57,22 +57,9 @@ impl Transformer {
             .any(|decorator| decorator == &Decorator::MetricPrefixes)
     }
 
-    fn name_and_aliases<'a>(
-        name: &'a String,
-        decorators: &'a [Decorator],
-    ) -> Box<dyn Iterator<Item = &'a String> + 'a> {
-        let name_iter = std::iter::once(name);
-        for decorator in decorators {
-            if let Decorator::Aliases(aliases) = decorator {
-                return Box::new(name_iter.chain(aliases.iter()));
-            }
-        }
-        return Box::new(name_iter);
-    }
-
     fn register_name_and_aliases(&mut self, name: &String, decorators: &[Decorator]) -> Result<()> {
         let is_prefixable = Self::has_prefix_decorator(decorators);
-        for alias in Self::name_and_aliases(name, decorators) {
+        for alias in decorator::name_and_aliases(name, decorators) {
             if is_prefixable {
                 self.prefix_parser.add_prefixable_unit(&alias)?;
             } else {

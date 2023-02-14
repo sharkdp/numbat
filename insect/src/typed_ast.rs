@@ -1,5 +1,5 @@
-pub use crate::ast::{BinaryOperator, Decorator, DimensionExpression};
-use crate::{number::Number, prefix::Prefix, registry::BaseRepresentation};
+pub use crate::ast::{BinaryOperator, DimensionExpression};
+use crate::{decorator::Decorator, number::Number, prefix::Prefix, registry::BaseRepresentation};
 
 pub type Type = BaseRepresentation;
 
