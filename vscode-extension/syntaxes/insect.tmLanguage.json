@@ -37,7 +37,7 @@
             "patterns": [
                 {
                     "name": "support.function.insect",
-                    "match": "(@prefixes)\\b"
+                    "match": "@(metric_prefixes|binary_prefixes|aliases|aliases_short)\\b"
                 }
             ]
         },

@@ -54,27 +54,44 @@ impl Transformer {
     fn has_prefix_decorator(decorators: &[Decorator]) -> bool {
         decorators
             .iter()
-            .any(|decorator| decorator == &Decorator::Prefixes("decimal".into()))
+            .any(|decorator| decorator == &Decorator::MetricPrefixes)
+    }
+
+    fn name_and_aliases<'a>(
+        name: &'a String,
+        decorators: &'a [Decorator],
+    ) -> Box<dyn Iterator<Item = &'a String> + 'a> {
+        let name_iter = std::iter::once(name);
+        for decorator in decorators {
+            if let Decorator::Aliases(aliases) = decorator {
+                return Box::new(name_iter.chain(aliases.iter()));
+            }
+        }
+        return Box::new(name_iter);
+    }
+
+    fn register_name_and_aliases(&mut self, name: &String, decorators: &[Decorator]) -> Result<()> {
+        let is_prefixable = Self::has_prefix_decorator(decorators);
+        for alias in Self::name_and_aliases(name, decorators) {
+            if is_prefixable {
+                self.prefix_parser.add_prefixable_unit(&alias)?;
+            } else {
+                self.prefix_parser.add_non_prefixable_unit(&alias)?;
+            }
+        }
+
+        Ok(())
     }
 
     fn transform_statement(&mut self, statement: Statement) -> Result<Statement> {
         Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
             Statement::DeclareBaseUnit(name, dexpr, decorators) => {
-                if Self::has_prefix_decorator(&decorators) {
-                    self.prefix_parser.add_prefixable_unit(&name)?;
-                } else {
-                    self.prefix_parser.add_non_prefixable_unit(&name)?;
-                }
+                self.register_name_and_aliases(&name, &decorators)?;
                 Statement::DeclareBaseUnit(name, dexpr, decorators)
             }
             Statement::DeclareDerivedUnit(name, expr, dexpr, decorators) => {
-                // TODO(minor): same block as above. extract to function?
-                if Self::has_prefix_decorator(&decorators) {
-                    self.prefix_parser.add_prefixable_unit(&name)?;
-                } else {
-                    self.prefix_parser.add_non_prefixable_unit(&name)?;
-                }
+                self.register_name_and_aliases(&name, &decorators)?;
                 Statement::DeclareDerivedUnit(
                     name,
                     self.transform_expression(expr),

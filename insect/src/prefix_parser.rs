@@ -30,55 +30,8 @@ impl PrefixParser {
         }
     }
 
-    fn is_registered_name(&self, name: &str) -> bool {
-        self.other_identifiers.contains(name)
-            || self.prefixable_units.contains(name)
-            || self.non_prefixable_units.contains(name)
-    }
-
-    pub fn add_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
-        if self.is_registered_name(unit_name) {
-            return Err(NameResolutionError::IdentifierClash(unit_name.into()));
-        }
-
-        self.prefixable_units.insert(unit_name.into());
-
-        Ok(())
-    }
-
-    pub fn add_non_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
-        if self.is_registered_name(unit_name) {
-            return Err(NameResolutionError::IdentifierClash(unit_name.into()));
-        }
-
-        self.non_prefixable_units.insert(unit_name.into());
-
-        Ok(())
-    }
-
-    pub fn add_other_identifier(&mut self, identifier: &str) -> Result<()> {
-        match self.parse(identifier) {
-            PrefixParserResult::Identifier(_) => {}
-            PrefixParserResult::UnitIdentifier(_, _) => {
-                return Err(NameResolutionError::IdentifierClash(identifier.into()));
-            }
-        }
-
-        if self.other_identifiers.insert(identifier.into()) {
-            Ok(())
-        } else {
-            Err(NameResolutionError::IdentifierClash(identifier.into()))
-        }
-    }
-
-    pub fn parse(&self, input: &str) -> PrefixParserResult {
-        if self.prefixable_units.iter().any(|u| u == input)
-            || self.non_prefixable_units.iter().any(|u| u == input)
-        {
-            return PrefixParserResult::UnitIdentifier(Prefix::none(), input.into());
-        }
-
-        let prefixes = PREFIXES.get_or_init(|| {
+    fn prefixes() -> &'static [(&'static str, &'static str, Prefix)] {
+        PREFIXES.get_or_init(|| {
             vec![
                 ("atto", "a", Prefix::Decimal(-18)),
                 ("femto", "f", Prefix::Decimal(-15)),
@@ -94,9 +47,60 @@ impl PrefixParser {
                 ("giga", "G", Prefix::Decimal(9)),
                 ("tera", "T", Prefix::Decimal(12)),
             ]
-        });
+        })
+    }
 
-        for (prefix_long, _prefix_short, prefix) in prefixes {
+    fn ensure_name_is_available(&self, name: &str) -> Result<()> {
+        if self.other_identifiers.contains(name) {
+            return Err(NameResolutionError::IdentifierClash(name.into()));
+        }
+
+        match self.parse(name) {
+            PrefixParserResult::Identifier(_) => Ok(()),
+            PrefixParserResult::UnitIdentifier(_, _) => {
+                Err(NameResolutionError::IdentifierClash(name.into()))
+            }
+        }
+    }
+
+    pub fn add_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
+        self.ensure_name_is_available(unit_name)?;
+
+        for (prefix_long, _, _) in Self::prefixes() {
+            self.ensure_name_is_available(&format!("{}{}", prefix_long, unit_name))?;
+        }
+
+        self.prefixable_units.insert(unit_name.into());
+
+        Ok(())
+    }
+
+    pub fn add_non_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
+        self.ensure_name_is_available(unit_name)?;
+
+        self.non_prefixable_units.insert(unit_name.into());
+
+        Ok(())
+    }
+
+    pub fn add_other_identifier(&mut self, identifier: &str) -> Result<()> {
+        self.ensure_name_is_available(identifier)?;
+
+        if self.other_identifiers.insert(identifier.into()) {
+            Ok(())
+        } else {
+            Err(NameResolutionError::IdentifierClash(identifier.into()))
+        }
+    }
+
+    pub fn parse(&self, input: &str) -> PrefixParserResult {
+        if self.prefixable_units.iter().any(|u| u == input)
+            || self.non_prefixable_units.iter().any(|u| u == input)
+        {
+            return PrefixParserResult::UnitIdentifier(Prefix::none(), input.into());
+        }
+
+        for (prefix_long, _prefix_short, prefix) in Self::prefixes() {
             if input.starts_with(prefix_long)
                 && self
                     .prefixable_units

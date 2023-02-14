@@ -144,7 +144,8 @@ pub enum ProcedureKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Decorator {
-    Prefixes(String),
+    MetricPrefixes,
+    Aliases(Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

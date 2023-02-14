@@ -180,6 +180,26 @@ impl<'a> Parser<'a> {
         Ok(statements)
     }
 
+    fn list_of_identifiers(&mut self) -> Result<Vec<String>> {
+        if self.match_exact(TokenKind::RightParen).is_some() {
+            return Ok(vec![]);
+        }
+
+        let mut identifiers: Vec<String> = vec![self.identifier()?];
+        while self.match_exact(TokenKind::Comma).is_some() {
+            identifiers.push(self.identifier()?);
+        }
+
+        if self.match_exact(TokenKind::RightParen).is_none() {
+            return Err(ParseError::new(
+                ParseErrorKind::MissingClosingParen,
+                self.next().span.clone(),
+            ));
+        }
+
+        Ok(identifiers)
+    }
+
     fn statement(&mut self) -> Result<Statement> {
         if !(self.peek().kind == TokenKind::At || self.peek().kind == TokenKind::Unit)
             && !self.decorator_stack.is_empty()
@@ -325,24 +345,24 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::At).is_some() {
             if let Some(decorator) = self.match_exact(TokenKind::Identifier) {
-                assert!(decorator.lexeme == "prefixes");
-                if self.match_exact(TokenKind::LeftParen).is_some() {
-                    if let Some(decorator_arg) = self.match_exact(TokenKind::Identifier) {
-                        if self.match_exact(TokenKind::RightParen).is_none() {
-                            todo!("Parse error: …")
-                        }
-                        self.decorator_stack
-                            .push(Decorator::Prefixes(decorator_arg.lexeme.clone()));
-
-                        // A decorator is not yet a full statement. Continue parsing:
-                        self.skip_empty_lines();
-                        self.statement()
+                let decorator = if decorator.lexeme == "metric_prefixes" {
+                    Decorator::MetricPrefixes
+                } else if decorator.lexeme == "aliases" {
+                    if self.match_exact(TokenKind::LeftParen).is_some() {
+                        let aliases = self.list_of_identifiers()?;
+                        Decorator::Aliases(aliases)
                     } else {
-                        todo!("Parse error: …")
+                        todo!("Parse error: expected left paren after decorator")
                     }
                 } else {
-                    todo!("Parse error: …")
-                }
+                    todo!("Parse error: unknown decorator")
+                };
+
+                self.decorator_stack.push(decorator);
+
+                // A decorator is not yet a full statement. Continue parsing:
+                self.skip_empty_lines();
+                self.statement()
             } else {
                 todo!("Parse error: …")
             }
