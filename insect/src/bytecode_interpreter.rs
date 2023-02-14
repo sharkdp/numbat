@@ -139,6 +139,10 @@ impl BytecodeInterpreter {
                     self.unit_name_to_constant_index
                         .insert((Prefix::none(), name.into()), constant_idx);
                 }
+                for name in decorator::aliases_short(&decorators) {
+                    self.unit_name_to_constant_index
+                        .insert((Prefix::none(), name.into()), constant_idx);
+                }
             }
             Statement::DeclareDerivedUnit(unit_name, expr, decorators) => {
                 self.unit_registry
@@ -153,7 +157,13 @@ impl BytecodeInterpreter {
                 self.compile_expression(expr)?;
                 self.vm
                     .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
+
+                // TODO: code duplication with DeclareBaseUnit branch above
                 for name in decorator::name_and_aliases(&unit_name, &decorators) {
+                    self.unit_name_to_constant_index
+                        .insert((Prefix::none(), name.into()), constant_idx);
+                }
+                for name in decorator::aliases_short(&decorators) {
                     self.unit_name_to_constant_index
                         .insert((Prefix::none(), name.into()), constant_idx);
                 }

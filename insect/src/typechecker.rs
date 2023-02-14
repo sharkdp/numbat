@@ -347,6 +347,10 @@ impl TypeChecker {
                     self.identifiers
                         .insert(name.clone(), type_specified.clone());
                 }
+                for name in decorator::aliases_short(&decorators) {
+                    self.identifiers
+                        .insert(name.clone(), type_specified.clone());
+                }
                 typed_ast::Statement::DeclareBaseUnit(unit_name, decorators, type_specified)
             }
             ast::Statement::DeclareDerivedUnit(unit_name, expr, optional_dexpr, decorators) => {
@@ -371,6 +375,9 @@ impl TypeChecker {
                     }
                 }
                 for name in decorator::name_and_aliases(&unit_name, &decorators) {
+                    self.identifiers.insert(name.clone(), type_deduced.clone());
+                }
+                for name in decorator::aliases_short(&decorators) {
                     self.identifiers.insert(name.clone(), type_deduced.clone());
                 }
                 typed_ast::Statement::DeclareDerivedUnit(unit_name, expr, decorators)

@@ -61,7 +61,14 @@ impl Transformer {
         let is_prefixable = Self::has_prefix_decorator(decorators);
         for alias in decorator::name_and_aliases(name, decorators) {
             if is_prefixable {
-                self.prefix_parser.add_prefixable_unit(&alias)?;
+                self.prefix_parser.add_prefixable_unit_long(&alias)?;
+            } else {
+                self.prefix_parser.add_non_prefixable_unit(&alias)?;
+            }
+        }
+        for alias in decorator::aliases_short(decorators) {
+            if is_prefixable {
+                self.prefix_parser.add_prefixable_unit_short(&alias)?;
             } else {
                 self.prefix_parser.add_non_prefixable_unit(&alias)?;
             }

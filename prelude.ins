@@ -40,75 +40,92 @@ dimension Temperature
 
 @metric_prefixes
 @aliases(meters, metre, metres)
-#@aliases_short(m)
+@aliases_short(m)
 unit meter: Length
 
 @metric_prefixes
 @aliases(seconds)
+@aliases_short(s)
 unit second: Time
 
 @metric_prefixes
 @aliases(grams, gramme, grammes)
+@aliases_short(g)
 unit gram: Mass
 
 @metric_prefixes
+@aliases_short(Hz)
 unit hertz: Frequency = 1 / second
 
 @metric_prefixes
 @aliases(newtons)
+@aliases_short(N)
 unit newton: Force = kilogram meter / second^2
 
 @metric_prefixes
 @aliases(joules)
+@aliases_short(J)
 unit joule: Energy = newton meter
 
 @metric_prefixes
 @aliases(watts)
+@aliases_short(W)
 unit watt: Power = joule / second
 
 @metric_prefixes
 @aliases(pascals)
+@aliases_short(Pa)
 unit pascal: Pressure = newton / meter^2
 
 @metric_prefixes
 @aliases(amperes)
+@aliases_short(A)
 unit ampere: Current
 
 @metric_prefixes
 @aliases(coulombs)
+@aliases_short(C)
 unit coulomb: Charge = ampere second
 
 @metric_prefixes
 @aliases(volts)
+@aliases_short(V)
 unit volt: Voltage = kilogram  meter^2 / (second^3 ampere)
 
 @metric_prefixes
 @aliases(farads)
+@aliases_short(F)
 unit farad: Capacitance = coulomb / volt
 
 @metric_prefixes
 @aliases(ohms)
+@aliases_short(Ω)
 unit ohm: Resistance = volt / ampere
 
 @metric_prefixes
 @aliases(kelvins)
+@aliases_short(K)
 unit kelvin : Temperature
 
 ## SI accepted units
 
 @metric_prefixes
 @aliases(radians)
+@aliases_short(rad)
 unit radian = meter / meter # TODO
 
 @aliases(degrees)
+@aliases_short(deg, °)
 unit degree = π radian / 180
 
 ### Time units
 
 @aliases(minutes)
+@aliases_short(min)
 unit minute: Time = 60 seconds
 
 @aliases(hours)
+@aliases_short(h)
 unit hour: Time = 60 minutes
 
 @aliases(days)
@@ -124,51 +141,37 @@ unit month: Time = year / 12
 
 dimension Bit
 
+@metric_prefixes
 @aliases(bits)
-unit bit: Bit
+unit bit: Bit    # TODO: with this definition, we can not use 'Mbit', only 'megabit'.
 
+@metric_prefixes
 @aliases(bytes,octet,octets)
+@aliases_short(B)
 unit byte: Bit = 8 bit
 
 ### Imperial units
 
 @aliases(inches)
+@aliases_short(in)
 unit inch: Length = 0.0254 meter
 
 @aliases(feet)
+@aliases_short(ft)
 unit foot: Length = 0.3048 meter
 assert_eq(1 foot, 12 inches, 0.001 inch)
 
 @aliases(yards)
+@aliases_short(yd)
 unit yard: Length = 0.9144 meter
 assert_eq(1 yard, 3 feet, 0.001 foot)
 
 @aliases(miles)
+@aliases_short(mi)
 unit mile: Length = 1609.344 meter
 assert_eq(1 mile, 1760 yard, 0.001 yard)
 
-### Short versions of units (TODO)
-
-unit m = meter
-unit s = second
-unit kg = kilogram
-unit Hz = hertz
-unit N = newton
-unit J = joule
-unit W = watt
-unit Pa = pascal
-unit A = ampere
-unit C = coulomb
-unit V = volt
-unit F = farad
-unit Ω = ohm
-unit K = kelvin
-
-unit rad = radian
-unit deg = degree
-unit ° = degree
-
-unit min = minute
+### Commonly used non-standard abbreviations
 
 unit mph = miles per hour
 

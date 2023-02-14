@@ -77,7 +77,10 @@ impl Cli {
                 "Error while reading prelude from {}",
                 prelude_path.to_string_lossy()
             ))?;
-            self.parse_and_evaluate(&prelude_code, ExecutionMode::Normal);
+            let result = self.parse_and_evaluate(&prelude_code, ExecutionMode::Normal);
+            if result.is_break() {
+                bail!("Interpreter error in Prelude code")
+            }
         }
 
         let code: Option<String> = if let Some(ref path) = self.args.file {
@@ -160,6 +163,7 @@ impl Cli {
         }
     }
 
+    #[must_use]
     fn parse_and_evaluate(&mut self, input: &str, execution_mode: ExecutionMode) -> ControlFlow {
         let result = self.insect.interpret(input);
 

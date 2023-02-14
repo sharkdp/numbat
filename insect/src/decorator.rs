@@ -2,6 +2,7 @@
 pub enum Decorator {
     MetricPrefixes,
     Aliases(Vec<String>),
+    AliasesShort(Vec<String>),
 }
 
 pub fn name_and_aliases<'a>(
@@ -15,4 +16,13 @@ pub fn name_and_aliases<'a>(
         }
     }
     return Box::new(name_iter);
+}
+
+pub fn aliases_short<'a>(decorators: &'a [Decorator]) -> Box<dyn Iterator<Item = &'a String> + 'a> {
+    for decorator in decorators {
+        if let Decorator::AliasesShort(aliases) = decorator {
+            return Box::new(aliases.iter());
+        }
+    }
+    return Box::new(std::iter::empty());
 }

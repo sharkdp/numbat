@@ -353,11 +353,18 @@ impl<'a> Parser<'a> {
                     } else {
                         todo!("Parse error: expected left paren after decorator")
                     }
+                } else if decorator.lexeme == "aliases_short" {
+                    if self.match_exact(TokenKind::LeftParen).is_some() {
+                        let aliases_short = self.list_of_identifiers()?;
+                        Decorator::AliasesShort(aliases_short)
+                    } else {
+                        todo!("Parse error: expected left paren after decorator")
+                    }
                 } else {
                     todo!("Parse error: unknown decorator")
                 };
 
-                self.decorator_stack.push(decorator);
+                self.decorator_stack.push(decorator); // TODO: make sure that there are no duplicate decorators
 
                 // A decorator is not yet a full statement. Continue parsing:
                 self.skip_empty_lines();
