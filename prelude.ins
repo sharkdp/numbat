@@ -101,28 +101,6 @@ dimension Bit
 unit bit: Bit
 unit byte: Bit = 8 bit
 
-### Short versions of units (TODO)
-
-unit m = meter
-unit s = second
-unit kg = kilogram
-unit Hz = hertz
-unit N = newton
-unit J = joule
-unit W = watt
-unit P = pascal
-unit A = ampere
-unit C = coulomb
-unit V = volt
-unit F = farad
-unit Ω = ohm
-unit K = kelvin
-
-unit rad = radian
-unit deg = degree
-
-unit min = minute
-
 ### Imperial units
 
 unit inch: Length = 0.0254 meter
@@ -136,6 +114,29 @@ assert_eq(1 yard, 3 foot, 0.001 foot)
 unit mile: Length = 1609.344 meter
 assert_eq(1 mile, 1760 yard, 0.001 yard)
 
+### Short versions of units (TODO)
+
+unit m = meter
+unit s = second
+unit kg = kilogram
+unit Hz = hertz
+unit N = newton
+unit J = joule
+unit W = watt
+unit Pa = pascal
+unit A = ampere
+unit C = coulomb
+unit V = volt
+unit F = farad
+unit Ω = ohm
+unit K = kelvin
+
+unit rad = radian
+unit deg = degree
+
+unit min = minute
+
+unit mph = mile/hour
 
 ### Physical constants
 
