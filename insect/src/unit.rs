@@ -56,10 +56,10 @@ impl Ord for BaseUnit {
 pub struct UnitFactor(pub Prefix, pub BaseUnit, pub Exponent);
 
 impl Canonicalize for UnitFactor {
-    type MergeKey = BaseUnit;
+    type MergeKey = (Prefix, BaseUnit);
 
     fn merge_key(&self) -> Self::MergeKey {
-        self.1.clone()
+        (self.0.clone(), self.1.clone())
     }
 
     fn merge(self, other: Self) -> Self {
