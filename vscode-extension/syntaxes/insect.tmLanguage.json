@@ -6,6 +6,12 @@
             "include": "#keywords"
         },
         {
+            "include": "#decorators"
+        },
+        {
+            "include": "#decorator_args"
+        },
+        {
             "include": "#comments"
         },
         {
@@ -23,7 +29,23 @@
             "patterns": [
                 {
                     "name": "keyword.control.insect",
-                    "match": "\\b(dimension|unit|let|fn)\\b"
+                    "match": "\\b(dimension|unit|let|fn|assert_eq|print)\\b"
+                }
+            ]
+        },
+        "decorators": {
+            "patterns": [
+                {
+                    "name": "support.function.insect",
+                    "match": "(@prefixes)\\b"
+                }
+            ]
+        },
+        "decorator_args": {
+            "patterns": [
+                {
+                    "name": "string.unquoted",
+                    "match": "\\b(decimal)\\b"
                 }
             ]
         },
@@ -47,7 +69,7 @@
             "patterns": [
                 {
                     "name": "entity.name.type",
-                    "match": "\\b[A-Z][A-Za-z]+\\b"
+                    "match": "\\b\\p{Lu}[A-Za-z]*\\b"
                 }
             ]
         },
@@ -55,7 +77,7 @@
             "patterns": [
                 {
                     "name": "variable.name",
-                    "match": "\\b\\p{Ll}\\w+\\b"
+                    "match": "\\b[\\p{Ll}½¼_][\\p{L}½¼_0-9]*\\b"
                 }
             ]
         }
