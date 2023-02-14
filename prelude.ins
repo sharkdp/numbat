@@ -39,80 +39,111 @@ dimension Temperature
 ### SI Units
 
 @metric_prefixes
-@aliases(metre, meters, metres)
+@aliases(meters, metre, metres)
 #@aliases_short(m)
 unit meter: Length
 
 @metric_prefixes
+@aliases(seconds)
 unit second: Time
 
 @metric_prefixes
+@aliases(grams, gramme, grammes)
 unit gram: Mass
 
 @metric_prefixes
 unit hertz: Frequency = 1 / second
 
 @metric_prefixes
+@aliases(newtons)
 unit newton: Force = kilogram meter / second^2
 
 @metric_prefixes
+@aliases(joules)
 unit joule: Energy = newton meter
 
 @metric_prefixes
+@aliases(watts)
 unit watt: Power = joule / second
 
 @metric_prefixes
+@aliases(pascals)
 unit pascal: Pressure = newton / meter^2
 
 @metric_prefixes
+@aliases(amperes)
 unit ampere: Current
 
 @metric_prefixes
+@aliases(coulombs)
 unit coulomb: Charge = ampere second
 
 @metric_prefixes
+@aliases(volts)
 unit volt: Voltage = kilogram  meter^2 / (second^3 ampere)
 
 @metric_prefixes
+@aliases(farads)
 unit farad: Capacitance = coulomb / volt
 
 @metric_prefixes
+@aliases(ohms)
 unit ohm: Resistance = volt / ampere
 
 @metric_prefixes
+@aliases(kelvins)
 unit kelvin : Temperature
 
 ## SI accepted units
 
 @metric_prefixes
+@aliases(radians)
 unit radian = meter / meter # TODO
 
+@aliases(degrees)
 unit degree = π radian / 180
 
 ### Time units
 
-unit minute: Time = 60 second
-unit hour: Time = 60 minute
-unit day: Time = 24 hour
-unit year: Time = 365.2425 day
+@aliases(minutes)
+unit minute: Time = 60 seconds
+
+@aliases(hours)
+unit hour: Time = 60 minutes
+
+@aliases(days)
+unit day: Time = 24 hours
+
+@aliases(years)
+unit year: Time = 365.2425 days
+
+@aliases(months)
 unit month: Time = year / 12
 
 ### Other units
 
 dimension Bit
+
+@aliases(bits)
 unit bit: Bit
+
+@aliases(bytes,octet,octets)
 unit byte: Bit = 8 bit
 
 ### Imperial units
 
+@aliases(inches)
 unit inch: Length = 0.0254 meter
 
+@aliases(feet)
 unit foot: Length = 0.3048 meter
-assert_eq(1 foot, 12 inch, 0.001 inch)
+assert_eq(1 foot, 12 inches, 0.001 inch)
 
+@aliases(yards)
 unit yard: Length = 0.9144 meter
-assert_eq(1 yard, 3 foot, 0.001 foot)
+assert_eq(1 yard, 3 feet, 0.001 foot)
 
+@aliases(miles)
 unit mile: Length = 1609.344 meter
 assert_eq(1 mile, 1760 yard, 0.001 yard)
 
@@ -135,10 +166,11 @@ unit K = kelvin
 
 unit rad = radian
 unit deg = degree
+unit ° = degree
 
 unit min = minute
 
-unit mph = mile/hour
+unit mph = miles per hour
 
 ### Physical constants
 

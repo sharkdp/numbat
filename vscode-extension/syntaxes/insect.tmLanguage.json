@@ -29,7 +29,7 @@
             "patterns": [
                 {
                     "name": "keyword.control.insect",
-                    "match": "\\b(dimension|unit|let|fn|assert_eq|print)\\b"
+                    "match": "\\b(per|to|let|fn|dimension|unit|print|assert_eq)\\b"
                 }
             ]
         },

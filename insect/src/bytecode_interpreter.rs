@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use crate::ffi;
 use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::prefix::Prefix;
 use crate::typed_ast::{BinaryOperator, Expression, Statement};
 use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
 use crate::vm::{Constant, Op, Vm};
+use crate::{decorator, ffi};
 
 pub struct BytecodeInterpreter {
     vm: Vm,
@@ -127,7 +127,7 @@ impl BytecodeInterpreter {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DeclareBaseUnit(unit_name, _decorators, dexpr) => {
+            Statement::DeclareBaseUnit(unit_name, decorators, dexpr) => {
                 self.unit_registry
                     .add_base_unit(unit_name, dexpr.clone())
                     .map_err(RuntimeError::UnitRegistryError)?;
@@ -135,10 +135,12 @@ impl BytecodeInterpreter {
                 let constant_idx = self
                     .vm
                     .add_constant(Constant::Unit(Unit::new_standard(unit_name)));
-                self.unit_name_to_constant_index
-                    .insert((Prefix::none(), unit_name.into()), constant_idx);
+                for name in decorator::name_and_aliases(&unit_name, &decorators) {
+                    self.unit_name_to_constant_index
+                        .insert((Prefix::none(), name.into()), constant_idx);
+                }
             }
-            Statement::DeclareDerivedUnit(unit_name, expr, _decorators) => {
+            Statement::DeclareDerivedUnit(unit_name, expr, decorators) => {
                 self.unit_registry
                     .add_derived_unit(unit_name, expr)
                     .map_err(RuntimeError::UnitRegistryError)?;
@@ -151,8 +153,10 @@ impl BytecodeInterpreter {
                 self.compile_expression(expr)?;
                 self.vm
                     .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
-                self.unit_name_to_constant_index
-                    .insert((Prefix::none(), unit_name.into()), constant_idx);
+                for name in decorator::name_and_aliases(&unit_name, &decorators) {
+                    self.unit_name_to_constant_index
+                        .insert((Prefix::none(), name.into()), constant_idx);
+                }
             }
             Statement::ProcedureCall(kind, args) => {
                 // Put all arguments on top of the stack

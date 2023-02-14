@@ -5,7 +5,7 @@ use crate::dimension::DimensionRegistry;
 use crate::ffi::ArityRange;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::typed_ast::{self, Type};
-use crate::{ast, ffi};
+use crate::{ast, decorator, ffi};
 
 use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
@@ -338,16 +338,18 @@ impl TypeChecker {
                 self.identifiers.insert(name.clone(), type_deduced.clone());
                 typed_ast::Statement::DeclareVariable(name, expr, type_deduced)
             }
-            ast::Statement::DeclareBaseUnit(name, dexpr, decorators) => {
+            ast::Statement::DeclareBaseUnit(unit_name, dexpr, decorators) => {
                 let type_specified = self
                     .registry
                     .get_base_representation(&dexpr)
                     .map_err(TypeCheckError::RegistryError)?;
-                self.identifiers
-                    .insert(name.clone(), type_specified.clone());
-                typed_ast::Statement::DeclareBaseUnit(name, decorators, type_specified)
+                for name in decorator::name_and_aliases(&unit_name, &decorators) {
+                    self.identifiers
+                        .insert(name.clone(), type_specified.clone());
+                }
+                typed_ast::Statement::DeclareBaseUnit(unit_name, decorators, type_specified)
             }
-            ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr, decorators) => {
+            ast::Statement::DeclareDerivedUnit(unit_name, expr, optional_dexpr, decorators) => {
                 // TODO: this is the *exact same code* that we have above for
                 // variable declarations => deduplicate this somehow
                 let expr = self.check_expression(expr)?;
@@ -368,8 +370,10 @@ impl TypeChecker {
                         ));
                     }
                 }
-                self.identifiers.insert(name.clone(), type_deduced);
-                typed_ast::Statement::DeclareDerivedUnit(name, expr, decorators)
+                for name in decorator::name_and_aliases(&unit_name, &decorators) {
+                    self.identifiers.insert(name.clone(), type_deduced.clone());
+                }
+                typed_ast::Statement::DeclareDerivedUnit(unit_name, expr, decorators)
             }
             ast::Statement::DeclareFunction(
                 function_name,
