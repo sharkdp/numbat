@@ -110,18 +110,19 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
 
         match result {
             Ok(diff) => {
-                if let Err(e) = args[2].convert_to(diff.unit()) {
-                    return ControlFlow::Break(RuntimeError::ConversionError(e));
-                }
-
-                if diff.unsafe_value().to_f64().abs() < args[2].unsafe_value().to_f64() {
-                    ControlFlow::Continue(())
-                } else {
-                    ControlFlow::Break(RuntimeError::AssertEq3Failed(
-                        args[0].clone(),
-                        args[1].clone(),
-                        args[2].clone(),
-                    ))
+                match diff.convert_to(args[2].unit()) {
+                    Err(e) => ControlFlow::Break(RuntimeError::ConversionError(e)),
+                    Ok(diff_converted) => {
+                        if diff_converted.unsafe_value().to_f64().abs() < args[2].unsafe_value().to_f64() {
+                            ControlFlow::Continue(())
+                        } else {
+                            ControlFlow::Break(RuntimeError::AssertEq3Failed(
+                                args[0].clone(),
+                                args[1].clone(),
+                                args[2].clone(),
+                            ))
+                        }
+                    }
                 }
             }
             Err(e) => ControlFlow::Break(RuntimeError::ConversionError(e)),
