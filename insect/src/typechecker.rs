@@ -338,16 +338,16 @@ impl TypeChecker {
                 self.identifiers.insert(name.clone(), type_deduced.clone());
                 typed_ast::Statement::DeclareVariable(name, expr, type_deduced)
             }
-            ast::Statement::DeclareBaseUnit(name, dexpr) => {
+            ast::Statement::DeclareBaseUnit(name, dexpr, decorators) => {
                 let type_specified = self
                     .registry
                     .get_base_representation(&dexpr)
                     .map_err(TypeCheckError::RegistryError)?;
                 self.identifiers
                     .insert(name.clone(), type_specified.clone());
-                typed_ast::Statement::DeclareBaseUnit(name, type_specified)
+                typed_ast::Statement::DeclareBaseUnit(name, decorators, type_specified)
             }
-            ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr) => {
+            ast::Statement::DeclareDerivedUnit(name, expr, optional_dexpr, decorators) => {
                 // TODO: this is the *exact same code* that we have above for
                 // variable declarations => deduplicate this somehow
                 let expr = self.check_expression(expr)?;
@@ -369,7 +369,7 @@ impl TypeChecker {
                     }
                 }
                 self.identifiers.insert(name.clone(), type_deduced);
-                typed_ast::Statement::DeclareDerivedUnit(name, expr)
+                typed_ast::Statement::DeclareDerivedUnit(name, expr, decorators)
             }
             ast::Statement::DeclareFunction(
                 function_name,

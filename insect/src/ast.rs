@@ -142,6 +142,11 @@ pub enum ProcedureKind {
     AssertEq,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Decorator {
+    Prefixes(String),
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
@@ -159,8 +164,13 @@ pub enum Statement {
         Option<DimensionExpression>,
     ),
     DeclareDimension(String, Vec<DimensionExpression>),
-    DeclareBaseUnit(String, DimensionExpression),
-    DeclareDerivedUnit(String, Expression, Option<DimensionExpression>),
+    DeclareBaseUnit(String, DimensionExpression, Vec<Decorator>),
+    DeclareDerivedUnit(
+        String,
+        Expression,
+        Option<DimensionExpression>,
+        Vec<Decorator>,
+    ),
     ProcedureCall(ProcedureKind, Vec<Expression>),
 }
 
@@ -198,10 +208,10 @@ impl PrettyPrint for Statement {
             Statement::DeclareDimension(ident, dexprs) => {
                 format!("dimension {} = {}", ident, dexprs[0].pretty_print()) // TODO: print all dexprs
             }
-            Statement::DeclareBaseUnit(ident, dexpr) => {
+            Statement::DeclareBaseUnit(ident, dexpr, _decorators) => {
                 format!("unit {}: {}", ident, dexpr.pretty_print())
             }
-            Statement::DeclareDerivedUnit(ident, expr, dexpr) => {
+            Statement::DeclareDerivedUnit(ident, expr, dexpr, _decorators) => {
                 format!(
                     "unit {}: {} = {}",
                     ident,

@@ -2,6 +2,7 @@ use crate::{
     ast::{Expression, Statement},
     name_resolution::NameResolutionError,
     prefix_parser::{PrefixParser, PrefixParserResult},
+    typed_ast::Decorator,
 };
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
@@ -50,16 +51,36 @@ impl Transformer {
         }
     }
 
+    fn has_prefix_decorator(decorators: &[Decorator]) -> bool {
+        decorators
+            .iter()
+            .any(|decorator| decorator == &Decorator::Prefixes("decimal".into()))
+    }
+
     fn transform_statement(&mut self, statement: Statement) -> Result<Statement> {
         Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
-            Statement::DeclareBaseUnit(name, dexpr) => {
-                self.prefix_parser.add_prefixable_unit(&name)?;
-                Statement::DeclareBaseUnit(name, dexpr)
+            Statement::DeclareBaseUnit(name, dexpr, decorators) => {
+                if Self::has_prefix_decorator(&decorators) {
+                    self.prefix_parser.add_prefixable_unit(&name)?;
+                } else {
+                    self.prefix_parser.add_non_prefixable_unit(&name)?;
+                }
+                Statement::DeclareBaseUnit(name, dexpr, decorators)
             }
-            Statement::DeclareDerivedUnit(name, expr, dexpr) => {
-                self.prefix_parser.add_prefixable_unit(&name)?;
-                Statement::DeclareDerivedUnit(name, self.transform_expression(expr), dexpr)
+            Statement::DeclareDerivedUnit(name, expr, dexpr, decorators) => {
+                // TODO(minor): same block as above. extract to function?
+                if Self::has_prefix_decorator(&decorators) {
+                    self.prefix_parser.add_prefixable_unit(&name)?;
+                } else {
+                    self.prefix_parser.add_non_prefixable_unit(&name)?;
+                }
+                Statement::DeclareDerivedUnit(
+                    name,
+                    self.transform_expression(expr),
+                    dexpr,
+                    decorators,
+                )
             }
             Statement::DeclareVariable(name, expr, dexpr) => {
                 self.prefix_parser.add_other_identifier(&name)?;

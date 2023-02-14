@@ -23,7 +23,7 @@ pub enum TokenKind {
     LeftAngleBracket,
     RightAngleBracket,
 
-    // Operators
+    // Operators and special signs
     Plus,
     Minus,
     Multiply,
@@ -35,6 +35,7 @@ pub enum TokenKind {
     Colon,
     PostfixApply,
     UnicodeExponent,
+    At,
 
     // Keywords
     Let,
@@ -185,6 +186,7 @@ impl Tokenizer {
             '→' | '➞' => TokenKind::Arrow,
             '=' => TokenKind::Equal,
             ':' => TokenKind::Colon,
+            '@' => TokenKind::At,
             '-' => {
                 if self.match_char('>') {
                     TokenKind::Arrow

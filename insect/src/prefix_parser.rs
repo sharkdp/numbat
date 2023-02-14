@@ -17,6 +17,7 @@ type Result<T> = std::result::Result<T, NameResolutionError>;
 #[derive(Debug)]
 pub struct PrefixParser {
     prefixable_units: HashSet<String>,
+    non_prefixable_units: HashSet<String>,
     other_identifiers: HashSet<String>,
 }
 
@@ -24,20 +25,33 @@ impl PrefixParser {
     pub fn new() -> Self {
         Self {
             prefixable_units: HashSet::new(),
+            non_prefixable_units: HashSet::new(),
             other_identifiers: HashSet::new(),
         }
     }
 
-    pub fn add_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
-        if self.other_identifiers.contains(unit_name) {
-            return Err(NameResolutionError::IdentifierClash(unit_name.into()));
-        }
+    fn is_registered_name(&self, name: &str) -> bool {
+        self.other_identifiers.contains(name)
+            || self.prefixable_units.contains(name)
+            || self.non_prefixable_units.contains(name)
+    }
 
-        if self.prefixable_units.contains(unit_name) {
+    pub fn add_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
+        if self.is_registered_name(unit_name) {
             return Err(NameResolutionError::IdentifierClash(unit_name.into()));
         }
 
         self.prefixable_units.insert(unit_name.into());
+
+        Ok(())
+    }
+
+    pub fn add_non_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
+        if self.is_registered_name(unit_name) {
+            return Err(NameResolutionError::IdentifierClash(unit_name.into()));
+        }
+
+        self.non_prefixable_units.insert(unit_name.into());
 
         Ok(())
     }
@@ -58,7 +72,9 @@ impl PrefixParser {
     }
 
     pub fn parse(&self, input: &str) -> PrefixParserResult {
-        if self.prefixable_units.iter().any(|u| u == input) {
+        if self.prefixable_units.iter().any(|u| u == input)
+            || self.non_prefixable_units.iter().any(|u| u == input)
+        {
             return PrefixParserResult::UnitIdentifier(Prefix::none(), input.into());
         }
 

@@ -127,7 +127,7 @@ impl BytecodeInterpreter {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DeclareBaseUnit(unit_name, dexpr) => {
+            Statement::DeclareBaseUnit(unit_name, _decorators, dexpr) => {
                 self.unit_registry
                     .add_base_unit(unit_name, dexpr.clone())
                     .map_err(RuntimeError::UnitRegistryError)?;
@@ -138,7 +138,7 @@ impl BytecodeInterpreter {
                 self.unit_name_to_constant_index
                     .insert((Prefix::none(), unit_name.into()), constant_idx);
             }
-            Statement::DeclareDerivedUnit(unit_name, expr) => {
+            Statement::DeclareDerivedUnit(unit_name, expr, _decorators) => {
                 self.unit_registry
                     .add_derived_unit(unit_name, expr)
                     .map_err(RuntimeError::UnitRegistryError)?;

@@ -34,7 +34,9 @@
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
-use crate::ast::{BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement};
+use crate::ast::{
+    BinaryOperator, Decorator, DimensionExpression, Expression, ProcedureKind, Statement,
+};
 use crate::number::Number;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
@@ -129,18 +131,26 @@ type Result<T> = std::result::Result<T, ParseError>;
 pub struct Parser<'a> {
     tokens: &'a [Token],
     current: usize,
+    decorator_stack: Vec<Decorator>,
 }
 
 impl<'a> Parser<'a> {
     pub(crate) fn new(tokens: &'a [Token]) -> Self {
-        Parser { tokens, current: 0 }
+        Parser {
+            tokens,
+            current: 0,
+            decorator_stack: vec![],
+        }
+    }
+
+    fn skip_empty_lines(&mut self) {
+        while self.match_exact(TokenKind::Newline).is_some() {}
     }
 
     fn parse(&mut self) -> Result<Vec<Statement>> {
         let mut statements = vec![];
 
-        // Skip over empty lines
-        while self.match_exact(TokenKind::Newline).is_some() {}
+        self.skip_empty_lines();
 
         while !self.is_at_end() {
             match self.statement() {
@@ -171,6 +181,12 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self) -> Result<Statement> {
+        if !(self.peek().kind == TokenKind::At || self.peek().kind == TokenKind::Unit)
+            && !self.decorator_stack.is_empty()
+        {
+            todo!("Parser error: @-decorators can only be used on unit expressions")
+        }
+
         if self.match_exact(TokenKind::Let).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
@@ -307,6 +323,29 @@ impl<'a> Parser<'a> {
                     span: self.peek().span.clone(),
                 })
             }
+        } else if self.match_exact(TokenKind::At).is_some() {
+            if let Some(decorator) = self.match_exact(TokenKind::Identifier) {
+                assert!(decorator.lexeme == "prefixes");
+                if self.match_exact(TokenKind::LeftParen).is_some() {
+                    if let Some(decorator_arg) = self.match_exact(TokenKind::Identifier) {
+                        if self.match_exact(TokenKind::RightParen).is_none() {
+                            todo!("Parse error: …")
+                        }
+                        self.decorator_stack
+                            .push(Decorator::Prefixes(decorator_arg.lexeme.clone()));
+
+                        // A decorator is not yet a full statement. Continue parsing:
+                        self.skip_empty_lines();
+                        self.statement()
+                    } else {
+                        todo!("Parse error: …")
+                    }
+                } else {
+                    todo!("Parse error: …")
+                }
+            } else {
+                todo!("Parse error: …")
+            }
         } else if self.match_exact(TokenKind::Unit).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
@@ -316,11 +355,17 @@ impl<'a> Parser<'a> {
                 };
 
                 let unit_name = identifier.lexeme.clone();
+
+                let mut decorators = vec![];
+                std::mem::swap(&mut decorators, &mut self.decorator_stack);
+
                 if self.match_exact(TokenKind::Equal).is_some() {
                     let expr = self.expression()?;
-                    Ok(Statement::DeclareDerivedUnit(unit_name, expr, dexpr))
+                    Ok(Statement::DeclareDerivedUnit(
+                        unit_name, expr, dexpr, decorators,
+                    ))
                 } else if let Some(dexpr) = dexpr {
-                    Ok(Statement::DeclareBaseUnit(unit_name, dexpr))
+                    Ok(Statement::DeclareBaseUnit(unit_name, dexpr, decorators))
                 } else {
                     Err(ParseError {
                         kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
