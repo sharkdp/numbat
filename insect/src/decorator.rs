@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Decorator {
     MetricPrefixes,
+    BinaryPrefixes,
     Aliases(Vec<String>),
     AliasesShort(Vec<String>),
 }

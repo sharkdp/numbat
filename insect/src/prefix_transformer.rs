@@ -2,7 +2,7 @@ use crate::{
     ast::{Expression, Statement},
     decorator::{self, Decorator},
     name_resolution::NameResolutionError,
-    prefix_parser::{PrefixParser, PrefixParserResult},
+    prefix_parser::{PrefixParser, PrefixParserResult, UnitKind},
 };
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
@@ -51,27 +51,28 @@ impl Transformer {
         }
     }
 
-    fn has_prefix_decorator(decorators: &[Decorator]) -> bool {
-        decorators
-            .iter()
-            .any(|decorator| decorator == &Decorator::MetricPrefixes)
+    fn has_decorator(decorators: &[Decorator], decorator: Decorator) -> bool {
+        decorators.iter().any(|d| d == &decorator)
     }
 
     fn register_name_and_aliases(&mut self, name: &String, decorators: &[Decorator]) -> Result<()> {
-        let is_prefixable = Self::has_prefix_decorator(decorators);
+        let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
+        let binary_prefixes = Self::has_decorator(decorators, Decorator::BinaryPrefixes);
         for alias in decorator::name_and_aliases(name, decorators) {
-            if is_prefixable {
-                self.prefix_parser.add_prefixable_unit_long(&alias)?;
-            } else {
-                self.prefix_parser.add_non_prefixable_unit(&alias)?;
-            }
+            self.prefix_parser.add_unit(
+                &alias,
+                UnitKind::Long,
+                metric_prefixes,
+                binary_prefixes,
+            )?;
         }
         for alias in decorator::aliases_short(decorators) {
-            if is_prefixable {
-                self.prefix_parser.add_prefixable_unit_short(&alias)?;
-            } else {
-                self.prefix_parser.add_non_prefixable_unit(&alias)?;
-            }
+            self.prefix_parser.add_unit(
+                &alias,
+                UnitKind::Short,
+                metric_prefixes,
+                binary_prefixes,
+            )?;
         }
 
         Ok(())

@@ -346,6 +346,8 @@ impl<'a> Parser<'a> {
             if let Some(decorator) = self.match_exact(TokenKind::Identifier) {
                 let decorator = if decorator.lexeme == "metric_prefixes" {
                     Decorator::MetricPrefixes
+                } else if decorator.lexeme == "binary_prefixes" {
+                    Decorator::BinaryPrefixes
                 } else if decorator.lexeme == "aliases" {
                     if self.match_exact(TokenKind::LeftParen).is_some() {
                         let aliases = self.list_of_identifiers()?;

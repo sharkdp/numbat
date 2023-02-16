@@ -403,10 +403,7 @@ impl Vm {
                     let identifier_idx = self.read_byte();
                     let identifier = &self.global_identifiers[identifier_idx as usize];
 
-                    let quantity = self
-                        .globals
-                        .get(identifier)
-                        .expect("Variable exists");
+                    let quantity = self.globals.get(identifier).expect("Variable exists");
 
                     self.push(quantity.clone());
                 }
