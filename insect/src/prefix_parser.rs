@@ -107,8 +107,19 @@ impl PrefixParser {
     ) -> Result<()> {
         self.ensure_name_is_available(unit_name)?;
 
-        for (prefix_long, _, _) in Self::prefixes() {
-            self.ensure_name_is_available(&format!("{}{}", prefix_long, unit_name))?;
+        for (prefix_long, prefix_short, prefix) in Self::prefixes() {
+            if !(prefix.is_metric() && metric || prefix.is_binary() && binary) {
+                continue;
+            }
+
+            match kind {
+                UnitKind::Long => {
+                    self.ensure_name_is_available(&format!("{}{}", prefix_long, unit_name))?
+                }
+                UnitKind::Short => {
+                    self.ensure_name_is_available(&format!("{}{}", prefix_short, unit_name))?
+                }
+            }
         }
 
         self.units.insert(
