@@ -10,14 +10,12 @@ use thiserror::Error;
 pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
-    #[error("Unknown variable '{0}'")]
-    UnknownVariable(String),
     #[error("No statements in program")]
-    NoStatements,
+    NoStatements, // TODO: move this error to an earlier stage?
     #[error("{0}")]
-    UnitRegistryError(UnitRegistryError),
+    UnitRegistryError(UnitRegistryError), // TODO: can this even be triggered?
     #[error("{0}")]
-    ConversionError(ConversionError),
+    ConversionError(ConversionError), // TODO: can this even be triggered?
     #[error(
         "Assertion failed because the following two quantities are not the same:\n  {0}\n  {1}"
     )]
