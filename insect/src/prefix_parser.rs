@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use once_cell::sync::OnceCell;
 
@@ -14,20 +14,29 @@ pub enum PrefixParserResult {
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum UnitKind {
+    Short,
+    Long,
+}
+
+#[derive(Debug, Clone)]
+struct UnitInfo {
+    kind: Option<UnitKind>,
+    metric_prefixes: bool,
+    binary_prefixes: bool,
+}
+
 #[derive(Debug)]
 pub struct PrefixParser {
-    prefixable_units_long: HashSet<String>,
-    prefixable_units_short: HashSet<String>,
-    non_prefixable_units: HashSet<String>,
+    units: HashMap<String, UnitInfo>,
     other_identifiers: HashSet<String>,
 }
 
 impl PrefixParser {
     pub fn new() -> Self {
         Self {
-            prefixable_units_long: HashSet::new(),
-            prefixable_units_short: HashSet::new(),
-            non_prefixable_units: HashSet::new(),
+            units: HashMap::new(),
             other_identifiers: HashSet::new(),
         }
     }
@@ -72,7 +81,14 @@ impl PrefixParser {
             self.ensure_name_is_available(&format!("{}{}", prefix_long, unit_name))?;
         }
 
-        self.prefixable_units_long.insert(unit_name.into());
+        self.units.insert(
+            unit_name.into(),
+            UnitInfo {
+                kind: Some(UnitKind::Long),
+                metric_prefixes: true,
+                binary_prefixes: false,
+            },
+        );
 
         Ok(())
     }
@@ -84,7 +100,14 @@ impl PrefixParser {
             self.ensure_name_is_available(&format!("{}{}", prefix_short, unit_name))?;
         }
 
-        self.prefixable_units_short.insert(unit_name.into());
+        self.units.insert(
+            unit_name.into(),
+            UnitInfo {
+                kind: Some(UnitKind::Short),
+                metric_prefixes: true,
+                binary_prefixes: false,
+            },
+        );
 
         Ok(())
     }
@@ -92,7 +115,14 @@ impl PrefixParser {
     pub fn add_non_prefixable_unit(&mut self, unit_name: &str) -> Result<()> {
         self.ensure_name_is_available(unit_name)?;
 
-        self.non_prefixable_units.insert(unit_name.into());
+        self.units.insert(
+            unit_name.into(),
+            UnitInfo {
+                kind: None,
+                metric_prefixes: true,
+                binary_prefixes: false,
+            },
+        );
 
         Ok(())
     }
@@ -108,19 +138,17 @@ impl PrefixParser {
     }
 
     pub fn parse(&self, input: &str) -> PrefixParserResult {
-        if self.prefixable_units_long.iter().any(|u| u == input)
-            || self.prefixable_units_short.iter().any(|u| u == input)
-            || self.non_prefixable_units.iter().any(|u| u == input)
-        {
+        if self.units.iter().any(|(name, _)| name == input) {
             return PrefixParserResult::UnitIdentifier(Prefix::none(), input.into());
         }
 
         for (prefix_long, prefix_short, prefix) in Self::prefixes() {
             if input.starts_with(prefix_long)
                 && self
-                    .prefixable_units_long
+                    .units
                     .iter()
-                    .any(|u| u == &input[prefix_long.len()..])
+                    .filter(|(name, info)| info.kind == Some(UnitKind::Long))
+                    .any(|(name, _)| name == &input[prefix_long.len()..])
             {
                 return PrefixParserResult::UnitIdentifier(
                     prefix.clone(),
@@ -130,9 +158,10 @@ impl PrefixParser {
 
             if input.starts_with(prefix_short)
                 && self
-                    .prefixable_units_short
+                    .units
                     .iter()
-                    .any(|u| u == &input[prefix_short.len()..])
+                    .filter(|(name, info)| info.kind == Some(UnitKind::Short))
+                    .any(|(name, _)| name == &input[prefix_short.len()..])
             {
                 return PrefixParserResult::UnitIdentifier(
                     prefix.clone(),
@@ -153,11 +182,22 @@ mod tests {
     fn basic() {
         let mut prefix_parser = PrefixParser::new();
         prefix_parser.add_prefixable_unit_long("meter").unwrap();
+        prefix_parser.add_prefixable_unit_short("m").unwrap();
+        prefix_parser.add_non_prefixable_unit("me").unwrap();
 
         assert_eq!(
             prefix_parser.parse("meter"),
             PrefixParserResult::UnitIdentifier(Prefix::none(), "meter".into())
         );
+        assert_eq!(
+            prefix_parser.parse("m"),
+            PrefixParserResult::UnitIdentifier(Prefix::none(), "m".into())
+        );
+        assert_eq!(
+            prefix_parser.parse("me"),
+            PrefixParserResult::UnitIdentifier(Prefix::none(), "me".into())
+        );
+
         assert_eq!(
             prefix_parser.parse("kilometer"),
             PrefixParserResult::UnitIdentifier(Prefix::kilo(), "meter".into())
@@ -165,6 +205,24 @@ mod tests {
         assert_eq!(
             prefix_parser.parse("millimeter"),
             PrefixParserResult::UnitIdentifier(Prefix::milli(), "meter".into())
+        );
+
+        assert_eq!(
+            prefix_parser.parse("km"),
+            PrefixParserResult::UnitIdentifier(Prefix::kilo(), "m".into())
+        );
+        assert_eq!(
+            prefix_parser.parse("mm"),
+            PrefixParserResult::UnitIdentifier(Prefix::milli(), "m".into())
+        );
+
+        assert_eq!(
+            prefix_parser.parse("kilome"),
+            PrefixParserResult::Identifier("kilome".into())
+        );
+        assert_eq!(
+            prefix_parser.parse("kme"),
+            PrefixParserResult::Identifier("kme".into())
         );
 
         assert_eq!(
