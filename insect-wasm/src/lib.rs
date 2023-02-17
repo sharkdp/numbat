@@ -20,6 +20,6 @@ pub fn interpret(code: &str) -> String {
     match result {
         InterpreterResult::Quantity(q) => format!("{}", q),
         InterpreterResult::Continue => todo!(),
-        InterpreterResult::Exit => todo!(),
+        InterpreterResult::Exit(_) => todo!(),
     }
 }
