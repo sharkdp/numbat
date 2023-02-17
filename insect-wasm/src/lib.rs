@@ -14,12 +14,13 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn interpret(code: &str) -> String {
     utils::set_panic_hook();
 
-    let mut insect = Insect::new(false);
-    let (_, result) = insect.interpret(&code).unwrap();
-
-    match result {
-        InterpreterResult::Quantity(q) => format!("{}", q),
-        InterpreterResult::Continue => todo!(),
-        InterpreterResult::Exit(_) => todo!(),
+    let mut insect = Insect::new(true);
+    match insect.interpret(&code) {
+        Ok((_, result)) => match result {
+            InterpreterResult::Quantity(q) => format!("{}", q),
+            InterpreterResult::Continue => "Nothing to show".into(),
+            InterpreterResult::Exit(_) => "Error!".into(),
+        },
+        Err(e) => format!("{:#}", e)
     }
 }
