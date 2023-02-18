@@ -28,7 +28,7 @@ impl UnitIdentifier {
     fn corresponding_base_unit(&self) -> Unit {
         match &self.unit_type {
             UnitKind::Base => Unit::new_base(&self.name),
-            UnitKind::Derived(_, unit) => unit.clone(),
+            UnitKind::Derived(_, base_unit) => base_unit.clone(),
         }
     }
 
@@ -52,28 +52,40 @@ impl Ord for UnitIdentifier {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
-pub struct UnitFactor(pub Prefix, pub UnitIdentifier, pub Exponent);
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct UnitFactor {
+    pub prefix: Prefix,
+    pub unit_id: UnitIdentifier,
+    pub exponent: Exponent,
+}
 
 impl Canonicalize for UnitFactor {
     type MergeKey = (Prefix, UnitIdentifier);
 
     fn merge_key(&self) -> Self::MergeKey {
-        (self.0.clone(), self.1.clone())
+        (self.prefix.clone(), self.unit_id.clone())
     }
 
     fn merge(self, other: Self) -> Self {
-        UnitFactor(self.0, self.1, self.2 + other.2)
+        UnitFactor {
+            prefix: self.prefix,
+            unit_id: self.unit_id,
+            exponent: self.exponent + other.exponent,
+        }
     }
 
     fn is_trivial(&self) -> bool {
-        self.2 == Rational::zero()
+        self.exponent == Rational::zero()
     }
 }
 
 impl Power for UnitFactor {
     fn power(self, e: Exponent) -> Self {
-        UnitFactor(self.0, self.1, self.2 * e)
+        UnitFactor {
+            prefix: self.prefix,
+            unit_id: self.unit_id,
+            exponent: self.exponent * e,
+        }
     }
 }
 
@@ -85,49 +97,59 @@ impl Unit {
     }
 
     pub fn new_base(name: &str) -> Self {
-        Unit::from_factor(UnitFactor(
-            Prefix::none(),
-            UnitIdentifier {
+        Unit::from_factor(UnitFactor {
+            prefix: Prefix::none(),
+            unit_id: UnitIdentifier {
                 name: name.into(),
                 unit_type: UnitKind::Base,
             },
-            Rational::from_integer(1),
-        ))
+            exponent: Rational::from_integer(1),
+        })
     }
 
     pub fn new_derived(name: &str, factor: ConversionFactor, base_unit: Unit) -> Self {
-        Unit::from_factor(UnitFactor(
-            Prefix::none(),
-            UnitIdentifier {
+        Unit::from_factor(UnitFactor {
+            prefix: Prefix::none(),
+            unit_id: UnitIdentifier {
                 name: name.into(),
                 unit_type: UnitKind::Derived(factor, base_unit),
             },
-            Rational::from_integer(1),
-        ))
+            exponent: Rational::from_integer(1),
+        })
     }
 
     pub fn with_prefix(self, prefix: Prefix) -> Self {
         let mut factors: Vec<_> = self.into_iter().collect();
         assert!(!factors.is_empty());
-        assert!(factors[0].0 == Prefix::none());
-        factors[0].0 = prefix;
+        assert!(factors[0].prefix == Prefix::none());
+        factors[0].prefix = prefix;
         Self::from_factors(factors)
     }
 
     pub fn to_base_unit_representation(&self) -> (Self, ConversionFactor) {
         let base_unit_representation = self
             .iter()
-            .map(|UnitFactor(_, base_unit, exponent)| {
-                base_unit.corresponding_base_unit().power(*exponent)
-            })
+            .map(
+                |UnitFactor {
+                     prefix: _,
+                     unit_id: base_unit,
+                     exponent,
+                 }| { base_unit.corresponding_base_unit().power(*exponent) },
+            )
             .product();
 
         let factor = self
             .iter()
-            .map(|UnitFactor(prefix, base_unit, exponent)| {
-                (prefix.factor() * base_unit.conversion_factor())
-                    .pow(&Number::from_f64(exponent.to_f64().unwrap()))
-            }) // TODO: reduce wrapping/unwrapping; do we want to use exponent.to_f64?
+            .map(
+                |UnitFactor {
+                     prefix,
+                     unit_id: base_unit,
+                     exponent,
+                 }| {
+                    (prefix.factor() * base_unit.conversion_factor())
+                        .pow(&Number::from_f64(exponent.to_f64().unwrap()))
+                },
+            ) // TODO: reduce wrapping/unwrapping; do we want to use exponent.to_f64?
             .product();
 
         (base_unit_representation, factor)
@@ -157,36 +179,41 @@ impl Unit {
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
-        for &UnitFactor(prefix, ref base_unit, exp) in self.iter() {
+        for &UnitFactor {
+            prefix,
+            unit_id: ref base_unit,
+            exponent,
+        } in self.iter()
+        {
             result.push_str(&format!("{}", prefix));
             result.push_str(&base_unit.name);
 
-            if exp == Ratio::from_integer(5) {
+            if exponent == Ratio::from_integer(5) {
                 result.push('⁵');
-            } else if exp == Ratio::from_integer(4) {
+            } else if exponent == Ratio::from_integer(4) {
                 result.push('⁴');
-            } else if exp == Ratio::from_integer(3) {
+            } else if exponent == Ratio::from_integer(3) {
                 result.push('³');
-            } else if exp == Ratio::from_integer(2) {
+            } else if exponent == Ratio::from_integer(2) {
                 result.push('²');
-            } else if exp == Ratio::from_integer(1) {
-            } else if exp == Ratio::from_integer(-1) {
+            } else if exponent == Ratio::from_integer(1) {
+            } else if exponent == Ratio::from_integer(-1) {
                 result.push('⁻');
                 result.push('¹');
-            } else if exp == Ratio::from_integer(-2) {
+            } else if exponent == Ratio::from_integer(-2) {
                 result.push('⁻');
                 result.push('²');
-            } else if exp == Ratio::from_integer(-3) {
+            } else if exponent == Ratio::from_integer(-3) {
                 result.push('⁻');
                 result.push('³');
-            } else if exp == Ratio::from_integer(-4) {
+            } else if exponent == Ratio::from_integer(-4) {
                 result.push('⁻');
                 result.push('⁴');
-            } else if exp == Ratio::from_integer(-5) {
+            } else if exponent == Ratio::from_integer(-5) {
                 result.push('⁻');
                 result.push('⁵');
             } else {
-                write!(result, "^{}", exp).unwrap();
+                write!(result, "^{}", exponent).unwrap();
             };
             result.push('·');
         }
@@ -204,22 +231,22 @@ mod tests {
     #[test]
     fn division() {
         let meter_per_second = Unit::from_factors([
-            UnitFactor(
-                Prefix::none(),
-                UnitIdentifier {
+            UnitFactor {
+                prefix: Prefix::none(),
+                unit_id: UnitIdentifier {
                     name: "meter".into(),
                     unit_type: UnitKind::Base,
                 },
-                Rational::from_integer(1),
-            ),
-            UnitFactor(
-                Prefix::none(),
-                UnitIdentifier {
+                exponent: Rational::from_integer(1),
+            },
+            UnitFactor {
+                prefix: Prefix::none(),
+                unit_id: UnitIdentifier {
                     name: "second".into(),
                     unit_type: UnitKind::Base,
                 },
-                Rational::from_integer(-1),
-            ),
+                exponent: Rational::from_integer(-1),
+            },
         ]);
 
         assert_eq!(Unit::meter().divide(Unit::second()), meter_per_second);
@@ -230,14 +257,14 @@ mod tests {
         let millimeter = Unit::meter().with_prefix(Prefix::milli());
         assert_eq!(
             millimeter,
-            Unit::from_factors([UnitFactor(
-                Prefix::Metric(-3),
-                UnitIdentifier {
+            Unit::from_factors([UnitFactor {
+                prefix: Prefix::Metric(-3),
+                unit_id: UnitIdentifier {
                     name: "meter".into(),
                     unit_type: UnitKind::Base,
                 },
-                Rational::from_integer(1),
-            )])
+                exponent: Rational::from_integer(1),
+            }])
         );
     }
 
