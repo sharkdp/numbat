@@ -54,6 +54,7 @@ impl Quantity {
                     target_unit.clone(),
                 ))
             } else {
+                // TODO: can this even be triggered? replace by an assertion?
                 Err(ConversionError::IncompatibleUnits(
                     self.unit.clone(),
                     target_unit.clone(),
