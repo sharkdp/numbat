@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::arithmetic::{Exponent, Power, Rational};
 use crate::dimension::DimensionRegistry;
 use crate::ffi::ArityRange;
+use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::typed_ast::{self, Type};
 use crate::{ast, decorator, ffi};
@@ -314,7 +315,12 @@ impl TypeChecker {
     pub fn check_statement(&mut self, ast: ast::Statement) -> Result<typed_ast::Statement> {
         Ok(match ast {
             ast::Statement::Expression(expr) => {
-                typed_ast::Statement::Expression(self.check_expression(expr)?)
+                let checked_expr = self.check_expression(expr)?;
+                for &identifier in LAST_RESULT_IDENTIFIERS {
+                    self.identifiers
+                        .insert(identifier.into(), checked_expr.get_type());
+                }
+                typed_ast::Statement::Expression(checked_expr)
             }
             ast::Statement::DeclareVariable(name, expr, optional_dexpr) => {
                 let expr = self.check_expression(expr)?;

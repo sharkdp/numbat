@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, Result, RuntimeError},
+    name_resolution::LAST_RESULT_IDENTIFIERS,
     quantity::Quantity,
     unit::Unit,
 };
@@ -485,7 +486,14 @@ impl Vm {
                 }
                 Op::Return => {
                     if self.frames.len() == 1 {
-                        return Ok(InterpreterResult::Quantity(self.pop()));
+                        let return_value = self.pop();
+
+                        // Save the returned value in `ans` and `_`:
+                        for &identifier in LAST_RESULT_IDENTIFIERS {
+                            self.globals.insert(identifier.into(), return_value.clone());
+                        }
+
+                        return Ok(InterpreterResult::Quantity(return_value));
                     } else {
                         let discarded_frame = self.frames.pop().unwrap();
 
