@@ -384,7 +384,7 @@ impl Vm {
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
                         unit_name,
-                        conversion_value.unsafe_value().clone() * factor,
+                        *conversion_value.unsafe_value() * factor,
                         base_unit_representation,
                     ));
 

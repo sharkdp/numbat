@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-pub const LAST_RESULT_IDENTIFIERS: &'static [&'static str] = &["ans", "_"];
+pub const LAST_RESULT_IDENTIFIERS: &[&str] = &["ans", "_"];
 
 #[derive(Debug, Error)]
 pub enum NameResolutionError {

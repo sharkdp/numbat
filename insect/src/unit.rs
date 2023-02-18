@@ -37,7 +37,7 @@ impl UnitIdentifier {
     fn conversion_factor(&self) -> Number {
         match &self.unit_type {
             UnitKind::Base => Number::from_f64(1.0),
-            UnitKind::Derived(factor, _) => factor.clone(),
+            UnitKind::Derived(factor, _) => *factor,
         }
     }
 }
@@ -65,7 +65,7 @@ impl Canonicalize for UnitFactor {
     type MergeKey = (Prefix, UnitIdentifier);
 
     fn merge_key(&self) -> Self::MergeKey {
-        (self.prefix.clone(), self.unit_id.clone())
+        (self.prefix, self.unit_id.clone())
     }
 
     fn merge(self, other: Self) -> Self {

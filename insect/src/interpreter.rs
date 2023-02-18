@@ -74,7 +74,7 @@ mod tests {
 
     use super::*;
 
-    static TEST_PRELUDE: &'static str = "
+    static TEST_PRELUDE: &str = "
         dimension Scalar = 1
 
         dimension Length

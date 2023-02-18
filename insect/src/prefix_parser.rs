@@ -165,7 +165,7 @@ impl PrefixParser {
                     .any(|(name, _)| name == &input[prefix_long.len()..])
             {
                 return PrefixParserResult::UnitIdentifier(
-                    prefix.clone(),
+                    *prefix,
                     input[prefix_long.len()..].into(),
                 );
             }
@@ -182,7 +182,7 @@ impl PrefixParser {
                     .any(|(name, _)| name == &input[prefix_short.len()..])
             {
                 return PrefixParserResult::UnitIdentifier(
-                    prefix.clone(),
+                    *prefix,
                     input[prefix_short.len()..].into(),
                 );
             }

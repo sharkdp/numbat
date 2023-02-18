@@ -16,7 +16,7 @@ pub fn name_and_aliases<'a>(
             return Box::new(name_iter.chain(aliases.iter()));
         }
     }
-    return Box::new(name_iter);
+    Box::new(name_iter)
 }
 
 pub fn aliases_short<'a>(decorators: &'a [Decorator]) -> Box<dyn Iterator<Item = &'a String> + 'a> {
@@ -25,5 +25,5 @@ pub fn aliases_short<'a>(decorators: &'a [Decorator]) -> Box<dyn Iterator<Item =
             return Box::new(aliases.iter());
         }
     }
-    return Box::new(std::iter::empty());
+    Box::new(std::iter::empty())
 }
