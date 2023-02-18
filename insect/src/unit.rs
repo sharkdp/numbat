@@ -278,7 +278,8 @@ mod tests {
                 * Unit::second().power(Ratio::from_integer(2));
             assert_same_representation(
                 unit.canonicalized(),
-                Unit::meter().power(Ratio::from_integer(2)) * Unit::second().power(Ratio::from_integer(3)),
+                Unit::meter().power(Ratio::from_integer(2))
+                    * Unit::second().power(Ratio::from_integer(3)),
             );
         }
         {
@@ -295,7 +296,7 @@ mod tests {
                 * Unit::second().power(Ratio::from_integer(-1));
             assert_same_representation(
                 unit.canonicalized(),
-                Unit::meter().power(Ratio::from_integer(2)) ,
+                Unit::meter().power(Ratio::from_integer(2)),
             );
         }
         {
@@ -303,10 +304,7 @@ mod tests {
                 * Unit::second()
                 * Unit::meter()
                 * Unit::second().power(Ratio::from_integer(-1));
-            assert_same_representation(
-                unit.canonicalized(),
-                Unit::scalar(),
-            );
+            assert_same_representation(unit.canonicalized(), Unit::scalar());
         }
     }
 
