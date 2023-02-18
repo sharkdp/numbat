@@ -176,9 +176,23 @@ assert_eq(1 yard, 3 feet, 0.001 foot)
 unit mile: Length = 1609.344 meter
 assert_eq(1 mile, 1760 yard, 0.001 yard)
 
+# Other misc units (TODO: clean up)
+
+@aliases(knots)
+unit knot: Speed = 463 m / 900 s
+
+@aliases(fathoms)
+unit fathom: Length = 2 yard
+
+@aliases(furlongs)
+unit furlong: Length = 220 yard
+
+
 ### Commonly used non-standard abbreviations
 
 unit mph = miles per hour
+unit kph = kilometer per hour
+unit sec = second
 
 ### Physical constants
 
