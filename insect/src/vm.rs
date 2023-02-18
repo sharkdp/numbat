@@ -377,15 +377,15 @@ impl Vm {
                     let conversion_value = self.pop();
 
                     let unit_name = &self.global_identifiers[identifier_idx as usize];
-                    let base_unit = conversion_value.unit();
+                    let defining_unit = conversion_value.unit();
 
-                    let (base_unit_standard_representation, factor) =
-                        base_unit.to_standard_representation();
+                    let (base_unit_representation, factor) =
+                        defining_unit.to_base_unit_representation();
 
-                    self.constants[constant_idx as usize] = Constant::Unit(Unit::new_non_standard(
+                    self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
                         unit_name,
                         conversion_value.unsafe_value().clone() * factor,
-                        base_unit_standard_representation,
+                        base_unit_representation,
                     ));
 
                     return Ok(InterpreterResult::Continue);

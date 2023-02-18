@@ -44,13 +44,15 @@ impl Quantity {
         if &self.unit == target_unit || self.is_zero() {
             Ok(Quantity::new(self.value, target_unit.clone()))
         } else {
-            let (target_unit_standard, factor) = target_unit.to_standard_representation();
-            let quantity_standard = self.to_standard();
-            let unit_standard = quantity_standard.unit();
+            let (target_base_unit_representation, factor) =
+                target_unit.to_base_unit_representation();
 
-            if unit_standard == &target_unit_standard {
+            let quantity_base_unit_representation = self.to_base_unit_representation();
+            let self_base_unit_representation = quantity_base_unit_representation.unit();
+
+            if self_base_unit_representation == &target_base_unit_representation {
                 Ok(Quantity::new(
-                    *quantity_standard.unsafe_value() / factor,
+                    *quantity_base_unit_representation.unsafe_value() / factor,
                     target_unit.clone(),
                 ))
             } else {
@@ -80,8 +82,8 @@ impl Quantity {
         ))
     }
 
-    fn to_standard(&self) -> Quantity {
-        let (unit, factor) = self.unit.to_standard_representation();
+    fn to_base_unit_representation(&self) -> Quantity {
+        let (unit, factor) = self.unit.to_base_unit_representation();
         Quantity::new(self.value * factor, unit)
     }
 }
@@ -158,8 +160,8 @@ impl std::fmt::Display for Quantity {
 
 #[test]
 fn test_conversion_trivial() {
-    let meter = Unit::new_standard("meter");
-    let second = Unit::new_standard("second");
+    let meter = Unit::new_base("meter");
+    let second = Unit::new_base("second");
 
     let length = Quantity::new(Number::from_f64(2.0), meter.clone());
 
@@ -173,8 +175,8 @@ fn test_conversion_trivial() {
 fn test_conversion_basic() {
     use approx::assert_relative_eq;
 
-    let meter = Unit::new_standard("meter");
-    let foot = Unit::new_non_standard("foot", Number::from_f64(0.3048), meter.clone());
+    let meter = Unit::new_base("meter");
+    let foot = Unit::new_derived("foot", Number::from_f64(0.3048), meter.clone());
 
     let length = Quantity::new(Number::from_f64(2.0), meter.clone());
 
@@ -198,8 +200,8 @@ fn test_prefixes() {
     use approx::assert_relative_eq;
     use num_rational::Ratio;
 
-    let meter = Unit::new_standard("meter");
-    let centimeter = Unit::new_standard("meter").with_prefix(Prefix::centi());
+    let meter = Unit::new_base("meter");
+    let centimeter = Unit::new_base("meter").with_prefix(Prefix::centi());
 
     let length = Quantity::new(Number::from_f64(2.5), meter.clone());
     {

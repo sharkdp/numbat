@@ -134,7 +134,7 @@ impl BytecodeInterpreter {
 
                 let constant_idx = self
                     .vm
-                    .add_constant(Constant::Unit(Unit::new_standard(unit_name)));
+                    .add_constant(Constant::Unit(Unit::new_base(unit_name)));
                 for name in decorator::name_and_aliases(&unit_name, &decorators) {
                     self.unit_name_to_constant_index
                         .insert((Prefix::none(), name.into()), constant_idx);
@@ -151,7 +151,7 @@ impl BytecodeInterpreter {
 
                 let constant_idx = self
                     .vm
-                    .add_constant(Constant::Unit(Unit::new_standard("<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
+                    .add_constant(Constant::Unit(Unit::new_base("<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
                 let identifier_idx = self.vm.add_global_identifier(unit_name); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 
                 self.compile_expression(expr)?;

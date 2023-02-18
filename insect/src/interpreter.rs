@@ -150,7 +150,7 @@ mod tests {
 
         assert_evaluates_to(
             "2 meter + 3 meter",
-            (Quantity::from_scalar(2.0 + 3.0) * Quantity::from_unit(Unit::new_standard("meter")))
+            (Quantity::from_scalar(2.0 + 3.0) * Quantity::from_unit(Unit::new_base("meter")))
                 .unwrap(),
         );
 
@@ -158,16 +158,15 @@ mod tests {
             "dimension Pixel
              unit pixel : Pixel
              2 * pixel",
-            (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_standard("pixel")))
-                .unwrap(),
+            (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_base("pixel"))).unwrap(),
         );
 
         assert_evaluates_to(
             "fn speed(distance: Length, time: Time) -> Speed = distance / time
              speed(10 * meter, 2 * second)",
             (Quantity::from_scalar(5.0)
-                * (Quantity::from_unit(Unit::new_standard("meter"))
-                    / Quantity::from_unit(Unit::new_standard("second")))
+                * (Quantity::from_unit(Unit::new_base("meter"))
+                    / Quantity::from_unit(Unit::new_base("second")))
                 .unwrap())
             .unwrap(),
         );

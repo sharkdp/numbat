@@ -13,50 +13,50 @@ use crate::{
 pub type ConversionFactor = Number;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum UnitType {
-    Standard,
-    NonStandard(ConversionFactor, Unit),
+pub enum UnitKind {
+    Base,
+    Derived(ConversionFactor, Unit),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BaseUnit {
+pub struct UnitIdentifier {
     name: String,
-    unit_type: UnitType,
+    unit_type: UnitKind,
 }
 
-impl BaseUnit {
-    fn to_standard(&self) -> Unit {
+impl UnitIdentifier {
+    fn corresponding_base_unit(&self) -> Unit {
         match &self.unit_type {
-            UnitType::Standard => Unit::new_standard(&self.name),
-            UnitType::NonStandard(_, unit) => unit.clone(),
+            UnitKind::Base => Unit::new_base(&self.name),
+            UnitKind::Derived(_, unit) => unit.clone(),
         }
     }
 
     fn conversion_factor(&self) -> Number {
         match &self.unit_type {
-            UnitType::Standard => Number::from_f64(1.0),
-            UnitType::NonStandard(factor, _) => factor.clone(),
+            UnitKind::Base => Number::from_f64(1.0),
+            UnitKind::Derived(factor, _) => factor.clone(),
         }
     }
 }
 
-impl PartialOrd for BaseUnit {
+impl PartialOrd for UnitIdentifier {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.name.partial_cmp(&other.name)
     }
 }
 
-impl Ord for BaseUnit {
+impl Ord for UnitIdentifier {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.name.cmp(&other.name)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
-pub struct UnitFactor(pub Prefix, pub BaseUnit, pub Exponent);
+pub struct UnitFactor(pub Prefix, pub UnitIdentifier, pub Exponent);
 
 impl Canonicalize for UnitFactor {
-    type MergeKey = (Prefix, BaseUnit);
+    type MergeKey = (Prefix, UnitIdentifier);
 
     fn merge_key(&self) -> Self::MergeKey {
         (self.0.clone(), self.1.clone())
@@ -84,23 +84,23 @@ impl Unit {
         Self::unity()
     }
 
-    pub fn new_standard(name: &str) -> Self {
+    pub fn new_base(name: &str) -> Self {
         Unit::from_factor(UnitFactor(
             Prefix::none(),
-            BaseUnit {
+            UnitIdentifier {
                 name: name.into(),
-                unit_type: UnitType::Standard,
+                unit_type: UnitKind::Base,
             },
             Rational::from_integer(1),
         ))
     }
 
-    pub fn new_non_standard(name: &str, factor: ConversionFactor, standard_unit: Unit) -> Self {
+    pub fn new_derived(name: &str, factor: ConversionFactor, base_unit: Unit) -> Self {
         Unit::from_factor(UnitFactor(
             Prefix::none(),
-            BaseUnit {
+            UnitIdentifier {
                 name: name.into(),
-                unit_type: UnitType::NonStandard(factor, standard_unit),
+                unit_type: UnitKind::Derived(factor, base_unit),
             },
             Rational::from_integer(1),
         ))
@@ -114,10 +114,12 @@ impl Unit {
         Self::from_factors(factors)
     }
 
-    pub fn to_standard_representation(&self) -> (Self, ConversionFactor) {
-        let standardized_unit = self
+    pub fn to_base_unit_representation(&self) -> (Self, ConversionFactor) {
+        let base_unit_representation = self
             .iter()
-            .map(|UnitFactor(_, base_unit, exponent)| base_unit.to_standard().power(*exponent))
+            .map(|UnitFactor(_, base_unit, exponent)| {
+                base_unit.corresponding_base_unit().power(*exponent)
+            })
             .product();
 
         let factor = self
@@ -128,7 +130,27 @@ impl Unit {
             }) // TODO: reduce wrapping/unwrapping; do we want to use exponent.to_f64?
             .product();
 
-        (standardized_unit, factor)
+        (base_unit_representation, factor)
+    }
+
+    #[cfg(test)]
+    fn meter() -> Self {
+        Self::new_base("meter")
+    }
+
+    #[cfg(test)]
+    fn second() -> Self {
+        Self::new_base("second")
+    }
+
+    #[cfg(test)]
+    fn mile() -> Self {
+        Self::new_derived("mile", Number::from_f64(1609.344), Self::meter())
+    }
+
+    #[cfg(test)]
+    fn hour() -> Self {
+        Self::new_derived("hour", Number::from_f64(3600.0), Self::second())
     }
 }
 
@@ -179,56 +201,40 @@ mod tests {
 
     use super::*;
 
-    fn meter() -> Unit {
-        Unit::new_standard("meter")
-    }
-
-    fn second() -> Unit {
-        Unit::new_standard("second")
-    }
-
-    fn mile() -> Unit {
-        Unit::new_non_standard("mile", Number::from_f64(1609.344), meter())
-    }
-
-    fn hour() -> Unit {
-        Unit::new_non_standard("hour", Number::from_f64(3600.0), second())
-    }
-
     #[test]
     fn division() {
         let meter_per_second = Unit::from_factors([
             UnitFactor(
                 Prefix::none(),
-                BaseUnit {
+                UnitIdentifier {
                     name: "meter".into(),
-                    unit_type: UnitType::Standard,
+                    unit_type: UnitKind::Base,
                 },
                 Rational::from_integer(1),
             ),
             UnitFactor(
                 Prefix::none(),
-                BaseUnit {
+                UnitIdentifier {
                     name: "second".into(),
-                    unit_type: UnitType::Standard,
+                    unit_type: UnitKind::Base,
                 },
                 Rational::from_integer(-1),
             ),
         ]);
 
-        assert_eq!(meter().divide(second()), meter_per_second);
+        assert_eq!(Unit::meter().divide(Unit::second()), meter_per_second);
     }
 
     #[test]
     fn with_prefix() {
-        let millimeter = meter().with_prefix(Prefix::milli());
+        let millimeter = Unit::meter().with_prefix(Prefix::milli());
         assert_eq!(
             millimeter,
             Unit::from_factors([UnitFactor(
                 Prefix::Metric(-3),
-                BaseUnit {
+                UnitIdentifier {
                     name: "meter".into(),
-                    unit_type: UnitType::Standard,
+                    unit_type: UnitKind::Base,
                 },
                 Rational::from_integer(1),
             )])
@@ -236,10 +242,14 @@ mod tests {
     }
 
     #[test]
-    fn to_standard_representation() {
-        let mile_per_hour = mile().divide(hour());
-        let (standard_unit, conversion_factor) = mile_per_hour.to_standard_representation();
-        assert_eq!(standard_unit, meter().divide(second()));
+    fn to_base_unit_representation() {
+        let mile_per_hour = Unit::mile().divide(Unit::hour());
+        let (base_unit_representation, conversion_factor) =
+            mile_per_hour.to_base_unit_representation();
+        assert_eq!(
+            base_unit_representation,
+            Unit::meter().divide(Unit::second())
+        );
         assert_relative_eq!(
             conversion_factor.to_f64(),
             1609.344 / 3600.0,
