@@ -63,6 +63,14 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
             },
         );
         m.insert(
+            "round",
+            ForeignFunction {
+                name: "round".into(),
+                arity: 1..=1,
+                callable: Callable::Function(round),
+            },
+        );
+        m.insert(
             "sin",
             ForeignFunction {
                 name: "sin".into(),
@@ -135,6 +143,13 @@ fn abs(args: &[Quantity]) -> Quantity {
 
     let value = args[0].unsafe_value().to_f64();
     Quantity::new(Number::from_f64(value.abs()), args[0].unit().clone())
+}
+
+fn round(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let value = args[0].unsafe_value().to_f64();
+    Quantity::new(Number::from_f64(value.round()), args[0].unit().clone())
 }
 
 fn sin(args: &[Quantity]) -> Quantity {
