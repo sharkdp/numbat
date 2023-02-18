@@ -272,10 +272,13 @@ mod tests {
         };
 
         {
-            let unit = Unit::meter() * Unit::second() * Unit::meter();
+            let unit = Unit::meter()
+                * Unit::second()
+                * Unit::meter()
+                * Unit::second().power(Ratio::from_integer(2));
             assert_same_representation(
                 unit.canonicalized(),
-                Unit::meter().power(Ratio::from_integer(2)) * Unit::second(),
+                Unit::meter().power(Ratio::from_integer(2)) * Unit::second().power(Ratio::from_integer(3)),
             );
         }
         {
@@ -283,6 +286,26 @@ mod tests {
             assert_same_representation(
                 unit.canonicalized(),
                 Unit::millimeter() * Unit::meter() * Unit::second(),
+            );
+        }
+        {
+            let unit = Unit::meter()
+                * Unit::second()
+                * Unit::meter()
+                * Unit::second().power(Ratio::from_integer(-1));
+            assert_same_representation(
+                unit.canonicalized(),
+                Unit::meter().power(Ratio::from_integer(2)) ,
+            );
+        }
+        {
+            let unit = Unit::meter().power(Ratio::from_integer(-1))
+                * Unit::second()
+                * Unit::meter()
+                * Unit::second().power(Ratio::from_integer(-1));
+            assert_same_representation(
+                unit.canonicalized(),
+                Unit::scalar(),
             );
         }
     }
