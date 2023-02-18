@@ -174,23 +174,9 @@ impl Display for Unit {
 }
 
 #[test]
-fn unit_basic() {
-    let meter = Unit::from_factor(UnitFactor(
-        Prefix::none(),
-        BaseUnit {
-            name: "meter".into(),
-            unit_type: UnitType::Standard,
-        },
-        Rational::from_integer(1),
-    ));
-    let second = Unit::from_factor(UnitFactor(
-        Prefix::none(),
-        BaseUnit {
-            name: "second".into(),
-            unit_type: UnitType::Standard,
-        },
-        Rational::from_integer(1),
-    ));
+fn unit_divide() {
+    let meter = Unit::new_standard("meter");
+    let second = Unit::new_standard("second");
 
     let meter_per_second = Unit::from_factors([
         UnitFactor(
