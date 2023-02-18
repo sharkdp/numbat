@@ -40,6 +40,11 @@ impl Quantity {
         self.value.to_f64() == 0.0
     }
 
+    fn to_base_unit_representation(&self) -> Quantity {
+        let (unit, factor) = self.unit.to_base_unit_representation();
+        Quantity::new(self.value * factor, unit)
+    }
+
     pub fn convert_to(&self, target_unit: &Unit) -> Result<Quantity> {
         if &self.unit == target_unit || self.is_zero() {
             Ok(Quantity::new(self.value, target_unit.clone()))
@@ -80,11 +85,6 @@ impl Quantity {
             self.unit
                 .power(Rational::from_f64(exponent_as_scalar).unwrap()), // TODO: error handling; can this really handle rational exponents?
         ))
-    }
-
-    fn to_base_unit_representation(&self) -> Quantity {
-        let (unit, factor) = self.unit.to_base_unit_representation();
-        Quantity::new(self.value * factor, unit)
     }
 }
 
