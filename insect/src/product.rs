@@ -112,6 +112,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool> Div
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
+        #[allow(clippy::suspicious_arithmetic_impl)]
         let mut result = self * other.invert();
         result.automated_canonicalize();
         result

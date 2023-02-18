@@ -200,8 +200,9 @@ impl<'a> Parser<'a> {
     }
 
     fn statement(&mut self) -> Result<Statement> {
-        if !(self.peek().kind == TokenKind::At || self.peek().kind == TokenKind::Unit)
-            && !self.decorator_stack.is_empty()
+        if !(self.peek().kind == TokenKind::At
+            || self.peek().kind == TokenKind::Unit
+            || self.decorator_stack.is_empty())
         {
             todo!("Parser error: @-decorators can only be used on unit expressions")
         }
