@@ -163,6 +163,11 @@ impl Unit {
     }
 
     #[cfg(test)]
+    fn millimeter() -> Self {
+        Self::new_base("meter").with_prefix(Prefix::milli())
+    }
+
+    #[cfg(test)]
     fn second() -> Self {
         Self::new_base("second")
     }
@@ -255,12 +260,29 @@ mod tests {
     }
 
     #[test]
-    fn canonicalized() {
+    fn canonicalization() {
+        let assert_same_representation = |lhs: Unit, rhs: Unit| {
+            // we collect the unit factors into a vector here instead of directly comaring the units.
+            // Otherwise the tests would always succeed because the PartialEq implementation on units
+            // performs canonicalization.
+            assert_eq!(
+                lhs.into_iter().collect::<Vec<_>>(),
+                rhs.into_iter().collect::<Vec<_>>()
+            );
+        };
+
         {
             let unit = Unit::meter() * Unit::second() * Unit::meter();
-            assert_eq!(
+            assert_same_representation(
                 unit.canonicalized(),
-                Unit::meter() * Unit::meter() * Unit::second()
+                Unit::meter().power(Ratio::from_integer(2)) * Unit::second(),
+            );
+        }
+        {
+            let unit = Unit::meter() * Unit::second() * Unit::millimeter();
+            assert_same_representation(
+                unit.canonicalized(),
+                Unit::millimeter() * Unit::meter() * Unit::second(),
             );
         }
     }
