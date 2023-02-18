@@ -12,6 +12,8 @@ use crate::{
 
 pub type ConversionFactor = Number;
 
+/// A unit can either be a base/fundamental unit or it is derived from one.
+/// In the latter case, a conversion factor to the base unit has to be specified.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnitKind {
     Base,
@@ -249,7 +251,18 @@ mod tests {
             },
         ]);
 
-        assert_eq!(Unit::meter().divide(Unit::second()), meter_per_second);
+        assert_eq!(Unit::meter() / Unit::second(), meter_per_second);
+    }
+
+    #[test]
+    fn canonicalized() {
+        {
+            let unit = Unit::meter() * Unit::second() * Unit::meter();
+            assert_eq!(
+                unit.canonicalized(),
+                Unit::meter() * Unit::meter() * Unit::second()
+            );
+        }
     }
 
     #[test]
@@ -270,13 +283,10 @@ mod tests {
 
     #[test]
     fn to_base_unit_representation() {
-        let mile_per_hour = Unit::mile().divide(Unit::hour());
+        let mile_per_hour = Unit::mile() / Unit::hour();
         let (base_unit_representation, conversion_factor) =
             mile_per_hour.to_base_unit_representation();
-        assert_eq!(
-            base_unit_representation,
-            Unit::meter().divide(Unit::second())
-        );
+        assert_eq!(base_unit_representation, Unit::meter() / Unit::second());
         assert_relative_eq!(
             conversion_factor.to_f64(),
             1609.344 / 3600.0,

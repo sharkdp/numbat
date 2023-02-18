@@ -122,7 +122,7 @@ impl std::ops::Mul for Quantity {
     fn mul(self, rhs: Self) -> Self::Output {
         Ok(Quantity {
             value: self.value * rhs.value,
-            unit: self.unit.multiply(rhs.unit),
+            unit: self.unit * rhs.unit,
         })
     }
 }
@@ -133,7 +133,7 @@ impl std::ops::Div for Quantity {
     fn div(self, rhs: Self) -> Self::Output {
         Ok(Quantity {
             value: self.value / rhs.value,
-            unit: self.unit.divide(rhs.unit),
+            unit: self.unit / rhs.unit,
         })
     }
 }

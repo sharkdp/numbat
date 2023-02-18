@@ -1,3 +1,5 @@
+use std::ops::{Div, Mul};
+
 use crate::arithmetic::{Exponent, Power, Rational};
 use itertools::Itertools;
 
@@ -35,11 +37,6 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Facto
         product
     }
 
-    pub fn multiply(mut self, mut other: Self) -> Self {
-        self.factors.append(&mut other.factors);
-        Self::from_vec(self.factors)
-    }
-
     pub fn iter(&self) -> ProductIter<Factor> {
         ProductIter {
             inner: self.factors.iter(),
@@ -75,10 +72,21 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Facto
             .collect();
     }
 
-    fn canonicalized(&self) -> Self {
+    pub fn canonicalized(&self) -> Self {
         let mut result = self.clone();
         result.canonicalize();
         result
+    }
+}
+
+impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Mul
+    for Product<Factor, CANONICALIZE>
+{
+    type Output = Self;
+
+    fn mul(mut self, mut other: Self) -> Self {
+        self.factors.append(&mut other.factors);
+        Self::from_vec(self.factors)
     }
 }
 
@@ -96,9 +104,15 @@ impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool>
     pub fn invert(self) -> Self {
         self.power(Rational::from_integer(-1))
     }
+}
 
-    pub fn divide(self, other: Self) -> Self {
-        let mut result = self.multiply(other.invert());
+impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool> Div
+    for Product<Factor, CANONICALIZE>
+{
+    type Output = Self;
+
+    fn div(self, other: Self) -> Self {
+        let mut result = self * other.invert();
         result.automated_canonicalize();
         result
     }
@@ -146,7 +160,7 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> std::iter::Pr
     where
         I: Iterator<Item = Self>,
     {
-        iter.fold(Product::unity(), |acc, prod| acc.multiply(prod))
+        iter.fold(Product::unity(), |acc, prod| acc * prod)
     }
 }
 
@@ -195,7 +209,7 @@ impl Canonicalize for i32 {
 fn multiply() {
     let product1 = Product::<i32>::from_factors([5, 2, 3]);
     let product2 = Product::<i32>::from_factors([6, 8]);
-    let result = product1.multiply(product2);
+    let result = product1 * product2;
     assert_eq!(
         result.into_iter().collect::<Vec<_>>().as_slice(),
         [5, 2, 3, 6, 8]
@@ -209,7 +223,7 @@ fn multiply_canonicalize() {
         TestUnit("second".into(), Rational::from_integer(1)),
     ]);
     let product2 = Product::from_factor(TestUnit("meter".into(), Rational::from_integer(2)));
-    let result = product1.multiply(product2);
+    let result = product1 * product2;
     assert_eq!(
         result.into_vec(),
         &[
@@ -271,7 +285,7 @@ fn divide() {
         TestUnit("second".into(), Rational::from_integer(1)),
     ]);
     let product2 = Product::from_factor(TestUnit("second".into(), Rational::from_integer(1)));
-    let result = product1.divide(product2);
+    let result = product1 / product2;
     assert_eq!(
         result.into_vec(),
         &[

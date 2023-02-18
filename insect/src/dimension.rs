@@ -21,13 +21,13 @@ impl DimensionRegistry {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
-                Ok(lhs.multiply(rhs))
+                Ok(lhs * rhs)
             }
             DimensionExpression::Divide(lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
-                Ok(lhs.divide(rhs))
+                Ok(lhs / rhs)
             }
             DimensionExpression::Power(expr, outer_exponent) => {
                 Ok(self.get_base_representation(expr)?.power(*outer_exponent))

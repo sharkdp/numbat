@@ -172,8 +172,8 @@ impl TypeChecker {
                 let type_ = match op {
                     typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
                     typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::Mul => lhs.get_type().multiply(rhs.get_type()),
-                    typed_ast::BinaryOperator::Div => lhs.get_type().divide(rhs.get_type()),
+                    typed_ast::BinaryOperator::Mul => lhs.get_type() * rhs.get_type(),
+                    typed_ast::BinaryOperator::Div => lhs.get_type() / rhs.get_type(),
                     typed_ast::BinaryOperator::Power => {
                         let exponent_type = rhs.get_type();
                         if exponent_type != Type::unity() {
@@ -226,9 +226,8 @@ impl TypeChecker {
                             .iter()
                             .find(|BaseRepresentationFactor(n, _)| n == name)
                         {
-                            result_type = result_type
-                                .divide(Type::from_factor((*factor).clone()))
-                                .multiply(substituted_type.clone().power(*exp));
+                            result_type = result_type / Type::from_factor((*factor).clone())
+                                * substituted_type.clone().power(*exp);
                         }
                     }
                     result_type
@@ -263,9 +262,8 @@ impl TypeChecker {
                         //
 
                         let alpha = Rational::from_integer(1) / generic_subtype_factor.1;
-                        let d = argument_type
-                            .clone()
-                            .divide(parameter_type.clone().divide(generic_subtype))
+                        let d = (argument_type.clone()
+                            / (parameter_type.clone() / generic_subtype))
                             .power(alpha);
 
                         // We can now substitute that generic parameter in all subsequent expressions
@@ -567,7 +565,7 @@ mod tests {
     }
 
     fn type_c() -> BaseRepresentation {
-        type_a().multiply(type_b())
+        type_a() * type_b()
     }
 
     fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
@@ -692,7 +690,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
-            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_c() && t2 == type_a().divide(type_b())
+            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_c() && t2 == type_a() / type_b()
         ));
 
         assert!(matches!(
@@ -729,8 +727,8 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("fn f<T1, T2>(x: T1, y: T2) -> T2/T1 = x/y"),
             TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2)
-                if t1 == base_type("T2").divide(base_type("T1")) &&
-                   t2 == base_type("T1").divide(base_type("T2"))
+                if t1 == base_type("T2") / base_type("T1") &&
+                   t2 == base_type("T1") / base_type("T2")
         ));
     }
 
