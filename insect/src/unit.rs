@@ -173,29 +173,77 @@ impl Display for Unit {
     }
 }
 
-#[test]
-fn unit_divide() {
-    let meter = Unit::new_standard("meter");
-    let second = Unit::new_standard("second");
+#[cfg(test)]
+mod tests {
+    use approx::assert_relative_eq;
 
-    let meter_per_second = Unit::from_factors([
-        UnitFactor(
-            Prefix::none(),
-            BaseUnit {
-                name: "meter".into(),
-                unit_type: UnitType::Standard,
-            },
-            Rational::from_integer(1),
-        ),
-        UnitFactor(
-            Prefix::none(),
-            BaseUnit {
-                name: "second".into(),
-                unit_type: UnitType::Standard,
-            },
-            Rational::from_integer(-1),
-        ),
-    ]);
+    use super::*;
 
-    assert_eq!(meter.divide(second), meter_per_second);
+    fn meter() -> Unit {
+        Unit::new_standard("meter")
+    }
+
+    fn second() -> Unit {
+        Unit::new_standard("second")
+    }
+
+    fn mile() -> Unit {
+        Unit::new_non_standard("mile", Number::from_f64(1609.344), meter())
+    }
+
+    fn hour() -> Unit {
+        Unit::new_non_standard("hour", Number::from_f64(3600.0), second())
+    }
+
+    #[test]
+    fn division() {
+        let meter_per_second = Unit::from_factors([
+            UnitFactor(
+                Prefix::none(),
+                BaseUnit {
+                    name: "meter".into(),
+                    unit_type: UnitType::Standard,
+                },
+                Rational::from_integer(1),
+            ),
+            UnitFactor(
+                Prefix::none(),
+                BaseUnit {
+                    name: "second".into(),
+                    unit_type: UnitType::Standard,
+                },
+                Rational::from_integer(-1),
+            ),
+        ]);
+
+        assert_eq!(meter().divide(second()), meter_per_second);
+    }
+
+    #[test]
+    fn with_prefix() {
+        let millimeter = meter().with_prefix(Prefix::milli());
+        assert_eq!(
+            millimeter,
+            Unit::from_factors([UnitFactor(
+                Prefix::Metric(-3),
+                BaseUnit {
+                    name: "meter".into(),
+                    unit_type: UnitType::Standard,
+                },
+                Rational::from_integer(1),
+            )])
+        );
+    }
+
+    #[test]
+    fn to_standard_representation() {
+        let mile_per_hour = mile().divide(hour());
+        let (standard_unit, conversion_factor) = mile_per_hour.to_standard_representation();
+        assert_eq!(standard_unit, meter().divide(second()));
+        assert_relative_eq!(
+            conversion_factor.to_f64(),
+            1609.344 / 3600.0,
+            epsilon = 1e-6
+        );
+    }
 }
