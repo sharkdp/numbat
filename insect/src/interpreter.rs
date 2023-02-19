@@ -150,8 +150,7 @@ mod tests {
 
         assert_evaluates_to(
             "2 meter + 3 meter",
-            (Quantity::from_scalar(2.0 + 3.0) * Quantity::from_unit(Unit::new_base("meter")))
-                .unwrap(),
+            (Quantity::from_scalar(2.0 + 3.0) * Quantity::from_unit(Unit::meter())).unwrap(),
         );
 
         assert_evaluates_to(
@@ -165,9 +164,8 @@ mod tests {
             "fn speed(distance: Length, time: Time) -> Speed = distance / time
              speed(10 * meter, 2 * second)",
             (Quantity::from_scalar(5.0)
-                * (Quantity::from_unit(Unit::new_base("meter"))
-                    / Quantity::from_unit(Unit::new_base("second")))
-                .unwrap())
+                * (Quantity::from_unit(Unit::meter()) / Quantity::from_unit(Unit::second()))
+                    .unwrap())
             .unwrap(),
         );
     }

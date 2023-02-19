@@ -158,27 +158,27 @@ impl Unit {
     }
 
     #[cfg(test)]
-    fn meter() -> Self {
+    pub fn meter() -> Self {
         Self::new_base("meter")
     }
 
     #[cfg(test)]
-    fn millimeter() -> Self {
+    pub fn millimeter() -> Self {
         Self::new_base("meter").with_prefix(Prefix::milli())
     }
 
     #[cfg(test)]
-    fn second() -> Self {
+    pub fn second() -> Self {
         Self::new_base("second")
     }
 
     #[cfg(test)]
-    fn mile() -> Self {
+    pub fn mile() -> Self {
         Self::new_derived("mile", Number::from_f64(1609.344), Self::meter())
     }
 
     #[cfg(test)]
-    fn hour() -> Self {
+    pub fn hour() -> Self {
         Self::new_derived("hour", Number::from_f64(3600.0), Self::second())
     }
 }

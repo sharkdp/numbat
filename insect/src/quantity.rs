@@ -172,8 +172,8 @@ mod tests {
 
     #[test]
     fn conversion_trivial() {
-        let meter = Unit::new_base("meter");
-        let second = Unit::new_base("second");
+        let meter = Unit::meter();
+        let second = Unit::second();
 
         let length = Quantity::new(Number::from_f64(2.0), meter.clone());
 
@@ -187,7 +187,7 @@ mod tests {
     fn conversion_basic() {
         use approx::assert_relative_eq;
 
-        let meter = Unit::new_base("meter");
+        let meter = Unit::meter();
         let foot = Unit::new_derived("foot", Number::from_f64(0.3048), meter.clone());
 
         let length = Quantity::new(Number::from_f64(2.0), meter.clone());
@@ -212,8 +212,8 @@ mod tests {
         use approx::assert_relative_eq;
         use num_rational::Ratio;
 
-        let meter = Unit::new_base("meter");
-        let centimeter = Unit::new_base("meter").with_prefix(Prefix::centi());
+        let meter = Unit::meter();
+        let centimeter = Unit::meter().with_prefix(Prefix::centi());
 
         let length = Quantity::new(Number::from_f64(2.5), meter.clone());
         {
@@ -250,4 +250,7 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn full_simplify() {}
 }
