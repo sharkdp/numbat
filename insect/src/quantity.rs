@@ -218,6 +218,8 @@ impl std::fmt::Display for Quantity {
 mod tests {
     use num_rational::Ratio;
 
+    use crate::prefix::Prefix;
+
     use super::*;
 
     #[test]
@@ -288,8 +290,6 @@ mod tests {
                 .power(Quantity::from_scalar(3.0))
                 .expect("exponent is scalar");
 
-            println!("{}", &volume);
-
             let volume_in_centimeter3 = volume
                 .convert_to(&centimeter.power(Ratio::from_integer(3)))
                 .expect("conversion succeeds");
@@ -341,6 +341,54 @@ mod tests {
                 Unit::kilometer() / Unit::millimeter(),
             );
             assert_eq!(q.full_simplify(), Quantity::from_scalar(2000000.0));
+        }
+    }
+
+    #[test]
+    fn full_simplify_complex() {
+        {
+            let q = Quantity::new(
+                Number::from_f64(5.0),
+                Unit::second() * Unit::millimeter() / Unit::meter(),
+            );
+            let expected = Quantity::new(Number::from_f64(0.005), Unit::second());
+            assert_eq!(q.full_simplify(), expected);
+        }
+        {
+            let q = Quantity::new(
+                Number::from_f64(5.0),
+                Unit::bit().with_prefix(Prefix::mega()) / Unit::second() * Unit::hour(),
+            );
+            let expected = Quantity::new(
+                Number::from_f64(18000.0),
+                Unit::bit().with_prefix(Prefix::mega()),
+            );
+            assert_eq!(q.full_simplify(), expected);
+        }
+        // TODO
+        // {
+        //     let q = Quantity::new(Number::from_f64(5.0), Unit::centimeter() * Unit::meter());
+        //     let expected = Quantity::new(
+        //         Number::from_f64(500.0),
+        //         Unit::centimeter().power(Ratio::from_integer(2)),
+        //     );
+        //     assert_eq!(q.full_simplify(), expected);
+        // }
+        {
+            let q = Quantity::new(Number::from_f64(5.0), Unit::meter() * Unit::centimeter());
+            let expected = Quantity::new(
+                Number::from_f64(0.05),
+                Unit::meter().power(Ratio::from_integer(2)),
+            );
+            assert_eq!(q.full_simplify(), expected);
+        }
+        {
+            let q = Quantity::new(Number::from_f64(1.0), Unit::hertz() / Unit::second());
+            let expected = Quantity::new(
+                Number::from_f64(1.0),
+                Unit::second().power(Ratio::from_integer(-2)),
+            );
+            assert_eq!(q.full_simplify(), expected);
         }
     }
 }
