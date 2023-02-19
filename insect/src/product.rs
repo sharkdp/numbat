@@ -1,7 +1,8 @@
 use std::ops::{Div, Mul};
 
-use crate::arithmetic::{Exponent, Power, Rational};
+use crate::arithmetic::{Exponent, Power};
 use itertools::Itertools;
+use num_rational::Ratio;
 
 pub trait Canonicalize {
     type MergeKey: PartialEq;
@@ -102,7 +103,11 @@ impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool>
     Product<Factor, CANONICALIZE>
 {
     pub fn invert(self) -> Self {
-        self.power(Rational::from_integer(-1))
+        self.powi(-1)
+    }
+
+    pub fn powi(self, exp: i64) -> Self {
+        self.power(Ratio::from_integer(exp))
     }
 }
 
@@ -190,127 +195,135 @@ impl<Factor> Iterator for ProductIntoIter<Factor> {
 }
 
 #[cfg(test)]
-impl Canonicalize for i32 {
-    type MergeKey = ();
+mod tests {
+    use super::*;
+    use crate::arithmetic::Rational;
 
-    fn merge_key(&self) -> Self::MergeKey {
-        // merge everything
+    #[cfg(test)]
+    impl Canonicalize for i32 {
+        type MergeKey = ();
+
+        fn merge_key(&self) -> Self::MergeKey {
+            // merge everything
+        }
+
+        fn merge(self, other: Self) -> Self {
+            self * other
+        }
+
+        fn is_trivial(&self) -> bool {
+            *self == 1
+        }
     }
 
-    fn merge(self, other: Self) -> Self {
-        self * other
+    #[test]
+    fn multiply() {
+        let product1 = Product::<i32>::from_factors([5, 2, 3]);
+        let product2 = Product::<i32>::from_factors([6, 8]);
+        let result = product1 * product2;
+        assert_eq!(
+            result.into_iter().collect::<Vec<_>>().as_slice(),
+            [5, 2, 3, 6, 8]
+        );
     }
 
-    fn is_trivial(&self) -> bool {
-        *self == 1
-    }
-}
+    #[test]
+    fn multiply_canonicalize() {
+        use crate::arithmetic::Rational;
 
-#[test]
-fn multiply() {
-    let product1 = Product::<i32>::from_factors([5, 2, 3]);
-    let product2 = Product::<i32>::from_factors([6, 8]);
-    let result = product1 * product2;
-    assert_eq!(
-        result.into_iter().collect::<Vec<_>>().as_slice(),
-        [5, 2, 3, 6, 8]
-    );
-}
-
-#[test]
-fn multiply_canonicalize() {
-    let product1 = Product::<TestUnit, true>::from_factors([
-        TestUnit("meter".into(), Rational::from_integer(1)),
-        TestUnit("second".into(), Rational::from_integer(1)),
-    ]);
-    let product2 = Product::from_factor(TestUnit("meter".into(), Rational::from_integer(2)));
-    let result = product1 * product2;
-    assert_eq!(
-        result.into_vec(),
-        &[
-            TestUnit("meter".into(), Rational::from_integer(3)),
-            TestUnit("second".into(), Rational::from_integer(1))
-        ]
-    );
-}
-
-#[cfg(test)]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct TestUnit(String, Exponent);
-
-#[cfg(test)]
-impl Canonicalize for TestUnit {
-    type MergeKey = String;
-
-    fn merge_key(&self) -> Self::MergeKey {
-        self.0.clone()
-    }
-
-    fn merge(self, other: Self) -> Self {
-        TestUnit(self.0, self.1 + other.1)
-    }
-
-    fn is_trivial(&self) -> bool {
-        use num_traits::Zero;
-        self.1 == Rational::zero()
-    }
-}
-
-#[cfg(test)]
-impl Power for TestUnit {
-    fn power(self, e: Exponent) -> Self {
-        TestUnit(self.0, self.1 * e)
-    }
-}
-
-#[test]
-fn power() {
-    let product = Product::<TestUnit>::from_factors([
-        TestUnit("meter".into(), Rational::from_integer(1)),
-        TestUnit("second".into(), Rational::from_integer(-2)),
-    ]);
-    let result = product.power(Rational::from_integer(3));
-    assert_eq!(
-        result.into_vec(),
-        &[
-            TestUnit("meter".into(), Rational::from_integer(3)),
-            TestUnit("second".into(), Rational::from_integer(-6))
-        ]
-    );
-}
-
-#[test]
-fn divide() {
-    let product1 = Product::<TestUnit>::from_factors([
-        TestUnit("meter".into(), Rational::from_integer(1)),
-        TestUnit("second".into(), Rational::from_integer(1)),
-    ]);
-    let product2 = Product::from_factor(TestUnit("second".into(), Rational::from_integer(1)));
-    let result = product1 / product2;
-    assert_eq!(
-        result.into_vec(),
-        &[
+        let product1 = Product::<TestUnit, true>::from_factors([
             TestUnit("meter".into(), Rational::from_integer(1)),
             TestUnit("second".into(), Rational::from_integer(1)),
-            TestUnit("second".into(), Rational::from_integer(-1))
-        ]
-    );
-}
+        ]);
+        let product2 = Product::from_factor(TestUnit("meter".into(), Rational::from_integer(2)));
+        let result = product1 * product2;
+        assert_eq!(
+            result.into_vec(),
+            &[
+                TestUnit("meter".into(), Rational::from_integer(3)),
+                TestUnit("second".into(), Rational::from_integer(1))
+            ]
+        );
+    }
 
-#[test]
-fn iter() {
-    let product = Product::<i32>::from_factors([5, 2, 3]);
-    let mut iter = product.iter();
-    assert_eq!(iter.next(), Some(&5));
-    assert_eq!(iter.next(), Some(&2));
-    assert_eq!(iter.next(), Some(&3));
-    assert_eq!(iter.next(), None);
-    assert_eq!(iter.next(), None);
-}
+    #[cfg(test)]
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    struct TestUnit(String, Exponent);
 
-#[test]
-fn canonicalize() {
-    let mut product = Product::<i32>::from_factors([5, 2, 3]);
-    product.canonicalize();
-    assert_eq!(product.into_iter().collect::<Vec<_>>().as_slice(), [30]);
+    #[cfg(test)]
+    impl Canonicalize for TestUnit {
+        type MergeKey = String;
+
+        fn merge_key(&self) -> Self::MergeKey {
+            self.0.clone()
+        }
+
+        fn merge(self, other: Self) -> Self {
+            TestUnit(self.0, self.1 + other.1)
+        }
+
+        fn is_trivial(&self) -> bool {
+            use num_traits::Zero;
+            self.1 == Rational::zero()
+        }
+    }
+
+    #[cfg(test)]
+    impl Power for TestUnit {
+        fn power(self, e: Exponent) -> Self {
+            TestUnit(self.0, self.1 * e)
+        }
+    }
+
+    #[test]
+    fn power() {
+        let product = Product::<TestUnit>::from_factors([
+            TestUnit("meter".into(), Rational::from_integer(1)),
+            TestUnit("second".into(), Rational::from_integer(-2)),
+        ]);
+        let result = product.powi(3);
+        assert_eq!(
+            result.into_vec(),
+            &[
+                TestUnit("meter".into(), Rational::from_integer(3)),
+                TestUnit("second".into(), Rational::from_integer(-6))
+            ]
+        );
+    }
+
+    #[test]
+    fn divide() {
+        let product1 = Product::<TestUnit>::from_factors([
+            TestUnit("meter".into(), Rational::from_integer(1)),
+            TestUnit("second".into(), Rational::from_integer(1)),
+        ]);
+        let product2 = Product::from_factor(TestUnit("second".into(), Rational::from_integer(1)));
+        let result = product1 / product2;
+        assert_eq!(
+            result.into_vec(),
+            &[
+                TestUnit("meter".into(), Rational::from_integer(1)),
+                TestUnit("second".into(), Rational::from_integer(1)),
+                TestUnit("second".into(), Rational::from_integer(-1))
+            ]
+        );
+    }
+
+    #[test]
+    fn iter() {
+        let product = Product::<i32>::from_factors([5, 2, 3]);
+        let mut iter = product.iter();
+        assert_eq!(iter.next(), Some(&5));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn canonicalize() {
+        let mut product = Product::<i32>::from_factors([5, 2, 3]);
+        product.canonicalize();
+        assert_eq!(product.into_iter().collect::<Vec<_>>().as_slice(), [30]);
+    }
 }

@@ -216,8 +216,6 @@ impl std::fmt::Display for Quantity {
 
 #[cfg(test)]
 mod tests {
-    use num_rational::Ratio;
-
     use crate::prefix::Prefix;
 
     use super::*;
@@ -262,7 +260,6 @@ mod tests {
         use crate::prefix::Prefix;
 
         use approx::assert_relative_eq;
-        use num_rational::Ratio;
 
         let meter = Unit::meter();
         let centimeter = Unit::meter().with_prefix(Prefix::centi());
@@ -291,7 +288,7 @@ mod tests {
                 .expect("exponent is scalar");
 
             let volume_in_centimeter3 = volume
-                .convert_to(&centimeter.power(Ratio::from_integer(3)))
+                .convert_to(&centimeter.powi(3))
                 .expect("conversion succeeds");
             assert_relative_eq!(
                 volume_in_centimeter3.unsafe_value().to_f64(),
@@ -331,7 +328,7 @@ mod tests {
             );
             let expected = Quantity::new(
                 Number::from_f64(2.0),
-                Unit::meter().power(Ratio::from_integer(2)) * Unit::second(),
+                Unit::meter().powi(2) * Unit::second(),
             );
             assert_eq!(q.full_simplify(), expected);
         }
@@ -370,24 +367,18 @@ mod tests {
         //     let q = Quantity::new(Number::from_f64(5.0), Unit::centimeter() * Unit::meter());
         //     let expected = Quantity::new(
         //         Number::from_f64(500.0),
-        //         Unit::centimeter().power(Ratio::from_integer(2)),
+        //         Unit::centimeter().powi(2),
         //     );
         //     assert_eq!(q.full_simplify(), expected);
         // }
         {
             let q = Quantity::new(Number::from_f64(5.0), Unit::meter() * Unit::centimeter());
-            let expected = Quantity::new(
-                Number::from_f64(0.05),
-                Unit::meter().power(Ratio::from_integer(2)),
-            );
+            let expected = Quantity::new(Number::from_f64(0.05), Unit::meter().powi(2));
             assert_eq!(q.full_simplify(), expected);
         }
         {
             let q = Quantity::new(Number::from_f64(1.0), Unit::hertz() / Unit::second());
-            let expected = Quantity::new(
-                Number::from_f64(1.0),
-                Unit::second().power(Ratio::from_integer(-2)),
-            );
+            let expected = Quantity::new(Number::from_f64(1.0), Unit::second().powi(-2));
             assert_eq!(q.full_simplify(), expected);
         }
     }

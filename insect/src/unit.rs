@@ -206,11 +206,7 @@ impl Unit {
 
     #[cfg(test)]
     pub fn hertz() -> Self {
-        Self::new_derived(
-            "hertz",
-            Number::from_f64(1.0),
-            Unit::second().power(Ratio::from_integer(-1)),
-        )
+        Self::new_derived("hertz", Number::from_f64(1.0), Unit::second().powi(-1))
     }
 
     #[cfg(test)]
@@ -318,21 +314,17 @@ mod tests {
         };
 
         {
-            let unit = Unit::meter()
-                * Unit::second()
-                * Unit::meter()
-                * Unit::second().power(Ratio::from_integer(2));
+            let unit = Unit::meter() * Unit::second() * Unit::meter() * Unit::second().powi(2);
             assert_same_representation(
                 unit.canonicalized(),
-                Unit::meter().power(Ratio::from_integer(2))
-                    * Unit::second().power(Ratio::from_integer(3)),
+                Unit::meter().powi(2) * Unit::second().powi(3),
             );
         }
         {
             let unit = Unit::meter() * Unit::second() * Unit::meter() * Unit::hertz();
             assert_same_representation(
                 unit.canonicalized(),
-                Unit::meter().power(Ratio::from_integer(2)) * Unit::second() * Unit::hertz(),
+                Unit::meter().powi(2) * Unit::second() * Unit::hertz(),
             );
         }
         {
@@ -343,20 +335,12 @@ mod tests {
             );
         }
         {
-            let unit = Unit::meter()
-                * Unit::second()
-                * Unit::meter()
-                * Unit::second().power(Ratio::from_integer(-1));
-            assert_same_representation(
-                unit.canonicalized(),
-                Unit::meter().power(Ratio::from_integer(2)),
-            );
+            let unit = Unit::meter() * Unit::second() * Unit::meter() * Unit::second().powi(-1);
+            assert_same_representation(unit.canonicalized(), Unit::meter().powi(2));
         }
         {
-            let unit = Unit::meter().power(Ratio::from_integer(-1))
-                * Unit::second()
-                * Unit::meter()
-                * Unit::second().power(Ratio::from_integer(-1));
+            let unit =
+                Unit::meter().powi(-1) * Unit::second() * Unit::meter() * Unit::second().powi(-1);
             assert_same_representation(unit.canonicalized(), Unit::scalar());
         }
     }
