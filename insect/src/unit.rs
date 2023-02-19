@@ -27,7 +27,11 @@ pub struct UnitIdentifier {
 }
 
 impl UnitIdentifier {
-    fn corresponding_base_unit(&self) -> Unit {
+    pub fn is_base(&self) -> bool {
+        matches!(self.kind, UnitKind::Base)
+    }
+
+    pub fn corresponding_base_unit(&self) -> Unit {
         match &self.kind {
             UnitKind::Base => Unit::new_base(&self.name),
             UnitKind::Derived(_, base_unit) => base_unit.clone(),
@@ -41,7 +45,7 @@ impl UnitIdentifier {
         }
     }
 
-    fn sort_key(&self) -> String {
+    pub fn sort_key(&self) -> String {
         // TODO: this is more or less a hack. instead of properly sorting by physical
         // dimension, we sort by the name of the corresponding base unit(s).
         match &self.kind {
@@ -126,7 +130,7 @@ impl Unit {
     }
 
     pub fn new_derived(name: &str, factor: ConversionFactor, base_unit: Unit) -> Self {
-        assert!(base_unit.iter().all(|f| f.unit_id.kind == UnitKind::Base));
+        assert!(base_unit.iter().all(|f| f.unit_id.is_base()));
 
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),

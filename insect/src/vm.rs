@@ -486,7 +486,7 @@ impl Vm {
                 }
                 Op::Return => {
                     if self.frames.len() == 1 {
-                        let return_value = self.pop();
+                        let return_value = self.pop().full_simplify(); // TODO: this is not a good idea. we only want to simplify if the user did not ask for an explicit conversion.
 
                         // Save the returned value in `ans` and `_`:
                         for &identifier in LAST_RESULT_IDENTIFIERS {
