@@ -70,6 +70,14 @@ impl Quantity {
         }
     }
 
+    pub fn full_simplify(self) -> Self {
+        if let Ok(num) = self.as_scalar() {
+            Self::from_scalar(num.to_f64())
+        } else {
+            self
+        }
+    }
+
     pub fn as_scalar(&self) -> Result<Number> {
         Ok(self.convert_to(&Unit::scalar())?.value)
     }
@@ -158,83 +166,88 @@ impl std::fmt::Display for Quantity {
     }
 }
 
-#[test]
-fn test_conversion_trivial() {
-    let meter = Unit::new_base("meter");
-    let second = Unit::new_base("second");
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let length = Quantity::new(Number::from_f64(2.0), meter.clone());
+    #[test]
+    fn conversion_trivial() {
+        let meter = Unit::new_base("meter");
+        let second = Unit::new_base("second");
 
-    assert!(length.convert_to(&meter).is_ok());
+        let length = Quantity::new(Number::from_f64(2.0), meter.clone());
 
-    assert!(length.convert_to(&second).is_err());
-    assert!(length.convert_to(&Unit::scalar()).is_err());
-}
+        assert!(length.convert_to(&meter).is_ok());
 
-#[test]
-fn test_conversion_basic() {
-    use approx::assert_relative_eq;
+        assert!(length.convert_to(&second).is_err());
+        assert!(length.convert_to(&Unit::scalar()).is_err());
+    }
 
-    let meter = Unit::new_base("meter");
-    let foot = Unit::new_derived("foot", Number::from_f64(0.3048), meter.clone());
+    #[test]
+    fn conversion_basic() {
+        use approx::assert_relative_eq;
 
-    let length = Quantity::new(Number::from_f64(2.0), meter.clone());
+        let meter = Unit::new_base("meter");
+        let foot = Unit::new_derived("foot", Number::from_f64(0.3048), meter.clone());
 
-    let length_in_foot = length.convert_to(&foot).expect("conversion succeeds");
-    assert_eq!(length_in_foot.unsafe_value().to_f64(), 2.0 / 0.3048);
+        let length = Quantity::new(Number::from_f64(2.0), meter.clone());
 
-    let length_converted_back_to_meter = length_in_foot
-        .convert_to(&meter)
-        .expect("conversion succeeds");
-    assert_relative_eq!(
-        length_converted_back_to_meter.unsafe_value().to_f64(),
-        2.0,
-        epsilon = 1e-6
-    );
-}
+        let length_in_foot = length.convert_to(&foot).expect("conversion succeeds");
+        assert_eq!(length_in_foot.unsafe_value().to_f64(), 2.0 / 0.3048);
 
-#[test]
-fn test_prefixes() {
-    use crate::prefix::Prefix;
-
-    use approx::assert_relative_eq;
-    use num_rational::Ratio;
-
-    let meter = Unit::new_base("meter");
-    let centimeter = Unit::new_base("meter").with_prefix(Prefix::centi());
-
-    let length = Quantity::new(Number::from_f64(2.5), meter.clone());
-    {
-        let length_in_centimeter = length.convert_to(&centimeter).expect("conversion succeeds");
-        assert_relative_eq!(
-            length_in_centimeter.unsafe_value().to_f64(),
-            250.0,
-            epsilon = 1e-6
-        );
-
-        let length_converted_back_to_meter = length_in_centimeter
+        let length_converted_back_to_meter = length_in_foot
             .convert_to(&meter)
             .expect("conversion succeeds");
         assert_relative_eq!(
             length_converted_back_to_meter.unsafe_value().to_f64(),
-            2.5,
+            2.0,
             epsilon = 1e-6
         );
     }
-    {
-        let volume = length
-            .power(Quantity::from_scalar(3.0))
-            .expect("exponent is scalar");
 
-        println!("{}", &volume);
+    #[test]
+    fn prefixes() {
+        use crate::prefix::Prefix;
 
-        let volume_in_centimeter3 = volume
-            .convert_to(&centimeter.power(Ratio::from_integer(3)))
-            .expect("conversion succeeds");
-        assert_relative_eq!(
-            volume_in_centimeter3.unsafe_value().to_f64(),
-            15_625_000.0,
-            epsilon = 1e-6
-        );
+        use approx::assert_relative_eq;
+        use num_rational::Ratio;
+
+        let meter = Unit::new_base("meter");
+        let centimeter = Unit::new_base("meter").with_prefix(Prefix::centi());
+
+        let length = Quantity::new(Number::from_f64(2.5), meter.clone());
+        {
+            let length_in_centimeter = length.convert_to(&centimeter).expect("conversion succeeds");
+            assert_relative_eq!(
+                length_in_centimeter.unsafe_value().to_f64(),
+                250.0,
+                epsilon = 1e-6
+            );
+
+            let length_converted_back_to_meter = length_in_centimeter
+                .convert_to(&meter)
+                .expect("conversion succeeds");
+            assert_relative_eq!(
+                length_converted_back_to_meter.unsafe_value().to_f64(),
+                2.5,
+                epsilon = 1e-6
+            );
+        }
+        {
+            let volume = length
+                .power(Quantity::from_scalar(3.0))
+                .expect("exponent is scalar");
+
+            println!("{}", &volume);
+
+            let volume_in_centimeter3 = volume
+                .convert_to(&centimeter.power(Ratio::from_integer(3)))
+                .expect("conversion succeeds");
+            assert_relative_eq!(
+                volume_in_centimeter3.unsafe_value().to_f64(),
+                15_625_000.0,
+                epsilon = 1e-6
+            );
+        }
     }
 }
