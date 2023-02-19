@@ -168,6 +168,11 @@ impl Unit {
     }
 
     #[cfg(test)]
+    pub fn kilometer() -> Self {
+        Self::new_base("meter").with_prefix(Prefix::kilo())
+    }
+
+    #[cfg(test)]
     pub fn second() -> Self {
         Self::new_base("second")
     }
