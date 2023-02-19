@@ -185,6 +185,11 @@ impl Unit {
     }
 
     #[cfg(test)]
+    pub fn centimeter() -> Self {
+        Self::new_base("meter").with_prefix(Prefix::centi())
+    }
+
+    #[cfg(test)]
     pub fn millimeter() -> Self {
         Self::new_base("meter").with_prefix(Prefix::milli())
     }
@@ -201,7 +206,16 @@ impl Unit {
 
     #[cfg(test)]
     pub fn hertz() -> Self {
-        Self::new_derived("hertz", Number::from_f64(1.0), Unit::second())
+        Self::new_derived(
+            "hertz",
+            Number::from_f64(1.0),
+            Unit::second().power(Ratio::from_integer(-1)),
+        )
+    }
+
+    #[cfg(test)]
+    pub fn hour() -> Self {
+        Self::new_derived("hour", Number::from_f64(3600.0), Self::second())
     }
 
     #[cfg(test)]
@@ -210,8 +224,8 @@ impl Unit {
     }
 
     #[cfg(test)]
-    pub fn hour() -> Self {
-        Self::new_derived("hour", Number::from_f64(3600.0), Self::second())
+    pub fn bit() -> Self {
+        Self::new_base("bit")
     }
 }
 
