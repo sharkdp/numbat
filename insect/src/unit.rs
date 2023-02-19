@@ -23,34 +23,50 @@ pub enum UnitKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitIdentifier {
     name: String,
-    unit_type: UnitKind,
+    kind: UnitKind,
 }
 
 impl UnitIdentifier {
     fn corresponding_base_unit(&self) -> Unit {
-        match &self.unit_type {
+        match &self.kind {
             UnitKind::Base => Unit::new_base(&self.name),
             UnitKind::Derived(_, base_unit) => base_unit.clone(),
         }
     }
 
     fn conversion_factor(&self) -> Number {
-        match &self.unit_type {
+        match &self.kind {
             UnitKind::Base => Number::from_f64(1.0),
             UnitKind::Derived(factor, _) => *factor,
+        }
+    }
+
+    fn sort_key(&self) -> String {
+        // TODO: this is more or less a hack. instead of properly sorting by physical
+        // dimension, we sort by the name of the corresponding base unit(s).
+        match &self.kind {
+            UnitKind::Base => self.name.clone(),
+            UnitKind::Derived(_, base_unit) => itertools::Itertools::intersperse(
+                base_unit
+                    .canonicalized()
+                    .iter()
+                    .map(|f| f.unit_id.sort_key()),
+                "###".into(),
+            )
+            .collect::<String>(),
         }
     }
 }
 
 impl PartialOrd for UnitIdentifier {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.name.partial_cmp(&other.name)
+        self.sort_key().partial_cmp(&other.sort_key())
     }
 }
 
 impl Ord for UnitIdentifier {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.name.cmp(&other.name)
+        self.sort_key().cmp(&other.sort_key())
     }
 }
 
@@ -103,18 +119,20 @@ impl Unit {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
                 name: name.into(),
-                unit_type: UnitKind::Base,
+                kind: UnitKind::Base,
             },
             exponent: Rational::from_integer(1),
         })
     }
 
     pub fn new_derived(name: &str, factor: ConversionFactor, base_unit: Unit) -> Self {
+        assert!(base_unit.iter().all(|f| f.unit_id.kind == UnitKind::Base));
+
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
                 name: name.into(),
-                unit_type: UnitKind::Derived(factor, base_unit),
+                kind: UnitKind::Derived(factor, base_unit),
             },
             exponent: Rational::from_integer(1),
         })
@@ -175,6 +193,11 @@ impl Unit {
     #[cfg(test)]
     pub fn second() -> Self {
         Self::new_base("second")
+    }
+
+    #[cfg(test)]
+    pub fn hertz() -> Self {
+        Self::new_derived("hertz", Number::from_f64(1.0), Unit::second())
     }
 
     #[cfg(test)]
@@ -247,7 +270,7 @@ mod tests {
                 prefix: Prefix::none(),
                 unit_id: UnitIdentifier {
                     name: "meter".into(),
-                    unit_type: UnitKind::Base,
+                    kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(1),
             },
@@ -255,7 +278,7 @@ mod tests {
                 prefix: Prefix::none(),
                 unit_id: UnitIdentifier {
                     name: "second".into(),
-                    unit_type: UnitKind::Base,
+                    kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(-1),
             },
@@ -285,6 +308,13 @@ mod tests {
                 unit.canonicalized(),
                 Unit::meter().power(Ratio::from_integer(2))
                     * Unit::second().power(Ratio::from_integer(3)),
+            );
+        }
+        {
+            let unit = Unit::meter() * Unit::second() * Unit::meter() * Unit::hertz();
+            assert_same_representation(
+                unit.canonicalized(),
+                Unit::meter().power(Ratio::from_integer(2)) * Unit::second() * Unit::hertz(),
             );
         }
         {
@@ -322,7 +352,7 @@ mod tests {
                 prefix: Prefix::Metric(-3),
                 unit_id: UnitIdentifier {
                     name: "meter".into(),
-                    unit_type: UnitKind::Base,
+                    kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(1),
             }])
