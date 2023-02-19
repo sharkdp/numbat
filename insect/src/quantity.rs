@@ -266,7 +266,10 @@ mod tests {
             assert_eq!(q.full_simplify(), Quantity::from_scalar(2000.0));
         }
         {
-            let q = Quantity::new(Number::from_f64(2.0), Unit::kilometer() / Unit::millimeter());
+            let q = Quantity::new(
+                Number::from_f64(2.0),
+                Unit::kilometer() / Unit::millimeter(),
+            );
             assert_eq!(q.full_simplify(), Quantity::from_scalar(2000000.0));
         }
     }
@@ -274,12 +277,21 @@ mod tests {
     #[test]
     fn full_simplify_unit_rearrangements() {
         {
-            let q = Quantity::new(Number::from_f64(2.0), Unit::meter() * Unit::second() * Unit::meter());
-            let expected = Quantity::new(Number::from_f64(2.0), Unit::meter().power(Ratio::from_integer(2)) * Unit::second());
+            let q = Quantity::new(
+                Number::from_f64(2.0),
+                Unit::meter() * Unit::second() * Unit::meter(),
+            );
+            let expected = Quantity::new(
+                Number::from_f64(2.0),
+                Unit::meter().power(Ratio::from_integer(2)) * Unit::second(),
+            );
             assert_eq!(q.full_simplify(), expected);
         }
         {
-            let q = Quantity::new(Number::from_f64(2.0), Unit::kilometer() / Unit::millimeter());
+            let q = Quantity::new(
+                Number::from_f64(2.0),
+                Unit::kilometer() / Unit::millimeter(),
+            );
             assert_eq!(q.full_simplify(), Quantity::from_scalar(2000000.0));
         }
     }
