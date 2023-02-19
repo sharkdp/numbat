@@ -70,11 +70,11 @@ impl Quantity {
         }
     }
 
-    pub fn full_simplify(self) -> Self {
+    pub fn full_simplify(&self) -> Self {
         if let Ok(num) = self.as_scalar() {
             Self::from_scalar(num.to_f64())
         } else {
-            self
+            self.clone()
         }
     }
 
@@ -252,5 +252,14 @@ mod tests {
     }
 
     #[test]
-    fn full_simplify() {}
+    fn full_simplify_basic() {
+        let q = Quantity::new(Number::from_f64(2.0), Unit::meter() / Unit::second());
+        assert_eq!(q.full_simplify(), q);
+    }
+
+    #[test]
+    fn full_simplify_convertible_to_scalar() {
+        let q = Quantity::new(Number::from_f64(2.0), Unit::meter() / Unit::millimeter());
+        assert_eq!(q.full_simplify(), Quantity::from_scalar(2000.0));
+    }
 }
