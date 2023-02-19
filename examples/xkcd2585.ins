@@ -1,0 +1,88 @@
+# https://xkcd.com/2585/
+#
+# I can ride my bike at 45 mph.
+# If you round.
+
+17 mph
+
+ans -> meters/sec    // round
+ans -> knots         // round
+ans -> fathoms/sec   // round
+ans -> furlongs/min  // round
+ans -> fathoms/sec   // round
+ans -> kph           // round
+ans -> knots         // round
+ans -> kph           // round
+ans -> furlongs/hour // round
+ans -> mi/h          // round       # TODO: replace mi/h with mph. see below for details
+ans -> m/s           // round
+ans -> furlongs/min  // round
+ans -> yards/sec     // round
+ans -> fathoms/sec   // round
+ans -> m/s           // round
+ans -> mph           // round
+ans -> furlongs/min  // round
+ans -> knots         // round
+ans -> yards/sec     // round
+ans -> fathoms/sec   // round
+ans -> knots         // round
+ans -> furlongs/min  // round
+ans -> mph           // round
+
+assert_eq(ans, 45 mph)
+
+
+# Unfortunately, if we replace mi/h above with mph, the test fails.
+# The reason lies in the '204 furlongs/hour -> mph' conversion.
+# 204 furlongs are 25.5 miles (exact). 204 furlongs/hour -> mph is
+# therefore supposed to yield 26 mph after rounding. However, in our
+# primitive `Quantity::convert_to` implementation, we first convert
+# to the corresponding base unit (m/s) and then back:
+#
+#    furlongs/hour -> m/s -> mph
+#
+# Minor floating point inaccuracies then lead to a result which is
+# slightly less than 25.5 mph. After rounding, this becomes 25 mph.
+#
+# Improving the conversion algorithm slightly by removing common
+# unit factors (here: 1/hour), improved the situation and now leads
+# to the correct result when using mi/h (mile/hour). However, if we
+# use the `mph` shorthand, our common-unit-factor computation fails
+# and still leads to the wrong 25 mph result.
+#
+# A proper solution to this would probably build a full DAG for all
+# unit definitions of a single physical dimension. The conversion
+# algorithm could then be changed to use shortest paths in those
+# graphs. For example: If both miles and furlongs were defined via
+# the unit foot, we could use foot/hour as the 'base' unit for the
+# conversion instead of meter/second:
+#
+#
+#                meter       second
+#
+#                  ▲            ▲
+#                  │            │
+#                  │            │
+#                  │            │
+#
+#                inch        minute
+#
+#                  ▲            ▲
+#                  │            │
+#                  │            │
+#                  │            │
+#
+#         ┌────► foot         hour
+#         │
+#         │        ▲
+#         │        │
+#         │        │
+#         │        │
+#
+#       mile    furlong
+#
+#
+# Another, potentially simpler solution to this problem could be to
+# introduce a proper type for rationals. This way, floating point
+# inaccuracies would only appear for units with irrational defining
+# conversion factors, like `unit degree = pi / 180 × radian`.

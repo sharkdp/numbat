@@ -4,7 +4,7 @@ use crate::unit::{Unit, UnitFactor};
 
 use itertools::Itertools;
 use num_rational::Ratio;
-use num_traits::FromPrimitive;
+use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
@@ -51,13 +51,52 @@ impl Quantity {
         if &self.unit == target_unit || self.is_zero() {
             Ok(Quantity::new(self.value, target_unit.clone()))
         } else {
+            // Remove common unit factors to reduce unnecessary conversion procedures
+            // For example: when converting from km/hour to mile/hour, there is no need
+            // to also perform the hour->second conversion, which would be needed, as
+            // we go back to base units for now. Removing common factors is just one
+            // heuristic, but it would be better to solve this in a more general way.
+            // For more details on this problem, see `examples/xkcd2585.ins`.
+            let mut common_unit_factors = Unit::scalar();
+            let target_unit_canonicalized = target_unit.canonicalized();
+            for factor in self.unit.canonicalized().iter() {
+                if let Some(other_factor) = target_unit_canonicalized
+                    .iter()
+                    .find(|&f| factor.prefix == f.prefix && factor.unit_id == f.unit_id)
+                {
+                    if factor.exponent > Ratio::zero() && other_factor.exponent > Ratio::zero() {
+                        common_unit_factors = common_unit_factors
+                            * Unit::from_factor(UnitFactor {
+                                exponent: std::cmp::min(factor.exponent, other_factor.exponent),
+                                ..factor.clone()
+                            });
+                    } else if factor.exponent < Ratio::zero()
+                        && other_factor.exponent < Ratio::zero()
+                    {
+                        common_unit_factors = common_unit_factors
+                            * Unit::from_factor(UnitFactor {
+                                exponent: std::cmp::max(factor.exponent, other_factor.exponent),
+                                ..factor.clone()
+                            });
+                    }
+                }
+            }
+
+            let target_unit_reduced =
+                (target_unit.clone() / common_unit_factors.clone()).canonicalized();
+            let own_unit_reduced =
+                (self.unit.clone() / common_unit_factors.clone()).canonicalized();
+
             let (target_base_unit_representation, factor) =
-                target_unit.to_base_unit_representation();
+                target_unit_reduced.to_base_unit_representation();
 
-            let quantity_base_unit_representation = self.to_base_unit_representation();
-            let self_base_unit_representation = quantity_base_unit_representation.unit();
+            let quantity_base_unit_representation = (self.clone()
+                / Quantity::from_unit(common_unit_factors))
+            .unwrap()
+            .to_base_unit_representation();
+            let own_base_unit_representation = own_unit_reduced.to_base_unit_representation().0;
 
-            if self_base_unit_representation == &target_base_unit_representation {
+            if own_base_unit_representation == target_base_unit_representation {
                 Ok(Quantity::new(
                     *quantity_base_unit_representation.unsafe_value() / factor,
                     target_unit.clone(),
