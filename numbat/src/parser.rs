@@ -1,4 +1,4 @@
-//! Insect Parser
+//! Numbat Parser
 //!
 //! Operator precedence, low to high
 //! * postfix apply ("//")

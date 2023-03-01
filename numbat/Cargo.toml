@@ -1,5 +1,5 @@
 [package]
-name = "insect"
+name = "numbat"
 description = "A high precision scientific calculator with full support for physical units."
 authors = ["David Peter <mail@david-peter.de>"]
 version = "0.1.0"

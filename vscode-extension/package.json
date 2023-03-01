@@ -1,7 +1,7 @@
 {
-    "name": "insect",
-    "displayName": "Insect",
-    "description": "Syntax highlighting for the Insect programming language",
+    "name": "numbat",
+    "displayName": "Numbat",
+    "description": "Syntax highlighting for the Numbat programming language",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.71.0"
@@ -11,15 +11,15 @@
     ],
     "contributes": {
         "languages": [{
-            "id": "insect",
-            "aliases": ["Insect", "insect"],
-            "extensions": [".ins"],
+            "id": "numbat",
+            "aliases": ["Numbat", "numbat"],
+            "extensions": [".nbt"],
             "configuration": "./language-configuration.json"
         }],
         "grammars": [{
-            "language": "insect",
-            "scopeName": "source.insect",
-            "path": "./syntaxes/insect.tmLanguage.json"
+            "language": "numbat",
+            "scopeName": "source.numbat",
+            "path": "./syntaxes/numbat.tmLanguage.json"
         }]
     }
 }

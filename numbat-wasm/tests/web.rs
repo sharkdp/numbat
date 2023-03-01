@@ -1,7 +1,7 @@
 #![cfg(target_arch = "wasm32")]
 
 use wasm_bindgen_test::*;
-use insect_wasm::interpret;
+use numbat_wasm::interpret;
 
 wasm_bindgen_test_configure!(run_in_browser);
 

@@ -1,9 +1,9 @@
 [workspace]
 members = [
-    "insect",
-    "insect-cli",
+    "numbat",
+    "numbat-cli",
 ]
 
 exclude = [
-    "insect-wasm"
+    "numbat-wasm"
 ]

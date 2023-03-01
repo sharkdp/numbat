@@ -3,7 +3,7 @@ authors = ["David Peter"]
 language = "en"
 multilingual = false
 src = "src"
-title = "Insect - scientific calculator with full support for physical units"
+title = "Numbat - scientific calculator with full support for physical units"
 
 [output.html]
 mathjax-support = true

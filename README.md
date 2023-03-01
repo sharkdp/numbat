@@ -1,6 +1,6 @@
-# Insect
+# Numbat
 
-Insect is a statically typed programming language for scientific computations with
+Numbat is a statically typed programming language for scientific computations with
 first class support for physical units.
 
 ## Key features
@@ -8,12 +8,12 @@ first class support for physical units.
   * Statically typed: the 
   * Type inference
   * Strict syntax
-  * Customizable: the whole system of physical dimensions and units is written in Insect itself and can be modified or replaced
+  * Customizable: the whole system of physical dimensions and units is written in Numbat itself and can be modified or replaced
   * (Modular)
 
 ## Type system
 
-Insects treats *physical dimensions* like length or time as *types*. A value of `5 meter` is of type `Length`. A value of `2.5 inch`
+Numbat treats *physical dimensions* like length or time as *types*. A value of `5 meter` is of type `Length`. A value of `2.5 inch`
 is also of type `Length`.
 
 
@@ -41,7 +41,7 @@ In order to compute the type of `expr1 ^ expr2`, we need to fully *evaluate*
 hypothetical expression like `meter^f()` where `f()` could do *anything*. Maybe even
 get some input from the user at runtime.
 
-Insects solution to this problem looks like this: If `expr1` is *not* dimensionless, 
+Numbats solution to this problem looks like this: If `expr1` is *not* dimensionless, 
 we restrict `expr2` to a small subset of allowed operations that can be fully
 evaluated at compile time (similar to `constexpr` expressions in C++, `const`
 expressions in Rust, etc). Expressions like `meter^(2 * (2 + 1) / 3)` are completely
@@ -70,7 +70,7 @@ of the parameter `n`.
   - A redesign from scratch would allow me to focus on areas of improvement:
       - Introducing the concept of physical *dimensions* into the language
       - Experimenting with a static dimension/unit checker
-      - Allowing user-defined units => move all of the unit definitions to the Insect language
+      - Allowing user-defined units => move all of the unit definitions to the language
       - Better parser errors
       - Automated tracking of significant digits
       - Support for rational numbers? Complex numbers? Intervals?

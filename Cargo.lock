@@ -259,31 +259,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "insect"
-version = "0.1.0"
-dependencies = [
- "approx",
- "itertools",
- "num-rational",
- "num-traits",
- "once_cell",
- "thiserror",
-]
-
-[[package]]
-name = "insect-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "clap",
- "dirs-next",
- "insect",
- "predicates",
- "rustyline",
-]
-
-[[package]]
 name = "io-lifetimes"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -391,6 +366,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "numbat"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "itertools",
+ "num-rational",
+ "num-traits",
+ "once_cell",
+ "thiserror",
+]
+
+[[package]]
+name = "numbat-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "dirs-next",
+ "numbat",
+ "predicates",
+ "rustyline",
 ]
 
 [[package]]

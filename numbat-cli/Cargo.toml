@@ -1,5 +1,5 @@
 [package]
-name = "insect-cli"
+name = "numbat-cli"
 description = "A high precision scientific calculator with full support for physical units."
 authors = ["David Peter <mail@david-peter.de>"]
 version = "0.1.0"
@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1"
 rustyline = "10"
 dirs-next = "2"
-insect = { path = "../insect" }
+numbat = { path = "../numbat" }
 
 [dependencies.clap]
 version = "4"
@@ -20,5 +20,5 @@ assert_cmd = "2"
 predicates = "2"
 
 [[bin]]
-name = "insect"
+name = "numbat"
 path = "src/main.rs"

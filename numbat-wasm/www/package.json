@@ -1,5 +1,5 @@
 {
-  "name": "insect",
+  "name": "numbat",
   "version": "0.1.0",
   "main": "index.js",
   "scripts": {
@@ -7,7 +7,7 @@
     "start": "webpack-dev-server"
   },
   "devDependencies": {
-    "insect-wasm": "file:../pkg",
+    "numbat-wasm": "file:../pkg",
     "webpack": "^4.29.3",
     "webpack-cli": "^3.1.0",
     "webpack-dev-server": "^3.1.5",

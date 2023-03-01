@@ -1,22 +1,22 @@
 use std::fs;
 use std::path::PathBuf;
 
-use insect::pretty_print::PrettyPrint;
-use insect::{ExitStatus, Insect, InsectError, InterpreterResult, ParseError};
+use numbat::pretty_print::PrettyPrint;
+use numbat::{ExitStatus, InterpreterResult, Numbat, NumbatError, ParseError};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-type ControlFlow = std::ops::ControlFlow<insect::ExitStatus>;
+type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
 const PROMPT: &str = ">>> ";
 
 #[derive(Parser, Debug)]
-#[command(version, about, name("insect"))]
+#[command(version, about, name("numbat"))]
 struct Args {
-    /// Path to source file with Insect code. If none is given, an interactive
+    /// Path to source file with Numbat code. If none is given, an interactive
     /// session is started.
     file: Option<PathBuf>,
 
@@ -24,7 +24,7 @@ struct Args {
     #[arg(short, long, value_name = "CODE", conflicts_with = "file")]
     expression: Option<String>,
 
-    /// Do not load Insects prelude with predefined physical dimensions and units.
+    /// Do not load the prelude with predefined physical dimensions and units.
     #[arg(long)]
     no_prelude: bool,
 
@@ -54,7 +54,7 @@ impl ExecutionMode {
 
 struct Cli {
     args: Args,
-    insect: Insect,
+    numbat: Numbat,
     current_filename: Option<PathBuf>,
 }
 
@@ -62,7 +62,7 @@ impl Cli {
     fn new() -> Self {
         let args = Args::parse();
         Self {
-            insect: Insect::new_without_prelude(args.debug),
+            numbat: Numbat::new_without_prelude(args.debug),
             args,
             current_filename: None,
         }
@@ -110,11 +110,9 @@ impl Cli {
     }
 
     fn repl(&mut self) -> Result<()> {
-        println!(r" _                     _   ");
-        println!(r"(_)_ __  ___  ___  ___| |_ ");
-        println!(r"| | '_ \/ __|/ _ \/ __| __|   version 0.1");
-        println!(r"| | | | \__ \  __/ (__| |_    enter '?' for help");
-        println!(r"|_|_| |_|___/\___|\___|\__|");
+        println!();
+        println!(" █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀");
+        println!(" █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░");
         println!();
 
         let history_path = self.get_history_path()?;
@@ -165,7 +163,7 @@ impl Cli {
 
     #[must_use]
     fn parse_and_evaluate(&mut self, input: &str, execution_mode: ExecutionMode) -> ControlFlow {
-        let result = self.insect.interpret(input);
+        let result = self.numbat.interpret(input);
 
         match result {
             Ok((statements, interpreter_result)) => {
@@ -191,7 +189,7 @@ impl Cli {
                     InterpreterResult::Exit(exit_status) => ControlFlow::Break(exit_status),
                 }
             }
-            Err(InsectError::ParseError(ref e @ ParseError { ref span, .. })) => {
+            Err(NumbatError::ParseError(ref e @ ParseError { ref span, .. })) => {
                 let line = input.lines().nth(span.line - 1).unwrap();
 
                 let filename = self
@@ -211,15 +209,15 @@ impl Cli {
 
                 execution_mode.exit_status_in_case_of_error()
             }
-            Err(InsectError::NameResolutionError(e)) => {
+            Err(NumbatError::NameResolutionError(e)) => {
                 eprintln!("Name resolution error: {:#}", e);
                 execution_mode.exit_status_in_case_of_error()
             }
-            Err(InsectError::TypeCheckError(e)) => {
+            Err(NumbatError::TypeCheckError(e)) => {
                 eprintln!("Type check error: {:#}", e);
                 execution_mode.exit_status_in_case_of_error()
             }
-            Err(InsectError::RuntimeError(e)) => {
+            Err(NumbatError::RuntimeError(e)) => {
                 eprintln!("Runtime error: {:#}", e);
                 execution_mode.exit_status_in_case_of_error()
             }
@@ -228,13 +226,13 @@ impl Cli {
 
     fn get_prelude_path(&self) -> PathBuf {
         let config_dir = dirs_next::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        config_dir.join("insect").join("prelude.ins") // TODO: allow for preludes in system paths, user paths, …
+        config_dir.join("numbat").join("prelude.nbt") // TODO: allow for preludes in system paths, user paths, …
     }
 
     fn get_history_path(&self) -> Result<PathBuf> {
         let data_dir = dirs_next::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("insect");
+            .join("numbat");
         fs::create_dir(&data_dir).ok();
         Ok(data_dir.join("history"))
     }

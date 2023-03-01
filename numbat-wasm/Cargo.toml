@@ -1,5 +1,5 @@
 [package]
-name = "insect-wasm"
+name = "numbat-wasm"
 authors = ["David Peter <mail@david-peter.de>"]
 version = "0.1.0"
 edition = "2021"
@@ -24,7 +24,7 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 # allocator, however.
 wee_alloc = { version = "0.4.5", optional = true }
 
-insect = { path = "../insect" }
+numbat = { path = "../numbat" }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

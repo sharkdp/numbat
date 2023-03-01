@@ -37,7 +37,7 @@ pub use interpreter::InterpreterResult;
 pub use parser::ParseError;
 
 #[derive(Debug, Error)]
-pub enum InsectError {
+pub enum NumbatError {
     #[error("{0}")]
     ParseError(ParseError),
     #[error("{0}")]
@@ -48,17 +48,17 @@ pub enum InsectError {
     RuntimeError(RuntimeError),
 }
 
-pub type Result<T> = std::result::Result<T, InsectError>;
+pub type Result<T> = std::result::Result<T, NumbatError>;
 
-pub struct Insect {
+pub struct Numbat {
     prefix_transformer: Transformer,
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
 }
 
-impl Insect {
+impl Numbat {
     pub fn new_without_prelude(debug: bool) -> Self {
-        Insect {
+        Numbat {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(debug),
@@ -66,29 +66,29 @@ impl Insect {
     }
 
     pub fn new(debug: bool) -> Self {
-        let mut insect = Self::new_without_prelude(debug);
-        assert!(insect
-            .interpret(include_str!("../../prelude.ins"))
+        let mut numbat = Self::new_without_prelude(debug);
+        assert!(numbat
+            .interpret(include_str!("../../prelude.nbt"))
             .expect("Error while running prelude")
             .1
             .is_success()); // TODO: read prelude dynamically, error handling
-        insect
+        numbat
     }
 
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
-        let statements = parse(code).map_err(InsectError::ParseError)?;
+        let statements = parse(code).map_err(NumbatError::ParseError)?;
         let transformed_statements = self
             .prefix_transformer
             .transform(statements)
-            .map_err(InsectError::NameResolutionError)?;
+            .map_err(NumbatError::NameResolutionError)?;
         let typed_statements = self
             .typechecker
             .check_statements(transformed_statements.clone()) // TODO: get rid of clone?
-            .map_err(InsectError::TypeCheckError)?;
+            .map_err(NumbatError::TypeCheckError)?;
         let result = self
             .interpreter
             .interpret_statements(&typed_statements)
-            .map_err(InsectError::RuntimeError)?;
+            .map_err(NumbatError::RuntimeError)?;
 
         Ok((transformed_statements, result))
     }

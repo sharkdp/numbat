@@ -412,7 +412,7 @@ impl TypeChecker {
                         .get_base_representation(
                             &optional_dexpr.expect("Parameter types can not be deduced."),
                         )
-                        // TODO: add type inference, see https://github.com/sharkdp/insect-rs/issues/29
+                        // TODO: add type inference, see https://github.com/sharkdp/numbat/issues/29
                         // TODO: once we add type inference, make sure that annotations are required for foreign functions
                         .map_err(TypeCheckError::RegistryError)?;
                     typechecker_fn

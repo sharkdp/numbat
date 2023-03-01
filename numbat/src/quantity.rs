@@ -56,7 +56,7 @@ impl Quantity {
             // to also perform the hour->second conversion, which would be needed, as
             // we go back to base units for now. Removing common factors is just one
             // heuristic, but it would be better to solve this in a more general way.
-            // For more details on this problem, see `examples/xkcd2585.ins`.
+            // For more details on this problem, see `examples/xkcd2585.nbt`.
             let mut common_unit_factors = Unit::scalar();
             let target_unit_canonicalized = target_unit.canonicalized();
             for factor in self.unit.canonicalized().iter() {

@@ -1,6 +1,6 @@
 mod utils;
 
-use insect::{Insect, InterpreterResult};
+use numbat::{Numbat, InterpreterResult};
 
 use wasm_bindgen::prelude::*;
 
@@ -14,8 +14,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn interpret(code: &str) -> String {
     utils::set_panic_hook();
 
-    let mut insect = Insect::new(true);
-    match insect.interpret(&code) {
+    let mut numbat = Numbat::new(true);
+    match numbat.interpret(&code) {
         Ok((_, result)) => match result {
             InterpreterResult::Quantity(q) => format!("{}", q),
             InterpreterResult::Continue => "Nothing to show".into(),

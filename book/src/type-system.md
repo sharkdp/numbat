@@ -1,19 +1,19 @@
 # Type system
 
-Insect is a language with a special type system that treats *physical dimensions* as types.
+Numbat is a language with a special type system that treats *physical dimensions* as types.
 A type checker infers types for every expression in the program and ensures that everything is correct in terms of physical dimensions, which implies correctness in terms of physical *units*.
 For example, the expression `2 meter` has a *type* of `Length`.
 The expression `3 inch` *also* has a type of `Length`.
 The combined expression `2 meter + 3 inch` is therefore well-typed.
 On the other hand, `2 meter + 3 second` is ill-typed, as `3 second` is of type `Time`.
 
-The type system is *static* which means that the correctness of an Insect program is verified before the program starts executing.
+The type system is *static* which means that the correctness of an Numbat program is verified before the program starts executing.
 Note that certain *runtime* errors (like division-by-zero) can still occur.
 
 ## Algebra of types
 
 
-Types in Insect can be combined in various ways to produce new types.
+Types in Numbat can be combined in various ways to produce new types.
 In its most general form, a type can be thought of as a product of physical (base) dimensions \\( D_k \\) with exponents \\( \alpha_k \in \mathbb{Q} \\):
 \\[ \prod_k D_k^{\alpha_k} \\]
 For example, the type *Energy* can be represented as *Mass¹ × Length² × Time⁻²*.
@@ -79,7 +79,7 @@ fn air_pressure(height: Length) -> Pressure = p0 · (1 - gradient · height / t0
 
 ## Generic types
 
-Insects type system also supports generic types (type polymorphism).
+Numbats type system also supports generic types (type polymorphism).
 These can be used for functions that work regardless of the physical dimension of the argument(s).
 For example, the type signature of the absolute value function is given by
 ```rs
