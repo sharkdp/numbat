@@ -5,11 +5,12 @@ first class support for physical units.
 
 ## Key features
 
-  * Statically typed: the 
+  * First class support for physical units and dimensions
+  * Static type checking (unit safety)
   * Type inference
   * Strict syntax
+  * REPL mode
   * Customizable: the whole system of physical dimensions and units is written in Numbat itself and can be modified or replaced
-  * (Modular)
 
 ## Type system
 
