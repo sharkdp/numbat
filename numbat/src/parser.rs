@@ -72,8 +72,8 @@ pub enum ParseErrorKind {
     #[error("Expected function name after '//' operator")]
     ExpectedIdentifierInPostfixApply,
 
-    #[error("Expected dimension identifier")]
-    ExpectedDimensionIdentifierOrUnity,
+    #[error("Expected dimension identifier, '1', or opening parenthesis")]
+    ExpectedDimensionPrimary,
 
     #[error("Expected ',' or '>'")]
     ExpectedCommaOrRightAngleBracket,
@@ -669,7 +669,7 @@ impl<'a> Parser<'a> {
     }
 
     fn dimension_power(&mut self) -> Result<DimensionExpression> {
-        let expr = self.dimension_identifier()?;
+        let expr = self.dimension_primary()?;
 
         if self.match_exact(TokenKind::Power).is_some() {
             let exponent = self.dimension_exponent()?;
@@ -719,9 +719,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn dimension_identifier(&mut self) -> Result<DimensionExpression> {
+    fn dimension_primary(&mut self) -> Result<DimensionExpression> {
         let e = Err(ParseError::new(
-            ParseErrorKind::ExpectedDimensionIdentifierOrUnity,
+            ParseErrorKind::ExpectedDimensionPrimary,
             self.peek().span.clone(),
         ));
         if let Some(token) = self.match_exact(TokenKind::Identifier) {
@@ -732,6 +732,12 @@ impl<'a> Parser<'a> {
             } else {
                 Ok(DimensionExpression::Unity)
             }
+        } else if self.match_exact(TokenKind::LeftParen).is_some() {
+            let dexpr = self.dimension_expression()?;
+            if self.match_exact(TokenKind::RightParen).is_none() {
+                todo!("Parse error: expected ')'");
+            }
+            Ok(dexpr)
         } else {
             e
         }
