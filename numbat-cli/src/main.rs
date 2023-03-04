@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use numbat::markup::{self, FormatType, OutputType};
+use numbat::markup::{self, FormatType};
 use numbat::pretty_print::PrettyPrint;
 use numbat::{
     markup::FormattedString, markup::Formatter, ExitStatus, InterpreterResult, Numbat, NumbatError,
@@ -72,6 +72,7 @@ impl Formatter for ANSIFormatter {
             FormatType::Identifier => text.red(),
             FormatType::TypeIdentifier => text.bright_yellow(),
             FormatType::Operator => text.bold(),
+            FormatType::Decorator => text.yellow(),
         })
         .to_string()
     }
@@ -102,7 +103,7 @@ impl Cli {
                 "Error while reading prelude from {}",
                 prelude_path.to_string_lossy()
             ))?;
-            let result = self.parse_and_evaluate(&prelude_code, ExecutionMode::Normal);
+            let result = self.parse_and_evaluate(&prelude_code, ExecutionMode::Normal, false);
             if result.is_break() {
                 bail!("Interpreter error in Prelude code")
             }
@@ -120,7 +121,8 @@ impl Cli {
         };
 
         if let Some(code) = code {
-            let result = self.parse_and_evaluate(&code, ExecutionMode::Normal);
+            let result =
+                self.parse_and_evaluate(&code, ExecutionMode::Normal, self.args.pretty_print);
 
             match result {
                 std::ops::ControlFlow::Continue(()) => Ok(()),
@@ -162,7 +164,11 @@ impl Cli {
                 Ok(line) => {
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line);
-                        let result = self.parse_and_evaluate(&line, ExecutionMode::Interactive);
+                        let result = self.parse_and_evaluate(
+                            &line,
+                            ExecutionMode::Interactive,
+                            self.args.pretty_print,
+                        );
 
                         match result {
                             std::ops::ControlFlow::Continue(()) => {}
@@ -187,15 +193,20 @@ impl Cli {
     }
 
     #[must_use]
-    fn parse_and_evaluate(&mut self, input: &str, execution_mode: ExecutionMode) -> ControlFlow {
+    fn parse_and_evaluate(
+        &mut self,
+        input: &str,
+        execution_mode: ExecutionMode,
+        pretty_print: bool,
+    ) -> ControlFlow {
         let result = self.numbat.interpret(input);
 
         match result {
             Ok((statements, interpreter_result)) => {
-                if self.args.pretty_print {
+                if pretty_print {
                     println!();
                     for statement in &statements {
-                        let repr = ANSIFormatter {}.format(statement.pretty_print());
+                        let repr = ANSIFormatter {}.format(statement.pretty_print(), true);
                         println!("{}", repr);
                     }
                 }
@@ -218,7 +229,7 @@ impl Cli {
                             + markup::value(formatted_number)
                             + markup::text(" ")
                             + markup::unit(format!("{}", quantity.unit()));
-                        println!("{}", ANSIFormatter {}.format(output_markup));
+                        println!("{}", ANSIFormatter {}.format(output_markup, false));
                         println!();
 
                         ControlFlow::Continue(())

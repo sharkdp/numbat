@@ -70,6 +70,7 @@ macro_rules! binop {
 pub(crate) use binop;
 #[cfg(test)]
 pub(crate) use identifier;
+use itertools::Itertools;
 #[cfg(test)]
 pub(crate) use negate;
 #[cfg(test)]
@@ -96,17 +97,11 @@ impl PrettyPrint for Expression {
             FunctionCall(name, args) => {
                 m::identifier(name)
                     + m::operator("(")
-                    + Markup(
-                        itertools::Itertools::intersperse(
-                            args.iter().flat_map(|e| e.pretty_print().0),
-                            FormattedString(
-                                m::OutputType::Normal,
-                                m::FormatType::Operator,
-                                ",".into(),
-                            ),
-                        )
-                        .collect(),
+                    + itertools::Itertools::intersperse(
+                        args.iter().map(|e| e.pretty_print()),
+                        m::operator(","),
                     )
+                    .sum()
                     + m::operator(")")
             }
         }
@@ -200,27 +195,61 @@ pub enum Statement {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DeclareVariable(identifier, expr, _dexpr) => {
+            Statement::DeclareVariable(identifier, expr, dexpr) => {
                 m::keyword("let")
                     + m::text(" ")
                     + m::identifier(identifier)
+                    + dexpr
+                        .as_ref()
+                        .map(|d| m::operator(":") + m::text(" ") + d.pretty_print())
+                        .unwrap_or_default()
                     + m::text(" ")
                     + m::operator("=")
                     + m::text(" ")
-                    + expr.pretty_print() // TODO: add type information
+                    + expr.pretty_print()
             }
-            Statement::DeclareFunction(identifier, _type_variables, _parameters, body, _dexpr) => {
+            Statement::DeclareFunction(identifier, type_variables, parameters, body, dexpr) => {
+                let markup_type_variables = if type_variables.is_empty() {
+                    Markup::default()
+                } else {
+                    m::operator("<")
+                        + Itertools::intersperse(
+                            type_variables.iter().map(|t| m::type_identifier(t)),
+                            m::operator(", "),
+                        )
+                        .sum()
+                        + m::operator(">")
+                };
+
+                let markup_parameters = Itertools::intersperse(
+                    parameters.iter().map(|(name, dexpr)| {
+                        m::identifier(name)
+                            + dexpr
+                                .as_ref()
+                                .map(|d| m::operator(":") + m::text(" ") + d.pretty_print())
+                                .unwrap_or_default()
+                    }),
+                    m::operator(", "),
+                )
+                .sum();
+
+                let markup_return_type = dexpr
+                    .as_ref()
+                    .map(|d| m::text(" ") + m::operator("->") + m::text(" ") + d.pretty_print())
+                    .unwrap_or_default();
+
                 m::keyword("fn")
                     + m::text(" ")
                     + m::identifier(identifier)
+                    + markup_type_variables
                     + m::operator("(")
-                    + m::text("…")
+                    + markup_parameters
                     + m::operator(")")
-                    + m::text(" ")
-                    + m::operator("=")
-                    + m::text(" ")
-                    + body.as_ref().map(|e| e.pretty_print()).unwrap_or_default()
-                // TODO: add type information, parameters, etc.
+                    + markup_return_type
+                    + body
+                        .as_ref()
+                        .map(|e| m::text(" ") + m::operator("=") + m::text(" ") + e.pretty_print())
+                        .unwrap_or_default()
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DeclareDimension(identifier, dexprs) if dexprs.is_empty() => {
@@ -233,7 +262,11 @@ impl PrettyPrint for Statement {
                     + m::text(" ")
                     + m::operator("=")
                     + m::text(" ")
-                    + dexprs[0].pretty_print() // TODO: print all dexprs
+                    + Itertools::intersperse(
+                        dexprs.iter().map(|d| d.pretty_print()),
+                        m::text(" ") + m::operator("=") + m::text(" "),
+                    )
+                    .sum()
             }
             Statement::DeclareBaseUnit(identifier, dexpr, _decorators) => {
                 m::keyword("unit")
@@ -243,21 +276,64 @@ impl PrettyPrint for Statement {
                     + m::text(" ")
                     + dexpr.pretty_print()
             }
-            Statement::DeclareDerivedUnit(identifier, expr, dexpr, _decorators) => {
-                m::keyword("unit")
+            Statement::DeclareDerivedUnit(identifier, expr, dexpr, decorators) => {
+                let mut markup_decorators = Markup::default();
+                for decorator in decorators {
+                    markup_decorators = markup_decorators
+                        + match decorator {
+                            Decorator::MetricPrefixes => m::decorator("@metric_prefixes"),
+                            Decorator::BinaryPrefixes => m::decorator("@binary_prefixes"),
+                            Decorator::Aliases(names) => {
+                                m::decorator("@aliases")
+                                    + m::operator("(")
+                                    + Itertools::intersperse(
+                                        names.iter().map(|n| m::unit(n)),
+                                        m::operator(","),
+                                    )
+                                    .sum()
+                                    + m::operator(")")
+                            }
+                            Decorator::AliasesShort(names) => {
+                                m::decorator("@aliases_short")
+                                    + m::operator("(")
+                                    + Itertools::intersperse(
+                                        names.iter().map(|n| m::unit(n)),
+                                        m::operator(","),
+                                    )
+                                    .sum()
+                                    + m::operator(")")
+                            }
+                        }
+                        + m::nl();
+                }
+
+                markup_decorators
+                    + m::keyword("unit")
                     + m::text(" ")
                     + m::unit(identifier)
-                    + (if let Some(dexpr) = dexpr {
-                        m::operator(":") + m::text(" ") + dexpr.pretty_print()
-                    } else {
-                        Markup::default()
-                    })
+                    + dexpr
+                        .as_ref()
+                        .map(|d| m::operator(":") + m::text(" ") + d.pretty_print())
+                        .unwrap_or_default()
                     + m::text(" ")
                     + m::operator("=")
                     + m::text(" ")
                     + expr.pretty_print()
             }
-            Statement::ProcedureCall(_kind, _args) => m::text("TODO"),
+            Statement::ProcedureCall(kind, args) => {
+                let identifier = match kind {
+                    ProcedureKind::Print => "print",
+                    ProcedureKind::AssertEq => "assert_eq",
+                };
+                m::identifier(identifier)
+                    + m::operator("(")
+                    + Itertools::intersperse(
+                        args.iter().map(|a| a.pretty_print()),
+                        m::operator(",") + m::text(" "),
+                    )
+                    .sum()
+                    + m::operator(")")
+            }
         }
     }
 }

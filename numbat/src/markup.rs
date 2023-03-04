@@ -2,13 +2,12 @@
 pub enum FormatType {
     Text,
     Keyword,
-    //Emphasized,
-    //Error,
     Value,
     Unit,
     Identifier,
     TypeIdentifier,
     Operator,
+    Decorator,
 }
 
 #[derive(Debug, Clone)]
@@ -44,6 +43,12 @@ impl std::ops::Add for Markup {
         let mut res = self.0;
         res.extend_from_slice(&rhs.0);
         Markup(res)
+    }
+}
+
+impl std::iter::Sum for Markup {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Markup::default(), |acc, n| acc + n)
     }
 }
 
@@ -103,13 +108,41 @@ pub fn operator(text: impl AsRef<str>) -> Markup {
     ))
 }
 
+pub fn decorator(text: impl AsRef<str>) -> Markup {
+    Markup::from(FormattedString(
+        OutputType::Normal,
+        FormatType::Decorator,
+        text.as_ref().to_string(),
+    ))
+}
+
+pub fn nl() -> Markup {
+    Markup::from(FormattedString(
+        OutputType::Normal,
+        FormatType::Text,
+        "\n".into(),
+    ))
+}
+
 pub trait Formatter {
     fn format_part(&self, part: &FormattedString) -> String;
 
-    fn format(&self, markup: Markup) -> String {
+    fn format(&self, markup: Markup, indent: bool) -> String {
+        let spaces = self.format_part(&FormattedString(
+            OutputType::Normal,
+            FormatType::Text,
+            "  ".into(),
+        ));
+
         let mut output: String = String::new();
+        if indent {
+            output.push_str(&spaces);
+        }
         for part in markup.0 {
             output.push_str(&self.format_part(&part));
+            if indent && part.2.contains("\n") {
+                output.push_str(&spaces);
+            }
         }
         output
     }
