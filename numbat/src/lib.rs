@@ -5,6 +5,7 @@ mod decorator;
 mod dimension;
 mod ffi;
 mod interpreter;
+mod markup;
 mod name_resolution;
 mod number;
 mod parser;

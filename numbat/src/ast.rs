@@ -1,5 +1,6 @@
+use crate::markup::{self as m, FormattedString};
 use crate::{
-    arithmetic::Exponent, decorator::Decorator, number::Number, prefix::Prefix,
+    arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint,
 };
 
@@ -14,17 +15,17 @@ pub enum BinaryOperator {
 }
 
 impl PrettyPrint for BinaryOperator {
-    fn pretty_print(&self) -> String {
+    fn pretty_print(&self) -> Markup {
         use BinaryOperator::*;
 
-        match self {
-            Add => "+".into(),
-            Sub => "-".into(),
-            Mul => "×".into(),
-            Div => "/".into(),
-            Power => "^".into(),
-            ConvertTo => "→".into(),
-        }
+        m::operator(match self {
+            Add => "+",
+            Sub => "-",
+            Mul => "×",
+            Div => "/",
+            Power => "^",
+            ConvertTo => "→",
+        })
     }
 }
 
@@ -75,29 +76,39 @@ pub(crate) use negate;
 pub(crate) use scalar;
 
 impl PrettyPrint for Expression {
-    fn pretty_print(&self) -> String {
+    fn pretty_print(&self) -> Markup {
         use Expression::*;
 
         match self {
-            Scalar(Number(n)) => format!("{n}"),
-            Identifier(name) => name.clone(),
-            UnitIdentifier(prefix, name) => format!("{}{}", prefix, name),
-            Negate(rhs) => format!("-{rhs}", rhs = rhs.pretty_print()),
-            BinaryOperator(op, lhs, rhs) => format!(
-                "({lhs} {op} {rhs})",
-                lhs = lhs.pretty_print(),
-                op = op.pretty_print(),
-                rhs = rhs.pretty_print()
-            ),
-            FunctionCall(name, args) => format!(
-                "{name}({args})",
-                name = name,
-                args = args
-                    .iter()
-                    .map(|e| e.pretty_print())
-                    .collect::<Vec<_>>()
-                    .join(",")
-            ),
+            Scalar(Number(n)) => m::value(&format!("{n}")),
+            Identifier(name) => m::identifier(name),
+            UnitIdentifier(prefix, name) => m::unit(format!("{}{}", prefix, name)),
+            Negate(rhs) => m::operator("-") + rhs.pretty_print(),
+            BinaryOperator(op, lhs, rhs) => {
+                m::operator("(")
+                    + lhs.pretty_print()
+                    + m::text(" ")
+                    + op.pretty_print()
+                    + m::text(" ")
+                    + rhs.pretty_print()
+                    + m::operator(")")
+            }
+            FunctionCall(name, args) => {
+                m::identifier(name)
+                    + m::operator("(")
+                    + Markup(
+                        itertools::Itertools::intersperse(
+                            args.iter().flat_map(|e| e.pretty_print().0),
+                            FormattedString(
+                                m::OutputType::Normal,
+                                m::FormatType::Operator,
+                                ",".into(),
+                            ),
+                        )
+                        .collect(),
+                    )
+                    + m::operator(")")
+            }
         }
     }
 }
@@ -110,7 +121,7 @@ fn expression_pretty_print() {
         binop!(negate!(scalar!(3.0)), Add, scalar!(4.0))
     );
 
-    assert_eq!(expr.pretty_print(), "(2 × (-3 + 4))");
+    assert_eq!(expr.pretty_print().to_string(), "(2 × (-3 + 4))");
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -124,17 +135,31 @@ pub enum DimensionExpression {
 }
 
 impl PrettyPrint for DimensionExpression {
-    fn pretty_print(&self) -> String {
+    fn pretty_print(&self) -> Markup {
         match self {
-            DimensionExpression::Unity => "1".into(),
-            DimensionExpression::Dimension(ident) => ident.clone(),
+            DimensionExpression::Unity => m::identifier("1"),
+            DimensionExpression::Dimension(ident) => m::identifier(ident),
             DimensionExpression::Multiply(lhs, rhs) => {
-                format!("{} × {}", lhs.pretty_print(), rhs.pretty_print())
+                lhs.pretty_print()
+                    + m::text(" ")
+                    + m::operator("×")
+                    + m::text(" ")
+                    + rhs.pretty_print()
             }
             DimensionExpression::Divide(lhs, rhs) => {
-                format!("{} / ({})", lhs.pretty_print(), rhs.pretty_print())
+                lhs.pretty_print()
+                    + m::text(" ")
+                    + m::operator("/")
+                    + m::text(" ")
+                    + rhs.pretty_print()
             }
-            DimensionExpression::Power(dexpr, exp) => format!("({})^{}", dexpr.pretty_print(), exp),
+            DimensionExpression::Power(lhs, exp) => {
+                m::operator("(")
+                    + lhs.pretty_print()
+                    + m::operator(")")
+                    + m::operator("^")
+                    + m::value(format!("{exp}"))
+            }
         }
     }
 }
@@ -173,55 +198,30 @@ pub enum Statement {
 }
 
 impl PrettyPrint for Statement {
-    fn pretty_print(&self) -> String {
+    fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DeclareVariable(identifier, expr, dexpr) => {
-                format!(
-                    "let {}{} = {}",
-                    identifier,
-                    if let Some(dexpr) = dexpr {
-                        format!(": {}", dexpr.pretty_print())
-                    } else {
-                        "".into()
-                    },
-                    expr.pretty_print()
-                )
+            Statement::DeclareVariable(identifier, expr, _dexpr) => {
+                m::keyword("let")
+                    + m::text(" ")
+                    + m::identifier(identifier)
+                    + m::text(" ")
+                    + m::operator("=")
+                    + m::text(" ")
+                    + expr.pretty_print() // TODO: add type information
             }
-            Statement::DeclareFunction(identifier, _type_variables, _parameters, body, _dexpr) => {
-                // TODO(minor): print args
-                format!(
-                    "fn {}(…) {}",
-                    identifier,
-                    if let Some(expr) = body {
-                        format!("= {}", expr.pretty_print())
-                    } else {
-                        "".into()
-                    }
-                )
-            }
+            Statement::DeclareFunction(
+                _identifier,
+                _type_variables,
+                _parameters,
+                _body,
+                _dexpr,
+            ) => m::text("TODO"),
             Statement::Expression(expr) => expr.pretty_print(),
-            Statement::DeclareDimension(ident, vec) if vec.is_empty() => {
-                format!("dimension {}", ident)
-            }
-            Statement::DeclareDimension(ident, dexprs) => {
-                format!("dimension {} = {}", ident, dexprs[0].pretty_print()) // TODO: print all dexprs
-            }
-            Statement::DeclareBaseUnit(ident, dexpr, _decorators) => {
-                format!("unit {}: {}", ident, dexpr.pretty_print())
-            }
-            Statement::DeclareDerivedUnit(ident, expr, dexpr, _decorators) => {
-                format!(
-                    "unit {}: {} = {}",
-                    ident,
-                    if let Some(dexpr) = dexpr {
-                        format!(": {}", dexpr.pretty_print())
-                    } else {
-                        "".into()
-                    },
-                    expr.pretty_print()
-                )
-            }
-            Statement::ProcedureCall(_kind, _args) => "".into(),
+            Statement::DeclareDimension(_ident, vec) if vec.is_empty() => m::text("TODO"),
+            Statement::DeclareDimension(_ident, _dexprs) => m::text("TODO"),
+            Statement::DeclareBaseUnit(_ident, _dexpr, _decorators) => m::text("TODO"),
+            Statement::DeclareDerivedUnit(_ident, _expr, _dexpr, _decorators) => m::text("TODO"),
+            Statement::ProcedureCall(_kind, _args) => m::text("TODO"),
         }
     }
 }

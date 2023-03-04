@@ -1,4 +1,4 @@
-use numbat::{Numbat, NumbatError, InterpreterResult};
+use numbat::{InterpreterResult, Numbat, NumbatError};
 
 use std::ffi::OsStr;
 use std::fs;

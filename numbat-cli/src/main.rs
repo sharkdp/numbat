@@ -111,8 +111,8 @@ impl Cli {
 
     fn repl(&mut self) -> Result<()> {
         println!();
-        println!(" █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀");
-        println!(" █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░");
+        println!(" █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀");
+        println!(" █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░");
         println!();
 
         let history_path = self.get_history_path()?;
@@ -170,7 +170,7 @@ impl Cli {
                 if self.args.pretty_print {
                     println!();
                     for statement in &statements {
-                        let repr = statement.pretty_print();
+                        let repr = statement.pretty_print().to_string();
                         if !repr.is_empty() {
                             println!("  {}", repr);
                         }
