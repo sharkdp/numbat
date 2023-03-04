@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug, Clone)]
 pub enum FormatType {
     Text,
@@ -26,9 +28,11 @@ impl Markup {
     fn from(f: FormattedString) -> Self {
         Self(vec![f])
     }
+}
 
-    pub fn to_string(self) -> String {
-        PlainTextFormatter{}.format(self, false)
+impl Display for Markup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", PlainTextFormatter{}.format(self, false))
     }
 }
 
@@ -123,7 +127,7 @@ pub fn nl() -> Markup {
 pub trait Formatter {
     fn format_part(&self, part: &FormattedString) -> String;
 
-    fn format(&self, markup: Markup, indent: bool) -> String {
+    fn format(&self, markup: &Markup, indent: bool) -> String {
         let spaces = self.format_part(&FormattedString(
             OutputType::Normal,
             FormatType::Text,
@@ -134,8 +138,8 @@ pub trait Formatter {
         if indent {
             output.push_str(&spaces);
         }
-        for part in markup.0 {
-            output.push_str(&self.format_part(&part));
+        for part in &markup.0 {
+            output.push_str(&self.format_part(part));
             if indent && part.2.contains('\n') {
                 output.push_str(&spaces);
             }

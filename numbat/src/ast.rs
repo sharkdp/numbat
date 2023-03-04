@@ -81,7 +81,7 @@ impl PrettyPrint for Expression {
         use Expression::*;
 
         match self {
-            Scalar(Number(n)) => m::value(&format!("{n}")),
+            Scalar(Number(n)) => m::value(format!("{n}")),
             Identifier(name) => m::identifier(name),
             UnitIdentifier(prefix, name) => m::unit(format!("{}{}", prefix, name)),
             Negate(rhs) => m::operator("-") + rhs.pretty_print(),
@@ -214,7 +214,7 @@ impl PrettyPrint for Statement {
                 } else {
                     m::operator("<")
                         + Itertools::intersperse(
-                            type_variables.iter().map(|t| m::type_identifier(t)),
+                            type_variables.iter().map(m::type_identifier),
                             m::operator(", "),
                         )
                         .sum()
@@ -287,7 +287,7 @@ impl PrettyPrint for Statement {
                                 m::decorator("@aliases")
                                     + m::operator("(")
                                     + Itertools::intersperse(
-                                        names.iter().map(|n| m::unit(n)),
+                                        names.iter().map(m::unit),
                                         m::operator(","),
                                     )
                                     .sum()
@@ -297,7 +297,7 @@ impl PrettyPrint for Statement {
                                 m::decorator("@aliases_short")
                                     + m::operator("(")
                                     + Itertools::intersperse(
-                                        names.iter().map(|n| m::unit(n)),
+                                        names.iter().map(m::unit),
                                         m::operator(","),
                                     )
                                     .sum()

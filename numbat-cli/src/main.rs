@@ -206,7 +206,7 @@ impl Cli {
                 if pretty_print {
                     println!();
                     for statement in &statements {
-                        let repr = ANSIFormatter {}.format(statement.pretty_print(), true);
+                        let repr = ANSIFormatter {}.format(&statement.pretty_print(), true);
                         println!("{}", repr);
                     }
                 }
@@ -229,7 +229,7 @@ impl Cli {
                             + markup::value(formatted_number)
                             + markup::text(" ")
                             + markup::unit(format!("{}", quantity.unit()));
-                        println!("{}", ANSIFormatter {}.format(output_markup, false));
+                        println!("{}", ANSIFormatter {}.format(&output_markup, false));
                         println!();
 
                         ControlFlow::Continue(())
