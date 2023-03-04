@@ -28,11 +28,7 @@ impl Markup {
     }
 
     pub fn to_string(self) -> String {
-        let mut result: String = String::new();
-        for part in self.0 {
-            result += &part.2;
-        }
-        result
+        PlainTextFormatter{}.format(self, false)
     }
 }
 
@@ -140,10 +136,18 @@ pub trait Formatter {
         }
         for part in markup.0 {
             output.push_str(&self.format_part(&part));
-            if indent && part.2.contains("\n") {
+            if indent && part.2.contains('\n') {
                 output.push_str(&spaces);
             }
         }
         output
+    }
+}
+
+struct PlainTextFormatter;
+
+impl Formatter for PlainTextFormatter {
+    fn format_part(&self, FormattedString(_, _, text): &FormattedString) -> String {
+        text.clone()
     }
 }
