@@ -51,15 +51,15 @@ pub enum NumbatError {
 
 pub type Result<T> = std::result::Result<T, NumbatError>;
 
-pub struct Numbat {
+pub struct Context {
     prefix_transformer: Transformer,
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
 }
 
-impl Numbat {
+impl Context {
     pub fn new_without_prelude(debug: bool) -> Self {
-        Numbat {
+        Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(debug),

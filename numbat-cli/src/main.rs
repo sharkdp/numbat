@@ -4,11 +4,11 @@ use std::path::PathBuf;
 use numbat::markup::{self, FormatType};
 use numbat::pretty_print::PrettyPrint;
 use numbat::{
-    markup::FormattedString, markup::Formatter, ExitStatus, InterpreterResult, Numbat, NumbatError,
-    ParseError,
+    markup::FormattedString, markup::Formatter, Context, ExitStatus, InterpreterResult,
+    NumbatError, ParseError,
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use colored::Colorize;
 use rustyline::error::ReadlineError;
@@ -80,7 +80,7 @@ impl Formatter for ANSIFormatter {
 
 struct Cli {
     args: Args,
-    numbat: Numbat,
+    numbat: Context,
     current_filename: Option<PathBuf>,
 }
 
@@ -88,7 +88,7 @@ impl Cli {
     fn new() -> Self {
         let args = Args::parse();
         Self {
-            numbat: Numbat::new_without_prelude(args.debug),
+            numbat: Context::new_without_prelude(args.debug),
             args,
             current_filename: None,
         }

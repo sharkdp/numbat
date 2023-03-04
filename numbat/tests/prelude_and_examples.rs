@@ -1,10 +1,10 @@
-use numbat::{InterpreterResult, Numbat, NumbatError};
+use numbat::{Context, InterpreterResult, NumbatError};
 
 use std::ffi::OsStr;
 use std::fs;
 
 fn assert_typechecks_and_runs(code: &str) {
-    let result = Numbat::new_without_prelude(false).interpret(code);
+    let result = Context::new_without_prelude(false).interpret(code);
     assert!(result.is_ok());
     assert!(matches!(
         result.unwrap().1,
@@ -14,28 +14,28 @@ fn assert_typechecks_and_runs(code: &str) {
 
 fn assert_parse_error(code: &str) {
     assert!(matches!(
-        Numbat::new_without_prelude(false).interpret(code),
+        Context::new_without_prelude(false).interpret(code),
         Err(NumbatError::ParseError(_))
     ));
 }
 
 fn assert_name_resolution_error(code: &str) {
     assert!(matches!(
-        Numbat::new_without_prelude(false).interpret(code),
+        Context::new_without_prelude(false).interpret(code),
         Err(NumbatError::NameResolutionError(_))
     ));
 }
 
 fn assert_typecheck_error(code: &str) {
     assert!(matches!(
-        Numbat::new_without_prelude(false).interpret(code),
+        Context::new_without_prelude(false).interpret(code),
         Err(NumbatError::TypeCheckError(_))
     ));
 }
 
 fn assert_runtime_error(code: &str) {
     assert!(matches!(
-        Numbat::new_without_prelude(false).interpret(code),
+        Context::new_without_prelude(false).interpret(code),
         Err(NumbatError::RuntimeError(_))
     ));
 }

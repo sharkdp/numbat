@@ -32,7 +32,7 @@ impl Markup {
 
 impl Display for Markup {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", PlainTextFormatter{}.format(self, false))
+        write!(f, "{}", PlainTextFormatter {}.format(self, false))
     }
 }
 
