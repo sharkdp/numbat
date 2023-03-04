@@ -1,4 +1,4 @@
-use crate::markup::{self as m, FormattedString};
+use crate::markup as m;
 use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint,
