@@ -137,8 +137,8 @@ pub enum DimensionExpression {
 impl PrettyPrint for DimensionExpression {
     fn pretty_print(&self) -> Markup {
         match self {
-            DimensionExpression::Unity => m::identifier("1"),
-            DimensionExpression::Dimension(ident) => m::identifier(ident),
+            DimensionExpression::Unity => m::type_identifier("1"),
+            DimensionExpression::Dimension(ident) => m::type_identifier(ident),
             DimensionExpression::Multiply(lhs, rhs) => {
                 lhs.pretty_print()
                     + m::text(" ")
@@ -209,18 +209,54 @@ impl PrettyPrint for Statement {
                     + m::text(" ")
                     + expr.pretty_print() // TODO: add type information
             }
-            Statement::DeclareFunction(
-                _identifier,
-                _type_variables,
-                _parameters,
-                _body,
-                _dexpr,
-            ) => m::text("TODO"),
+            Statement::DeclareFunction(identifier, _type_variables, _parameters, body, _dexpr) => {
+                m::keyword("fn")
+                    + m::text(" ")
+                    + m::identifier(identifier)
+                    + m::operator("(")
+                    + m::text("…")
+                    + m::operator(")")
+                    + m::text(" ")
+                    + m::operator("=")
+                    + m::text(" ")
+                    + body.as_ref().map(|e| e.pretty_print()).unwrap_or_default()
+                // TODO: add type information, parameters, etc.
+            }
             Statement::Expression(expr) => expr.pretty_print(),
-            Statement::DeclareDimension(_ident, vec) if vec.is_empty() => m::text("TODO"),
-            Statement::DeclareDimension(_ident, _dexprs) => m::text("TODO"),
-            Statement::DeclareBaseUnit(_ident, _dexpr, _decorators) => m::text("TODO"),
-            Statement::DeclareDerivedUnit(_ident, _expr, _dexpr, _decorators) => m::text("TODO"),
+            Statement::DeclareDimension(identifier, dexprs) if dexprs.is_empty() => {
+                m::keyword("dimension") + m::text(" ") + m::type_identifier(identifier)
+            }
+            Statement::DeclareDimension(identifier, dexprs) => {
+                m::keyword("dimension")
+                    + m::text(" ")
+                    + m::type_identifier(identifier)
+                    + m::text(" ")
+                    + m::operator("=")
+                    + m::text(" ")
+                    + dexprs[0].pretty_print() // TODO: print all dexprs
+            }
+            Statement::DeclareBaseUnit(identifier, dexpr, _decorators) => {
+                m::keyword("unit")
+                    + m::text(" ")
+                    + m::unit(identifier)
+                    + m::operator(":")
+                    + m::text(" ")
+                    + dexpr.pretty_print()
+            }
+            Statement::DeclareDerivedUnit(identifier, expr, dexpr, _decorators) => {
+                m::keyword("unit")
+                    + m::text(" ")
+                    + m::unit(identifier)
+                    + (if let Some(dexpr) = dexpr {
+                        m::operator(":") + m::text(" ") + dexpr.pretty_print()
+                    } else {
+                        Markup::default()
+                    })
+                    + m::text(" ")
+                    + m::operator("=")
+                    + m::text(" ")
+                    + expr.pretty_print()
+            }
             Statement::ProcedureCall(_kind, _args) => m::text("TODO"),
         }
     }

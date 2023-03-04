@@ -1,11 +1,16 @@
 use std::fs;
 use std::path::PathBuf;
 
+use numbat::markup::{FormatType, OutputType};
 use numbat::pretty_print::PrettyPrint;
-use numbat::{ExitStatus, InterpreterResult, Numbat, NumbatError, ParseError};
+use numbat::{
+    markup::FormattedString, markup::Formatter, ExitStatus, InterpreterResult, Numbat, NumbatError,
+    ParseError,
+};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use colored::Colorize;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
@@ -49,6 +54,26 @@ impl ExecutionMode {
         } else {
             ControlFlow::Continue(())
         }
+    }
+}
+
+struct ANSIFormatter;
+
+impl Formatter for ANSIFormatter {
+    fn format_part(
+        &self,
+        FormattedString(_output_type, format_type, text): &FormattedString,
+    ) -> String {
+        (match format_type {
+            FormatType::Text => text.normal(),
+            FormatType::Keyword => text.magenta(),
+            FormatType::Value => text.yellow(),
+            FormatType::Unit => text.cyan(),
+            FormatType::Identifier => text.red(),
+            FormatType::TypeIdentifier => text.bright_yellow(),
+            FormatType::Operator => text.bold(),
+        })
+        .to_string()
     }
 }
 
@@ -170,10 +195,8 @@ impl Cli {
                 if self.args.pretty_print {
                     println!();
                     for statement in &statements {
-                        let repr = statement.pretty_print().to_string();
-                        if !repr.is_empty() {
-                            println!("  {}", repr);
-                        }
+                        let repr = ANSIFormatter {}.format(statement.pretty_print());
+                        println!("{}", repr);
                     }
                 }
 

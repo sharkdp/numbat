@@ -10,6 +10,7 @@ anyhow = "1"
 rustyline = "10"
 dirs-next = "2"
 numbat = { path = "../numbat" }
+colored = "2"
 
 [dependencies.clap]
 version = "4"

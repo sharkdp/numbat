@@ -7,6 +7,7 @@ pub enum FormatType {
     Value,
     Unit,
     Identifier,
+    TypeIdentifier,
     Operator,
 }
 
@@ -19,7 +20,7 @@ pub enum OutputType {
 #[derive(Debug, Clone)]
 pub struct FormattedString(pub OutputType, pub FormatType, pub String);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Markup(pub Vec<FormattedString>);
 
 impl Markup {
@@ -86,6 +87,14 @@ pub fn identifier(text: impl AsRef<str>) -> Markup {
     ))
 }
 
+pub fn type_identifier(text: impl AsRef<str>) -> Markup {
+    Markup::from(FormattedString(
+        OutputType::Normal,
+        FormatType::TypeIdentifier,
+        text.as_ref().to_string(),
+    ))
+}
+
 pub fn operator(text: impl AsRef<str>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
@@ -94,16 +103,14 @@ pub fn operator(text: impl AsRef<str>) -> Markup {
     ))
 }
 
-// macro_rules! merge {
-//     () => {
-//         Markup(vec![])
-//     };
-//     ( $arg:expr $(, $others:expr) * ) => {
-//         {
-//             let mut result: Vec<_> = $arg.0;
-//             result.extend_from_slice(merge!($($others),*).0);
-//             Markup(result)
-//         }
-//     };
-// }
-// pub(crate) use merge;
+pub trait Formatter {
+    fn format_part(&self, part: &FormattedString) -> String;
+
+    fn format(&self, markup: Markup) -> String {
+        let mut output: String = String::new();
+        for part in markup.0 {
+            output.push_str(&self.format_part(&part));
+        }
+        output
+    }
+}
