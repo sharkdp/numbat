@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use numbat::markup::{FormatType, OutputType};
+use numbat::markup::{self, FormatType, OutputType};
 use numbat::pretty_print::PrettyPrint;
 use numbat::{
     markup::FormattedString, markup::Formatter, ExitStatus, InterpreterResult, Numbat, NumbatError,
@@ -203,7 +203,22 @@ impl Cli {
                 match interpreter_result {
                     InterpreterResult::Quantity(quantity) => {
                         println!();
-                        println!("    = {}", quantity);
+
+                        let formatted_number = format!("{:.6}", quantity.unsafe_value().to_f64());
+                        let formatted_number = formatted_number.trim_end_matches('0');
+                        let formatted_number = if formatted_number.ends_with('.') {
+                            format!("{}0", formatted_number)
+                        } else {
+                            formatted_number.to_string()
+                        };
+
+                        let output_markup = markup::text("    ")
+                            + markup::operator("=")
+                            + markup::text(" ")
+                            + markup::value(formatted_number)
+                            + markup::text(" ")
+                            + markup::unit(format!("{}", quantity.unit()));
+                        println!("{}", ANSIFormatter {}.format(output_markup));
                         println!();
 
                         ControlFlow::Continue(())
