@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/numbat-logo-520.png"></p>
+<p align="center"><img src="assets/numbat-410.png"></p>
 
 *Numbat* is a statically typed programming language for scientific computations with
 first class support for physical units.
