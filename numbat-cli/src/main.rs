@@ -12,6 +12,7 @@ use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use colored::Colorize;
 use rustyline::error::ReadlineError;
+use rustyline::history::DefaultHistory;
 use rustyline::Editor;
 
 type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
@@ -144,7 +145,7 @@ impl Cli {
 
         let history_path = self.get_history_path()?;
 
-        let mut rl = Editor::<()>::new()?;
+        let mut rl = Editor::<(), DefaultHistory>::new()?;
         rl.load_history(&history_path).ok();
 
         let result = self.repl_loop(&mut rl);
@@ -157,13 +158,13 @@ impl Cli {
         result
     }
 
-    fn repl_loop(&mut self, rl: &mut Editor<()>) -> Result<()> {
+    fn repl_loop(&mut self, rl: &mut Editor<(), DefaultHistory>) -> Result<()> {
         loop {
             let readline = rl.readline(PROMPT);
             match readline {
                 Ok(line) => {
                     if !line.trim().is_empty() {
-                        rl.add_history_entry(&line);
+                        rl.add_history_entry(&line)?;
                         let result = self.parse_and_evaluate(
                             &line,
                             ExecutionMode::Interactive,
