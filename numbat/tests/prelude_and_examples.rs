@@ -50,7 +50,7 @@ fn run_for_each_numbat_file_in(folder: &str, f: impl Fn(&str)) {
     let prelude_code = fs::read_to_string("../prelude.nbt").unwrap();
     for entry in fs::read_dir(folder).unwrap() {
         let path = entry.unwrap().path();
-        if path.extension() != Some(OsStr::new("ins")) {
+        if path.extension() != Some(OsStr::new("nbt")) {
             continue;
         }
 

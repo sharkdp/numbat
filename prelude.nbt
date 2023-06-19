@@ -6,6 +6,19 @@ let e = 2.71828182845904523536028747135266250
 let ½ = 1/2
 let ¼ = 1/4
 
+### Named numbers
+
+let hundred =  100
+let thousand =  1000
+let million =  1000000
+let billion =  10^9
+let trillion =  10^12
+let quadrillion =  10^15
+let quintillion =  10^18
+
+let googol =  10^100
+
+
 ### Physical dimensions
 
 dimension Scalar = 1

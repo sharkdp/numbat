@@ -1,0 +1,24 @@
+dimension Money
+unit EUR: Money
+
+dimension WorkHour
+
+@aliases(workhours)
+unit workhour: WorkHour
+
+@aliases(workdays)
+unit workday = 8 workhours
+
+@aliases(workyears)
+unit workyear = 200 workdays
+
+unit FTE = 1 workyear per year
+
+let rate = 1000 EUR / workday
+assert_eq(0.5 million EUR / rate, 500 workday)
+
+assert_eq(3 FTE * 0.5 years -> workdays, 300 workday)
+
+let budget = 0.5 million EUR
+let duration = 0.5 year
+assert_eq(budget / rate / duration -> FTE, 5 FTE)
