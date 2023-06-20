@@ -182,12 +182,12 @@ impl Cli {
                         }
                     }
                 }
-                Err(ReadlineError::Eof) | Err(ReadlineError::Interrupted) => {
+                Err(ReadlineError::Interrupted) => {}
+                Err(ReadlineError::Eof) => {
                     return Ok(());
                 }
                 Err(err) => {
-                    eprintln!("Error: {:?}", err);
-                    todo!()
+                    bail!(err);
                 }
             }
         }
