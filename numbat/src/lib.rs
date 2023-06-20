@@ -84,7 +84,7 @@ impl Context {
             .map_err(NumbatError::NameResolutionError)?;
         let typed_statements = self
             .typechecker
-            .check_statements(transformed_statements.clone()) // TODO: get rid of clone?
+            .check_statements(transformed_statements.clone()) // TODO(minor): get rid of clone?
             .map_err(NumbatError::TypeCheckError)?;
         let result = self
             .interpreter
