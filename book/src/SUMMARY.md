@@ -28,7 +28,7 @@
 # Command line tool
 
 - [Installation]()
-- [Usage]()
+- [Usage](./cli-usage.md)
 
 # Web version
 

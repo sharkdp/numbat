@@ -13,7 +13,6 @@ use clap::Parser;
 use colored::Colorize;
 use rustyline::completion::extract_word;
 use rustyline::config::Configurer;
-use rustyline::Highlighter;
 use rustyline::{
     self,
     completion::{Completer, Pair},
@@ -21,6 +20,7 @@ use rustyline::{
     history::DefaultHistory,
     Completer, Editor, Helper, Hinter, Validator,
 };
+use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
 type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
@@ -242,6 +242,10 @@ impl Cli {
         rl.set_helper(Some(NumbatHelper {
             completer: NumbatCompleter {},
         }));
+        rl.bind_sequence(
+            KeyEvent(KeyCode::Enter, Modifiers::ALT),
+            EventHandler::Simple(rustyline::Cmd::Newline),
+        );
         rl.load_history(&history_path).ok();
 
         let result = self.repl_loop(&mut rl);
