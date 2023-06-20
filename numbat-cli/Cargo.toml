@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-rustyline = "11"
+rustyline = { version = "11", features = ["derive"] }
 dirs-next = "2"
 numbat = { path = "../numbat" }
 colored = "2"

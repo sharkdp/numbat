@@ -11,9 +11,15 @@ use numbat::{
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use colored::Colorize;
-use rustyline::error::ReadlineError;
-use rustyline::history::DefaultHistory;
-use rustyline::Editor;
+use rustyline::completion::extract_word;
+use rustyline::Highlighter;
+use rustyline::{
+    self,
+    completion::{Completer, Pair},
+    error::ReadlineError,
+    history::DefaultHistory,
+    Completer, Editor, Helper, Hinter, Validator,
+};
 
 type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
@@ -77,6 +83,90 @@ impl Formatter for ANSIFormatter {
         })
         .to_string()
     }
+}
+
+struct NumbatCompleter;
+
+impl Completer for NumbatCompleter {
+    type Candidate = Pair;
+
+    fn complete(
+        &self,
+        line: &str,
+        pos: usize,
+        _: &rustyline::Context<'_>,
+    ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
+        let (pos_word, word_part) = extract_word(line, pos, None, |c| {
+            // TODO: we could use is_identifier_char here potentially
+            match c {
+                c if c.is_alphanumeric() => false,
+                '_' => false,
+                _ => true,
+            }
+        });
+
+        // TODO, obviously
+        let words = vec![
+            "let ",
+            "fn ",
+            "dimension ",
+            "unit ",
+            //
+            "sqrt(",
+            "sqr(",
+            "exp(",
+            "abs(",
+            "round(",
+            "sin(",
+            "atan2(",
+            "toCelsius(",
+            "toKelvin(",
+            "print(",
+            "assert_eq(",
+            //
+            "metric_prefixes",
+            "binary_prefixes",
+            "aliases",
+            "aliases_short",
+            //
+            "gravity",
+            "speed_of_light",
+            //
+            "Scalar",
+            "Length",
+            "Time",
+            "Mass",
+            //
+            "meter",
+            "second",
+            "gram",
+            //
+            "micro",
+            "milli",
+            "centi",
+            "deci",
+            "kilo",
+            "mega",
+        ];
+
+        let candidates = words.iter().filter(|w| w.starts_with(word_part));
+
+        Ok((
+            pos_word,
+            candidates
+                .map(|w| Pair {
+                    display: w.to_string(),
+                    replacement: w.to_string(),
+                })
+                .collect(),
+        ))
+    }
+}
+
+#[derive(Completer, Helper, Hinter, Validator, Highlighter)]
+struct NumbatHelper {
+    #[rustyline(Completer)]
+    completer: NumbatCompleter,
 }
 
 struct Cli {
@@ -145,7 +235,10 @@ impl Cli {
 
         let history_path = self.get_history_path()?;
 
-        let mut rl = Editor::<(), DefaultHistory>::new()?;
+        let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
+        rl.set_helper(Some(NumbatHelper {
+            completer: NumbatCompleter {},
+        }));
         rl.load_history(&history_path).ok();
 
         let result = self.repl_loop(&mut rl);
@@ -158,7 +251,7 @@ impl Cli {
         result
     }
 
-    fn repl_loop(&mut self, rl: &mut Editor<(), DefaultHistory>) -> Result<()> {
+    fn repl_loop(&mut self, rl: &mut Editor<NumbatHelper, DefaultHistory>) -> Result<()> {
         loop {
             let readline = rl.readline(PROMPT);
             match readline {
