@@ -12,6 +12,7 @@ use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use colored::Colorize;
 use rustyline::completion::extract_word;
+use rustyline::config::Configurer;
 use rustyline::Highlighter;
 use rustyline::{
     self,
@@ -236,6 +237,8 @@ impl Cli {
         let history_path = self.get_history_path()?;
 
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
+        rl.set_max_history_size(1000)
+            .context("Error while configuring history size")?;
         rl.set_helper(Some(NumbatHelper {
             completer: NumbatCompleter {},
         }));
