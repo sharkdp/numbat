@@ -15,7 +15,7 @@ pub enum RuntimeError {
     #[error("{0}")]
     UnitRegistryError(UnitRegistryError), // TODO: can this even be triggered?
     #[error("{0}")]
-    ConversionError(ConversionError), // TODO: can this even be triggered?
+    ConversionError(ConversionError), // TODO: this can currently be triggered if there are multiple base units for the same dimension (no way to convert between them)
     #[error(
         "Assertion failed because the following two quantities are not the same:\n  {0}\n  {1}"
     )]
