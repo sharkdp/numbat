@@ -239,6 +239,7 @@ impl Cli {
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
         rl.set_max_history_size(1000)
             .context("Error while configuring history size")?;
+        rl.set_completion_type(rustyline::CompletionType::List);
         rl.set_helper(Some(NumbatHelper {
             completer: NumbatCompleter {},
         }));
