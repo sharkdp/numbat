@@ -118,7 +118,7 @@ unit ohm: Resistance = volt / ampere
 @metric_prefixes
 @aliases(kelvins)
 @aliases_short(K)
-unit kelvin : Temperature
+unit kelvin: Temperature
 
 ## SI accepted units
 
