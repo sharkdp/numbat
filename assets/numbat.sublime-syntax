@@ -1,0 +1,27 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+name: Numbat
+file_extensions:
+  - nbt
+scope: source.nbt
+contexts:
+  main:
+    - match: \b(per|to|let|fn|dimension|unit|print|assert_eq)\b
+      scope: keyword.control.nbt
+    - match: '#(.*)'
+      scope: comment.line.nbt
+    - match: \b([A-Z][a-zA-Z]*)\b
+      scope: storage.type.nbt
+    - match: \b([a-z][a-zA-Z_0-9]*)\b
+      scope: variable.other.nbt
+    - match: \b([0-9]+(\.[0-9]+)?)\b
+      scope: constant.numeric.nbt
+    - match: '(@aliases(\_short)?|@metric_prefixes|@binary_prefixes)'
+      scope: meta.annotation.attribute.nbt
+    - match: '[+\-/*=\^:<>·×÷²³]'
+      scope: keyword.operator.nbt
+    - match: '[\(\)]'
+      scope: punctuation.definition.parenthesis.nbt
+    - match: ','
+      scope: punctuation.separator.comma.nbt
