@@ -182,6 +182,14 @@ unit fathom: Length = 2 yard
 @aliases(furlongs)
 unit furlong: Length = 220 yard
 
+# "Dummy" units
+
+dimension Pixel
+
+@metric_prefixes
+@aliases(pixels, px: short)
+unit pixel: Pixel
+
 
 ### Commonly used non-standard abbreviations
 
