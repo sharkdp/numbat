@@ -83,8 +83,15 @@ fn is_exponent_char(c: char) -> bool {
     matches!(c, '¹' | '²' | '³' | '⁴' | '⁵')
 }
 
+fn is_currency_char(c: char) -> bool {
+    let c_u32 = c as u32;
+
+    // See https://en.wikipedia.org/wiki/Currency_Symbols_(Unicode_block)
+    (c_u32 >= 0x20A0 && c_u32 <= 0x20CF) || c == '£' || c == '¥' || c == '$' || c == '฿'
+}
+
 fn is_identifier_char(c: char) -> bool {
-    (c.is_alphanumeric() || c == '_') && !is_exponent_char(c)
+    (c.is_alphanumeric() || c == '_' || is_currency_char(c)) && !is_exponent_char(c)
 }
 
 impl Tokenizer {
@@ -392,5 +399,17 @@ fn tokenize_basic() {
         ])
     );
 
-    assert!(tokenize("$").is_err());
+    assert!(tokenize("…").is_err());
+}
+
+#[test]
+fn test_is_currency_char() {
+    assert!(is_currency_char('€'));
+    assert!(is_currency_char('$'));
+    assert!(is_currency_char('¥'));
+    assert!(is_currency_char('£'));
+    assert!(is_currency_char('฿'));
+    assert!(is_currency_char('₿'));
+
+    assert!(!is_currency_char('E'));
 }

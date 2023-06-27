@@ -1,11 +1,13 @@
 dimension Money
+
+@aliases(EUR, €)
 unit euro: Money
 
 dimension Person
 unit person: Person
 
-let lunch_cost = 85 euro
+let lunch_cost = 85 €
 
 let cost_per_person = lunch_cost / 4 person
 
-assert_eq(cost_per_person, 21.25 euro / person, 0.01 euro / person)
+assert_eq(cost_per_person, 21.25 € / person, 0.01 € / person)
