@@ -2,7 +2,7 @@ use crate::{
     ast::{Expression, Statement},
     decorator::{self, Decorator},
     name_resolution::NameResolutionError,
-    prefix_parser::{AcceptsPrefix, PrefixParser, PrefixParserResult},
+    prefix_parser::{PrefixParser, PrefixParserResult},
 };
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
@@ -58,21 +58,9 @@ impl Transformer {
     fn register_name_and_aliases(&mut self, name: &String, decorators: &[Decorator]) -> Result<()> {
         let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
         let binary_prefixes = Self::has_decorator(decorators, Decorator::BinaryPrefixes);
-        for alias in decorator::name_and_aliases(name, decorators) {
-            self.prefix_parser.add_unit(
-                alias,
-                AcceptsPrefix::only_long(),
-                metric_prefixes,
-                binary_prefixes,
-            )?;
-        }
-        for alias in decorator::aliases_short(decorators) {
-            self.prefix_parser.add_unit(
-                alias,
-                AcceptsPrefix::only_short(),
-                metric_prefixes,
-                binary_prefixes,
-            )?;
+        for (alias, accepts_prefix) in decorator::name_and_aliases(name, decorators) {
+            self.prefix_parser
+                .add_unit(alias, accepts_prefix, metric_prefixes, binary_prefixes)?;
         }
 
         Ok(())

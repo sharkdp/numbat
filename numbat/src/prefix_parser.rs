@@ -14,10 +14,10 @@ pub enum PrefixParserResult {
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AcceptsPrefix {
-    short: bool,
-    long: bool,
+    pub short: bool,
+    pub long: bool,
 }
 
 impl AcceptsPrefix {
@@ -39,6 +39,13 @@ impl AcceptsPrefix {
         Self {
             long: true,
             short: true,
+        }
+    }
+
+    pub fn none() -> Self {
+        Self {
+            long: false,
+            short: false,
         }
     }
 }

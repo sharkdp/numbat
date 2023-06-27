@@ -287,17 +287,7 @@ impl PrettyPrint for Statement {
                                 m::decorator("@aliases")
                                     + m::operator("(")
                                     + Itertools::intersperse(
-                                        names.iter().map(m::unit),
-                                        m::operator(","),
-                                    )
-                                    .sum()
-                                    + m::operator(")")
-                            }
-                            Decorator::AliasesShort(names) => {
-                                m::decorator("@aliases_short")
-                                    + m::operator("(")
-                                    + Itertools::intersperse(
-                                        names.iter().map(m::unit),
+                                        names.iter().map(|(name, accepts_prefix)| m::unit(name)), // TODO
                                         m::operator(","),
                                     )
                                     .sum()

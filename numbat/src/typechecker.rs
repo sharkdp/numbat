@@ -347,11 +347,7 @@ impl TypeChecker {
                     .registry
                     .get_base_representation(&dexpr)
                     .map_err(TypeCheckError::RegistryError)?;
-                for name in decorator::name_and_aliases(&unit_name, &decorators) {
-                    self.identifiers
-                        .insert(name.clone(), type_specified.clone());
-                }
-                for name in decorator::aliases_short(&decorators) {
+                for (name, _) in decorator::name_and_aliases(&unit_name, &decorators) {
                     self.identifiers
                         .insert(name.clone(), type_specified.clone());
                 }
@@ -378,10 +374,7 @@ impl TypeChecker {
                         ));
                     }
                 }
-                for name in decorator::name_and_aliases(&unit_name, &decorators) {
-                    self.identifiers.insert(name.clone(), type_deduced.clone());
-                }
-                for name in decorator::aliases_short(&decorators) {
+                for (name, _) in decorator::name_and_aliases(&unit_name, &decorators) {
                     self.identifiers.insert(name.clone(), type_deduced.clone());
                 }
                 typed_ast::Statement::DeclareDerivedUnit(unit_name, expr, decorators)

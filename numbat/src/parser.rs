@@ -37,6 +37,7 @@ use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement};
 use crate::decorator::Decorator;
 use crate::number::Number;
+use crate::prefix_parser::AcceptsPrefix;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError};
 
@@ -179,14 +180,33 @@ impl<'a> Parser<'a> {
         Ok(statements)
     }
 
-    fn list_of_identifiers(&mut self) -> Result<Vec<String>> {
+    fn accepts_prefix(&mut self) -> Result<Option<AcceptsPrefix>> {
+        if self.match_exact(TokenKind::Colon).is_some() {
+            if self.match_exact(TokenKind::Long).is_some() {
+                Ok(Some(AcceptsPrefix::only_long()))
+            } else if self.match_exact(TokenKind::Short).is_some() {
+                Ok(Some(AcceptsPrefix::only_short()))
+            } else if self.match_exact(TokenKind::Both).is_some() {
+                Ok(Some(AcceptsPrefix::both()))
+            } else if self.match_exact(TokenKind::None).is_some() {
+                Ok(Some(AcceptsPrefix::none()))
+            } else {
+                todo!("Parse error: unknown alias annotation")
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn list_of_aliases(&mut self) -> Result<Vec<(String, Option<AcceptsPrefix>)>> {
         if self.match_exact(TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
-        let mut identifiers: Vec<String> = vec![self.identifier()?];
+        let mut identifiers: Vec<(String, Option<AcceptsPrefix>)> =
+            vec![(self.identifier()?, self.accepts_prefix()?)];
         while self.match_exact(TokenKind::Comma).is_some() {
-            identifiers.push(self.identifier()?);
+            identifiers.push((self.identifier()?, self.accepts_prefix()?));
         }
 
         if self.match_exact(TokenKind::RightParen).is_none() {
@@ -351,15 +371,8 @@ impl<'a> Parser<'a> {
                     Decorator::BinaryPrefixes
                 } else if decorator.lexeme == "aliases" {
                     if self.match_exact(TokenKind::LeftParen).is_some() {
-                        let aliases = self.list_of_identifiers()?;
+                        let aliases = self.list_of_aliases()?;
                         Decorator::Aliases(aliases)
-                    } else {
-                        todo!("Parse error: expected left paren after decorator")
-                    }
-                } else if decorator.lexeme == "aliases_short" {
-                    if self.match_exact(TokenKind::LeftParen).is_some() {
-                        let aliases_short = self.list_of_identifiers()?;
-                        Decorator::AliasesShort(aliases_short)
                     } else {
                         todo!("Parse error: expected left paren after decorator")
                     }

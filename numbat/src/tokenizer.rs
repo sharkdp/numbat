@@ -43,6 +43,11 @@ pub enum TokenKind {
     Dimension,
     Unit,
 
+    Long,
+    Short,
+    Both,
+    None,
+
     // Procedure calls
     ProcedurePrint,
     ProcedureAssertEq,
@@ -127,6 +132,10 @@ impl Tokenizer {
             m.insert("fn", TokenKind::Fn);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
+            m.insert("long", TokenKind::Long);
+            m.insert("short", TokenKind::Short);
+            m.insert("both", TokenKind::Both);
+            m.insert("none", TokenKind::None);
             m.insert("print", TokenKind::ProcedurePrint);
             m.insert("assert_eq", TokenKind::ProcedureAssertEq);
             m

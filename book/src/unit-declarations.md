@@ -41,16 +41,17 @@ This allows the usage of both `mebibyte` (1024² byte) as well as `megabyte` (10
 ## Aliases
 
 It is often useful to define alternative names for a unit. For example, we might want to use the plural form `seconds` or the commonly
-used short version `s`. We can use the `@aliases` decorator to specify "long" aliases and the `@aliases_short` to define "short" ones:
+used short version `s`. We can use the `@aliases` decorator to specify them:
 ```
 @metric_prefixes
-@aliases(meters, metre, metres)
-@aliases_short(m)
+@aliases(meters, metre, metres, m: short)
 unit meter: Length
 ```
-The reason we distinguish between long and short forms is that they interact differently with prefixes. The unit name itself and all
-long aliases can be prefixed with the long versions of prefixes (..., `milli`, `kilo`, `mega`, `giga`, ...). On the other hand, short aliases can only be prefixed with the respective short versions of the prefixes (..., `m`, `k`, `M`, `G`, ...). The definition above
-allows all of following expressions:
+In addition to the name, we can also specify how aliases interact with prefixes using `: long` (the default), `: short`, `: both` or
+`: none`. The actual unit name (`meter`) and all `long` aliases will accept the long version of prefixes (..., `milli`, `kilo`, `mega`, `giga`, ...).
+All `short` aliases (`m` in the example above) will only accept the respective short versions of the prefixes (..., `m`, `k`, `M`, `G`, ...).
+Aliases annotated with `: both` or `: none` accept either both long *and* short prefixes, or none of them.
+The unit definition above allows all of following expressions:
 ```
 millimeter
 kilometer

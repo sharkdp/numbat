@@ -135,11 +135,7 @@ impl BytecodeInterpreter {
                 let constant_idx = self
                     .vm
                     .add_constant(Constant::Unit(Unit::new_base(unit_name)));
-                for name in decorator::name_and_aliases(unit_name, decorators) {
-                    self.unit_name_to_constant_index
-                        .insert((Prefix::none(), name.into()), constant_idx);
-                }
-                for name in decorator::aliases_short(decorators) {
+                for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
                         .insert((Prefix::none(), name.into()), constant_idx);
                 }
@@ -159,11 +155,7 @@ impl BytecodeInterpreter {
                     .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
 
                 // TODO: code duplication with DeclareBaseUnit branch above
-                for name in decorator::name_and_aliases(unit_name, decorators) {
-                    self.unit_name_to_constant_index
-                        .insert((Prefix::none(), name.into()), constant_idx);
-                }
-                for name in decorator::aliases_short(decorators) {
+                for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
                         .insert((Prefix::none(), name.into()), constant_idx);
                 }

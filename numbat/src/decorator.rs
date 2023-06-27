@@ -1,29 +1,37 @@
+use itertools::Itertools;
+
+use crate::prefix_parser::AcceptsPrefix;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Decorator {
     MetricPrefixes,
     BinaryPrefixes,
-    Aliases(Vec<String>),
-    AliasesShort(Vec<String>),
+    Aliases(Vec<(String, Option<AcceptsPrefix>)>),
 }
 
 pub fn name_and_aliases<'a>(
     name: &'a String,
     decorators: &'a [Decorator],
-) -> Box<dyn Iterator<Item = &'a String> + 'a> {
-    let name_iter = std::iter::once(name);
-    for decorator in decorators {
-        if let Decorator::Aliases(aliases) = decorator {
-            return Box::new(name_iter.chain(aliases.iter()));
+) -> Box<dyn Iterator<Item = (&'a String, AcceptsPrefix)> + 'a> {
+    let aliases = {
+        let mut aliases_vec = vec![];
+        for decorator in decorators {
+            if let Decorator::Aliases(aliases) = decorator {
+                aliases_vec = aliases
+                    .iter()
+                    .map(|(name, accepts_prefix)| {
+                        (name, accepts_prefix.unwrap_or(AcceptsPrefix::only_long()))
+                    })
+                    .collect();
+            }
         }
-    }
-    Box::new(name_iter)
-}
+        aliases_vec
+    };
 
-pub fn aliases_short<'a>(decorators: &'a [Decorator]) -> Box<dyn Iterator<Item = &'a String> + 'a> {
-    for decorator in decorators {
-        if let Decorator::AliasesShort(aliases) = decorator {
-            return Box::new(aliases.iter());
-        }
+    if !aliases.iter().find(|(n, _)| n == &name).is_some() {
+        let name_iter = std::iter::once((name, AcceptsPrefix::only_long()));
+        Box::new(name_iter.chain(aliases))
+    } else {
+        Box::new(aliases.into_iter())
     }
-    Box::new(std::iter::empty())
 }
