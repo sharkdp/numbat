@@ -15,14 +15,37 @@ pub enum PrefixParserResult {
 type Result<T> = std::result::Result<T, NameResolutionError>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum UnitKind {
-    Short,
-    Long,
+pub struct AcceptsPrefix {
+    short: bool,
+    long: bool,
+}
+
+impl AcceptsPrefix {
+    pub fn only_long() -> Self {
+        Self {
+            long: true,
+            short: false,
+        }
+    }
+
+    pub fn only_short() -> Self {
+        Self {
+            long: false,
+            short: true,
+        }
+    }
+
+    pub fn both() -> Self {
+        Self {
+            long: true,
+            short: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 struct UnitInfo {
-    kind: UnitKind,
+    accepts_prefix: AcceptsPrefix,
     metric_prefixes: bool,
     binary_prefixes: bool,
 }
@@ -101,7 +124,7 @@ impl PrefixParser {
     pub fn add_unit(
         &mut self,
         unit_name: &str,
-        kind: UnitKind,
+        accepts_prefix: AcceptsPrefix,
         metric: bool,
         binary: bool,
     ) -> Result<()> {
@@ -112,20 +135,18 @@ impl PrefixParser {
                 continue;
             }
 
-            match kind {
-                UnitKind::Long => {
-                    self.ensure_name_is_available(&format!("{}{}", prefix_long, unit_name))?
-                }
-                UnitKind::Short => {
-                    self.ensure_name_is_available(&format!("{}{}", prefix_short, unit_name))?
-                }
+            if accepts_prefix.long {
+                self.ensure_name_is_available(&format!("{}{}", prefix_long, unit_name))?;
+            }
+            if accepts_prefix.short {
+                self.ensure_name_is_available(&format!("{}{}", prefix_short, unit_name))?;
             }
         }
 
         self.units.insert(
             unit_name.into(),
             UnitInfo {
-                kind,
+                accepts_prefix: accepts_prefix,
                 metric_prefixes: metric,
                 binary_prefixes: binary,
             },
@@ -158,7 +179,7 @@ impl PrefixParser {
                     .units
                     .iter()
                     .filter(|(_, info)| {
-                        info.kind == UnitKind::Long
+                        info.accepts_prefix.long
                             && (is_metric && info.metric_prefixes
                                 || is_binary && info.binary_prefixes)
                     })
@@ -175,7 +196,7 @@ impl PrefixParser {
                     .units
                     .iter()
                     .filter(|(_, info)| {
-                        info.kind == UnitKind::Short
+                        info.accepts_prefix.short
                             && (is_metric && info.metric_prefixes
                                 || is_binary && info.binary_prefixes)
                     })
@@ -200,21 +221,21 @@ mod tests {
     fn basic() {
         let mut prefix_parser = PrefixParser::new();
         prefix_parser
-            .add_unit("meter", UnitKind::Long, true, false)
+            .add_unit("meter", AcceptsPrefix::only_long(), true, false)
             .unwrap();
         prefix_parser
-            .add_unit("m", UnitKind::Short, true, false)
-            .unwrap();
-
-        prefix_parser
-            .add_unit("byte", UnitKind::Long, true, true)
-            .unwrap();
-        prefix_parser
-            .add_unit("B", UnitKind::Short, true, true)
+            .add_unit("m", AcceptsPrefix::only_short(), true, false)
             .unwrap();
 
         prefix_parser
-            .add_unit("me", UnitKind::Short, false, false)
+            .add_unit("byte", AcceptsPrefix::only_long(), true, true)
+            .unwrap();
+        prefix_parser
+            .add_unit("B", AcceptsPrefix::only_short(), true, true)
+            .unwrap();
+
+        prefix_parser
+            .add_unit("me", AcceptsPrefix::only_short(), false, false)
             .unwrap();
 
         assert_eq!(
