@@ -125,7 +125,7 @@ unit kelvin: Temperature
 @metric_prefixes
 @aliases(radians)
 @aliases_short(rad)
-unit radian = meter / meter # TODO
+unit radian = meter / meter
 
 @aliases(degrees)
 @aliases_short(deg, °)
