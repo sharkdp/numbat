@@ -52,6 +52,9 @@ pub enum ParseErrorKind {
     #[error("Unexpected character in negative exponent")]
     TokenizerUnexpectedCharacterInNegativeExponent(Option<char>),
 
+    #[error("Expected digit")]
+    TokenizerExpectedDigit(Option<char>),
+
     #[error("Expected one of: number, identifier, parenthesized expression")]
     ExpectedPrimary,
 
@@ -819,6 +822,9 @@ pub fn parse(input: &str) -> Result<Vec<Statement>> {
                 span,
             )
         }
+        TokenizerError::ExpectedDigit { character, span } => {
+            ParseError::new(ParseErrorKind::TokenizerExpectedDigit(character), span)
+        }
     })?;
     let mut parser = Parser::new(&tokens);
     parser.parse()
@@ -875,39 +881,13 @@ mod tests {
 
     #[test]
     fn numbers_simple() {
-        parse_as_expression(
-            &[
-                "1",
-                "1.0",
-                "  1   ",
-                " 1.0000   ",
-                "1.",
-                // " +1.0   ", "+1", TODO
-            ],
-            scalar!(1.0),
-        );
+        parse_as_expression(&["1", "1.0", "  1   ", " 1.0000   ", "1."], scalar!(1.0));
 
-        parse_as_expression(
-            &[
-                "0.2", "  0.2  ", // ".2", "+.2", "+0.2 ", TODO
-            ],
-            scalar!(0.2),
-        );
+        parse_as_expression(&["0.2", "  0.2  ", ".2"], scalar!(0.2));
 
-        parse_as_expression(
-            &[
-                "3.5", "  3.5  ", "3.50",
-                // "+3.5", // TODO
-            ],
-            scalar!(3.5),
-        );
+        parse_as_expression(&["3.5", "  3.5  ", "3.50"], scalar!(3.5));
 
-        parse_as_expression(
-            &[
-                "0.05", // , ".05" TODO
-            ],
-            scalar!(0.05),
-        );
+        parse_as_expression(&["0.05"], scalar!(0.05));
 
         parse_as_expression(&["123.456"], scalar!(123.456));
 
@@ -917,11 +897,7 @@ mod tests {
     #[test]
     fn large_numbers() {
         parse_as_expression(
-            &[
-                "1234567890000000",
-                "1234567890000000.0",
-                // "+1234567890000000.0", TODO
-            ],
+            &["1234567890000000", "1234567890000000.0"],
             scalar!(1234567890000000.0),
         );
     }
@@ -937,6 +913,19 @@ mod tests {
             &["-1 + 2"],
             binop!(negate!(scalar!(1.0)), Add, scalar!(2.0)),
         );
+    }
+
+    #[test]
+    fn scientific_notation() {
+        parse_as_expression(&["1e3"], scalar!(1.0e3));
+        parse_as_expression(&["1e+3"], scalar!(1.0e+3));
+        parse_as_expression(&["1e-3"], scalar!(1.0e-3));
+
+        parse_as_expression(&["123.456e12"], scalar!(123.456e12));
+        parse_as_expression(&["123.456e+12"], scalar!(123.456e+12));
+        parse_as_expression(&["123.456e-12"], scalar!(123.456e-12));
+
+        should_fail(&["1e", "1.0e", "1e²", "1ee", "1e++2", "1e+-2", "1e+", "1e-"]);
     }
 
     #[test]

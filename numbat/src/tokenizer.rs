@@ -11,6 +11,9 @@ pub enum TokenizerError {
 
     #[error("Unexpected character after '")]
     UnexpectedCharacterInNegativeExponent { character: Option<char>, span: Span },
+
+    #[error("Expected digit")]
+    ExpectedDigit { character: Option<char>, span: Span },
 }
 
 type Result<T> = std::result::Result<T, TokenizerError>;
@@ -130,6 +133,39 @@ impl Tokenizer {
         Ok(tokens)
     }
 
+    fn consume_stream_of_digits(&mut self, at_least_one_digit: bool) -> Result<()> {
+        if at_least_one_digit {
+            if !self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                return Err(TokenizerError::ExpectedDigit {
+                    character: self.peek(),
+                    span: Span {
+                        line: self.current_line,
+                        position: self.current_position,
+                        index: self.token_start_index,
+                    },
+                });
+            }
+        }
+
+        while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+            self.advance();
+        }
+
+        Ok(())
+    }
+
+    fn scientific_notation(&mut self) -> Result<()> {
+        if self.match_char('e') || self.match_char('E') {
+            if self.match_char('+') {
+            } else if self.match_char('-') {
+            }
+
+            self.consume_stream_of_digits(true)?;
+        }
+
+        Ok(())
+    }
+
     fn scan_single_token(&mut self) -> Result<Option<Token>> {
         static KEYWORDS: OnceCell<HashMap<&'static str, TokenKind>> = OnceCell::new();
         let keywords = KEYWORDS.get_or_init(|| {
@@ -171,16 +207,20 @@ impl Tokenizer {
             '<' => TokenKind::LeftAngleBracket,
             '>' => TokenKind::RightAngleBracket,
             c if c.is_ascii_digit() => {
-                while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-                    self.advance();
-                }
+                self.consume_stream_of_digits(false)?;
 
                 // decimal part
                 if self.match_char('.') {
-                    while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-                        self.advance();
-                    }
+                    self.consume_stream_of_digits(false)?;
                 }
+
+                self.scientific_notation()?;
+
+                TokenKind::Number
+            }
+            '.' => {
+                self.consume_stream_of_digits(true)?;
+                self.scientific_notation()?;
 
                 TokenKind::Number
             }
