@@ -55,6 +55,7 @@ pub enum TokenKind {
     // Variable-length tokens
     Number,
     Identifier,
+    String,
 
     // Other
     Newline,
@@ -228,6 +229,17 @@ impl Tokenizer {
             }
             '¹' | '²' | '³' | '⁴' | '⁵' => TokenKind::UnicodeExponent,
             '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so we treat it as a special case here
+            '"' => {
+                while self.peek().map(|c| c != '"').unwrap_or(false) {
+                    self.advance();
+                }
+
+                if self.match_char('"') {
+                    TokenKind::String
+                } else {
+                    todo!("Parse error: string not terminated");
+                }
+            }
             c if is_identifier_char(c) => {
                 while self.peek().map(is_identifier_char).unwrap_or(false) {
                     self.advance();
@@ -397,6 +409,11 @@ fn tokenize_basic() {
             ("42", Number, (2, 1, 4)),
             ("", Eof, (2, 3, 6))
         ])
+    );
+
+    assert_eq!(
+        tokenize("\"foo\"").unwrap(),
+        token_stream(&[("\"foo\"", String, (1, 1, 0)), ("", Eof, (1, 6, 5))])
     );
 
     assert!(tokenize("…").is_err());
