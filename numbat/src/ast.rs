@@ -1,4 +1,5 @@
 use crate::markup as m;
+use crate::prefix_parser::AcceptsPrefix;
 use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint,
@@ -192,6 +193,58 @@ pub enum Statement {
     ProcedureCall(ProcedureKind, Vec<Expression>),
 }
 
+fn accepts_prefix_markup(accepts_prefix: &Option<AcceptsPrefix>) -> Markup {
+    if let Some(accepts_prefix) = accepts_prefix {
+        m::operator(":")
+            + m::text(" ")
+            + match accepts_prefix {
+                AcceptsPrefix {
+                    short: true,
+                    long: true,
+                } => m::keyword("both"),
+                AcceptsPrefix {
+                    short: true,
+                    long: false,
+                } => m::keyword("short"),
+                AcceptsPrefix {
+                    short: false,
+                    long: true,
+                } => m::keyword("long"),
+                AcceptsPrefix {
+                    short: false,
+                    long: false,
+                } => m::keyword("none"),
+            }
+    } else {
+        Markup::default()
+    }
+}
+
+fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
+    let mut markup_decorators = Markup::default();
+    for decorator in decorators {
+        markup_decorators = markup_decorators
+            + match decorator {
+                Decorator::MetricPrefixes => m::decorator("@metric_prefixes"),
+                Decorator::BinaryPrefixes => m::decorator("@binary_prefixes"),
+                Decorator::Aliases(names) => {
+                    m::decorator("@aliases")
+                        + m::operator("(")
+                        + Itertools::intersperse(
+                            names.iter().map(|(name, accepts_prefix)| {
+                                m::unit(name) + accepts_prefix_markup(accepts_prefix)
+                            }),
+                            m::operator(", "),
+                        )
+                        .sum()
+                        + m::operator(")")
+                }
+            }
+            + m::nl();
+    }
+    markup_decorators
+}
+
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
@@ -268,8 +321,9 @@ impl PrettyPrint for Statement {
                     )
                     .sum()
             }
-            Statement::DeclareBaseUnit(identifier, dexpr, _decorators) => {
-                m::keyword("unit")
+            Statement::DeclareBaseUnit(identifier, dexpr, decorators) => {
+                decorator_markup(decorators)
+                    + m::keyword("unit")
                     + m::text(" ")
                     + m::unit(identifier)
                     + m::operator(":")
@@ -277,27 +331,7 @@ impl PrettyPrint for Statement {
                     + dexpr.pretty_print()
             }
             Statement::DeclareDerivedUnit(identifier, expr, dexpr, decorators) => {
-                let mut markup_decorators = Markup::default();
-                for decorator in decorators {
-                    markup_decorators = markup_decorators
-                        + match decorator {
-                            Decorator::MetricPrefixes => m::decorator("@metric_prefixes"),
-                            Decorator::BinaryPrefixes => m::decorator("@binary_prefixes"),
-                            Decorator::Aliases(names) => {
-                                m::decorator("@aliases")
-                                    + m::operator("(")
-                                    + Itertools::intersperse(
-                                        names.iter().map(|(name, accepts_prefix)| m::unit(name)), // TODO
-                                        m::operator(","),
-                                    )
-                                    .sum()
-                                    + m::operator(")")
-                            }
-                        }
-                        + m::nl();
-                }
-
-                markup_decorators
+                decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::text(" ")
                     + m::unit(identifier)
