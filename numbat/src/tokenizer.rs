@@ -91,7 +91,7 @@ fn is_currency_char(c: char) -> bool {
     let c_u32 = c as u32;
 
     // See https://en.wikipedia.org/wiki/Currency_Symbols_(Unicode_block)
-    (c_u32 >= 0x20A0 && c_u32 <= 0x20CF) || c == '£' || c == '¥' || c == '$' || c == '฿'
+    (0x20A0..=0x20CF).contains(&c_u32) || c == '£' || c == '¥' || c == '$' || c == '฿'
 }
 
 fn is_identifier_char(c: char) -> bool {
@@ -134,17 +134,15 @@ impl Tokenizer {
     }
 
     fn consume_stream_of_digits(&mut self, at_least_one_digit: bool) -> Result<()> {
-        if at_least_one_digit {
-            if !self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-                return Err(TokenizerError::ExpectedDigit {
-                    character: self.peek(),
-                    span: Span {
-                        line: self.current_line,
-                        position: self.current_position,
-                        index: self.token_start_index,
-                    },
-                });
-            }
+        if at_least_one_digit && !self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+            return Err(TokenizerError::ExpectedDigit {
+                character: self.peek(),
+                span: Span {
+                    line: self.current_line,
+                    position: self.current_position,
+                    index: self.token_start_index,
+                },
+            });
         }
 
         while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
@@ -156,9 +154,7 @@ impl Tokenizer {
 
     fn scientific_notation(&mut self) -> Result<()> {
         if self.match_char('e') || self.match_char('E') {
-            if self.match_char('+') {
-            } else if self.match_char('-') {
-            }
+            let _ = self.match_char('+') || self.match_char('-');
 
             self.consume_stream_of_digits(true)?;
         }

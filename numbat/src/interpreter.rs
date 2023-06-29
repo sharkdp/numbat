@@ -110,7 +110,7 @@ mod tests {
         if let InterpreterResult::Quantity(actual) = get_interpreter_result(input).unwrap() {
             assert_eq!(actual, expected);
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -122,7 +122,7 @@ mod tests {
         if let Err(err_actual) = get_interpreter_result(input) {
             assert_eq!(err_actual, err_expected);
         } else {
-            assert!(false);
+            panic!();
         }
     }
 

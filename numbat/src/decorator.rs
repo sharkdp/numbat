@@ -1,4 +1,4 @@
-use itertools::Itertools;
+
 
 use crate::prefix_parser::AcceptsPrefix;
 
@@ -28,7 +28,7 @@ pub fn name_and_aliases<'a>(
         aliases_vec
     };
 
-    if !aliases.iter().find(|(n, _)| n == &name).is_some() {
+    if !aliases.iter().any(|(n, _)| n == &name) {
         let name_iter = std::iter::once((name, AcceptsPrefix::only_long()));
         Box::new(name_iter.chain(aliases))
     } else {

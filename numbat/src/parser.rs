@@ -863,7 +863,7 @@ mod tests {
                     assert_eq!(e.kind, error_kind);
                 }
                 _ => {
-                    assert!(false);
+                    panic!();
                 }
             }
         }

@@ -153,7 +153,7 @@ impl PrefixParser {
         self.units.insert(
             unit_name.into(),
             UnitInfo {
-                accepts_prefix: accepts_prefix,
+                accepts_prefix,
                 metric_prefixes: metric,
                 binary_prefixes: binary,
             },
