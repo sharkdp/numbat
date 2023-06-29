@@ -1,10 +1,10 @@
 use std::collections::{HashMap, HashSet};
 
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 
 use crate::{name_resolution::NameResolutionError, prefix::Prefix};
 
-static PREFIXES: OnceCell<Vec<(&'static str, &'static str, Prefix)>> = OnceCell::new();
+static PREFIXES: OnceLock<Vec<(&'static str, &'static str, Prefix)>> = OnceLock::new();
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PrefixParserResult {

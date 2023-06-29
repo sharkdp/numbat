@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 
 use crate::interpreter::RuntimeError;
 use crate::{ast::ProcedureKind, number::Number, quantity::Quantity};
@@ -22,8 +22,8 @@ pub(crate) struct ForeignFunction {
     pub(crate) callable: Callable,
 }
 
-static FFI_PROCEDURES: OnceCell<HashMap<ProcedureKind, ForeignFunction>> = OnceCell::new();
-static FFI_FUNCTIONS: OnceCell<HashMap<&'static str, ForeignFunction>> = OnceCell::new();
+static FFI_PROCEDURES: OnceLock<HashMap<ProcedureKind, ForeignFunction>> = OnceLock::new();
+static FFI_FUNCTIONS: OnceLock<HashMap<&'static str, ForeignFunction>> = OnceLock::new();
 
 pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
     FFI_PROCEDURES.get_or_init(|| {

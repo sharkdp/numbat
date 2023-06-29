@@ -475,7 +475,6 @@ dependencies = [
  "itertools",
  "num-rational",
  "num-traits",
- "once_cell",
  "thiserror",
 ]
 

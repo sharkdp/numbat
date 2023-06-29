@@ -1,7 +1,7 @@
 use crate::span::Span;
 
-use once_cell::sync::OnceCell;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -167,7 +167,7 @@ impl Tokenizer {
     }
 
     fn scan_single_token(&mut self) -> Result<Option<Token>> {
-        static KEYWORDS: OnceCell<HashMap<&'static str, TokenKind>> = OnceCell::new();
+        static KEYWORDS: OnceLock<HashMap<&'static str, TokenKind>> = OnceLock::new();
         let keywords = KEYWORDS.get_or_init(|| {
             let mut m = HashMap::new();
             m.insert("per", TokenKind::Divide);
