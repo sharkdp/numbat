@@ -30,7 +30,7 @@
 //! unicode_power   →   call ( "⁻" ? ("¹" | "²" | "³" | "⁴" | "⁵" ) ) ?
 //! call            →   primary ( "(" arguments? ")" ) ?
 //! arguments       →   expression ( "," expression ) *
-//! primary         →   number | identifier | "(" expression ")"
+//! primary         →   number | hex-number | oct-number | bin-number | identifier | "(" expression ")"
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
@@ -39,21 +39,15 @@ use crate::decorator::Decorator;
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::span::Span;
-use crate::tokenizer::{Token, TokenKind, TokenizerError};
+use crate::tokenizer::{Token, TokenKind, TokenizerError, TokenizerErrorKind};
 
 use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum ParseErrorKind {
-    #[error("Unexpected character '{0}'")]
-    TokenizerUnexpectedCharacter(char),
-
-    #[error("Unexpected character in negative exponent")]
-    TokenizerUnexpectedCharacterInNegativeExponent(Option<char>),
-
-    #[error("Expected digit")]
-    TokenizerExpectedDigit(Option<char>),
+    #[error("{0}")]
+    TokenizerError(TokenizerErrorKind),
 
     #[error("Expected one of: number, identifier, parenthesized expression")]
     ExpectedPrimary,
@@ -626,6 +620,18 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(Number::from_f64(
                 num.lexeme.parse::<f64>().unwrap(),
             )))
+        } else if let Some(hex_int) = self.match_exact(TokenKind::IntegerWithBase(16)) {
+            Ok(Expression::Scalar(Number::from_f64(
+                i128::from_str_radix(&hex_int.lexeme[2..], 16).unwrap() as f64, // TODO: i128 limits our precision here
+            )))
+        } else if let Some(oct_int) = self.match_exact(TokenKind::IntegerWithBase(8)) {
+            Ok(Expression::Scalar(Number::from_f64(
+                i128::from_str_radix(&oct_int.lexeme[2..], 8).unwrap() as f64, // TODO: i128 limits our precision here
+            )))
+        } else if let Some(bin_int) = self.match_exact(TokenKind::IntegerWithBase(2)) {
+            Ok(Expression::Scalar(Number::from_f64(
+                i128::from_str_radix(&bin_int.lexeme[2..], 2).unwrap() as f64, // TODO: i128 limits our precision here
+            )))
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             Ok(Expression::Identifier(identifier.lexeme.clone()))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
@@ -808,23 +814,8 @@ impl<'a> Parser<'a> {
 pub fn parse(input: &str) -> Result<Vec<Statement>> {
     use crate::tokenizer::tokenize;
 
-    let tokens = tokenize(input).map_err(|e| match e {
-        TokenizerError::UnexpectedCharacter {
-            character,
-            ref span,
-        } => ParseError::new(
-            ParseErrorKind::TokenizerUnexpectedCharacter(character),
-            span.clone(),
-        ),
-        TokenizerError::UnexpectedCharacterInNegativeExponent { character, span } => {
-            ParseError::new(
-                ParseErrorKind::TokenizerUnexpectedCharacterInNegativeExponent(character),
-                span,
-            )
-        }
-        TokenizerError::ExpectedDigit { character, span } => {
-            ParseError::new(ParseErrorKind::TokenizerExpectedDigit(character), span)
-        }
+    let tokens = tokenize(input).map_err(|TokenizerError { kind, span }| {
+        ParseError::new(ParseErrorKind::TokenizerError(kind), span)
     })?;
     let mut parser = Parser::new(&tokens);
     parser.parse()
@@ -926,6 +917,27 @@ mod tests {
         parse_as_expression(&["123.456e-12"], scalar!(123.456e-12));
 
         should_fail(&["1e", "1.0e", "1e²", "1ee", "1e++2", "1e+-2", "1e+", "1e-"]);
+    }
+
+    #[test]
+    fn hex_oct_bin() {
+        parse_as_expression(&["0x6A", "0x6a", "0b1101010", "0o152"], scalar!(106.0));
+        parse_as_expression(&["0xFF", "0xff", "0b11111111", "0o377"], scalar!(255.0));
+
+        parse_as_expression(&["-0x3", "-0b11", "-0o3"], negate!(scalar!(3.0)));
+
+        should_fail(&["0x"]);
+        should_fail(&["0o"]);
+        should_fail(&["0b"]);
+        should_fail(&["0xG"]);
+        should_fail(&["0oG"]);
+        should_fail(&["0oA"]);
+        should_fail(&["0o8"]);
+        should_fail(&["0bF"]);
+        should_fail(&["0b2"]);
+        should_fail(&["0xABCDU"]);
+        should_fail(&["0o12348"]);
+        should_fail(&["0b10102"]);
     }
 
     #[test]
