@@ -376,12 +376,12 @@ impl Cli {
     }
 
     fn get_prelude_path(&self) -> PathBuf {
-        let config_dir = dirs_next::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
         config_dir.join("numbat").join("prelude.nbt") // TODO: allow for preludes in system paths, user paths, …
     }
 
     fn get_history_path(&self) -> Result<PathBuf> {
-        let data_dir = dirs_next::data_dir()
+        let data_dir = dirs::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join("numbat");
         fs::create_dir(&data_dir).ok();

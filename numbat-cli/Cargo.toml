@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-rustyline = { version = "11", features = ["derive"] }
-dirs-next = "2"
+rustyline = { version = "12", features = ["derive"] }
+dirs = "5"
 numbat = { path = "../numbat" }
 colored = "2"
 
@@ -18,7 +18,7 @@ features = ["suggestions", "color", "wrap_help", "derive"]
 
 [dev-dependencies]
 assert_cmd = "2"
-predicates = "2"
+predicates = "3"
 
 [[bin]]
 name = "numbat"
