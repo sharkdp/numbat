@@ -5,15 +5,28 @@ use std::sync::OnceLock;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
-pub enum TokenizerError {
+pub enum TokenizerErrorKind {
     #[error("Unexpected character: '{character}'")]
-    UnexpectedCharacter { character: char, span: Span },
+    UnexpectedCharacter { character: char },
 
-    #[error("Unexpected character after '")]
-    UnexpectedCharacterInNegativeExponent { character: Option<char>, span: Span },
+    #[error("Unexpected character in negative exponent")]
+    UnexpectedCharacterInNegativeExponent { character: Option<char> },
 
     #[error("Expected digit")]
-    ExpectedDigit { character: Option<char>, span: Span },
+    ExpectedDigit { character: Option<char> },
+
+    #[error("Expected base-{base} digit")]
+    ExpectedDigitInBase {
+        base: usize,
+        character: Option<char>,
+    },
+}
+
+#[derive(Debug, Error, PartialEq, Eq)]
+#[error("{kind}")]
+pub struct TokenizerError {
+    pub kind: TokenizerErrorKind,
+    pub span: Span,
 }
 
 type Result<T> = std::result::Result<T, TokenizerError>;
@@ -57,6 +70,7 @@ pub enum TokenKind {
 
     // Variable-length tokens
     Number,
+    IntegerWithBase(usize),
     Identifier,
     String,
 
@@ -135,8 +149,10 @@ impl Tokenizer {
 
     fn consume_stream_of_digits(&mut self, at_least_one_digit: bool) -> Result<()> {
         if at_least_one_digit && !self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-            return Err(TokenizerError::ExpectedDigit {
-                character: self.peek(),
+            return Err(TokenizerError {
+                kind: TokenizerErrorKind::ExpectedDigit {
+                    character: self.peek(),
+                },
                 span: Span {
                     line: self.current_line,
                     position: self.current_position,
@@ -194,14 +210,59 @@ impl Tokenizer {
             }
         }
 
-        let current_position = self.current_position;
         let current_char = self.advance();
+
+        let tokenizer_error = |line, position, index, kind| -> Result<Option<Token>> {
+            Err(TokenizerError {
+                kind,
+                span: Span {
+                    line,
+                    position,
+                    index,
+                },
+            })
+        };
 
         let kind = match current_char {
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
             '<' => TokenKind::LeftAngleBracket,
             '>' => TokenKind::RightAngleBracket,
+            '0' if self
+                .peek()
+                .map(|c| c == 'x' || c == 'o' || c == 'b')
+                .unwrap_or(false) =>
+            {
+                let (base, is_digit_in_base): (_, Box<dyn Fn(char) -> bool>) =
+                    match self.peek().unwrap() {
+                        'x' => (16, Box::new(|c| c.is_ascii_hexdigit())),
+                        'o' => (8, Box::new(|c| ('0'..='7').contains(&c))),
+                        'b' => (2, Box::new(|c| c == '0' || c == '1')),
+                        _ => unreachable!(),
+                    };
+
+                self.advance(); // skip over the x/o/b
+
+                let mut has_advanced = false;
+                while self.peek().map(&is_digit_in_base).unwrap_or(false) {
+                    self.advance();
+                    has_advanced = true;
+                }
+
+                if !has_advanced || self.peek().map(|c| is_identifier_char(c)).unwrap_or(false) {
+                    return tokenizer_error(
+                        self.current_line,
+                        self.current_position,
+                        self.token_start_index,
+                        TokenizerErrorKind::ExpectedDigitInBase {
+                            base,
+                            character: self.peek(),
+                        },
+                    );
+                }
+
+                TokenKind::IntegerWithBase(base)
+            }
             c if c.is_ascii_digit() => {
                 self.consume_stream_of_digits(false)?;
 
@@ -253,14 +314,12 @@ impl Tokenizer {
                     self.advance();
                     TokenKind::UnicodeExponent
                 } else {
-                    return Err(TokenizerError::UnexpectedCharacterInNegativeExponent {
-                        character: c,
-                        span: Span {
-                            line: self.current_line,
-                            position: current_position,
-                            index: self.token_start_index,
-                        },
-                    });
+                    return tokenizer_error(
+                        self.current_line,
+                        self.current_position,
+                        self.current_index,
+                        TokenizerErrorKind::UnexpectedCharacterInNegativeExponent { character: c },
+                    );
                 }
             }
             '¹' | '²' | '³' | '⁴' | '⁵' => TokenKind::UnicodeExponent,
@@ -288,14 +347,12 @@ impl Tokenizer {
                 }
             }
             c => {
-                return Err(TokenizerError::UnexpectedCharacter {
-                    character: c,
-                    span: Span {
-                        line: self.current_line,
-                        position: current_position,
-                        index: self.token_start_index,
-                    },
-                });
+                return tokenizer_error(
+                    self.current_line,
+                    self.current_position - 1,
+                    self.current_index - 1,
+                    TokenizerErrorKind::UnexpectedCharacter { character: c },
+                );
             }
         };
 
