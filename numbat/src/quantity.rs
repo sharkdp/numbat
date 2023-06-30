@@ -161,6 +161,8 @@ impl Quantity {
                 factor = factor * converted.value;
             }
 
+            simplified_unit.canonicalize();
+
             Quantity::new(self.value * factor, simplified_unit)
         }
     }
@@ -355,6 +357,16 @@ mod tests {
                 Unit::kilometer() / Unit::millimeter(),
             );
             assert_eq!(q.full_simplify(), Quantity::from_scalar(2000000.0));
+        }
+        {
+            let q = Quantity::new(
+                Number::from_f64(2.0),
+                Unit::meter() / Unit::centimeter() * Unit::second(),
+            );
+            assert_eq!(
+                q.full_simplify(),
+                Quantity::new(Number::from_f64(2.0 * 100.0), Unit::second())
+            );
         }
     }
 
