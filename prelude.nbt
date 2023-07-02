@@ -154,6 +154,12 @@ unit bit: Bit
 @aliases(byte: both, bytes: both, octet, octets, B: short)
 unit byte: Bit = 8 bit
 
+### Common abbreviations
+
+@metric_prefixes
+@aliases(Wh: short)
+unit Wh = W h
+
 ### Imperial units
 
 @aliases(inches, in)
