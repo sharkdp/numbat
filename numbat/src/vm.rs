@@ -54,6 +54,9 @@ pub enum Op {
     /// Same as above, but call a procedure which does not return anything (does not push a value onto the stack)
     FFICallProcedure,
 
+    /// Perform a simplification operation to the current value on the stack
+    FullSimplify,
+
     /// Return from the current function
     Return,
 }
@@ -70,6 +73,7 @@ impl Op {
             | Op::Divide
             | Op::Power
             | Op::ConvertTo
+            | Op::FullSimplify
             | Op::Return => 0,
         }
     }
@@ -91,6 +95,7 @@ impl Op {
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
             Op::FFICallProcedure => "FFICallProcedure",
+            Op::FullSimplify => "FullSimplify",
             Op::Return => "Return",
         }
     }
@@ -484,9 +489,13 @@ impl Vm {
                         }
                     }
                 }
+                Op::FullSimplify => {
+                    let simplified = self.pop().full_simplify();
+                    self.push(simplified);
+                }
                 Op::Return => {
                     if self.frames.len() == 1 {
-                        let return_value = self.pop().full_simplify(); // TODO: this is not a good idea. we only want to simplify if the user did not ask for an explicit conversion.
+                        let return_value = self.pop();
 
                         // Save the returned value in `ans` and `_`:
                         for &identifier in LAST_RESULT_IDENTIFIERS {

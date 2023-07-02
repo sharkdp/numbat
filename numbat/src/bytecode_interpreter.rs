@@ -93,14 +93,32 @@ impl BytecodeInterpreter {
         Ok(())
     }
 
+    fn compile_expression_with_simplify(&mut self, expr: &Expression) -> Result<()> {
+        self.compile_expression(expr)?;
+
+        match expr {
+            Expression::Scalar(_)
+            | Expression::Identifier(_, _)
+            | Expression::UnitIdentifier(_, _, _)
+            | Expression::FunctionCall(_, _, _)
+            | Expression::Negate(_, _)
+            | Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _, _) => {}
+            Expression::BinaryOperator(_, _, _, _) => {
+                self.vm.add_op(Op::FullSimplify);
+            }
+        }
+
+        Ok(())
+    }
+
     fn compile_statement(&mut self, stmt: &Statement) -> Result<()> {
         match stmt {
             Statement::Expression(expr) => {
-                self.compile_expression(expr)?;
+                self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
             Statement::DeclareVariable(identifier, expr, _dexpr) => {
-                self.compile_expression(expr)?;
+                self.compile_expression_with_simplify(expr)?;
                 let identifier_idx = self.vm.add_global_identifier(identifier);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
@@ -109,7 +127,7 @@ impl BytecodeInterpreter {
                 for parameter in parameters.iter() {
                     self.local_variables.push(parameter.0.clone());
                 }
-                self.compile_expression(expr)?;
+                self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
                 for _ in parameters {
                     self.local_variables.pop();
@@ -150,7 +168,7 @@ impl BytecodeInterpreter {
                     .add_constant(Constant::Unit(Unit::new_base("<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
                 let identifier_idx = self.vm.add_global_identifier(unit_name); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 
-                self.compile_expression(expr)?;
+                self.compile_expression_with_simplify(expr)?;
                 self.vm
                     .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
 
@@ -163,7 +181,7 @@ impl BytecodeInterpreter {
             Statement::ProcedureCall(kind, args) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression(arg)?;
+                    self.compile_expression_with_simplify(arg)?;
                 }
 
                 let name = &ffi::procedures().get(kind).unwrap().name;
