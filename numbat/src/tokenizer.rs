@@ -285,6 +285,7 @@ impl Tokenizer {
                 return Ok(None);
             }
             '\n' => TokenKind::Newline,
+            '*' if self.match_char('*') => TokenKind::Power,
             '+' => TokenKind::Plus,
             '*' | '·' | '×' => TokenKind::Multiply,
             '/' => {
