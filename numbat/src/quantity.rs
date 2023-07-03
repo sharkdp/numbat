@@ -260,13 +260,7 @@ impl PrettyPrint for Quantity {
     fn pretty_print(&self) -> crate::markup::Markup {
         use crate::markup;
 
-        let formatted_number = format!("{:.6}", self.unsafe_value().to_f64());
-        let formatted_number = formatted_number.trim_end_matches('0');
-        let formatted_number = if formatted_number.ends_with('.') {
-            format!("{}0", formatted_number)
-        } else {
-            formatted_number.to_string()
-        };
+        let formatted_number = self.unsafe_value().pretty_print();
 
         let output_markup = markup::text("    ")
             + markup::operator("=")

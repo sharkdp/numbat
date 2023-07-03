@@ -11,7 +11,7 @@ fn pass_expression_on_command_line() {
         .arg("2 meter + 3 meter")
         .assert()
         .success()
-        .stdout(predicates::str::contains("5.0 meter"));
+        .stdout(predicates::str::contains("5 meter"));
 
     numbat()
         .arg("--expression")
@@ -60,8 +60,8 @@ fn without_prelude() {
     numbat()
         .arg("--no-prelude")
         .arg("--expression")
-        .arg("2 + 3")
+        .arg("2.1 + 3.1")
         .assert()
         .success()
-        .stdout(predicates::str::contains("5.0"));
+        .stdout(predicates::str::contains("5.2"));
 }
