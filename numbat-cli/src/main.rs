@@ -1,26 +1,24 @@
-use std::fs;
-use std::path::PathBuf;
+mod ansi_formatter;
+mod completion;
 
-use numbat::markup::{self, FormatType};
+use ansi_formatter::ANSIFormatter;
+use completion::NumbatCompleter;
+
+use numbat::markup;
 use numbat::pretty_print::PrettyPrint;
-use numbat::{
-    markup::FormattedString, markup::Formatter, Context, ExitStatus, InterpreterResult,
-    NumbatError, ParseError,
-};
+use numbat::{markup::Formatter, Context, ExitStatus, InterpreterResult, NumbatError, ParseError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
-use colored::Colorize;
-use rustyline::completion::extract_word;
 use rustyline::config::Configurer;
 use rustyline::{
-    self,
-    completion::{Completer, Pair},
-    error::ReadlineError,
-    history::DefaultHistory,
-    Completer, Editor, Helper, Hinter, Validator,
+    self, error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter,
+    Validator,
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
+
+use std::fs;
+use std::path::PathBuf;
 
 type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
@@ -62,105 +60,6 @@ impl ExecutionMode {
         } else {
             ControlFlow::Continue(())
         }
-    }
-}
-
-struct ANSIFormatter;
-
-impl Formatter for ANSIFormatter {
-    fn format_part(
-        &self,
-        FormattedString(_output_type, format_type, text): &FormattedString,
-    ) -> String {
-        (match format_type {
-            FormatType::Text => text.normal(),
-            FormatType::Keyword => text.magenta(),
-            FormatType::Value => text.yellow(),
-            FormatType::Unit => text.cyan(),
-            FormatType::Identifier => text.red(),
-            FormatType::TypeIdentifier => text.bright_yellow(),
-            FormatType::Operator => text.bold(),
-            FormatType::Decorator => text.yellow(),
-        })
-        .to_string()
-    }
-}
-
-struct NumbatCompleter;
-
-impl Completer for NumbatCompleter {
-    type Candidate = Pair;
-
-    fn complete(
-        &self,
-        line: &str,
-        pos: usize,
-        _: &rustyline::Context<'_>,
-    ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
-        let (pos_word, word_part) = extract_word(line, pos, None, |c| {
-            // TODO: we could use is_identifier_char here potentially
-            match c {
-                c if c.is_alphanumeric() => false,
-                '_' => false,
-                _ => true,
-            }
-        });
-
-        // TODO, obviously
-        let words = vec![
-            "let ",
-            "fn ",
-            "dimension ",
-            "unit ",
-            //
-            "sqrt(",
-            "sqr(",
-            "exp(",
-            "abs(",
-            "round(",
-            "sin(",
-            "atan2(",
-            "toCelsius(",
-            "toKelvin(",
-            "print(",
-            "assert_eq(",
-            //
-            "metric_prefixes",
-            "binary_prefixes",
-            "aliases",
-            "aliases_short",
-            //
-            "gravity",
-            "speed_of_light",
-            //
-            "Scalar",
-            "Length",
-            "Time",
-            "Mass",
-            //
-            "meter",
-            "second",
-            "gram",
-            //
-            "micro",
-            "milli",
-            "centi",
-            "deci",
-            "kilo",
-            "mega",
-        ];
-
-        let candidates = words.iter().filter(|w| w.starts_with(word_part));
-
-        Ok((
-            pos_word,
-            candidates
-                .map(|w| Pair {
-                    display: w.to_string(),
-                    replacement: w.to_string(),
-                })
-                .collect(),
-        ))
     }
 }
 
