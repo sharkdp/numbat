@@ -86,6 +86,14 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
                 callable: Callable::Function(atan2),
             },
         );
+        m.insert(
+            "ln",
+            ForeignFunction {
+                name: "ln".into(),
+                arity: 1..=1,
+                callable: Callable::Function(ln),
+            },
+        );
 
         m
     })
@@ -157,6 +165,13 @@ fn sin(args: &[Quantity]) -> Quantity {
 
     let input = args[0].as_scalar().unwrap().to_f64();
     Quantity::from_scalar(input.sin())
+}
+
+fn ln(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.ln())
 }
 
 fn atan2(args: &[Quantity]) -> Quantity {

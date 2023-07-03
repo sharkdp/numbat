@@ -210,17 +210,25 @@ let speed_of_light = 299792458 meter / second
 
 ## Mathematical functions
 
-# TODO: implement these as foreign functions? => benchmark
-fn sqrt<D>(x: D^2) -> D = x^(1/2)
-fn sqr<D>(x: D) -> D^2 = x^2
-fn exp(x: Scalar) -> Scalar = e^x
-
 # Foreign functions
 
 fn abs<T>(x: T) -> T
 fn round<T>(x: T) -> T
 fn sin(x: Scalar) -> Scalar
 fn atan2<T>(y: T, x: T) -> Scalar
+fn ln(x: Scalar) -> Scalar
+
+# TODO: implement these as foreign functions? => benchmark
+fn sqrt<D>(x: D^2) -> D = x^(1/2)
+fn sqr<D>(x: D) -> D^2 = x^2
+
+fn exp(x: Scalar) -> Scalar = e^x
+
+fn cos(x: Scalar) -> Scalar = sin(x + π / 2)
+fn tan(x: Scalar) = sin(x) / cos(x)
+
+fn log10(x: Scalar) -> Scalar = ln(x) / ln(10)
+fn log2(x: Scalar) -> Scalar = ln(x) / ln(2)
 
 ### Physics functions
 
