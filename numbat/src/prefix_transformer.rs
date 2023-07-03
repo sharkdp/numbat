@@ -55,7 +55,11 @@ impl Transformer {
         decorators.iter().any(|d| d == &decorator)
     }
 
-    fn register_name_and_aliases(&mut self, name: &String, decorators: &[Decorator]) -> Result<()> {
+    pub(crate) fn register_name_and_aliases(
+        &mut self,
+        name: &String,
+        decorators: &[Decorator],
+    ) -> Result<()> {
         let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
         let binary_prefixes = Self::has_decorator(decorators, Decorator::BinaryPrefixes);
         for (alias, accepts_prefix) in decorator::name_and_aliases(name, decorators) {

@@ -19,14 +19,14 @@ impl PrettyPrint for BinaryOperator {
     fn pretty_print(&self) -> Markup {
         use BinaryOperator::*;
 
-        m::operator(match self {
-            Add => "+",
-            Sub => "-",
-            Mul => "×",
-            Div => "/",
-            Power => "^",
-            ConvertTo => "→",
-        })
+        match self {
+            Add => m::text(" ") + m::operator("+") + m::text(" "),
+            Sub => m::text(" ") + m::operator("-") + m::text(" "),
+            Mul => m::text(" ") + m::operator("×") + m::text(" "),
+            Div => m::text(" ") + m::operator("/") + m::text(" "),
+            Power => m::operator("^"),
+            ConvertTo => m::text(" ") + m::operator("→") + m::text(" "),
+        }
     }
 }
 
@@ -77,47 +77,148 @@ pub(crate) use negate;
 #[cfg(test)]
 pub(crate) use scalar;
 
+fn pretty_scalar(Number(n): Number) -> Markup {
+    m::value(format!("{n}"))
+}
+
+fn with_parens(expr: &Expression) -> Markup {
+    match expr {
+        Expression::Scalar(_)
+        | Expression::Identifier(_)
+        | Expression::UnitIdentifier(_, _)
+        | Expression::FunctionCall(_, _) => expr.pretty_print(),
+        Expression::Negate(_) | Expression::BinaryOperator(_, _, _) => {
+            m::operator("(") + expr.pretty_print() + m::operator(")")
+        }
+    }
+}
+
+/// Add parens, if needed -- liberal version, can not be used for exponentiation.
+fn with_parens_liberal(expr: &Expression) -> Markup {
+    match expr {
+        Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs)
+            if matches!(**lhs, Expression::Scalar(_))
+                && matches!(**rhs, Expression::UnitIdentifier(_, _)) =>
+        {
+            expr.pretty_print()
+        }
+        _ => with_parens(expr),
+    }
+}
+
+fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -> Markup {
+    match op {
+        BinaryOperator::ConvertTo => {
+            // never needs parens, it has the lowest precedence:
+            lhs.pretty_print() + op.pretty_print() + rhs.pretty_print()
+        }
+        BinaryOperator::Mul => match (lhs, rhs) {
+            (Expression::Scalar(s), Expression::UnitIdentifier(prefix, name)) => {
+                // Fuse multiplication of a scalar and a unit to a quantity
+                pretty_scalar(*s) + m::text(" ") + m::unit(format!("{}{}", prefix, name))
+            }
+            (Expression::Scalar(s), Expression::Identifier(name)) => {
+                // Fuse multiplication of a scalar and identifier
+                pretty_scalar(*s) + m::text(" ") + m::identifier(name)
+            }
+            _ => {
+                let add_parens_if_needed = |expr: &Expression| {
+                    if matches!(
+                        expr,
+                        Expression::BinaryOperator(BinaryOperator::Power, _, _)
+                            | Expression::BinaryOperator(BinaryOperator::Mul, _, _)
+                    ) {
+                        expr.pretty_print()
+                    } else {
+                        with_parens_liberal(expr)
+                    }
+                };
+
+                add_parens_if_needed(lhs) + op.pretty_print() + add_parens_if_needed(rhs)
+            }
+        },
+        BinaryOperator::Div => {
+            let lhs_add_parens_if_needed = |expr: &Expression| {
+                if matches!(
+                    expr,
+                    Expression::BinaryOperator(BinaryOperator::Power, _, _)
+                        | Expression::BinaryOperator(BinaryOperator::Mul, _, _)
+                ) {
+                    expr.pretty_print()
+                } else {
+                    with_parens_liberal(expr)
+                }
+            };
+            let rhs_add_parens_if_needed = |expr: &Expression| {
+                if matches!(
+                    expr,
+                    Expression::BinaryOperator(BinaryOperator::Power, _, _)
+                ) {
+                    expr.pretty_print()
+                } else {
+                    with_parens_liberal(expr)
+                }
+            };
+
+            lhs_add_parens_if_needed(lhs) + op.pretty_print() + rhs_add_parens_if_needed(rhs)
+        }
+        BinaryOperator::Add => {
+            let add_parens_if_needed = |expr: &Expression| {
+                if matches!(
+                    expr,
+                    Expression::BinaryOperator(BinaryOperator::Power, _, _)
+                        | Expression::BinaryOperator(BinaryOperator::Mul, _, _)
+                        | Expression::BinaryOperator(BinaryOperator::Add, _, _)
+                ) {
+                    expr.pretty_print()
+                } else {
+                    with_parens_liberal(expr)
+                }
+            };
+
+            add_parens_if_needed(lhs) + op.pretty_print() + add_parens_if_needed(rhs)
+        }
+        BinaryOperator::Sub => {
+            let add_parens_if_needed = |expr: &Expression| {
+                if matches!(
+                    expr,
+                    Expression::BinaryOperator(BinaryOperator::Power, _, _)
+                        | Expression::BinaryOperator(BinaryOperator::Mul, _, _)
+                ) {
+                    expr.pretty_print()
+                } else {
+                    with_parens_liberal(expr)
+                }
+            };
+
+            add_parens_if_needed(lhs) + op.pretty_print() + add_parens_if_needed(rhs)
+        }
+        _ => with_parens(lhs) + op.pretty_print() + with_parens(rhs),
+    }
+}
+
 impl PrettyPrint for Expression {
     fn pretty_print(&self) -> Markup {
         use Expression::*;
 
         match self {
-            Scalar(Number(n)) => m::value(format!("{n}")),
+            Scalar(n) => pretty_scalar(*n),
             Identifier(name) => m::identifier(name),
             UnitIdentifier(prefix, name) => m::unit(format!("{}{}", prefix, name)),
             Negate(rhs) => m::operator("-") + rhs.pretty_print(),
-            BinaryOperator(op, lhs, rhs) => {
-                m::operator("(")
-                    + lhs.pretty_print()
-                    + m::text(" ")
-                    + op.pretty_print()
-                    + m::text(" ")
-                    + rhs.pretty_print()
-                    + m::operator(")")
-            }
+            BinaryOperator(op, lhs, rhs) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(name, args) => {
                 m::identifier(name)
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
                         args.iter().map(|e| e.pretty_print()),
-                        m::operator(","),
+                        m::operator(",") + m::text(" "),
                     )
                     .sum()
                     + m::operator(")")
             }
         }
     }
-}
-
-#[test]
-fn expression_pretty_print() {
-    let expr = binop!(
-        scalar!(2.0),
-        Mul,
-        binop!(negate!(scalar!(3.0)), Add, scalar!(4.0))
-    );
-
-    assert_eq!(expr.pretty_print().to_string(), "(2 × (-3 + 4))");
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -359,5 +460,71 @@ impl PrettyPrint for Statement {
                     + m::operator(")")
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        markup::{Formatter, PlainTextFormatter},
+        prefix_transformer::Transformer,
+    };
+
+    #[test]
+    fn expression_pretty_print() {
+        let expr = binop!(
+            scalar!(2.0),
+            Mul,
+            binop!(negate!(scalar!(3.0)), Add, scalar!(4.0))
+        );
+
+        assert_eq!(expr.pretty_print().to_string(), "2 × ((-3) + 4)");
+    }
+
+    fn parse_and_pretty_print(code: &str) -> String {
+        let mut transformer = Transformer::new();
+        transformer
+            .register_name_and_aliases(
+                &"meter".into(),
+                &[
+                    Decorator::Aliases(vec![("m".into(), Some(AcceptsPrefix::only_short()))]),
+                    Decorator::MetricPrefixes,
+                ],
+            )
+            .unwrap();
+
+        let statements = crate::parse(code).unwrap();
+        let markup = transformer.transform(statements).unwrap()[0].pretty_print();
+
+        (PlainTextFormatter {}).format(&markup, false)
+    }
+
+    fn equal_pretty(input: &str, output: &str) {
+        assert_eq!(parse_and_pretty_print(input), output);
+    }
+
+    #[test]
+    fn pretty_print() {
+        equal_pretty("2+3", "2 + 3");
+        equal_pretty("2*3", "2 × 3");
+        equal_pretty("2^3", "2^3");
+        // equal_pretty("2km", "2 km"); // TODO
+        equal_pretty("2kilometer", "2 kilometer");
+        // equal_pretty("sin(30°)", "sin(30°)"); // TODO
+        equal_pretty("2*3*4", "2 × 3 × 4");
+        equal_pretty("2*(3*4)", "2 × 3 × 4");
+        equal_pretty("2+3+4", "2 + 3 + 4");
+        equal_pretty("2+(3+4)", "2 + 3 + 4");
+        // equal_pretty("atan(30cm / 2m)", "atan(30 cm / 2 m)"); // TODO
+        // equal_pretty("1mrad -> °", "1 mrad ➞ °"); // TODO
+        // equal_pretty("2km+2cm -> in", "2 km + 2 cm ➞ in"); // TODO
+        equal_pretty("2^3 + 4^5", "2^3 + 4^5");
+        equal_pretty("2^3 - 4^5", "2^3 - 4^5");
+        equal_pretty("2^3 * 4^5", "2^3 × 4^5");
+        equal_pretty("2 * 3 + 4 * 5", "2 × 3 + 4 × 5");
+        // equal_pretty("2 * 3 / 4", "2 × (3 / 4)"); // TODO
+        // equal_pretty("123.123 km^2 / s^2", "123.123 × km^2 / s^2"); // TODO
+        equal_pretty(" sin(  2  ,  3  ,  4   )  ", "sin(2, 3, 4)");
     }
 }

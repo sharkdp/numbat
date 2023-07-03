@@ -148,7 +148,7 @@ pub trait Formatter {
     }
 }
 
-struct PlainTextFormatter;
+pub(crate) struct PlainTextFormatter;
 
 impl Formatter for PlainTextFormatter {
     fn format_part(&self, FormattedString(_, _, text): &FormattedString) -> String {
