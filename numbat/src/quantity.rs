@@ -1,5 +1,6 @@
 use crate::arithmetic::{Power, Rational};
 use crate::number::Number;
+use crate::pretty_print::PrettyPrint;
 use crate::unit::{Unit, UnitFactor};
 
 use itertools::Itertools;
@@ -252,6 +253,28 @@ impl std::fmt::Display for Quantity {
         let mut unit_canonicalized = self.unit.clone();
         unit_canonicalized.canonicalize();
         write!(f, "{:.6} {}", self.value.to_f64(), unit_canonicalized)
+    }
+}
+
+impl PrettyPrint for Quantity {
+    fn pretty_print(&self) -> crate::markup::Markup {
+        use crate::markup;
+
+        let formatted_number = format!("{:.6}", self.unsafe_value().to_f64());
+        let formatted_number = formatted_number.trim_end_matches('0');
+        let formatted_number = if formatted_number.ends_with('.') {
+            format!("{}0", formatted_number)
+        } else {
+            formatted_number.to_string()
+        };
+
+        let output_markup = markup::text("    ")
+            + markup::operator("=")
+            + markup::text(" ")
+            + markup::value(formatted_number)
+            + markup::text(" ")
+            + markup::unit(format!("{}", self.unit()));
+        output_markup
     }
 }
 
