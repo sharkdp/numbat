@@ -1,10 +1,9 @@
 use std::fmt::Display;
 
-use num_rational::Ratio;
 use num_traits::{Signed, ToPrimitive, Zero};
 
 use crate::{
-    arithmetic::{Exponent, Power, Rational},
+    arithmetic::{pretty_exponent, Exponent, Power, Rational},
     number::Number,
     prefix::Prefix,
     product::{Canonicalize, Product},
@@ -235,32 +234,6 @@ impl Unit {
     #[cfg(test)]
     pub fn bit() -> Self {
         Self::new_base("bit", "B")
-    }
-}
-
-fn pretty_exponent(e: &Exponent) -> String {
-    if e == &Ratio::from_integer(5) {
-        "⁵".into()
-    } else if e == &Ratio::from_integer(4) {
-        "⁴".into()
-    } else if e == &Ratio::from_integer(3) {
-        "³".into()
-    } else if e == &Ratio::from_integer(2) {
-        "²".into()
-    } else if e == &Ratio::from_integer(1) {
-        "".into()
-    } else if e == &Ratio::from_integer(-1) {
-        "⁻¹".into()
-    } else if e == &Ratio::from_integer(-2) {
-        "⁻²".into()
-    } else if e == &Ratio::from_integer(-3) {
-        "⁻³".into()
-    } else if e == &Ratio::from_integer(-4) {
-        "⁻⁴".into()
-    } else if e == &Ratio::from_integer(-5) {
-        "⁻⁵".into()
-    } else {
-        format!("^{}", e)
     }
 }
 

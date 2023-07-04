@@ -4,7 +4,7 @@ use num_traits::Zero;
 use thiserror::Error;
 
 use crate::{
-    arithmetic::{Exponent, Power, Rational},
+    arithmetic::{pretty_exponent, Exponent, Power, Rational},
     product::{Canonicalize, Product},
 };
 
@@ -55,8 +55,18 @@ pub type BaseRepresentation = Product<BaseRepresentationFactor, true>;
 
 impl Display for BaseRepresentation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for BaseRepresentationFactor(name, exp) in self.iter() {
-            write!(f, "{}^({}) ", name, exp)?;
+        let num_factors = self.iter().count();
+
+        if num_factors == 0 {
+            write!(f, "Scalar")?;
+        } else {
+            for (n, BaseRepresentationFactor(name, exp)) in self.iter().enumerate() {
+                write!(f, "{}{}", name, pretty_exponent(exp))?;
+
+                if n != self.iter().count() - 1 {
+                    write!(f, " × ")?;
+                }
+            }
         }
         Ok(())
     }
