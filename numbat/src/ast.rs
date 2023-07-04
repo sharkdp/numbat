@@ -194,10 +194,10 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             add_parens_if_needed(lhs) + op.pretty_print() + add_parens_if_needed(rhs)
         }
         BinaryOperator::Power if matches!(rhs, Expression::Scalar(n) if n.to_f64() == 2.0) => {
-            lhs.pretty_print() + m::operator("²")
+            with_parens(lhs) + m::operator("²")
         }
         BinaryOperator::Power if matches!(rhs, Expression::Scalar(n) if n.to_f64() == 3.0) => {
-            lhs.pretty_print() + m::operator("³")
+            with_parens(lhs) + m::operator("³")
         }
         _ => with_parens(lhs) + op.pretty_print() + with_parens(rhs),
     }
@@ -211,7 +211,7 @@ impl PrettyPrint for Expression {
             Scalar(n) => pretty_scalar(*n),
             Identifier(name) => m::identifier(name),
             UnitIdentifier(prefix, _name, full_name) => m::unit(format!("{}{}", prefix, full_name)),
-            Negate(rhs) => m::operator("-") + rhs.pretty_print(),
+            Negate(rhs) => m::operator("-") + with_parens(rhs),
             BinaryOperator(op, lhs, rhs) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(name, args) => {
                 m::identifier(name)
@@ -480,7 +480,7 @@ mod tests {
         assert_eq!(expr.pretty_print().to_string(), "2 × ((-3) + 4)");
     }
 
-    fn parse_and_pretty_print(code: &str) -> String {
+    fn parse(code: &str) -> Statement {
         let mut transformer = Transformer::new();
         transformer
             .register_name_and_aliases(
@@ -523,17 +523,21 @@ mod tests {
             .unwrap();
 
         let statements = crate::parse(code).unwrap();
-        let markup = transformer.transform(statements).unwrap()[0].pretty_print();
+        transformer.transform(statements).unwrap()[0].clone()
+    }
+
+    fn pretty_print(stmt: &Statement) -> String {
+        let markup = stmt.pretty_print();
 
         (PlainTextFormatter {}).format(&markup, false)
     }
 
     fn equal_pretty(input: &str, output: &str) {
-        assert_eq!(parse_and_pretty_print(input), output);
+        assert_eq!(pretty_print(&parse(input)), output);
     }
 
     #[test]
-    fn pretty_print() {
+    fn test_pretty_print_basic() {
         equal_pretty("2+3", "2 + 3");
         equal_pretty("2*3", "2 × 3");
         equal_pretty("2^3", "2³");
@@ -554,5 +558,53 @@ mod tests {
         equal_pretty("2 * 3 / 4", "2 × 3 / 4");
         equal_pretty("123.123 km² / s²", "123.123 × kilometer² / second²");
         equal_pretty(" sin(  2  ,  3  ,  4   )  ", "sin(2, 3, 4)");
+    }
+
+    fn pretty_print_roundtrip_check(code: &str) {
+        let ast1 = parse(code);
+        let ast2 = parse(&pretty_print(&ast1));
+        assert_eq!(ast1, ast2);
+    }
+
+    #[test]
+    fn test_pretty_print_roundtrip_check() {
+        pretty_print_roundtrip_check("1.0");
+        pretty_print_roundtrip_check("2");
+        pretty_print_roundtrip_check("1 + 2");
+
+        pretty_print_roundtrip_check("-2.3e-12387");
+        pretty_print_roundtrip_check("2.3e-12387");
+        pretty_print_roundtrip_check("18379173");
+        pretty_print_roundtrip_check("2+3");
+        pretty_print_roundtrip_check("2+3*5");
+        pretty_print_roundtrip_check("-3^4+2/(4+2*3)");
+        pretty_print_roundtrip_check("1-2-3-4-(5-6-7)");
+        pretty_print_roundtrip_check("1/2/3/4/(5/6/7)");
+        pretty_print_roundtrip_check("kg");
+        pretty_print_roundtrip_check("2meter/second");
+        pretty_print_roundtrip_check("a+b*c^d-e*f");
+        pretty_print_roundtrip_check("sin(x)^3");
+        pretty_print_roundtrip_check("sin(cos(atanh(x)+2))^3");
+        pretty_print_roundtrip_check("2^3^4^5");
+        pretty_print_roundtrip_check("(2^3)^(4^5)");
+        pretty_print_roundtrip_check("sqrt(1.4^2 + 1.5^2) * cos(pi/3)^2");
+        pretty_print_roundtrip_check("40 kilometer * 9.8meter/second^2 * 150centimeter");
+        pretty_print_roundtrip_check("4/3 * pi * r³");
+        pretty_print_roundtrip_check("vol * density -> kg");
+        pretty_print_roundtrip_check("atan(30 centimeter / 2 meter)");
+        pretty_print_roundtrip_check("500kilometer/second -> centimeter/second");
+        pretty_print_roundtrip_check("länge * x_2 * µ * _prefixed");
+        pretty_print_roundtrip_check("2meter^3");
+        pretty_print_roundtrip_check("(2meter)^3");
+        pretty_print_roundtrip_check("-sqrt(-30meter^3)");
+        pretty_print_roundtrip_check("-3^4");
+        pretty_print_roundtrip_check("(-3)^4");
+        pretty_print_roundtrip_check("sin(2,3,4)");
+
+        // TODO: when we support factorials
+        // pretty_print_roundtrip_check("5!³");
+        // pretty_print_roundtrip_check("2^3!");
+        // pretty_print_roundtrip_check("-3!");
+        // pretty_print_roundtrip_check("(-3)!");
     }
 }
