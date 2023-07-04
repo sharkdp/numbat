@@ -17,7 +17,7 @@ impl Formatter for ANSIFormatter {
             FormatType::Identifier => text.normal(),
             FormatType::TypeIdentifier => text.bright_yellow(),
             FormatType::Operator => text.bold(),
-            FormatType::Decorator => text.yellow(),
+            FormatType::Decorator => text.green(),
         })
         .to_string()
     }

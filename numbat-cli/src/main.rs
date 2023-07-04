@@ -209,13 +209,14 @@ impl Cli {
                     for statement in &statements {
                         let repr = ANSIFormatter {}.format(&statement.pretty_print(), true);
                         println!("{}", repr);
+                        println!();
                     }
+                } else {
+                    println!();
                 }
 
                 match interpreter_result {
                     InterpreterResult::Quantity(quantity) => {
-                        println!();
-
                         let q_markup = markup::whitespace("    ")
                             + markup::operator("=")
                             + markup::space()
