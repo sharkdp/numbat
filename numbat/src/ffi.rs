@@ -71,6 +71,22 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
             },
         );
         m.insert(
+            "floor",
+            ForeignFunction {
+                name: "floor".into(),
+                arity: 1..=1,
+                callable: Callable::Function(floor),
+            },
+        );
+        m.insert(
+            "ceil",
+            ForeignFunction {
+                name: "ceil".into(),
+                arity: 1..=1,
+                callable: Callable::Function(ceil),
+            },
+        );
+        m.insert(
             "sin",
             ForeignFunction {
                 name: "sin".into(),
@@ -230,6 +246,20 @@ fn round(args: &[Quantity]) -> Quantity {
 
     let value = args[0].unsafe_value().to_f64();
     Quantity::new(Number::from_f64(value.round()), args[0].unit().clone())
+}
+
+fn floor(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let value = args[0].unsafe_value().to_f64();
+    Quantity::new(Number::from_f64(value.floor()), args[0].unit().clone())
+}
+
+fn ceil(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let value = args[0].unsafe_value().to_f64();
+    Quantity::new(Number::from_f64(value.ceil()), args[0].unit().clone())
 }
 
 fn sin(args: &[Quantity]) -> Quantity {

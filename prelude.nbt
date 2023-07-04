@@ -219,6 +219,8 @@ let ℏ = planck_constant / 2π
 
 fn abs<T>(x: T) -> T
 fn round<T>(x: T) -> T
+fn floor<T>(x: T) -> T
+fn ceil<T>(x: T) -> T
 
 fn sin(x: Scalar) -> Scalar
 fn asin(x: Scalar) -> Scalar

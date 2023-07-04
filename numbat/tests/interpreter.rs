@@ -103,8 +103,8 @@ fn test_other_functions() {
     expect_output("log10(100000)", "5");
     expect_output("log(e^15)", "15");
     expect_output("ln(e^15)", "15");
-    // expect_output("ceil(3.1)", "4");
-    // expect_output("floor(3.9)", "3");
+    expect_output("ceil(3.1)", "4");
+    expect_output("floor(3.9)", "3");
     expect_output("round(3.9)", "4");
     expect_output("round(3.1)", "3");
 }
