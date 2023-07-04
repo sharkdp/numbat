@@ -194,6 +194,14 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
         );
 
         m.insert(
+            "exp",
+            ForeignFunction {
+                name: "exp".into(),
+                arity: 1..=1,
+                callable: Callable::Function(exp),
+            },
+        );
+        m.insert(
             "ln",
             ForeignFunction {
                 name: "ln".into(),
@@ -387,6 +395,13 @@ fn atanh(args: &[Quantity]) -> Quantity {
 
     let input = args[0].as_scalar().unwrap().to_f64();
     Quantity::from_scalar(input.atanh())
+}
+
+fn exp(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.exp())
 }
 
 fn ln(args: &[Quantity]) -> Quantity {

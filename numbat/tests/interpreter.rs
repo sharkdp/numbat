@@ -75,6 +75,7 @@ fn test_function_inverses() {
     expect_output("log(exp(0.1234))", "0.1234");
     expect_output("log10(10^0.1234)", "0.1234");
     expect_output("log2(2^0.1234)", "0.1234");
+    expect_output("sqr(sqrt(0.1234))", "0.1234");
 
     expect_output("asin(sin(0.1234))", "0.1234");
     expect_output("acos(cos(0.1234))", "0.1234");
@@ -85,6 +86,7 @@ fn test_function_inverses() {
     expect_output("exp(log(0.1234))", "0.1234");
     expect_output("10^(log10(0.1234))", "0.1234");
     expect_output("2^(log2(0.1234))", "0.1234");
+    expect_output("sqrt(sqr(0.1234))", "0.1234");
 }
 
 #[test]

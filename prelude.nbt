@@ -215,8 +215,6 @@ let ℏ = planck_constant / 2π
 
 ## Mathematical functions
 
-# Foreign functions
-
 fn abs<T>(x: T) -> T
 fn round<T>(x: T) -> T
 fn floor<T>(x: T) -> T
@@ -237,16 +235,14 @@ fn asinh(x: Scalar) -> Scalar
 fn acosh(x: Scalar) -> Scalar
 fn atanh(x: Scalar) -> Scalar
 
+fn exp(x: Scalar) -> Scalar
 fn ln(x: Scalar) -> Scalar
 fn log(x: Scalar) -> Scalar = ln(x)
 fn log10(x: Scalar) -> Scalar
 fn log2(x: Scalar) -> Scalar
 
-# TODO: implement these as foreign functions? => benchmark
 fn sqrt<D>(x: D^2) -> D = x^(1/2)
 fn sqr<D>(x: D) -> D^2 = x^2
-
-fn exp(x: Scalar) -> Scalar = e^x
 
 ### Physics functions
 
