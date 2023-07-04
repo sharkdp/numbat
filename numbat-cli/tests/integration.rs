@@ -11,7 +11,7 @@ fn pass_expression_on_command_line() {
         .arg("2 meter + 3 meter")
         .assert()
         .success()
-        .stdout(predicates::str::contains("5 meter"));
+        .stdout(predicates::str::contains("5 m"));
 
     numbat()
         .arg("--expression")
@@ -52,7 +52,7 @@ fn print_calls() {
         .arg("../examples/print.nbt")
         .assert()
         .success()
-        .stdout(predicates::str::contains("1.000000 \n2.000000 meter"));
+        .stdout(predicates::str::contains("1.000000 \n2.000000 m"));
 }
 
 #[test]

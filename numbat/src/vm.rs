@@ -159,8 +159,9 @@ pub struct Vm {
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
     pub constants: Vec<Constant>,
 
-    /// The names of global variables or [Unit]s.
-    global_identifiers: Vec<String>,
+    /// The names of global variables or [Unit]s. The second
+    /// entry is the canonical name for units.
+    global_identifiers: Vec<(String, Option<String>)>,
 
     /// A dictionary of global variables and their respective values.
     globals: HashMap<String, Quantity>,
@@ -223,12 +224,23 @@ impl Vm {
         (self.constants.len() - 1) as u8 // TODO: this can overflow, see above
     }
 
-    pub fn add_global_identifier(&mut self, identifier: &str) -> u8 {
-        if let Some(idx) = self.global_identifiers.iter().position(|i| i == identifier) {
+    pub fn add_global_identifier(
+        &mut self,
+        identifier: &str,
+        canonical_unit_name: Option<&str>,
+    ) -> u8 {
+        if let Some(idx) = self
+            .global_identifiers
+            .iter()
+            .position(|i| i.0 == identifier)
+        {
             return idx as u8;
         }
 
-        self.global_identifiers.push(identifier.to_owned());
+        self.global_identifiers.push((
+            identifier.to_owned(),
+            canonical_unit_name.map(|s| s.to_owned()),
+        ));
         assert!(self.global_identifiers.len() <= u8::MAX as usize);
         (self.global_identifiers.len() - 1) as u8 // TODO: this can overflow, see above
     }
@@ -274,7 +286,7 @@ impl Vm {
         }
         println!(".IDENTIFIERS");
         for (idx, identifier) in self.global_identifiers.iter().enumerate() {
-            println!("  {:04} {}", idx, identifier);
+            println!("  {:04} {}", idx, identifier.0);
         }
         for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
             println!(".CODE {idx} ({name})", idx = idx, name = function_name);
@@ -388,7 +400,8 @@ impl Vm {
                         defining_unit.to_base_unit_representation();
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
-                        unit_name,
+                        &unit_name.0,
+                        unit_name.1.as_ref().unwrap(),
                         *conversion_value.unsafe_value() * factor,
                         base_unit_representation,
                     ));
@@ -399,7 +412,7 @@ impl Vm {
                     let identifier_idx = self.read_byte();
                     let quantity = self.pop();
                     let identifier: String =
-                        self.global_identifiers[identifier_idx as usize].clone();
+                        self.global_identifiers[identifier_idx as usize].0.clone();
 
                     self.globals.insert(identifier, quantity);
 
@@ -407,7 +420,7 @@ impl Vm {
                 }
                 Op::GetVariable => {
                     let identifier_idx = self.read_byte();
-                    let identifier = &self.global_identifiers[identifier_idx as usize];
+                    let identifier = &self.global_identifiers[identifier_idx as usize].0;
 
                     let quantity = self.globals.get(identifier).expect("Variable exists");
 

@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use crate::number::Number;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -73,50 +71,92 @@ impl Prefix {
     pub fn is_binary(&self) -> bool {
         matches!(self, Prefix::Binary(_))
     }
-}
 
-impl Display for Prefix {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    pub fn to_string_short(&self) -> String {
         match self {
-            Prefix::Metric(-30) => write!(f, "quecto"),
-            Prefix::Metric(-27) => write!(f, "ronto"),
-            Prefix::Metric(-24) => write!(f, "yocto"),
-            Prefix::Metric(-21) => write!(f, "zepto"),
-            Prefix::Metric(-18) => write!(f, "atto"),
-            Prefix::Metric(-15) => write!(f, "femto"),
-            Prefix::Metric(-12) => write!(f, "pico"),
-            Prefix::Metric(-9) => write!(f, "nano"),
-            Prefix::Metric(-6) => write!(f, "micro"),
-            Prefix::Metric(-3) => write!(f, "milli"),
-            Prefix::Metric(-2) => write!(f, "centi"),
-            Prefix::Metric(-1) => write!(f, "deci"),
-            Prefix::Metric(0) => write!(f, ""),
-            Prefix::Metric(1) => write!(f, "deca"),
-            Prefix::Metric(2) => write!(f, "hecto"),
-            Prefix::Metric(3) => write!(f, "kilo"),
-            Prefix::Metric(6) => write!(f, "mega"),
-            Prefix::Metric(9) => write!(f, "giga"),
-            Prefix::Metric(12) => write!(f, "tera"),
-            Prefix::Metric(15) => write!(f, "peta"),
-            Prefix::Metric(18) => write!(f, "exa"),
-            Prefix::Metric(21) => write!(f, "zetta"),
-            Prefix::Metric(24) => write!(f, "yotta"),
-            Prefix::Metric(27) => write!(f, "ronna"),
-            Prefix::Metric(30) => write!(f, "quetta"),
+            Prefix::Metric(-30) => "q".into(),
+            Prefix::Metric(-27) => "r".into(),
+            Prefix::Metric(-24) => "y".into(),
+            Prefix::Metric(-21) => "z".into(),
+            Prefix::Metric(-18) => "a".into(),
+            Prefix::Metric(-15) => "f".into(),
+            Prefix::Metric(-12) => "p".into(),
+            Prefix::Metric(-9) => "n".into(),
+            Prefix::Metric(-6) => "µ".into(),
+            Prefix::Metric(-3) => "m".into(),
+            Prefix::Metric(-2) => "c".into(),
+            Prefix::Metric(-1) => "d".into(),
+            Prefix::Metric(0) => "".into(),
+            Prefix::Metric(1) => "da".into(),
+            Prefix::Metric(2) => "h".into(),
+            Prefix::Metric(3) => "k".into(),
+            Prefix::Metric(6) => "M".into(),
+            Prefix::Metric(9) => "G".into(),
+            Prefix::Metric(12) => "T".into(),
+            Prefix::Metric(15) => "P".into(),
+            Prefix::Metric(18) => "E".into(),
+            Prefix::Metric(21) => "Z".into(),
+            Prefix::Metric(24) => "Y".into(),
+            Prefix::Metric(27) => "R".into(),
+            Prefix::Metric(30) => "Q".into(),
 
-            Prefix::Metric(n) => write!(f, "<prefix 10^{}>", n),
+            Prefix::Metric(n) => format!("<prefix 10^{}>", n),
 
-            Prefix::Binary(0) => write!(f, ""),
-            Prefix::Binary(10) => write!(f, "kibi"),
-            Prefix::Binary(20) => write!(f, "mebi"),
-            Prefix::Binary(30) => write!(f, "gibi"),
-            Prefix::Binary(40) => write!(f, "tebi"),
-            Prefix::Binary(50) => write!(f, "pebi"),
-            Prefix::Binary(60) => write!(f, "exbi"),
-            Prefix::Binary(70) => write!(f, "zebi"),
-            Prefix::Binary(80) => write!(f, "yobi"),
+            Prefix::Binary(0) => "".into(),
+            Prefix::Binary(10) => "Ki".into(),
+            Prefix::Binary(20) => "Mi".into(),
+            Prefix::Binary(30) => "Gi".into(),
+            Prefix::Binary(40) => "Ti".into(),
+            Prefix::Binary(50) => "Pi".into(),
+            Prefix::Binary(60) => "Ei".into(),
+            Prefix::Binary(70) => "Zi".into(),
+            Prefix::Binary(80) => "Yi".into(),
 
-            Prefix::Binary(n) => write!(f, "<prefix 2^{}>", n),
+            Prefix::Binary(n) => format!("<prefix 2^{}>", n),
+        }
+    }
+
+    pub fn to_string_long(&self) -> String {
+        match self {
+            Prefix::Metric(-30) => "quecto".into(),
+            Prefix::Metric(-27) => "ronto".into(),
+            Prefix::Metric(-24) => "yocto".into(),
+            Prefix::Metric(-21) => "zepto".into(),
+            Prefix::Metric(-18) => "atto".into(),
+            Prefix::Metric(-15) => "femto".into(),
+            Prefix::Metric(-12) => "pico".into(),
+            Prefix::Metric(-9) => "nano".into(),
+            Prefix::Metric(-6) => "micro".into(),
+            Prefix::Metric(-3) => "milli".into(),
+            Prefix::Metric(-2) => "centi".into(),
+            Prefix::Metric(-1) => "deci".into(),
+            Prefix::Metric(0) => "".into(),
+            Prefix::Metric(1) => "deca".into(),
+            Prefix::Metric(2) => "hecto".into(),
+            Prefix::Metric(3) => "kilo".into(),
+            Prefix::Metric(6) => "mega".into(),
+            Prefix::Metric(9) => "giga".into(),
+            Prefix::Metric(12) => "tera".into(),
+            Prefix::Metric(15) => "peta".into(),
+            Prefix::Metric(18) => "exa".into(),
+            Prefix::Metric(21) => "zetta".into(),
+            Prefix::Metric(24) => "yotta".into(),
+            Prefix::Metric(27) => "ronna".into(),
+            Prefix::Metric(30) => "quetta".into(),
+
+            Prefix::Metric(n) => format!("<prefix 10^{}>", n),
+
+            Prefix::Binary(0) => "".into(),
+            Prefix::Binary(10) => "kibi".into(),
+            Prefix::Binary(20) => "mebi".into(),
+            Prefix::Binary(30) => "gibi".into(),
+            Prefix::Binary(40) => "tebi".into(),
+            Prefix::Binary(50) => "pebi".into(),
+            Prefix::Binary(60) => "exbi".into(),
+            Prefix::Binary(70) => "zebi".into(),
+            Prefix::Binary(80) => "yobi".into(),
+
+            Prefix::Binary(n) => format!("<prefix 2^{}>", n),
         }
     }
 }

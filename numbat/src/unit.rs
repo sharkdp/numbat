@@ -23,6 +23,7 @@ pub enum UnitKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitIdentifier {
     name: String,
+    canonical_name: String,
     kind: UnitKind,
 }
 
@@ -33,7 +34,7 @@ impl UnitIdentifier {
 
     pub fn corresponding_base_unit(&self) -> Unit {
         match &self.kind {
-            UnitKind::Base => Unit::new_base(&self.name),
+            UnitKind::Base => Unit::new_base(&self.name, &self.canonical_name),
             UnitKind::Derived(_, base_unit) => base_unit.clone(),
         }
     }
@@ -118,24 +119,31 @@ impl Unit {
         Self::unity()
     }
 
-    pub fn new_base(name: &str) -> Self {
+    pub fn new_base(name: &str, canonical_name: &str) -> Self {
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
                 name: name.into(),
+                canonical_name: canonical_name.into(),
                 kind: UnitKind::Base,
             },
             exponent: Rational::from_integer(1),
         })
     }
 
-    pub fn new_derived(name: &str, factor: ConversionFactor, base_unit: Unit) -> Self {
+    pub fn new_derived(
+        name: &str,
+        canonical_name: &str,
+        factor: ConversionFactor,
+        base_unit: Unit,
+    ) -> Self {
         assert!(base_unit.iter().all(|f| f.unit_id.is_base()));
 
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
                 name: name.into(),
+                canonical_name: canonical_name.into(),
                 kind: UnitKind::Derived(factor, base_unit),
             },
             exponent: Rational::from_integer(1),
@@ -181,47 +189,52 @@ impl Unit {
 
     #[cfg(test)]
     pub fn meter() -> Self {
-        Self::new_base("meter")
+        Self::new_base("meter", "m")
     }
 
     #[cfg(test)]
     pub fn centimeter() -> Self {
-        Self::new_base("meter").with_prefix(Prefix::centi())
+        Self::new_base("meter", "m").with_prefix(Prefix::centi())
     }
 
     #[cfg(test)]
     pub fn millimeter() -> Self {
-        Self::new_base("meter").with_prefix(Prefix::milli())
+        Self::new_base("meter", "m").with_prefix(Prefix::milli())
     }
 
     #[cfg(test)]
     pub fn kilometer() -> Self {
-        Self::new_base("meter").with_prefix(Prefix::kilo())
+        Self::new_base("meter", "m").with_prefix(Prefix::kilo())
     }
 
     #[cfg(test)]
     pub fn second() -> Self {
-        Self::new_base("second")
+        Self::new_base("second", "s")
     }
 
     #[cfg(test)]
     pub fn hertz() -> Self {
-        Self::new_derived("hertz", Number::from_f64(1.0), Unit::second().powi(-1))
+        Self::new_derived(
+            "hertz",
+            "Hz",
+            Number::from_f64(1.0),
+            Unit::second().powi(-1),
+        )
     }
 
     #[cfg(test)]
     pub fn hour() -> Self {
-        Self::new_derived("hour", Number::from_f64(3600.0), Self::second())
+        Self::new_derived("hour", "h", Number::from_f64(3600.0), Self::second())
     }
 
     #[cfg(test)]
     pub fn mile() -> Self {
-        Self::new_derived("mile", Number::from_f64(1609.344), Self::meter())
+        Self::new_derived("mile", "mi", Number::from_f64(1609.344), Self::meter())
     }
 
     #[cfg(test)]
     pub fn bit() -> Self {
-        Self::new_base("bit")
+        Self::new_base("bit", "B")
     }
 }
 
@@ -234,8 +247,8 @@ impl Display for Unit {
             exponent,
         } in self.iter()
         {
-            result.push_str(&format!("{}", prefix));
-            result.push_str(&base_unit.name);
+            result.push_str(&format!("{}", prefix.to_string_short()));
+            result.push_str(&base_unit.canonical_name);
 
             if exponent == Ratio::from_integer(5) {
                 result.push('⁵');
@@ -284,6 +297,7 @@ mod tests {
                 prefix: Prefix::none(),
                 unit_id: UnitIdentifier {
                     name: "meter".into(),
+                    canonical_name: "m".into(),
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(1),
@@ -292,6 +306,7 @@ mod tests {
                 prefix: Prefix::none(),
                 unit_id: UnitIdentifier {
                     name: "second".into(),
+                    canonical_name: "s".into(),
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(-1),
@@ -354,6 +369,7 @@ mod tests {
                 prefix: Prefix::Metric(-3),
                 unit_id: UnitIdentifier {
                     name: "meter".into(),
+                    canonical_name: "m".into(),
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(1),

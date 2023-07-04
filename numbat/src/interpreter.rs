@@ -85,9 +85,13 @@ mod tests {
         dimension Momentum = Mass * Speed
         dimension Frequency = 1 / Time
 
+        @aliases(m: short)
         unit meter : Length
+
+        @aliases(s: short)
         unit second : Time
-        
+
+        @aliases(Hz: short)
         unit hertz: Frequency = 1 / second
         
         fn sin(x: Scalar) -> Scalar
@@ -155,9 +159,11 @@ mod tests {
 
         assert_evaluates_to(
             "dimension Pixel
+             @aliases(px: short)
              unit pixel : Pixel
              2 * pixel",
-            (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_base("pixel"))).unwrap(),
+            (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_base("pixel", "px")))
+                .unwrap(),
         );
 
         assert_evaluates_to(

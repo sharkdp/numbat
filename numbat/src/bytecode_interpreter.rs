@@ -28,7 +28,7 @@ impl BytecodeInterpreter {
                 if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
                     self.vm.add_op1(Op::GetLocal, position as u8); // TODO: check overflow
                 } else {
-                    let identifier_idx = self.vm.add_global_identifier(identifier);
+                    let identifier_idx = self.vm.add_global_identifier(identifier, None);
                     self.vm.add_op1(Op::GetVariable, identifier_idx);
                 }
             }
@@ -119,7 +119,7 @@ impl BytecodeInterpreter {
             }
             Statement::DeclareVariable(identifier, expr, _dexpr) => {
                 self.compile_expression_with_simplify(expr)?;
-                let identifier_idx = self.vm.add_global_identifier(identifier);
+                let identifier_idx = self.vm.add_global_identifier(identifier, None);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
             Statement::DeclareFunction(name, parameters, Some(expr), _return_type) => {
@@ -150,9 +150,10 @@ impl BytecodeInterpreter {
                     .add_base_unit(unit_name, dexpr.clone())
                     .map_err(RuntimeError::UnitRegistryError)?;
 
-                let constant_idx = self
-                    .vm
-                    .add_constant(Constant::Unit(Unit::new_base(unit_name)));
+                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
+                    unit_name,
+                    &crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
+                )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
                         .insert((Prefix::none(), name.into()), constant_idx);
@@ -165,8 +166,14 @@ impl BytecodeInterpreter {
 
                 let constant_idx = self
                     .vm
-                    .add_constant(Constant::Unit(Unit::new_base("<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
-                let identifier_idx = self.vm.add_global_identifier(unit_name); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
+                    .add_constant(Constant::Unit(Unit::new_base("<dummy>", "<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
+                let identifier_idx = self.vm.add_global_identifier(
+                    unit_name,
+                    Some(&crate::decorator::get_canonical_unit_name(
+                        unit_name.as_str(),
+                        &decorators[..],
+                    )),
+                ); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 
                 self.compile_expression_with_simplify(expr)?;
                 self.vm

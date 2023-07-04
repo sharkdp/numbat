@@ -115,7 +115,9 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
         BinaryOperator::Mul => match (lhs, rhs) {
             (Expression::Scalar(s), Expression::UnitIdentifier(prefix, _name, full_name)) => {
                 // Fuse multiplication of a scalar and a unit to a quantity
-                pretty_scalar(*s) + m::space() + m::unit(format!("{}{}", prefix, full_name))
+                pretty_scalar(*s)
+                    + m::space()
+                    + m::unit(format!("{}{}", prefix.to_string_long(), full_name))
             }
             (Expression::Scalar(s), Expression::Identifier(name)) => {
                 // Fuse multiplication of a scalar and identifier
@@ -210,7 +212,9 @@ impl PrettyPrint for Expression {
         match self {
             Scalar(n) => pretty_scalar(*n),
             Identifier(name) => m::identifier(name),
-            UnitIdentifier(prefix, _name, full_name) => m::unit(format!("{}{}", prefix, full_name)),
+            UnitIdentifier(prefix, _name, full_name) => {
+                m::unit(format!("{}{}", prefix.to_string_long(), full_name))
+            }
             Negate(rhs) => m::operator("-") + with_parens(rhs),
             BinaryOperator(op, lhs, rhs) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(name, args) => {

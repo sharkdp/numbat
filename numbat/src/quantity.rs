@@ -290,7 +290,7 @@ mod tests {
         use approx::assert_relative_eq;
 
         let meter = Unit::meter();
-        let foot = Unit::new_derived("foot", Number::from_f64(0.3048), meter.clone());
+        let foot = Unit::new_derived("foot", "ft", Number::from_f64(0.3048), meter.clone());
 
         let length = Quantity::new(Number::from_f64(2.0), meter.clone());
 

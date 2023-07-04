@@ -33,3 +33,19 @@ pub fn name_and_aliases<'a>(
         Box::new(aliases.into_iter())
     }
 }
+
+pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> String {
+    for decorator in decorators {
+        match decorator {
+            Decorator::Aliases(aliases) => {
+                for (alias, accepts_prefix) in aliases {
+                    if accepts_prefix.map(|ap| ap.short).unwrap_or(false) {
+                        return alias.into();
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    unit_name.into()
+}
