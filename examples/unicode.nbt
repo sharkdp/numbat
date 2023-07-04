@@ -1,0 +1,11 @@
+let c = speed_of_light
+
+let λ = 2 × 300 µm
+let ν = c / λ
+
+assert_eq(ν, 499.7 GHz, 0.1 GHz)
+
+let ω = 2 π ν
+let E = ℏ ω
+
+assert_eq(E, 2 meV, 0.1 meV)
