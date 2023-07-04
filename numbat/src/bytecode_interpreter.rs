@@ -32,7 +32,7 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(Op::GetVariable, identifier_idx);
                 }
             }
-            Expression::UnitIdentifier(prefix, unit_name, _type) => {
+            Expression::UnitIdentifier(prefix, unit_name, _full_name, _type) => {
                 if let Some(index) = self
                     .unit_name_to_constant_index
                     .get(&(*prefix, unit_name.clone()))
@@ -99,7 +99,7 @@ impl BytecodeInterpreter {
         match expr {
             Expression::Scalar(_)
             | Expression::Identifier(_, _)
-            | Expression::UnitIdentifier(_, _, _)
+            | Expression::UnitIdentifier(_, _, _, _)
             | Expression::FunctionCall(_, _, _)
             | Expression::Negate(_, _)
             | Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _, _) => {}

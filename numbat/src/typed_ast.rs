@@ -7,7 +7,7 @@ pub type Type = BaseRepresentation;
 pub enum Expression {
     Scalar(Number),
     Identifier(String, Type),
-    UnitIdentifier(Prefix, String, Type),
+    UnitIdentifier(Prefix, String, String, Type),
     Negate(Box<Expression>, Type),
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>, Type),
     FunctionCall(String, Vec<Expression>, Type),
@@ -29,7 +29,7 @@ impl Expression {
         match self {
             Expression::Scalar(_) => Type::unity(),
             Expression::Identifier(_, type_) => type_.clone(),
-            Expression::UnitIdentifier(_, _, _type) => _type.clone(),
+            Expression::UnitIdentifier(_, _, _, _type) => _type.clone(),
             Expression::Negate(_, type_) => type_.clone(),
             Expression::BinaryOperator(_, _, _, type_) => type_.clone(),
             Expression::FunctionCall(_, _, type_) => type_.clone(),

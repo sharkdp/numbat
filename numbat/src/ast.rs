@@ -34,7 +34,7 @@ impl PrettyPrint for BinaryOperator {
 pub enum Expression {
     Scalar(Number),
     Identifier(String),
-    UnitIdentifier(Prefix, String),
+    UnitIdentifier(Prefix, String, String),
     Negate(Box<Expression>),
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
     FunctionCall(String, Vec<Expression>),
@@ -85,7 +85,7 @@ fn with_parens(expr: &Expression) -> Markup {
     match expr {
         Expression::Scalar(_)
         | Expression::Identifier(_)
-        | Expression::UnitIdentifier(_, _)
+        | Expression::UnitIdentifier(_, _, _)
         | Expression::FunctionCall(_, _) => expr.pretty_print(),
         Expression::Negate(_) | Expression::BinaryOperator(_, _, _) => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
@@ -98,7 +98,7 @@ fn with_parens_liberal(expr: &Expression) -> Markup {
     match expr {
         Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs)
             if matches!(**lhs, Expression::Scalar(_))
-                && matches!(**rhs, Expression::UnitIdentifier(_, _)) =>
+                && matches!(**rhs, Expression::UnitIdentifier(_, _, _)) =>
         {
             expr.pretty_print()
         }
@@ -113,9 +113,9 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             lhs.pretty_print() + op.pretty_print() + rhs.pretty_print()
         }
         BinaryOperator::Mul => match (lhs, rhs) {
-            (Expression::Scalar(s), Expression::UnitIdentifier(prefix, name)) => {
+            (Expression::Scalar(s), Expression::UnitIdentifier(prefix, _name, full_name)) => {
                 // Fuse multiplication of a scalar and a unit to a quantity
-                pretty_scalar(*s) + m::space() + m::unit(format!("{}{}", prefix, name))
+                pretty_scalar(*s) + m::space() + m::unit(format!("{}{}", prefix, full_name))
             }
             (Expression::Scalar(s), Expression::Identifier(name)) => {
                 // Fuse multiplication of a scalar and identifier
@@ -204,7 +204,7 @@ impl PrettyPrint for Expression {
         match self {
             Scalar(n) => pretty_scalar(*n),
             Identifier(name) => m::identifier(name),
-            UnitIdentifier(prefix, name) => m::unit(format!("{}{}", prefix, name)),
+            UnitIdentifier(prefix, _name, full_name) => m::unit(format!("{}{}", prefix, full_name)),
             Negate(rhs) => m::operator("-") + rhs.pretty_print(),
             BinaryOperator(op, lhs, rhs) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(name, args) => {

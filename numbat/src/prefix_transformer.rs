@@ -23,15 +23,15 @@ impl Transformer {
         match expression {
             expr @ Expression::Scalar(_) => expr,
             Expression::Identifier(identifier) => {
-                if let PrefixParserResult::UnitIdentifier(prefix, unit_name) =
+                if let PrefixParserResult::UnitIdentifier(prefix, unit_name, full_name) =
                     self.prefix_parser.parse(&identifier)
                 {
-                    Expression::UnitIdentifier(prefix, unit_name)
+                    Expression::UnitIdentifier(prefix, unit_name, full_name)
                 } else {
                     Expression::Identifier(identifier)
                 }
             }
-            Expression::UnitIdentifier(_, _) => {
+            Expression::UnitIdentifier(_, _, _) => {
                 unreachable!("Prefixed identifiers should not exist prior to this stage")
             }
             Expression::Negate(expr) => {
@@ -63,8 +63,13 @@ impl Transformer {
         let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
         let binary_prefixes = Self::has_decorator(decorators, Decorator::BinaryPrefixes);
         for (alias, accepts_prefix) in decorator::name_and_aliases(name, decorators) {
-            self.prefix_parser
-                .add_unit(alias, accepts_prefix, metric_prefixes, binary_prefixes)?;
+            self.prefix_parser.add_unit(
+                alias,
+                accepts_prefix,
+                metric_prefixes,
+                binary_prefixes,
+                name,
+            )?;
         }
 
         Ok(())
