@@ -93,6 +93,8 @@ fn test_temperature_conversions() {
     expect_output("toFahrenheit(fromFahrenheit(100))", "100.0");
     expect_output("fromCelsius(toCelsius(123 K))", "123 kelvin");
     expect_output("fromFahrenheit(toFahrenheit(123 K))", "123.0 kelvin");
+
+    expect_output("-40 // fromFahrenheit // toCelsius", "-40.0");
 }
 
 #[test]
