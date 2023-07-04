@@ -546,12 +546,12 @@ mod tests {
         equal_pretty("2+(3+4)", "2 + 3 + 4");
         equal_pretty("atan(30cm / 2m)", "atan(30 centimeter / 2 meter)");
         equal_pretty("1mrad -> °", "1 milliradian ➞ degree");
-        equal_pretty("2km+2cm -> in", "2 kilometer + 2 centimeter ➞ inch"); // TODO
+        equal_pretty("2km+2cm -> in", "2 kilometer + 2 centimeter ➞ inch");
         equal_pretty("2^3 + 4^5", "2³ + 4^5");
         equal_pretty("2^3 - 4^5", "2³ - 4^5");
         equal_pretty("2^3 * 4^5", "2³ × 4^5");
         equal_pretty("2 * 3 + 4 * 5", "2 × 3 + 4 × 5");
-        // equal_pretty("2 * 3 / 4", "2 × (3 / 4)"); // TODO
+        equal_pretty("2 * 3 / 4", "2 × 3 / 4");
         equal_pretty("123.123 km² / s²", "123.123 × kilometer² / second²");
         equal_pretty(" sin(  2  ,  3  ,  4   )  ", "sin(2, 3, 4)");
     }
