@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use num_rational::Ratio;
-use num_traits::{ToPrimitive, Zero};
+use num_traits::{Signed, ToPrimitive, Zero};
 
 use crate::{
     arithmetic::{Exponent, Power, Rational},
@@ -266,20 +266,59 @@ fn pretty_exponent(e: &Exponent) -> String {
 
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut result = String::new();
-        for &UnitFactor {
-            prefix,
-            unit_id: ref base_unit,
-            exponent,
-        } in self.iter()
-        {
-            result.push_str(&format!("{}", prefix.to_string_short()));
-            result.push_str(&base_unit.canonical_name);
-            result.push_str(&pretty_exponent(&exponent));
-            result.push('·');
-        }
+        let to_string = |fs: &[UnitFactor]| -> String {
+            let mut result = String::new();
+            for &UnitFactor {
+                prefix,
+                unit_id: ref base_unit,
+                exponent,
+            } in fs.iter()
+            {
+                result.push_str(&prefix.to_string_short());
+                result.push_str(&base_unit.canonical_name);
+                result.push_str(&pretty_exponent(&exponent));
+                result.push('·');
+            }
+            result.trim_end_matches('·').into()
+        };
 
-        write!(f, "{}", result.trim_end_matches('·'))
+        let flip_exponents = |fs: &[UnitFactor]| -> Vec<UnitFactor> {
+            fs.iter()
+                .map(|f| UnitFactor {
+                    exponent: -f.exponent,
+                    ..f.clone()
+                })
+                .collect()
+        };
+
+        let factors_positive: Vec<_> = self
+            .iter()
+            .filter(|f| f.exponent.is_positive())
+            .cloned()
+            .collect();
+        let factors_negative: Vec<_> = self
+            .iter()
+            .filter(|f| !f.exponent.is_positive())
+            .cloned()
+            .collect();
+
+        let result: String = match (&factors_positive[..], &factors_negative[..]) {
+            (&[], &[]) => "".into(),
+            (positive, &[]) => to_string(positive),
+            (positive, &[ref single_negative]) => format!(
+                "{}/{}",
+                to_string(positive),
+                to_string(&flip_exponents(&[single_negative.clone()]))
+            ),
+            (&[], negative) => to_string(negative),
+            (positive, negative) => format!(
+                "{}/({})",
+                to_string(positive),
+                to_string(&flip_exponents(negative))
+            ),
+        };
+
+        write!(f, "{}", result)
     }
 }
 
