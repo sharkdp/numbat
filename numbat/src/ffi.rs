@@ -201,6 +201,22 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
                 callable: Callable::Function(ln),
             },
         );
+        m.insert(
+            "log10",
+            ForeignFunction {
+                name: "log10".into(),
+                arity: 1..=1,
+                callable: Callable::Function(log10),
+            },
+        );
+        m.insert(
+            "log2",
+            ForeignFunction {
+                name: "log2".into(),
+                arity: 1..=1,
+                callable: Callable::Function(log2),
+            },
+        );
 
         m
     })
@@ -323,6 +339,14 @@ fn atan(args: &[Quantity]) -> Quantity {
     Quantity::from_scalar(input.atan())
 }
 
+fn atan2(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 2);
+
+    let input0 = args[0].unsafe_value().to_f64(); // TODO: properly convert to the same unit here!
+    let input1 = args[1].unsafe_value().to_f64();
+    Quantity::from_scalar(input0.atan2(input1))
+}
+
 fn sinh(args: &[Quantity]) -> Quantity {
     assert!(args.len() == 1);
 
@@ -372,10 +396,16 @@ fn ln(args: &[Quantity]) -> Quantity {
     Quantity::from_scalar(input.ln())
 }
 
-fn atan2(args: &[Quantity]) -> Quantity {
-    assert!(args.len() == 2);
+fn log10(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
 
-    let input0 = args[0].unsafe_value().to_f64(); // TODO: properly convert to the same unit here!
-    let input1 = args[1].unsafe_value().to_f64();
-    Quantity::from_scalar(input0.atan2(input1))
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.log10())
+}
+
+fn log2(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.log2())
 }

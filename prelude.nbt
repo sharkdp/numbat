@@ -171,7 +171,7 @@ unit inch: Length = 0.0254 meter
 
 @aliases(feet, ft: short)
 unit foot: Length = 0.3048 meter
-assert_eq(1 foot, 12 inches, 0.001 inch)  # TODO: move this somewhere else
+assert_eq(1 foot, 12 inches, 0.001 inch)  # TODO: move those assertions somewhere else
 
 @aliases(yards, yd: short)
 unit yard: Length = 0.9144 meter
@@ -238,16 +238,15 @@ fn acosh(x: Scalar) -> Scalar
 fn atanh(x: Scalar) -> Scalar
 
 fn ln(x: Scalar) -> Scalar
+fn log(x: Scalar) -> Scalar = ln(x)
+fn log10(x: Scalar) -> Scalar
+fn log2(x: Scalar) -> Scalar
 
 # TODO: implement these as foreign functions? => benchmark
 fn sqrt<D>(x: D^2) -> D = x^(1/2)
 fn sqr<D>(x: D) -> D^2 = x^2
 
 fn exp(x: Scalar) -> Scalar = e^x
-
-fn log(x: Scalar) -> Scalar = ln(x)
-fn log10(x: Scalar) -> Scalar = ln(x) / ln(10)
-fn log2(x: Scalar) -> Scalar = ln(x) / ln(2)
 
 ### Physics functions
 
