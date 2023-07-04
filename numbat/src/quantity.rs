@@ -249,10 +249,7 @@ impl std::ops::Neg for Quantity {
 
 impl std::fmt::Display for Quantity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: we do not always want to canonicalize
-        let mut unit_canonicalized = self.unit.clone();
-        unit_canonicalized.canonicalize();
-        write!(f, "{:.6} {}", self.value.to_f64(), unit_canonicalized)
+        write!(f, "{:.6} {}", self.value.to_f64(), self.unit)
     }
 }
 
