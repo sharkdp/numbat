@@ -1,4 +1,4 @@
-use std::fmt::{Display, Write};
+use std::fmt::Display;
 
 use num_rational::Ratio;
 use num_traits::{ToPrimitive, Zero};
@@ -238,6 +238,32 @@ impl Unit {
     }
 }
 
+fn pretty_exponent(e: &Exponent) -> String {
+    if e == &Ratio::from_integer(5) {
+        "⁵".into()
+    } else if e == &Ratio::from_integer(4) {
+        "⁴".into()
+    } else if e == &Ratio::from_integer(3) {
+        "³".into()
+    } else if e == &Ratio::from_integer(2) {
+        "²".into()
+    } else if e == &Ratio::from_integer(1) {
+        "".into()
+    } else if e == &Ratio::from_integer(-1) {
+        "⁻¹".into()
+    } else if e == &Ratio::from_integer(-2) {
+        "⁻²".into()
+    } else if e == &Ratio::from_integer(-3) {
+        "⁻³".into()
+    } else if e == &Ratio::from_integer(-4) {
+        "⁻⁴".into()
+    } else if e == &Ratio::from_integer(-5) {
+        "⁻⁵".into()
+    } else {
+        format!("^{}", e)
+    }
+}
+
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
@@ -249,34 +275,7 @@ impl Display for Unit {
         {
             result.push_str(&format!("{}", prefix.to_string_short()));
             result.push_str(&base_unit.canonical_name);
-
-            if exponent == Ratio::from_integer(5) {
-                result.push('⁵');
-            } else if exponent == Ratio::from_integer(4) {
-                result.push('⁴');
-            } else if exponent == Ratio::from_integer(3) {
-                result.push('³');
-            } else if exponent == Ratio::from_integer(2) {
-                result.push('²');
-            } else if exponent == Ratio::from_integer(1) {
-            } else if exponent == Ratio::from_integer(-1) {
-                result.push('⁻');
-                result.push('¹');
-            } else if exponent == Ratio::from_integer(-2) {
-                result.push('⁻');
-                result.push('²');
-            } else if exponent == Ratio::from_integer(-3) {
-                result.push('⁻');
-                result.push('³');
-            } else if exponent == Ratio::from_integer(-4) {
-                result.push('⁻');
-                result.push('⁴');
-            } else if exponent == Ratio::from_integer(-5) {
-                result.push('⁻');
-                result.push('⁵');
-            } else {
-                write!(result, "^{}", exponent).unwrap();
-            };
+            result.push_str(&pretty_exponent(&exponent));
             result.push('·');
         }
 
