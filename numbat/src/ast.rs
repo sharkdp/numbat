@@ -20,12 +20,12 @@ impl PrettyPrint for BinaryOperator {
         use BinaryOperator::*;
 
         match self {
-            Add => m::text(" ") + m::operator("+") + m::text(" "),
-            Sub => m::text(" ") + m::operator("-") + m::text(" "),
-            Mul => m::text(" ") + m::operator("×") + m::text(" "),
-            Div => m::text(" ") + m::operator("/") + m::text(" "),
+            Add => m::space() + m::operator("+") + m::space(),
+            Sub => m::space() + m::operator("-") + m::space(),
+            Mul => m::space() + m::operator("×") + m::space(),
+            Div => m::space() + m::operator("/") + m::space(),
             Power => m::operator("^"),
-            ConvertTo => m::text(" ") + m::operator("→") + m::text(" "),
+            ConvertTo => m::space() + m::operator("→") + m::space(),
         }
     }
 }
@@ -115,11 +115,11 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
         BinaryOperator::Mul => match (lhs, rhs) {
             (Expression::Scalar(s), Expression::UnitIdentifier(prefix, name)) => {
                 // Fuse multiplication of a scalar and a unit to a quantity
-                pretty_scalar(*s) + m::text(" ") + m::unit(format!("{}{}", prefix, name))
+                pretty_scalar(*s) + m::space() + m::unit(format!("{}{}", prefix, name))
             }
             (Expression::Scalar(s), Expression::Identifier(name)) => {
                 // Fuse multiplication of a scalar and identifier
-                pretty_scalar(*s) + m::text(" ") + m::identifier(name)
+                pretty_scalar(*s) + m::space() + m::identifier(name)
             }
             _ => {
                 let add_parens_if_needed = |expr: &Expression| {
@@ -212,7 +212,7 @@ impl PrettyPrint for Expression {
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
                         args.iter().map(|e| e.pretty_print()),
-                        m::operator(",") + m::text(" "),
+                        m::operator(",") + m::space(),
                     )
                     .sum()
                     + m::operator(")")
@@ -237,18 +237,10 @@ impl PrettyPrint for DimensionExpression {
             DimensionExpression::Unity => m::type_identifier("1"),
             DimensionExpression::Dimension(ident) => m::type_identifier(ident),
             DimensionExpression::Multiply(lhs, rhs) => {
-                lhs.pretty_print()
-                    + m::text(" ")
-                    + m::operator("×")
-                    + m::text(" ")
-                    + rhs.pretty_print()
+                lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
             }
             DimensionExpression::Divide(lhs, rhs) => {
-                lhs.pretty_print()
-                    + m::text(" ")
-                    + m::operator("/")
-                    + m::text(" ")
-                    + rhs.pretty_print()
+                lhs.pretty_print() + m::space() + m::operator("/") + m::space() + rhs.pretty_print()
             }
             DimensionExpression::Power(lhs, exp) => {
                 m::operator("(")
@@ -297,7 +289,7 @@ pub enum Statement {
 fn accepts_prefix_markup(accepts_prefix: &Option<AcceptsPrefix>) -> Markup {
     if let Some(accepts_prefix) = accepts_prefix {
         m::operator(":")
-            + m::text(" ")
+            + m::space()
             + match accepts_prefix {
                 AcceptsPrefix {
                     short: true,
@@ -351,15 +343,15 @@ impl PrettyPrint for Statement {
         match self {
             Statement::DeclareVariable(identifier, expr, dexpr) => {
                 m::keyword("let")
-                    + m::text(" ")
+                    + m::space()
                     + m::identifier(identifier)
                     + dexpr
                         .as_ref()
-                        .map(|d| m::operator(":") + m::text(" ") + d.pretty_print())
+                        .map(|d| m::operator(":") + m::space() + d.pretty_print())
                         .unwrap_or_default()
-                    + m::text(" ")
+                    + m::space()
                     + m::operator("=")
-                    + m::text(" ")
+                    + m::space()
                     + expr.pretty_print()
             }
             Statement::DeclareFunction(identifier, type_variables, parameters, body, dexpr) => {
@@ -380,7 +372,7 @@ impl PrettyPrint for Statement {
                         m::identifier(name)
                             + dexpr
                                 .as_ref()
-                                .map(|d| m::operator(":") + m::text(" ") + d.pretty_print())
+                                .map(|d| m::operator(":") + m::space() + d.pretty_print())
                                 .unwrap_or_default()
                     }),
                     m::operator(", "),
@@ -389,11 +381,11 @@ impl PrettyPrint for Statement {
 
                 let markup_return_type = dexpr
                     .as_ref()
-                    .map(|d| m::text(" ") + m::operator("->") + m::text(" ") + d.pretty_print())
+                    .map(|d| m::space() + m::operator("->") + m::space() + d.pretty_print())
                     .unwrap_or_default();
 
                 m::keyword("fn")
-                    + m::text(" ")
+                    + m::space()
                     + m::identifier(identifier)
                     + markup_type_variables
                     + m::operator("(")
@@ -402,47 +394,47 @@ impl PrettyPrint for Statement {
                     + markup_return_type
                     + body
                         .as_ref()
-                        .map(|e| m::text(" ") + m::operator("=") + m::text(" ") + e.pretty_print())
+                        .map(|e| m::space() + m::operator("=") + m::space() + e.pretty_print())
                         .unwrap_or_default()
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DeclareDimension(identifier, dexprs) if dexprs.is_empty() => {
-                m::keyword("dimension") + m::text(" ") + m::type_identifier(identifier)
+                m::keyword("dimension") + m::space() + m::type_identifier(identifier)
             }
             Statement::DeclareDimension(identifier, dexprs) => {
                 m::keyword("dimension")
-                    + m::text(" ")
+                    + m::space()
                     + m::type_identifier(identifier)
-                    + m::text(" ")
+                    + m::space()
                     + m::operator("=")
-                    + m::text(" ")
+                    + m::space()
                     + Itertools::intersperse(
                         dexprs.iter().map(|d| d.pretty_print()),
-                        m::text(" ") + m::operator("=") + m::text(" "),
+                        m::space() + m::operator("=") + m::space(),
                     )
                     .sum()
             }
             Statement::DeclareBaseUnit(identifier, dexpr, decorators) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
-                    + m::text(" ")
+                    + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
-                    + m::text(" ")
+                    + m::space()
                     + dexpr.pretty_print()
             }
             Statement::DeclareDerivedUnit(identifier, expr, dexpr, decorators) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
-                    + m::text(" ")
+                    + m::space()
                     + m::unit(identifier)
                     + dexpr
                         .as_ref()
-                        .map(|d| m::operator(":") + m::text(" ") + d.pretty_print())
+                        .map(|d| m::operator(":") + m::space() + d.pretty_print())
                         .unwrap_or_default()
-                    + m::text(" ")
+                    + m::space()
                     + m::operator("=")
-                    + m::text(" ")
+                    + m::space()
                     + expr.pretty_print()
             }
             Statement::ProcedureCall(kind, args) => {
@@ -454,7 +446,7 @@ impl PrettyPrint for Statement {
                     + m::operator("(")
                     + Itertools::intersperse(
                         args.iter().map(|a| a.pretty_print()),
-                        m::operator(",") + m::text(" "),
+                        m::operator(",") + m::space(),
                     )
                     .sum()
                     + m::operator(")")

@@ -10,7 +10,7 @@ impl Formatter for ANSIFormatter {
         FormattedString(_output_type, format_type, text): &FormattedString,
     ) -> String {
         (match format_type {
-            FormatType::Text => text.normal(),
+            FormatType::Whitespace => text.normal(),
             FormatType::Keyword => text.magenta(),
             FormatType::Value => text.yellow(),
             FormatType::Unit => text.cyan(),

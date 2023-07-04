@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub enum FormatType {
-    Text,
+    Whitespace,
     Keyword,
     Value,
     Unit,
@@ -52,10 +52,18 @@ impl std::iter::Sum for Markup {
     }
 }
 
-pub fn text(text: impl AsRef<str>) -> Markup {
+pub fn space() -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
-        FormatType::Text,
+        FormatType::Whitespace,
+        " ".to_string(),
+    ))
+}
+
+pub fn whitespace(text: impl AsRef<str>) -> Markup {
+    Markup::from(FormattedString(
+        OutputType::Normal,
+        FormatType::Whitespace,
         text.as_ref().to_string(),
     ))
 }
@@ -119,7 +127,7 @@ pub fn decorator(text: impl AsRef<str>) -> Markup {
 pub fn nl() -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
-        FormatType::Text,
+        FormatType::Whitespace,
         "\n".into(),
     ))
 }
@@ -130,7 +138,7 @@ pub trait Formatter {
     fn format(&self, markup: &Markup, indent: bool) -> String {
         let spaces = self.format_part(&FormattedString(
             OutputType::Normal,
-            FormatType::Text,
+            FormatType::Whitespace,
             "  ".into(),
         ));
 

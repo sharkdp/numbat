@@ -262,11 +262,8 @@ impl PrettyPrint for Quantity {
 
         let formatted_number = self.unsafe_value().pretty_print();
 
-        let output_markup = markup::text("    ")
-            + markup::operator("=")
-            + markup::text(" ")
-            + markup::value(formatted_number)
-            + markup::text(" ")
+        let output_markup = markup::value(formatted_number)
+            + markup::space()
             + markup::unit(format!("{}", self.unit()));
         output_markup
     }

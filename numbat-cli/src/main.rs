@@ -4,6 +4,7 @@ mod completion;
 use ansi_formatter::ANSIFormatter;
 use completion::NumbatCompleter;
 
+use numbat::markup;
 use numbat::pretty_print::PrettyPrint;
 use numbat::{markup::Formatter, Context, ExitStatus, InterpreterResult, NumbatError, ParseError};
 
@@ -215,7 +216,10 @@ impl Cli {
                     InterpreterResult::Quantity(quantity) => {
                         println!();
 
-                        let q_markup = quantity.pretty_print();
+                        let q_markup = markup::whitespace("    ")
+                            + markup::operator("=")
+                            + markup::space()
+                            + quantity.pretty_print();
                         println!("{}", ANSIFormatter {}.format(&q_markup, false));
                         println!();
 
