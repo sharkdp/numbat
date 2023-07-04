@@ -79,11 +79,83 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
             },
         );
         m.insert(
+            "asin",
+            ForeignFunction {
+                name: "asin".into(),
+                arity: 1..=1,
+                callable: Callable::Function(asin),
+            },
+        );
+        m.insert(
+            "acos",
+            ForeignFunction {
+                name: "acos".into(),
+                arity: 1..=1,
+                callable: Callable::Function(acos),
+            },
+        );
+        m.insert(
+            "atan",
+            ForeignFunction {
+                name: "atan".into(),
+                arity: 1..=1,
+                callable: Callable::Function(atan),
+            },
+        );
+        m.insert(
             "atan2",
             ForeignFunction {
                 name: "atan2".into(),
                 arity: 2..=2,
                 callable: Callable::Function(atan2),
+            },
+        );
+        m.insert(
+            "sinh",
+            ForeignFunction {
+                name: "sinh".into(),
+                arity: 1..=1,
+                callable: Callable::Function(sinh),
+            },
+        );
+        m.insert(
+            "cosh",
+            ForeignFunction {
+                name: "cosh".into(),
+                arity: 1..=1,
+                callable: Callable::Function(cosh),
+            },
+        );
+        m.insert(
+            "tanh",
+            ForeignFunction {
+                name: "tanh".into(),
+                arity: 1..=1,
+                callable: Callable::Function(tanh),
+            },
+        );
+        m.insert(
+            "asinh",
+            ForeignFunction {
+                name: "asinh".into(),
+                arity: 1..=1,
+                callable: Callable::Function(asinh),
+            },
+        );
+        m.insert(
+            "acosh",
+            ForeignFunction {
+                name: "acosh".into(),
+                arity: 1..=1,
+                callable: Callable::Function(acosh),
+            },
+        );
+        m.insert(
+            "atanh",
+            ForeignFunction {
+                name: "atanh".into(),
+                arity: 1..=1,
+                callable: Callable::Function(atanh),
             },
         );
         m.insert(
@@ -165,6 +237,69 @@ fn sin(args: &[Quantity]) -> Quantity {
 
     let input = args[0].as_scalar().unwrap().to_f64();
     Quantity::from_scalar(input.sin())
+}
+
+fn asin(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.asin())
+}
+
+fn acos(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.acos())
+}
+
+fn atan(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.atan())
+}
+
+fn sinh(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.sinh())
+}
+
+fn cosh(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.cosh())
+}
+
+fn tanh(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.tanh())
+}
+
+fn asinh(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.asinh())
+}
+
+fn acosh(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.acosh())
+}
+
+fn atanh(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.atanh())
 }
 
 fn ln(args: &[Quantity]) -> Quantity {
