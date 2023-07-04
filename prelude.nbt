@@ -245,5 +245,13 @@ fn log2(x: Scalar) -> Scalar = ln(x) / ln(2)
 
 ### Physics functions
 
-fn fromCelsius(t_celsius: Scalar) -> Temperature = (t_celsius + 273.15) kelvin
-fn toCelsius(t_kelvin: Temperature) -> Scalar = t_kelvin / kelvin - 273.15
+let offset_celsius = 273.15
+
+fn fromCelsius(t_celsius: Scalar) -> Temperature = (t_celsius + offset_celsius) kelvin
+fn toCelsius(t_kelvin: Temperature) -> Scalar = t_kelvin / kelvin - offset_celsius
+
+let offset_fahrenheit = 459.67
+let scale_fahrenheit = 5 / 9
+
+fn fromFahrenheit(t_fahrenheit: Scalar) -> Temperature = ((t_fahrenheit + offset_fahrenheit) * scale_fahrenheit) kelvin
+fn toFahrenheit(t_kelvin: Temperature) -> Scalar = (t_kelvin / kelvin) / scale_fahrenheit - offset_fahrenheit
