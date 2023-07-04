@@ -288,27 +288,17 @@ impl Tokenizer {
             '*' if self.match_char('*') => TokenKind::Power,
             '+' => TokenKind::Plus,
             '*' | '·' | '×' => TokenKind::Multiply,
-            '/' => {
-                if self.match_char('/') {
-                    TokenKind::PostfixApply
-                } else {
-                    TokenKind::Divide
-                }
-            }
+            '/' if self.match_char('/') => TokenKind::PostfixApply,
+            '/' => TokenKind::Divide,
             '÷' => TokenKind::Divide,
             '^' => TokenKind::Power,
             ',' => TokenKind::Comma,
-            '→' | '➞' => TokenKind::Arrow,
             '=' => TokenKind::Equal,
             ':' => TokenKind::Colon,
             '@' => TokenKind::At,
-            '-' => {
-                if self.match_char('>') {
-                    TokenKind::Arrow
-                } else {
-                    TokenKind::Minus
-                }
-            }
+            '→' | '➞' => TokenKind::Arrow,
+            '-' if self.match_char('>') => TokenKind::Arrow,
+            '-' => TokenKind::Minus,
             '⁻' => {
                 let c = self.peek();
                 if c.map(is_exponent_char).unwrap_or(false) {
