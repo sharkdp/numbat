@@ -86,12 +86,29 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
                 callable: Callable::Function(ceil),
             },
         );
+
         m.insert(
             "sin",
             ForeignFunction {
                 name: "sin".into(),
                 arity: 1..=1,
                 callable: Callable::Function(sin),
+            },
+        );
+        m.insert(
+            "cos",
+            ForeignFunction {
+                name: "cos".into(),
+                arity: 1..=1,
+                callable: Callable::Function(cos),
+            },
+        );
+        m.insert(
+            "tan",
+            ForeignFunction {
+                name: "tan".into(),
+                arity: 1..=1,
+                callable: Callable::Function(tan),
             },
         );
         m.insert(
@@ -126,6 +143,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
                 callable: Callable::Function(atan2),
             },
         );
+
         m.insert(
             "sinh",
             ForeignFunction {
@@ -174,6 +192,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
                 callable: Callable::Function(atanh),
             },
         );
+
         m.insert(
             "ln",
             ForeignFunction {
@@ -267,6 +286,20 @@ fn sin(args: &[Quantity]) -> Quantity {
 
     let input = args[0].as_scalar().unwrap().to_f64();
     Quantity::from_scalar(input.sin())
+}
+
+fn cos(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.cos())
+}
+
+fn tan(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(input.tan())
 }
 
 fn asin(args: &[Quantity]) -> Quantity {

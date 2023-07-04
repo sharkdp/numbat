@@ -223,6 +223,8 @@ fn floor<T>(x: T) -> T
 fn ceil<T>(x: T) -> T
 
 fn sin(x: Scalar) -> Scalar
+fn cos(x: Scalar) -> Scalar
+fn tan(x: Scalar) -> Scalar
 fn asin(x: Scalar) -> Scalar
 fn acos(x: Scalar) -> Scalar
 fn atan(x: Scalar) -> Scalar
@@ -242,9 +244,6 @@ fn sqrt<D>(x: D^2) -> D = x^(1/2)
 fn sqr<D>(x: D) -> D^2 = x^2
 
 fn exp(x: Scalar) -> Scalar = e^x
-
-fn cos(x: Scalar) -> Scalar = sin(x + π / 2)
-fn tan(x: Scalar) = sin(x) / cos(x)
 
 fn log(x: Scalar) -> Scalar = ln(x)
 fn log10(x: Scalar) -> Scalar = ln(x) / ln(10)
