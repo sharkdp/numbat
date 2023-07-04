@@ -48,6 +48,7 @@ struct Args {
     debug: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum ExecutionMode {
     Normal,
     Interactive,
@@ -211,7 +212,7 @@ impl Cli {
                         println!("{}", repr);
                         println!();
                     }
-                } else {
+                } else if execution_mode == ExecutionMode::Interactive {
                     println!();
                 }
 
