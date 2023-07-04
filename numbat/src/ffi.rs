@@ -226,6 +226,31 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
             },
         );
 
+        m.insert(
+            "mean",
+            ForeignFunction {
+                name: "mean".into(),
+                arity: 1..=usize::MAX,
+                callable: Callable::Function(mean),
+            },
+        );
+        m.insert(
+            "maximum",
+            ForeignFunction {
+                name: "maximum".into(),
+                arity: 1..=usize::MAX,
+                callable: Callable::Function(maximum),
+            },
+        );
+        m.insert(
+            "minimum",
+            ForeignFunction {
+                name: "minimum".into(),
+                arity: 1..=usize::MAX,
+                callable: Callable::Function(minimum),
+            },
+        );
+
         m
     })
 }
@@ -423,4 +448,47 @@ fn log2(args: &[Quantity]) -> Quantity {
 
     let input = args[0].as_scalar().unwrap().to_f64();
     Quantity::from_scalar(input.log2())
+}
+
+fn mean(args: &[Quantity]) -> Quantity {
+    assert!(!args.is_empty());
+
+    let output_unit = args[0].unit();
+    Quantity::new(
+        Number::from_f64(
+            args.iter()
+                .map(|q| q.convert_to(output_unit).unwrap().unsafe_value().to_f64())
+                .sum::<f64>()
+                / (args.len() as f64),
+        ),
+        output_unit.clone(),
+    )
+}
+
+fn maximum(args: &[Quantity]) -> Quantity {
+    assert!(!args.is_empty());
+
+    let output_unit = args[0].unit();
+    Quantity::new(
+        args.iter()
+            .map(|q| q.convert_to(output_unit).unwrap().unsafe_value().clone())
+            .max_by(|l, r| l.partial_cmp(r).unwrap())
+            .unwrap()
+            .clone(),
+        output_unit.clone(),
+    )
+}
+
+fn minimum(args: &[Quantity]) -> Quantity {
+    assert!(!args.is_empty());
+
+    let output_unit = args[0].unit();
+    Quantity::new(
+        args.iter()
+            .map(|q| q.convert_to(output_unit).unwrap().unsafe_value().clone())
+            .min_by(|l, r| l.partial_cmp(r).unwrap())
+            .unwrap()
+            .clone(),
+        output_unit.clone(),
+    )
 }

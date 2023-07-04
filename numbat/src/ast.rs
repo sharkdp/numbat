@@ -278,8 +278,8 @@ pub enum Statement {
         String,
         /// Introduced type parameters
         Vec<String>,
-        /// Arguments, optionally with type annotations
-        Vec<(String, Option<DimensionExpression>)>,
+        /// Arguments, optionally with type annotations. The boolean argument specifies whether or not the parameter is variadic
+        Vec<(String, Option<DimensionExpression>, bool)>,
         /// Function body. If it is absent, the function is implemented via FFI
         Option<Expression>,
         /// Optional annotated return type
@@ -378,11 +378,20 @@ impl PrettyPrint for Statement {
                 };
 
                 let markup_parameters = Itertools::intersperse(
-                    parameters.iter().map(|(name, dexpr)| {
+                    parameters.iter().map(|(name, dexpr, is_variadic)| {
                         m::identifier(name)
                             + dexpr
                                 .as_ref()
-                                .map(|d| m::operator(":") + m::space() + d.pretty_print())
+                                .map(|d| {
+                                    m::operator(":")
+                                        + m::space()
+                                        + d.pretty_print()
+                                        + if *is_variadic {
+                                            m::operator("…")
+                                        } else {
+                                            Markup::default()
+                                        }
+                                })
                                 .unwrap_or_default()
                     }),
                     m::operator(", "),

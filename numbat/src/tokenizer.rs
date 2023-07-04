@@ -52,6 +52,7 @@ pub enum TokenKind {
     PostfixApply,
     UnicodeExponent,
     At,
+    Ellipsis,
 
     // Keywords
     Let,
@@ -326,6 +327,7 @@ impl Tokenizer {
                     todo!("Parse error: string not terminated");
                 }
             }
+            '…' => TokenKind::Ellipsis,
             c if is_identifier_char(c) => {
                 while self.peek().map(is_identifier_char).unwrap_or(false) {
                     self.advance();
@@ -500,7 +502,7 @@ fn tokenize_basic() {
         token_stream(&[("\"foo\"", String, (1, 1, 0)), ("", Eof, (1, 6, 5))])
     );
 
-    assert!(tokenize("…").is_err());
+    assert!(tokenize("~").is_err());
 }
 
 #[test]

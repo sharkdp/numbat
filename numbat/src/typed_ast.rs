@@ -17,7 +17,7 @@ pub enum Expression {
 pub enum Statement {
     Expression(Expression),
     DeclareVariable(String, Expression, Type),
-    DeclareFunction(String, Vec<(String, Type)>, Option<Expression>, Type),
+    DeclareFunction(String, Vec<(String, bool, Type)>, Option<Expression>, Type),
     DeclareDimension(String),
     DeclareBaseUnit(String, Vec<Decorator>, Type),
     DeclareDerivedUnit(String, Expression, Vec<Decorator>),

@@ -138,8 +138,16 @@ impl BytecodeInterpreter {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
 
-                self.vm
-                    .add_foreign_function(name, parameters.len()..=parameters.len());
+                let is_variadic = parameters.iter().any(|p| p.1);
+
+                self.vm.add_foreign_function(
+                    name,
+                    if is_variadic {
+                        1..=usize::MAX
+                    } else {
+                        parameters.len()..=parameters.len()
+                    },
+                );
             }
             Statement::DeclareDimension(_name) => {
                 // Declaring a dimension is like introducing a new type. The information

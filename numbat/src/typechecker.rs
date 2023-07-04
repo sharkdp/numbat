@@ -62,6 +62,9 @@ pub enum TypeCheckError {
 
     #[error("Foreign function definition '{0}' needs a return type annotation.")]
     ForeignFunctionNeedsReturnTypeAnnotation(String),
+
+    #[error("Unknown foreign function '{0}'")]
+    UnknownForeignFunction(String),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -120,7 +123,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     identifiers: HashMap<String, Type>,
-    function_signatures: HashMap<String, (Vec<String>, Vec<Type>, Type)>,
+    function_signatures: HashMap<String, (Vec<String>, Vec<Type>, bool, Type)>,
     registry: DimensionRegistry,
 }
 
@@ -197,15 +200,21 @@ impl TypeChecker {
                 typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), type_)
             }
             ast::Expression::FunctionCall(function_name, args) => {
-                let (type_parameters, parameter_types, return_type) = self
+                let (type_parameters, parameter_types, is_variadic, return_type) = self
                     .function_signatures
                     .get(&function_name)
                     .ok_or_else(|| TypeCheckError::UnknownFunction(function_name.clone()))?;
 
-                if parameter_types.len() != args.len() {
+                let arity_range = if *is_variadic {
+                    1..=usize::MAX
+                } else {
+                    parameter_types.len()..=parameter_types.len()
+                };
+
+                if !arity_range.contains(&args.len()) {
                     return Err(TypeCheckError::WrongArity {
                         callable_name: function_name.clone(),
-                        arity: parameter_types.len()..=parameter_types.len(),
+                        arity: arity_range,
                         num_args: args.len(),
                     });
                 }
@@ -232,6 +241,17 @@ impl TypeChecker {
                     }
                     result_type
                 };
+
+                let mut parameter_types = parameter_types.clone();
+                if *is_variadic {
+                    // For a variadic function, we simply duplicate the parameter type
+                    // N times, where N is the number of arguments given.
+                    assert!(parameter_types.len() == 1);
+
+                    for _ in 1..argument_types.len() {
+                        parameter_types.push(parameter_types[0].clone());
+                    }
+                }
 
                 for (idx, (parameter_type, argument_type)) in
                     parameter_types.iter().zip(argument_types).enumerate()
@@ -399,7 +419,8 @@ impl TypeChecker {
                 }
 
                 let mut typed_parameters = vec![];
-                for (parameter, optional_dexpr) in parameters {
+                let mut is_variadic = false;
+                for (parameter, optional_dexpr, p_is_variadic) in parameters {
                     let parameter_type = typechecker_fn
                         .registry
                         .get_base_representation(
@@ -411,7 +432,9 @@ impl TypeChecker {
                     typechecker_fn
                         .identifiers
                         .insert(parameter.clone(), parameter_type.clone());
-                    typed_parameters.push((parameter.clone(), parameter_type));
+                    typed_parameters.push((parameter.clone(), p_is_variadic, parameter_type));
+
+                    is_variadic |= p_is_variadic;
                 }
 
                 let return_type_specified = optional_return_type_dexpr
@@ -442,6 +465,10 @@ impl TypeChecker {
                     }
                     return_type_deduced
                 } else {
+                    if !ffi::functions().contains_key(function_name.as_str()) {
+                        return Err(TypeCheckError::UnknownForeignFunction(function_name));
+                    }
+
                     return_type_specified.ok_or_else(|| {
                         TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(
                             function_name.clone(),
@@ -449,10 +476,15 @@ impl TypeChecker {
                     })?
                 };
 
-                let parameter_types = typed_parameters.iter().map(|(_, t)| t.clone()).collect();
+                let parameter_types = typed_parameters.iter().map(|(_, _, t)| t.clone()).collect();
                 self.function_signatures.insert(
                     function_name.clone(),
-                    (type_parameters, parameter_types, return_type.clone()),
+                    (
+                        type_parameters,
+                        parameter_types,
+                        is_variadic,
+                        return_type.clone(),
+                    ),
                 );
 
                 typed_ast::Statement::DeclareFunction(
@@ -828,6 +860,27 @@ mod tests {
             "),
             TypeCheckError::WrongArity{callable_name, arity, num_args: 2} if arity == (1..=1) && callable_name == "f"
         ));
+
+        assert!(matches!(
+            get_typecheck_error("
+                fn mean<D>(xs: D…) -> D
+                mean()
+            "),
+            TypeCheckError::WrongArity{callable_name, arity, num_args: 0} if arity == (1..=usize::MAX) && callable_name == "mean"
+        ));
+    }
+
+    #[test]
+    fn variadic_functions() {
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn mean<D>(xs: D…) -> D
+                mean(1 a, 1 b)
+            "
+            ),
+            TypeCheckError::IncompatibleDimensions(_, _, _, _, _)
+        ));
     }
 
     #[test]
@@ -835,6 +888,14 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("fn sin(x: Scalar)"),
             TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(name) if name == "sin"
+        ));
+    }
+
+    #[test]
+    fn unknown_foreign_function() {
+        assert!(matches!(
+            get_typecheck_error("fn foo(x: Scalar) -> Scalar"),
+            TypeCheckError::UnknownForeignFunction(name) if name == "foo"
         ));
     }
 

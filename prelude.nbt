@@ -107,7 +107,7 @@ unit ohm: Resistance = volt / ampere
 @aliases(kelvins, K: short)
 unit kelvin: Temperature
 
-## SI accepted units
+### SI accepted units
 
 @metric_prefixes
 @aliases(radians, rad: short)
@@ -158,11 +158,20 @@ unit byte: Bit = 8 bit
 @aliases(eV: short)
 unit electronvolt = 1.602176634e-19 J
 
-### Common abbreviations
-
 @metric_prefixes
 @aliases(Wh: short)
 unit Wh = W h
+
+@aliases(knots)
+unit knot: Speed = 463 m / 900 s
+
+### Useful 'dummy' units
+
+dimension Pixel
+
+@metric_prefixes
+@aliases(pixels, px: short)
+unit pixel: Pixel
 
 ### Imperial units
 
@@ -181,25 +190,11 @@ assert_eq(1 yard, 3 feet, 0.001 foot)
 unit mile: Length = 1609.344 meter
 assert_eq(1 mile, 1760 yard, 0.001 yard)
 
-# Other misc units (TODO: clean up)
-
-@aliases(knots)
-unit knot: Speed = 463 m / 900 s
-
 @aliases(fathoms)
 unit fathom: Length = 2 yard
 
 @aliases(furlongs)
 unit furlong: Length = 220 yard
-
-# "Dummy" units
-
-dimension Pixel
-
-@metric_prefixes
-@aliases(pixels, px: short)
-unit pixel: Pixel
-
 
 ### Commonly used non-standard abbreviations
 
@@ -213,7 +208,7 @@ let speed_of_light = 299792458 m / s
 let planck_constant = 6.62607015e-34 J / Hz
 let ℏ = planck_constant / 2π
 
-## Mathematical functions
+### Mathematical functions
 
 fn abs<T>(x: T) -> T
 fn round<T>(x: T) -> T
@@ -243,6 +238,12 @@ fn log2(x: Scalar) -> Scalar
 
 fn sqrt<D>(x: D^2) -> D = x^(1/2)
 fn sqr<D>(x: D) -> D^2 = x^2
+
+### Statistics functions
+
+fn mean<D>(xs: D…) -> D
+fn maximum<D>(xs: D…) -> D
+fn minimum<D>(xs: D…) -> D
 
 ### Physics functions
 

@@ -82,11 +82,17 @@ pub enum ParseErrorKind {
     #[error("Expected opening parenthesis '(' in function definition")]
     ExpectedLeftParenInFunctionDefinition,
 
-    #[error("Expected ',' or ')' in function parameter list")]
-    ExpectedCommaOrRightParenInFunctionDefinition,
+    #[error("Expected ',', '…', or ')' in function parameter list")]
+    ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
 
     #[error("Expected parameter name in function definition")]
     ExpectedParameterNameInFunctionDefinition,
+
+    #[error("Only a single variadic parameter is allowed in a function definition")]
+    OnlySingleVariadicParameter,
+
+    #[error("Variadic parameters are only allowed in foreign functions")]
+    VariadicParameterOnlyAllowedInForeignFunction,
 
     #[error("Expected identifier (dimension name)")]
     ExpectedIdentifierAfterDimension,
@@ -292,13 +298,19 @@ impl<'a> Parser<'a> {
                             None
                         };
 
-                        parameters.push((param_name.lexeme.to_string(), param_type_dexpr));
+                        let is_variadic = self.match_exact(TokenKind::Ellipsis).is_some();
+
+                        parameters.push((
+                            param_name.lexeme.to_string(),
+                            param_type_dexpr,
+                            is_variadic,
+                        ));
 
                         if self.match_exact(TokenKind::Comma).is_none()
                             && self.peek().kind != TokenKind::RightParen
                         {
                             return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedCommaOrRightParenInFunctionDefinition,
+                                kind: ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
                                 span: self.peek().span.clone(),
                             });
                         }
@@ -308,6 +320,14 @@ impl<'a> Parser<'a> {
                             span: self.peek().span.clone(),
                         });
                     }
+                }
+
+                let fn_is_variadic = parameters.iter().any(|p| p.2);
+                if fn_is_variadic && parameters.len() > 1 {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::OnlySingleVariadicParameter,
+                        span: self.peek().span.clone(),
+                    });
                 }
 
                 let optional_return_type_dexpr = if self.match_exact(TokenKind::Arrow).is_some() {
@@ -322,6 +342,14 @@ impl<'a> Parser<'a> {
                 } else {
                     Some(self.expression()?)
                 };
+
+                if fn_is_variadic && body.is_some() {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::VariadicParameterOnlyAllowedInForeignFunction,
+                        span: self.peek().span.clone(),
+                    });
+                }
+
                 Ok(Statement::DeclareFunction(
                     fn_name.lexeme.clone(),
                     type_parameters,
@@ -1191,7 +1219,7 @@ mod tests {
             Statement::DeclareFunction(
                 "foo".into(),
                 vec![],
-                vec![("x".into(), None)],
+                vec![("x".into(), None, false)],
                 Some(scalar!(1.0)),
                 None,
             ),
@@ -1202,7 +1230,11 @@ mod tests {
             Statement::DeclareFunction(
                 "foo".into(),
                 vec![],
-                vec![("x".into(), None), ("y".into(), None), ("z".into(), None)],
+                vec![
+                    ("x".into(), None, false),
+                    ("y".into(), None, false),
+                    ("z".into(), None, false),
+                ],
                 Some(scalar!(1.0)),
                 None,
             ),
@@ -1217,10 +1249,12 @@ mod tests {
                     (
                         "x".into(),
                         Some(DimensionExpression::Dimension("Length".into())),
+                        false,
                     ),
                     (
                         "y".into(),
                         Some(DimensionExpression::Dimension("Time".into())),
+                        false,
                     ),
                     (
                         "z".into(),
@@ -1234,6 +1268,7 @@ mod tests {
                                 Rational::new(2, 1),
                             )),
                         )),
+                        false,
                     ),
                 ],
                 Some(scalar!(1.0)),
@@ -1246,10 +1281,46 @@ mod tests {
             Statement::DeclareFunction(
                 "foo".into(),
                 vec!["X".into()],
-                vec![("x".into(), Some(DimensionExpression::Dimension("X".into())))],
+                vec![(
+                    "x".into(),
+                    Some(DimensionExpression::Dimension("X".into())),
+                    false,
+                )],
                 Some(scalar!(1.0)),
                 None,
             ),
+        );
+
+        parse_as(
+            &["fn foo<D>(x: D…) -> D"],
+            Statement::DeclareFunction(
+                "foo".into(),
+                vec!["D".into()],
+                vec![(
+                    "x".into(),
+                    Some(DimensionExpression::Dimension("D".into())),
+                    true,
+                )],
+                None,
+                Some(DimensionExpression::Dimension("D".into())),
+            ),
+        );
+
+        should_fail_with(
+            &[
+                "fn foo<D>(x: D, y: D…) -> D",
+                "fn foo<D>(y: D…, x: D) -> D",
+                "fn foo<D>(y: D…, x: D…) -> D",
+            ],
+            ParseErrorKind::OnlySingleVariadicParameter,
+        );
+
+        should_fail_with(
+            &[
+                "fn foo(x: Scalar…) -> Scalar = 1",
+                "fn foo<D>(x: D…) -> 1 = 1",
+            ],
+            ParseErrorKind::VariadicParameterOnlyAllowedInForeignFunction,
         );
     }
 
