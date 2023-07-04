@@ -25,7 +25,7 @@ impl PrettyPrint for BinaryOperator {
             Mul => m::space() + m::operator("×") + m::space(),
             Div => m::space() + m::operator("/") + m::space(),
             Power => m::operator("^"),
-            ConvertTo => m::space() + m::operator("→") + m::space(),
+            ConvertTo => m::space() + m::operator("➞") + m::space(),
         }
     }
 }
@@ -192,6 +192,12 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             };
 
             add_parens_if_needed(lhs) + op.pretty_print() + add_parens_if_needed(rhs)
+        }
+        BinaryOperator::Power if matches!(rhs, Expression::Scalar(n) if n.to_f64() == 2.0) => {
+            lhs.pretty_print() + m::operator("²")
+        }
+        BinaryOperator::Power if matches!(rhs, Expression::Scalar(n) if n.to_f64() == 3.0) => {
+            lhs.pretty_print() + m::operator("³")
         }
         _ => with_parens(lhs) + op.pretty_print() + with_parens(rhs),
     }
@@ -485,6 +491,36 @@ mod tests {
                 ],
             )
             .unwrap();
+        transformer
+            .register_name_and_aliases(
+                &"second".into(),
+                &[
+                    Decorator::Aliases(vec![("s".into(), Some(AcceptsPrefix::only_short()))]),
+                    Decorator::MetricPrefixes,
+                ],
+            )
+            .unwrap();
+        transformer
+            .register_name_and_aliases(
+                &"radian".into(),
+                &[
+                    Decorator::Aliases(vec![("rad".into(), Some(AcceptsPrefix::only_short()))]),
+                    Decorator::MetricPrefixes,
+                ],
+            )
+            .unwrap();
+        transformer
+            .register_name_and_aliases(
+                &"degree".into(),
+                &[Decorator::Aliases(vec![("°".into(), None)])],
+            )
+            .unwrap();
+        transformer
+            .register_name_and_aliases(
+                &"inch".into(),
+                &[Decorator::Aliases(vec![("in".into(), None)])],
+            )
+            .unwrap();
 
         let statements = crate::parse(code).unwrap();
         let markup = transformer.transform(statements).unwrap()[0].pretty_print();
@@ -500,23 +536,23 @@ mod tests {
     fn pretty_print() {
         equal_pretty("2+3", "2 + 3");
         equal_pretty("2*3", "2 × 3");
-        equal_pretty("2^3", "2^3");
-        // equal_pretty("2km", "2 km"); // TODO
+        equal_pretty("2^3", "2³");
+        equal_pretty("2km", "2 kilometer");
         equal_pretty("2kilometer", "2 kilometer");
-        // equal_pretty("sin(30°)", "sin(30°)"); // TODO
+        equal_pretty("sin(30°)", "sin(30 degree)");
         equal_pretty("2*3*4", "2 × 3 × 4");
         equal_pretty("2*(3*4)", "2 × 3 × 4");
         equal_pretty("2+3+4", "2 + 3 + 4");
         equal_pretty("2+(3+4)", "2 + 3 + 4");
-        // equal_pretty("atan(30cm / 2m)", "atan(30 cm / 2 m)"); // TODO
-        // equal_pretty("1mrad -> °", "1 mrad ➞ °"); // TODO
-        // equal_pretty("2km+2cm -> in", "2 km + 2 cm ➞ in"); // TODO
-        equal_pretty("2^3 + 4^5", "2^3 + 4^5");
-        equal_pretty("2^3 - 4^5", "2^3 - 4^5");
-        equal_pretty("2^3 * 4^5", "2^3 × 4^5");
+        equal_pretty("atan(30cm / 2m)", "atan(30 centimeter / 2 meter)");
+        equal_pretty("1mrad -> °", "1 milliradian ➞ degree");
+        equal_pretty("2km+2cm -> in", "2 kilometer + 2 centimeter ➞ inch"); // TODO
+        equal_pretty("2^3 + 4^5", "2³ + 4^5");
+        equal_pretty("2^3 - 4^5", "2³ - 4^5");
+        equal_pretty("2^3 * 4^5", "2³ × 4^5");
         equal_pretty("2 * 3 + 4 * 5", "2 × 3 + 4 × 5");
         // equal_pretty("2 * 3 / 4", "2 × (3 / 4)"); // TODO
-        // equal_pretty("123.123 km^2 / s^2", "123.123 × km^2 / s^2"); // TODO
+        equal_pretty("123.123 km² / s²", "123.123 × kilometer² / second²");
         equal_pretty(" sin(  2  ,  3  ,  4   )  ", "sin(2, 3, 4)");
     }
 }
