@@ -65,6 +65,9 @@ pub enum TypeCheckError {
 
     #[error("Unknown foreign function '{0}'")]
     UnknownForeignFunction(String),
+
+    #[error("Parameter types can not (yet) be deduced, they have to be specified manually: f(x: Length, y: Time) -> …")]
+    ParameterTypesCanNotBeDeduced,
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -424,7 +427,7 @@ impl TypeChecker {
                     let parameter_type = typechecker_fn
                         .registry
                         .get_base_representation(
-                            &optional_dexpr.expect("Parameter types can not be deduced."),
+                            &optional_dexpr.ok_or(TypeCheckError::ParameterTypesCanNotBeDeduced)?,
                         )
                         // TODO: add type inference, see https://github.com/sharkdp/numbat/issues/29
                         // TODO: once we add type inference, make sure that annotations are required for foreign functions
