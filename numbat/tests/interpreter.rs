@@ -164,3 +164,18 @@ fn test_full_simplify() {
         "500 cm/m",
     );
 }
+
+#[test]
+fn test_prefixes() {
+    expect_output("hertz second", "1");
+    expect_output("kilohertz millisecond", "1");
+    expect_output("megahertz microsecond", "1");
+    expect_output("gigahertz nanosecond", "1");
+    expect_output("terahertz picosecond", "1");
+    expect_output("petahertz femtosecond", "1");
+    expect_output("exahertz attosecond", "1");
+    expect_output("zettahertz zeptosecond", "1.0"); // ?
+    expect_output("yottahertz yoctosecond", "1");
+    expect_output("ronnahertz rontosecond", "1");
+    expect_output("quettahertz quectosecond", "1.0"); // ?
+}
