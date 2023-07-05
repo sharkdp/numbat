@@ -151,3 +151,16 @@ fn test_misc_examples() {
     expect_output("4/2*2", "4");
     expect_output("1/2 Hz -> s", "0.5 s");
 }
+
+#[test]
+fn test_full_simplify() {
+    expect_output("5 cm/m", "0.05");
+    expect_output("hour/second", "3600");
+
+    expect_output("5 to cm/m", "500 cm/m");
+    expect_output(
+        "fn f(x: Scalar) -> Scalar = x to cm/m
+             f(5)",
+        "500 cm/m",
+    );
+}

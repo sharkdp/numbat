@@ -94,37 +94,3 @@ impl Context {
         Ok((transformed_statements, result))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::quantity::Quantity;
-    use crate::unit::Unit;
-
-    use super::*;
-    fn assert_yields_quantity(code: &str, quantity: &Quantity) {
-        let result = Context::new(false).interpret(code).unwrap().1;
-        match result {
-            InterpreterResult::Quantity(q) => {
-                assert_eq!(q, *quantity)
-            }
-            _ => panic!(),
-        }
-    }
-
-    #[test]
-    fn test_full_simplify_basic() {
-        assert_yields_quantity("5 cm/m", &Quantity::from_scalar(0.05));
-        assert_yields_quantity("hour/second", &Quantity::from_scalar(3600.0));
-    }
-
-    #[test]
-    fn test_full_simplify_does_not_run_for_explicit_conversions() {
-        let q = Quantity::new_f64(500.0, Unit::centimeter() / Unit::meter());
-        assert_yields_quantity("5 to cm/m", &q);
-        assert_yields_quantity(
-            "fn f(x: Scalar) -> Scalar = x to cm/m
-             f(5)",
-            &q,
-        );
-    }
-}

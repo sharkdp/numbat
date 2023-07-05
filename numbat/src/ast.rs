@@ -550,7 +550,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pretty_print_basic() {
+    fn pretty_print_basic() {
         equal_pretty("2+3", "2 + 3");
         equal_pretty("2*3", "2 × 3");
         equal_pretty("2^3", "2³");
@@ -573,51 +573,51 @@ mod tests {
         equal_pretty(" sin(  2  ,  3  ,  4   )  ", "sin(2, 3, 4)");
     }
 
-    fn pretty_print_roundtrip_check(code: &str) {
+    fn roundtrip_check(code: &str) {
         let ast1 = parse(code);
         let ast2 = parse(&pretty_print(&ast1));
         assert_eq!(ast1, ast2);
     }
 
     #[test]
-    fn test_pretty_print_roundtrip_check() {
-        pretty_print_roundtrip_check("1.0");
-        pretty_print_roundtrip_check("2");
-        pretty_print_roundtrip_check("1 + 2");
+    fn pretty_print_roundtrip_check() {
+        roundtrip_check("1.0");
+        roundtrip_check("2");
+        roundtrip_check("1 + 2");
 
-        pretty_print_roundtrip_check("-2.3e-12387");
-        pretty_print_roundtrip_check("2.3e-12387");
-        pretty_print_roundtrip_check("18379173");
-        pretty_print_roundtrip_check("2+3");
-        pretty_print_roundtrip_check("2+3*5");
-        pretty_print_roundtrip_check("-3^4+2/(4+2*3)");
-        pretty_print_roundtrip_check("1-2-3-4-(5-6-7)");
-        pretty_print_roundtrip_check("1/2/3/4/(5/6/7)");
-        pretty_print_roundtrip_check("kg");
-        pretty_print_roundtrip_check("2meter/second");
-        pretty_print_roundtrip_check("a+b*c^d-e*f");
-        pretty_print_roundtrip_check("sin(x)^3");
-        pretty_print_roundtrip_check("sin(cos(atanh(x)+2))^3");
-        pretty_print_roundtrip_check("2^3^4^5");
-        pretty_print_roundtrip_check("(2^3)^(4^5)");
-        pretty_print_roundtrip_check("sqrt(1.4^2 + 1.5^2) * cos(pi/3)^2");
-        pretty_print_roundtrip_check("40 kilometer * 9.8meter/second^2 * 150centimeter");
-        pretty_print_roundtrip_check("4/3 * pi * r³");
-        pretty_print_roundtrip_check("vol * density -> kg");
-        pretty_print_roundtrip_check("atan(30 centimeter / 2 meter)");
-        pretty_print_roundtrip_check("500kilometer/second -> centimeter/second");
-        pretty_print_roundtrip_check("länge * x_2 * µ * _prefixed");
-        pretty_print_roundtrip_check("2meter^3");
-        pretty_print_roundtrip_check("(2meter)^3");
-        pretty_print_roundtrip_check("-sqrt(-30meter^3)");
-        pretty_print_roundtrip_check("-3^4");
-        pretty_print_roundtrip_check("(-3)^4");
-        pretty_print_roundtrip_check("sin(2,3,4)");
+        roundtrip_check("-2.3e-12387");
+        roundtrip_check("2.3e-12387");
+        roundtrip_check("18379173");
+        roundtrip_check("2+3");
+        roundtrip_check("2+3*5");
+        roundtrip_check("-3^4+2/(4+2*3)");
+        roundtrip_check("1-2-3-4-(5-6-7)");
+        roundtrip_check("1/2/3/4/(5/6/7)");
+        roundtrip_check("kg");
+        roundtrip_check("2meter/second");
+        roundtrip_check("a+b*c^d-e*f");
+        roundtrip_check("sin(x)^3");
+        roundtrip_check("sin(cos(atanh(x)+2))^3");
+        roundtrip_check("2^3^4^5");
+        roundtrip_check("(2^3)^(4^5)");
+        roundtrip_check("sqrt(1.4^2 + 1.5^2) * cos(pi/3)^2");
+        roundtrip_check("40 kilometer * 9.8meter/second^2 * 150centimeter");
+        roundtrip_check("4/3 * pi * r³");
+        roundtrip_check("vol * density -> kg");
+        roundtrip_check("atan(30 centimeter / 2 meter)");
+        roundtrip_check("500kilometer/second -> centimeter/second");
+        roundtrip_check("länge * x_2 * µ * _prefixed");
+        roundtrip_check("2meter^3");
+        roundtrip_check("(2meter)^3");
+        roundtrip_check("-sqrt(-30meter^3)");
+        roundtrip_check("-3^4");
+        roundtrip_check("(-3)^4");
+        roundtrip_check("sin(2,3,4)");
 
         // TODO: when we support factorials
-        // pretty_print_roundtrip_check("5!³");
-        // pretty_print_roundtrip_check("2^3!");
-        // pretty_print_roundtrip_check("-3!");
-        // pretty_print_roundtrip_check("(-3)!");
+        // roundtrip_check("5!³");
+        // roundtrip_check("2^3!");
+        // roundtrip_check("-3!");
+        // roundtrip_check("(-3)!");
     }
 }

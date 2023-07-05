@@ -420,7 +420,7 @@ fn token_stream(input: &[(&str, TokenKind, (usize, usize, usize))]) -> Vec<Token
 }
 
 #[test]
-fn tokenize_basic() {
+fn test_tokenize_basic() {
     use TokenKind::*;
 
     assert_eq!(
