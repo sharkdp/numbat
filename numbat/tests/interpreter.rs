@@ -174,8 +174,8 @@ fn test_prefixes() {
     expect_output("terahertz picosecond", "1");
     expect_output("petahertz femtosecond", "1");
     expect_output("exahertz attosecond", "1");
-    expect_output("zettahertz zeptosecond", "1.0"); // ?
+    expect_output("zettahertz zeptosecond", "1.0"); // TODO: this might be "resolved" when we use a high-precision float. type
     expect_output("yottahertz yoctosecond", "1");
     expect_output("ronnahertz rontosecond", "1");
-    expect_output("quettahertz quectosecond", "1.0"); // ?
+    expect_output("quettahertz quectosecond", "1.0"); // TODO: this might be "resolved" when we use a high-precision float. type
 }
