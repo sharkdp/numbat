@@ -78,14 +78,34 @@ impl Context {
 
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
         let statements = parse(code).map_err(NumbatError::ParseError)?;
+
+        let prefix_transformer_old = self.prefix_transformer.clone();
+
         let transformed_statements = self
             .prefix_transformer
             .transform(statements)
             .map_err(NumbatError::NameResolutionError)?;
-        let typed_statements = self
+        let result = self
             .typechecker
             .check_statements(transformed_statements.clone()) // TODO(minor): get rid of clone?
-            .map_err(NumbatError::TypeCheckError)?;
+            .map_err(NumbatError::TypeCheckError);
+
+        if result.is_err() {
+            // Reset the state of the prefix transformer to what we had before. This is necessary
+            // for REPL use cases where we want to back track from type-check errors.
+            // For example:
+            //
+            //     >>> let x: Length = 1s      # <-- here we register the name 'x' before type checking
+            //     Type check error: Incompatible dimensions in variable declaration:
+            //         specified dimension: Length
+            //         actual dimension: Time
+            //     >>> let x: Length = 1m      # <-- here we want to use the name 'x' again
+            //
+            self.prefix_transformer = prefix_transformer_old;
+        }
+
+        let typed_statements = result?;
+
         let result = self
             .interpreter
             .interpret_statements(&typed_statements)

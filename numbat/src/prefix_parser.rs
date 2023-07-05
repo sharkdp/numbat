@@ -59,7 +59,7 @@ struct UnitInfo {
     full_name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PrefixParser {
     units: HashMap<String, UnitInfo>,
     other_identifiers: HashSet<String>,

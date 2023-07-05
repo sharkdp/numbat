@@ -7,7 +7,8 @@ use crate::{
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
 
-pub struct Transformer {
+#[derive(Debug, Clone)]
+pub(crate) struct Transformer {
     prefix_parser: PrefixParser,
 }
 
