@@ -240,6 +240,11 @@ impl Unit {
     pub fn bit() -> Self {
         Self::new_base("bit", "B")
     }
+
+    #[cfg(test)]
+    pub fn byte() -> Self {
+        Self::new_derived("byte", "B", Number::from_f64(8.0), Self::bit())
+    }
 }
 
 impl Display for Unit {
@@ -303,7 +308,6 @@ impl Display for Unit {
 #[cfg(test)]
 mod tests {
     use approx::assert_relative_eq;
-    use num_rational::Ratio;
 
     use super::*;
 
@@ -410,35 +414,14 @@ mod tests {
     #[test]
     fn to_string() {
         assert_eq!(Unit::meter().to_string(), "m");
-        assert_eq!(
-            Unit::meter().power(Ratio::from_integer(2)).to_string(),
-            "m²"
-        );
-        assert_eq!(
-            Unit::meter().power(Ratio::from_integer(3)).to_string(),
-            "m³"
-        );
-        assert_eq!(
-            Unit::meter().power(Ratio::from_integer(4)).to_string(),
-            "m⁴"
-        );
-        assert_eq!(
-            Unit::meter().power(Ratio::from_integer(8)).to_string(),
-            "m^8"
-        );
+        assert_eq!(Unit::meter().powi(2).to_string(), "m²");
+        assert_eq!(Unit::meter().powi(3).to_string(), "m³");
+        assert_eq!(Unit::meter().powi(4).to_string(), "m⁴");
+        assert_eq!(Unit::meter().powi(8).to_string(), "m^8");
 
-        assert_eq!(
-            Unit::meter().power(Ratio::from_integer(-1)).to_string(),
-            "m⁻¹"
-        );
-        assert_eq!(
-            Unit::meter().power(Ratio::from_integer(-4)).to_string(),
-            "m⁻⁴"
-        );
-        assert_eq!(
-            Unit::meter().power(Ratio::from_integer(-8)).to_string(),
-            "m^(-8)"
-        );
+        assert_eq!(Unit::meter().powi(-1).to_string(), "m⁻¹");
+        assert_eq!(Unit::meter().powi(-4).to_string(), "m⁻⁴");
+        assert_eq!(Unit::meter().powi(-8).to_string(), "m^(-8)");
 
         assert_eq!(
             (Unit::meter() * Unit::meter() * Unit::second())
@@ -481,6 +464,30 @@ mod tests {
                 .canonicalized()
                 .to_string(),
             "ms·m·s"
+        );
+
+        assert_eq!(Unit::meter().with_prefix(Prefix::micro()).to_string(), "µm");
+        assert_eq!(Unit::meter().with_prefix(Prefix::milli()).to_string(), "mm");
+        assert_eq!(Unit::meter().with_prefix(Prefix::centi()).to_string(), "cm");
+        assert_eq!(Unit::meter().with_prefix(Prefix::deci()).to_string(), "dm");
+        assert_eq!(Unit::meter().with_prefix(Prefix::hecto()).to_string(), "hm");
+        assert_eq!(Unit::meter().with_prefix(Prefix::kilo()).to_string(), "km");
+        assert_eq!(Unit::second().with_prefix(Prefix::mega()).to_string(), "Ms");
+        assert_eq!(Unit::second().with_prefix(Prefix::giga()).to_string(), "Gs");
+        assert_eq!(Unit::second().with_prefix(Prefix::tera()).to_string(), "Ts");
+        assert_eq!(
+            Unit::second()
+                .with_prefix(Prefix::tera())
+                .powi(2)
+                .to_string(),
+            "Ts²"
+        );
+        assert_eq!(Unit::byte().with_prefix(Prefix::kibi()).to_string(), "KiB");
+        assert_eq!(Unit::byte().with_prefix(Prefix::mebi()).to_string(), "MiB");
+        assert_eq!(Unit::byte().with_prefix(Prefix::gibi()).to_string(), "GiB");
+        assert_eq!(
+            Unit::byte().with_prefix(Prefix::gibi()).powi(2).to_string(),
+            "GiB²"
         );
     }
 }

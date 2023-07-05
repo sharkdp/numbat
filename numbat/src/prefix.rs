@@ -21,6 +21,11 @@ impl Prefix {
     }
 
     #[cfg(test)]
+    pub fn micro() -> Self {
+        Prefix::Metric(-6)
+    }
+
+    #[cfg(test)]
     pub fn milli() -> Self {
         Prefix::Metric(-3)
     }
@@ -36,6 +41,16 @@ impl Prefix {
     }
 
     #[cfg(test)]
+    pub fn deca() -> Self {
+        Prefix::Metric(1)
+    }
+
+    #[cfg(test)]
+    pub fn hecto() -> Self {
+        Prefix::Metric(2)
+    }
+
+    #[cfg(test)]
     pub fn kilo() -> Self {
         Prefix::Metric(3)
     }
@@ -46,6 +61,16 @@ impl Prefix {
     }
 
     #[cfg(test)]
+    pub fn giga() -> Self {
+        Prefix::Metric(9)
+    }
+
+    #[cfg(test)]
+    pub fn tera() -> Self {
+        Prefix::Metric(12)
+    }
+
+    #[cfg(test)]
     pub fn kibi() -> Self {
         Prefix::Binary(10)
     }
@@ -53,6 +78,11 @@ impl Prefix {
     #[cfg(test)]
     pub fn mebi() -> Self {
         Prefix::Binary(20)
+    }
+
+    #[cfg(test)]
+    pub fn gibi() -> Self {
+        Prefix::Binary(30)
     }
 
     pub fn is_none(&self) -> bool {
