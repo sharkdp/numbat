@@ -1,4 +1,5 @@
 use num_rational::{Ratio, Rational64};
+use num_traits::Signed;
 
 pub type Rational = Rational64;
 pub type Exponent = Rational;
@@ -29,6 +30,10 @@ pub fn pretty_exponent(e: &Exponent) -> String {
     } else if e == &Ratio::from_integer(-5) {
         "⁻⁵".into()
     } else {
-        format!("^{}", e)
+        if e.is_positive() {
+            format!("^{}", e)
+        } else {
+            format!("^({})", e)
+        }
     }
 }

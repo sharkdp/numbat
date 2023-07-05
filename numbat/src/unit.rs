@@ -212,6 +212,11 @@ impl Unit {
     }
 
     #[cfg(test)]
+    pub fn kilogram() -> Self {
+        Self::new_base("gram", "g").with_prefix(Prefix::kilo())
+    }
+
+    #[cfg(test)]
     pub fn hertz() -> Self {
         Self::new_derived(
             "hertz",
@@ -277,13 +282,13 @@ impl Display for Unit {
 
         let result: String = match (&factors_positive[..], &factors_negative[..]) {
             (&[], &[]) => "".into(),
+            (&[], negative) => to_string(negative),
             (positive, &[]) => to_string(positive),
             (positive, &[ref single_negative]) => format!(
                 "{}/{}",
                 to_string(positive),
                 to_string(&flip_exponents(&[single_negative.clone()]))
             ),
-            (&[], negative) => to_string(negative),
             (positive, negative) => format!(
                 "{}/({})",
                 to_string(positive),
@@ -298,6 +303,7 @@ impl Display for Unit {
 #[cfg(test)]
 mod tests {
     use approx::assert_relative_eq;
+    use num_rational::Ratio;
 
     use super::*;
 
@@ -398,6 +404,83 @@ mod tests {
             conversion_factor.to_f64(),
             1609.344 / 3600.0,
             epsilon = 1e-6
+        );
+    }
+
+    #[test]
+    fn to_string() {
+        assert_eq!(Unit::meter().to_string(), "m");
+        assert_eq!(
+            Unit::meter().power(Ratio::from_integer(2)).to_string(),
+            "m²"
+        );
+        assert_eq!(
+            Unit::meter().power(Ratio::from_integer(3)).to_string(),
+            "m³"
+        );
+        assert_eq!(
+            Unit::meter().power(Ratio::from_integer(4)).to_string(),
+            "m⁴"
+        );
+        assert_eq!(
+            Unit::meter().power(Ratio::from_integer(8)).to_string(),
+            "m^8"
+        );
+
+        assert_eq!(
+            Unit::meter().power(Ratio::from_integer(-1)).to_string(),
+            "m⁻¹"
+        );
+        assert_eq!(
+            Unit::meter().power(Ratio::from_integer(-4)).to_string(),
+            "m⁻⁴"
+        );
+        assert_eq!(
+            Unit::meter().power(Ratio::from_integer(-8)).to_string(),
+            "m^(-8)"
+        );
+
+        assert_eq!(
+            (Unit::meter() * Unit::meter() * Unit::second())
+                .canonicalized()
+                .to_string(),
+            "m²·s"
+        );
+        assert_eq!(
+            (Unit::meter() * Unit::second() * Unit::second())
+                .canonicalized()
+                .to_string(),
+            "m·s²"
+        );
+
+        assert_eq!(
+            (Unit::meter() / Unit::second()).canonicalized().to_string(),
+            "m/s"
+        );
+        assert_eq!(
+            (Unit::meter() / (Unit::second() * Unit::second()))
+                .canonicalized()
+                .to_string(),
+            "m/s²"
+        );
+
+        assert_eq!(
+            (Unit::kilometer() * Unit::second() * Unit::second())
+                .canonicalized()
+                .to_string(),
+            "s²·km"
+        );
+        assert_eq!(
+            (Unit::meter() / (Unit::second() * Unit::second() * Unit::kilogram()))
+                .canonicalized()
+                .to_string(),
+            "m/(s²·kg)"
+        );
+        assert_eq!(
+            (Unit::meter() * Unit::second().with_prefix(Prefix::milli()) * Unit::second())
+                .canonicalized()
+                .to_string(),
+            "ms·m·s"
         );
     }
 }
