@@ -17,9 +17,14 @@ fn expect_output(code: &str, expected_output: &str) {
     expect_output_with_context(&mut ctx, code, expected_output)
 }
 
-fn expect_failure(code: &str) {
+fn expect_failure(code: &str, msg_part: &str) {
     let mut ctx = Context::new(false);
-    assert!(ctx.interpret(code).is_err());
+    if let Err(e) = ctx.interpret(code) {
+        let error_message = e.to_string();
+        assert!(error_message.contains(msg_part));
+    } else {
+        panic!();
+    }
 }
 
 #[test]
@@ -61,7 +66,7 @@ fn test_implicit_conversion() {
     expect_output_with_context(&mut ctx, "x x", "25 m²");
     expect_output_with_context(&mut ctx, "x²", "25 m²");
 
-    expect_failure("x2");
+    expect_failure("x2", "Unknown identifier 'x2'");
 }
 
 #[test]
@@ -178,4 +183,28 @@ fn test_prefixes() {
     expect_output("yottahertz yoctosecond", "1");
     expect_output("ronnahertz rontosecond", "1");
     expect_output("quettahertz quectosecond", "1.0"); // TODO: this might be "resolved" when we use a high-precision float. type
+}
+
+#[test]
+fn test_error_messages() {
+    expect_failure(
+        "3kg+",
+        "Expected one of: number, identifier, parenthesized expression",
+    );
+    expect_failure("let kg=2", "Identifier is already in use: 'kg'");
+    expect_failure("let pi=2", "Identifier is already in use: 'pi'");
+    expect_failure("let sin=2", "Identifier is already in use: 'sin'");
+    expect_failure("let print=2", "Expected identifier after 'let' keyword");
+    expect_failure("fn kg(x: Scalar) = 1", "Identifier is already in use: 'kg'");
+    expect_failure("fn pi(x: Scalar) = 1", "Identifier is already in use: 'pi'");
+    expect_failure(
+        "fn sin(x: Scalar) = 1",
+        "Identifier is already in use: 'sin'",
+    );
+    expect_failure(
+        "fn print(x: Scalar) = 1",
+        "Expected identifier after 'fn' keyword",
+    );
+    expect_failure("foo", "Unknown identifier 'foo'");
+    expect_failure("1/0", "Division by zero");
 }
