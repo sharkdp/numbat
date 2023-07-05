@@ -37,7 +37,9 @@ impl Number {
         if self.is_integer() && self.0.abs() < 1e15 {
             format!("{number}")
         } else {
-            if self.0.abs() > 1e12 {
+            if number.abs() > 1e12 {
+                format!("{number:.fractional_digits$e}")
+            } else if number.abs() < 1e-6 {
                 format!("{number:.fractional_digits$e}")
             } else {
                 let formatted_number = format!("{number:.fractional_digits$}");
@@ -103,6 +105,9 @@ fn test_pretty_print() {
     assert_eq!(Number::from_f64(1.).pretty_print(), "1");
     assert_eq!(Number::from_f64(1.234).pretty_print(), "1.234");
     assert_eq!(Number::from_f64(1.234e50).pretty_print(), "1.234000e50");
+    assert_eq!(Number::from_f64(-1.234e50).pretty_print(), "-1.234000e50");
+    assert_eq!(Number::from_f64(1.234e-50).pretty_print(), "1.234000e-50");
+    assert_eq!(Number::from_f64(-1.234e-50).pretty_print(), "-1.234000e-50");
 
     assert_eq!(Number::from_f64(1234567890.).pretty_print(), "1234567890");
     assert_eq!(
