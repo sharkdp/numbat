@@ -97,7 +97,6 @@ impl Context {
 
 #[cfg(test)]
 mod tests {
-    use crate::number::Number;
     use crate::quantity::Quantity;
     use crate::unit::Unit;
 
@@ -120,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_full_simplify_does_not_run_for_explicit_conversions() {
-        let q = Quantity::new(Number::from_f64(500.0), Unit::centimeter() / Unit::meter());
+        let q = Quantity::new_f64(500.0, Unit::centimeter() / Unit::meter());
         assert_yields_quantity("5 to cm/m", &q);
         assert_yields_quantity(
             "fn f(x: Scalar) -> Scalar = x to cm/m

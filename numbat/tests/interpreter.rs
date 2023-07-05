@@ -140,10 +140,10 @@ fn test_misc_examples() {
 
     expect_output("60mph -> m/s", "26.8224 m/s");
     expect_output("240km/day -> km/h", "10.0 km/h");
-    expect_output("1mrad -> °", "0.057296 deg"); // TODO: do we want that to be "x.y°"?
+    expect_output("1mrad -> °", "0.057296°");
     expect_output("52weeks -> days", "364 day");
     expect_output("5in + 2ft -> cm", "73.66 cm");
-    expect_output("atan(30cm / 2m) -> °", "8.530766 deg");
+    expect_output("atan(30cm / 2m) -> deg", "8.530766°");
     expect_output("6Mbit/s * 1.5h -> GB", "4.05 GB");
     expect_output("6Mbit/s * 1.5h -> GiB", "3.771856 GiB");
 

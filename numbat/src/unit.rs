@@ -212,8 +212,33 @@ impl Unit {
     }
 
     #[cfg(test)]
+    pub fn gram() -> Self {
+        Self::new_base("gram", "g")
+    }
+
+    #[cfg(test)]
     pub fn kilogram() -> Self {
-        Self::new_base("gram", "g").with_prefix(Prefix::kilo())
+        Self::gram().with_prefix(Prefix::kilo())
+    }
+
+    #[cfg(test)]
+    pub fn kelvin() -> Self {
+        Self::new_base("kelvin", "K")
+    }
+
+    #[cfg(test)]
+    pub fn radian() -> Self {
+        Self::new_base("radian", "rad")
+    }
+
+    #[cfg(test)]
+    pub fn degree() -> Self {
+        Self::new_derived(
+            "degree",
+            "°",
+            Number::from_f64(std::f64::consts::PI / 180.0),
+            Self::radian(),
+        )
     }
 
     #[cfg(test)]
@@ -223,6 +248,16 @@ impl Unit {
             "Hz",
             Number::from_f64(1.0),
             Unit::second().powi(-1),
+        )
+    }
+
+    #[cfg(test)]
+    pub fn newton() -> Self {
+        Self::new_derived(
+            "newton",
+            "N",
+            Number::from_f64(1000.0),
+            Unit::gram() * Unit::meter() / Unit::second().powi(2),
         )
     }
 

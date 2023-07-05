@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use crate::interpreter::RuntimeError;
-use crate::{ast::ProcedureKind, number::Number, quantity::Quantity};
+use crate::{ast::ProcedureKind, quantity::Quantity};
 
 type ControlFlow = std::ops::ControlFlow<RuntimeError>;
 
@@ -306,28 +306,28 @@ fn abs(args: &[Quantity]) -> Quantity {
     assert!(args.len() == 1);
 
     let value = args[0].unsafe_value().to_f64();
-    Quantity::new(Number::from_f64(value.abs()), args[0].unit().clone())
+    Quantity::new_f64(value.abs(), args[0].unit().clone())
 }
 
 fn round(args: &[Quantity]) -> Quantity {
     assert!(args.len() == 1);
 
     let value = args[0].unsafe_value().to_f64();
-    Quantity::new(Number::from_f64(value.round()), args[0].unit().clone())
+    Quantity::new_f64(value.round(), args[0].unit().clone())
 }
 
 fn floor(args: &[Quantity]) -> Quantity {
     assert!(args.len() == 1);
 
     let value = args[0].unsafe_value().to_f64();
-    Quantity::new(Number::from_f64(value.floor()), args[0].unit().clone())
+    Quantity::new_f64(value.floor(), args[0].unit().clone())
 }
 
 fn ceil(args: &[Quantity]) -> Quantity {
     assert!(args.len() == 1);
 
     let value = args[0].unsafe_value().to_f64();
-    Quantity::new(Number::from_f64(value.ceil()), args[0].unit().clone())
+    Quantity::new_f64(value.ceil(), args[0].unit().clone())
 }
 
 fn sin(args: &[Quantity]) -> Quantity {
@@ -454,13 +454,11 @@ fn mean(args: &[Quantity]) -> Quantity {
     assert!(!args.is_empty());
 
     let output_unit = args[0].unit();
-    Quantity::new(
-        Number::from_f64(
-            args.iter()
-                .map(|q| q.convert_to(output_unit).unwrap().unsafe_value().to_f64())
-                .sum::<f64>()
-                / (args.len() as f64),
-        ),
+    Quantity::new_f64(
+        args.iter()
+            .map(|q| q.convert_to(output_unit).unwrap().unsafe_value().to_f64())
+            .sum::<f64>()
+            / (args.len() as f64),
         output_unit.clone(),
     )
 }

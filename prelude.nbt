@@ -113,7 +113,7 @@ unit kelvin: Temperature
 @aliases(radians, rad: short)
 unit radian = meter / meter
 
-@aliases(degrees, deg: short, °)
+@aliases(degrees, deg, °: short)
 unit degree = π radian / 180
 
 @metric_prefixes

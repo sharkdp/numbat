@@ -52,7 +52,7 @@ fn print_calls() {
         .arg("../examples/print.nbt")
         .assert()
         .success()
-        .stdout(predicates::str::contains("1.000000 \n2.000000 m"));
+        .stdout(predicates::str::contains("1 \n2 m"));
 }
 
 #[test]

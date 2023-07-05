@@ -27,12 +27,19 @@ impl Quantity {
         Quantity { value, unit }
     }
 
+    pub fn new_f64(value: f64, unit: Unit) -> Self {
+        Quantity {
+            value: Number::from_f64(value),
+            unit,
+        }
+    }
+
     pub fn from_scalar(value: f64) -> Quantity {
-        Quantity::new(Number::from_f64(value), Unit::scalar())
+        Quantity::new_f64(value, Unit::scalar())
     }
 
     pub fn from_unit(unit: Unit) -> Quantity {
-        Quantity::new(Number::from_f64(1.0), unit)
+        Quantity::new_f64(1.0, unit)
     }
 
     pub fn unit(&self) -> &Unit {
@@ -178,8 +185,8 @@ impl Quantity {
 
     pub fn power(self, exp: Quantity) -> Result<Self> {
         let exponent_as_scalar = exp.as_scalar()?.to_f64();
-        Ok(Quantity::new(
-            Number::from_f64(self.value.to_f64().powf(exponent_as_scalar)),
+        Ok(Quantity::new_f64(
+            self.value.to_f64().powf(exponent_as_scalar),
             self.unit
                 .power(Rational::from_f64(exponent_as_scalar).unwrap()), // TODO: error handling; can this really handle rational exponents?
         ))
@@ -247,22 +254,32 @@ impl std::ops::Neg for Quantity {
     }
 }
 
-impl std::fmt::Display for Quantity {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:.6} {}", self.value.to_f64(), self.unit)
-    }
-}
-
 impl PrettyPrint for Quantity {
     fn pretty_print(&self) -> crate::markup::Markup {
         use crate::markup;
 
         let formatted_number = self.unsafe_value().pretty_print();
 
+        let unit_str = format!("{}", self.unit());
+
         let output_markup = markup::value(formatted_number)
-            + markup::space()
-            + markup::unit(format!("{}", self.unit()));
+            + if unit_str == "°" {
+                markup::Markup::default()
+            } else {
+                markup::space()
+            }
+            + markup::unit(unit_str);
         output_markup
+    }
+}
+
+impl std::fmt::Display for Quantity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use crate::markup::{Formatter, PlainTextFormatter};
+
+        let markup = self.pretty_print();
+        let formatter = PlainTextFormatter {};
+        write!(f, "{}", formatter.format(&markup, false))
     }
 }
 
@@ -277,7 +294,7 @@ mod tests {
         let meter = Unit::meter();
         let second = Unit::second();
 
-        let length = Quantity::new(Number::from_f64(2.0), meter.clone());
+        let length = Quantity::new_f64(2.0, meter.clone());
 
         assert!(length.convert_to(&meter).is_ok());
 
@@ -292,7 +309,7 @@ mod tests {
         let meter = Unit::meter();
         let foot = Unit::new_derived("foot", "ft", Number::from_f64(0.3048), meter.clone());
 
-        let length = Quantity::new(Number::from_f64(2.0), meter.clone());
+        let length = Quantity::new_f64(2.0, meter.clone());
 
         let length_in_foot = length.convert_to(&foot).expect("conversion succeeds");
         assert_eq!(length_in_foot.unsafe_value().to_f64(), 2.0 / 0.3048);
@@ -316,7 +333,7 @@ mod tests {
         let meter = Unit::meter();
         let centimeter = Unit::meter().with_prefix(Prefix::centi());
 
-        let length = Quantity::new(Number::from_f64(2.5), meter.clone());
+        let length = Quantity::new_f64(2.5, meter.clone());
         {
             let length_in_centimeter = length.convert_to(&centimeter).expect("conversion succeeds");
             assert_relative_eq!(
@@ -352,31 +369,25 @@ mod tests {
 
     #[test]
     fn full_simplify_basic() {
-        let q = Quantity::new(Number::from_f64(2.0), Unit::meter() / Unit::second());
+        let q = Quantity::new_f64(2.0, Unit::meter() / Unit::second());
         assert_eq!(q.full_simplify(), q);
     }
 
     #[test]
     fn full_simplify_convertible_to_scalar() {
         {
-            let q = Quantity::new(Number::from_f64(2.0), Unit::meter() / Unit::millimeter());
+            let q = Quantity::new_f64(2.0, Unit::meter() / Unit::millimeter());
             assert_eq!(q.full_simplify(), Quantity::from_scalar(2000.0));
         }
         {
-            let q = Quantity::new(
-                Number::from_f64(2.0),
-                Unit::kilometer() / Unit::millimeter(),
-            );
+            let q = Quantity::new_f64(2.0, Unit::kilometer() / Unit::millimeter());
             assert_eq!(q.full_simplify(), Quantity::from_scalar(2000000.0));
         }
         {
-            let q = Quantity::new(
-                Number::from_f64(2.0),
-                Unit::meter() / Unit::centimeter() * Unit::second(),
-            );
+            let q = Quantity::new_f64(2.0, Unit::meter() / Unit::centimeter() * Unit::second());
             assert_eq!(
                 q.full_simplify(),
-                Quantity::new(Number::from_f64(2.0 * 100.0), Unit::second())
+                Quantity::new_f64(2.0 * 100.0, Unit::second())
             );
         }
     }
@@ -384,21 +395,12 @@ mod tests {
     #[test]
     fn full_simplify_unit_rearrangements() {
         {
-            let q = Quantity::new(
-                Number::from_f64(2.0),
-                Unit::meter() * Unit::second() * Unit::meter(),
-            );
-            let expected = Quantity::new(
-                Number::from_f64(2.0),
-                Unit::meter().powi(2) * Unit::second(),
-            );
+            let q = Quantity::new_f64(2.0, Unit::meter() * Unit::second() * Unit::meter());
+            let expected = Quantity::new_f64(2.0, Unit::meter().powi(2) * Unit::second());
             assert_eq!(q.full_simplify(), expected);
         }
         {
-            let q = Quantity::new(
-                Number::from_f64(2.0),
-                Unit::kilometer() / Unit::millimeter(),
-            );
+            let q = Quantity::new_f64(2.0, Unit::kilometer() / Unit::millimeter());
             assert_eq!(q.full_simplify(), Quantity::from_scalar(2000000.0));
         }
     }
@@ -406,42 +408,89 @@ mod tests {
     #[test]
     fn full_simplify_complex() {
         {
-            let q = Quantity::new(
-                Number::from_f64(5.0),
-                Unit::second() * Unit::millimeter() / Unit::meter(),
-            );
-            let expected = Quantity::new(Number::from_f64(0.005), Unit::second());
+            let q = Quantity::new_f64(5.0, Unit::second() * Unit::millimeter() / Unit::meter());
+            let expected = Quantity::new_f64(0.005, Unit::second());
             assert_eq!(q.full_simplify(), expected);
         }
         {
-            let q = Quantity::new(
-                Number::from_f64(5.0),
+            let q = Quantity::new_f64(
+                5.0,
                 Unit::bit().with_prefix(Prefix::mega()) / Unit::second() * Unit::hour(),
             );
-            let expected = Quantity::new(
-                Number::from_f64(18000.0),
-                Unit::bit().with_prefix(Prefix::mega()),
-            );
+            let expected = Quantity::new_f64(18000.0, Unit::bit().with_prefix(Prefix::mega()));
             assert_eq!(q.full_simplify(), expected);
         }
         // TODO
         // {
-        //     let q = Quantity::new(Number::from_f64(5.0), Unit::centimeter() * Unit::meter());
-        //     let expected = Quantity::new(
-        //         Number::from_f64(500.0),
+        //     let q = Quantity::new_f64(5.0, Unit::centimeter() * Unit::meter());
+        //     let expected = Quantity::new_f64(
+        //         500.0,
         //         Unit::centimeter().powi(2),
         //     );
         //     assert_eq!(q.full_simplify(), expected);
         // }
         {
-            let q = Quantity::new(Number::from_f64(5.0), Unit::meter() * Unit::centimeter());
-            let expected = Quantity::new(Number::from_f64(0.05), Unit::meter().powi(2));
+            let q = Quantity::new_f64(5.0, Unit::meter() * Unit::centimeter());
+            let expected = Quantity::new_f64(0.05, Unit::meter().powi(2));
             assert_eq!(q.full_simplify(), expected);
         }
         {
-            let q = Quantity::new(Number::from_f64(1.0), Unit::hertz() / Unit::second());
-            let expected = Quantity::new(Number::from_f64(1.0), Unit::second().powi(-2));
+            let q = Quantity::new_f64(1.0, Unit::hertz() / Unit::second());
+            let expected = Quantity::new_f64(1.0, Unit::second().powi(-2));
             assert_eq!(q.full_simplify(), expected);
         }
+    }
+
+    #[test]
+    fn si_compliant_pretty_printing() {
+        //  See: https://en.wikipedia.org/wiki/International_System_of_Units
+        //        -> Unit symbols and the value of quantities
+
+        // The value of a quantity is written as a number followed by a space
+        // (representing a multiplication sign) and a unit symbol; e.g., 2.21 kg,
+        // 7.3×10² m², 22 K.
+        assert_eq!(
+            Quantity::new_f64(2.21, Unit::kilogram()).to_string(),
+            "2.21 kg"
+        );
+        assert_eq!(Quantity::new_f64(22.0, Unit::kelvin()).to_string(), "22 K");
+
+        // Exceptions are the symbols for plane angular degrees, minutes, and
+        // seconds (°, ′, and ″), which are placed immediately after the
+        // number with no intervening space.
+        assert_eq!(Quantity::new_f64(90.0, Unit::degree()).to_string(), "90°");
+
+        // A prefix is part of the unit, and its symbol is prepended to the
+        // unit symbol without a separator (e.g., k in km, M in MPa, G in GHz).
+        // Compound prefixes are not allowed.
+        assert_eq!(
+            Quantity::new_f64(1.0, Unit::hertz().with_prefix(Prefix::giga())).to_string(),
+            "1 GHz"
+        );
+
+        // Symbols for derived units formed by multiplication are joined with a
+        // centre dot (·) or a non-breaking space; e.g., N·m or N m.
+        assert_eq!(
+            Quantity::new_f64(1.0, Unit::newton() * Unit::meter()).to_string(),
+            "1 N·m"
+        );
+
+        // Symbols for derived units formed by division are joined with a solidus
+        // (/), or given as a negative exponent. E.g., the "metre per second" can
+        // be written m/s, m s^(−1), m·s^(−1), or m/s. Only one solidus should
+        // be used; e.g., kg/(m·s²) and kg·m^(−1)·s^(−2) are acceptable, but
+        // kg/m/s² is ambiguous and unacceptable.
+        assert_eq!(
+            Quantity::new_f64(1.0, Unit::meter() / Unit::meter()).to_string(),
+            "1 m/m"
+        );
+        assert_eq!(
+            Quantity::new_f64(
+                1.0,
+                Unit::kilogram() / (Unit::meter() * Unit::second().powi(2))
+            )
+            .to_string(),
+            "1 kg/(m·s²)"
+        );
     }
 }

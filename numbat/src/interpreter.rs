@@ -70,7 +70,6 @@ pub trait Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use crate::number::Number;
     use crate::unit::Unit;
     use crate::{bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer};
 
@@ -215,23 +214,20 @@ mod tests {
         assert_evaluates_to_scalar("mean(1, 1, 1, 0)", 0.75);
         assert_evaluates_to(
             "mean(1 m, 1 m, 1 m, 0 m)",
-            Quantity::new(Number::from_f64(0.75), Unit::meter()),
+            Quantity::new_f64(0.75, Unit::meter()),
         );
-        assert_evaluates_to(
-            "mean(2 m, 100 cm)",
-            Quantity::new(Number::from_f64(1.5), Unit::meter()),
-        );
+        assert_evaluates_to("mean(2 m, 100 cm)", Quantity::new_f64(1.5, Unit::meter()));
 
         assert_evaluates_to_scalar("maximum(1, 2, 0, -3)", 2.0);
         assert_evaluates_to(
             "maximum(2 m, 0.1 km)",
-            Quantity::new(Number::from_f64(100.0), Unit::meter()),
+            Quantity::new_f64(100.0, Unit::meter()),
         );
 
         assert_evaluates_to_scalar("minimum(1, 2, 0, -3)", -3.0);
         assert_evaluates_to(
             "minimum(2 m, 150 cm)",
-            Quantity::new(Number::from_f64(1.5), Unit::meter()),
+            Quantity::new_f64(1.5, Unit::meter()),
         );
     }
 
