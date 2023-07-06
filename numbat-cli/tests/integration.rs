@@ -1,7 +1,9 @@
 use assert_cmd::Command;
 
 fn numbat() -> Command {
-    Command::cargo_bin("numbat").unwrap()
+    let mut cmd = Command::cargo_bin("numbat").unwrap();
+    cmd.arg("--no-init");
+    cmd
 }
 
 #[test]

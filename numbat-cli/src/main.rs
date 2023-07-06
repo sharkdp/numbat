@@ -35,9 +35,13 @@ struct Args {
     #[arg(short, long, value_name = "CODE", conflicts_with = "file")]
     expression: Option<String>,
 
-    /// Do not load the prelude with predefined physical dimensions and units.
+    /// Do not load the prelude with predefined physical dimensions and units. This implies --no-init.
     #[arg(long)]
     no_prelude: bool,
+
+    /// Do not load the user init file.
+    #[arg(long)]
+    no_init: bool,
 
     /// Whether or not to pretty-print every input expression.
     #[arg(long)]
@@ -89,18 +93,33 @@ impl Cli {
     }
 
     fn run(&mut self) -> Result<()> {
-        if !self.args.no_prelude {
+        let load_prelude = !self.args.no_prelude;
+        let load_init = !(self.args.no_prelude || self.args.no_init);
+
+        if load_prelude {
             let modules_path = Self::get_modules_path();
             let prelude_path = modules_path.join("prelude.nbt");
 
             self.current_filename = Some(prelude_path.clone());
             let prelude_code = fs::read_to_string(&prelude_path).context(format!(
-                "Error while reading prelude from {}",
+                "Error while reading prelude from '{}'",
                 prelude_path.to_string_lossy()
             ))?;
             let result = self.parse_and_evaluate(&prelude_code, ExecutionMode::Normal, false);
             if result.is_break() {
                 bail!("Interpreter error in Prelude code")
+            }
+        }
+
+        if load_init {
+            let user_init_path = Self::get_config_path().join("init.nbt");
+
+            self.current_filename = Some(user_init_path.clone());
+            if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
+                let result = self.parse_and_evaluate(&user_init_code, ExecutionMode::Normal, false);
+                if result.is_break() {
+                    bail!("Interpreter error in user initialization code")
+                }
             }
         }
 
@@ -273,9 +292,13 @@ impl Cli {
         }
     }
 
-    fn get_modules_path() -> PathBuf {
+    fn get_config_path() -> PathBuf {
         let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        config_dir.join("numbat").join("modules") // TODO: allow for preludes in system paths, user paths, …
+        config_dir.join("numbat") // TODO: allow for preludes in system paths, user paths, …
+    }
+
+    fn get_modules_path() -> PathBuf {
+        Self::get_config_path().join("modules")
     }
 
     fn get_history_path(&self) -> Result<PathBuf> {
