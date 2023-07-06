@@ -1,0 +1,26 @@
+### US customary units
+
+@aliases(inches, in: short)
+unit inch: Length = 0.0254 meter
+
+@aliases(feet, ft: short)
+unit foot: Length = 0.3048 meter
+assert_eq(1 foot, 12 inches, 0.001 inch)  # TODO: move those assertions somewhere else
+
+@aliases(yards, yd: short)
+unit yard: Length = 0.9144 meter
+assert_eq(1 yard, 3 feet, 0.001 foot)
+
+@aliases(miles, mi: short)
+unit mile: Length = 1609.344 meter
+assert_eq(1 mile, 1760 yard, 0.001 yard)
+
+@aliases(gallons, gal: short)
+unit gallon: Volume = 0.003785411784 meter^3
+assert_eq(1 gallon, 231 inch^3, 0.001 inch^3)
+
+@aliases(fathoms)
+unit fathom: Length = 2 yard
+
+@aliases(furlongs)
+unit furlong: Length = 220 yard

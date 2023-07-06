@@ -4,7 +4,7 @@ use std::ffi::OsStr;
 use std::fs;
 
 fn assert_typechecks_and_runs(code: &str) {
-    let result = Context::new_without_prelude(false).interpret(code);
+    let result = Context::new(false).interpret(code);
     assert!(result.is_ok());
     assert!(matches!(
         result.unwrap().1,
@@ -14,40 +14,33 @@ fn assert_typechecks_and_runs(code: &str) {
 
 fn assert_parse_error(code: &str) {
     assert!(matches!(
-        Context::new_without_prelude(false).interpret(code),
+        Context::new(false).interpret(code),
         Err(NumbatError::ParseError(_))
     ));
 }
 
 fn assert_name_resolution_error(code: &str) {
     assert!(matches!(
-        Context::new_without_prelude(false).interpret(code),
+        Context::new(false).interpret(code),
         Err(NumbatError::NameResolutionError(_))
     ));
 }
 
 fn assert_typecheck_error(code: &str) {
     assert!(matches!(
-        Context::new_without_prelude(false).interpret(code),
+        Context::new(false).interpret(code),
         Err(NumbatError::TypeCheckError(_))
     ));
 }
 
 fn assert_runtime_error(code: &str) {
     assert!(matches!(
-        Context::new_without_prelude(false).interpret(code),
+        Context::new(false).interpret(code),
         Err(NumbatError::RuntimeError(_))
     ));
 }
 
-#[test]
-fn prelude_can_be_parsed_and_interpreted() {
-    let prelude_code = fs::read_to_string("../prelude.nbt").unwrap();
-    assert_typechecks_and_runs(&prelude_code);
-}
-
 fn run_for_each_numbat_file_in(folder: &str, f: impl Fn(&str)) {
-    let prelude_code = fs::read_to_string("../prelude.nbt").unwrap();
     for entry in fs::read_dir(folder).unwrap() {
         let path = entry.unwrap().path();
         if path.extension() != Some(OsStr::new("nbt")) {
@@ -56,12 +49,8 @@ fn run_for_each_numbat_file_in(folder: &str, f: impl Fn(&str)) {
 
         println!("Testing example {example:?}", example = path);
         let example_code = fs::read_to_string(path).unwrap();
-        f(&format!(
-            "{prelude}\n\
-             {example}",
-            prelude = prelude_code,
-            example = example_code
-        ));
+
+        f(&example_code);
     }
 }
 

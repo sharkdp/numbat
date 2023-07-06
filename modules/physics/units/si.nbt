@@ -1,0 +1,70 @@
+### Base SI units
+
+@metric_prefixes
+@aliases(meters, metre, metres, m: short)
+unit meter: Length
+
+@metric_prefixes
+@aliases(seconds, s: short, sec: none)
+unit second: Time
+
+@metric_prefixes
+@aliases(grams, gramme, grammes, g: short)
+unit gram: Mass
+
+@metric_prefixes
+@aliases(Hz: short)
+unit hertz: Frequency = 1 / second
+
+@metric_prefixes
+@aliases(newtons, N: short)
+unit newton: Force = kilogram meter / second^2
+
+@metric_prefixes
+@aliases(joules, J: short)
+unit joule: Energy = newton meter
+
+@metric_prefixes
+@aliases(watts, W: short)
+unit watt: Power = joule / second
+
+@metric_prefixes
+@aliases(pascals, Pa: short)
+unit pascal: Pressure = newton / meter^2
+
+@metric_prefixes
+@aliases(amperes, A: short)
+unit ampere: Current
+
+@metric_prefixes
+@aliases(coulombs, C: short)
+unit coulomb: Charge = ampere second
+
+@metric_prefixes
+@aliases(volts, V: short)
+unit volt: Voltage = kilogram meter^2 / (second^3 ampere)
+
+@metric_prefixes
+@aliases(farads, F: short)
+unit farad: Capacitance = coulomb / volt
+
+@metric_prefixes
+@aliases(ohms, Ω: short)
+unit ohm: Resistance = volt / ampere
+
+@metric_prefixes
+@aliases(kelvins, K: short)
+unit kelvin: Temperature
+
+### SI accepted units
+
+@metric_prefixes
+@aliases(radians, rad: short)
+unit radian = meter / meter
+
+@aliases(degrees, deg, °: short)
+unit degree = π radian / 180
+
+@metric_prefixes
+@aliases(litres, liter, liters, l: short, L: short)
+unit litre = 1 dm^3

@@ -1,0 +1,27 @@
+### Physical dimensions
+
+dimension Length
+dimension Area = Length^2
+dimension Volume = Length^3
+
+dimension Time
+dimension Frequency = 1 / Time
+dimension Speed = Length / Time
+dimension Acceleration = Length / Time^2
+
+dimension Mass
+dimension Momentum = Mass × Speed
+dimension Force = Mass × Acceleration = Momentum / Time
+dimension Energy = Momentum^2 / Mass = Mass × Speed^2 = Force × Length
+dimension Power = Energy / Time = Force × Speed
+dimension Pressure = Force / Area = Energy / Volume
+dimension Action = Energy × Time
+dimension MassDensity = Mass / Length^3
+
+dimension Current
+dimension Charge = Current × Time
+dimension Voltage = Energy / Charge = Power / Current
+dimension Capacitance = Charge / Voltage
+dimension Resistance = Voltage / Current
+
+dimension Temperature

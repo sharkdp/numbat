@@ -1,0 +1,37 @@
+### Other units
+
+dimension Bit
+
+@metric_prefixes
+@binary_prefixes
+@aliases(bit: both, bits: both)
+unit bit: Bit
+
+@metric_prefixes
+@binary_prefixes
+@aliases(B: short, byte: both, bytes: both, octet, octets)
+unit byte: Bit = 8 bit
+
+@metric_prefixes
+@aliases(eV: short)
+unit electronvolt = 1.602176634e-19 J
+
+@metric_prefixes
+@aliases(Wh: short)
+unit Wh = W h
+
+@aliases(knots)
+unit knot: Speed = 463 m / 900 s
+
+### Useful 'dummy' units
+
+dimension Pixel
+
+@metric_prefixes
+@aliases(pixels, px: short)
+unit pixel: Pixel
+
+### Abbreviations
+
+unit mph = miles per hour
+unit kph = kilometer per hour

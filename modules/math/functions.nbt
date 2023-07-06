@@ -1,0 +1,36 @@
+### Mathematical functions
+
+fn abs<T>(x: T) -> T
+fn round<T>(x: T) -> T
+fn floor<T>(x: T) -> T
+fn ceil<T>(x: T) -> T
+
+fn sin(x: Scalar) -> Scalar
+fn cos(x: Scalar) -> Scalar
+fn tan(x: Scalar) -> Scalar
+fn asin(x: Scalar) -> Scalar
+fn acos(x: Scalar) -> Scalar
+fn atan(x: Scalar) -> Scalar
+fn atan2<T>(y: T, x: T) -> Scalar
+
+fn sinh(x: Scalar) -> Scalar
+fn cosh(x: Scalar) -> Scalar
+fn tanh(x: Scalar) -> Scalar
+fn asinh(x: Scalar) -> Scalar
+fn acosh(x: Scalar) -> Scalar
+fn atanh(x: Scalar) -> Scalar
+
+fn exp(x: Scalar) -> Scalar
+fn ln(x: Scalar) -> Scalar
+fn log(x: Scalar) -> Scalar = ln(x)
+fn log10(x: Scalar) -> Scalar
+fn log2(x: Scalar) -> Scalar
+
+fn sqrt<D>(x: D^2) -> D = x^(1/2)
+fn sqr<D>(x: D) -> D^2 = x^2
+
+### Statistics functions
+
+fn mean<D>(xs: D…) -> D
+fn maximum<D>(xs: D…) -> D
+fn minimum<D>(xs: D…) -> D

@@ -72,15 +72,17 @@ struct NumbatHelper {
 
 struct Cli {
     args: Args,
-    numbat: Context,
+    context: Context,
     current_filename: Option<PathBuf>,
 }
 
 impl Cli {
     fn new() -> Self {
         let args = Args::parse();
+        let mut context = Context::new_without_prelude(args.debug);
+        context.add_module_path("/home/ped1st/software/numbat/modules"); // TODO
         Self {
-            numbat: Context::new_without_prelude(args.debug),
+            context,
             args,
             current_filename: None,
         }
@@ -201,7 +203,7 @@ impl Cli {
         execution_mode: ExecutionMode,
         pretty_print: bool,
     ) -> ControlFlow {
-        let result = self.numbat.interpret(input);
+        let result = self.context.interpret(input);
 
         match result {
             Ok((statements, interpreter_result)) => {

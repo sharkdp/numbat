@@ -1,0 +1,8 @@
+### Physics constants
+
+# TODO: add more constants, split into multiple modules
+
+let gravity = 9.80665 m / s^2
+let speed_of_light = 299792458 m / s
+let planck_constant = 6.62607015e-34 J / Hz
+let ℏ = planck_constant / 2π

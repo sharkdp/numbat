@@ -1,0 +1,19 @@
+### Time units
+
+@aliases(minutes, min: short)
+unit minute: Time = 60 seconds
+
+@aliases(hours, h: short)
+unit hour: Time = 60 minutes
+
+@aliases(days)
+unit day: Time = 24 hours
+
+@aliases(weeks)
+unit week: Time = 7 days
+
+@aliases(years)
+unit year: Time = 365.2425 days
+
+@aliases(months)
+unit month: Time = year / 12

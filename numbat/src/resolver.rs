@@ -1,4 +1,9 @@
-use crate::{ast::Statement, parser::parse, ParseError};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
+
+use crate::{ast::Statement, name_resolution::NameResolutionError, parser::parse, ParseError};
 
 use thiserror::Error;
 
@@ -81,6 +86,40 @@ pub struct NullImporter {}
 
 impl ModuleImporter for NullImporter {
     fn import(&self, _: &ModulePath) -> Option<String> {
+        None
+    }
+}
+
+pub struct FileSystemImporter {
+    root_paths: Vec<PathBuf>,
+}
+
+impl FileSystemImporter {
+    pub fn new<P: AsRef<Path>>(root_paths: &[P]) -> Self {
+        Self {
+            root_paths: root_paths
+                .iter()
+                .map(|p| p.as_ref().to_path_buf())
+                .collect(),
+        }
+    }
+}
+
+impl ModuleImporter for FileSystemImporter {
+    fn import(&self, module_path: &ModulePath) -> Option<String> {
+        for path in &self.root_paths {
+            let mut path = path.clone();
+            for part in &module_path.0 {
+                path = path.join(part);
+            }
+
+            path.set_extension("nbt");
+
+            if let Ok(code) = fs::read_to_string(path) {
+                return Some(code);
+            }
+        }
+
         None
     }
 }
