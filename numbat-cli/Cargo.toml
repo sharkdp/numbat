@@ -11,6 +11,7 @@ rustyline = { version = "12", features = ["derive"] }
 dirs = "5"
 numbat = { path = "../numbat" }
 colored = "2"
+itertools = "0.10"
 
 [dependencies.clap]
 version = "4"

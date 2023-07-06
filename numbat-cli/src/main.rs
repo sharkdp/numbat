@@ -2,6 +2,7 @@ mod ansi_formatter;
 mod completion;
 
 use ansi_formatter::ANSIFormatter;
+use colored::Colorize;
 use completion::NumbatCompleter;
 
 use numbat::markup;
@@ -188,19 +189,47 @@ impl Cli {
                 Ok(line) => {
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line)?;
-                        let result = self.parse_and_evaluate(
-                            &line,
-                            ExecutionMode::Interactive,
-                            self.args.pretty_print,
-                        );
 
-                        match result {
-                            std::ops::ControlFlow::Continue(()) => {}
-                            std::ops::ControlFlow::Break(ExitStatus::Success) => {
-                                return Ok(());
+                        match line.trim() {
+                            "list" => {
+                                let mut functions = Vec::from(self.context.function_names());
+                                functions.sort();
+                                let mut units = Vec::from(self.context.unit_names());
+                                units.sort();
+                                let mut variables = Vec::from(self.context.variable_names());
+                                variables.sort();
+
+                                println!("{}", "List of functions:".bold());
+                                for function in functions {
+                                    println!("  {function}");
+                                }
+                                println!();
+                                println!("{}", "List of units:".bold());
+                                for unit_names in units {
+                                    println!("  {}", itertools::join(unit_names.iter(), ", "));
+                                }
+                                println!();
+                                println!("{}", "List of variables:".bold());
+                                for variable in variables {
+                                    println!("  {variable}");
+                                }
                             }
-                            std::ops::ControlFlow::Break(ExitStatus::Error) => {
-                                bail!("Interpreter stopped due to error")
+                            _ => {
+                                let result = self.parse_and_evaluate(
+                                    &line,
+                                    ExecutionMode::Interactive,
+                                    self.args.pretty_print,
+                                );
+
+                                match result {
+                                    std::ops::ControlFlow::Continue(()) => {}
+                                    std::ops::ControlFlow::Break(ExitStatus::Success) => {
+                                        return Ok(());
+                                    }
+                                    std::ops::ControlFlow::Break(ExitStatus::Error) => {
+                                        bail!("Interpreter stopped due to error")
+                                    }
+                                }
                             }
                         }
                     }

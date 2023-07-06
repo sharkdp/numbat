@@ -10,6 +10,9 @@ type Result<T> = std::result::Result<T, NameResolutionError>;
 #[derive(Debug, Clone)]
 pub(crate) struct Transformer {
     prefix_parser: PrefixParser,
+    pub variable_names: Vec<String>,
+    pub function_names: Vec<String>,
+    pub unit_names: Vec<Vec<String>>,
 }
 
 // TODO: generalize this to a general-purpose transformer (not just for prefixes, could also be used for optimization)
@@ -17,6 +20,9 @@ impl Transformer {
     pub fn new() -> Self {
         Self {
             prefix_parser: PrefixParser::new(),
+            variable_names: vec![],
+            function_names: vec![],
+            unit_names: vec![],
         }
     }
 
@@ -61,6 +67,7 @@ impl Transformer {
         name: &String,
         decorators: &[Decorator],
     ) -> Result<()> {
+        let mut unit_names = vec![name.to_string()];
         let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
         let binary_prefixes = Self::has_decorator(decorators, Decorator::BinaryPrefixes);
         for (alias, accepts_prefix) in decorator::name_and_aliases(name, decorators) {
@@ -71,7 +78,11 @@ impl Transformer {
                 binary_prefixes,
                 name,
             )?;
+            unit_names.push(alias.to_string());
         }
+
+        unit_names.sort();
+        self.unit_names.push(unit_names);
 
         Ok(())
     }
@@ -93,10 +104,12 @@ impl Transformer {
                 )
             }
             Statement::DeclareVariable(name, expr, dexpr) => {
+                self.variable_names.push(name.clone());
                 self.prefix_parser.add_other_identifier(&name)?;
                 Statement::DeclareVariable(name, self.transform_expression(expr), dexpr)
             }
             Statement::DeclareFunction(name, type_params, args, body, return_type) => {
+                self.function_names.push(name.clone());
                 self.prefix_parser.add_other_identifier(&name)?;
                 Statement::DeclareFunction(
                     name,

@@ -80,6 +80,18 @@ impl Context {
         self.module_paths.push(path.as_ref().to_path_buf());
     }
 
+    pub fn variable_names(&self) -> &[String] {
+        &self.prefix_transformer.variable_names
+    }
+
+    pub fn function_names(&self) -> &[String] {
+        &self.prefix_transformer.function_names
+    }
+
+    pub fn unit_names(&self) -> &[Vec<String>] {
+        &self.prefix_transformer.unit_names
+    }
+
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
         let importer = FileSystemImporter::new(&self.module_paths[..]);
         let resolver = Resolver::new(&importer);

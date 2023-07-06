@@ -502,6 +502,7 @@ dependencies = [
  "clap",
  "colored",
  "dirs",
+ "itertools",
  "numbat",
  "predicates",
  "rustyline",
