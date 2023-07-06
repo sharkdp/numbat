@@ -48,6 +48,7 @@ pub enum TokenKind {
     Multiply,
     Power,
     Divide,
+    Per,
     Comma,
     Arrow,
     Equal,
@@ -188,7 +189,7 @@ impl Tokenizer {
         static KEYWORDS: OnceLock<HashMap<&'static str, TokenKind>> = OnceLock::new();
         let keywords = KEYWORDS.get_or_init(|| {
             let mut m = HashMap::new();
-            m.insert("per", TokenKind::Divide);
+            m.insert("per", TokenKind::Per);
             m.insert("to", TokenKind::Arrow);
             m.insert("let", TokenKind::Let);
             m.insert("fn", TokenKind::Fn);

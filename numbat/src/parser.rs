@@ -23,7 +23,8 @@
 //! postfix_apply   →   conversion ( "//" identifier ) *
 //! conversion      →   term ( "→" term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
-//! factor          →   unary ( ( "*" | "/") unary ) *
+//! factor          →   unary ( ( "*" | "/") per_factor ) *
+//! per_factor      →   unary ( "per" unary ) *
 //! unary           →   "-" unary | ifactor
 //! ifactor         →   power ( " " power ) *
 //! power           →   unicode_power ( "^" power )
@@ -549,7 +550,7 @@ impl<'a> Parser<'a> {
     }
 
     fn factor(&mut self) -> Result<Expression> {
-        let mut expr = self.unary()?;
+        let mut expr = self.per_factor()?;
         while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
             let operator = if operator_token.kind == TokenKind::Multiply {
                 BinaryOperator::Mul
@@ -557,10 +558,22 @@ impl<'a> Parser<'a> {
                 BinaryOperator::Div
             };
 
-            let rhs = self.unary()?;
+            let rhs = self.per_factor()?;
 
             expr = Expression::BinaryOperator(operator, Box::new(expr), Box::new(rhs));
         }
+        Ok(expr)
+    }
+
+    fn per_factor(&mut self) -> Result<Expression> {
+        let mut expr = self.unary()?;
+
+        while self.match_exact(TokenKind::Per).is_some() {
+            let rhs = self.per_factor()?;
+
+            expr = Expression::BinaryOperator(BinaryOperator::Div, Box::new(expr), Box::new(rhs));
+        }
+
         Ok(expr)
     }
 
@@ -1032,6 +1045,16 @@ mod tests {
         );
 
         should_fail(&["1*@", "1*", "1 per", "÷", "×"]);
+
+        // 'per' is higher-precedence than '/'
+        parse_as_expression(
+            &["1 / meter per second"],
+            binop!(
+                scalar!(1.0),
+                Div,
+                binop!(identifier!("meter"), Div, identifier!("second"))
+            ),
+        );
     }
 
     #[test]
