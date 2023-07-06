@@ -16,6 +16,7 @@ pub mod pretty_print;
 mod product;
 mod quantity;
 mod registry;
+mod resolver;
 mod span;
 mod tokenizer;
 mod typechecker;
@@ -27,8 +28,10 @@ mod vm;
 use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, RuntimeError};
 use name_resolution::NameResolutionError;
-use parser::parse;
 use prefix_transformer::Transformer;
+use resolver::NullImporter;
+use resolver::Resolver;
+use resolver::ResolverError;
 use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
@@ -41,6 +44,8 @@ pub use parser::ParseError;
 pub enum NumbatError {
     #[error("{0}")]
     ParseError(ParseError),
+    #[error("{0}")]
+    ResolverError(ResolverError),
     #[error("{0}")]
     NameResolutionError(NameResolutionError),
     #[error("{0}")]
@@ -77,7 +82,13 @@ impl Context {
     }
 
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
-        let statements = parse(code).map_err(NumbatError::ParseError)?;
+        let importer = NullImporter {};
+        let resolver = Resolver::new(&importer);
+
+        let statements = resolver.resolve(code).map_err(|e| match e {
+            ResolverError::ParseError(e) => NumbatError::ParseError(e),
+            e => NumbatError::ResolverError(e),
+        })?;
 
         let prefix_transformer_old = self.prefix_transformer.clone();
 

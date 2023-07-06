@@ -251,6 +251,10 @@ impl Cli {
 
                 execution_mode.exit_status_in_case_of_error()
             }
+            Err(NumbatError::ResolverError(e)) => {
+                eprintln!("Module resolver error: {:#}", e);
+                execution_mode.exit_status_in_case_of_error()
+            }
             Err(NumbatError::NameResolutionError(e)) => {
                 eprintln!("Name resolution error: {:#}", e);
                 execution_mode.exit_status_in_case_of_error()

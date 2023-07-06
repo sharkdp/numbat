@@ -545,6 +545,9 @@ impl TypeChecker {
 
                 typed_ast::Statement::ProcedureCall(kind, checked_args)
             }
+            ast::Statement::ModuleImport(_) => {
+                unreachable!("Modules should have been inlined by now")
+            }
         })
     }
 

@@ -61,20 +61,10 @@ impl DimensionRegistry {
     }
 }
 
-#[cfg(test)]
-pub fn parse_dexpr(input: &str) -> DimensionExpression {
-    let tokens = crate::tokenizer::tokenize(input).expect("No tokenizer errors in tests");
-    let mut parser = crate::parser::Parser::new(&tokens);
-    let expr = parser
-        .dimension_expression()
-        .expect("No parser errors in tests");
-    assert!(parser.is_at_end());
-    expr
-}
-
 #[test]
 fn basic() {
     use crate::arithmetic::Rational;
+    use crate::parser::parse_dexpr;
     use crate::registry::BaseRepresentationFactor;
 
     let mut registry = DimensionRegistry::default();

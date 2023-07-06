@@ -12,7 +12,7 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl | procedure_call
+//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl | procedure_call | module_import
 //!
 //! variable_decl   →   …
 //! function_decl   →   …
@@ -38,6 +38,7 @@ use crate::ast::{BinaryOperator, DimensionExpression, Expression, ProcedureKind,
 use crate::decorator::Decorator;
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
+use crate::resolver::ModulePath;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError, TokenizerErrorKind};
 
@@ -131,7 +132,7 @@ impl ParseError {
 
 type Result<T> = std::result::Result<T, ParseError>;
 
-pub struct Parser<'a> {
+struct Parser<'a> {
     tokens: &'a [Token],
     current: usize,
     decorator_stack: Vec<Decorator>,
@@ -444,6 +445,21 @@ impl<'a> Parser<'a> {
                     kind: ParseErrorKind::ExpectedIdentifierAfterUnit,
                     span: self.peek().span.clone(),
                 })
+            }
+        } else if self.match_exact(TokenKind::Use).is_some() {
+            if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                let mut module_path = vec![identifier.lexeme.clone()];
+
+                while self.match_exact(TokenKind::ColonColon).is_some() {
+                    if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                        module_path.push(identifier.lexeme.clone());
+                    } else {
+                        todo!("Parse error")
+                    }
+                }
+                Ok(Statement::ModuleImport(ModulePath(module_path)))
+            } else {
+                todo!("Parse error")
             }
         } else if self
             .match_any(&[TokenKind::ProcedurePrint, TokenKind::ProcedureAssertEq])
@@ -847,6 +863,17 @@ pub fn parse(input: &str) -> Result<Vec<Statement>> {
     })?;
     let mut parser = Parser::new(&tokens);
     parser.parse()
+}
+
+#[cfg(test)]
+pub fn parse_dexpr(input: &str) -> DimensionExpression {
+    let tokens = crate::tokenizer::tokenize(input).expect("No tokenizer errors in tests");
+    let mut parser = crate::parser::Parser::new(&tokens);
+    let expr = parser
+        .dimension_expression()
+        .expect("No parser errors in tests");
+    assert!(parser.is_at_end());
+    expr
 }
 
 #[cfg(test)]

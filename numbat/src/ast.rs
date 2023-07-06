@@ -2,7 +2,7 @@ use crate::markup as m;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
-    pretty_print::PrettyPrint,
+    pretty_print::PrettyPrint, resolver::ModulePath,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -294,6 +294,7 @@ pub enum Statement {
         Vec<Decorator>,
     ),
     ProcedureCall(ProcedureKind, Vec<Expression>),
+    ModuleImport(ModulePath),
 }
 
 fn accepts_prefix_markup(accepts_prefix: &Option<AcceptsPrefix>) -> Markup {
@@ -470,6 +471,15 @@ impl PrettyPrint for Statement {
                     .sum()
                     + m::operator(")")
             }
+            Statement::ModuleImport(module_path) => {
+                m::keyword("use")
+                    + m::space()
+                    + Itertools::intersperse(
+                        module_path.0.iter().map(|m| m::identifier(m)),
+                        m::operator("::"),
+                    )
+                    .sum()
+            }
         }
     }
 }
@@ -535,7 +545,7 @@ mod tests {
             )
             .unwrap();
 
-        let statements = crate::parse(code).unwrap();
+        let statements = crate::parser::parse(code).unwrap();
         transformer.transform(statements).unwrap()[0].clone()
     }
 

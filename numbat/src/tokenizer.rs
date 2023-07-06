@@ -49,6 +49,7 @@ pub enum TokenKind {
     Arrow,
     Equal,
     Colon,
+    ColonColon,
     PostfixApply,
     UnicodeExponent,
     At,
@@ -59,6 +60,7 @@ pub enum TokenKind {
     Fn,
     Dimension,
     Unit,
+    Use,
 
     Long,
     Short,
@@ -189,6 +191,7 @@ impl Tokenizer {
             m.insert("fn", TokenKind::Fn);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
+            m.insert("use", TokenKind::Use);
             m.insert("long", TokenKind::Long);
             m.insert("short", TokenKind::Short);
             m.insert("both", TokenKind::Both);
@@ -295,6 +298,7 @@ impl Tokenizer {
             '^' => TokenKind::Power,
             ',' => TokenKind::Comma,
             '=' => TokenKind::Equal,
+            ':' if self.match_char(':') => TokenKind::ColonColon,
             ':' => TokenKind::Colon,
             '@' => TokenKind::At,
             '→' | '➞' => TokenKind::Arrow,
