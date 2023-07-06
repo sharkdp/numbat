@@ -20,6 +20,9 @@ pub enum TokenizerErrorKind {
         base: usize,
         character: Option<char>,
     },
+
+    #[error("Unterminated string")]
+    UnterminatedString,
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -328,7 +331,12 @@ impl Tokenizer {
                 if self.match_char('"') {
                     TokenKind::String
                 } else {
-                    todo!("Parse error: string not terminated");
+                    return tokenizer_error(
+                        self.current_line,
+                        self.current_position,
+                        self.current_index,
+                        TokenizerErrorKind::UnterminatedString,
+                    );
                 }
             }
             '…' => TokenKind::Ellipsis,
