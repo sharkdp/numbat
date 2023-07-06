@@ -18,7 +18,7 @@ unit electronvolt = 1.602176634e-19 J
 
 @metric_prefixes
 @aliases(Wh: short)
-unit Wh = W h
+unit watthour = W h
 
 @aliases(knots)
 unit knot: Speed = 463 m / 900 s

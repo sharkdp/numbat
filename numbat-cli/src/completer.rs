@@ -6,6 +6,8 @@ use rustyline::{
     completion::{extract_word, Completer, Pair},
 };
 
+use crate::keywords::KEYWORDS;
+
 pub struct NumbatCompleter {
     pub context: Arc<Mutex<Context>>,
 }
@@ -28,21 +30,7 @@ impl Completer for NumbatCompleter {
             }
         });
 
-        let mut words = vec![
-            // keywords
-            "let ".into(),
-            "fn ".into(),
-            "dimension ".into(),
-            "unit ".into(),
-            "use ".into(),
-            // 'inline' keywords
-            "short".into(),
-            "long".into(),
-            // decorators
-            "metric_prefixes".into(),
-            "binary_prefixes".into(),
-            "aliases".into(),
-        ];
+        let mut words: Vec<_> = KEYWORDS.iter().map(|k| k.to_string()).collect();
 
         {
             let ctx = self.context.lock().unwrap();

@@ -1,16 +1,18 @@
 mod ansi_formatter;
-mod completion;
+mod completer;
+mod highlighter;
+mod keywords;
 
-use ansi_formatter::ANSIFormatter;
-use colored::Colorize;
-use completion::NumbatCompleter;
+use completer::NumbatCompleter;
+use highlighter::NumbatHighlighter;
 
 use numbat::markup;
 use numbat::pretty_print::PrettyPrint;
-use numbat::{markup::Formatter, Context, ExitStatus, InterpreterResult, NumbatError, ParseError};
+use numbat::{Context, ExitStatus, InterpreterResult, NumbatError, ParseError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
+use colored::Colorize;
 use rustyline::config::Configurer;
 use rustyline::{
     self, error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter,
@@ -21,6 +23,8 @@ use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+
+use crate::ansi_formatter::ansi_format;
 
 type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
@@ -74,6 +78,8 @@ impl ExecutionMode {
 struct NumbatHelper {
     #[rustyline(Completer)]
     completer: NumbatCompleter,
+    #[rustyline(Highlighter)]
+    highlighter: NumbatHighlighter,
 }
 
 struct Cli {
@@ -166,6 +172,9 @@ impl Cli {
         rl.set_completion_type(rustyline::CompletionType::List);
         rl.set_helper(Some(NumbatHelper {
             completer: NumbatCompleter {
+                context: self.context.clone(),
+            },
+            highlighter: NumbatHighlighter {
                 context: self.context.clone(),
             },
         }));
@@ -277,7 +286,7 @@ impl Cli {
                 if pretty_print {
                     println!();
                     for statement in &statements {
-                        let repr = ANSIFormatter {}.format(&statement.pretty_print(), true);
+                        let repr = ansi_format(&statement.pretty_print(), true);
                         println!("{}", repr);
                         println!();
                     }
@@ -291,7 +300,7 @@ impl Cli {
                             + markup::operator("=")
                             + markup::space()
                             + quantity.pretty_print();
-                        println!("{}", ANSIFormatter {}.format(&q_markup, false));
+                        println!("{}", ansi_format(&q_markup, false));
                         println!();
 
                         ControlFlow::Continue(())

@@ -1,4 +1,4 @@
-use numbat::markup::{FormatType, FormattedString, Formatter};
+use numbat::markup::{FormatType, FormattedString, Formatter, Markup};
 
 use colored::Colorize;
 
@@ -21,4 +21,8 @@ impl Formatter for ANSIFormatter {
         })
         .to_string()
     }
+}
+
+pub fn ansi_format(m: &Markup, indent: bool) -> String {
+    ANSIFormatter {}.format(m, indent)
 }
