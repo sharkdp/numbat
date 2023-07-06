@@ -7,7 +7,7 @@ file_extensions:
 scope: source.nbt
 contexts:
   main:
-    - match: \b(per|to|let|fn|dimension|unit|long|short|both|none|print|assert_eq)\b
+    - match: \b(per|to|let|fn|dimension|unit|use|long|short|both|none|print|assert_eq)\b
       scope: keyword.control.nbt
     - match: '#(.*)'
       scope: comment.line.nbt

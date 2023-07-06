@@ -57,7 +57,7 @@ pub enum NumbatError {
     RuntimeError(RuntimeError),
 }
 
-pub type Result<T> = std::result::Result<T, NumbatError>;
+type Result<T> = std::result::Result<T, NumbatError>;
 
 pub struct Context {
     prefix_transformer: Transformer,
