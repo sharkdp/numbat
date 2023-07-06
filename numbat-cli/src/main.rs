@@ -191,7 +191,7 @@ impl Cli {
                         rl.add_history_entry(&line)?;
 
                         match line.trim() {
-                            "list" => {
+                            "list" | "ls" | "ll" => {
                                 let mut functions = Vec::from(self.context.function_names());
                                 functions.sort();
                                 let mut units = Vec::from(self.context.unit_names());
@@ -213,6 +213,12 @@ impl Cli {
                                 for variable in variables {
                                     println!("  {variable}");
                                 }
+                            }
+                            "clear" => {
+                                rl.clear_screen()?;
+                            }
+                            "quit" | "exit" => {
+                                return Ok(());
                             }
                             _ => {
                                 let result = self.parse_and_evaluate(
