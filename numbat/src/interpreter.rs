@@ -11,7 +11,7 @@ pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
     #[error("No statements in program")]
-    NoStatements, // TODO: move this error to an earlier stage?
+    NoStatements,
     #[error("{0}")]
     UnitRegistryError(UnitRegistryError), // TODO: can this even be triggered?
     #[error("{0}")]
@@ -39,7 +39,7 @@ pub enum InterpreterResult {
 }
 
 impl InterpreterResult {
-    pub(crate) fn is_success(&self) -> bool {
+    pub fn is_success(&self) -> bool {
         match self {
             Self::Quantity(_) => true,
             Self::Continue => true,

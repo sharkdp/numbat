@@ -1,3 +1,7 @@
+mod common;
+
+use common::get_test_context;
+
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
 
@@ -13,12 +17,12 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &s
 }
 
 fn expect_output(code: &str, expected_output: &str) {
-    let mut ctx = Context::new(false);
+    let mut ctx = get_test_context();
     expect_output_with_context(&mut ctx, code, expected_output)
 }
 
 fn expect_failure(code: &str, msg_part: &str) {
-    let mut ctx = Context::new(false);
+    let mut ctx = get_test_context();
     if let Err(e) = ctx.interpret(code) {
         let error_message = e.to_string();
         assert!(error_message.contains(msg_part));
@@ -56,7 +60,7 @@ fn test_conversions() {
 
 #[test]
 fn test_implicit_conversion() {
-    let mut ctx = Context::new(false);
+    let mut ctx = get_test_context();
 
     let _ = ctx.interpret("let x = 5 m").unwrap();
 
@@ -122,7 +126,7 @@ fn test_other_functions() {
 
 #[test]
 fn test_last_result_identifier() {
-    let mut ctx = Context::new(false);
+    let mut ctx = get_test_context();
 
     let _ = ctx.interpret("2 + 3").unwrap();
     expect_output_with_context(&mut ctx, "ans", "5");

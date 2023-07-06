@@ -266,8 +266,6 @@ fn print(args: &[Quantity]) -> ControlFlow {
 fn assert_eq(args: &[Quantity]) -> ControlFlow {
     assert!(args.len() == 2 || args.len() == 3);
 
-    // TODO: make sure that phys. dimension line up
-
     if args.len() == 2 {
         if args[0] == args[1] {
             ControlFlow::Continue(())

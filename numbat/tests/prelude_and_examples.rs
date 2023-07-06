@@ -1,10 +1,14 @@
-use numbat::{Context, InterpreterResult, NumbatError};
+mod common;
+
+use common::get_test_context;
+
+use numbat::{InterpreterResult, NumbatError};
 
 use std::ffi::OsStr;
 use std::fs;
 
 fn assert_typechecks_and_runs(code: &str) {
-    let result = Context::new(false).interpret(code);
+    let result = get_test_context().interpret(code);
     assert!(result.is_ok());
     assert!(matches!(
         result.unwrap().1,
@@ -14,28 +18,28 @@ fn assert_typechecks_and_runs(code: &str) {
 
 fn assert_parse_error(code: &str) {
     assert!(matches!(
-        Context::new(false).interpret(code),
+        get_test_context().interpret(code),
         Err(NumbatError::ParseError(_))
     ));
 }
 
 fn assert_name_resolution_error(code: &str) {
     assert!(matches!(
-        Context::new(false).interpret(code),
+        get_test_context().interpret(code),
         Err(NumbatError::NameResolutionError(_))
     ));
 }
 
 fn assert_typecheck_error(code: &str) {
     assert!(matches!(
-        Context::new(false).interpret(code),
+        get_test_context().interpret(code),
         Err(NumbatError::TypeCheckError(_))
     ));
 }
 
 fn assert_runtime_error(code: &str) {
     assert!(matches!(
-        Context::new(false).interpret(code),
+        get_test_context().interpret(code),
         Err(NumbatError::RuntimeError(_))
     ));
 }

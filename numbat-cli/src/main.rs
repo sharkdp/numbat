@@ -79,8 +79,8 @@ struct Cli {
 impl Cli {
     fn new() -> Self {
         let args = Args::parse();
-        let mut context = Context::new_without_prelude(args.debug);
-        context.add_module_path("/home/ped1st/software/numbat/modules"); // TODO
+        let mut context = Context::new(args.debug);
+        context.add_module_path(Self::get_modules_path());
         Self {
             context,
             args,
@@ -90,7 +90,8 @@ impl Cli {
 
     fn run(&mut self) -> Result<()> {
         if !self.args.no_prelude {
-            let prelude_path = self.get_prelude_path();
+            let modules_path = Self::get_modules_path();
+            let prelude_path = modules_path.join("prelude.nbt");
 
             self.current_filename = Some(prelude_path.clone());
             let prelude_code = fs::read_to_string(&prelude_path).context(format!(
@@ -272,9 +273,9 @@ impl Cli {
         }
     }
 
-    fn get_prelude_path(&self) -> PathBuf {
+    fn get_modules_path() -> PathBuf {
         let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        config_dir.join("numbat").join("prelude.nbt") // TODO: allow for preludes in system paths, user paths, …
+        config_dir.join("numbat").join("modules") // TODO: allow for preludes in system paths, user paths, …
     }
 
     fn get_history_path(&self) -> Result<PathBuf> {

@@ -67,27 +67,13 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new_without_prelude(debug: bool) -> Self {
+    pub fn new(debug: bool) -> Self {
         Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(debug),
             module_paths: vec![],
         }
-    }
-
-    pub fn new(debug: bool) -> Self {
-        let mut context = Self::new_without_prelude(debug);
-
-        let module_path = Path::new("/home/ped1st/software/numbat/modules");
-        context.add_module_path(module_path); // TODO
-
-        assert!(context
-            .interpret(&std::fs::read_to_string(module_path.join("prelude.nbt")).unwrap())
-            .expect("Error while running prelude")
-            .1
-            .is_success()); // TODO: error handling
-        context
     }
 
     pub fn add_module_path<P: AsRef<Path>>(&mut self, path: P) {
