@@ -199,6 +199,8 @@ impl Cli {
 
                                 let mut functions = Vec::from(ctx.function_names());
                                 functions.sort();
+                                let mut dimensions = Vec::from(ctx.dimension_names());
+                                dimensions.sort();
                                 let mut units = Vec::from(ctx.unit_names());
                                 units.sort();
                                 let mut variables = Vec::from(ctx.variable_names());
@@ -207,6 +209,11 @@ impl Cli {
                                 println!("{}", "List of functions:".bold());
                                 for function in functions {
                                     println!("  {function}");
+                                }
+                                println!();
+                                println!("{}", "List of dimensions:".bold());
+                                for dimension in dimensions {
+                                    println!("  {dimension}");
                                 }
                                 println!();
                                 println!("{}", "List of units:".bold());

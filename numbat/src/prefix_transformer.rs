@@ -10,9 +10,11 @@ type Result<T> = std::result::Result<T, NameResolutionError>;
 #[derive(Debug, Clone)]
 pub(crate) struct Transformer {
     prefix_parser: PrefixParser,
+
     pub variable_names: Vec<String>,
     pub function_names: Vec<String>,
     pub unit_names: Vec<Vec<String>>,
+    pub dimension_names: Vec<String>,
 }
 
 // TODO: generalize this to a general-purpose transformer (not just for prefixes, could also be used for optimization)
@@ -23,6 +25,7 @@ impl Transformer {
             variable_names: vec![],
             function_names: vec![],
             unit_names: vec![],
+            dimension_names: vec![],
         }
     }
 
@@ -119,7 +122,10 @@ impl Transformer {
                     return_type,
                 )
             }
-            statement @ Statement::DeclareDimension(_, _) => statement,
+            Statement::DeclareDimension(name, dexprs) => {
+                self.dimension_names.push(name.clone());
+                Statement::DeclareDimension(name, dexprs)
+            }
             Statement::ProcedureCall(procedure, args) => Statement::ProcedureCall(
                 procedure,
                 args.into_iter()

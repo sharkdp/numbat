@@ -92,6 +92,10 @@ impl Context {
         &self.prefix_transformer.unit_names
     }
 
+    pub fn dimension_names(&self) -> &[String] {
+        &self.prefix_transformer.dimension_names
+    }
+
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
         let importer = FileSystemImporter::new(&self.module_paths[..]);
         let resolver = Resolver::new(&importer);

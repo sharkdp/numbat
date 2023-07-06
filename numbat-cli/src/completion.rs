@@ -56,6 +56,10 @@ impl Completer for NumbatCompleter {
                 words.push(format!("{}(", function));
             }
 
+            for dimension in ctx.dimension_names() {
+                words.push(dimension.clone());
+            }
+
             for unit_names in ctx.unit_names() {
                 for unit in unit_names {
                     words.push(unit.clone());
