@@ -33,7 +33,6 @@ use interpreter::{Interpreter, RuntimeError};
 use name_resolution::NameResolutionError;
 use prefix_transformer::Transformer;
 use resolver::FileSystemImporter;
-use resolver::NullImporter;
 use resolver::Resolver;
 use resolver::ResolverError;
 use thiserror::Error;

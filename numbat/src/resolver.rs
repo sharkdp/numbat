@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{ast::Statement, name_resolution::NameResolutionError, parser::parse, ParseError};
+use crate::{ast::Statement, parser::parse, ParseError};
 
 use thiserror::Error;
 
@@ -155,7 +155,7 @@ mod tests {
         let importer = TestImporter {};
 
         let resolver = Resolver::new(&importer);
-        let program_inlined = resolver.resolve(&program).unwrap();
+        let program_inlined = resolver.resolve(program).unwrap();
 
         assert_eq!(
             &program_inlined,

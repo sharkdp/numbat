@@ -36,19 +36,15 @@ impl Number {
         // big-decimal type.
         if self.is_integer() && self.0.abs() < 1e15 {
             format!("{number}")
+        } else if number.abs() > 1e12 || number.abs() < 1e-6 {
+            format!("{number:.fractional_digits$e}")
         } else {
-            if number.abs() > 1e12 {
-                format!("{number:.fractional_digits$e}")
-            } else if number.abs() < 1e-6 {
-                format!("{number:.fractional_digits$e}")
+            let formatted_number = format!("{number:.fractional_digits$}");
+            let formatted_number = formatted_number.trim_end_matches('0');
+            if formatted_number.ends_with('.') {
+                format!("{}0", formatted_number)
             } else {
-                let formatted_number = format!("{number:.fractional_digits$}");
-                let formatted_number = formatted_number.trim_end_matches('0');
-                if formatted_number.ends_with('.') {
-                    format!("{}0", formatted_number)
-                } else {
-                    formatted_number.to_string()
-                }
+                formatted_number.to_string()
             }
         }
     }

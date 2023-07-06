@@ -292,7 +292,7 @@ impl Display for Unit {
                 exponent,
             } in fs.iter()
             {
-                result.push_str(&prefix.to_string_short());
+                result.push_str(&prefix.as_string_short());
                 result.push_str(&base_unit.canonical_name);
                 result.push_str(&pretty_exponent(&exponent));
                 result.push('·');
@@ -324,7 +324,7 @@ impl Display for Unit {
             (&[], &[]) => "".into(),
             (&[], negative) => to_string(negative),
             (positive, &[]) => to_string(positive),
-            (positive, &[ref single_negative]) => format!(
+            (positive, [single_negative]) => format!(
                 "{}/{}",
                 to_string(positive),
                 to_string(&flip_exponents(&[single_negative.clone()]))

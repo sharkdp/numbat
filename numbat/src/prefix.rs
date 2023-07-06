@@ -102,7 +102,7 @@ impl Prefix {
         matches!(self, Prefix::Binary(_))
     }
 
-    pub fn to_string_short(&self) -> String {
+    pub fn as_string_short(&self) -> String {
         match self {
             Prefix::Metric(-30) => "q".into(),
             Prefix::Metric(-27) => "r".into(),
@@ -146,7 +146,7 @@ impl Prefix {
         }
     }
 
-    pub fn to_string_long(&self) -> String {
+    pub fn as_string_long(&self) -> String {
         match self {
             Prefix::Metric(-30) => "quecto".into(),
             Prefix::Metric(-27) => "ronto".into(),

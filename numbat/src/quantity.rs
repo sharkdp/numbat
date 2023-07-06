@@ -262,14 +262,13 @@ impl PrettyPrint for Quantity {
 
         let unit_str = format!("{}", self.unit());
 
-        let output_markup = markup::value(formatted_number)
+        markup::value(formatted_number)
             + if unit_str == "°" {
                 markup::Markup::default()
             } else {
                 markup::space()
             }
-            + markup::unit(unit_str);
-        output_markup
+            + markup::unit(unit_str)
     }
 }
 

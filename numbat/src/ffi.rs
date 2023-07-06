@@ -469,10 +469,9 @@ fn maximum(args: &[Quantity]) -> Quantity {
     let output_unit = args[0].unit();
     Quantity::new(
         args.iter()
-            .map(|q| q.convert_to(output_unit).unwrap().unsafe_value().clone())
+            .map(|q| *q.convert_to(output_unit).unwrap().unsafe_value())
             .max_by(|l, r| l.partial_cmp(r).unwrap())
-            .unwrap()
-            .clone(),
+            .unwrap(),
         output_unit.clone(),
     )
 }
@@ -483,10 +482,9 @@ fn minimum(args: &[Quantity]) -> Quantity {
     let output_unit = args[0].unit();
     Quantity::new(
         args.iter()
-            .map(|q| q.convert_to(output_unit).unwrap().unsafe_value().clone())
+            .map(|q| *q.convert_to(output_unit).unwrap().unsafe_value())
             .min_by(|l, r| l.partial_cmp(r).unwrap())
-            .unwrap()
-            .clone(),
+            .unwrap(),
         output_unit.clone(),
     )
 }
