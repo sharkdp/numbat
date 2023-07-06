@@ -13,10 +13,6 @@ unit bit: Bit
 unit byte: Bit = 8 bit
 
 @metric_prefixes
-@aliases(eV: short)
-unit electronvolt = 1.602176634e-19 J
-
-@metric_prefixes
 @aliases(Wh: short)
 unit watthour = W h
 

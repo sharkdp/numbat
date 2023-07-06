@@ -1,14 +1,5 @@
 ### Time units
 
-@aliases(minutes, min: short)
-unit minute: Time = 60 seconds
-
-@aliases(hours, h: short)
-unit hour: Time = 60 minutes
-
-@aliases(days)
-unit day: Time = 24 hours
-
 @aliases(weeks)
 unit week: Time = 7 days
 

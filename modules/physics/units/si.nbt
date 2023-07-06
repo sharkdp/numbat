@@ -32,11 +32,11 @@ unit candela: LuminousIntensity
 
 @metric_prefixes
 @aliases(radians, rad: short)
-unit radian = meter / meter
+unit radian: Angle = meter / meter
 
 @metric_prefixes
 @aliases(steradians, sr: short)
-unit steradian = meter^2 / meter^2
+unit steradian: SolidAngle = meter^2 / meter^2
 
 @metric_prefixes
 @aliases(Hz: short)
@@ -116,9 +116,43 @@ unit katal: CatalyticActivity = mole / second
 
 ### SI accepted units
 
+@aliases(minutes, min: short)
+unit minute: Time = 60 seconds
+
+@aliases(hours, hr, h: short)
+unit hour: Time = 60 minutes
+
+@aliases(days, d: short)
+unit day: Time = 24 hours
+
+@aliases(astronomicalunits, au: short, AU: short)
+unit astronomicalunit: Length = 149597870700 meter
+
 @aliases(degrees, deg, °: short)
-unit degree = π radian / 180
+unit degree: Angle = π / 180 × radian
+
+@aliases(arcminutes)
+unit arcminute: Angle = 1 / 60 × degree
+
+@aliases(arcseconds)
+unit arcsecond: Angle = 1 / 60 × arcminute
+
+@aliases(hectares, ha: short)
+unit hectare: Area = hectometer^2
 
 @metric_prefixes
 @aliases(litres, liter, liters, l: short, L: short)
-unit litre = 1 dm^3
+unit litre: Volume = decimeter^3
+
+#@metric_prefixes  # TODO: clash with foot=ft (femto tonne)
+@aliases(tonnes, ton, tons, t: short)
+unit tonne: Mass = 10^3 kilogram
+unit kiloton = 1000 ton
+unit megaton = 1000 kiloton
+
+@aliases(daltons, Da: short)
+unit dalton: Mass = 1.660539040e-27 kilogram
+
+@metric_prefixes
+@aliases(eV: short)
+unit electronvolt: Energy = 1.602176634e-19 joule
