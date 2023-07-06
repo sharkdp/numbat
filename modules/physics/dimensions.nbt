@@ -1,5 +1,8 @@
 ### Physical dimensions
 
+dimension Angle = 1
+dimension SolidAngle = Angle^2
+
 dimension Length
 dimension Area = Length^2
 dimension Volume = Length^3
@@ -23,5 +26,22 @@ dimension Charge = Current × Time
 dimension Voltage = Energy / Charge = Power / Current
 dimension Capacitance = Charge / Voltage
 dimension Resistance = Voltage / Current
+dimension Conductance = 1 / Resistance
+dimension MagneticFluxDensity = Force / (Charge × Speed)
+dimension MagneticFlux = MagneticFluxDensity × Area
+dimension Inductance = MagneticFlux / Current
 
 dimension Temperature
+
+dimension AmountOfSubstance
+dimension Concentration = AmountOfSubstance / Volume
+dimension MolarMass = Mass / AmountOfSubstance
+dimension CatalyticActivity = AmountOfSubstance / Time
+
+dimension LuminousIntensity
+dimension LuminousFlux = LuminousIntensity × Angle^2
+dimension Illuminance = LuminousFlux / Area
+
+dimension Activity = 1 / Time
+dimension AbsorbedDose = Energy / Mass
+dimension EquivalentDose = Energy / Mass

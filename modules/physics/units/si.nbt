@@ -1,4 +1,4 @@
-### Base SI units
+### SI base units
 
 @metric_prefixes
 @aliases(meters, metre, metres, m: short)
@@ -13,6 +13,32 @@ unit second: Time
 unit gram: Mass
 
 @metric_prefixes
+@aliases(amperes, A: short)
+unit ampere: Current
+
+@metric_prefixes
+@aliases(kelvins, K: short)
+unit kelvin: Temperature
+
+@metric_prefixes
+@aliases(moles, mol: short)
+unit mole: AmountOfSubstance
+
+@metric_prefixes
+@aliases(candelas, cd: short)
+unit candela: LuminousIntensity
+
+### SI derived units
+
+@metric_prefixes
+@aliases(radians, rad: short)
+unit radian = meter / meter
+
+@metric_prefixes
+@aliases(steradians, sr: short)
+unit steradian = meter^2 / meter^2
+
+@metric_prefixes
 @aliases(Hz: short)
 unit hertz: Frequency = 1 / second
 
@@ -21,20 +47,16 @@ unit hertz: Frequency = 1 / second
 unit newton: Force = kilogram meter / second^2
 
 @metric_prefixes
+@aliases(pascals, Pa: short)
+unit pascal: Pressure = newton / meter^2
+
+@metric_prefixes
 @aliases(joules, J: short)
 unit joule: Energy = newton meter
 
 @metric_prefixes
 @aliases(watts, W: short)
 unit watt: Power = joule / second
-
-@metric_prefixes
-@aliases(pascals, Pa: short)
-unit pascal: Pressure = newton / meter^2
-
-@metric_prefixes
-@aliases(amperes, A: short)
-unit ampere: Current
 
 @metric_prefixes
 @aliases(coulombs, C: short)
@@ -53,14 +75,46 @@ unit farad: Capacitance = coulomb / volt
 unit ohm: Resistance = volt / ampere
 
 @metric_prefixes
-@aliases(kelvins, K: short)
-unit kelvin: Temperature
-
-### SI accepted units
+@aliases(S: short)
+unit siemens: Conductance = 1 / ohm
 
 @metric_prefixes
-@aliases(radians, rad: short)
-unit radian = meter / meter
+@aliases(webers, Wb: short)
+unit weber: MagneticFlux = volt second
+
+@metric_prefixes
+@aliases(teslas, T: short)
+unit tesla: MagneticFluxDensity = weber / meter^2
+
+@metric_prefixes
+@aliases(henrys, henries, H: short)
+unit henry: Inductance = weber / ampere
+
+@metric_prefixes
+@aliases(lumens, lm: short)
+unit lumen: LuminousFlux = candela steradian
+
+@metric_prefixes
+@aliases(lx: short)
+unit lux: Illuminance = lumen / meter^2
+
+@metric_prefixes
+@aliases(becquerels, Bq: short)
+unit becquerel: Illuminance = lumen / meter^2
+
+@metric_prefixes
+@aliases(grays, Gy: short)
+unit gray: AbsorbedDose = joule / kilogram
+
+@metric_prefixes
+@aliases(sieverts, Sv: short)
+unit sievert: EquivalentDose = joule / kilogram
+
+@metric_prefixes
+@aliases(katals, kat: short)
+unit katal: CatalyticActivity = mole / second
+
+### SI accepted units
 
 @aliases(degrees, deg, °: short)
 unit degree = π radian / 180
