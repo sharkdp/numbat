@@ -122,7 +122,7 @@ unit minute: Time = 60 seconds
 @aliases(hours, hr, h: short)
 unit hour: Time = 60 minutes
 
-@aliases(days, d: short)
+@aliases(days, day: short, d: short)
 unit day: Time = 24 hours
 
 @aliases(astronomicalunits, au: short, AU: short)
