@@ -20,6 +20,7 @@ use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
 use std::fs;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
@@ -77,7 +78,7 @@ struct NumbatHelper {
 
 struct Cli {
     args: Args,
-    context: Context,
+    context: Arc<Mutex<Context>>,
     current_filename: Option<PathBuf>,
 }
 
@@ -87,7 +88,7 @@ impl Cli {
         let mut context = Context::new(args.debug);
         context.add_module_path(Self::get_modules_path());
         Self {
-            context,
+            context: Arc::new(Mutex::new(context)),
             args,
             current_filename: None,
         }
@@ -164,7 +165,9 @@ impl Cli {
             .context("Error while configuring history size")?;
         rl.set_completion_type(rustyline::CompletionType::List);
         rl.set_helper(Some(NumbatHelper {
-            completer: NumbatCompleter {},
+            completer: NumbatCompleter {
+                context: self.context.clone(),
+            },
         }));
         rl.bind_sequence(
             KeyEvent(KeyCode::Enter, Modifiers::ALT),
@@ -192,11 +195,13 @@ impl Cli {
 
                         match line.trim() {
                             "list" | "ls" | "ll" => {
-                                let mut functions = Vec::from(self.context.function_names());
+                                let ctx = self.context.lock().unwrap();
+
+                                let mut functions = Vec::from(ctx.function_names());
                                 functions.sort();
-                                let mut units = Vec::from(self.context.unit_names());
+                                let mut units = Vec::from(ctx.unit_names());
                                 units.sort();
-                                let mut variables = Vec::from(self.context.variable_names());
+                                let mut variables = Vec::from(ctx.variable_names());
                                 variables.sort();
 
                                 println!("{}", "List of functions:".bold());
@@ -258,7 +263,7 @@ impl Cli {
         execution_mode: ExecutionMode,
         pretty_print: bool,
     ) -> ControlFlow {
-        let result = self.context.interpret(input);
+        let result = { self.context.lock().unwrap().interpret(input) };
 
         match result {
             Ok((statements, interpreter_result)) => {

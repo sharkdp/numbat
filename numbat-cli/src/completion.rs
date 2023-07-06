@@ -1,9 +1,14 @@
+use std::sync::{Arc, Mutex};
+
+use numbat::Context;
 use rustyline::{
     self,
     completion::{extract_word, Completer, Pair},
 };
 
-pub struct NumbatCompleter;
+pub struct NumbatCompleter {
+    pub context: Arc<Mutex<Context>>,
+}
 
 impl Completer for NumbatCompleter {
     type Candidate = Pair;
@@ -23,63 +28,43 @@ impl Completer for NumbatCompleter {
             }
         });
 
-        // TODO, obviously
-        let words = vec![
-            "let ",
-            "fn ",
-            "dimension ",
-            "unit ",
-            //
-            "sqrt(",
-            "sqr(",
-            "exp(",
-            "ln(",
-            "log(",
-            "log10(",
-            "log2(",
-            "abs(",
-            "round(",
-            "floor(",
-            "ceil(",
-            "sin(",
-            "cos(",
-            "tan(",
-            "asin(",
-            "acos(",
-            "atan(",
-            "atan2(",
-            "toCelsius(",
-            "toKelvin(",
-            "print(",
-            "assert_eq(",
-            "mean(",
-            "minimum(",
-            "maximum(",
-            //
-            "metric_prefixes",
-            "binary_prefixes",
-            "aliases",
-            "aliases_short",
-            //
-            "gravity",
-            "speed_of_light",
-            //
-            "Scalar",
-            "Length",
-            "Time",
-            "Mass",
-            //
-            "meter",
-            "second",
-            "gram",
-            //
-            "micro",
-            "milli",
-            "centi",
-            "deci",
-            "kilo",
-            "mega",
+        let mut words = vec![
+            // keywords
+            "let ".into(),
+            "fn ".into(),
+            "dimension ".into(),
+            "unit ".into(),
+            "use ".into(),
+            // 'inline' keywords
+            "short".into(),
+            "long".into(),
+            // decorators
+            "metric_prefixes".into(),
+            "binary_prefixes".into(),
+            "aliases".into(),
+            "aliases_short".into(),
         ];
+
+        {
+            let ctx = self.context.lock().unwrap();
+
+            for variable in ctx.variable_names() {
+                words.push(variable.clone());
+            }
+
+            for function in ctx.function_names() {
+                words.push(format!("{}(", function));
+            }
+
+            for unit_names in ctx.unit_names() {
+                for unit in unit_names {
+                    words.push(unit.clone());
+                }
+            }
+        }
+
+        words.sort();
+        words.dedup();
 
         let candidates = words.iter().filter(|w| w.starts_with(word_part));
 
