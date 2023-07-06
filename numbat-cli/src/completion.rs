@@ -42,7 +42,6 @@ impl Completer for NumbatCompleter {
             "metric_prefixes".into(),
             "binary_prefixes".into(),
             "aliases".into(),
-            "aliases_short".into(),
         ];
 
         {
