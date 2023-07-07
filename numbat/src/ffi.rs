@@ -267,13 +267,18 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
     assert!(args.len() == 2 || args.len() == 3);
 
     if args.len() == 2 {
-        if args[0] == args[1] {
-            ControlFlow::Continue(())
+        let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(
+            args[0].clone(),
+            args[1].clone(),
+        ));
+        if let Ok(args1_converted) = args[1].convert_to(args[0].unit()) {
+            if args[0] == args1_converted {
+                ControlFlow::Continue(())
+            } else {
+                error
+            }
         } else {
-            ControlFlow::Break(RuntimeError::AssertEq2Failed(
-                args[0].clone(),
-                args[1].clone(),
-            ))
+            error
         }
     } else {
         let result = &args[0] - &args[1];
