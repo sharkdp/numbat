@@ -1,8 +1,8 @@
 use core::scalar
 use core::dimensions
 
-use math::constants
 use math::functions
+use math::constants
 use math::partsperx
 
 use units::si

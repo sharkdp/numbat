@@ -2,7 +2,10 @@
 
 let pi = 3.14159265358979323846264338327950288
 let π = pi
+let τ = 2 π
 let e = 2.71828182845904523536028747135266250
+let φ = (1 + sqrt(5)) / 2
+let golden_ratio = φ
 
 ### Named numbers
 
