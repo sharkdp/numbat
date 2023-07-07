@@ -48,7 +48,7 @@ impl<'a> Resolver<'a> {
             match statement {
                 Statement::ModuleImport(module_path) => {
                     if let Some(code) = self.importer.import(module_path) {
-                        for statement in parse(&code).unwrap() {
+                        for statement in parse(&code).map_err(ResolverError::ParseError)? {
                             new_program.push(statement);
                         }
                         performed_imports = true;
