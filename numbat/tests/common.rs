@@ -3,7 +3,7 @@ use std::path::Path;
 use numbat::Context;
 
 pub fn get_test_context() -> Context {
-    let mut context = Context::new(false);
+    let mut context = Context::new();
 
     let module_path = Path::new("../modules");
     context.add_module_path(module_path);

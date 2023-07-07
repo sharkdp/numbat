@@ -67,13 +67,17 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(debug: bool) -> Self {
+    pub fn new() -> Self {
         Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
-            interpreter: BytecodeInterpreter::new(debug),
+            interpreter: BytecodeInterpreter::new(),
             module_paths: vec![],
         }
+    }
+
+    pub fn set_debug(&mut self, activate: bool) {
+        self.interpreter.set_debug(activate);
     }
 
     pub fn add_module_path<P: AsRef<Path>>(&mut self, path: P) {

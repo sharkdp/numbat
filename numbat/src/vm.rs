@@ -181,7 +181,7 @@ pub struct Vm {
 }
 
 impl Vm {
-    pub fn new(debug: bool) -> Self {
+    pub fn new() -> Self {
         Self {
             bytecode: vec![("<main>".into(), vec![])],
             current_chunk_index: 0,
@@ -191,8 +191,12 @@ impl Vm {
             ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff.clone()).collect(),
             frames: vec![CallFrame::root()],
             stack: vec![],
-            debug,
+            debug: false,
         }
+    }
+
+    pub fn set_debug(&mut self, activate: bool) {
+        self.debug = activate;
     }
 
     // The following functions are helpers for the compilation process
@@ -574,7 +578,7 @@ impl Vm {
 
 #[test]
 fn vm_basic() {
-    let mut vm = Vm::new(false);
+    let mut vm = Vm::new();
     vm.add_constant(Constant::Scalar(42.0));
     vm.add_constant(Constant::Scalar(1.0));
 

@@ -219,12 +219,16 @@ impl BytecodeInterpreter {
 
         result
     }
+
+    pub(crate) fn set_debug(&mut self, activate: bool) {
+        self.vm.set_debug(activate);
+    }
 }
 
 impl Interpreter for BytecodeInterpreter {
-    fn new(debug: bool) -> Self {
+    fn new() -> Self {
         Self {
-            vm: Vm::new(debug),
+            vm: Vm::new(),
             unit_registry: UnitRegistry::new(),
             local_variables: vec![],
             unit_name_to_constant_index: HashMap::new(),

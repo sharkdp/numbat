@@ -51,7 +51,7 @@ impl InterpreterResult {
 pub type Result<T> = std::result::Result<T, RuntimeError>;
 
 pub trait Interpreter {
-    fn new(debug: bool) -> Self;
+    fn new() -> Self;
 
     fn interpret_statement(&mut self, statements: &Statement) -> Result<InterpreterResult>;
 
@@ -112,7 +112,7 @@ mod tests {
         let statements_typechecked = crate::typechecker::TypeChecker::default()
             .check_statements(statements_transformed)
             .expect("No type check errors for inputs in this test suite");
-        BytecodeInterpreter::new(false).interpret_statements(&statements_typechecked)
+        BytecodeInterpreter::new().interpret_statements(&statements_typechecked)
     }
 
     fn assert_evaluates_to(input: &str, expected: Quantity) {

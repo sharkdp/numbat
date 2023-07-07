@@ -91,7 +91,8 @@ struct Cli {
 impl Cli {
     fn new() -> Self {
         let args = Args::parse();
-        let mut context = Context::new(args.debug);
+        let mut context = Context::new();
+        context.set_debug(args.debug);
         context.add_module_path(Self::get_modules_path());
         Self {
             context: Arc::new(Mutex::new(context)),
