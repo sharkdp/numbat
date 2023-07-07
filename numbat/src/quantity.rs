@@ -129,50 +129,44 @@ impl Quantity {
             }
         };
 
-        if let Ok(num) = self.as_scalar() {
-            Self::from_scalar(num.to_f64())
-        } else {
-            let mut factor = Number::from_f64(1.0);
-            let mut simplified_unit = Unit::scalar();
+        let mut factor = Number::from_f64(1.0);
+        let mut simplified_unit = Unit::scalar();
 
-            for (_, group) in &self
-                .unit
-                .canonicalized()
+        for (_, group) in &self
+            .unit
+            .canonicalized()
+            .iter()
+            .group_by(|f| f.unit_id.sort_key())
+        {
+            let group_as_unit = Unit::from_factors(group.cloned());
+            let group_representative = group_as_unit
                 .iter()
-                .group_by(|f| f.unit_id.sort_key())
-            {
-                let group_as_unit = Unit::from_factors(group.cloned());
-                let group_representative = group_as_unit
-                    .iter()
-                    .max_by(|&f1, &f2| {
-                        // TODO: describe this heuristic
-                        (f1.unit_id.is_base().cmp(&f2.unit_id.is_base()))
-                            .then(f1.exponent.cmp(&f2.exponent))
-                    })
-                    .expect("At least one unit factor in the group");
-                let exponent = group_as_unit
-                    .iter()
-                    .map(|f| {
-                        f.exponent * removed_exponent(f) / removed_exponent(group_representative)
-                    })
-                    .sum();
-                let target_unit = Unit::from_factor(UnitFactor {
-                    exponent,
-                    ..group_representative.clone()
-                });
+                .max_by(|&f1, &f2| {
+                    // TODO: describe this heuristic
+                    (f1.unit_id.is_base().cmp(&f2.unit_id.is_base()))
+                        .then(f1.exponent.cmp(&f2.exponent))
+                })
+                .expect("At least one unit factor in the group");
+            let exponent = group_as_unit
+                .iter()
+                .map(|f| f.exponent * removed_exponent(f) / removed_exponent(group_representative))
+                .sum();
+            let target_unit = Unit::from_factor(UnitFactor {
+                exponent,
+                ..group_representative.clone()
+            });
 
-                let converted = Quantity::from_unit(group_as_unit)
-                    .convert_to(&target_unit)
-                    .unwrap();
+            let converted = Quantity::from_unit(group_as_unit)
+                .convert_to(&target_unit)
+                .unwrap();
 
-                simplified_unit = simplified_unit * target_unit;
-                factor = factor * converted.value;
-            }
-
-            simplified_unit.canonicalize();
-
-            Quantity::new(self.value * factor, simplified_unit)
+            simplified_unit = simplified_unit * target_unit;
+            factor = factor * converted.value;
         }
+
+        simplified_unit.canonicalize();
+
+        Quantity::new(self.value * factor, simplified_unit)
     }
 
     pub fn as_scalar(&self) -> Result<Number> {
