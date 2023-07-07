@@ -1,12 +1,14 @@
 use std::path::Path;
 
-use numbat::Context;
+use numbat::{resolver::FileSystemImporter, Context};
 
 pub fn get_test_context() -> Context {
-    let mut context = Context::new();
-
     let module_path = Path::new("../modules");
-    context.add_module_path(module_path);
+
+    let mut importer = FileSystemImporter::new();
+    importer.add_path(module_path);
+
+    let mut context = Context::new(importer);
 
     assert!(context
         .interpret(&std::fs::read_to_string(module_path.join("prelude.nbt")).unwrap())

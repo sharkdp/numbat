@@ -8,6 +8,7 @@ use highlighter::NumbatHighlighter;
 
 use numbat::markup;
 use numbat::pretty_print::PrettyPrint;
+use numbat::resolver::FileSystemImporter;
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError, ParseError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -91,9 +92,13 @@ struct Cli {
 impl Cli {
     fn new() -> Self {
         let args = Args::parse();
-        let mut context = Context::new();
+
+        let mut importer = FileSystemImporter::new();
+        importer.add_path(Self::get_modules_path());
+
+        let mut context = Context::new(importer);
         context.set_debug(args.debug);
-        context.add_module_path(Self::get_modules_path());
+
         Self {
             context: Arc::new(Mutex::new(context)),
             args,

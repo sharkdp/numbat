@@ -84,6 +84,12 @@ pub trait ModuleImporter {
 
 pub struct NullImporter {}
 
+impl NullImporter {
+    pub fn new() -> NullImporter {
+        Self {}
+    }
+}
+
 impl ModuleImporter for NullImporter {
     fn import(&self, _: &ModulePath) -> Option<String> {
         None
@@ -95,13 +101,12 @@ pub struct FileSystemImporter {
 }
 
 impl FileSystemImporter {
-    pub fn new<P: AsRef<Path>>(root_paths: &[P]) -> Self {
-        Self {
-            root_paths: root_paths
-                .iter()
-                .map(|p| p.as_ref().to_path_buf())
-                .collect(),
-        }
+    pub fn new() -> Self {
+        Self { root_paths: vec![] }
+    }
+
+    pub fn add_path<P: AsRef<Path>>(&mut self, path: P) {
+        self.root_paths.push(path.as_ref().to_owned());
     }
 }
 

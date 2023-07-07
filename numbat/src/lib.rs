@@ -16,7 +16,7 @@ pub mod pretty_print;
 mod product;
 mod quantity;
 mod registry;
-mod resolver;
+pub mod resolver;
 mod span;
 mod tokenizer;
 mod typechecker;
@@ -25,14 +25,12 @@ mod unit;
 mod unit_registry;
 mod vm;
 
-use std::path::Path;
-use std::path::PathBuf;
-
 use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, RuntimeError};
 use name_resolution::NameResolutionError;
 use prefix_transformer::Transformer;
-use resolver::FileSystemImporter;
+use resolver::ModuleImporter;
+use resolver::NullImporter;
 use resolver::Resolver;
 use resolver::ResolverError;
 use thiserror::Error;
@@ -63,25 +61,25 @@ pub struct Context {
     prefix_transformer: Transformer,
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
-    module_paths: Vec<PathBuf>,
+    module_importer: Box<dyn ModuleImporter>,
 }
 
 impl Context {
-    pub fn new() -> Self {
+    pub fn new(module_importer: impl ModuleImporter + 'static) -> Self {
         Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(),
-            module_paths: vec![],
+            module_importer: Box::new(module_importer),
         }
+    }
+
+    pub fn new_without_importer() -> Self {
+        Self::new(NullImporter::new())
     }
 
     pub fn set_debug(&mut self, activate: bool) {
         self.interpreter.set_debug(activate);
-    }
-
-    pub fn add_module_path<P: AsRef<Path>>(&mut self, path: P) {
-        self.module_paths.push(path.as_ref().to_path_buf());
     }
 
     pub fn variable_names(&self) -> &[String] {
@@ -101,8 +99,7 @@ impl Context {
     }
 
     pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
-        let importer = FileSystemImporter::new(&self.module_paths[..]);
-        let resolver = Resolver::new(&importer);
+        let resolver = Resolver::new(self.module_importer.as_ref());
 
         let statements = resolver.resolve(code).map_err(|e| match e {
             ResolverError::ParseError(e) => NumbatError::ParseError(e),
