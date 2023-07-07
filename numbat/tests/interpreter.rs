@@ -99,6 +99,20 @@ fn test_function_inverses() {
 }
 
 #[test]
+fn test_math() {
+    expect_output("sin(90°)", "1");
+    expect_output("sin(30°)", "0.5");
+    expect_output("sin(pi/2)", "1");
+
+    expect_output("atan2(10, 0) / (pi / 2)", "1");
+    expect_output("atan2(100 cm, 1 m) / (pi / 4)", "1");
+    expect_failure(
+        "atan2(100 cm, 1 m²)",
+        "Incompatible dimensions in argument 2 of function call to 'atan2'",
+    );
+}
+
+#[test]
 fn test_temperature_conversions() {
     expect_output("fromCelsius(11.5)", "284.65 K");
     expect_output("fromFahrenheit(89.3)", "304.983333 K");

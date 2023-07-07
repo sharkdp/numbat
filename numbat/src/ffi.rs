@@ -378,8 +378,12 @@ fn atan(args: &[Quantity]) -> Quantity {
 fn atan2(args: &[Quantity]) -> Quantity {
     assert!(args.len() == 2);
 
-    let input0 = args[0].unsafe_value().to_f64(); // TODO: properly convert to the same unit here!
-    let input1 = args[1].unsafe_value().to_f64();
+    let input0 = args[0].unsafe_value().to_f64();
+    let input1 = args[1]
+        .convert_to(args[0].unit())
+        .unwrap()
+        .unsafe_value()
+        .to_f64();
     Quantity::from_scalar(input0.atan2(input1))
 }
 
