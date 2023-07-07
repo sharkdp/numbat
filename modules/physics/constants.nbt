@@ -1,8 +1,49 @@
 ### Physics constants
 
-# TODO: add more constants, split into multiple modules
+# The speed of light in vacuum
+let speed_of_light: Speed = 299792458 m / s
 
-let gravity = 9.80665 m / s^2
-let speed_of_light = 299792458 m / s
+# The Newtonian constant of gravitation
+let gravitational_constant: Force × Length^2 / Mass^2 =  6.67430e-11 m³ / (kg s²)
+
+# Standard acceleration of gravity on earth
+let gravity: Acceleration = 9.80665 m / s²
+
+# The Planck constant
 let planck_constant = 6.62607015e-34 J / Hz
+
+# The reduced Planck constant
 let ℏ = planck_constant / 2π
+
+# Mass of the electron
+let electron_mass: Mass = 9.1093837015e-31 kg
+
+# Elementary charge (charge of the electron)
+let elementary_charge: Charge =  1.602176634e-19 C 
+let electron_charge: Charge = elementary_charge
+
+# Magnetic constant (vacuum magnetic permeability)
+let µ0: Force / Current^2 =  1.25663706212e-6 N / A²
+let mu0 = µ0
+
+# Electric constant ( vacuum electric permittivity)
+let ε0: Capacitance / Length = 8.8541878128e-12 F / m
+let eps0 = ε0
+
+# Bohr magneton
+let µ_B: Energy / MagneticFluxDensity = 9.2740100783e-24 J / T
+
+# Fine structure constant
+let α: Scalar = 7.2973525693e-3 
+
+# Proton mass
+let proton_mass: Mass =  1.67262192369e-27 kg
+
+# Avogadro constant
+let N_A: 1 / AmountOfSubstance = 6.02214076e23 / mol
+
+# Boltzmann constant
+let k_B: Energy / Temperature = 1.380649e-23 J / K
+
+# Ideal gas constant
+let R: Energy / (AmountOfSubstance × Temperature) = 8.31446261815324 J / (K mol)
