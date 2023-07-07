@@ -144,11 +144,9 @@ unit hectare: Area = hectometer^2
 @aliases(litres, liter, liters, l: short, L: short)
 unit litre: Volume = decimeter^3
 
-#@metric_prefixes  # TODO: clash with foot=ft (femto tonne)
-@aliases(tonnes, ton, tons, t: short)
+@metric_prefixes
+@aliases(tonnes, ton: both, tons: both, t: none)
 unit tonne: Mass = 10^3 kilogram
-unit kiloton = 1000 ton
-unit megaton = 1000 kiloton
 
 @aliases(daltons, Da: short)
 unit dalton: Mass = 1.660539040e-27 kilogram
