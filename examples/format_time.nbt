@@ -1,0 +1,12 @@
+let time = 17.47 hours
+
+let time_seconds = time -> seconds
+let num_seconds = time_seconds % 60 seconds
+let num_minutes = (time - num_seconds) % (60 minutes) -> minutes
+let num_hours = floor((time - num_minutes - num_seconds) / 1 hour) × hour -> hours
+
+print(num_hours)
+print(num_minutes)
+print(num_seconds)
+
+assert_eq(num_hours + num_minutes + num_seconds, time)
