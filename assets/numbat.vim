@@ -41,4 +41,7 @@ if exists(":DoMatchIt")
   DoMatchIt
 endif
 
+setlocal comments=b:#,fb:-
+setlocal commentstring=#\ %s
+
 let b:current_syntax = "numbat"

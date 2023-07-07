@@ -11,7 +11,7 @@ use units::astronomical
 use units::imperial
 use units::us_customary
 use units::nautical
-# use units::cgs
+use units::cgs
 use units::fff
 use units::misc
 
