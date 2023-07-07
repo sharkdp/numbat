@@ -332,9 +332,8 @@ impl Cli {
             Err(NumbatError::ParseError {
                 inner: ref e @ ParseError { ref span, .. },
                 code_source,
+                line,
             }) => {
-                let line = input.lines().nth(span.line - 1).unwrap(); // TODO
-
                 let code_source_text = match code_source {
                     CodeSource::Text => "<input>".to_string(),
                     CodeSource::File(path) => format!("File {}", path.to_string_lossy()),

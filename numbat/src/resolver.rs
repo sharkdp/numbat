@@ -37,6 +37,7 @@ pub enum ResolverError {
     ParseError {
         inner: ParseError,
         code_source: CodeSource,
+        line: String,
     },
 }
 
@@ -52,7 +53,14 @@ impl<'a> Resolver<'a> {
     }
 
     fn parse(&self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
-        parse(code).map_err(|inner| ResolverError::ParseError { inner, code_source })
+        parse(code).map_err(|inner| {
+            let line = code.lines().nth(inner.span.line - 1).unwrap().to_string();
+            ResolverError::ParseError {
+                inner,
+                code_source,
+                line,
+            }
+        })
     }
 
     fn inlining_pass(&self, program: &[Statement]) -> Result<(Vec<Statement>, bool)> {

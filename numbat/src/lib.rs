@@ -48,6 +48,7 @@ pub enum NumbatError {
     ParseError {
         inner: ParseError,
         code_source: CodeSource,
+        line: String,
     },
     #[error("{0}")]
     ResolverError(ResolverError),
@@ -110,9 +111,15 @@ impl Context {
         let resolver = Resolver::new(self.module_importer.as_ref());
 
         let statements = resolver.resolve(code, code_source).map_err(|e| match e {
-            ResolverError::ParseError { inner, code_source } => {
-                NumbatError::ParseError { inner, code_source }
-            }
+            ResolverError::ParseError {
+                inner,
+                code_source,
+                line,
+            } => NumbatError::ParseError {
+                inner,
+                code_source,
+                line,
+            },
             e => NumbatError::ResolverError(e),
         })?;
 
