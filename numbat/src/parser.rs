@@ -963,7 +963,9 @@ mod tests {
 
         parse_as_expression(&["123.456"], scalar!(123.456));
 
-        should_fail(&["123..", "0..", ".0.", ".", ". 2", "..2", ".."]);
+        should_fail(&[
+            "123..", "0..", ".0.", ".", ". 2", "..2", "..", ".1.1", "0.1.",
+        ]);
     }
 
     #[test]
@@ -997,7 +999,14 @@ mod tests {
         parse_as_expression(&["123.456e+12"], scalar!(123.456e+12));
         parse_as_expression(&["123.456e-12"], scalar!(123.456e-12));
 
-        should_fail(&["1e", "1.0e", "1e²", "1ee", "1e++2", "1e+-2", "1e+", "1e-"]);
+        should_fail(&["1e++2", "1e+-2", "1e+", "1e-"]);
+
+        should_fail(&["2e1.5", "e.2e3e"]);
+
+        parse_as_expression(&["1e", "1.0e"], binop!(scalar!(1.0), Mul, identifier!("e")));
+        parse_as_expression(&["1ee"], binop!(scalar!(1.0), Mul, identifier!("ee")));
+        parse_as_expression(&["1eV"], binop!(scalar!(1.0), Mul, identifier!("eV")));
+        parse_as_expression(&["1erg"], binop!(scalar!(1.0), Mul, identifier!("erg")));
     }
 
     #[test]

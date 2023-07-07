@@ -12,6 +12,15 @@ pub enum TokenizerErrorKind {
     #[error("Unexpected character in negative exponent")]
     UnexpectedCharacterInNegativeExponent { character: Option<char> },
 
+    #[error("Unexpected character in number literal: '{0}'")]
+    UnexpectedCharacterInNumberLiteral(char),
+
+    #[error("Unexpected character in scientific notation: '{0}'")]
+    UnexpectedCharacterInScientificNotation(char),
+
+    #[error("Unexpected character in identifier: '{0}'")]
+    UnexpectedCharacterInIdentifier(char),
+
     #[error("Expected digit")]
     ExpectedDigit { character: Option<char> },
 
@@ -155,7 +164,11 @@ impl Tokenizer {
         Ok(tokens)
     }
 
-    fn consume_stream_of_digits(&mut self, at_least_one_digit: bool) -> Result<()> {
+    fn consume_stream_of_digits(
+        &mut self,
+        at_least_one_digit: bool,
+        disallow_dot_and_digits_after_stream: bool,
+    ) -> Result<()> {
         if at_least_one_digit && !self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::ExpectedDigit {
@@ -173,14 +186,52 @@ impl Tokenizer {
             self.advance();
         }
 
+        if disallow_dot_and_digits_after_stream
+            && self
+                .peek()
+                .map(|c| c.is_ascii_digit() || c == '.')
+                .unwrap_or(false)
+        {
+            return Err(TokenizerError {
+                kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(self.peek().unwrap()),
+                span: Span {
+                    line: self.current_line,
+                    position: self.current_position,
+                    index: self.current_index,
+                },
+            });
+        }
+
         Ok(())
     }
 
     fn scientific_notation(&mut self) -> Result<()> {
-        if self.match_char('e') || self.match_char('E') {
+        if self
+            .peek2()
+            .map(|c| c.is_ascii_digit() || c == '+' || c == '-')
+            .unwrap_or(false)
+            && (self.match_char('e') || self.match_char('E'))
+        {
             let _ = self.match_char('+') || self.match_char('-');
 
-            self.consume_stream_of_digits(true)?;
+            self.consume_stream_of_digits(true, true)?;
+
+            if self
+                .peek()
+                .map(|c| c.is_ascii_digit() || c == '.')
+                .unwrap_or(false)
+            {
+                return Err(TokenizerError {
+                    kind: TokenizerErrorKind::UnexpectedCharacterInScientificNotation(
+                        self.peek().unwrap(),
+                    ),
+                    span: Span {
+                        line: self.current_line,
+                        position: self.current_position,
+                        index: self.current_index,
+                    },
+                });
+            }
         }
 
         Ok(())
@@ -273,11 +324,11 @@ impl Tokenizer {
                 TokenKind::IntegerWithBase(base)
             }
             c if c.is_ascii_digit() => {
-                self.consume_stream_of_digits(false)?;
+                self.consume_stream_of_digits(false, false)?;
 
                 // decimal part
                 if self.match_char('.') {
-                    self.consume_stream_of_digits(false)?;
+                    self.consume_stream_of_digits(false, true)?;
                 }
 
                 self.scientific_notation()?;
@@ -285,7 +336,7 @@ impl Tokenizer {
                 TokenKind::Number
             }
             '.' => {
-                self.consume_stream_of_digits(true)?;
+                self.consume_stream_of_digits(true, true)?;
                 self.scientific_notation()?;
 
                 TokenKind::Number
@@ -348,6 +399,15 @@ impl Tokenizer {
                     self.advance();
                 }
 
+                if self.peek().map(|c| c == '.').unwrap_or(false) {
+                    return tokenizer_error(
+                        self.current_line,
+                        self.current_position,
+                        self.current_index,
+                        TokenizerErrorKind::UnexpectedCharacterInIdentifier(self.peek().unwrap()),
+                    );
+                }
+
                 if let Some(kind) = keywords.get(self.lexeme().as_str()) {
                     *kind
                 } else {
@@ -397,6 +457,10 @@ impl Tokenizer {
 
     fn peek(&self) -> Option<char> {
         self.input.get(self.current_index).copied()
+    }
+
+    fn peek2(&self) -> Option<char> {
+        self.input.get(self.current_index + 1).copied()
     }
 
     fn match_char(&mut self, c: char) -> bool {
