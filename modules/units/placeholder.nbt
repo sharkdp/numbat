@@ -5,6 +5,8 @@ dimension Pixel
 @aliases(pixels, px: short)
 unit pixel: Pixel
 
+unit ppi: Pixel / Length = pixel / inch
+
 
 # Smallest possible output resolution on a printing device
 dimension Dot
@@ -20,6 +22,8 @@ dimension Frame
 
 @aliases(frames)
 unit frame: Frame
+
+unit fps: Frame / Time = frame / second
 
 
 # A separate or limited portion or quantity of something

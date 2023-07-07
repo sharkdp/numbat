@@ -13,7 +13,7 @@ unit second: Time
 unit gram: Mass
 
 @metric_prefixes
-@aliases(amperes, A: short)
+@aliases(amperes, amp, amps, A: short)
 unit ampere: Current
 
 @metric_prefixes
@@ -154,5 +154,5 @@ unit megaton = 1000 kiloton
 unit dalton: Mass = 1.660539040e-27 kilogram
 
 @metric_prefixes
-@aliases(eV: short)
+@aliases(electronvolts, eV: short)
 unit electronvolt: Energy = 1.602176634e-19 joule
