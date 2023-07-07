@@ -20,6 +20,7 @@ fn asinh(x: Scalar) -> Scalar
 fn acosh(x: Scalar) -> Scalar
 fn atanh(x: Scalar) -> Scalar
 
+fn mod<T>(a: T, b: T) -> T
 fn exp(x: Scalar) -> Scalar
 fn ln(x: Scalar) -> Scalar
 fn log(x: Scalar) -> Scalar = ln(x)

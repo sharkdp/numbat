@@ -110,6 +110,16 @@ fn test_math() {
         "atan2(100 cm, 1 m²)",
         "Incompatible dimensions in argument 2 of function call to 'atan2'",
     );
+
+    expect_output("5 % 3", "2");
+    expect_output("-1 % 4", "3");
+    expect_output("8 cm % 5 cm", "3 cm");
+    expect_output("235 cm % 1 m", "35 cm");
+    expect_output("2 m % 7 cm", "0.04 m");
+    expect_failure(
+        "8 m % 5 s",
+        "Incompatible dimensions in argument 2 of function call to 'mod'",
+    )
 }
 
 #[test]

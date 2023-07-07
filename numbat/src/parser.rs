@@ -24,7 +24,8 @@
 //! conversion      →   term ( "→" term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
 //! factor          →   unary ( ( "*" | "/") per_factor ) *
-//! per_factor      →   unary ( "per" unary ) *
+//! per_factor      →   modulo ( "per" modulo ) *
+//! modulo          →   unary ( "%" unary ) *
 //! unary           →   "-" unary | ifactor
 //! ifactor         →   power ( " " power ) *
 //! power           →   unicode_power ( "^" power )
@@ -566,12 +567,24 @@ impl<'a> Parser<'a> {
     }
 
     fn per_factor(&mut self) -> Result<Expression> {
-        let mut expr = self.unary()?;
+        let mut expr = self.modulo()?;
 
         while self.match_exact(TokenKind::Per).is_some() {
             let rhs = self.per_factor()?;
 
             expr = Expression::BinaryOperator(BinaryOperator::Div, Box::new(expr), Box::new(rhs));
+        }
+
+        Ok(expr)
+    }
+
+    fn modulo(&mut self) -> Result<Expression> {
+        let mut expr = self.unary()?;
+
+        while self.match_exact(TokenKind::Modulo).is_some() {
+            let rhs = self.modulo()?;
+
+            expr = Expression::FunctionCall("mod".into(), vec![expr, rhs]);
         }
 
         Ok(expr)
