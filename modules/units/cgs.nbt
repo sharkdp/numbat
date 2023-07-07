@@ -1,3 +1,8 @@
 ### Centimetre–gram–second system of units
 
-unit erg: Energy = 1e-7 joule
+@aliases(dyn)
+unit dyne: Force = 1e-5 N
+
+unit erg: Energy = 1 dyn cm
+
+unit gauss: MagneticFluxDensity = 100 µT

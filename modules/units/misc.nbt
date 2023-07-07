@@ -10,22 +10,44 @@ unit angstrom: Length = 1e-10 meter
 @aliases(barns)
 unit barn: Area = 1e-28 meter^2
 
+@aliases(calories, cal: short)
+unit calorie: Energy = 4.184 joule
+
+unit BTU: Energy = 1055.05585262 joule
+
+@aliases(lbf: short)
+unit pound_force: Force = 4.448222 newton
+
+@aliases(ozf: short)
+unit ounce_force: Force = 16 lbf
+
+@aliases(kgf: short)
+unit kilogram_force: Force = 9.80665 newton
+
+@aliases(RPM: short)
+unit rpm: Frequency = 1 / minute
+
+unit mmHg: Pressure = 133.322387415 pascal
+
+unit torr: Pressure = 101325 / 760 × pascal
+
+@aliases(PSI: short)
+unit psi: Pressure = 6.894757 kPa
+
+@aliases(atmospheres, atm: short)
+unit atmosphere: Pressure = 101325 pascal
+
+@metric_prefixes
+unit molar: AmountOfSubstance / Volume = 1 mol / litre
+
+@metric_prefixes
+unit molal: AmountOfSubstance / Mass = 1 mole / kilogram
+
+### Abbreviations
+
 @metric_prefixes
 @aliases(Wh: short)
 unit watthour = W h
-
-@aliases(knots)
-unit knot: Speed = 463 m / 900 s
-
-### Useful 'dummy' units
-
-dimension Pixel
-
-@metric_prefixes
-@aliases(pixels, px: short)
-unit pixel: Pixel
-
-### Abbreviations
 
 unit mph = miles per hour
 unit kph = kilometer per hour

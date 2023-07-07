@@ -1,0 +1,14 @@
+# The furlong–firkin–fortnight system
+# https://en.wikipedia.org/wiki/FFF_system
+
+@metric_prefixes
+@aliases(furlongs)
+unit furlong: Length = 220 yard
+
+@metric_prefixes
+@aliases(firkins)
+unit firkin: Mass = 90 lb
+
+@metric_prefixes
+@aliases(fortnights)
+unit fortnight = 14 days

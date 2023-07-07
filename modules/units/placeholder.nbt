@@ -1,0 +1,36 @@
+# Smallest addressable element on a digital display
+dimension Pixel
+
+@metric_prefixes
+@aliases(pixels, px: short)
+unit pixel: Pixel
+
+
+# Smallest possible output resolution on a printing device
+dimension Dot
+
+@aliases(dots)
+unit dot: Dot
+
+unit dpi: Dot / Length = dots / inch
+
+
+# A single image in a (video) sequence
+dimension Frame
+
+@aliases(frames)
+unit frame: Frame
+
+
+# A separate or limited portion or quantity of something
+dimension Piece
+
+@aliases(pieces)
+unit piece: Piece
+
+
+# A human being
+dimension Person
+
+@aliases(persons, people)
+unit person: Person

@@ -1,8 +1,3 @@
-dimension Money
-
-@aliases(EUR, €)
-unit euro: Money
-
 dimension WorkHour
 
 @aliases(workhours)

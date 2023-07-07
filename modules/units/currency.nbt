@@ -1,0 +1,4 @@
+dimension Money
+
+@aliases(euros, EUR, €: short)
+unit euro: Money

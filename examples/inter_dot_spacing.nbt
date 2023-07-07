@@ -1,10 +1,3 @@
-dimension Dot
-
-@aliases(dots)
-unit dot: Dot
-
-unit dpi = dots / inch
-
-fn inter_dot_spacing(resolution: Dot/Length) -> Length = 1 dot / resolution
+fn inter_dot_spacing(resolution: Dot / Length) -> Length = 1 dot / resolution
 
 assert_eq(inter_dot_spacing(72 dpi), 353 µm, 1µm)

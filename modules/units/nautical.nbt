@@ -1,0 +1,5 @@
+@aliases(knots, kn: short, kt: short)
+unit knot: Speed = 463 m / 900 s
+
+@aliases(nautical_miles, NM: short)
+unit nautical_mile = 1852 m
