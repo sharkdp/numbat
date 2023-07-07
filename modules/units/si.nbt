@@ -13,7 +13,7 @@ unit second: Time
 unit gram: Mass
 
 @metric_prefixes
-@aliases(amperes, amp, amps, A: short)
+@aliases(amperes, A: short)
 unit ampere: Current
 
 @metric_prefixes
@@ -100,7 +100,7 @@ unit lux: Illuminance = lumen / meter^2
 
 @metric_prefixes
 @aliases(becquerels, Bq: short)
-unit becquerel: Illuminance = lumen / meter^2
+unit becquerel: Activity = 1 / second
 
 @metric_prefixes
 @aliases(grays, Gy: short)
