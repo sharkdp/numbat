@@ -3,8 +3,12 @@
 @aliases(weeks)
 unit week: Time = 7 days
 
+# Gregorian year
 @aliases(years)
 unit year: Time = 365.2425 days
 
 @aliases(months)
 unit month: Time = year / 12
+
+@aliases(julian_years)
+unit julian_year = 365.25 days

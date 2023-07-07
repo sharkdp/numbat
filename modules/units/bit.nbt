@@ -1,0 +1,11 @@
+dimension Bit
+
+@metric_prefixes
+@binary_prefixes
+@aliases(bit: both, bits: both)
+unit bit: Bit
+
+@metric_prefixes
+@binary_prefixes
+@aliases(B: short, byte: both, bytes: both, octet, octets)
+unit byte: Bit = 8 bit

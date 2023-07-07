@@ -1,14 +1,15 @@
 use core::scalar
+use core::dimensions
 
 use math::constants
 use math::functions
 
-use physics::dimensions
-
-use physics::units::si
-use physics::units::time
-use physics::units::us_customary
-use physics::units::misc
+use units::si
+use units::time
+use units::us_customary
+use units::misc
+use units::astronomical
+use units::bit
 
 use physics::constants
 use physics::temperature_conversion

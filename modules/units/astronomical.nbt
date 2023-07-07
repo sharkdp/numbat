@@ -1,0 +1,7 @@
+@metric_prefixes
+@aliases(parsecs, pc: short)
+unit parsec: Length = 648000 / π × au
+
+@metric_prefixes
+@aliases(lightyears, ly: short)
+unit lightyear: Length = 9460730472580800 m

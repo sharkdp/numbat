@@ -1,16 +1,14 @@
 ### Other units
 
-dimension Bit
-
 @metric_prefixes
-@binary_prefixes
-@aliases(bit: both, bits: both)
-unit bit: Bit
+@aliases(bar: both, bars: both)
+unit bar: Pressure = 100 kPa
 
-@metric_prefixes
-@binary_prefixes
-@aliases(B: short, byte: both, bytes: both, octet, octets)
-unit byte: Bit = 8 bit
+@aliases(angstroms, Å: short)
+unit angstrom: Length = 1e-10 meter
+
+@aliases(barns)
+unit barn: Area = 1e-28 meter^2
 
 @metric_prefixes
 @aliases(Wh: short)
