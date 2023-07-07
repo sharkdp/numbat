@@ -16,13 +16,28 @@ impl std::fmt::Display for ModulePath {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum CodeSource {
+    /// User input from the command line or a REPL
+    Text,
+
+    /// A file that has been read in
+    File(PathBuf),
+
+    /// A module that has been imported
+    Module(ModulePath, Option<PathBuf>),
+}
+
 #[derive(Error, Debug)]
 pub enum ResolverError {
     #[error("Unknown module '{0}'.")]
     UnknownModule(ModulePath),
 
-    #[error("{0}")]
-    ParseError(ParseError),
+    #[error("{inner}")]
+    ParseError {
+        inner: ParseError,
+        code_source: CodeSource,
+    },
 }
 
 type Result<T> = std::result::Result<T, ResolverError>;
@@ -36,8 +51,8 @@ impl<'a> Resolver<'a> {
         Self { importer }
     }
 
-    fn parse(&self, code: &str) -> Result<Vec<Statement>> {
-        parse(code).map_err(ResolverError::ParseError)
+    fn parse(&self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
+        parse(code).map_err(|inner| ResolverError::ParseError { inner, code_source })
     }
 
     fn inlining_pass(&self, program: &[Statement]) -> Result<(Vec<Statement>, bool)> {
@@ -47,8 +62,11 @@ impl<'a> Resolver<'a> {
         for statement in program {
             match statement {
                 Statement::ModuleImport(module_path) => {
-                    if let Some(code) = self.importer.import(module_path) {
-                        for statement in parse(&code).map_err(ResolverError::ParseError)? {
+                    if let Some((code, filesystem_path)) = self.importer.import(module_path) {
+                        for statement in self.parse(
+                            &code,
+                            CodeSource::Module(module_path.clone(), filesystem_path),
+                        )? {
                             new_program.push(statement);
                         }
                         performed_imports = true;
@@ -63,10 +81,10 @@ impl<'a> Resolver<'a> {
         Ok((new_program, performed_imports))
     }
 
-    pub fn resolve(&self, code: &str) -> Result<Vec<Statement>> {
+    pub fn resolve(&self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
         // TODO: handle cyclic dependencies & infinite loops
 
-        let mut statements = self.parse(code)?;
+        let mut statements = self.parse(code, code_source)?;
 
         loop {
             let result = self.inlining_pass(&statements)?;
@@ -79,7 +97,7 @@ impl<'a> Resolver<'a> {
 }
 
 pub trait ModuleImporter {
-    fn import(&self, path: &ModulePath) -> Option<String>;
+    fn import(&self, path: &ModulePath) -> Option<(String, Option<PathBuf>)>;
 }
 
 pub struct NullImporter {}
@@ -91,7 +109,7 @@ impl NullImporter {
 }
 
 impl ModuleImporter for NullImporter {
-    fn import(&self, _: &ModulePath) -> Option<String> {
+    fn import(&self, _: &ModulePath) -> Option<(String, Option<PathBuf>)> {
         None
     }
 }
@@ -111,7 +129,7 @@ impl FileSystemImporter {
 }
 
 impl ModuleImporter for FileSystemImporter {
-    fn import(&self, module_path: &ModulePath) -> Option<String> {
+    fn import(&self, module_path: &ModulePath) -> Option<(String, Option<PathBuf>)> {
         for path in &self.root_paths {
             let mut path = path.clone();
             for part in &module_path.0 {
@@ -120,8 +138,8 @@ impl ModuleImporter for FileSystemImporter {
 
             path.set_extension("nbt");
 
-            if let Ok(code) = fs::read_to_string(path) {
-                return Some(code);
+            if let Ok(code) = fs::read_to_string(&path) {
+                return Some((code, Some(path.to_owned())));
             }
         }
 
@@ -141,10 +159,10 @@ mod tests {
     struct TestImporter {}
 
     impl ModuleImporter for TestImporter {
-        fn import(&self, path: &ModulePath) -> Option<String> {
+        fn import(&self, path: &ModulePath) -> Option<(String, Option<PathBuf>)> {
             match path {
-                ModulePath(p) if p == &["foo", "bar"] => Some("use foo::baz".into()),
-                ModulePath(p) if p == &["foo", "baz"] => Some("let a = 1".into()),
+                ModulePath(p) if p == &["foo", "bar"] => Some(("use foo::baz".into(), None)),
+                ModulePath(p) if p == &["foo", "baz"] => Some(("let a = 1".into(), None)),
                 _ => None,
             }
         }
@@ -160,7 +178,7 @@ mod tests {
         let importer = TestImporter {};
 
         let resolver = Resolver::new(&importer);
-        let program_inlined = resolver.resolve(program).unwrap();
+        let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
 
         assert_eq!(
             &program_inlined,

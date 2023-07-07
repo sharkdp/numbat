@@ -8,7 +8,7 @@ use highlighter::NumbatHighlighter;
 
 use numbat::markup;
 use numbat::pretty_print::PrettyPrint;
-use numbat::resolver::FileSystemImporter;
+use numbat::resolver::{CodeSource, FileSystemImporter};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError, ParseError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -86,7 +86,6 @@ struct NumbatHelper {
 struct Cli {
     args: Args,
     context: Arc<Mutex<Context>>,
-    current_filename: Option<PathBuf>,
 }
 
 impl Cli {
@@ -102,7 +101,6 @@ impl Cli {
         Self {
             context: Arc::new(Mutex::new(context)),
             args,
-            current_filename: None,
         }
     }
 
@@ -114,12 +112,16 @@ impl Cli {
             let modules_path = Self::get_modules_path();
             let prelude_path = modules_path.join("prelude.nbt");
 
-            self.current_filename = Some(prelude_path.clone());
             let prelude_code = fs::read_to_string(&prelude_path).context(format!(
                 "Error while reading prelude from '{}'",
                 prelude_path.to_string_lossy()
             ))?;
-            let result = self.parse_and_evaluate(&prelude_code, ExecutionMode::Normal, false);
+            let result = self.parse_and_evaluate(
+                &prelude_code,
+                CodeSource::File(prelude_path),
+                ExecutionMode::Normal,
+                false,
+            );
             if result.is_break() {
                 bail!("Interpreter error in Prelude code")
             }
@@ -128,29 +130,39 @@ impl Cli {
         if load_init {
             let user_init_path = Self::get_config_path().join("init.nbt");
 
-            self.current_filename = Some(user_init_path.clone());
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
-                let result = self.parse_and_evaluate(&user_init_code, ExecutionMode::Normal, false);
+                let result = self.parse_and_evaluate(
+                    &user_init_code,
+                    CodeSource::File(user_init_path),
+                    ExecutionMode::Normal,
+                    false,
+                );
                 if result.is_break() {
                     bail!("Interpreter error in user initialization code")
                 }
             }
         }
 
-        let code: Option<String> = if let Some(ref path) = self.args.file {
-            self.current_filename = Some(path.clone());
-            Some(fs::read_to_string(path).context(format!(
-                "Could not load source file '{}'",
-                path.to_string_lossy()
-            ))?)
-        } else {
-            self.current_filename = None;
-            self.args.expression.clone()
-        };
+        let (code, code_source): (Option<String>, CodeSource) =
+            if let Some(ref path) = self.args.file {
+                (
+                    Some(fs::read_to_string(path).context(format!(
+                        "Could not load source file '{}'",
+                        path.to_string_lossy()
+                    ))?),
+                    CodeSource::File(path.clone()),
+                )
+            } else {
+                (self.args.expression.clone(), CodeSource::Text)
+            };
 
         if let Some(code) = code {
-            let result =
-                self.parse_and_evaluate(&code, ExecutionMode::Normal, self.args.pretty_print);
+            let result = self.parse_and_evaluate(
+                &code,
+                code_source,
+                ExecutionMode::Normal,
+                self.args.pretty_print,
+            );
 
             match result {
                 std::ops::ControlFlow::Continue(()) => Ok(()),
@@ -250,6 +262,7 @@ impl Cli {
                             _ => {
                                 let result = self.parse_and_evaluate(
                                     &line,
+                                    CodeSource::Text,
                                     ExecutionMode::Interactive,
                                     self.args.pretty_print,
                                 );
@@ -282,10 +295,11 @@ impl Cli {
     fn parse_and_evaluate(
         &mut self,
         input: &str,
+        code_source: CodeSource,
         execution_mode: ExecutionMode,
         pretty_print: bool,
     ) -> ControlFlow {
-        let result = { self.context.lock().unwrap().interpret(input) };
+        let result = { self.context.lock().unwrap().interpret(input, code_source) };
 
         match result {
             Ok((statements, interpreter_result)) => {
@@ -315,17 +329,25 @@ impl Cli {
                     InterpreterResult::Exit(exit_status) => ControlFlow::Break(exit_status),
                 }
             }
-            Err(NumbatError::ParseError(ref e @ ParseError { ref span, .. })) => {
-                let line = input.lines().nth(span.line - 1).unwrap();
+            Err(NumbatError::ParseError {
+                inner: ref e @ ParseError { ref span, .. },
+                code_source,
+            }) => {
+                let line = input.lines().nth(span.line - 1).unwrap(); // TODO
 
-                let filename = self
-                    .current_filename
-                    .as_deref()
-                    .map(|p| p.to_string_lossy())
-                    .unwrap_or_else(|| "<input>".into());
+                let code_source_text = match code_source {
+                    CodeSource::Text => "<input>".to_string(),
+                    CodeSource::File(path) => format!("File {}", path.to_string_lossy()),
+                    CodeSource::Module(module_path, path) => format!(
+                        "Module '{module_path}', File {path}",
+                        module_path = itertools::join(module_path.0.iter(), "::"),
+                        path = path
+                            .map(|p| p.to_string_lossy().to_string())
+                            .unwrap_or("?".into()),
+                    ),
+                };
                 eprintln!(
-                    "File {filename}:{line_number}:{position}",
-                    filename = filename,
+                    "{code_source_text}:{line_number}:{position}",
                     line_number = span.line,
                     position = span.position
                 );

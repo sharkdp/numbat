@@ -29,6 +29,7 @@ use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, RuntimeError};
 use name_resolution::NameResolutionError;
 use prefix_transformer::Transformer;
+use resolver::CodeSource;
 use resolver::ModuleImporter;
 use resolver::NullImporter;
 use resolver::Resolver;
@@ -43,8 +44,11 @@ pub use parser::ParseError;
 
 #[derive(Debug, Error)]
 pub enum NumbatError {
-    #[error("{0}")]
-    ParseError(ParseError),
+    #[error("{inner}")]
+    ParseError {
+        inner: ParseError,
+        code_source: CodeSource,
+    },
     #[error("{0}")]
     ResolverError(ResolverError),
     #[error("{0}")]
@@ -98,11 +102,17 @@ impl Context {
         &self.prefix_transformer.dimension_names
     }
 
-    pub fn interpret(&mut self, code: &str) -> Result<(Vec<Statement>, InterpreterResult)> {
+    pub fn interpret(
+        &mut self,
+        code: &str,
+        code_source: CodeSource,
+    ) -> Result<(Vec<Statement>, InterpreterResult)> {
         let resolver = Resolver::new(self.module_importer.as_ref());
 
-        let statements = resolver.resolve(code).map_err(|e| match e {
-            ResolverError::ParseError(e) => NumbatError::ParseError(e),
+        let statements = resolver.resolve(code, code_source).map_err(|e| match e {
+            ResolverError::ParseError { inner, code_source } => {
+                NumbatError::ParseError { inner, code_source }
+            }
             e => NumbatError::ResolverError(e),
         })?;
 
