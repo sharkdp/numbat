@@ -14,7 +14,7 @@ pub struct BytecodeInterpreter {
     /// List of local variables currently in scope
     local_variables: Vec<String>,
     // Maps names of units to indices of the respective constants in the VM
-    unit_name_to_constant_index: HashMap<(Prefix, String), u8>,
+    unit_name_to_constant_index: HashMap<(Prefix, String), u16>,
 }
 
 impl BytecodeInterpreter {
@@ -26,7 +26,7 @@ impl BytecodeInterpreter {
             }
             Expression::Identifier(identifier, _type) => {
                 if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
-                    self.vm.add_op1(Op::GetLocal, position as u8); // TODO: check overflow
+                    self.vm.add_op1(Op::GetLocal, position as u16); // TODO: check overflow
                 } else {
                     let identifier_idx = self.vm.add_global_identifier(identifier, None);
                     self.vm.add_op1(Op::GetVariable, identifier_idx);
@@ -81,11 +81,11 @@ impl BytecodeInterpreter {
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
                     // TODO: check overflow:
-                    self.vm.add_op2(Op::FFICallFunction, idx, args.len() as u8);
+                    self.vm.add_op2(Op::FFICallFunction, idx, args.len() as u16);
                 } else {
                     let idx = self.vm.get_function_idx(name);
 
-                    self.vm.add_op2(Op::Call, idx, args.len() as u8); // TODO: check overflow
+                    self.vm.add_op2(Op::Call, idx, args.len() as u16); // TODO: check overflow
                 }
             }
         };
@@ -202,7 +202,8 @@ impl BytecodeInterpreter {
                 let name = &ffi::procedures().get(kind).unwrap().name;
 
                 let idx = self.vm.get_ffi_callable_idx(name).unwrap();
-                self.vm.add_op2(Op::FFICallProcedure, idx, args.len() as u8); // TODO: check overflow
+                self.vm
+                    .add_op2(Op::FFICallProcedure, idx, args.len() as u16); // TODO: check overflow
             }
         }
 

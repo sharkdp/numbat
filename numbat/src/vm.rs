@@ -201,48 +201,54 @@ impl Vm {
         &mut self.bytecode[self.current_chunk_index].1
     }
 
+    fn push_u16(chunk: &mut Vec<u8>, data: u16) {
+        let arg_bytes = data.to_le_bytes();
+        chunk.push(arg_bytes[0]);
+        chunk.push(arg_bytes[1]);
+    }
+
     pub fn add_op(&mut self, op: Op) {
         self.current_chunk_mut().push(op as u8);
     }
 
-    pub fn add_op1(&mut self, op: Op, arg: u8) {
+    pub fn add_op1(&mut self, op: Op, arg: u16) {
         let current_chunk = self.current_chunk_mut();
         current_chunk.push(op as u8);
-        current_chunk.push(arg);
+        Self::push_u16(current_chunk, arg)
     }
 
-    pub(crate) fn add_op2(&mut self, op: Op, arg1: u8, arg2: u8) {
+    pub(crate) fn add_op2(&mut self, op: Op, arg1: u16, arg2: u16) {
         let current_chunk = self.current_chunk_mut();
         current_chunk.push(op as u8);
-        current_chunk.push(arg1);
-        current_chunk.push(arg2);
+        Self::push_u16(current_chunk, arg1);
+        Self::push_u16(current_chunk, arg2);
     }
 
-    pub fn add_constant(&mut self, constant: Constant) -> u8 {
+    pub fn add_constant(&mut self, constant: Constant) -> u16 {
         self.constants.push(constant);
-        assert!(self.constants.len() <= u8::MAX as usize);
-        (self.constants.len() - 1) as u8 // TODO: this can overflow, see above
+        assert!(self.constants.len() <= u16::MAX as usize);
+        (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
     pub fn add_global_identifier(
         &mut self,
         identifier: &str,
         canonical_unit_name: Option<&str>,
-    ) -> u8 {
+    ) -> u16 {
         if let Some(idx) = self
             .global_identifiers
             .iter()
             .position(|i| i.0 == identifier)
         {
-            return idx as u8;
+            return idx as u16;
         }
 
         self.global_identifiers.push((
             identifier.to_owned(),
             canonical_unit_name.map(|s| s.to_owned()),
         ));
-        assert!(self.global_identifiers.len() <= u8::MAX as usize);
-        (self.global_identifiers.len() - 1) as u8 // TODO: this can overflow, see above
+        assert!(self.global_identifiers.len() <= u16::MAX as usize);
+        (self.global_identifiers.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
     pub(crate) fn begin_function(&mut self, name: &str) {
@@ -255,10 +261,10 @@ impl Vm {
         self.current_chunk_index = 0;
     }
 
-    pub(crate) fn get_function_idx(&self, name: &str) -> u8 {
+    pub(crate) fn get_function_idx(&self, name: &str) -> u16 {
         let position = self.bytecode.iter().position(|(n, _)| n == name).unwrap();
-        assert!(position <= u8::MAX as usize);
-        position as u8
+        assert!(position <= u16::MAX as usize);
+        position as u16
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: ArityRange) {
@@ -267,11 +273,11 @@ impl Vm {
         self.ffi_callables.push(ff);
     }
 
-    pub(crate) fn get_ffi_callable_idx(&self, name: &str) -> Option<u8> {
+    pub(crate) fn get_ffi_callable_idx(&self, name: &str) -> Option<u16> {
         // TODO: this is a linear search that can certainly be optimized
         let position = self.ffi_callables.iter().position(|ff| ff.name == name)?;
-        assert!(position <= u8::MAX as usize);
-        Some(position as u8)
+        assert!(position <= u16::MAX as usize);
+        Some(position as u16)
     }
 
     pub fn disassemble(&self) {
@@ -297,12 +303,17 @@ impl Vm {
                 offset += 1;
                 let op = unsafe { std::mem::transmute::<u8, Op>(op) };
 
-                let operands = &bytecode[offset..(offset + op.num_operands())];
-                offset += op.num_operands();
+                let mut operands: Vec<u16> = vec![];
+                for _ in 0..op.num_operands() {
+                    let operand =
+                        u16::from_le_bytes(bytecode[offset..(offset + 2)].try_into().unwrap());
+                    operands.push(operand);
+                    offset += 2;
+                }
 
                 let operands_str = operands
                     .iter()
-                    .map(u8::to_string)
+                    .map(u16::to_string)
                     .collect::<Vec<String>>()
                     .join(" ");
 
@@ -344,6 +355,11 @@ impl Vm {
         byte
     }
 
+    fn read_u16(&mut self) -> u16 {
+        let bytes = [self.read_byte(), self.read_byte()];
+        u16::from_le_bytes(bytes)
+    }
+
     fn push(&mut self, quantity: Quantity) {
         self.stack.push(quantity);
     }
@@ -383,13 +399,13 @@ impl Vm {
 
             match op {
                 Op::LoadConstant => {
-                    let constant_idx = self.read_byte();
+                    let constant_idx = self.read_u16();
                     self.stack
                         .push(self.constants[constant_idx as usize].to_quantity());
                 }
                 Op::SetUnitConstant => {
-                    let identifier_idx = self.read_byte();
-                    let constant_idx = self.read_byte();
+                    let identifier_idx = self.read_u16();
+                    let constant_idx = self.read_u16();
 
                     let conversion_value = self.pop();
 
@@ -409,7 +425,7 @@ impl Vm {
                     return Ok(InterpreterResult::Continue);
                 }
                 Op::SetVariable => {
-                    let identifier_idx = self.read_byte();
+                    let identifier_idx = self.read_u16();
                     let quantity = self.pop();
                     let identifier: String =
                         self.global_identifiers[identifier_idx as usize].0.clone();
@@ -419,7 +435,7 @@ impl Vm {
                     return Ok(InterpreterResult::Continue);
                 }
                 Op::GetVariable => {
-                    let identifier_idx = self.read_byte();
+                    let identifier_idx = self.read_u16();
                     let identifier = &self.global_identifiers[identifier_idx as usize].0;
 
                     let quantity = self.globals.get(identifier).expect("Variable exists");
@@ -427,7 +443,7 @@ impl Vm {
                     self.push(quantity.clone());
                 }
                 Op::GetLocal => {
-                    let slot_idx = self.read_byte() as usize;
+                    let slot_idx = self.read_u16() as usize;
                     let stack_idx = self.current_frame().fp + slot_idx;
                     self.push(self.stack[stack_idx].clone());
                 }
@@ -462,8 +478,8 @@ impl Vm {
                     self.push(-rhs);
                 }
                 Op::Call => {
-                    let function_idx = self.read_byte() as usize;
-                    let num_args = self.read_byte() as usize;
+                    let function_idx = self.read_u16() as usize;
+                    let num_args = self.read_u16() as usize;
                     self.frames.push(CallFrame {
                         function_idx,
                         ip: 0,
@@ -471,8 +487,8 @@ impl Vm {
                     })
                 }
                 Op::FFICallFunction | Op::FFICallProcedure => {
-                    let function_idx = self.read_byte() as usize;
-                    let num_args = self.read_byte() as usize;
+                    let function_idx = self.read_u16() as usize;
+                    let num_args = self.read_u16() as usize;
                     let foreign_function = &self.ffi_callables[function_idx];
 
                     assert!(foreign_function.arity.contains(&num_args));
