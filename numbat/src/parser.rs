@@ -64,19 +64,19 @@ pub enum ParseErrorKind {
     #[error("Expected identifier after 'let' keyword")]
     ExpectedIdentifierAfterLet,
 
-    #[error("Expected '=' or ':' after identifier in 'let' assignment")]
+    #[error("Expected '=' or ':' after identifier (and type annotation) in 'let' assignment")]
     ExpectedEqualOrColonAfterLetIdentifier,
 
     #[error("Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names.")]
     ExpectedIdentifierAfterFn,
 
-    #[error("Expected function name after '//' operator")]
+    #[error("Expected function name after '//' postfix apply operator")]
     ExpectedIdentifierInPostfixApply,
 
     #[error("Expected dimension identifier, '1', or opening parenthesis")]
     ExpectedDimensionPrimary,
 
-    #[error("Expected ',' or '>'")]
+    #[error("Expected ',' or '>' in type parameter list")]
     ExpectedCommaOrRightAngleBracket,
 
     #[error("Expected identifier (type parameter name)")]
@@ -94,7 +94,7 @@ pub enum ParseErrorKind {
     #[error("Only a single variadic parameter is allowed in a function definition")]
     OnlySingleVariadicParameter,
 
-    #[error("Variadic parameters are only allowed in foreign functions")]
+    #[error("Variadic parameters are only allowed in foreign functions (without body)")]
     VariadicParameterOnlyAllowedInForeignFunction,
 
     #[error("Expected identifier (dimension name)")]
@@ -292,6 +292,8 @@ impl<'a> Parser<'a> {
                     });
                 }
 
+                let mut parameter_span = self.peek().span.clone();
+
                 let mut parameters = vec![];
                 while self.match_exact(TokenKind::RightParen).is_none() {
                     if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
@@ -309,6 +311,8 @@ impl<'a> Parser<'a> {
                             is_variadic,
                         ));
 
+                        parameter_span = parameter_span.extend(&self.last().unwrap().span);
+
                         if self.match_exact(TokenKind::Comma).is_none()
                             && self.peek().kind != TokenKind::RightParen
                         {
@@ -325,20 +329,20 @@ impl<'a> Parser<'a> {
                     }
                 }
 
-                let fn_is_variadic = parameters.iter().any(|p| p.2);
-                if fn_is_variadic && parameters.len() > 1 {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::OnlySingleVariadicParameter,
-                        span: self.peek().span.clone(),
-                    });
-                }
-
                 let optional_return_type_dexpr = if self.match_exact(TokenKind::Arrow).is_some() {
                     // Parse return type
                     Some(self.dimension_expression()?)
                 } else {
                     None
                 };
+
+                let fn_is_variadic = parameters.iter().any(|p| p.2);
+                if fn_is_variadic && parameters.len() > 1 {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::OnlySingleVariadicParameter,
+                        span: parameter_span,
+                    });
+                }
 
                 let body = if self.match_exact(TokenKind::Equal).is_none() {
                     None
@@ -349,7 +353,7 @@ impl<'a> Parser<'a> {
                 if fn_is_variadic && body.is_some() {
                     return Err(ParseError {
                         kind: ParseErrorKind::VariadicParameterOnlyAllowedInForeignFunction,
-                        span: self.peek().span.clone(),
+                        span: parameter_span,
                     });
                 }
 
@@ -496,7 +500,7 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParseError::new(
                 ParseErrorKind::CanOnlyCallIdentifier,
-                self.peek().span.clone(),
+                self.peek().span.clone(), // TODO: Ideally, this span should point to whatever we try to call. Once we have spans in the AST, this should be easy to resolve.
             ))
         }
     }

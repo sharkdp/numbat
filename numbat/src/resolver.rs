@@ -82,10 +82,10 @@ impl Resolver {
     fn parse(&self, code: &str, code_source_index: usize) -> Result<Vec<Statement>> {
         parse(code).map_err(|inner| {
             let diagnostic = Diagnostic::error()
-                .with_message("Parse error")
+                .with_message("while parsing")
                 .with_labels(vec![Label::primary(
                     code_source_index,
-                    (inner.span.position.byte)..(inner.span.position.byte + 1),
+                    (inner.span.start.byte)..(inner.span.end.byte),
                 )
                 .with_message(inner.kind.to_string())]);
             ResolverError::ParseError { inner, diagnostic }

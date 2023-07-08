@@ -103,6 +103,7 @@ pub struct Token {
 struct Tokenizer {
     input: Vec<char>,
     current: SourceCodePositition,
+    last: SourceCodePositition,
     token_start: SourceCodePositition,
 }
 
@@ -126,6 +127,7 @@ impl Tokenizer {
         Tokenizer {
             input: input.chars().collect(),
             current: SourceCodePositition::start(),
+            last: SourceCodePositition::start(),
             token_start: SourceCodePositition::start(),
         }
     }
@@ -336,10 +338,13 @@ impl Tokenizer {
                 if self.match_char('"') {
                     TokenKind::String
                 } else {
-                    return tokenizer_error(
-                        &self.token_start,
-                        TokenizerErrorKind::UnterminatedString,
-                    );
+                    return Err(TokenizerError {
+                        kind: TokenizerErrorKind::UnterminatedString,
+                        span: Span {
+                            start: self.token_start,
+                            end: self.last,
+                        },
+                    });
                 }
             }
             '…' => TokenKind::Ellipsis,
@@ -372,7 +377,10 @@ impl Tokenizer {
         let token = Some(Token {
             kind,
             lexeme: self.lexeme(),
-            span: self.token_start.to_single_character_span(),
+            span: Span {
+                start: self.token_start,
+                end: self.current,
+            },
         });
 
         if kind == TokenKind::Newline {
@@ -391,6 +399,7 @@ impl Tokenizer {
 
     fn advance(&mut self) -> char {
         let c = self.input[self.current.index];
+        self.last = self.current;
         self.current.index += 1;
         self.current.byte += c.len_utf8();
         self.current.position += 1;
@@ -433,7 +442,7 @@ fn tokenize_reduced(input: &str) -> Vec<(String, TokenKind, (usize, usize))> {
             (
                 token.lexeme.to_string(),
                 token.kind,
-                (token.span.position.line, token.span.position.position),
+                (token.span.start.line, token.span.start.position),
             )
         })
         .collect()

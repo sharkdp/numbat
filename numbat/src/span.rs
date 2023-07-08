@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SourceCodePositition {
     pub byte: usize,
     pub index: usize,
@@ -18,12 +18,22 @@ impl SourceCodePositition {
 
     pub fn to_single_character_span(&self) -> Span {
         Span {
-            position: self.clone(),
+            start: self.clone(),
+            end: self.clone(),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
-    pub position: SourceCodePositition,
+    pub start: SourceCodePositition,
+    pub end: SourceCodePositition,
+}
+impl Span {
+    pub fn extend(&self, other: &Span) -> Span {
+        Span {
+            start: self.start,
+            end: other.end,
+        }
+    }
 }

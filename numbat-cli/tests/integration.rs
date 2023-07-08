@@ -20,7 +20,7 @@ fn pass_expression_on_command_line() {
         .arg("2 ++ 3")
         .assert()
         .failure()
-        .stderr(predicates::str::contains("Parse error"));
+        .stderr(predicates::str::contains("while parsing"));
 
     numbat()
         .arg("--expression")
@@ -45,7 +45,7 @@ fn read_code_from_file() {
         .arg("../examples/parse_error/trailing_characters.nbt")
         .assert()
         .failure()
-        .stderr(predicates::str::contains("Parse error"));
+        .stderr(predicates::str::contains("while parsing"));
 }
 
 #[test]
