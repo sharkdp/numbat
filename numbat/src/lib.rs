@@ -26,7 +26,6 @@ mod unit_registry;
 mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
-use codespan_reporting::diagnostic::Diagnostic;
 use interpreter::{Interpreter, RuntimeError};
 use name_resolution::NameResolutionError;
 use prefix_transformer::Transformer;
@@ -42,6 +41,8 @@ use ast::Statement;
 pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
 pub use parser::ParseError;
+
+pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
 
 #[derive(Debug, Error)]
 pub enum NumbatError {
@@ -143,7 +144,7 @@ impl Context {
         Ok((transformed_statements, result))
     }
 
-    pub fn print_diagnostic(&self, diagnostic: &Diagnostic<usize>) {
+    pub fn print_diagnostic(&self, diagnostic: &Diagnostic) {
         use codespan_reporting::term::{
             self,
             termcolor::{ColorChoice, StandardStream},

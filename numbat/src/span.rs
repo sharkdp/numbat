@@ -16,10 +16,11 @@ impl SourceCodePositition {
         }
     }
 
-    pub fn to_single_character_span(&self) -> Span {
+    pub fn to_single_character_span(&self, code_source_index: usize) -> Span {
         Span {
             start: self.clone(),
             end: self.clone(),
+            code_source_index,
         }
     }
 }
@@ -28,12 +29,15 @@ impl SourceCodePositition {
 pub struct Span {
     pub start: SourceCodePositition,
     pub end: SourceCodePositition,
+    pub code_source_index: usize,
 }
 impl Span {
     pub fn extend(&self, other: &Span) -> Span {
+        assert_eq!(self.code_source_index, other.code_source_index);
         Span {
             start: self.start,
             end: other.end,
+            code_source_index: self.code_source_index,
         }
     }
 }

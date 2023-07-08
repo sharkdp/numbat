@@ -545,7 +545,7 @@ impl TypeChecker {
 
                 typed_ast::Statement::ProcedureCall(kind, checked_args)
             }
-            ast::Statement::ModuleImport(_) => {
+            ast::Statement::ModuleImport(_, _) => {
                 unreachable!("Modules should have been inlined by now")
             }
         })
@@ -601,7 +601,7 @@ mod tests {
 
     fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
         let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
-        let statements = parse(code).expect("No parse errors for inputs in this test suite");
+        let statements = parse(code, 0).expect("No parse errors for inputs in this test suite");
         let transformed_statements = Transformer::new()
             .transform(statements)
             .expect("No name resolution errors for inputs in this test suite");

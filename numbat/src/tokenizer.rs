@@ -105,6 +105,7 @@ struct Tokenizer {
     current: SourceCodePositition,
     last: SourceCodePositition,
     token_start: SourceCodePositition,
+    code_source_index: usize,
 }
 
 fn is_exponent_char(c: char) -> bool {
@@ -123,12 +124,13 @@ fn is_identifier_char(c: char) -> bool {
 }
 
 impl Tokenizer {
-    fn new(input: &str) -> Self {
+    fn new(input: &str, code_source_index: usize) -> Self {
         Tokenizer {
             input: input.chars().collect(),
             current: SourceCodePositition::start(),
             last: SourceCodePositition::start(),
             token_start: SourceCodePositition::start(),
+            code_source_index,
         }
     }
 
@@ -144,7 +146,9 @@ impl Tokenizer {
         tokens.push(Token {
             kind: TokenKind::Eof,
             lexeme: "".into(),
-            span: self.current.to_single_character_span(),
+            span: self
+                .current
+                .to_single_character_span(self.code_source_index),
         });
 
         Ok(tokens)
@@ -160,7 +164,9 @@ impl Tokenizer {
                 kind: TokenizerErrorKind::ExpectedDigit {
                     character: self.peek(),
                 },
-                span: self.current.to_single_character_span(),
+                span: self
+                    .current
+                    .to_single_character_span(self.code_source_index),
             });
         }
 
@@ -176,7 +182,9 @@ impl Tokenizer {
         {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(self.peek().unwrap()),
-                span: self.current.to_single_character_span(),
+                span: self
+                    .current
+                    .to_single_character_span(self.code_source_index),
             });
         }
 
@@ -233,10 +241,11 @@ impl Tokenizer {
 
         let current_char = self.advance();
 
+        let code_source_index = self.code_source_index;
         let tokenizer_error = |position: &SourceCodePositition, kind| -> Result<Option<Token>> {
             Err(TokenizerError {
                 kind,
-                span: position.to_single_character_span(),
+                span: position.to_single_character_span(code_source_index),
             })
         };
 
@@ -343,6 +352,7 @@ impl Tokenizer {
                         span: Span {
                             start: self.token_start,
                             end: self.last,
+                            code_source_index: self.code_source_index,
                         },
                     });
                 }
@@ -380,6 +390,7 @@ impl Tokenizer {
             span: Span {
                 start: self.token_start,
                 end: self.current,
+                code_source_index: self.code_source_index,
             },
         });
 
@@ -428,14 +439,14 @@ impl Tokenizer {
     }
 }
 
-pub fn tokenize(input: &str) -> Result<Vec<Token>> {
-    let mut tokenizer = Tokenizer::new(input);
+pub fn tokenize(input: &str, code_source_index: usize) -> Result<Vec<Token>> {
+    let mut tokenizer = Tokenizer::new(input, code_source_index);
     tokenizer.scan()
 }
 
 #[cfg(test)]
 fn tokenize_reduced(input: &str) -> Vec<(String, TokenKind, (usize, usize))> {
-    tokenize(input)
+    tokenize(input, 0)
         .unwrap()
         .iter()
         .map(|token| {
@@ -534,7 +545,7 @@ fn test_tokenize_basic() {
         ]
     );
 
-    assert!(tokenize("~").is_err());
+    assert!(tokenize("~", 0).is_err());
 }
 
 #[test]

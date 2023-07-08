@@ -6,9 +6,9 @@ mod keywords;
 use completer::NumbatCompleter;
 use highlighter::NumbatHighlighter;
 
-use numbat::markup;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::{CodeSource, FileSystemImporter};
+use numbat::{markup, Diagnostic};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -331,14 +331,14 @@ impl Cli {
             }
             Err(NumbatError::ResolverError(e)) => {
                 match e {
-                    numbat::resolver::ResolverError::UnknownModule(_) => {
-                        eprintln!("Module resolver error: {:#}", e);
+                    numbat::resolver::ResolverError::UnknownModule(_, _, diagnostic) => {
+                        self.print_digagnostic(diagnostic);
                     }
                     numbat::resolver::ResolverError::ParseError {
                         inner: _,
                         diagnostic,
                     } => {
-                        self.context.lock().unwrap().print_diagnostic(&diagnostic);
+                        self.print_digagnostic(diagnostic);
                     }
                 }
                 execution_mode.exit_status_in_case_of_error()
@@ -356,6 +356,10 @@ impl Cli {
                 execution_mode.exit_status_in_case_of_error()
             }
         }
+    }
+
+    fn print_digagnostic(&mut self, diagnostic: Diagnostic) {
+        self.context.lock().unwrap().print_diagnostic(&diagnostic)
     }
 
     fn get_config_path() -> PathBuf {

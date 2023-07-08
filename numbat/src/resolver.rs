@@ -3,9 +3,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{ast::Statement, parser::parse, ParseError};
+use crate::{ast::Statement, parser::parse, span::Span, Diagnostic, ParseError};
 
-use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::diagnostic::Label;
 use codespan_reporting::files::SimpleFiles;
 use thiserror::Error;
 
@@ -32,13 +32,13 @@ pub enum CodeSource {
 
 #[derive(Error, Debug)]
 pub enum ResolverError {
-    #[error("Unknown module '{0}'.")]
-    UnknownModule(ModulePath),
+    #[error("Unknown module '{1}'.")]
+    UnknownModule(Span, ModulePath, Diagnostic),
 
     #[error("{inner}")]
     ParseError {
         inner: ParseError,
-        diagnostic: Diagnostic<usize>,
+        diagnostic: Diagnostic,
     },
 }
 
@@ -80,11 +80,11 @@ impl Resolver {
     }
 
     fn parse(&self, code: &str, code_source_index: usize) -> Result<Vec<Statement>> {
-        parse(code).map_err(|inner| {
+        parse(code, code_source_index).map_err(|inner| {
             let diagnostic = Diagnostic::error()
                 .with_message("while parsing")
                 .with_labels(vec![Label::primary(
-                    code_source_index,
+                    inner.span.code_source_index,
                     (inner.span.start.byte)..(inner.span.end.byte),
                 )
                 .with_message(inner.kind.to_string())]);
@@ -98,7 +98,7 @@ impl Resolver {
 
         for statement in program {
             match statement {
-                Statement::ModuleImport(module_path) => {
+                Statement::ModuleImport(span, module_path) => {
                     if let Some((code, filesystem_path)) = self.importer.import(module_path) {
                         let index = self.add_code_source(
                             CodeSource::Module(module_path.clone(), filesystem_path),
@@ -109,7 +109,19 @@ impl Resolver {
                         }
                         performed_imports = true;
                     } else {
-                        return Err(ResolverError::UnknownModule(module_path.clone()));
+                        let diagnostic = Diagnostic::error()
+                            .with_message("while resolving imports in")
+                            .with_labels(vec![Label::primary(
+                                span.code_source_index,
+                                (span.start.byte)..(span.end.byte),
+                            )
+                            .with_message("Unknown module")]);
+
+                        return Err(ResolverError::UnknownModule(
+                            span.clone(),
+                            module_path.clone(),
+                            diagnostic,
+                        ));
                     }
                 }
                 statement => new_program.push(statement.clone()),

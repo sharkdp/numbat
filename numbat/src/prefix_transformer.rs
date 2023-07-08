@@ -132,7 +132,7 @@ impl Transformer {
                     .map(|arg| self.transform_expression(arg))
                     .collect(),
             ),
-            statement @ Statement::ModuleImport(_) => statement,
+            statement @ Statement::ModuleImport(_, _) => statement,
         })
     }
 

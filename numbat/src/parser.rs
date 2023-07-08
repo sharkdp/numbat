@@ -453,6 +453,8 @@ impl<'a> Parser<'a> {
                 })
             }
         } else if self.match_exact(TokenKind::Use).is_some() {
+            let mut span = self.peek().span.clone();
+
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let mut module_path = vec![identifier.lexeme.clone()];
 
@@ -463,7 +465,9 @@ impl<'a> Parser<'a> {
                         todo!("Parse error")
                     }
                 }
-                Ok(Statement::ModuleImport(ModulePath(module_path)))
+                span = span.extend(&self.last().unwrap().span);
+
+                Ok(Statement::ModuleImport(span, ModulePath(module_path)))
             } else {
                 todo!("Parse error")
             }
@@ -880,10 +884,10 @@ impl<'a> Parser<'a> {
     }
 }
 
-pub fn parse(input: &str) -> Result<Vec<Statement>> {
+pub fn parse(input: &str, code_source_index: usize) -> Result<Vec<Statement>> {
     use crate::tokenizer::tokenize;
 
-    let tokens = tokenize(input).map_err(|TokenizerError { kind, span }| {
+    let tokens = tokenize(input, code_source_index).map_err(|TokenizerError { kind, span }| {
         ParseError::new(ParseErrorKind::TokenizerError(kind), span)
     })?;
     let mut parser = Parser::new(&tokens);
@@ -892,7 +896,7 @@ pub fn parse(input: &str) -> Result<Vec<Statement>> {
 
 #[cfg(test)]
 pub fn parse_dexpr(input: &str) -> DimensionExpression {
-    let tokens = crate::tokenizer::tokenize(input).expect("No tokenizer errors in tests");
+    let tokens = crate::tokenizer::tokenize(input, 0).expect("No tokenizer errors in tests");
     let mut parser = crate::parser::Parser::new(&tokens);
     let expr = parser
         .dimension_expression()
@@ -908,7 +912,7 @@ mod tests {
 
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
-            let statements = parse(input).expect("parse error");
+            let statements = parse(input, 0).expect("parse error");
 
             assert!(statements.len() == 1);
             let statement = &statements[0];
@@ -923,13 +927,13 @@ mod tests {
 
     fn should_fail(inputs: &[&str]) {
         for input in inputs {
-            assert!(parse(input).is_err());
+            assert!(parse(input, 0).is_err());
         }
     }
 
     fn should_fail_with(inputs: &[&str], error_kind: ParseErrorKind) {
         for input in inputs {
-            match parse(input) {
+            match parse(input, 0) {
                 Err(e) => {
                     assert_eq!(e.kind, error_kind);
                 }
