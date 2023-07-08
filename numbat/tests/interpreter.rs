@@ -125,16 +125,16 @@ fn test_math() {
 
 #[test]
 fn test_temperature_conversions() {
-    expect_output("fromCelsius(11.5)", "284.65 K");
-    expect_output("fromFahrenheit(89.3)", "304.983333 K");
-    expect_output("toCelsius(0 K)", "-273.15");
-    expect_output("toFahrenheit(30 K)", "-405.67");
-    expect_output("toCelsius(fromCelsius(100))", "100");
-    expect_output("toFahrenheit(fromFahrenheit(100))", "100.0");
-    expect_output("fromCelsius(toCelsius(123 K))", "123 K");
-    expect_output("fromFahrenheit(toFahrenheit(123 K))", "123.0 K");
+    expect_output("from_celsius(11.5)", "284.65 K");
+    expect_output("from_fahrenheit(89.3)", "304.983333 K");
+    expect_output("to_celsius(0 K)", "-273.15");
+    expect_output("to_fahrenheit(30 K)", "-405.67");
+    expect_output("to_celsius(from_celsius(100))", "100");
+    expect_output("to_fahrenheit(from_fahrenheit(100))", "100.0");
+    expect_output("from_celsius(to_celsius(123 K))", "123 K");
+    expect_output("from_fahrenheit(to_fahrenheit(123 K))", "123.0 K");
 
-    expect_output("-40 // fromFahrenheit // toCelsius", "-40.0");
+    expect_output("-40 // from_fahrenheit // to_celsius", "-40.0");
 }
 
 #[test]
