@@ -9,7 +9,7 @@ use highlighter::NumbatHighlighter;
 use numbat::markup;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::{CodeSource, FileSystemImporter};
-use numbat::{Context, ExitStatus, InterpreterResult, NumbatError, ParseError};
+use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
@@ -329,35 +329,18 @@ impl Cli {
                     InterpreterResult::Exit(exit_status) => ControlFlow::Break(exit_status),
                 }
             }
-            Err(NumbatError::ParseError {
-                inner: ref e @ ParseError { ref span, .. },
-                code_source,
-                line,
-            }) => {
-                let code_source_text = match code_source {
-                    CodeSource::Text => "<input>".to_string(),
-                    CodeSource::File(path) => format!("File {}", path.to_string_lossy()),
-                    CodeSource::Module(module_path, path) => format!(
-                        "Module '{module_path}', File {path}",
-                        module_path = itertools::join(module_path.0.iter(), "::"),
-                        path = path
-                            .map(|p| p.to_string_lossy().to_string())
-                            .unwrap_or("?".into()),
-                    ),
-                };
-                eprintln!(
-                    "{code_source_text}:{line_number}:{position}",
-                    line_number = span.line,
-                    position = span.position
-                );
-                eprintln!("    {line}");
-                eprintln!("    {offset}^", offset = " ".repeat(span.position - 1));
-                eprintln!("{}", e);
-
-                execution_mode.exit_status_in_case_of_error()
-            }
             Err(NumbatError::ResolverError(e)) => {
-                eprintln!("Module resolver error: {:#}", e);
+                match e {
+                    numbat::resolver::ResolverError::UnknownModule(_) => {
+                        eprintln!("Module resolver error: {:#}", e);
+                    }
+                    numbat::resolver::ResolverError::ParseError {
+                        inner: _,
+                        diagnostic,
+                    } => {
+                        self.context.lock().unwrap().print_diagnostic(&diagnostic);
+                    }
+                }
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::NameResolutionError(e)) => {

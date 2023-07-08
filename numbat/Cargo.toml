@@ -10,6 +10,7 @@ thiserror = "1"
 itertools = "0.10"
 num-rational = "0.4"
 num-traits = "0.2"
+codespan-reporting = "0.11"
 
 [dev-dependencies]
 approx = "0.5"

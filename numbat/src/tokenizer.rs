@@ -1,4 +1,4 @@
-use crate::span::Span;
+use crate::span::{SourceCodePositition, Span};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -14,9 +14,6 @@ pub enum TokenizerErrorKind {
 
     #[error("Unexpected character in number literal: '{0}'")]
     UnexpectedCharacterInNumberLiteral(char),
-
-    #[error("Unexpected character in scientific notation: '{0}'")]
-    UnexpectedCharacterInScientificNotation(char),
 
     #[error("Unexpected character in identifier: '{0}'")]
     UnexpectedCharacterInIdentifier(char),
@@ -105,13 +102,8 @@ pub struct Token {
 
 struct Tokenizer {
     input: Vec<char>,
-
-    token_start_index: usize,
-    token_start_position: usize,
-
-    current_index: usize,
-    current_line: usize,
-    current_position: usize,
+    current: SourceCodePositition,
+    token_start: SourceCodePositition,
 }
 
 fn is_exponent_char(c: char) -> bool {
@@ -133,19 +125,15 @@ impl Tokenizer {
     fn new(input: &str) -> Self {
         Tokenizer {
             input: input.chars().collect(),
-            token_start_index: 0,
-            token_start_position: 0,
-            current_index: 0,
-            current_position: 1,
-            current_line: 1,
+            current: SourceCodePositition::start(),
+            token_start: SourceCodePositition::start(),
         }
     }
 
     fn scan(&mut self) -> Result<Vec<Token>> {
         let mut tokens = vec![];
         while !self.at_end() {
-            self.token_start_index = self.current_index;
-            self.token_start_position = self.current_position;
+            self.token_start = self.current.clone();
             if let Some(token) = self.scan_single_token()? {
                 tokens.push(token);
             }
@@ -154,11 +142,7 @@ impl Tokenizer {
         tokens.push(Token {
             kind: TokenKind::Eof,
             lexeme: "".into(),
-            span: Span {
-                line: self.current_line,
-                position: self.current_position,
-                index: self.current_index,
-            },
+            span: self.current.to_single_character_span(),
         });
 
         Ok(tokens)
@@ -174,11 +158,7 @@ impl Tokenizer {
                 kind: TokenizerErrorKind::ExpectedDigit {
                     character: self.peek(),
                 },
-                span: Span {
-                    line: self.current_line,
-                    position: self.current_position,
-                    index: self.token_start_index,
-                },
+                span: self.current.to_single_character_span(),
             });
         }
 
@@ -194,11 +174,7 @@ impl Tokenizer {
         {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(self.peek().unwrap()),
-                span: Span {
-                    line: self.current_line,
-                    position: self.current_position,
-                    index: self.current_index,
-                },
+                span: self.current.to_single_character_span(),
             });
         }
 
@@ -215,23 +191,6 @@ impl Tokenizer {
             let _ = self.match_char('+') || self.match_char('-');
 
             self.consume_stream_of_digits(true, true)?;
-
-            if self
-                .peek()
-                .map(|c| c.is_ascii_digit() || c == '.')
-                .unwrap_or(false)
-            {
-                return Err(TokenizerError {
-                    kind: TokenizerErrorKind::UnexpectedCharacterInScientificNotation(
-                        self.peek().unwrap(),
-                    ),
-                    span: Span {
-                        line: self.current_line,
-                        position: self.current_position,
-                        index: self.current_index,
-                    },
-                });
-            }
         }
 
         Ok(())
@@ -272,14 +231,10 @@ impl Tokenizer {
 
         let current_char = self.advance();
 
-        let tokenizer_error = |line, position, index, kind| -> Result<Option<Token>> {
+        let tokenizer_error = |position: &SourceCodePositition, kind| -> Result<Option<Token>> {
             Err(TokenizerError {
                 kind,
-                span: Span {
-                    line,
-                    position,
-                    index,
-                },
+                span: position.to_single_character_span(),
             })
         };
 
@@ -311,9 +266,7 @@ impl Tokenizer {
 
                 if !has_advanced || self.peek().map(is_identifier_char).unwrap_or(false) {
                     return tokenizer_error(
-                        self.current_line,
-                        self.current_position,
-                        self.token_start_index,
+                        &self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {
                             base,
                             character: self.peek(),
@@ -368,9 +321,7 @@ impl Tokenizer {
                     TokenKind::UnicodeExponent
                 } else {
                     return tokenizer_error(
-                        self.current_line,
-                        self.current_position,
-                        self.current_index,
+                        &self.current,
                         TokenizerErrorKind::UnexpectedCharacterInNegativeExponent { character: c },
                     );
                 }
@@ -386,9 +337,7 @@ impl Tokenizer {
                     TokenKind::String
                 } else {
                     return tokenizer_error(
-                        self.current_line,
-                        self.current_position,
-                        self.current_index,
+                        &self.token_start,
                         TokenizerErrorKind::UnterminatedString,
                     );
                 }
@@ -401,9 +350,7 @@ impl Tokenizer {
 
                 if self.peek().map(|c| c == '.').unwrap_or(false) {
                     return tokenizer_error(
-                        self.current_line,
-                        self.current_position,
-                        self.current_index,
+                        &self.current,
                         TokenizerErrorKind::UnexpectedCharacterInIdentifier(self.peek().unwrap()),
                     );
                 }
@@ -416,9 +363,7 @@ impl Tokenizer {
             }
             c => {
                 return tokenizer_error(
-                    self.current_line,
-                    self.current_position - 1,
-                    self.current_index - 1,
+                    &self.token_start,
                     TokenizerErrorKind::UnexpectedCharacter { character: c },
                 );
             }
@@ -427,40 +372,37 @@ impl Tokenizer {
         let token = Some(Token {
             kind,
             lexeme: self.lexeme(),
-            span: Span {
-                line: self.current_line,
-                position: self.token_start_position,
-                index: self.token_start_index,
-            },
+            span: self.token_start.to_single_character_span(),
         });
 
         if kind == TokenKind::Newline {
-            self.current_line += 1;
-            self.current_position = 1;
+            self.current.line += 1;
+            self.current.position = 1;
         }
 
         Ok(token)
     }
 
     fn lexeme(&self) -> String {
-        self.input[self.token_start_index..self.current_index]
+        self.input[self.token_start.index..self.current.index]
             .iter()
             .collect()
     }
 
     fn advance(&mut self) -> char {
-        let c = self.input[self.current_index];
-        self.current_index += 1;
-        self.current_position += 1;
+        let c = self.input[self.current.index];
+        self.current.index += 1;
+        self.current.byte += c.len_utf8();
+        self.current.position += 1;
         c
     }
 
     fn peek(&self) -> Option<char> {
-        self.input.get(self.current_index).copied()
+        self.input.get(self.current.index).copied()
     }
 
     fn peek2(&self) -> Option<char> {
-        self.input.get(self.current_index + 1).copied()
+        self.input.get(self.current.index + 1).copied()
     }
 
     fn match_char(&mut self, c: char) -> bool {
@@ -473,7 +415,7 @@ impl Tokenizer {
     }
 
     fn at_end(&self) -> bool {
-        self.current_index >= self.input.len()
+        self.current.index >= self.input.len()
     }
 }
 
@@ -483,17 +425,16 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>> {
 }
 
 #[cfg(test)]
-fn token_stream(input: &[(&str, TokenKind, (usize, usize, usize))]) -> Vec<Token> {
-    input
+fn tokenize_reduced(input: &str) -> Vec<(String, TokenKind, (usize, usize))> {
+    tokenize(input)
+        .unwrap()
         .iter()
-        .map(|(lexeme, kind, (line, position, index))| Token {
-            kind: *kind,
-            lexeme: lexeme.to_string(),
-            span: Span {
-                line: *line,
-                position: *position,
-                index: *index,
-            },
+        .map(|token| {
+            (
+                token.lexeme.to_string(),
+                token.kind,
+                (token.span.position.line, token.span.position.position),
+            )
         })
         .collect()
 }
@@ -503,82 +444,85 @@ fn test_tokenize_basic() {
     use TokenKind::*;
 
     assert_eq!(
-        tokenize("  12 + 34  ").unwrap(),
-        token_stream(&[
-            ("12", Number, (1, 3, 2)),
-            ("+", Plus, (1, 6, 5)),
-            ("34", Number, (1, 8, 7)),
-            ("", Eof, (1, 12, 11))
-        ])
+        tokenize_reduced("  12 + 34  "),
+        [
+            ("12".to_string(), Number, (1, 3)),
+            ("+".to_string(), Plus, (1, 6)),
+            ("34".to_string(), Number, (1, 8)),
+            ("".to_string(), Eof, (1, 12))
+        ]
     );
 
     assert_eq!(
-        tokenize("1 2").unwrap(),
-        token_stream(&[
-            ("1", Number, (1, 1, 0)),
-            ("2", Number, (1, 3, 2)),
-            ("", Eof, (1, 4, 3))
-        ])
+        tokenize_reduced("1 2"),
+        [
+            ("1".to_string(), Number, (1, 1)),
+            ("2".to_string(), Number, (1, 3)),
+            ("".to_string(), Eof, (1, 4))
+        ]
     );
 
     assert_eq!(
-        tokenize("12 × (3 - 4)").unwrap(),
-        token_stream(&[
-            ("12", Number, (1, 1, 0)),
-            ("×", Multiply, (1, 4, 3)),
-            ("(", LeftParen, (1, 6, 5)),
-            ("3", Number, (1, 7, 6)),
-            ("-", Minus, (1, 9, 8)),
-            ("4", Number, (1, 11, 10)),
-            (")", RightParen, (1, 12, 11)),
-            ("", Eof, (1, 13, 12))
-        ])
+        tokenize_reduced("12 × (3 - 4)"),
+        [
+            ("12".to_string(), Number, (1, 1)),
+            ("×".to_string(), Multiply, (1, 4)),
+            ("(".to_string(), LeftParen, (1, 6)),
+            ("3".to_string(), Number, (1, 7)),
+            ("-".to_string(), Minus, (1, 9)),
+            ("4".to_string(), Number, (1, 11)),
+            (")".to_string(), RightParen, (1, 12)),
+            ("".to_string(), Eof, (1, 13))
+        ]
     );
 
     assert_eq!(
-        tokenize("foo to bar").unwrap(),
-        token_stream(&[
-            ("foo", Identifier, (1, 1, 0)),
-            ("to", Arrow, (1, 5, 4)),
-            ("bar", Identifier, (1, 8, 7)),
-            ("", Eof, (1, 11, 10))
-        ])
+        tokenize_reduced("foo to bar"),
+        [
+            ("foo".to_string(), Identifier, (1, 1)),
+            ("to".to_string(), Arrow, (1, 5)),
+            ("bar".to_string(), Identifier, (1, 8)),
+            ("".to_string(), Eof, (1, 11))
+        ]
     );
 
     assert_eq!(
-        tokenize("1 -> 2").unwrap(),
-        token_stream(&[
-            ("1", Number, (1, 1, 0)),
-            ("->", Arrow, (1, 3, 2)),
-            ("2", Number, (1, 6, 5)),
-            ("", Eof, (1, 7, 6))
-        ])
+        tokenize_reduced("1 -> 2"),
+        [
+            ("1".to_string(), Number, (1, 1)),
+            ("->".to_string(), Arrow, (1, 3)),
+            ("2".to_string(), Number, (1, 6)),
+            ("".to_string(), Eof, (1, 7))
+        ]
     );
 
     assert_eq!(
-        tokenize("45°").unwrap(),
-        token_stream(&[
-            ("45", Number, (1, 1, 0)),
-            ("°", Identifier, (1, 3, 2)),
-            ("", Eof, (1, 4, 3))
-        ])
+        tokenize_reduced("45°"),
+        [
+            ("45".to_string(), Number, (1, 1)),
+            ("°".to_string(), Identifier, (1, 3)),
+            ("".to_string(), Eof, (1, 4))
+        ]
     );
 
     assert_eq!(
-        tokenize("1+2\n42").unwrap(),
-        token_stream(&[
-            ("1", Number, (1, 1, 0)),
-            ("+", Plus, (1, 2, 1)),
-            ("2", Number, (1, 3, 2)),
-            ("\n", Newline, (1, 4, 3)),
-            ("42", Number, (2, 1, 4)),
-            ("", Eof, (2, 3, 6))
-        ])
+        tokenize_reduced("1+2\n42"),
+        [
+            ("1".to_string(), Number, (1, 1)),
+            ("+".to_string(), Plus, (1, 2)),
+            ("2".to_string(), Number, (1, 3)),
+            ("\n".to_string(), Newline, (1, 4)),
+            ("42".to_string(), Number, (2, 1)),
+            ("".to_string(), Eof, (2, 3))
+        ]
     );
 
     assert_eq!(
-        tokenize("\"foo\"").unwrap(),
-        token_stream(&[("\"foo\"", String, (1, 1, 0)), ("", Eof, (1, 6, 5))])
+        tokenize_reduced("\"foo\""),
+        [
+            ("\"foo\"".to_string(), String, (1, 1)),
+            ("".to_string(), Eof, (1, 6))
+        ]
     );
 
     assert!(tokenize("~").is_err());

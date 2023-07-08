@@ -2,7 +2,7 @@ mod common;
 
 use common::get_test_context;
 
-use numbat::resolver::CodeSource;
+use numbat::resolver::{CodeSource, ResolverError};
 use numbat::{InterpreterResult, NumbatError};
 
 use std::ffi::OsStr;
@@ -20,7 +20,7 @@ fn assert_typechecks_and_runs(code: &str) {
 fn assert_parse_error(code: &str) {
     assert!(matches!(
         get_test_context().interpret(code, CodeSource::Text),
-        Err(NumbatError::ParseError { .. })
+        Err(NumbatError::ResolverError(ResolverError::ParseError { .. }))
     ));
 }
 

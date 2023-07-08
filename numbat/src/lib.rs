@@ -26,6 +26,7 @@ mod unit_registry;
 mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
+use codespan_reporting::diagnostic::Diagnostic;
 use interpreter::{Interpreter, RuntimeError};
 use name_resolution::NameResolutionError;
 use prefix_transformer::Transformer;
@@ -44,12 +45,6 @@ pub use parser::ParseError;
 
 #[derive(Debug, Error)]
 pub enum NumbatError {
-    #[error("{inner}")]
-    ParseError {
-        inner: ParseError,
-        code_source: CodeSource,
-        line: String,
-    },
     #[error("{0}")]
     ResolverError(ResolverError),
     #[error("{0}")]
@@ -66,7 +61,7 @@ pub struct Context {
     prefix_transformer: Transformer,
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
-    module_importer: Box<dyn ModuleImporter>,
+    resolver: Resolver,
 }
 
 impl Context {
@@ -75,7 +70,7 @@ impl Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(),
-            module_importer: Box::new(module_importer),
+            resolver: Resolver::new(module_importer),
         }
     }
 
@@ -108,20 +103,10 @@ impl Context {
         code: &str,
         code_source: CodeSource,
     ) -> Result<(Vec<Statement>, InterpreterResult)> {
-        let resolver = Resolver::new(self.module_importer.as_ref());
-
-        let statements = resolver.resolve(code, code_source).map_err(|e| match e {
-            ResolverError::ParseError {
-                inner,
-                code_source,
-                line,
-            } => NumbatError::ParseError {
-                inner,
-                code_source,
-                line,
-            },
-            e => NumbatError::ResolverError(e),
-        })?;
+        let statements = self
+            .resolver
+            .resolve(code, code_source)
+            .map_err(NumbatError::ResolverError)?;
 
         let prefix_transformer_old = self.prefix_transformer.clone();
 
@@ -156,5 +141,24 @@ impl Context {
             .map_err(NumbatError::RuntimeError)?;
 
         Ok((transformed_statements, result))
+    }
+
+    pub fn print_diagnostic(&self, diagnostic: &Diagnostic<usize>) {
+        use codespan_reporting::term::{
+            self,
+            termcolor::{ColorChoice, StandardStream},
+            Config,
+        };
+
+        let writer = StandardStream::stderr(ColorChoice::Always);
+        let config = Config::default();
+
+        term::emit(
+            &mut writer.lock(),
+            &config,
+            &self.resolver.files,
+            &diagnostic,
+        )
+        .unwrap();
     }
 }

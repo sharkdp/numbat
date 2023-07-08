@@ -5,6 +5,8 @@ use std::{
 
 use crate::{ast::Statement, parser::parse, ParseError};
 
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::files::SimpleFiles;
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,34 +38,61 @@ pub enum ResolverError {
     #[error("{inner}")]
     ParseError {
         inner: ParseError,
-        code_source: CodeSource,
-        line: String,
+        diagnostic: Diagnostic<usize>,
     },
 }
 
 type Result<T> = std::result::Result<T, ResolverError>;
 
-pub(crate) struct Resolver<'a> {
-    importer: &'a dyn ModuleImporter,
+pub(crate) struct Resolver {
+    importer: Box<dyn ModuleImporter>,
+    code_sources: Vec<CodeSource>,
+    pub files: SimpleFiles<String, String>,
 }
 
-impl<'a> Resolver<'a> {
-    pub(crate) fn new(importer: &'a dyn ModuleImporter) -> Self {
-        Self { importer }
+impl Resolver {
+    pub(crate) fn new(importer: impl ModuleImporter + 'static) -> Self {
+        Self {
+            importer: Box::new(importer),
+            code_sources: vec![],
+            files: SimpleFiles::new(),
+        }
     }
 
-    fn parse(&self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
+    fn add_code_source(&mut self, code_source: CodeSource, content: &str) -> usize {
+        let code_source_text = match &code_source {
+            CodeSource::Text => "<input>".to_string(),
+            CodeSource::File(path) => format!("File {}", path.to_string_lossy()),
+            CodeSource::Module(module_path, path) => format!(
+                "Module '{module_path}', File {path}",
+                module_path = itertools::join(module_path.0.iter(), "::"),
+                path = path
+                    .as_ref()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or("?".into()),
+            ),
+        };
+
+        let _file_id = self.files.add(code_source_text, content.to_string()); // TODO: it's a shame we need to clone the full source code here
+
+        self.code_sources.push(code_source);
+        self.code_sources.len() - 1
+    }
+
+    fn parse(&self, code: &str, code_source_index: usize) -> Result<Vec<Statement>> {
         parse(code).map_err(|inner| {
-            let line = code.lines().nth(inner.span.line - 1).unwrap().to_string();
-            ResolverError::ParseError {
-                inner,
-                code_source,
-                line,
-            }
+            let diagnostic = Diagnostic::error()
+                .with_message("Parse error")
+                .with_labels(vec![Label::primary(
+                    code_source_index,
+                    (inner.span.position.byte)..(inner.span.position.byte + 1),
+                )
+                .with_message(inner.kind.to_string())]);
+            ResolverError::ParseError { inner, diagnostic }
         })
     }
 
-    fn inlining_pass(&self, program: &[Statement]) -> Result<(Vec<Statement>, bool)> {
+    fn inlining_pass(&mut self, program: &[Statement]) -> Result<(Vec<Statement>, bool)> {
         let mut new_program = vec![];
         let mut performed_imports = false;
 
@@ -71,10 +100,11 @@ impl<'a> Resolver<'a> {
             match statement {
                 Statement::ModuleImport(module_path) => {
                     if let Some((code, filesystem_path)) = self.importer.import(module_path) {
-                        for statement in self.parse(
-                            &code,
+                        let index = self.add_code_source(
                             CodeSource::Module(module_path.clone(), filesystem_path),
-                        )? {
+                            &code,
+                        );
+                        for statement in self.parse(&code, index)? {
                             new_program.push(statement);
                         }
                         performed_imports = true;
@@ -89,10 +119,11 @@ impl<'a> Resolver<'a> {
         Ok((new_program, performed_imports))
     }
 
-    pub fn resolve(&self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
+    pub fn resolve(&mut self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
         // TODO: handle cyclic dependencies & infinite loops
 
-        let mut statements = self.parse(code, code_source)?;
+        let index = self.add_code_source(code_source, &code);
+        let mut statements = self.parse(code, index)?;
 
         loop {
             let result = self.inlining_pass(&statements)?;
@@ -185,7 +216,7 @@ mod tests {
 
         let importer = TestImporter {};
 
-        let resolver = Resolver::new(&importer);
+        let mut resolver = Resolver::new(importer);
         let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
 
         assert_eq!(

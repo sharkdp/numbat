@@ -120,9 +120,9 @@ pub enum ParseErrorKind {
 }
 
 #[derive(Debug, Error)]
-#[error("Parse error in {span}: {kind}")]
+#[error("{kind}")]
 pub struct ParseError {
-    kind: ParseErrorKind,
+    pub kind: ParseErrorKind,
     pub span: Span,
 }
 
@@ -218,7 +218,7 @@ impl<'a> Parser<'a> {
         if self.match_exact(TokenKind::RightParen).is_none() {
             return Err(ParseError::new(
                 ParseErrorKind::MissingClosingParen,
-                self.next().span.clone(),
+                self.peek().span.clone(),
             ));
         }
 
@@ -676,7 +676,7 @@ impl<'a> Parser<'a> {
         if self.match_exact(TokenKind::RightParen).is_none() {
             return Err(ParseError::new(
                 ParseErrorKind::MissingClosingParen,
-                self.next().span.clone(),
+                self.peek().span.clone(),
             ));
         }
 
@@ -710,7 +710,7 @@ impl<'a> Parser<'a> {
             if self.match_exact(TokenKind::RightParen).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.next().span.clone(),
+                    self.peek().span.clone(),
                 ));
             }
 
@@ -827,7 +827,10 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let dexpr = self.dimension_expression()?;
             if self.match_exact(TokenKind::RightParen).is_none() {
-                todo!("Parse error: expected ')'");
+                return Err(ParseError::new(
+                    ParseErrorKind::MissingClosingParen,
+                    self.peek().span.clone(),
+                ));
             }
             Ok(dexpr)
         } else {
@@ -866,14 +869,6 @@ impl<'a> Parser<'a> {
 
     fn last(&self) -> Option<&'a Token> {
         self.tokens.get(self.current - 1)
-    }
-
-    fn next(&self) -> &'a Token {
-        if self.is_at_end() {
-            self.peek()
-        } else {
-            &self.tokens[self.current + 1]
-        }
     }
 
     pub fn is_at_end(&self) -> bool {
