@@ -25,12 +25,13 @@ impl SourceCodePositition {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
     pub start: SourceCodePositition,
     pub end: SourceCodePositition,
     pub code_source_index: usize,
 }
+
 impl Span {
     pub fn extend(&self, other: &Span) -> Span {
         assert_eq!(self.code_source_index, other.code_source_index);
@@ -38,6 +39,15 @@ impl Span {
             start: self.start,
             end: other.end,
             code_source_index: self.code_source_index,
+        }
+    }
+
+    // TODO: make this #[cfg(test)]
+    pub fn dummy() -> Span {
+        Self {
+            start: SourceCodePositition::start(),
+            end: SourceCodePositition::start(),
+            code_source_index: 0,
         }
     }
 }

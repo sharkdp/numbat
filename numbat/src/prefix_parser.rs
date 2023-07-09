@@ -2,6 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use std::sync::OnceLock;
 
+use codespan_reporting::diagnostic::Label;
+
+use crate::span::Span;
+use crate::Diagnostic;
 use crate::{name_resolution::NameResolutionError, prefix::Prefix};
 
 static PREFIXES: OnceLock<Vec<(&'static str, &'static str, Prefix)>> = OnceLock::new();
@@ -117,15 +121,27 @@ impl PrefixParser {
         })
     }
 
-    fn ensure_name_is_available(&self, name: &str) -> Result<()> {
+    fn identifier_clash_error(&self, name: &str, definition_span: Span) -> NameResolutionError {
+        let diagnostic = Diagnostic::error()
+            .with_message("identifier clash in definition")
+            .with_labels(vec![Label::primary(
+                definition_span.code_source_index,
+                (definition_span.start.byte)..(definition_span.end.byte), // TODO extract this into a function
+            )
+            .with_message("Identifier is already in use")]);
+
+        NameResolutionError::IdentifierClash(name.into(), diagnostic)
+    }
+
+    fn ensure_name_is_available(&self, name: &str, definition_span: Span) -> Result<()> {
         if self.other_identifiers.contains(name) {
-            return Err(NameResolutionError::IdentifierClash(name.into()));
+            return Err(self.identifier_clash_error(name, definition_span));
         }
 
         match self.parse(name) {
             PrefixParserResult::Identifier(_) => Ok(()),
             PrefixParserResult::UnitIdentifier(_, _, _) => {
-                Err(NameResolutionError::IdentifierClash(name.into()))
+                Err(self.identifier_clash_error(name, definition_span))
             }
         }
     }
@@ -137,8 +153,9 @@ impl PrefixParser {
         metric: bool,
         binary: bool,
         full_name: &str,
+        definition_span: Span,
     ) -> Result<()> {
-        self.ensure_name_is_available(unit_name)?;
+        self.ensure_name_is_available(unit_name, definition_span)?;
 
         for (prefix_long, prefix_short, prefix) in Self::prefixes() {
             if !(prefix.is_metric() && metric || prefix.is_binary() && binary) {
@@ -146,10 +163,16 @@ impl PrefixParser {
             }
 
             if accepts_prefix.long {
-                self.ensure_name_is_available(&format!("{}{}", prefix_long, unit_name))?;
+                self.ensure_name_is_available(
+                    &format!("{}{}", prefix_long, unit_name),
+                    definition_span,
+                )?;
             }
             if accepts_prefix.short {
-                self.ensure_name_is_available(&format!("{}{}", prefix_short, unit_name))?;
+                self.ensure_name_is_available(
+                    &format!("{}{}", prefix_short, unit_name),
+                    definition_span,
+                )?;
             }
         }
 
@@ -166,13 +189,13 @@ impl PrefixParser {
         Ok(())
     }
 
-    pub fn add_other_identifier(&mut self, identifier: &str) -> Result<()> {
-        self.ensure_name_is_available(identifier)?;
+    pub fn add_other_identifier(&mut self, identifier: &str, definition_span: Span) -> Result<()> {
+        self.ensure_name_is_available(identifier, definition_span)?;
 
         if self.other_identifiers.insert(identifier.into()) {
             Ok(())
         } else {
-            Err(NameResolutionError::IdentifierClash(identifier.into()))
+            Err(self.identifier_clash_error(identifier.into(), definition_span))
         }
     }
 
@@ -234,21 +257,56 @@ mod tests {
     fn basic() {
         let mut prefix_parser = PrefixParser::new();
         prefix_parser
-            .add_unit("meter", AcceptsPrefix::only_long(), true, false, "meter")
+            .add_unit(
+                "meter",
+                AcceptsPrefix::only_long(),
+                true,
+                false,
+                "meter",
+                Span::dummy(),
+            )
             .unwrap();
         prefix_parser
-            .add_unit("m", AcceptsPrefix::only_short(), true, false, "meter")
+            .add_unit(
+                "m",
+                AcceptsPrefix::only_short(),
+                true,
+                false,
+                "meter",
+                Span::dummy(),
+            )
             .unwrap();
 
         prefix_parser
-            .add_unit("byte", AcceptsPrefix::only_long(), true, true, "byte")
+            .add_unit(
+                "byte",
+                AcceptsPrefix::only_long(),
+                true,
+                true,
+                "byte",
+                Span::dummy(),
+            )
             .unwrap();
         prefix_parser
-            .add_unit("B", AcceptsPrefix::only_short(), true, true, "byte")
+            .add_unit(
+                "B",
+                AcceptsPrefix::only_short(),
+                true,
+                true,
+                "byte",
+                Span::dummy(),
+            )
             .unwrap();
 
         prefix_parser
-            .add_unit("me", AcceptsPrefix::only_short(), false, false, "me")
+            .add_unit(
+                "me",
+                AcceptsPrefix::only_short(),
+                false,
+                false,
+                "me",
+                Span::dummy(),
+            )
             .unwrap();
 
         assert_eq!(

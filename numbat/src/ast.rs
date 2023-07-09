@@ -273,8 +273,9 @@ pub enum ProcedureKind {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DeclareVariable(String, Expression, Option<DimensionExpression>),
+    DeclareVariable(Span, String, Expression, Option<DimensionExpression>),
     DeclareFunction(
+        Span,
         /// Function name
         String,
         /// Introduced type parameters
@@ -287,8 +288,9 @@ pub enum Statement {
         Option<DimensionExpression>,
     ),
     DeclareDimension(String, Vec<DimensionExpression>),
-    DeclareBaseUnit(String, DimensionExpression, Vec<Decorator>),
+    DeclareBaseUnit(Span, String, DimensionExpression, Vec<Decorator>),
     DeclareDerivedUnit(
+        Span,
         String,
         Expression,
         Option<DimensionExpression>,
@@ -353,7 +355,7 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DeclareVariable(identifier, expr, dexpr) => {
+            Statement::DeclareVariable(_span, identifier, expr, dexpr) => {
                 m::keyword("let")
                     + m::space()
                     + m::identifier(identifier)
@@ -366,7 +368,14 @@ impl PrettyPrint for Statement {
                     + m::space()
                     + expr.pretty_print()
             }
-            Statement::DeclareFunction(identifier, type_variables, parameters, body, dexpr) => {
+            Statement::DeclareFunction(
+                _span,
+                identifier,
+                type_variables,
+                parameters,
+                body,
+                dexpr,
+            ) => {
                 let markup_type_variables = if type_variables.is_empty() {
                     Markup::default()
                 } else {
@@ -435,7 +444,7 @@ impl PrettyPrint for Statement {
                     )
                     .sum()
             }
-            Statement::DeclareBaseUnit(identifier, dexpr, decorators) => {
+            Statement::DeclareBaseUnit(_span, identifier, dexpr, decorators) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
@@ -444,7 +453,7 @@ impl PrettyPrint for Statement {
                     + m::space()
                     + dexpr.pretty_print()
             }
-            Statement::DeclareDerivedUnit(identifier, expr, dexpr, decorators) => {
+            Statement::DeclareDerivedUnit(_span, identifier, expr, dexpr, decorators) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
@@ -486,6 +495,73 @@ impl PrettyPrint for Statement {
 }
 
 #[cfg(test)]
+pub trait ReplaceSpans {
+    fn replace_spans(&self) -> Self;
+}
+
+#[cfg(test)]
+impl ReplaceSpans for Expression {
+    fn replace_spans(&self) -> Self {
+        self.clone()
+    }
+}
+
+#[cfg(test)]
+impl ReplaceSpans for Statement {
+    fn replace_spans(&self) -> Self {
+        match self {
+            Statement::Expression(expr) => Statement::Expression(expr.replace_spans()),
+            Statement::DeclareVariable(_, name, expr, type_) => Statement::DeclareVariable(
+                Span::dummy(),
+                name.clone(),
+                expr.replace_spans(),
+                type_.clone(),
+            ),
+            Statement::DeclareFunction(_span, name, type_params, args, body, type_) => {
+                Statement::DeclareFunction(
+                    Span::dummy(),
+                    name.clone(),
+                    type_params.clone(),
+                    args.clone(),
+                    body.clone().map(|b| b.replace_spans()),
+                    type_.clone(),
+                )
+            }
+            s @ Statement::DeclareDimension(_, _) => s.clone(),
+            Statement::DeclareBaseUnit(_, name, type_, decorators) => Statement::DeclareBaseUnit(
+                Span::dummy(),
+                name.clone(),
+                type_.clone(),
+                decorators.clone(),
+            ),
+            Statement::DeclareDerivedUnit(_, name, expr, type_, decorators) => {
+                Statement::DeclareDerivedUnit(
+                    Span::dummy(),
+                    name.clone(),
+                    expr.replace_spans(),
+                    type_.clone(),
+                    decorators.clone(),
+                )
+            }
+            Statement::ProcedureCall(proc, args) => Statement::ProcedureCall(
+                proc.clone(),
+                args.iter().map(|a| a.replace_spans()).collect(),
+            ),
+            Statement::ModuleImport(_, module_path) => {
+                Statement::ModuleImport(Span::dummy(), module_path.clone())
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+impl ReplaceSpans for Vec<Statement> {
+    fn replace_spans(&self) -> Self {
+        self.iter().map(|s| s.replace_spans()).collect()
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
@@ -513,6 +589,7 @@ mod tests {
                     Decorator::Aliases(vec![("m".into(), Some(AcceptsPrefix::only_short()))]),
                     Decorator::MetricPrefixes,
                 ],
+                Span::dummy(),
             )
             .unwrap();
         transformer
@@ -522,6 +599,7 @@ mod tests {
                     Decorator::Aliases(vec![("s".into(), Some(AcceptsPrefix::only_short()))]),
                     Decorator::MetricPrefixes,
                 ],
+                Span::dummy(),
             )
             .unwrap();
         transformer
@@ -531,18 +609,21 @@ mod tests {
                     Decorator::Aliases(vec![("rad".into(), Some(AcceptsPrefix::only_short()))]),
                     Decorator::MetricPrefixes,
                 ],
+                Span::dummy(),
             )
             .unwrap();
         transformer
             .register_name_and_aliases(
                 &"degree".into(),
                 &[Decorator::Aliases(vec![("°".into(), None)])],
+                Span::dummy(),
             )
             .unwrap();
         transformer
             .register_name_and_aliases(
                 &"inch".into(),
                 &[Decorator::Aliases(vec![("in".into(), None)])],
+                Span::dummy(),
             )
             .unwrap();
 

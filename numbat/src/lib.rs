@@ -27,7 +27,6 @@ mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
 use interpreter::{Interpreter, RuntimeError};
-use name_resolution::NameResolutionError;
 use prefix_transformer::Transformer;
 use resolver::CodeSource;
 use resolver::ModuleImporter;
@@ -40,6 +39,7 @@ use typechecker::{TypeCheckError, TypeChecker};
 use ast::Statement;
 pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
+pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
 
 pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;

@@ -3,6 +3,7 @@ use crate::{
     decorator::{self, Decorator},
     name_resolution::NameResolutionError,
     prefix_parser::{PrefixParser, PrefixParserResult},
+    span::Span,
 };
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
@@ -69,6 +70,7 @@ impl Transformer {
         &mut self,
         name: &String,
         decorators: &[Decorator],
+        definition_span: Span,
     ) -> Result<()> {
         let mut unit_names = vec![name.to_string()];
         let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
@@ -80,6 +82,7 @@ impl Transformer {
                 metric_prefixes,
                 binary_prefixes,
                 name,
+                definition_span,
             )?;
             unit_names.push(alias.to_string());
         }
@@ -93,28 +96,30 @@ impl Transformer {
     fn transform_statement(&mut self, statement: Statement) -> Result<Statement> {
         Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
-            Statement::DeclareBaseUnit(name, dexpr, decorators) => {
-                self.register_name_and_aliases(&name, &decorators)?;
-                Statement::DeclareBaseUnit(name, dexpr, decorators)
+            Statement::DeclareBaseUnit(span, name, dexpr, decorators) => {
+                self.register_name_and_aliases(&name, &decorators, span)?;
+                Statement::DeclareBaseUnit(span, name, dexpr, decorators)
             }
-            Statement::DeclareDerivedUnit(name, expr, dexpr, decorators) => {
-                self.register_name_and_aliases(&name, &decorators)?;
+            Statement::DeclareDerivedUnit(span, name, expr, dexpr, decorators) => {
+                self.register_name_and_aliases(&name, &decorators, span)?;
                 Statement::DeclareDerivedUnit(
+                    span,
                     name,
                     self.transform_expression(expr),
                     dexpr,
                     decorators,
                 )
             }
-            Statement::DeclareVariable(name, expr, dexpr) => {
+            Statement::DeclareVariable(span, name, expr, dexpr) => {
                 self.variable_names.push(name.clone());
-                self.prefix_parser.add_other_identifier(&name)?;
-                Statement::DeclareVariable(name, self.transform_expression(expr), dexpr)
+                self.prefix_parser.add_other_identifier(&name, span)?;
+                Statement::DeclareVariable(span, name, self.transform_expression(expr), dexpr)
             }
-            Statement::DeclareFunction(name, type_params, args, body, return_type) => {
+            Statement::DeclareFunction(span, name, type_params, args, body, return_type) => {
                 self.function_names.push(name.clone());
-                self.prefix_parser.add_other_identifier(&name)?;
+                self.prefix_parser.add_other_identifier(&name, span)?;
                 Statement::DeclareFunction(
+                    span,
                     name,
                     type_params,
                     args,

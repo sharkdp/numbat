@@ -221,6 +221,8 @@ mod tests {
 
     #[test]
     fn resolver_basic_import() {
+        use crate::ast::ReplaceSpans;
+
         let program = "
         use foo::bar
         a
@@ -232,9 +234,10 @@ mod tests {
         let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
 
         assert_eq!(
-            &program_inlined,
+            &program_inlined.replace_spans(),
             &[
                 Statement::DeclareVariable(
+                    Span::dummy(),
                     "a".into(),
                     Expression::Scalar(Number::from_f64(1.0)),
                     None

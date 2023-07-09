@@ -235,6 +235,8 @@ impl<'a> Parser<'a> {
 
         if self.match_exact(TokenKind::Let).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                let identifier_span = self.last().unwrap().span;
+
                 let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
                     Some(self.dimension_expression()?)
                 } else {
@@ -248,7 +250,9 @@ impl<'a> Parser<'a> {
                     })
                 } else {
                     let expr = self.expression()?;
+
                     Ok(Statement::DeclareVariable(
+                        identifier_span,
                         identifier.lexeme.clone(),
                         expr,
                         dexpr,
@@ -262,6 +266,7 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::Fn).is_some() {
             if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
+                let identifier_span = self.last().unwrap().span;
                 let mut type_parameters = vec![];
                 if self.match_exact(TokenKind::LeftAngleBracket).is_some() {
                     while self.match_exact(TokenKind::RightAngleBracket).is_none() {
@@ -358,6 +363,7 @@ impl<'a> Parser<'a> {
                 }
 
                 Ok(Statement::DeclareFunction(
+                    identifier_span,
                     fn_name.lexeme.clone(),
                     type_parameters,
                     parameters,
@@ -422,6 +428,7 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::Unit).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                let identifier_span = self.last().unwrap().span;
                 let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
                     Some(self.dimension_expression()?)
                 } else {
@@ -436,10 +443,19 @@ impl<'a> Parser<'a> {
                 if self.match_exact(TokenKind::Equal).is_some() {
                     let expr = self.expression()?;
                     Ok(Statement::DeclareDerivedUnit(
-                        unit_name, expr, dexpr, decorators,
+                        identifier_span,
+                        unit_name,
+                        expr,
+                        dexpr,
+                        decorators,
                     ))
                 } else if let Some(dexpr) = dexpr {
-                    Ok(Statement::DeclareBaseUnit(unit_name, dexpr, decorators))
+                    Ok(Statement::DeclareBaseUnit(
+                        identifier_span,
+                        unit_name,
+                        dexpr,
+                        decorators,
+                    ))
                 } else {
                     Err(ParseError {
                         kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
@@ -908,11 +924,11 @@ pub fn parse_dexpr(input: &str) -> DimensionExpression {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{binop, identifier, negate, scalar};
+    use crate::ast::{binop, identifier, negate, scalar, ReplaceSpans};
 
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
-            let statements = parse(input, 0).expect("parse error");
+            let statements = parse(input, 0).expect("parse error").replace_spans();
 
             assert!(statements.len() == 1);
             let statement = &statements[0];
@@ -1184,12 +1200,13 @@ mod tests {
     fn variable_declaration() {
         parse_as(
             &["let foo = 1", "let foo=1"],
-            Statement::DeclareVariable("foo".into(), scalar!(1.0), None),
+            Statement::DeclareVariable(Span::dummy(), "foo".into(), scalar!(1.0), None),
         );
 
         parse_as(
             &["let x: Length = 1 * meter"],
             Statement::DeclareVariable(
+                Span::dummy(),
                 "x".into(),
                 binop!(scalar!(1.0), Mul, identifier!("meter")),
                 Some(DimensionExpression::Dimension("Length".into())),
@@ -1275,12 +1292,20 @@ mod tests {
     fn function_declaration() {
         parse_as(
             &["fn foo() = 1"],
-            Statement::DeclareFunction("foo".into(), vec![], vec![], Some(scalar!(1.0)), None),
+            Statement::DeclareFunction(
+                Span::dummy(),
+                "foo".into(),
+                vec![],
+                vec![],
+                Some(scalar!(1.0)),
+                None,
+            ),
         );
 
         parse_as(
             &["fn foo() -> Scalar = 1"],
             Statement::DeclareFunction(
+                Span::dummy(),
                 "foo".into(),
                 vec![],
                 vec![],
@@ -1292,6 +1317,7 @@ mod tests {
         parse_as(
             &["fn foo(x) = 1"],
             Statement::DeclareFunction(
+                Span::dummy(),
                 "foo".into(),
                 vec![],
                 vec![("x".into(), None, false)],
@@ -1303,6 +1329,7 @@ mod tests {
         parse_as(
             &["fn foo(x, y, z) = 1"],
             Statement::DeclareFunction(
+                Span::dummy(),
                 "foo".into(),
                 vec![],
                 vec![
@@ -1318,6 +1345,7 @@ mod tests {
         parse_as(
             &["fn foo(x: Length, y: Time, z: Length^3 · Time^2) -> Scalar = 1"],
             Statement::DeclareFunction(
+                Span::dummy(),
                 "foo".into(),
                 vec![],
                 vec![
@@ -1354,6 +1382,7 @@ mod tests {
         parse_as(
             &["fn foo<X>(x: X) = 1"],
             Statement::DeclareFunction(
+                Span::dummy(),
                 "foo".into(),
                 vec!["X".into()],
                 vec![(
@@ -1369,6 +1398,7 @@ mod tests {
         parse_as(
             &["fn foo<D>(x: D…) -> D"],
             Statement::DeclareFunction(
+                Span::dummy(),
                 "foo".into(),
                 vec!["D".into()],
                 vec![(

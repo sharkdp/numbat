@@ -8,7 +8,7 @@ use highlighter::NumbatHighlighter;
 
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::{CodeSource, FileSystemImporter};
-use numbat::{markup, Diagnostic};
+use numbat::{markup, Diagnostic, NameResolutionError};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -343,8 +343,11 @@ impl Cli {
                 }
                 execution_mode.exit_status_in_case_of_error()
             }
-            Err(NumbatError::NameResolutionError(e)) => {
-                eprintln!("Name resolution error: {:#}", e);
+            Err(NumbatError::NameResolutionError(NameResolutionError::IdentifierClash(
+                _,
+                diagnostic,
+            ))) => {
+                self.print_digagnostic(diagnostic);
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::TypeCheckError(e)) => {
