@@ -195,7 +195,7 @@ impl PrefixParser {
         if self.other_identifiers.insert(identifier.into()) {
             Ok(())
         } else {
-            Err(self.identifier_clash_error(identifier.into(), definition_span))
+            Err(self.identifier_clash_error(identifier, definition_span))
         }
     }
 

@@ -137,7 +137,7 @@ impl Tokenizer {
     fn scan(&mut self) -> Result<Vec<Token>> {
         let mut tokens = vec![];
         while !self.at_end() {
-            self.token_start = self.current.clone();
+            self.token_start = self.current;
             if let Some(token) = self.scan_single_token()? {
                 tokens.push(token);
             }

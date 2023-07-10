@@ -177,7 +177,7 @@ impl<'a> Parser<'a> {
                 _ => {
                     return Err(ParseError {
                         kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
-                        span: self.peek().span.clone(),
+                        span: self.peek().span,
                     });
                 }
             }
@@ -218,7 +218,7 @@ impl<'a> Parser<'a> {
         if self.match_exact(TokenKind::RightParen).is_none() {
             return Err(ParseError::new(
                 ParseErrorKind::MissingClosingParen,
-                self.peek().span.clone(),
+                self.peek().span,
             ));
         }
 
@@ -246,7 +246,7 @@ impl<'a> Parser<'a> {
                 if self.match_exact(TokenKind::Equal).is_none() {
                     Err(ParseError {
                         kind: ParseErrorKind::ExpectedEqualOrColonAfterLetIdentifier,
-                        span: self.peek().span.clone(),
+                        span: self.peek().span,
                     })
                 } else {
                     let expr = self.expression()?;
@@ -261,7 +261,7 @@ impl<'a> Parser<'a> {
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedIdentifierAfterLet,
-                    span: self.peek().span.clone(),
+                    span: self.peek().span,
                 })
             }
         } else if self.match_exact(TokenKind::Fn).is_some() {
@@ -278,13 +278,13 @@ impl<'a> Parser<'a> {
                             {
                                 return Err(ParseError {
                                     kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
-                                    span: self.peek().span.clone(),
+                                    span: self.peek().span,
                                 });
                             }
                         } else {
                             return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedTypeParameterName,
-                                span: self.peek().span.clone(),
+                                span: self.peek().span,
                             });
                         }
                     }
@@ -293,11 +293,11 @@ impl<'a> Parser<'a> {
                 if self.match_exact(TokenKind::LeftParen).is_none() {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedLeftParenInFunctionDefinition,
-                        span: self.peek().span.clone(),
+                        span: self.peek().span,
                     });
                 }
 
-                let mut parameter_span = self.peek().span.clone();
+                let mut parameter_span = self.peek().span;
 
                 let mut parameters = vec![];
                 while self.match_exact(TokenKind::RightParen).is_none() {
@@ -323,13 +323,13 @@ impl<'a> Parser<'a> {
                         {
                             return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
-                                span: self.peek().span.clone(),
+                                span: self.peek().span,
                             });
                         }
                     } else {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedParameterNameInFunctionDefinition,
-                            span: self.peek().span.clone(),
+                            span: self.peek().span,
                         });
                     }
                 }
@@ -373,7 +373,7 @@ impl<'a> Parser<'a> {
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedIdentifierAfterFn,
-                    span: self.peek().span.clone(),
+                    span: self.peek().span,
                 })
             }
         } else if self.match_exact(TokenKind::Dimension).is_some() {
@@ -398,7 +398,7 @@ impl<'a> Parser<'a> {
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedIdentifierAfterDimension,
-                    span: self.peek().span.clone(),
+                    span: self.peek().span,
                 })
             }
         } else if self.match_exact(TokenKind::At).is_some() {
@@ -459,17 +459,17 @@ impl<'a> Parser<'a> {
                 } else {
                     Err(ParseError {
                         kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
-                        span: self.peek().span.clone(),
+                        span: self.peek().span,
                     })
                 }
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedIdentifierAfterUnit,
-                    span: self.peek().span.clone(),
+                    span: self.peek().span,
                 })
             }
         } else if self.match_exact(TokenKind::Use).is_some() {
-            let mut span = self.peek().span.clone();
+            let mut span = self.peek().span;
 
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let mut module_path = vec![identifier.lexeme.clone()];
@@ -500,7 +500,7 @@ impl<'a> Parser<'a> {
             if self.match_exact(TokenKind::LeftParen).is_none() {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
-                    span: self.peek().span.clone(),
+                    span: self.peek().span,
                 })
             } else {
                 Ok(Statement::ProcedureCall(procedure_kind, self.arguments()?))
@@ -520,7 +520,7 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParseError::new(
                 ParseErrorKind::CanOnlyCallIdentifier,
-                self.peek().span.clone(), // TODO: Ideally, this span should point to whatever we try to call. Once we have spans in the AST, this should be easy to resolve.
+                self.peek().span, // TODO: Ideally, this span should point to whatever we try to call. Once we have spans in the AST, this should be easy to resolve.
             ))
         }
     }
@@ -531,7 +531,7 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParseError::new(
                 ParseErrorKind::ExpectedIdentifierInPostfixApply,
-                self.peek().span.clone(),
+                self.peek().span,
             ))
         }
     }
@@ -700,7 +700,7 @@ impl<'a> Parser<'a> {
         if self.match_exact(TokenKind::RightParen).is_none() {
             return Err(ParseError::new(
                 ParseErrorKind::MissingClosingParen,
-                self.peek().span.clone(),
+                self.peek().span,
             ));
         }
 
@@ -734,7 +734,7 @@ impl<'a> Parser<'a> {
             if self.match_exact(TokenKind::RightParen).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span.clone(),
+                    self.peek().span,
                 ));
             }
 
@@ -745,12 +745,12 @@ impl<'a> Parser<'a> {
         ) {
             Err(ParseError::new(
                 ParseErrorKind::InlineProcedureUsage,
-                self.peek().span.clone(),
+                self.peek().span,
             ))
         } else {
             Err(ParseError::new(
                 ParseErrorKind::ExpectedPrimary,
-                self.peek().span.clone(),
+                self.peek().span,
             ))
         }
     }
@@ -814,12 +814,12 @@ impl<'a> Parser<'a> {
                 if rhs == Rational::zero() {
                     Err(ParseError::new(
                         ParseErrorKind::DivisionByZeroInDimensionExponent,
-                        self.last().unwrap().span.clone(),
+                        self.last().unwrap().span,
                     ))
                 } else if self.match_exact(TokenKind::RightParen).is_none() {
                     Err(ParseError::new(
                         ParseErrorKind::MissingClosingParen,
-                        self.peek().span.clone(),
+                        self.peek().span,
                     ))
                 } else {
                     Ok(exponent / rhs)
@@ -827,7 +827,7 @@ impl<'a> Parser<'a> {
             } else {
                 Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span.clone(),
+                    self.peek().span,
                 ))
             }
         } else {
@@ -838,7 +838,7 @@ impl<'a> Parser<'a> {
     fn dimension_primary(&mut self) -> Result<DimensionExpression> {
         let e = Err(ParseError::new(
             ParseErrorKind::ExpectedDimensionPrimary,
-            self.peek().span.clone(),
+            self.peek().span,
         ));
         if let Some(token) = self.match_exact(TokenKind::Identifier) {
             Ok(DimensionExpression::Dimension(token.lexeme.clone()))
@@ -853,7 +853,7 @@ impl<'a> Parser<'a> {
             if self.match_exact(TokenKind::RightParen).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span.clone(),
+                    self.peek().span,
                 ));
             }
             Ok(dexpr)

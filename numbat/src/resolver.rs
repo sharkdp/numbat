@@ -118,7 +118,7 @@ impl Resolver {
                             .with_message("Unknown module")]);
 
                         return Err(ResolverError::UnknownModule(
-                            span.clone(),
+                            *span,
                             module_path.clone(),
                             diagnostic,
                         ));
@@ -134,7 +134,7 @@ impl Resolver {
     pub fn resolve(&mut self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
         // TODO: handle cyclic dependencies & infinite loops
 
-        let index = self.add_code_source(code_source, &code);
+        let index = self.add_code_source(code_source, code);
         let mut statements = self.parse(code, index)?;
 
         loop {

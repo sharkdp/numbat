@@ -18,8 +18,8 @@ impl SourceCodePositition {
 
     pub fn to_single_character_span(&self, code_source_index: usize) -> Span {
         Span {
-            start: self.clone(),
-            end: self.clone(),
+            start: *self,
+            end: *self,
             code_source_index,
         }
     }

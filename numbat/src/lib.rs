@@ -158,7 +158,7 @@ impl Context {
             &mut writer.lock(),
             &config,
             &self.resolver.files,
-            &diagnostic,
+            diagnostic,
         )
         .unwrap();
     }
