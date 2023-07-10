@@ -1,7 +1,8 @@
 use codespan_reporting::diagnostic::LabelStyle;
 
 use crate::{
-    interpreter::RuntimeError, parser::ParseError, resolver::ResolverError, NameResolutionError,
+    interpreter::RuntimeError, parser::ParseError, resolver::ResolverError,
+    typechecker::TypeCheckError, NameResolutionError,
 };
 
 pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
@@ -49,8 +50,42 @@ impl ErrorDiagnostic for NameResolutionError {
     }
 }
 
+impl ErrorDiagnostic for TypeCheckError {
+    fn diagnostic(self) -> Diagnostic {
+        let d = Diagnostic::error()
+            .with_message("while type checking")
+            .with_notes(vec![format!("{self:#}")]);
+
+        match self {
+            TypeCheckError::UnknownIdentifier(span, _) => {
+                d.with_labels(vec![span.diagnostic_label(LabelStyle::Primary)])
+            }
+            TypeCheckError::UnknownFunction(_) => d,
+            TypeCheckError::IncompatibleDimensions(_, _, _, _, _) => d,
+            TypeCheckError::NonScalarExponent(_) => d,
+            TypeCheckError::UnsupportedConstEvalExpression(_) => d,
+            TypeCheckError::DivisionByZeroInConstEvalExpression => d,
+            TypeCheckError::RegistryError(_) => d,
+            TypeCheckError::IncompatibleAlternativeDimensionExpression(_) => d,
+            TypeCheckError::WrongArity {
+                callable_name: _,
+                arity: _,
+                num_args: _,
+            } => d,
+            TypeCheckError::TypeParameterNameClash(_) => d,
+            TypeCheckError::CanNotInferTypeParameters(_, _) => d,
+            TypeCheckError::MultipleUnresolvedTypeParameters => d,
+            TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(_) => d,
+            TypeCheckError::UnknownForeignFunction(_) => d,
+            TypeCheckError::ParameterTypesCanNotBeDeduced => d,
+        }
+    }
+}
+
 impl ErrorDiagnostic for RuntimeError {
     fn diagnostic(self) -> Diagnostic {
-        Diagnostic::error().with_message(format!("runtime error: {self:#}"))
+        Diagnostic::error()
+            .with_message("runtime error")
+            .with_notes(vec![format!("{self:#}")])
     }
 }

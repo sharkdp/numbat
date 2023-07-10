@@ -515,7 +515,7 @@ impl<'a> Parser<'a> {
     }
 
     fn function_name_from_primary(&self, primary: Expression) -> Result<String> {
-        if let Expression::Identifier(name) = primary {
+        if let Expression::Identifier(_, name) = primary {
             Ok(name)
         } else {
             Err(ParseError::new(
@@ -727,7 +727,8 @@ impl<'a> Parser<'a> {
                 i128::from_str_radix(&bin_int.lexeme[2..], 2).unwrap() as f64, // TODO: i128 limits our precision here
             )))
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-            Ok(Expression::Identifier(identifier.lexeme.clone()))
+            let span = self.last().unwrap().span;
+            Ok(Expression::Identifier(span, identifier.lexeme.clone()))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let inner = self.expression()?;
 

@@ -5,6 +5,7 @@ use crate::dimension::DimensionRegistry;
 use crate::ffi::ArityRange;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
+use crate::span::Span;
 use crate::typed_ast::{self, Type};
 use crate::{ast, decorator, ffi};
 
@@ -13,8 +14,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
-    #[error("Unknown identifier '{0}'.")]
-    UnknownIdentifier(String),
+    #[error("Unknown identifier '{1}'.")]
+    UnknownIdentifier(Span, String),
 
     #[error("Unknown function '{0}'.")]
     UnknownFunction(String),
@@ -131,22 +132,22 @@ pub struct TypeChecker {
 }
 
 impl TypeChecker {
-    fn type_for_identifier(&self, name: &str) -> Result<&Type> {
+    fn type_for_identifier(&self, span: Span, name: &str) -> Result<&Type> {
         self.identifiers
             .get(name)
-            .ok_or_else(|| TypeCheckError::UnknownIdentifier(name.into()))
+            .ok_or_else(|| TypeCheckError::UnknownIdentifier(span, name.into()))
     }
 
     pub(crate) fn check_expression(&self, ast: ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
             ast::Expression::Scalar(n) => typed_ast::Expression::Scalar(n),
-            ast::Expression::Identifier(name) => {
-                let type_ = self.type_for_identifier(&name)?.clone();
+            ast::Expression::Identifier(span, name) => {
+                let type_ = self.type_for_identifier(span, &name)?.clone();
 
                 typed_ast::Expression::Identifier(name, type_)
             }
-            ast::Expression::UnitIdentifier(prefix, name, full_name) => {
-                let type_ = self.type_for_identifier(&name)?.clone();
+            ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
+                let type_ = self.type_for_identifier(span, &name)?.clone();
 
                 typed_ast::Expression::UnitIdentifier(prefix, name, full_name, type_)
             }
@@ -825,7 +826,7 @@ mod tests {
     fn unknown_identifier() {
         assert!(matches!(
             get_typecheck_error("a + d"),
-            TypeCheckError::UnknownIdentifier(ident) if ident == "d"
+            TypeCheckError::UnknownIdentifier(_, ident) if ident == "d"
         ));
     }
 

@@ -27,7 +27,7 @@ fn pass_expression_on_command_line() {
         .arg("2 meter + 3 second")
         .assert()
         .failure()
-        .stderr(predicates::str::contains("Type check error"));
+        .stderr(predicates::str::contains("while type checking"));
 
     numbat()
         .arg("--expression")

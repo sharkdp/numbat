@@ -209,7 +209,7 @@ mod tests {
                     Expression::Scalar(Number::from_f64(1.0)),
                     None
                 ),
-                Statement::Expression(Expression::Identifier("a".into()))
+                Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
             ]
         );
     }

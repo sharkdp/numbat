@@ -341,7 +341,7 @@ impl Cli {
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::TypeCheckError(e)) => {
-                eprintln!("Type check error: {:#}", e);
+                self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::RuntimeError(e)) => {

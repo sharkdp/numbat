@@ -1,10 +1,10 @@
-use crate::markup as m;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::span::Span;
 use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint, resolver::ModulePath,
 };
+use crate::{markup as m, name_resolution};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
@@ -34,8 +34,8 @@ impl PrettyPrint for BinaryOperator {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Scalar(Number),
-    Identifier(String),
-    UnitIdentifier(Prefix, String, String),
+    Identifier(Span, String),
+    UnitIdentifier(Span, Prefix, String, String),
     Negate(Box<Expression>),
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
     FunctionCall(String, Vec<Expression>),
@@ -51,7 +51,7 @@ macro_rules! scalar {
 #[cfg(test)]
 macro_rules! identifier {
     ( $name:expr ) => {{
-        Expression::Identifier($name.into())
+        Expression::Identifier(Span::dummy(), $name.into())
     }};
 }
 
@@ -85,8 +85,8 @@ fn pretty_scalar(Number(n): Number) -> Markup {
 fn with_parens(expr: &Expression) -> Markup {
     match expr {
         Expression::Scalar(_)
-        | Expression::Identifier(_)
-        | Expression::UnitIdentifier(_, _, _)
+        | Expression::Identifier(_, _)
+        | Expression::UnitIdentifier(_, _, _, _)
         | Expression::FunctionCall(_, _) => expr.pretty_print(),
         Expression::Negate(_) | Expression::BinaryOperator(_, _, _) => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
@@ -99,7 +99,7 @@ fn with_parens_liberal(expr: &Expression) -> Markup {
     match expr {
         Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs)
             if matches!(**lhs, Expression::Scalar(_))
-                && matches!(**rhs, Expression::UnitIdentifier(_, _, _)) =>
+                && matches!(**rhs, Expression::UnitIdentifier(_, _, _, _)) =>
         {
             expr.pretty_print()
         }
@@ -114,13 +114,13 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             lhs.pretty_print() + op.pretty_print() + rhs.pretty_print()
         }
         BinaryOperator::Mul => match (lhs, rhs) {
-            (Expression::Scalar(s), Expression::UnitIdentifier(prefix, _name, full_name)) => {
+            (Expression::Scalar(s), Expression::UnitIdentifier(_, prefix, _name, full_name)) => {
                 // Fuse multiplication of a scalar and a unit to a quantity
                 pretty_scalar(*s)
                     + m::space()
                     + m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
-            (Expression::Scalar(s), Expression::Identifier(name)) => {
+            (Expression::Scalar(s), Expression::Identifier(_, name)) => {
                 // Fuse multiplication of a scalar and identifier
                 pretty_scalar(*s) + m::space() + m::identifier(name)
             }
@@ -212,8 +212,8 @@ impl PrettyPrint for Expression {
 
         match self {
             Scalar(n) => pretty_scalar(*n),
-            Identifier(name) => m::identifier(name),
-            UnitIdentifier(prefix, _name, full_name) => {
+            Identifier(_, name) => m::identifier(name),
+            UnitIdentifier(_, prefix, _name, full_name) => {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
             Negate(rhs) => m::operator("-") + with_parens(rhs),
@@ -502,7 +502,26 @@ pub trait ReplaceSpans {
 #[cfg(test)]
 impl ReplaceSpans for Expression {
     fn replace_spans(&self) -> Self {
-        self.clone()
+        match self {
+            e @ Expression::Scalar(_) => e.clone(),
+            Expression::Identifier(_, name) => Expression::Identifier(Span::dummy(), name.clone()),
+            Expression::UnitIdentifier(_, prefix, name, full_name) => Expression::UnitIdentifier(
+                Span::dummy(),
+                prefix.clone(),
+                name.clone(),
+                full_name.clone(),
+            ),
+            Expression::Negate(expr) => Expression::Negate(Box::new(expr.replace_spans())),
+            Expression::BinaryOperator(op, lhs, rhs) => Expression::BinaryOperator(
+                *op,
+                Box::new(lhs.replace_spans()),
+                Box::new(rhs.replace_spans()),
+            ),
+            Expression::FunctionCall(name, args) => Expression::FunctionCall(
+                name.clone(),
+                args.iter().map(|a| a.replace_spans()).collect(),
+            ),
+        }
     }
 }
 
@@ -666,8 +685,8 @@ mod tests {
     }
 
     fn roundtrip_check(code: &str) {
-        let ast1 = parse(code);
-        let ast2 = parse(&pretty_print(&ast1));
+        let ast1 = parse(code).replace_spans();
+        let ast2 = parse(&pretty_print(&ast1)).replace_spans();
         assert_eq!(ast1, ast2);
     }
 

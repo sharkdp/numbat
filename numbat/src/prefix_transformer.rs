@@ -33,16 +33,16 @@ impl Transformer {
     fn transform_expression(&self, expression: Expression) -> Expression {
         match expression {
             expr @ Expression::Scalar(_) => expr,
-            Expression::Identifier(identifier) => {
+            Expression::Identifier(span, identifier) => {
                 if let PrefixParserResult::UnitIdentifier(prefix, unit_name, full_name) =
                     self.prefix_parser.parse(&identifier)
                 {
-                    Expression::UnitIdentifier(prefix, unit_name, full_name)
+                    Expression::UnitIdentifier(span, prefix, unit_name, full_name)
                 } else {
-                    Expression::Identifier(identifier)
+                    Expression::Identifier(span, identifier)
                 }
             }
-            Expression::UnitIdentifier(_, _, _) => {
+            Expression::UnitIdentifier(_, _, _, _) => {
                 unreachable!("Prefixed identifiers should not exist prior to this stage")
             }
             Expression::Negate(expr) => {
