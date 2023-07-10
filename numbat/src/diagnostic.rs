@@ -68,21 +68,17 @@ impl ErrorDiagnostic for TypeCheckError {
                 expected_type,
                 ..
             } => {
-                let mut labels = vec![
+                let labels = vec![
                     span_operation
                         .diagnostic_label(LabelStyle::Secondary)
                         .with_message(format!("incompatible dimensions in {}", operation)),
+                    span_expected
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(format!("{expected_type}")),
                     span_actual
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message(format!("{actual_type}")),
                 ];
-                if let Some(span_expected) = span_expected {
-                    labels.push(
-                        span_expected
-                            .diagnostic_label(LabelStyle::Primary)
-                            .with_message(format!("{expected_type}")),
-                    );
-                }
                 d.with_labels(labels).with_notes(vec![format!("{self:#}")])
             }
             TypeCheckError::NonScalarExponent(span, type_) => d

@@ -24,7 +24,7 @@ pub enum TypeCheckError {
     IncompatibleDimensions {
         span_operation: Span,
         operation: String,
-        span_expected: Option<Span>,
+        span_expected: Span,
         expected_name: &'static str,
         expected_type: BaseRepresentation,
         span_actual: Span,
@@ -130,7 +130,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     identifiers: HashMap<String, Type>,
-    function_signatures: HashMap<String, (Vec<String>, Vec<Type>, bool, Type)>,
+    function_signatures: HashMap<String, (Vec<String>, Vec<(Span, Type)>, bool, Type)>,
     registry: DimensionRegistry,
 }
 
@@ -190,7 +190,7 @@ impl TypeChecker {
                                 typed_ast::BinaryOperator::Power => "exponentiation".into(),
                                 typed_ast::BinaryOperator::ConvertTo => "unit conversion".into(),
                             },
-                            span_expected: Some(lhs.full_span()),
+                            span_expected: lhs.full_span(),
                             expected_name: " left hand side",
                             expected_type: lhs_type,
                             span_actual: rhs.full_span(),
@@ -296,7 +296,7 @@ impl TypeChecker {
                     }
                 }
 
-                for (idx, (parameter_type, argument_type)) in
+                for (idx, ((_, parameter_type), argument_type)) in
                     parameter_types.iter().zip(argument_types).enumerate()
                 {
                     let mut parameter_type = substitute(&substitutions, parameter_type);
@@ -343,7 +343,7 @@ impl TypeChecker {
                                 num = idx + 1,
                                 name = function_name
                             ),
-                            span_expected: None, // TODO
+                            span_expected: parameter_types[idx].0,
                             expected_name: "parameter type",
                             expected_type: parameter_type.clone(),
                             span_actual: args[idx].full_span(),
@@ -405,7 +405,7 @@ impl TypeChecker {
                         return Err(TypeCheckError::IncompatibleDimensions {
                             span_operation: identifier_span,
                             operation: "variable declaration".into(),
-                            span_expected: type_annotation_span,
+                            span_expected: type_annotation_span.unwrap(),
                             expected_name: "specified dimension",
                             expected_type: type_specified,
                             span_actual: expr.full_span(),
@@ -451,7 +451,7 @@ impl TypeChecker {
                         return Err(TypeCheckError::IncompatibleDimensions {
                             span_operation: identifier_span,
                             operation: "derived unit declaration".into(),
-                            span_expected: type_annotation_span,
+                            span_expected: type_annotation_span.unwrap(),
                             expected_name: "specified dimension",
                             expected_type: type_specified,
                             span_actual: expr.full_span(),
@@ -488,7 +488,7 @@ impl TypeChecker {
 
                 let mut typed_parameters = vec![];
                 let mut is_variadic = false;
-                for (parameter, optional_dexpr, p_is_variadic) in parameters {
+                for (parameter_span, parameter, optional_dexpr, p_is_variadic) in parameters {
                     let parameter_type = typechecker_fn
                         .registry
                         .get_base_representation(
@@ -500,7 +500,12 @@ impl TypeChecker {
                     typechecker_fn
                         .identifiers
                         .insert(parameter.clone(), parameter_type.clone());
-                    typed_parameters.push((parameter.clone(), p_is_variadic, parameter_type));
+                    typed_parameters.push((
+                        parameter_span,
+                        parameter.clone(),
+                        p_is_variadic,
+                        parameter_type,
+                    ));
 
                     is_variadic |= p_is_variadic;
                 }
@@ -526,7 +531,7 @@ impl TypeChecker {
                             return Err(TypeCheckError::IncompatibleDimensions {
                                 span_operation: function_name_span,
                                 operation: "function return type".into(),
-                                span_expected: return_type_span,
+                                span_expected: return_type_span.unwrap(),
                                 expected_name: "specified return type",
                                 expected_type: return_type_specified,
                                 span_actual: body.unwrap().full_span(),
@@ -548,7 +553,10 @@ impl TypeChecker {
                     })?
                 };
 
-                let parameter_types = typed_parameters.iter().map(|(_, _, t)| t.clone()).collect();
+                let parameter_types = typed_parameters
+                    .iter()
+                    .map(|(span, _, _, t)| (*span, t.clone()))
+                    .collect();
                 self.function_signatures.insert(
                     function_name.clone(),
                     (

@@ -125,7 +125,7 @@ impl BytecodeInterpreter {
             Statement::DeclareFunction(name, parameters, Some(expr), _return_type) => {
                 self.vm.begin_function(name);
                 for parameter in parameters.iter() {
-                    self.local_variables.push(parameter.0.clone());
+                    self.local_variables.push(parameter.1.clone());
                 }
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
@@ -138,7 +138,7 @@ impl BytecodeInterpreter {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
 
-                let is_variadic = parameters.iter().any(|p| p.1);
+                let is_variadic = parameters.iter().any(|p| p.2);
 
                 self.vm.add_foreign_function(
                     name,

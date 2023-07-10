@@ -1,5 +1,7 @@
 pub use crate::ast::{BinaryOperator, DimensionExpression};
-use crate::{decorator::Decorator, number::Number, prefix::Prefix, registry::BaseRepresentation};
+use crate::{
+    decorator::Decorator, number::Number, prefix::Prefix, registry::BaseRepresentation, span::Span,
+};
 
 pub type Type = BaseRepresentation;
 
@@ -17,7 +19,12 @@ pub enum Expression {
 pub enum Statement {
     Expression(Expression),
     DeclareVariable(String, Expression, Type),
-    DeclareFunction(String, Vec<(String, bool, Type)>, Option<Expression>, Type),
+    DeclareFunction(
+        String,
+        Vec<(Span, String, bool, Type)>,
+        Option<Expression>,
+        Type,
+    ),
     DeclareDimension(String),
     DeclareBaseUnit(String, Vec<Decorator>, Type),
     DeclareDerivedUnit(String, Expression, Vec<Decorator>),

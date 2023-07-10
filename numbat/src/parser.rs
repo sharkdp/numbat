@@ -305,6 +305,7 @@ impl<'a> Parser<'a> {
                 let mut parameters = vec![];
                 while self.match_exact(TokenKind::RightParen).is_none() {
                     if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
+                        let span = self.last().unwrap().span;
                         let param_type_dexpr = if self.match_exact(TokenKind::Colon).is_some() {
                             Some(self.dimension_expression()?)
                         } else {
@@ -314,6 +315,7 @@ impl<'a> Parser<'a> {
                         let is_variadic = self.match_exact(TokenKind::Ellipsis).is_some();
 
                         parameters.push((
+                            span,
                             param_name.lexeme.to_string(),
                             param_type_dexpr,
                             is_variadic,
@@ -349,7 +351,7 @@ impl<'a> Parser<'a> {
                         (None, None)
                     };
 
-                let fn_is_variadic = parameters.iter().any(|p| p.2);
+                let fn_is_variadic = parameters.iter().any(|p| p.3);
                 if fn_is_variadic && parameters.len() > 1 {
                     return Err(ParseError {
                         kind: ParseErrorKind::OnlySingleVariadicParameter,
@@ -1400,7 +1402,7 @@ mod tests {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![],
-                parameters: vec![("x".into(), None, false)],
+                parameters: vec![(Span::dummy(), "x".into(), None, false)],
                 body: Some(scalar!(1.0)),
                 return_type_span: None,
                 return_type_annotation: None,
@@ -1414,9 +1416,9 @@ mod tests {
                 function_name: "foo".into(),
                 type_parameters: vec![],
                 parameters: vec![
-                    ("x".into(), None, false),
-                    ("y".into(), None, false),
-                    ("z".into(), None, false),
+                    (Span::dummy(), "x".into(), None, false),
+                    (Span::dummy(), "y".into(), None, false),
+                    (Span::dummy(), "z".into(), None, false),
                 ],
                 body: Some(scalar!(1.0)),
                 return_type_span: None,
@@ -1432,16 +1434,19 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![
                     (
+                        Span::dummy(),
                         "x".into(),
                         Some(DimensionExpression::Dimension("Length".into())),
                         false,
                     ),
                     (
+                        Span::dummy(),
                         "y".into(),
                         Some(DimensionExpression::Dimension("Time".into())),
                         false,
                     ),
                     (
+                        Span::dummy(),
                         "z".into(),
                         Some(DimensionExpression::Multiply(
                             Box::new(DimensionExpression::Power(
@@ -1469,6 +1474,7 @@ mod tests {
                 function_name: "foo".into(),
                 type_parameters: vec!["X".into()],
                 parameters: vec![(
+                    Span::dummy(),
                     "x".into(),
                     Some(DimensionExpression::Dimension("X".into())),
                     false,
@@ -1486,6 +1492,7 @@ mod tests {
                 function_name: "foo".into(),
                 type_parameters: vec!["D".into()],
                 parameters: vec![(
+                    Span::dummy(),
                     "x".into(),
                     Some(DimensionExpression::Dimension("D".into())),
                     true,
