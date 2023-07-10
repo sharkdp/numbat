@@ -14,7 +14,7 @@ pub enum RegistryError {
     EntryExists(String),
 
     #[error("Unknown entry '{0}'.")]
-    UnknownEntry(String),
+    UnknownEntry(String, Option<String>),
 }
 
 pub type Result<T> = std::result::Result<T, RegistryError>;
@@ -125,7 +125,20 @@ impl<Metadata> Registry<Metadata> {
         } else {
             self.derived_entries
                 .get(name)
-                .ok_or_else(|| RegistryError::UnknownEntry(name.to_owned()))
+                .ok_or_else(|| {
+                    let suggestion = self
+                        .base_entries
+                        .iter()
+                        .map(|(id, _)| id.to_string())
+                        .chain(self.derived_entries.keys().map(|s| s.to_string()))
+                        .min_by_key(|id| strsim::damerau_levenshtein(id, name))
+                        .filter(|id| {
+                            name.len() >= 3
+                                && id.len() >= 2
+                                && strsim::damerau_levenshtein(id, name) <= 3
+                        });
+                    RegistryError::UnknownEntry(name.to_owned(), suggestion)
+                })
                 .cloned()
         }
     }

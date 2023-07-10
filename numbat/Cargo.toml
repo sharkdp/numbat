@@ -11,6 +11,7 @@ itertools = "0.10"
 num-rational = "0.4"
 num-traits = "0.2"
 codespan-reporting = "0.11"
+strsim = "0.10.0"
 
 [dev-dependencies]
 approx = "0.5"

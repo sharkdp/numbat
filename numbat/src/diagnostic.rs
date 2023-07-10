@@ -62,9 +62,17 @@ impl ErrorDiagnostic for TypeCheckError {
         let inner_error = format!("{}", self);
 
         match self {
-            TypeCheckError::UnknownIdentifier(span, _) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message("unknown identifier")]),
+            TypeCheckError::UnknownIdentifier(span, _, suggestion) => {
+                let notes = if let Some(suggestion) = suggestion {
+                    vec![format!("Did you mean '{suggestion}'?")]
+                } else {
+                    vec![]
+                };
+                d.with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message("unknown identifier")])
+                    .with_notes(notes)
+            }
             TypeCheckError::UnknownCallable(span, _) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message("unknown callable")]),
@@ -101,7 +109,19 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::DivisionByZeroInConstEvalExpression(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
-            TypeCheckError::RegistryError(_) => d.with_notes(vec![inner_error]),
+            TypeCheckError::RegistryError(re) => match re {
+                crate::registry::RegistryError::EntryExists(_) => d.with_notes(vec![inner_error]),
+                crate::registry::RegistryError::UnknownEntry(name, suggestion) => {
+                    d.with_notes(vec![format!(
+                        "Unknown dimension '{name}'{maybe_suggestion}",
+                        maybe_suggestion = if let Some(suggestion) = suggestion {
+                            format!(" did you mean '{suggestion}'?")
+                        } else {
+                            "".into()
+                        }
+                    )])
+                }
+            },
             TypeCheckError::IncompatibleAlternativeDimensionExpression(
                 _name,
                 span1,

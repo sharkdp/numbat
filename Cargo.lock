@@ -501,6 +501,7 @@ dependencies = [
  "itertools",
  "num-rational",
  "num-traits",
+ "strsim",
  "thiserror",
 ]
 

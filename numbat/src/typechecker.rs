@@ -15,7 +15,7 @@ use thiserror::Error;
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
-    UnknownIdentifier(Span, String),
+    UnknownIdentifier(Span, String, Option<String>),
 
     #[error("Unknown callable '{1}'.")]
     UnknownCallable(Span, String),
@@ -139,9 +139,17 @@ pub struct TypeChecker {
 
 impl TypeChecker {
     fn type_for_identifier(&self, span: Span, name: &str) -> Result<&Type> {
-        self.identifiers
-            .get(name)
-            .ok_or_else(|| TypeCheckError::UnknownIdentifier(span, name.into()))
+        self.identifiers.get(name).ok_or_else(|| {
+            let suggestion = self
+                .identifiers
+                .iter()
+                .map(|(id, _)| id)
+                .min_by_key(|id| strsim::damerau_levenshtein(id, name))
+                .filter(|id| {
+                    name.len() >= 3 && id.len() >= 2 && strsim::damerau_levenshtein(id, name) <= 3
+                });
+            TypeCheckError::UnknownIdentifier(span, name.into(), suggestion.cloned())
+        })
     }
 
     pub(crate) fn check_expression(&self, ast: ast::Expression) -> Result<typed_ast::Expression> {
@@ -933,7 +941,7 @@ mod tests {
     fn unknown_identifier() {
         assert!(matches!(
             get_typecheck_error("a + d"),
-            TypeCheckError::UnknownIdentifier(_, ident) if ident == "d"
+            TypeCheckError::UnknownIdentifier(_, ident, _) if ident == "d"
         ));
     }
 
