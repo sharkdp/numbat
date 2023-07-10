@@ -24,7 +24,7 @@ impl BytecodeInterpreter {
                 let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
-            Expression::Identifier(identifier, _type) => {
+            Expression::Identifier(_span, identifier, _type) => {
                 if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
                     self.vm.add_op1(Op::GetLocal, position as u16); // TODO: check overflow
                 } else {
@@ -32,7 +32,7 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(Op::GetVariable, identifier_idx);
                 }
             }
-            Expression::UnitIdentifier(prefix, unit_name, _full_name, _type) => {
+            Expression::UnitIdentifier(_span, prefix, unit_name, _full_name, _type) => {
                 if let Some(index) = self
                     .unit_name_to_constant_index
                     .get(&(*prefix, unit_name.clone()))
@@ -55,7 +55,7 @@ impl BytecodeInterpreter {
                     }
                 }
             }
-            Expression::Negate(rhs, _type) => {
+            Expression::Negate(_span, rhs, _type) => {
                 self.compile_expression(rhs)?;
                 self.vm.add_op(Op::Negate);
             }
@@ -73,7 +73,7 @@ impl BytecodeInterpreter {
                 };
                 self.vm.add_op(op);
             }
-            Expression::FunctionCall(name, args, _type) => {
+            Expression::FunctionCall(_span, name, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg)?;
@@ -97,13 +97,13 @@ impl BytecodeInterpreter {
         self.compile_expression(expr)?;
 
         match expr {
-            Expression::Scalar(_)
-            | Expression::Identifier(_, _)
-            | Expression::UnitIdentifier(_, _, _, _)
-            | Expression::FunctionCall(_, _, _)
-            | Expression::Negate(_, _)
+            Expression::Scalar(..)
+            | Expression::Identifier(..)
+            | Expression::UnitIdentifier(..)
+            | Expression::FunctionCall(..)
+            | Expression::Negate(..)
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _) => {}
-            Expression::BinaryOperator(_, _, _, _, _) => {
+            Expression::BinaryOperator(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }
         }

@@ -52,7 +52,7 @@ impl Span {
         )
     }
 
-    // TODO: make this #[cfg(test)]
+    #[cfg(test)]
     pub fn dummy() -> Span {
         Self {
             start: SourceCodePositition::start(),

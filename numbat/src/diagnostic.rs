@@ -59,7 +59,7 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::UnknownIdentifier(span, _) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message("unknown identifier")]),
-            TypeCheckError::UnknownFunction(span, _) => d.with_labels(vec![span
+            TypeCheckError::UnknownCallable(span, _) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message("unknown callable")]),
             TypeCheckError::IncompatibleDimensions {
@@ -115,23 +115,40 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::WrongArity {
                 callable_span,
                 callable_name: _,
+                callable_definition_span,
                 arity,
                 num_args,
-            } => d.with_labels(vec![callable_span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(format!(
-                    "Function or procedure called with {num}, but takes {range}",
-                    num = if *num_args == 1 {
-                        "one argument".into()
-                    } else {
-                        format!("{num_args} arguments")
-                    },
-                    range = if arity.start() == arity.end() {
-                        format!("{}", arity.start())
-                    } else {
-                        format!("{} to {}", arity.start(), arity.end())
-                    }
-                ))]),
+            } => {
+                let mut labels = vec![callable_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(format!(
+                        "{what}was called with {num}, but takes {range}",
+                        what = if callable_definition_span.is_some() {
+                            ""
+                        } else {
+                            "procedure "
+                        },
+                        num = if *num_args == 1 {
+                            "one argument".into()
+                        } else {
+                            format!("{num_args} arguments")
+                        },
+                        range = if arity.start() == arity.end() {
+                            format!("{}", arity.start())
+                        } else {
+                            format!("{} to {}", arity.start(), arity.end())
+                        }
+                    ))];
+                if let Some(span) = callable_definition_span {
+                    labels.insert(
+                        0,
+                        span.diagnostic_label(LabelStyle::Secondary)
+                            .with_message("The function defined here …"),
+                    );
+                }
+
+                d.with_labels(labels)
+            }
             TypeCheckError::TypeParameterNameClash(_) => d.with_notes(vec![inner_error]),
             TypeCheckError::CanNotInferTypeParameters(_, _) => d.with_notes(vec![inner_error]),
             TypeCheckError::MultipleUnresolvedTypeParameters => d.with_notes(vec![inner_error]),
