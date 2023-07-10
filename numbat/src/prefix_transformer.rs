@@ -59,7 +59,8 @@ impl Transformer {
                 rhs: Box::new(self.transform_expression(*rhs)),
                 span_op,
             },
-            Expression::FunctionCall(name, args) => Expression::FunctionCall(
+            Expression::FunctionCall(span, name, args) => Expression::FunctionCall(
+                span,
                 name,
                 args.into_iter()
                     .map(|arg| self.transform_expression(arg))

@@ -514,9 +514,9 @@ impl<'a> Parser<'a> {
         self.postfix_apply()
     }
 
-    fn function_name_from_primary(&self, primary: Expression) -> Result<String> {
+    fn function_name_from_primary(&self, primary: &Expression) -> Result<String> {
         if let Expression::Identifier(_, name) = primary {
-            Ok(name)
+            Ok(name.clone())
         } else {
             Err(ParseError::new(
                 ParseErrorKind::CanOnlyCallIdentifier,
@@ -539,7 +539,9 @@ impl<'a> Parser<'a> {
     pub fn postfix_apply(&mut self) -> Result<Expression> {
         let mut expr = self.conversion()?;
         while self.match_exact(TokenKind::PostfixApply).is_some() {
-            expr = Expression::FunctionCall(self.identifier()?, vec![expr]);
+            let identifier = self.identifier()?;
+
+            expr = Expression::FunctionCall(self.last().unwrap().span, identifier, vec![expr]);
         }
         Ok(expr)
     }
@@ -626,9 +628,10 @@ impl<'a> Parser<'a> {
         let mut expr = self.unary()?;
 
         while self.match_exact(TokenKind::Modulo).is_some() {
+            let op_span = self.last().unwrap().span;
             let rhs = self.modulo()?;
 
-            expr = Expression::FunctionCall("mod".into(), vec![expr, rhs]);
+            expr = Expression::FunctionCall(op_span, "mod".into(), vec![expr, rhs]);
         }
 
         Ok(expr)
@@ -715,10 +718,14 @@ impl<'a> Parser<'a> {
         let primary = self.primary()?;
 
         if self.match_exact(TokenKind::LeftParen).is_some() {
-            let function_name = self.function_name_from_primary(primary)?;
+            let function_name = self.function_name_from_primary(&primary)?;
 
             let args = self.arguments()?;
-            return Ok(Expression::FunctionCall(function_name, args));
+            return Ok(Expression::FunctionCall(
+                primary.full_span(),
+                function_name,
+                args,
+            ));
         }
         Ok(primary)
     }
@@ -1480,7 +1487,11 @@ mod tests {
     fn postfix_apply() {
         parse_as_expression(
             &["1 + 1 // foo"],
-            Expression::FunctionCall("foo".into(), vec![binop!(scalar!(1.0), Add, scalar!(1.0))]),
+            Expression::FunctionCall(
+                Span::dummy(),
+                "foo".into(),
+                vec![binop!(scalar!(1.0), Add, scalar!(1.0))],
+            ),
         );
     }
 

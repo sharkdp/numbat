@@ -210,7 +210,7 @@ impl TypeChecker {
 
                 typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), type_)
             }
-            ast::Expression::FunctionCall(function_name, args) => {
+            ast::Expression::FunctionCall(_, function_name, args) => {
                 let (type_parameters, parameter_types, is_variadic, return_type) = self
                     .function_signatures
                     .get(&function_name)

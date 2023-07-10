@@ -43,7 +43,30 @@ pub enum Expression {
         rhs: Box<Expression>,
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
-    FunctionCall(String, Vec<Expression>),
+    FunctionCall(Span, String, Vec<Expression>),
+}
+impl Expression {
+    pub fn full_span(&self) -> Span {
+        match self {
+            Expression::Scalar(span, _) => *span,
+            Expression::Identifier(span, _) => *span,
+            Expression::UnitIdentifier(span, _, _, _) => *span,
+            Expression::Negate(span, expr) => span.extend(&expr.full_span()),
+            Expression::BinaryOperator {
+                op: _,
+                lhs,
+                rhs,
+                span_op,
+            } => {
+                let mut span = lhs.full_span().extend(&rhs.full_span());
+                if let Some(span_op) = span_op {
+                    span = span.extend(&span_op);
+                }
+                span
+            }
+            Expression::FunctionCall(_, _, _) => todo!(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -262,7 +285,7 @@ impl PrettyPrint for Expression {
                 rhs,
                 span_op: _,
             } => pretty_print_binop(op, lhs, rhs),
-            FunctionCall(name, args) => {
+            FunctionCall(_, name, args) => {
                 m::identifier(name)
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
@@ -569,7 +592,8 @@ impl ReplaceSpans for Expression {
                 rhs: Box::new(rhs.replace_spans()),
                 span_op: Some(Span::dummy()),
             },
-            Expression::FunctionCall(name, args) => Expression::FunctionCall(
+            Expression::FunctionCall(_, name, args) => Expression::FunctionCall(
+                Span::dummy(),
                 name.clone(),
                 args.iter().map(|a| a.replace_spans()).collect(),
             ),
