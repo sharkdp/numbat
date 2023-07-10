@@ -368,7 +368,7 @@ pub enum Statement {
     DeclareFunction {
         function_name_span: Span,
         function_name: String,
-        type_parameters: Vec<String>,
+        type_parameters: Vec<(Span, String)>,
         /// Parameters, optionally with type annotations. The boolean argument specifies whether or not the parameter is variadic
         parameters: Vec<(Span, String, Option<DimensionExpression>, bool)>,
         /// Function body. If it is absent, the function is implemented via FFI
@@ -479,7 +479,9 @@ impl PrettyPrint for Statement {
                 } else {
                     m::operator("<")
                         + Itertools::intersperse(
-                            type_parameters.iter().map(m::type_identifier),
+                            type_parameters
+                                .iter()
+                                .map(|(_, name)| m::type_identifier(name)),
                             m::operator(", "),
                         )
                         .sum()
@@ -696,7 +698,10 @@ impl ReplaceSpans for Statement {
             } => Statement::DeclareFunction {
                 function_name_span: Span::dummy(),
                 function_name: function_name.clone(),
-                type_parameters: type_parameters.clone(),
+                type_parameters: type_parameters
+                    .iter()
+                    .map(|(_, name)| (Span::dummy(), name.clone()))
+                    .collect(),
                 parameters: parameters
                     .iter()
                     .map(|(_, name, type_, is_variadic)| {

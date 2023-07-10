@@ -143,15 +143,37 @@ impl ErrorDiagnostic for TypeCheckError {
                     labels.insert(
                         0,
                         span.diagnostic_label(LabelStyle::Secondary)
-                            .with_message("The function defined here …"),
+                            .with_message("The function defined here"),
                     );
                 }
 
                 d.with_labels(labels)
             }
-            TypeCheckError::TypeParameterNameClash(_) => d.with_notes(vec![inner_error]),
-            TypeCheckError::CanNotInferTypeParameters(_, _) => d.with_notes(vec![inner_error]),
-            TypeCheckError::MultipleUnresolvedTypeParameters => d.with_notes(vec![inner_error]),
+            TypeCheckError::TypeParameterNameClash(span, _) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
+            TypeCheckError::CanNotInferTypeParameters(
+                span,
+                callable_definition_span,
+                _,
+                params,
+            ) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(format!("… could not be infered for this function call")),
+                callable_definition_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(format!(
+                        "The type parameter(s) {params} in this generic function"
+                    )),
+            ]),
+            TypeCheckError::MultipleUnresolvedTypeParameters(span, parameter_span) => d
+                .with_labels(vec![
+                    span.diagnostic_label(LabelStyle::Secondary)
+                        .with_message("In this function call"),
+                    parameter_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                ]),
             TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(span, _) => {
                 d.with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
@@ -160,7 +182,9 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::UnknownForeignFunction(span, _) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
-            TypeCheckError::ParameterTypesCanNotBeDeduced => d.with_notes(vec![inner_error]),
+            TypeCheckError::ParameterTypesCanNotBeDeduced(span) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
         }
     }
 }

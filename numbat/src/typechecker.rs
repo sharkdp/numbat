@@ -56,23 +56,23 @@ pub enum TypeCheckError {
         num_args: usize,
     },
 
-    #[error("'{0}' can not be used as a type parameter because it is also an existing dimension identifier.")]
-    TypeParameterNameClash(String), // TODO: add span information
+    #[error("'{1}' can not be used as a type parameter because it is also an existing dimension identifier.")]
+    TypeParameterNameClash(Span, String),
 
-    #[error("Could not infer the type parameters {0} in the function call '{1}'.")]
-    CanNotInferTypeParameters(String, String), // TODO: add span information
+    #[error("Could not infer the type parameters {3} in the function call '{2}'.")]
+    CanNotInferTypeParameters(Span, Span, String, String),
 
     #[error("Multiple unresolved generic parameters in a single function parameter type are not (yet) supported. Consider reordering the function parameters")]
-    MultipleUnresolvedTypeParameters, // TODO: add span information
+    MultipleUnresolvedTypeParameters(Span, Span),
+
+    #[error("Parameter types can not (yet) be deduced, they have to be specified manually: f(x: Length, y: Time) -> …")]
+    ParameterTypesCanNotBeDeduced(Span),
 
     #[error("Foreign function definition (without body) '{1}' needs a return type annotation.")]
     ForeignFunctionNeedsReturnTypeAnnotation(Span, String),
 
     #[error("Unknown foreign function (without body) '{1}'")]
     UnknownForeignFunction(Span, String),
-
-    #[error("Parameter types can not (yet) be deduced, they have to be specified manually: f(x: Length, y: Time) -> …")]
-    ParameterTypesCanNotBeDeduced, // TODO: add span information
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -132,7 +132,8 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     identifiers: HashMap<String, Type>,
-    function_signatures: HashMap<String, (Span, Vec<String>, Vec<(Span, Type)>, bool, Type)>,
+    function_signatures:
+        HashMap<String, (Span, Vec<(Span, String)>, Vec<(Span, Type)>, bool, Type)>,
     registry: DimensionRegistry,
 }
 
@@ -306,18 +307,23 @@ impl TypeChecker {
                     }
                 }
 
-                for (idx, ((_, parameter_type), argument_type)) in
+                for (idx, ((parameter_span, parameter_type), argument_type)) in
                     parameter_types.iter().zip(argument_types).enumerate()
                 {
                     let mut parameter_type = substitute(&substitutions, parameter_type);
 
                     let remaining_generic_subtypes: Vec<_> = parameter_type
                         .iter()
-                        .filter(|BaseRepresentationFactor(name, _)| type_parameters.contains(name))
+                        .filter(|BaseRepresentationFactor(name, _)| {
+                            type_parameters.iter().any(|(_, n)| name == n)
+                        })
                         .collect();
 
                     if remaining_generic_subtypes.len() > 1 {
-                        return Err(TypeCheckError::MultipleUnresolvedTypeParameters);
+                        return Err(TypeCheckError::MultipleUnresolvedTypeParameters(
+                            span,
+                            *parameter_span,
+                        ));
                     }
 
                     if let Some(&generic_subtype_factor) = remaining_generic_subtypes.first() {
@@ -364,7 +370,11 @@ impl TypeChecker {
                 }
 
                 if substitutions.len() != type_parameters.len() {
-                    let parameters: HashSet<String> = type_parameters.iter().cloned().collect();
+                    let parameters: HashSet<String> = type_parameters
+                        .iter()
+                        .map(|(_, name)| name)
+                        .cloned()
+                        .collect();
                     let inferred_parameters: HashSet<String> =
                         substitutions.iter().map(|t| t.0.clone()).collect();
 
@@ -374,6 +384,8 @@ impl TypeChecker {
                         .collect();
 
                     return Err(TypeCheckError::CanNotInferTypeParameters(
+                        span,
+                        *callable_definition_span,
                         function_name.clone(),
                         remaining.join(", "),
                     ));
@@ -491,10 +503,10 @@ impl TypeChecker {
             } => {
                 let mut typechecker_fn = self.clone();
 
-                for type_parameter in &type_parameters {
+                for (span, type_parameter) in &type_parameters {
                     match typechecker_fn.registry.add_base_dimension(type_parameter) {
                         Err(RegistryError::EntryExists(name)) => {
-                            return Err(TypeCheckError::TypeParameterNameClash(name))
+                            return Err(TypeCheckError::TypeParameterNameClash(*span, name))
                         }
                         Err(err) => return Err(TypeCheckError::RegistryError(err)),
                         _ => {}
@@ -506,9 +518,9 @@ impl TypeChecker {
                 for (parameter_span, parameter, optional_dexpr, p_is_variadic) in parameters {
                     let parameter_type = typechecker_fn
                         .registry
-                        .get_base_representation(
-                            &optional_dexpr.ok_or(TypeCheckError::ParameterTypesCanNotBeDeduced)?,
-                        )
+                        .get_base_representation(&optional_dexpr.ok_or(
+                            TypeCheckError::ParameterTypesCanNotBeDeduced(parameter_span),
+                        )?)
                         // TODO: add type inference, see https://github.com/sharkdp/numbat/issues/29
                         // TODO: once we add type inference, make sure that annotations are required for foreign functions
                         .map_err(TypeCheckError::RegistryError)?;
@@ -875,7 +887,7 @@ mod tests {
                 foo(2)
             "
             ),
-            TypeCheckError::MultipleUnresolvedTypeParameters
+            TypeCheckError::MultipleUnresolvedTypeParameters(..)
         ));
     }
 
@@ -886,7 +898,7 @@ mod tests {
                 fn foo<D0>(x: Scalar) -> Scalar = 1
                 foo(2)
             "),
-            TypeCheckError::CanNotInferTypeParameters(function_name, parameters) if function_name == "foo" && parameters == "D0"
+            TypeCheckError::CanNotInferTypeParameters(_, _, function_name, parameters) if function_name == "foo" && parameters == "D0"
         ));
 
         assert!(matches!(
@@ -894,7 +906,7 @@ mod tests {
                 fn foo<D0, D1>(x: D0, y: D0) -> Scalar = 1
                 foo(2, 3)
             "),
-            TypeCheckError::CanNotInferTypeParameters(function_name, parameters) if function_name == "foo" && parameters == "D1"
+            TypeCheckError::CanNotInferTypeParameters(_, _, function_name, parameters) if function_name == "foo" && parameters == "D1"
         ));
 
         assert!(matches!(
@@ -902,7 +914,7 @@ mod tests {
                 fn foo<D0, D1>(x: Scalar, y: Scalar) -> Scalar = 1
                 foo(2, 3)
             "),
-            TypeCheckError::CanNotInferTypeParameters(function_name, parameters) if function_name == "foo" && (parameters == "D1, D0" || parameters == "D0, D1")
+            TypeCheckError::CanNotInferTypeParameters(_, _, function_name, parameters) if function_name == "foo" && (parameters == "D1, D0" || parameters == "D0, D1")
         ));
     }
 
@@ -913,7 +925,7 @@ mod tests {
                 dimension Existing
                 fn f<Existing>(x: Existing) = 1
             "),
-            TypeCheckError::TypeParameterNameClash(name) if name == "Existing"
+            TypeCheckError::TypeParameterNameClash(_, name) if name == "Existing"
         ));
     }
 

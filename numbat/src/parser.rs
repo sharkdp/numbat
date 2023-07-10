@@ -274,7 +274,8 @@ impl<'a> Parser<'a> {
                 if self.match_exact(TokenKind::LeftAngleBracket).is_some() {
                     while self.match_exact(TokenKind::RightAngleBracket).is_none() {
                         if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
-                            type_parameters.push(type_parameter_name.lexeme.to_string());
+                            let span = self.last().unwrap().span;
+                            type_parameters.push((span, type_parameter_name.lexeme.to_string()));
 
                             if self.match_exact(TokenKind::Comma).is_none()
                                 && self.peek().kind != TokenKind::RightAngleBracket
@@ -375,7 +376,7 @@ impl<'a> Parser<'a> {
                 Ok(Statement::DeclareFunction {
                     function_name_span,
                     function_name: fn_name.lexeme.clone(),
-                    type_parameters: type_parameters,
+                    type_parameters,
                     parameters,
                     body,
                     return_type_span,
@@ -1539,7 +1540,7 @@ mod tests {
             Statement::DeclareFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
-                type_parameters: vec!["X".into()],
+                type_parameters: vec![(Span::dummy(), "X".into())],
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),
@@ -1557,7 +1558,7 @@ mod tests {
             Statement::DeclareFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
-                type_parameters: vec!["D".into()],
+                type_parameters: vec![(Span::dummy(), "D".into())],
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),
