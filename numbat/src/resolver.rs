@@ -203,12 +203,13 @@ mod tests {
         assert_eq!(
             &program_inlined.replace_spans(),
             &[
-                Statement::DeclareVariable(
-                    Span::dummy(),
-                    "a".into(),
-                    Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    None
-                ),
+                Statement::DeclareVariable {
+                    identifier_span: Span::dummy(),
+                    identifier: "a".into(),
+                    expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
+                    type_annotation_span: None,
+                    type_annotation: None
+                },
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
             ]
         );

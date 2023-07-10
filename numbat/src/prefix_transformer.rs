@@ -107,32 +107,63 @@ impl Transformer {
                 self.register_name_and_aliases(&name, &decorators, span)?;
                 Statement::DeclareBaseUnit(span, name, dexpr, decorators)
             }
-            Statement::DeclareDerivedUnit(span, name, expr, dexpr, decorators) => {
-                self.register_name_and_aliases(&name, &decorators, span)?;
-                Statement::DeclareDerivedUnit(
-                    span,
-                    name,
-                    self.transform_expression(expr),
-                    dexpr,
+            Statement::DeclareDerivedUnit {
+                identifier_span,
+                identifier,
+                expr,
+                type_annotation_span,
+                type_annotation,
+                decorators,
+            } => {
+                self.register_name_and_aliases(&identifier, &decorators, identifier_span)?;
+                Statement::DeclareDerivedUnit {
+                    identifier_span,
+                    identifier,
+                    expr: self.transform_expression(expr),
+                    type_annotation_span,
+                    type_annotation,
                     decorators,
-                )
+                }
             }
-            Statement::DeclareVariable(span, name, expr, dexpr) => {
-                self.variable_names.push(name.clone());
-                self.prefix_parser.add_other_identifier(&name, span)?;
-                Statement::DeclareVariable(span, name, self.transform_expression(expr), dexpr)
+            Statement::DeclareVariable {
+                identifier_span,
+                identifier,
+                expr,
+                type_annotation_span,
+                type_annotation,
+            } => {
+                self.variable_names.push(identifier.clone());
+                self.prefix_parser
+                    .add_other_identifier(&identifier, identifier_span)?;
+                Statement::DeclareVariable {
+                    identifier_span,
+                    identifier,
+                    expr: self.transform_expression(expr),
+                    type_annotation_span,
+                    type_annotation,
+                }
             }
-            Statement::DeclareFunction(span, name, type_params, args, body, return_type) => {
-                self.function_names.push(name.clone());
-                self.prefix_parser.add_other_identifier(&name, span)?;
-                Statement::DeclareFunction(
-                    span,
-                    name,
-                    type_params,
-                    args,
-                    body.map(|expr| self.transform_expression(expr)),
-                    return_type,
-                )
+            Statement::DeclareFunction {
+                function_name_span,
+                function_name,
+                type_parameters,
+                parameters,
+                body,
+                return_type_span,
+                return_type_annotation,
+            } => {
+                self.function_names.push(function_name.clone());
+                self.prefix_parser
+                    .add_other_identifier(&function_name, function_name_span)?;
+                Statement::DeclareFunction {
+                    function_name_span,
+                    function_name,
+                    type_parameters,
+                    parameters,
+                    body: body.map(|expr| self.transform_expression(expr)),
+                    return_type_span,
+                    return_type_annotation,
+                }
             }
             Statement::DeclareDimension(name, dexprs) => {
                 self.dimension_names.push(name.clone());

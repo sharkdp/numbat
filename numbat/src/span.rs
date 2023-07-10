@@ -1,6 +1,6 @@
 use codespan_reporting::diagnostic::{Label, LabelStyle};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SourceCodePositition {
     pub byte: usize,
     pub index: usize,
@@ -38,8 +38,8 @@ impl Span {
     pub fn extend(&self, other: &Span) -> Span {
         assert_eq!(self.code_source_index, other.code_source_index);
         Span {
-            start: self.start,
-            end: other.end,
+            start: std::cmp::min(self.start, other.start),
+            end: std::cmp::max(self.end, other.end),
             code_source_index: self.code_source_index,
         }
     }

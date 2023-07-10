@@ -237,10 +237,12 @@ impl<'a> Parser<'a> {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let identifier_span = self.last().unwrap().span;
 
-                let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
-                    Some(self.dimension_expression()?)
+                let (type_annotation_span, dexpr) = if self.match_exact(TokenKind::Colon).is_some()
+                {
+                    let type_annotation = self.dimension_expression()?;
+                    (Some(self.last().unwrap().span), Some(type_annotation))
                 } else {
-                    None
+                    (None, None)
                 };
 
                 if self.match_exact(TokenKind::Equal).is_none() {
@@ -251,12 +253,13 @@ impl<'a> Parser<'a> {
                 } else {
                     let expr = self.expression()?;
 
-                    Ok(Statement::DeclareVariable(
+                    Ok(Statement::DeclareVariable {
                         identifier_span,
-                        identifier.lexeme.clone(),
+                        identifier: identifier.lexeme.clone(),
                         expr,
-                        dexpr,
-                    ))
+                        type_annotation_span,
+                        type_annotation: dexpr,
+                    })
                 }
             } else {
                 Err(ParseError {
@@ -266,12 +269,12 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::Fn).is_some() {
             if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
-                let identifier_span = self.last().unwrap().span;
+                let function_name_span = self.last().unwrap().span;
                 let mut type_parameters = vec![];
                 if self.match_exact(TokenKind::LeftAngleBracket).is_some() {
                     while self.match_exact(TokenKind::RightAngleBracket).is_none() {
-                        if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
-                            type_parameters.push(param_name.lexeme.to_string());
+                        if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
+                            type_parameters.push(type_parameter_name.lexeme.to_string());
 
                             if self.match_exact(TokenKind::Comma).is_none()
                                 && self.peek().kind != TokenKind::RightAngleBracket
@@ -334,12 +337,17 @@ impl<'a> Parser<'a> {
                     }
                 }
 
-                let optional_return_type_dexpr = if self.match_exact(TokenKind::Arrow).is_some() {
-                    // Parse return type
-                    Some(self.dimension_expression()?)
-                } else {
-                    None
-                };
+                let (return_type_span, return_type_annotation) =
+                    if self.match_exact(TokenKind::Arrow).is_some() {
+                        // Parse return type
+                        let return_type_annotation = self.dimension_expression()?;
+                        (
+                            Some(self.last().unwrap().span),
+                            Some(return_type_annotation),
+                        )
+                    } else {
+                        (None, None)
+                    };
 
                 let fn_is_variadic = parameters.iter().any(|p| p.2);
                 if fn_is_variadic && parameters.len() > 1 {
@@ -362,14 +370,15 @@ impl<'a> Parser<'a> {
                     });
                 }
 
-                Ok(Statement::DeclareFunction(
-                    identifier_span,
-                    fn_name.lexeme.clone(),
-                    type_parameters,
+                Ok(Statement::DeclareFunction {
+                    function_name_span,
+                    function_name: fn_name.lexeme.clone(),
+                    type_parameters: type_parameters,
                     parameters,
                     body,
-                    optional_return_type_dexpr,
-                ))
+                    return_type_span,
+                    return_type_annotation,
+                })
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedIdentifierAfterFn,
@@ -429,10 +438,12 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(TokenKind::Unit).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let identifier_span = self.last().unwrap().span;
-                let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
-                    Some(self.dimension_expression()?)
+                let (type_annotation_span, dexpr) = if self.match_exact(TokenKind::Colon).is_some()
+                {
+                    let type_annotation = self.dimension_expression()?;
+                    (Some(self.last().unwrap().span), Some(type_annotation))
                 } else {
-                    None
+                    (None, None)
                 };
 
                 let unit_name = identifier.lexeme.clone();
@@ -442,13 +453,14 @@ impl<'a> Parser<'a> {
 
                 if self.match_exact(TokenKind::Equal).is_some() {
                     let expr = self.expression()?;
-                    Ok(Statement::DeclareDerivedUnit(
+                    Ok(Statement::DeclareDerivedUnit {
                         identifier_span,
-                        unit_name,
+                        identifier: unit_name,
                         expr,
-                        dexpr,
+                        type_annotation_span,
+                        type_annotation: dexpr,
                         decorators,
-                    ))
+                    })
                 } else if let Some(dexpr) = dexpr {
                     Ok(Statement::DeclareBaseUnit(
                         identifier_span,
@@ -1254,17 +1266,24 @@ mod tests {
     fn variable_declaration() {
         parse_as(
             &["let foo = 1", "let foo=1"],
-            Statement::DeclareVariable(Span::dummy(), "foo".into(), scalar!(1.0), None),
+            Statement::DeclareVariable {
+                identifier_span: Span::dummy(),
+                identifier: "foo".into(),
+                expr: scalar!(1.0),
+                type_annotation_span: None,
+                type_annotation: None,
+            },
         );
 
         parse_as(
             &["let x: Length = 1 * meter"],
-            Statement::DeclareVariable(
-                Span::dummy(),
-                "x".into(),
-                binop!(scalar!(1.0), Mul, identifier!("meter")),
-                Some(DimensionExpression::Dimension("Length".into())),
-            ),
+            Statement::DeclareVariable {
+                identifier_span: Span::dummy(),
+                identifier: "x".into(),
+                expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
+                type_annotation_span: Some(Span::dummy()),
+                type_annotation: Some(DimensionExpression::Dimension("Length".into())),
+            },
         );
 
         should_fail_with(
@@ -1346,63 +1365,67 @@ mod tests {
     fn function_declaration() {
         parse_as(
             &["fn foo() = 1"],
-            Statement::DeclareFunction(
-                Span::dummy(),
-                "foo".into(),
-                vec![],
-                vec![],
-                Some(scalar!(1.0)),
-                None,
-            ),
+            Statement::DeclareFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![],
+                body: Some(scalar!(1.0)),
+                return_type_span: None,
+                return_type_annotation: None,
+            },
         );
 
         parse_as(
             &["fn foo() -> Scalar = 1"],
-            Statement::DeclareFunction(
-                Span::dummy(),
-                "foo".into(),
-                vec![],
-                vec![],
-                Some(scalar!(1.0)),
-                Some(DimensionExpression::Dimension("Scalar".into())),
-            ),
+            Statement::DeclareFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![],
+                body: Some(scalar!(1.0)),
+                return_type_span: Some(Span::dummy()),
+                return_type_annotation: Some(DimensionExpression::Dimension("Scalar".into())),
+            },
         );
 
         parse_as(
             &["fn foo(x) = 1"],
-            Statement::DeclareFunction(
-                Span::dummy(),
-                "foo".into(),
-                vec![],
-                vec![("x".into(), None, false)],
-                Some(scalar!(1.0)),
-                None,
-            ),
+            Statement::DeclareFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![("x".into(), None, false)],
+                body: Some(scalar!(1.0)),
+                return_type_span: None,
+                return_type_annotation: None,
+            },
         );
 
         parse_as(
             &["fn foo(x, y, z) = 1"],
-            Statement::DeclareFunction(
-                Span::dummy(),
-                "foo".into(),
-                vec![],
-                vec![
+            Statement::DeclareFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![
                     ("x".into(), None, false),
                     ("y".into(), None, false),
                     ("z".into(), None, false),
                 ],
-                Some(scalar!(1.0)),
-                None,
-            ),
+                body: Some(scalar!(1.0)),
+                return_type_span: None,
+                return_type_annotation: None,
+            },
         );
 
         parse_as(
             &["fn foo(x: Length, y: Time, z: Length^3 · Time^2) -> Scalar = 1"],
-            Statement::DeclareFunction(
-                Span::dummy(),
-                "foo".into(),
-                vec![],
-                vec![
+            Statement::DeclareFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![
                     (
                         "x".into(),
                         Some(DimensionExpression::Dimension("Length".into())),
@@ -1428,41 +1451,44 @@ mod tests {
                         false,
                     ),
                 ],
-                Some(scalar!(1.0)),
-                Some(DimensionExpression::Dimension("Scalar".into())),
-            ),
+                body: Some(scalar!(1.0)),
+                return_type_span: Some(Span::dummy()),
+                return_type_annotation: Some(DimensionExpression::Dimension("Scalar".into())),
+            },
         );
 
         parse_as(
             &["fn foo<X>(x: X) = 1"],
-            Statement::DeclareFunction(
-                Span::dummy(),
-                "foo".into(),
-                vec!["X".into()],
-                vec![(
+            Statement::DeclareFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec!["X".into()],
+                parameters: vec![(
                     "x".into(),
                     Some(DimensionExpression::Dimension("X".into())),
                     false,
                 )],
-                Some(scalar!(1.0)),
-                None,
-            ),
+                body: Some(scalar!(1.0)),
+                return_type_span: None,
+                return_type_annotation: None,
+            },
         );
 
         parse_as(
             &["fn foo<D>(x: D…) -> D"],
-            Statement::DeclareFunction(
-                Span::dummy(),
-                "foo".into(),
-                vec!["D".into()],
-                vec![(
+            Statement::DeclareFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec!["D".into()],
+                parameters: vec![(
                     "x".into(),
                     Some(DimensionExpression::Dimension("D".into())),
                     true,
                 )],
-                None,
-                Some(DimensionExpression::Dimension("D".into())),
-            ),
+                body: None,
+                return_type_span: Some(Span::dummy()),
+                return_type_annotation: Some(DimensionExpression::Dimension("D".into())),
+            },
         );
 
         should_fail_with(

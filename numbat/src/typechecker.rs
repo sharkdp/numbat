@@ -20,18 +20,20 @@ pub enum TypeCheckError {
     #[error("Unknown function '{0}'.")]
     UnknownFunction(String),
 
-    #[error("Incompatible dimensions in {1}:\n    {2}: {3}\n    {4}: {5}")]
-    IncompatibleDimensions(
-        Option<Span>,
-        String,
-        &'static str,
-        BaseRepresentation,
-        &'static str,
-        BaseRepresentation,
-    ),
+    #[error("{expected_name}: {expected_type}\n{actual_name}: {actual_type}")]
+    IncompatibleDimensions {
+        span_operation: Span,
+        operation: String,
+        span_expected: Option<Span>,
+        expected_name: &'static str,
+        expected_type: BaseRepresentation,
+        span_actual: Option<Span>,
+        actual_name: &'static str,
+        actual_type: BaseRepresentation,
+    },
 
-    #[error("Got dimension {0}, but exponent must be dimensionless.")]
-    NonScalarExponent(BaseRepresentation),
+    #[error("Exponents need to be dimensionless (got {1}).")]
+    NonScalarExponent(Span, BaseRepresentation),
 
     #[error("Unsupported expression in const-evaluation of exponent: {0}.")]
     UnsupportedConstEvalExpression(&'static str),
@@ -163,21 +165,38 @@ impl TypeChecker {
                 rhs,
                 span_op,
             } => {
-                let lhs = self.check_expression(*lhs)?;
-                let rhs = self.check_expression(*rhs)?;
+                let lhs_checked = self.check_expression((*lhs).clone())?;
+                let rhs_checked = self.check_expression((*rhs).clone())?;
 
                 let get_type_and_assert_equality = || {
-                    let lhs_type = lhs.get_type();
-                    let rhs_type = rhs.get_type();
+                    let lhs_type = lhs_checked.get_type();
+                    let rhs_type = rhs_checked.get_type();
                     if lhs_type != rhs_type {
-                        Err(TypeCheckError::IncompatibleDimensions(
-                            span_op,
-                            "binary operator".into(),
-                            " left hand side",
-                            lhs_type,
-                            "right hand side",
-                            rhs_type,
-                        ))
+                        Err(TypeCheckError::IncompatibleDimensions {
+                            span_operation: span_op.unwrap_or(
+                                ast::Expression::BinaryOperator {
+                                    op,
+                                    lhs: lhs.clone(),
+                                    rhs: rhs.clone(),
+                                    span_op,
+                                }
+                                .full_span(),
+                            ),
+                            operation: match op {
+                                typed_ast::BinaryOperator::Add => "addition".into(),
+                                typed_ast::BinaryOperator::Sub => "subtraction".into(),
+                                typed_ast::BinaryOperator::Mul => "multiplication".into(),
+                                typed_ast::BinaryOperator::Div => "division".into(),
+                                typed_ast::BinaryOperator::Power => "exponentiation".into(),
+                                typed_ast::BinaryOperator::ConvertTo => "unit conversion".into(),
+                            },
+                            span_expected: Some(lhs.full_span()),
+                            expected_name: " left hand side",
+                            expected_type: lhs_type,
+                            span_actual: Some(rhs.full_span()),
+                            actual_name: "right hand side",
+                            actual_type: rhs_type,
+                        })
                     } else {
                         Ok(lhs_type)
                     }
@@ -186,31 +205,43 @@ impl TypeChecker {
                 let type_ = match op {
                     typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
                     typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::Mul => lhs.get_type() * rhs.get_type(),
-                    typed_ast::BinaryOperator::Div => lhs.get_type() / rhs.get_type(),
+                    typed_ast::BinaryOperator::Mul => {
+                        lhs_checked.get_type() * rhs_checked.get_type()
+                    }
+                    typed_ast::BinaryOperator::Div => {
+                        lhs_checked.get_type() / rhs_checked.get_type()
+                    }
                     typed_ast::BinaryOperator::Power => {
-                        let exponent_type = rhs.get_type();
+                        let exponent_type = rhs_checked.get_type();
                         if exponent_type != Type::unity() {
-                            return Err(TypeCheckError::NonScalarExponent(exponent_type));
+                            return Err(TypeCheckError::NonScalarExponent(
+                                rhs.full_span(),
+                                exponent_type,
+                            ));
                         }
 
-                        let base_type = lhs.get_type();
+                        let base_type = lhs_checked.get_type();
                         if base_type == Type::unity() {
                             // Skip evaluating the exponent if the lhs is a scalar. This allows
                             // for arbitrary (decimal) exponents, if the base is a scalar.
 
                             base_type
                         } else {
-                            let exponent = evaluate_const_expr(&rhs)?;
+                            let exponent = evaluate_const_expr(&rhs_checked)?;
                             base_type.power(exponent)
                         }
                     }
                     typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
                 };
 
-                typed_ast::Expression::BinaryOperator(op, Box::new(lhs), Box::new(rhs), type_)
+                typed_ast::Expression::BinaryOperator(
+                    op,
+                    Box::new(lhs_checked),
+                    Box::new(rhs_checked),
+                    type_,
+                )
             }
-            ast::Expression::FunctionCall(_, function_name, args) => {
+            ast::Expression::FunctionCall(span, function_name, args) => {
                 let (type_parameters, parameter_types, is_variadic, return_type) = self
                     .function_signatures
                     .get(&function_name)
@@ -231,8 +262,8 @@ impl TypeChecker {
                 }
 
                 let arguments_checked = args
-                    .into_iter()
-                    .map(|a| self.check_expression(a))
+                    .iter()
+                    .map(|a| self.check_expression(a.clone()))
                     .collect::<Result<Vec<_>>>()?;
                 let argument_types = arguments_checked.iter().map(|e| e.get_type());
 
@@ -304,18 +335,20 @@ impl TypeChecker {
                     }
 
                     if parameter_type != argument_type {
-                        return Err(TypeCheckError::IncompatibleDimensions(
-                            None, // TODO
-                            format!(
+                        return Err(TypeCheckError::IncompatibleDimensions {
+                            span_operation: span,
+                            operation: format!(
                                 "argument {num} of function call to '{name}'",
                                 num = idx + 1,
                                 name = function_name
                             ),
-                            "parameter type",
-                            parameter_type.clone(),
-                            " argument type",
-                            argument_type,
-                        ));
+                            span_expected: None, // TODO
+                            expected_name: "parameter type",
+                            expected_type: parameter_type.clone(),
+                            span_actual: Some(args[idx].full_span()),
+                            actual_name: " argument type",
+                            actual_type: argument_type,
+                        });
                     }
                 }
 
@@ -352,28 +385,37 @@ impl TypeChecker {
                 }
                 typed_ast::Statement::Expression(checked_expr)
             }
-            ast::Statement::DeclareVariable(_span, name, expr, optional_dexpr) => {
-                let expr = self.check_expression(expr)?;
-                let type_deduced = expr.get_type();
+            ast::Statement::DeclareVariable {
+                identifier_span,
+                identifier,
+                expr,
+                type_annotation_span,
+                type_annotation,
+            } => {
+                let expr_checked = self.check_expression(expr.clone())?;
+                let type_deduced = expr_checked.get_type();
 
-                if let Some(ref dexpr) = optional_dexpr {
+                if let Some(ref dexpr) = type_annotation {
                     let type_specified = self
                         .registry
                         .get_base_representation(dexpr)
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
-                        return Err(TypeCheckError::IncompatibleDimensions(
-                            None, // TODO
-                            "variable declaration".into(),
-                            "specified dimension",
-                            type_specified,
-                            "   actual dimension",
-                            type_deduced,
-                        ));
+                        return Err(TypeCheckError::IncompatibleDimensions {
+                            span_operation: identifier_span,
+                            operation: "variable declaration".into(),
+                            span_expected: type_annotation_span,
+                            expected_name: "specified dimension",
+                            expected_type: type_specified,
+                            span_actual: Some(expr.full_span()),
+                            actual_name: "   actual dimension",
+                            actual_type: type_deduced,
+                        });
                     }
                 }
-                self.identifiers.insert(name.clone(), type_deduced.clone());
-                typed_ast::Statement::DeclareVariable(name, expr, type_deduced)
+                self.identifiers
+                    .insert(identifier.clone(), type_deduced.clone());
+                typed_ast::Statement::DeclareVariable(identifier, expr_checked, type_deduced)
             }
             ast::Statement::DeclareBaseUnit(_span, unit_name, dexpr, decorators) => {
                 let type_specified = self
@@ -386,47 +428,51 @@ impl TypeChecker {
                 }
                 typed_ast::Statement::DeclareBaseUnit(unit_name, decorators, type_specified)
             }
-            ast::Statement::DeclareDerivedUnit(
-                _span,
-                unit_name,
+            ast::Statement::DeclareDerivedUnit {
+                identifier_span,
+                identifier,
                 expr,
-                optional_dexpr,
+                type_annotation_span,
+                type_annotation,
                 decorators,
-            ) => {
+            } => {
                 // TODO: this is the *exact same code* that we have above for
                 // variable declarations => deduplicate this somehow
-                let expr = self.check_expression(expr)?;
-                let type_deduced = expr.get_type();
+                let expr_checked = self.check_expression(expr.clone())?;
+                let type_deduced = expr_checked.get_type();
 
-                if let Some(ref dexpr) = optional_dexpr {
+                if let Some(ref dexpr) = type_annotation {
                     let type_specified = self
                         .registry
                         .get_base_representation(dexpr)
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
-                        return Err(TypeCheckError::IncompatibleDimensions(
-                            None, // TODO
-                            "derived unit declaration".into(),
-                            "specified dimension",
-                            type_specified,
-                            "   actual dimension",
-                            type_deduced,
-                        ));
+                        return Err(TypeCheckError::IncompatibleDimensions {
+                            span_operation: identifier_span,
+                            operation: "derived unit declaration".into(),
+                            span_expected: type_annotation_span,
+                            expected_name: "specified dimension",
+                            expected_type: type_specified,
+                            span_actual: Some(expr.full_span()),
+                            actual_name: "   actual dimension",
+                            actual_type: type_deduced,
+                        });
                     }
                 }
-                for (name, _) in decorator::name_and_aliases(&unit_name, &decorators) {
+                for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
                     self.identifiers.insert(name.clone(), type_deduced.clone());
                 }
-                typed_ast::Statement::DeclareDerivedUnit(unit_name, expr, decorators)
+                typed_ast::Statement::DeclareDerivedUnit(identifier, expr_checked, decorators)
             }
-            ast::Statement::DeclareFunction(
-                _span,
+            ast::Statement::DeclareFunction {
+                function_name_span,
                 function_name,
                 type_parameters,
                 parameters,
                 body,
-                optional_return_type_dexpr,
-            ) => {
+                return_type_span,
+                return_type_annotation,
+            } => {
                 let mut typechecker_fn = self.clone();
 
                 for type_parameter in &type_parameters {
@@ -458,7 +504,7 @@ impl TypeChecker {
                     is_variadic |= p_is_variadic;
                 }
 
-                let return_type_specified = optional_return_type_dexpr
+                let return_type_specified = return_type_annotation
                     .map(|ref return_type_dexpr| {
                         typechecker_fn
                             .registry
@@ -467,22 +513,25 @@ impl TypeChecker {
                     })
                     .transpose()?;
 
-                let body = body
+                let body_checked = body
+                    .clone()
                     .map(|expr| typechecker_fn.check_expression(expr))
                     .transpose()?;
 
-                let return_type = if let Some(ref expr) = body {
+                let return_type = if let Some(ref expr) = body_checked {
                     let return_type_deduced = expr.get_type();
                     if let Some(return_type_specified) = return_type_specified {
                         if return_type_deduced != return_type_specified {
-                            return Err(TypeCheckError::IncompatibleDimensions(
-                                None, // TODO
-                                "function return type".into(),
-                                "specified return type",
-                                return_type_specified,
-                                "   actual return type",
-                                return_type_deduced,
-                            ));
+                            return Err(TypeCheckError::IncompatibleDimensions {
+                                span_operation: function_name_span,
+                                operation: "function return type".into(),
+                                span_expected: return_type_span,
+                                expected_name: "specified return type",
+                                expected_type: return_type_specified,
+                                span_actual: Some(body.unwrap().full_span()),
+                                actual_name: "   actual return type",
+                                actual_type: return_type_deduced,
+                            });
                         }
                     }
                     return_type_deduced
@@ -512,7 +561,7 @@ impl TypeChecker {
                 typed_ast::Statement::DeclareFunction(
                     function_name,
                     typed_parameters,
-                    body,
+                    body_checked,
                     return_type,
                 )
             }
@@ -655,7 +704,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("a + b"),
-            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+            TypeCheckError::IncompatibleDimensions{expected_type, actual_type, ..} if expected_type == type_a() && actual_type == type_b()
         ));
     }
 
@@ -666,11 +715,11 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("2^a"),
-            TypeCheckError::NonScalarExponent(t) if t == type_a()
+            TypeCheckError::NonScalarExponent(_, t) if t == type_a()
         ));
         assert!(matches!(
             get_typecheck_error("2^(c/b)"),
-            TypeCheckError::NonScalarExponent(t) if t == type_a()
+            TypeCheckError::NonScalarExponent(_, t) if t == type_a()
         ));
     }
 
@@ -685,7 +734,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("a^b"),
-            TypeCheckError::NonScalarExponent(t) if t == type_b()
+            TypeCheckError::NonScalarExponent(_, t) if t == type_b()
         ));
 
         // TODO: if we add ("constexpr") constants later, it would be great to support those in exponents.
@@ -715,7 +764,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("let x: A = b"),
-            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+            TypeCheckError::IncompatibleDimensions{expected_type, actual_type, ..} if expected_type == type_a() && actual_type == type_b()
         ));
     }
 
@@ -726,7 +775,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("unit my_c: C = a"),
-            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_c() && t2 == type_a()
+            TypeCheckError::IncompatibleDimensions{expected_type, actual_type, ..} if expected_type == type_c() && actual_type == type_a()
         ));
     }
 
@@ -740,13 +789,13 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
-            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_c() && t2 == type_a() / type_b()
+            TypeCheckError::IncompatibleDimensions{expected_type, actual_type, ..} if expected_type == type_c() && actual_type == type_a() / type_b()
         ));
 
         assert!(matches!(
             get_typecheck_error("fn f(x: A) -> A = a\n\
                                  f(b)"),
-            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+            TypeCheckError::IncompatibleDimensions{expected_type, actual_type, ..} if expected_type == type_a() && actual_type == type_b()
         ));
     }
 
@@ -776,9 +825,9 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("fn f<T1, T2>(x: T1, y: T2) -> T2/T1 = x/y"),
-            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2)
-                if t1 == base_type("T2") / base_type("T1") &&
-                   t2 == base_type("T1") / base_type("T2")
+            TypeCheckError::IncompatibleDimensions{expected_type, actual_type, ..}
+                if expected_type == base_type("T2") / base_type("T1") &&
+                actual_type == base_type("T1") / base_type("T2")
         ));
     }
 
@@ -904,7 +953,7 @@ mod tests {
                 mean(1 a, 1 b)
             "
             ),
-            TypeCheckError::IncompatibleDimensions(..)
+            TypeCheckError::IncompatibleDimensions { .. }
         ));
     }
 
