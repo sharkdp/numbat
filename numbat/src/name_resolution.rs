@@ -9,6 +9,7 @@ pub enum NameResolutionError {
     #[error("Identifier is already in use: '{conflicting_identifier}'.")]
     IdentifierClash {
         conflicting_identifier: String,
-        conflicting_definition: Span,
+        conflict_span: Span,
+        original_span: Span,
     },
 }

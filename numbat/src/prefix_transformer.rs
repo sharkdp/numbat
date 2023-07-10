@@ -34,8 +34,12 @@ impl Transformer {
         match expression {
             expr @ Expression::Scalar(..) => expr,
             Expression::Identifier(span, identifier) => {
-                if let PrefixParserResult::UnitIdentifier(prefix, unit_name, full_name) =
-                    self.prefix_parser.parse(&identifier)
+                if let PrefixParserResult::UnitIdentifier(
+                    _definition_span,
+                    prefix,
+                    unit_name,
+                    full_name,
+                ) = self.prefix_parser.parse(&identifier)
                 {
                     Expression::UnitIdentifier(span, prefix, unit_name, full_name)
                 } else {
@@ -77,7 +81,7 @@ impl Transformer {
         &mut self,
         name: &String,
         decorators: &[Decorator],
-        definition_span: Span,
+        conflict_span: Span,
     ) -> Result<()> {
         let mut unit_names = vec![name.to_string()];
         let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
@@ -89,7 +93,7 @@ impl Transformer {
                 metric_prefixes,
                 binary_prefixes,
                 name,
-                definition_span,
+                conflict_span,
             )?;
             unit_names.push(alias.to_string());
         }

@@ -40,12 +40,18 @@ impl ErrorDiagnostic for NameResolutionError {
         match self {
             NameResolutionError::IdentifierClash {
                 conflicting_identifier: _,
-                conflicting_definition,
+                conflict_span,
+                original_span,
             } => Diagnostic::error()
                 .with_message("identifier clash in definition")
-                .with_labels(vec![conflicting_definition
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message("Identifier is already in use")]),
+                .with_labels(vec![
+                    original_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message("Previously defined here"),
+                    conflict_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message("identifier is already in use"),
+                ]),
         }
     }
 }

@@ -10,8 +10,8 @@ static PREFIXES: OnceLock<Vec<(&'static str, &'static str, Prefix)>> = OnceLock:
 #[derive(Debug, Clone, PartialEq)]
 pub enum PrefixParserResult {
     Identifier(String),
-    /// Prefix, unit name in source (e.g. 'm'), full unit name (e.g. 'meter')
-    UnitIdentifier(Prefix, String, String),
+    /// Span, prefix, unit name in source (e.g. 'm'), full unit name (e.g. 'meter')
+    UnitIdentifier(Span, Prefix, String, String),
 }
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
@@ -54,6 +54,7 @@ impl AcceptsPrefix {
 
 #[derive(Debug, Clone)]
 struct UnitInfo {
+    definition_span: Span,
     accepts_prefix: AcceptsPrefix,
     metric_prefixes: bool,
     binary_prefixes: bool,
@@ -63,7 +64,7 @@ struct UnitInfo {
 #[derive(Debug, Clone)]
 pub struct PrefixParser {
     units: HashMap<String, UnitInfo>,
-    other_identifiers: HashSet<String>,
+    other_identifiers: HashSet<(Span, String)>,
 }
 
 impl PrefixParser {
@@ -118,22 +119,28 @@ impl PrefixParser {
         })
     }
 
-    fn identifier_clash_error(&self, name: &str, definition_span: Span) -> NameResolutionError {
+    fn identifier_clash_error(
+        &self,
+        name: &str,
+        conflict_span: Span,
+        original_span: Span,
+    ) -> NameResolutionError {
         NameResolutionError::IdentifierClash {
             conflicting_identifier: name.to_string(),
-            conflicting_definition: definition_span,
+            conflict_span,
+            original_span,
         }
     }
 
-    fn ensure_name_is_available(&self, name: &str, definition_span: Span) -> Result<()> {
-        if self.other_identifiers.contains(name) {
-            return Err(self.identifier_clash_error(name, definition_span));
+    fn ensure_name_is_available(&self, name: &str, conflict_span: Span) -> Result<()> {
+        if let Some((original_span, _)) = self.other_identifiers.iter().find(|(_, n)| n == name) {
+            return Err(self.identifier_clash_error(name, conflict_span, *original_span));
         }
 
         match self.parse(name) {
             PrefixParserResult::Identifier(_) => Ok(()),
-            PrefixParserResult::UnitIdentifier(_, _, _) => {
-                Err(self.identifier_clash_error(name, definition_span))
+            PrefixParserResult::UnitIdentifier(original_span, _, _, _) => {
+                Err(self.identifier_clash_error(name, conflict_span, original_span))
             }
         }
     }
@@ -171,6 +178,7 @@ impl PrefixParser {
         self.units.insert(
             unit_name.into(),
             UnitInfo {
+                definition_span,
                 accepts_prefix,
                 metric_prefixes: metric,
                 binary_prefixes: binary,
@@ -184,16 +192,23 @@ impl PrefixParser {
     pub fn add_other_identifier(&mut self, identifier: &str, definition_span: Span) -> Result<()> {
         self.ensure_name_is_available(identifier, definition_span)?;
 
-        if self.other_identifiers.insert(identifier.into()) {
-            Ok(())
+        if let Some((original_span, _)) = self
+            .other_identifiers
+            .iter()
+            .find(|(_, name)| name == identifier)
+        {
+            Err(self.identifier_clash_error(identifier, definition_span, *original_span))
         } else {
-            Err(self.identifier_clash_error(identifier, definition_span))
+            self.other_identifiers
+                .insert((definition_span, identifier.into()));
+            Ok(())
         }
     }
 
     pub fn parse(&self, input: &str) -> PrefixParserResult {
         if let Some(info) = self.units.get(input) {
             return PrefixParserResult::UnitIdentifier(
+                info.definition_span,
                 Prefix::none(),
                 input.into(),
                 info.full_name.clone(),
@@ -216,8 +231,13 @@ impl PrefixParser {
                     .any(|(name, _)| name == &input[prefix_long.len()..])
             {
                 let unit_name = input[prefix_long.len()..].to_string();
-                let full_name = self.units.get(&unit_name).unwrap().full_name.clone();
-                return PrefixParserResult::UnitIdentifier(*prefix, unit_name, full_name);
+                let unit_info = self.units.get(&unit_name).unwrap();
+                return PrefixParserResult::UnitIdentifier(
+                    unit_info.definition_span,
+                    *prefix,
+                    unit_name,
+                    unit_info.full_name.clone(),
+                );
             }
 
             if input.starts_with(prefix_short)
@@ -232,8 +252,14 @@ impl PrefixParser {
                     .any(|(name, _)| name == &input[prefix_short.len()..])
             {
                 let unit_name = input[prefix_short.len()..].to_string();
-                let full_name = self.units.get(&unit_name).unwrap().full_name.clone();
-                return PrefixParserResult::UnitIdentifier(*prefix, unit_name, full_name);
+                let unit_info = self.units.get(&unit_name).unwrap();
+
+                return PrefixParserResult::UnitIdentifier(
+                    unit_info.definition_span,
+                    *prefix,
+                    unit_name,
+                    unit_info.full_name.clone(),
+                );
             }
         }
 
@@ -303,69 +329,149 @@ mod tests {
 
         assert_eq!(
             prefix_parser.parse("meter"),
-            PrefixParserResult::UnitIdentifier(Prefix::none(), "meter".into(), "meter".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::none(),
+                "meter".into(),
+                "meter".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("m"),
-            PrefixParserResult::UnitIdentifier(Prefix::none(), "m".into(), "meter".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::none(),
+                "m".into(),
+                "meter".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("byte"),
-            PrefixParserResult::UnitIdentifier(Prefix::none(), "byte".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::none(),
+                "byte".into(),
+                "byte".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("B"),
-            PrefixParserResult::UnitIdentifier(Prefix::none(), "B".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::none(),
+                "B".into(),
+                "byte".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("me"),
-            PrefixParserResult::UnitIdentifier(Prefix::none(), "me".into(), "me".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::none(),
+                "me".into(),
+                "me".into()
+            )
         );
 
         assert_eq!(
             prefix_parser.parse("kilometer"),
-            PrefixParserResult::UnitIdentifier(Prefix::kilo(), "meter".into(), "meter".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::kilo(),
+                "meter".into(),
+                "meter".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("millimeter"),
-            PrefixParserResult::UnitIdentifier(Prefix::milli(), "meter".into(), "meter".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::milli(),
+                "meter".into(),
+                "meter".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("kilobyte"),
-            PrefixParserResult::UnitIdentifier(Prefix::kilo(), "byte".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::kilo(),
+                "byte".into(),
+                "byte".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("kibibyte"),
-            PrefixParserResult::UnitIdentifier(Prefix::kibi(), "byte".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::kibi(),
+                "byte".into(),
+                "byte".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("mebibyte"),
-            PrefixParserResult::UnitIdentifier(Prefix::mebi(), "byte".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::mebi(),
+                "byte".into(),
+                "byte".into()
+            )
         );
 
         assert_eq!(
             prefix_parser.parse("km"),
-            PrefixParserResult::UnitIdentifier(Prefix::kilo(), "m".into(), "meter".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::kilo(),
+                "m".into(),
+                "meter".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("mm"),
-            PrefixParserResult::UnitIdentifier(Prefix::milli(), "m".into(), "meter".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::milli(),
+                "m".into(),
+                "meter".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("kB"),
-            PrefixParserResult::UnitIdentifier(Prefix::kilo(), "B".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::kilo(),
+                "B".into(),
+                "byte".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("MB"),
-            PrefixParserResult::UnitIdentifier(Prefix::mega(), "B".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::mega(),
+                "B".into(),
+                "byte".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("KiB"),
-            PrefixParserResult::UnitIdentifier(Prefix::kibi(), "B".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::kibi(),
+                "B".into(),
+                "byte".into()
+            )
         );
         assert_eq!(
             prefix_parser.parse("MiB"),
-            PrefixParserResult::UnitIdentifier(Prefix::mebi(), "B".into(), "byte".into())
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::mebi(),
+                "B".into(),
+                "byte".into()
+            )
         );
 
         assert_eq!(

@@ -1,6 +1,6 @@
 use codespan_reporting::diagnostic::{Label, LabelStyle};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SourceCodePositition {
     pub byte: usize,
     pub index: usize,
@@ -27,7 +27,7 @@ impl SourceCodePositition {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
     pub start: SourceCodePositition,
     pub end: SourceCodePositition,
