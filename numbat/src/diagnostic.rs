@@ -53,12 +53,15 @@ impl ErrorDiagnostic for NameResolutionError {
 impl ErrorDiagnostic for TypeCheckError {
     fn diagnostic(&self) -> Diagnostic {
         let d = Diagnostic::error().with_message("while type checking");
+        let inner_error = format!("{}", self);
 
         match self {
-            TypeCheckError::UnknownIdentifier(span, _) => {
-                d.with_labels(vec![span.diagnostic_label(LabelStyle::Primary)])
-            }
-            TypeCheckError::UnknownFunction(_) => d.with_notes(vec![format!("{self:#}")]),
+            TypeCheckError::UnknownIdentifier(span, _) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message("unknown identifier")]),
+            TypeCheckError::UnknownFunction(span, _) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message("unknown callable")]),
             TypeCheckError::IncompatibleDimensions {
                 operation,
                 span_operation,
@@ -79,22 +82,22 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message(format!("{actual_type}")),
                 ];
-                d.with_labels(labels).with_notes(vec![format!("{self:#}")])
+                d.with_labels(labels).with_notes(vec![inner_error])
             }
             TypeCheckError::NonScalarExponent(span, type_) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message(format!("{type_}"))])
-                .with_notes(vec![format!("{self:#}")]),
-            TypeCheckError::UnsupportedConstEvalExpression(_) => {
-                d.with_notes(vec![format!("{self:#}")])
-            }
-            TypeCheckError::DivisionByZeroInConstEvalExpression => {
-                d.with_notes(vec![format!("{self:#}")])
-            }
-            TypeCheckError::RegistryError(_) => d.with_notes(vec![format!("{self:#}")]),
+                .with_notes(vec![inner_error]),
+            TypeCheckError::UnsupportedConstEvalExpression(span, _) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
+            TypeCheckError::DivisionByZeroInConstEvalExpression(span) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
+            TypeCheckError::RegistryError(_) => d.with_notes(vec![inner_error]),
             TypeCheckError::IncompatibleAlternativeDimensionExpression(_) => {
-                d.with_notes(vec![format!("{self:#}")])
+                d.with_notes(vec![inner_error])
             }
             TypeCheckError::WrongArity {
                 callable_span,
@@ -116,20 +119,18 @@ impl ErrorDiagnostic for TypeCheckError {
                         format!("{} to {}", arity.start(), arity.end())
                     }
                 ))]),
-            TypeCheckError::TypeParameterNameClash(_) => d.with_notes(vec![format!("{self:#}")]),
-            TypeCheckError::CanNotInferTypeParameters(_, _) => {
-                d.with_notes(vec![format!("{self:#}")])
+            TypeCheckError::TypeParameterNameClash(_) => d.with_notes(vec![inner_error]),
+            TypeCheckError::CanNotInferTypeParameters(_, _) => d.with_notes(vec![inner_error]),
+            TypeCheckError::MultipleUnresolvedTypeParameters => d.with_notes(vec![inner_error]),
+            TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(span, _) => {
+                d.with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error)])
             }
-            TypeCheckError::MultipleUnresolvedTypeParameters => {
-                d.with_notes(vec![format!("{self:#}")])
-            }
-            TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(_) => {
-                d.with_notes(vec![format!("{self:#}")])
-            }
-            TypeCheckError::UnknownForeignFunction(_) => d.with_notes(vec![format!("{self:#}")]),
-            TypeCheckError::ParameterTypesCanNotBeDeduced => {
-                d.with_notes(vec![format!("{self:#}")])
-            }
+            TypeCheckError::UnknownForeignFunction(span, _) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
+            TypeCheckError::ParameterTypesCanNotBeDeduced => d.with_notes(vec![inner_error]),
         }
     }
 }

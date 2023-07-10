@@ -64,7 +64,7 @@ impl Expression {
                 }
                 span
             }
-            Expression::FunctionCall(_, _, _) => todo!(),
+            Expression::FunctionCall(identifier_span, _, _) => *identifier_span, // TODO: this is not the full function call span
         }
     }
 }
@@ -651,7 +651,10 @@ impl ReplaceSpans for Statement {
                 function_name_span: Span::dummy(),
                 function_name: function_name.clone(),
                 type_parameters: type_parameters.clone(),
-                parameters: parameters.clone(),
+                parameters: parameters
+                    .iter()
+                    .map(|(_, a, b, c)| (Span::dummy(), a.clone(), b.clone(), c.clone()))
+                    .collect(),
                 body: body.clone().map(|b| b.replace_spans()),
                 return_type_span: return_type_span.map(|_| Span::dummy()),
                 return_type_annotation: return_type_annotation.clone(),

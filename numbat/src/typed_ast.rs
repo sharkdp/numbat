@@ -11,7 +11,7 @@ pub enum Expression {
     Identifier(String, Type),
     UnitIdentifier(Prefix, String, String, Type),
     Negate(Box<Expression>, Type),
-    BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>, Type),
+    BinaryOperator(Span, BinaryOperator, Box<Expression>, Box<Expression>, Type),
     FunctionCall(String, Vec<Expression>, Type),
 }
 
@@ -38,7 +38,7 @@ impl Expression {
             Expression::Identifier(_, type_) => type_.clone(),
             Expression::UnitIdentifier(_, _, _, _type) => _type.clone(),
             Expression::Negate(_, type_) => type_.clone(),
-            Expression::BinaryOperator(_, _, _, type_) => type_.clone(),
+            Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
             Expression::FunctionCall(_, _, type_) => type_.clone(),
         }
     }

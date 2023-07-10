@@ -26,6 +26,7 @@ fn expect_failure(code: &str, msg_part: &str) {
     let mut ctx = get_test_context();
     if let Err(e) = ctx.interpret(code, CodeSource::Text) {
         let error_message = e.to_string();
+        println!("{}", error_message);
         assert!(error_message.contains(msg_part));
     } else {
         panic!();
@@ -109,7 +110,7 @@ fn test_math() {
     expect_output("atan2(100 cm, 1 m) / (pi / 4)", "1");
     expect_failure(
         "atan2(100 cm, 1 m²)",
-        "Incompatible dimensions in argument 2 of function call to 'atan2'",
+        "parameter type: Length\n argument type: Length²",
     );
 
     expect_output("5 % 3", "2");
@@ -117,10 +118,7 @@ fn test_math() {
     expect_output("8 cm % 5 cm", "3 cm");
     expect_output("235 cm % 1 m", "35 cm");
     expect_output("2 m % 7 cm", "0.04 m");
-    expect_failure(
-        "8 m % 5 s",
-        "Incompatible dimensions in argument 2 of function call to 'mod'",
-    )
+    expect_failure("8 m % 5 s", "parameter type: Length\n argument type: Time")
 }
 
 #[test]

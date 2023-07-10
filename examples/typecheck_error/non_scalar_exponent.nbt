@@ -1,0 +1,4 @@
+let x = 2 meter
+let sigma = 0.5 meter
+
+e^(-x^2/sigma)

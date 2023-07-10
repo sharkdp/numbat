@@ -59,7 +59,7 @@ impl BytecodeInterpreter {
                 self.compile_expression(rhs)?;
                 self.vm.add_op(Op::Negate);
             }
-            Expression::BinaryOperator(operator, lhs, rhs, _type) => {
+            Expression::BinaryOperator(_span, operator, lhs, rhs, _type) => {
                 self.compile_expression(lhs)?;
                 self.compile_expression(rhs)?;
 
@@ -102,8 +102,8 @@ impl BytecodeInterpreter {
             | Expression::UnitIdentifier(_, _, _, _)
             | Expression::FunctionCall(_, _, _)
             | Expression::Negate(_, _)
-            | Expression::BinaryOperator(BinaryOperator::ConvertTo, _, _, _) => {}
-            Expression::BinaryOperator(_, _, _, _) => {
+            | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _) => {}
+            Expression::BinaryOperator(_, _, _, _, _) => {
                 self.vm.add_op(Op::FullSimplify);
             }
         }

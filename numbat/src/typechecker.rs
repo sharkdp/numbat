@@ -17,8 +17,8 @@ pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
     UnknownIdentifier(Span, String),
 
-    #[error("Unknown function '{0}'.")]
-    UnknownFunction(String),
+    #[error("Unknown function '{1}'.")]
+    UnknownFunction(Span, String),
 
     #[error("{expected_name}: {expected_type}\n{actual_name}: {actual_type}")]
     IncompatibleDimensions {
@@ -35,17 +35,17 @@ pub enum TypeCheckError {
     #[error("Exponents need to be dimensionless (got {1}).")]
     NonScalarExponent(Span, BaseRepresentation),
 
-    #[error("Unsupported expression in const-evaluation of exponent: {0}.")]
-    UnsupportedConstEvalExpression(&'static str),
+    #[error("Unsupported expression in const-evaluation of exponent: {1}.")]
+    UnsupportedConstEvalExpression(Span, &'static str),
 
-    #[error("Division by zero in dimension exponent")]
-    DivisionByZeroInConstEvalExpression,
+    #[error("Division by zero in const. eval. expression")]
+    DivisionByZeroInConstEvalExpression(Span),
 
     #[error("{0}")]
     RegistryError(RegistryError),
 
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
-    IncompatibleAlternativeDimensionExpression(String),
+    IncompatibleAlternativeDimensionExpression(String), // TODO: add span information
 
     #[error("Function or procedure '{callable_name}' called with {num_args} arguments(s), but needs {}..{}", arity.start(), arity.end())]
     WrongArity {
@@ -56,22 +56,22 @@ pub enum TypeCheckError {
     },
 
     #[error("'{0}' can not be used as a type parameter because it is also an existing dimension identifier.")]
-    TypeParameterNameClash(String),
+    TypeParameterNameClash(String), // TODO: add span information
 
     #[error("Could not infer the type parameters {0} in the function call '{1}'.")]
-    CanNotInferTypeParameters(String, String),
+    CanNotInferTypeParameters(String, String), // TODO: add span information
 
     #[error("Multiple unresolved generic parameters in a single function parameter type are not (yet) supported. Consider reordering the function parameters")]
-    MultipleUnresolvedTypeParameters,
+    MultipleUnresolvedTypeParameters, // TODO: add span information
 
-    #[error("Foreign function definition '{0}' needs a return type annotation.")]
-    ForeignFunctionNeedsReturnTypeAnnotation(String),
+    #[error("Foreign function definition (without body) '{1}' needs a return type annotation.")]
+    ForeignFunctionNeedsReturnTypeAnnotation(Span, String),
 
-    #[error("Unknown foreign function '{0}'")]
-    UnknownForeignFunction(String),
+    #[error("Unknown foreign function (without body) '{1}'")]
+    UnknownForeignFunction(Span, String),
 
     #[error("Parameter types can not (yet) be deduced, they have to be specified manually: f(x: Length, y: Time) -> …")]
-    ParameterTypesCanNotBeDeduced,
+    ParameterTypesCanNotBeDeduced, // TODO: add span information
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -87,7 +87,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     match expr {
         typed_ast::Expression::Scalar(n) => Ok(to_rational_exponent(n.to_f64())),
         typed_ast::Expression::Negate(ref expr, _) => Ok(-evaluate_const_expr(expr)?),
-        typed_ast::Expression::BinaryOperator(op, lhs_expr, rhs_expr, _) => {
+        typed_ast::Expression::BinaryOperator(span, op, lhs_expr, rhs_expr, _) => {
             let lhs = evaluate_const_expr(lhs_expr)?;
             let rhs = evaluate_const_expr(rhs_expr)?;
             match op {
@@ -96,7 +96,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 typed_ast::BinaryOperator::Mul => Ok(lhs * rhs),
                 typed_ast::BinaryOperator::Div => {
                     if rhs == Rational::zero() {
-                        Err(TypeCheckError::DivisionByZeroInConstEvalExpression)
+                        Err(TypeCheckError::DivisionByZeroInConstEvalExpression(*span))
                     } else {
                         Ok(lhs / rhs)
                     }
@@ -106,23 +106,24 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                         Ok(lhs.pow(rhs.to_integer() as i32)) // TODO: dangerous cast
                     } else {
                         Err(TypeCheckError::UnsupportedConstEvalExpression(
+                            *span,
                             "exponentiation with non-integer exponent",
                         ))
                     }
                 }
-                typed_ast::BinaryOperator::ConvertTo => {
-                    Err(TypeCheckError::UnsupportedConstEvalExpression("conversion"))
-                }
+                typed_ast::BinaryOperator::ConvertTo => Err(
+                    TypeCheckError::UnsupportedConstEvalExpression(Span::dummy(), "conversion"), // TODO
+                ),
             }
         }
-        typed_ast::Expression::Identifier(_, _) => {
-            Err(TypeCheckError::UnsupportedConstEvalExpression("identifier"))
-        }
-        typed_ast::Expression::UnitIdentifier(_, _, _, _) => {
-            Err(TypeCheckError::UnsupportedConstEvalExpression("identifier"))
-        }
+        typed_ast::Expression::Identifier(_, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(Span::dummy(), "identifier"), // TODO
+        ),
+        typed_ast::Expression::UnitIdentifier(_, _, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(Span::dummy(), "identifier"), // TODO
+        ),
         typed_ast::Expression::FunctionCall(_, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression("function call"),
+            TypeCheckError::UnsupportedConstEvalExpression(Span::dummy(), "function call"), // TODO
         ),
     }
 }
@@ -165,6 +166,14 @@ impl TypeChecker {
                 rhs,
                 span_op,
             } => {
+                let full_span = ast::Expression::BinaryOperator {
+                    op,
+                    lhs: lhs.clone(),
+                    rhs: rhs.clone(),
+                    span_op,
+                }
+                .full_span();
+
                 let lhs_checked = self.check_expression((*lhs).clone())?;
                 let rhs_checked = self.check_expression((*rhs).clone())?;
 
@@ -173,15 +182,7 @@ impl TypeChecker {
                     let rhs_type = rhs_checked.get_type();
                     if lhs_type != rhs_type {
                         Err(TypeCheckError::IncompatibleDimensions {
-                            span_operation: span_op.unwrap_or(
-                                ast::Expression::BinaryOperator {
-                                    op,
-                                    lhs: lhs.clone(),
-                                    rhs: rhs.clone(),
-                                    span_op,
-                                }
-                                .full_span(),
-                            ),
+                            span_operation: span_op.unwrap_or(full_span),
                             operation: match op {
                                 typed_ast::BinaryOperator::Add => "addition".into(),
                                 typed_ast::BinaryOperator::Sub => "subtraction".into(),
@@ -235,6 +236,7 @@ impl TypeChecker {
                 };
 
                 typed_ast::Expression::BinaryOperator(
+                    full_span,
                     op,
                     Box::new(lhs_checked),
                     Box::new(rhs_checked),
@@ -245,7 +247,7 @@ impl TypeChecker {
                 let (type_parameters, parameter_types, is_variadic, return_type) = self
                     .function_signatures
                     .get(&function_name)
-                    .ok_or_else(|| TypeCheckError::UnknownFunction(function_name.clone()))?;
+                    .ok_or_else(|| TypeCheckError::UnknownFunction(span, function_name.clone()))?;
 
                 let arity_range = if *is_variadic {
                     1..=usize::MAX
@@ -543,11 +545,15 @@ impl TypeChecker {
                     return_type_deduced
                 } else {
                     if !ffi::functions().contains_key(function_name.as_str()) {
-                        return Err(TypeCheckError::UnknownForeignFunction(function_name));
+                        return Err(TypeCheckError::UnknownForeignFunction(
+                            function_name_span,
+                            function_name,
+                        ));
                     }
 
                     return_type_specified.ok_or_else(|| {
                         TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(
+                            function_name_span,
                             function_name.clone(),
                         )
                     })?
@@ -751,12 +757,12 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("let x=2
                                  a^x"),
-            TypeCheckError::UnsupportedConstEvalExpression(desc) if desc == "identifier"
+            TypeCheckError::UnsupportedConstEvalExpression(_, desc) if desc == "identifier"
         ));
 
         assert!(matches!(
             get_typecheck_error("a^(3/(1-1))"),
-            TypeCheckError::DivisionByZeroInConstEvalExpression
+            TypeCheckError::DivisionByZeroInConstEvalExpression(_)
         ));
     }
 
@@ -904,7 +910,7 @@ mod tests {
     fn unknown_function() {
         assert!(matches!(
             get_typecheck_error("foo(2)"),
-            TypeCheckError::UnknownFunction(name) if name == "foo"
+            TypeCheckError::UnknownFunction(_, name) if name == "foo"
         ));
     }
 
@@ -971,7 +977,7 @@ mod tests {
     fn foreign_function_with_missing_return_type() {
         assert!(matches!(
             get_typecheck_error("fn sin(x: Scalar)"),
-            TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(name) if name == "sin"
+            TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(_, name) if name == "sin"
         ));
     }
 
@@ -979,7 +985,7 @@ mod tests {
     fn unknown_foreign_function() {
         assert!(matches!(
             get_typecheck_error("fn foo(x: Scalar) -> Scalar"),
-            TypeCheckError::UnknownForeignFunction(name) if name == "foo"
+            TypeCheckError::UnknownForeignFunction(_, name) if name == "foo"
         ));
     }
 
