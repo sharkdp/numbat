@@ -48,7 +48,6 @@ pub enum TypeCheckError {
     IncompatibleAlternativeDimensionExpression(String),
 
     #[error("Function or procedure '{callable_name}' called with {num_args} arguments(s), but needs {}..{}", arity.start(), arity.end())]
-    // TODO: better formatting of the arity range (e.g. in case it includes just one number)
     WrongArity {
         callable_span: Span,
         callable_name: String,

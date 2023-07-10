@@ -105,11 +105,23 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::WrongArity {
                 callable_span,
                 callable_name: _,
-                arity: _,
-                num_args: _,
+                arity,
+                num_args,
             } => d.with_labels(vec![callable_span
                 .diagnostic_label(LabelStyle::Primary)
-                .with_message(format!("{self}"))]),
+                .with_message(format!(
+                    "Function or procedure called with {num}, but takes {range}",
+                    num = if *num_args == 1 {
+                        "one argument".into()
+                    } else {
+                        format!("{num_args} arguments")
+                    },
+                    range = if arity.start() == arity.end() {
+                        format!("{}", arity.start())
+                    } else {
+                        format!("{} to {}", arity.start(), arity.end())
+                    }
+                ))]),
             TypeCheckError::TypeParameterNameClash(_) => d.with_notes(vec![format!("{self:#}")]),
             TypeCheckError::CanNotInferTypeParameters(_, _) => {
                 d.with_notes(vec![format!("{self:#}")])
