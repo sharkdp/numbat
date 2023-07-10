@@ -156,7 +156,7 @@ impl TypeChecker {
                 let type_ = checked_expr.get_type();
                 typed_ast::Expression::Negate(Box::new(checked_expr), type_)
             }
-            ast::Expression::BinaryOperator(op, lhs, rhs) => {
+            ast::Expression::BinaryOperator { op, lhs, rhs } => {
                 let lhs = self.check_expression(*lhs)?;
                 let rhs = self.check_expression(*rhs)?;
 

@@ -549,11 +549,11 @@ impl<'a> Parser<'a> {
         while self.match_exact(TokenKind::Arrow).is_some() {
             let rhs = self.term()?;
 
-            expr = Expression::BinaryOperator(
-                BinaryOperator::ConvertTo,
-                Box::new(expr),
-                Box::new(rhs),
-            );
+            expr = Expression::BinaryOperator {
+                op: BinaryOperator::ConvertTo,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+            };
         }
         Ok(expr)
     }
@@ -569,7 +569,11 @@ impl<'a> Parser<'a> {
 
             let rhs = self.factor()?;
 
-            expr = Expression::BinaryOperator(operator, Box::new(expr), Box::new(rhs));
+            expr = Expression::BinaryOperator {
+                op: operator,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+            };
         }
         Ok(expr)
     }
@@ -577,7 +581,7 @@ impl<'a> Parser<'a> {
     fn factor(&mut self) -> Result<Expression> {
         let mut expr = self.per_factor()?;
         while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
-            let operator = if operator_token.kind == TokenKind::Multiply {
+            let op = if operator_token.kind == TokenKind::Multiply {
                 BinaryOperator::Mul
             } else {
                 BinaryOperator::Div
@@ -585,7 +589,11 @@ impl<'a> Parser<'a> {
 
             let rhs = self.per_factor()?;
 
-            expr = Expression::BinaryOperator(operator, Box::new(expr), Box::new(rhs));
+            expr = Expression::BinaryOperator {
+                op,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+            };
         }
         Ok(expr)
     }
@@ -596,7 +604,11 @@ impl<'a> Parser<'a> {
         while self.match_exact(TokenKind::Per).is_some() {
             let rhs = self.per_factor()?;
 
-            expr = Expression::BinaryOperator(BinaryOperator::Div, Box::new(expr), Box::new(rhs));
+            expr = Expression::BinaryOperator {
+                op: BinaryOperator::Div,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+            };
         }
 
         Ok(expr)
@@ -629,7 +641,11 @@ impl<'a> Parser<'a> {
 
         while self.next_token_could_start_power_expression() {
             let rhs = self.power()?;
-            expr = Expression::BinaryOperator(BinaryOperator::Mul, Box::new(expr), Box::new(rhs));
+            expr = Expression::BinaryOperator {
+                op: BinaryOperator::Mul,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+            };
         }
 
         Ok(expr)
@@ -640,7 +656,11 @@ impl<'a> Parser<'a> {
         if self.match_exact(TokenKind::Power).is_some() {
             let rhs = self.power()?;
 
-            expr = Expression::BinaryOperator(BinaryOperator::Power, Box::new(expr), Box::new(rhs));
+            expr = Expression::BinaryOperator {
+                op: BinaryOperator::Power,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+            };
         }
         Ok(expr)
     }
@@ -665,11 +685,11 @@ impl<'a> Parser<'a> {
                 ),
             };
 
-            expr = Expression::BinaryOperator(
-                BinaryOperator::Power,
-                Box::new(expr),
-                Box::new(Expression::Scalar(Number::from_f64(exp as f64))),
-            );
+            expr = Expression::BinaryOperator {
+                op: BinaryOperator::Power,
+                lhs: Box::new(expr),
+                rhs: Box::new(Expression::Scalar(Number::from_f64(exp as f64))),
+            };
         }
 
         Ok(expr)

@@ -1,10 +1,10 @@
+use crate::markup as m;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::span::Span;
 use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint, resolver::ModulePath,
 };
-use crate::{markup as m, name_resolution};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
@@ -37,7 +37,11 @@ pub enum Expression {
     Identifier(Span, String),
     UnitIdentifier(Span, Prefix, String, String),
     Negate(Box<Expression>),
-    BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
+    BinaryOperator {
+        op: BinaryOperator,
+        lhs: Box<Expression>,
+        rhs: Box<Expression>,
+    },
     FunctionCall(String, Vec<Expression>),
 }
 
@@ -65,7 +69,11 @@ macro_rules! negate {
 #[cfg(test)]
 macro_rules! binop {
     ( $lhs:expr, $op:ident, $rhs: expr ) => {{
-        Expression::BinaryOperator(BinaryOperator::$op, Box::new($lhs), Box::new($rhs))
+        Expression::BinaryOperator {
+            op: BinaryOperator::$op,
+            lhs: Box::new($lhs),
+            rhs: Box::new($rhs),
+        }
     }};
 }
 #[cfg(test)]
@@ -88,7 +96,7 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::Identifier(_, _)
         | Expression::UnitIdentifier(_, _, _, _)
         | Expression::FunctionCall(_, _) => expr.pretty_print(),
-        Expression::Negate(_) | Expression::BinaryOperator(_, _, _) => {
+        Expression::Negate(_) | Expression::BinaryOperator { .. } => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
         }
     }
@@ -97,9 +105,12 @@ fn with_parens(expr: &Expression) -> Markup {
 /// Add parens, if needed -- liberal version, can not be used for exponentiation.
 fn with_parens_liberal(expr: &Expression) -> Markup {
     match expr {
-        Expression::BinaryOperator(BinaryOperator::Mul, lhs, rhs)
-            if matches!(**lhs, Expression::Scalar(_))
-                && matches!(**rhs, Expression::UnitIdentifier(_, _, _, _)) =>
+        Expression::BinaryOperator {
+            op: BinaryOperator::Mul,
+            lhs,
+            rhs,
+        } if matches!(**lhs, Expression::Scalar(_))
+            && matches!(**rhs, Expression::UnitIdentifier(_, _, _, _)) =>
         {
             expr.pretty_print()
         }
@@ -128,8 +139,13 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
                 let add_parens_if_needed = |expr: &Expression| {
                     if matches!(
                         expr,
-                        Expression::BinaryOperator(BinaryOperator::Power, _, _)
-                            | Expression::BinaryOperator(BinaryOperator::Mul, _, _)
+                        Expression::BinaryOperator {
+                            op: BinaryOperator::Power,
+                            ..
+                        } | Expression::BinaryOperator {
+                            op: BinaryOperator::Mul,
+                            ..
+                        }
                     ) {
                         expr.pretty_print()
                     } else {
@@ -144,8 +160,13 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             let lhs_add_parens_if_needed = |expr: &Expression| {
                 if matches!(
                     expr,
-                    Expression::BinaryOperator(BinaryOperator::Power, _, _)
-                        | Expression::BinaryOperator(BinaryOperator::Mul, _, _)
+                    Expression::BinaryOperator {
+                        op: BinaryOperator::Power,
+                        ..
+                    } | Expression::BinaryOperator {
+                        op: BinaryOperator::Mul,
+                        ..
+                    }
                 ) {
                     expr.pretty_print()
                 } else {
@@ -155,7 +176,10 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             let rhs_add_parens_if_needed = |expr: &Expression| {
                 if matches!(
                     expr,
-                    Expression::BinaryOperator(BinaryOperator::Power, _, _)
+                    Expression::BinaryOperator {
+                        op: BinaryOperator::Power,
+                        ..
+                    }
                 ) {
                     expr.pretty_print()
                 } else {
@@ -169,9 +193,16 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             let add_parens_if_needed = |expr: &Expression| {
                 if matches!(
                     expr,
-                    Expression::BinaryOperator(BinaryOperator::Power, _, _)
-                        | Expression::BinaryOperator(BinaryOperator::Mul, _, _)
-                        | Expression::BinaryOperator(BinaryOperator::Add, _, _)
+                    Expression::BinaryOperator {
+                        op: BinaryOperator::Power,
+                        ..
+                    } | Expression::BinaryOperator {
+                        op: BinaryOperator::Mul,
+                        ..
+                    } | Expression::BinaryOperator {
+                        op: BinaryOperator::Add,
+                        ..
+                    }
                 ) {
                     expr.pretty_print()
                 } else {
@@ -185,8 +216,13 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             let add_parens_if_needed = |expr: &Expression| {
                 if matches!(
                     expr,
-                    Expression::BinaryOperator(BinaryOperator::Power, _, _)
-                        | Expression::BinaryOperator(BinaryOperator::Mul, _, _)
+                    Expression::BinaryOperator {
+                        op: BinaryOperator::Power,
+                        ..
+                    } | Expression::BinaryOperator {
+                        op: BinaryOperator::Mul,
+                        ..
+                    }
                 ) {
                     expr.pretty_print()
                 } else {
@@ -217,7 +253,7 @@ impl PrettyPrint for Expression {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
             Negate(rhs) => m::operator("-") + with_parens(rhs),
-            BinaryOperator(op, lhs, rhs) => pretty_print_binop(op, lhs, rhs),
+            BinaryOperator { op, lhs, rhs } => pretty_print_binop(op, lhs, rhs),
             FunctionCall(name, args) => {
                 m::identifier(name)
                     + m::operator("(")
@@ -512,11 +548,11 @@ impl ReplaceSpans for Expression {
                 full_name.clone(),
             ),
             Expression::Negate(expr) => Expression::Negate(Box::new(expr.replace_spans())),
-            Expression::BinaryOperator(op, lhs, rhs) => Expression::BinaryOperator(
-                *op,
-                Box::new(lhs.replace_spans()),
-                Box::new(rhs.replace_spans()),
-            ),
+            Expression::BinaryOperator { op, lhs, rhs } => Expression::BinaryOperator {
+                op: *op,
+                lhs: Box::new(lhs.replace_spans()),
+                rhs: Box::new(rhs.replace_spans()),
+            },
             Expression::FunctionCall(name, args) => Expression::FunctionCall(
                 name.clone(),
                 args.iter().map(|a| a.replace_spans()).collect(),

@@ -48,11 +48,11 @@ impl Transformer {
             Expression::Negate(expr) => {
                 Expression::Negate(Box::new(self.transform_expression(*expr)))
             }
-            Expression::BinaryOperator(op, expr_lhs, expr_rhs) => Expression::BinaryOperator(
+            Expression::BinaryOperator { op, lhs, rhs } => Expression::BinaryOperator {
                 op,
-                Box::new(self.transform_expression(*expr_lhs)),
-                Box::new(self.transform_expression(*expr_rhs)),
-            ),
+                lhs: Box::new(self.transform_expression(*lhs)),
+                rhs: Box::new(self.transform_expression(*rhs)),
+            },
             Expression::FunctionCall(name, args) => Expression::FunctionCall(
                 name,
                 args.into_iter()
