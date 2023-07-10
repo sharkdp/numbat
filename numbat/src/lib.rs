@@ -152,7 +152,7 @@ impl Context {
             Config,
         };
 
-        let writer = StandardStream::stderr(ColorChoice::Always);
+        let writer = StandardStream::stderr(ColorChoice::Auto);
         let config = Config::default();
 
         term::emit(

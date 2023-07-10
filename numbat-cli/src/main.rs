@@ -331,13 +331,13 @@ impl Cli {
                 }
             }
             Err(NumbatError::ResolverError(e)) => {
-                self.print_digagnostic(e);
+                self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::NameResolutionError(
                 e @ NameResolutionError::IdentifierClash { .. },
             )) => {
-                self.print_digagnostic(e);
+                self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::TypeCheckError(e)) => {
@@ -345,13 +345,13 @@ impl Cli {
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::RuntimeError(e)) => {
-                eprintln!("Runtime error: {:#}", e);
+                self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
         }
     }
 
-    fn print_digagnostic(&mut self, error: impl ErrorDiagnostic) {
+    fn print_diagnostic(&mut self, error: impl ErrorDiagnostic) {
         self.context.lock().unwrap().print_diagnostic(error)
     }
 

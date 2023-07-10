@@ -1,6 +1,8 @@
 use codespan_reporting::diagnostic::LabelStyle;
 
-use crate::{parser::ParseError, resolver::ResolverError, NameResolutionError};
+use crate::{
+    interpreter::RuntimeError, parser::ParseError, resolver::ResolverError, NameResolutionError,
+};
 
 pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
 
@@ -44,5 +46,11 @@ impl ErrorDiagnostic for NameResolutionError {
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message("Identifier is already in use")]),
         }
+    }
+}
+
+impl ErrorDiagnostic for RuntimeError {
+    fn diagnostic(self) -> Diagnostic {
+        Diagnostic::error().with_message(format!("runtime error: {self:#}"))
     }
 }

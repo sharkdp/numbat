@@ -34,7 +34,7 @@ fn pass_expression_on_command_line() {
         .arg("1/0")
         .assert()
         .failure()
-        .stderr(predicates::str::contains("Runtime error"));
+        .stderr(predicates::str::contains("runtime error"));
 }
 
 #[test]
