@@ -45,7 +45,7 @@ pub enum TypeCheckError {
     RegistryError(RegistryError),
 
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
-    IncompatibleAlternativeDimensionExpression(String), // TODO: add span information
+    IncompatibleAlternativeDimensionExpression(String, Span, Type, Span, Type),
 
     #[error("Function or procedure '{callable_name}' called with {num_args} arguments(s), but needs {}..{}", arity.start(), arity.end())]
     WrongArity {
@@ -600,6 +600,10 @@ impl TypeChecker {
                             return Err(
                                 TypeCheckError::IncompatibleAlternativeDimensionExpression(
                                     name.clone(),
+                                    dexpr.full_span(),
+                                    base_representation,
+                                    alternative_expr.full_span(),
+                                    alternative_base_representation,
                                 ),
                             );
                         }
@@ -921,7 +925,7 @@ mod tests {
                 "# wrong alternative expression: C / B^2
                  dimension D = A / B = C / B^3"
             ),
-            TypeCheckError::IncompatibleAlternativeDimensionExpression(t) if t == "D",
+            TypeCheckError::IncompatibleAlternativeDimensionExpression(t, ..) if t == "D",
         ));
     }
 

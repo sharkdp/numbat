@@ -302,25 +302,43 @@ impl PrettyPrint for Expression {
 #[derive(Debug, Clone, PartialEq)]
 
 pub enum DimensionExpression {
-    Unity,
-    Dimension(String),
-    Multiply(Box<DimensionExpression>, Box<DimensionExpression>),
-    Divide(Box<DimensionExpression>, Box<DimensionExpression>),
-    Power(Box<DimensionExpression>, Exponent),
+    Unity(Span),
+    Dimension(Span, String),
+    Multiply(Span, Box<DimensionExpression>, Box<DimensionExpression>),
+    Divide(Span, Box<DimensionExpression>, Box<DimensionExpression>),
+    Power(Span, Box<DimensionExpression>, Span, Exponent),
+}
+
+impl DimensionExpression {
+    pub fn full_span(&self) -> Span {
+        match self {
+            DimensionExpression::Unity(s) => *s,
+            DimensionExpression::Dimension(s, _) => *s,
+            DimensionExpression::Multiply(span_op, lhs, rhs) => {
+                span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
+            }
+            DimensionExpression::Divide(span_op, lhs, rhs) => {
+                span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
+            }
+            DimensionExpression::Power(span_op, lhs, span_exponent, _exp) => {
+                span_op.extend(&lhs.full_span()).extend(&span_exponent)
+            }
+        }
+    }
 }
 
 impl PrettyPrint for DimensionExpression {
     fn pretty_print(&self) -> Markup {
         match self {
-            DimensionExpression::Unity => m::type_identifier("1"),
-            DimensionExpression::Dimension(ident) => m::type_identifier(ident),
-            DimensionExpression::Multiply(lhs, rhs) => {
+            DimensionExpression::Unity(_) => m::type_identifier("1"),
+            DimensionExpression::Dimension(_, ident) => m::type_identifier(ident),
+            DimensionExpression::Multiply(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
             }
-            DimensionExpression::Divide(lhs, rhs) => {
+            DimensionExpression::Divide(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("/") + m::space() + rhs.pretty_print()
             }
-            DimensionExpression::Power(lhs, exp) => {
+            DimensionExpression::Power(_, lhs, _, exp) => {
                 m::operator("(")
                     + lhs.pretty_print()
                     + m::operator(")")
@@ -587,6 +605,34 @@ pub trait ReplaceSpans {
 }
 
 #[cfg(test)]
+impl ReplaceSpans for DimensionExpression {
+    fn replace_spans(&self) -> Self {
+        match self {
+            DimensionExpression::Unity(_) => DimensionExpression::Unity(Span::dummy()),
+            DimensionExpression::Dimension(_, d) => {
+                DimensionExpression::Dimension(Span::dummy(), d.clone())
+            }
+            DimensionExpression::Multiply(_, lhs, rhs) => DimensionExpression::Multiply(
+                Span::dummy(),
+                Box::new(lhs.replace_spans()),
+                Box::new(rhs.replace_spans()),
+            ),
+            DimensionExpression::Divide(_, lhs, rhs) => DimensionExpression::Divide(
+                Span::dummy(),
+                Box::new(lhs.replace_spans()),
+                Box::new(rhs.replace_spans()),
+            ),
+            DimensionExpression::Power(_, lhs, _, exp) => DimensionExpression::Power(
+                Span::dummy(),
+                Box::new(lhs.replace_spans()),
+                Span::dummy(),
+                exp.clone(),
+            ),
+        }
+    }
+}
+
+#[cfg(test)]
 impl ReplaceSpans for Expression {
     fn replace_spans(&self) -> Self {
         match self {
@@ -637,7 +683,7 @@ impl ReplaceSpans for Statement {
                 identifier: identifier.clone(),
                 expr: expr.replace_spans(),
                 type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
-                type_annotation: type_annotation.clone(),
+                type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
             },
             Statement::DeclareFunction {
                 function_name_span: _,
@@ -653,17 +699,27 @@ impl ReplaceSpans for Statement {
                 type_parameters: type_parameters.clone(),
                 parameters: parameters
                     .iter()
-                    .map(|(_, a, b, c)| (Span::dummy(), a.clone(), b.clone(), c.clone()))
+                    .map(|(_, name, type_, is_variadic)| {
+                        (
+                            Span::dummy(),
+                            name.clone(),
+                            type_.as_ref().map(|t| t.replace_spans()),
+                            *is_variadic,
+                        )
+                    })
                     .collect(),
                 body: body.clone().map(|b| b.replace_spans()),
                 return_type_span: return_type_span.map(|_| Span::dummy()),
-                return_type_annotation: return_type_annotation.clone(),
+                return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
             },
-            s @ Statement::DeclareDimension(_, _) => s.clone(),
+            Statement::DeclareDimension(name, dexprs) => Statement::DeclareDimension(
+                name.clone(),
+                dexprs.iter().map(|t| t.replace_spans()).collect(),
+            ),
             Statement::DeclareBaseUnit(_, name, type_, decorators) => Statement::DeclareBaseUnit(
                 Span::dummy(),
                 name.clone(),
-                type_.clone(),
+                type_.replace_spans(),
                 decorators.clone(),
             ),
             Statement::DeclareDerivedUnit {
@@ -678,7 +734,7 @@ impl ReplaceSpans for Statement {
                 identifier: identifier.clone(),
                 expr: expr.replace_spans(),
                 type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
-                type_annotation: type_annotation.clone(),
+                type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
                 decorators: decorators.clone(),
             },
             Statement::ProcedureCall(_, proc, args) => Statement::ProcedureCall(

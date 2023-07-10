@@ -96,9 +96,22 @@ impl ErrorDiagnostic for TypeCheckError {
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
             TypeCheckError::RegistryError(_) => d.with_notes(vec![inner_error]),
-            TypeCheckError::IncompatibleAlternativeDimensionExpression(_) => {
-                d.with_notes(vec![inner_error])
-            }
+            TypeCheckError::IncompatibleAlternativeDimensionExpression(
+                _name,
+                span1,
+                type1,
+                span2,
+                type2,
+            ) => d
+                .with_labels(vec![
+                    span1
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(type1.to_string()),
+                    span2
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(type2.to_string()),
+                ])
+                .with_notes(vec![inner_error]),
             TypeCheckError::WrongArity {
                 callable_span,
                 callable_name: _,

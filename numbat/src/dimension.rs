@@ -13,23 +13,23 @@ impl DimensionRegistry {
         expression: &DimensionExpression,
     ) -> Result<BaseRepresentation> {
         match expression {
-            DimensionExpression::Unity => Ok(BaseRepresentation::unity()),
-            DimensionExpression::Dimension(name) => {
+            DimensionExpression::Unity(_) => Ok(BaseRepresentation::unity()),
+            DimensionExpression::Dimension(_, name) => {
                 self.registry.get_base_representation_for_name(name)
             }
-            DimensionExpression::Multiply(lhs, rhs) => {
+            DimensionExpression::Multiply(_, lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
                 Ok(lhs * rhs)
             }
-            DimensionExpression::Divide(lhs, rhs) => {
+            DimensionExpression::Divide(_, lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
                 Ok(lhs / rhs)
             }
-            DimensionExpression::Power(expr, outer_exponent) => {
+            DimensionExpression::Power(_, expr, _, outer_exponent) => {
                 Ok(self.get_base_representation(expr)?.power(*outer_exponent))
             }
         }

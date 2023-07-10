@@ -846,12 +846,13 @@ impl<'a> Parser<'a> {
     fn dimension_factor(&mut self) -> Result<DimensionExpression> {
         let mut expr = self.dimension_power()?;
         while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
+            let span = self.last().unwrap().span;
             let rhs = self.dimension_power()?;
 
             expr = if operator_token.kind == TokenKind::Multiply {
-                DimensionExpression::Multiply(Box::new(expr), Box::new(rhs))
+                DimensionExpression::Multiply(span, Box::new(expr), Box::new(rhs))
             } else {
-                DimensionExpression::Divide(Box::new(expr), Box::new(rhs))
+                DimensionExpression::Divide(span, Box::new(expr), Box::new(rhs))
             };
         }
         Ok(expr)
@@ -861,29 +862,44 @@ impl<'a> Parser<'a> {
         let expr = self.dimension_primary()?;
 
         if self.match_exact(TokenKind::Power).is_some() {
-            let exponent = self.dimension_exponent()?;
+            let span = self.last().unwrap().span;
+            let (span_exponent, exponent) = self.dimension_exponent()?;
 
-            Ok(DimensionExpression::Power(Box::new(expr), exponent))
+            Ok(DimensionExpression::Power(
+                span,
+                Box::new(expr),
+                span_exponent,
+                exponent,
+            ))
         } else {
             Ok(expr)
         }
     }
 
-    fn dimension_exponent(&mut self) -> Result<Exponent> {
+    fn dimension_exponent(&mut self) -> Result<(Span, Exponent)> {
         // TODO: potentially allow for ², ³, etc.
 
         if let Some(token) = self.match_exact(TokenKind::Number) {
+            let span = self.last().unwrap().span;
             // TODO: only parse integers here
-            Ok(Rational::from_f64(token.lexeme.parse::<f64>().unwrap()).unwrap())
+            Ok((
+                span,
+                Rational::from_f64(token.lexeme.parse::<f64>().unwrap()).unwrap(),
+            ))
         } else if self.match_exact(TokenKind::Minus).is_some() {
-            let exponent = self.dimension_exponent()?;
-            Ok(-exponent)
+            let span = self.last().unwrap().span;
+            let (span_inner, exponent) = self.dimension_exponent()?;
+            Ok((span.extend(&span_inner), -exponent))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
-            let exponent = self.dimension_exponent()?;
+            let mut span = self.last().unwrap().span;
+            let (span_inner, exponent) = self.dimension_exponent()?;
+            span = span.extend(&span_inner);
             if self.match_exact(TokenKind::RightParen).is_some() {
-                Ok(exponent)
+                span = span.extend(&self.last().unwrap().span);
+                Ok((span, exponent))
             } else if self.match_exact(TokenKind::Divide).is_some() {
-                let rhs = self.dimension_exponent()?;
+                let (span_rhs, rhs) = self.dimension_exponent()?;
+                span = span.extend(&span_rhs);
                 if rhs == Rational::zero() {
                     Err(ParseError::new(
                         ParseErrorKind::DivisionByZeroInDimensionExponent,
@@ -895,7 +911,8 @@ impl<'a> Parser<'a> {
                         self.peek().span,
                     ))
                 } else {
-                    Ok(exponent / rhs)
+                    span = span.extend(&self.last().unwrap().span);
+                    Ok((span, exponent / rhs))
                 }
             } else {
                 Err(ParseError::new(
@@ -914,12 +931,14 @@ impl<'a> Parser<'a> {
             self.peek().span,
         ));
         if let Some(token) = self.match_exact(TokenKind::Identifier) {
-            Ok(DimensionExpression::Dimension(token.lexeme.clone()))
+            let span = self.last().unwrap().span;
+            Ok(DimensionExpression::Dimension(span, token.lexeme.clone()))
         } else if let Some(number) = self.match_exact(TokenKind::Number) {
+            let span = self.last().unwrap().span;
             if number.lexeme != "1" {
                 e
             } else {
-                Ok(DimensionExpression::Unity)
+                Ok(DimensionExpression::Unity(span))
             }
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let dexpr = self.dimension_expression()?;
@@ -1289,7 +1308,10 @@ mod tests {
                 identifier: "x".into(),
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
                 type_annotation_span: Some(Span::dummy()),
-                type_annotation: Some(DimensionExpression::Dimension("Length".into())),
+                type_annotation: Some(DimensionExpression::Dimension(
+                    Span::dummy(),
+                    "Length".into(),
+                )),
             },
         );
 
@@ -1319,8 +1341,15 @@ mod tests {
             Statement::DeclareDimension(
                 "Area".into(),
                 vec![DimensionExpression::Multiply(
-                    Box::new(DimensionExpression::Dimension("Length".into())),
-                    Box::new(DimensionExpression::Dimension("Length".into())),
+                    Span::dummy(),
+                    Box::new(DimensionExpression::Dimension(
+                        Span::dummy(),
+                        "Length".into(),
+                    )),
+                    Box::new(DimensionExpression::Dimension(
+                        Span::dummy(),
+                        "Length".into(),
+                    )),
                 )],
             ),
         );
@@ -1330,8 +1359,12 @@ mod tests {
             Statement::DeclareDimension(
                 "Speed".into(),
                 vec![DimensionExpression::Divide(
-                    Box::new(DimensionExpression::Dimension("Length".into())),
-                    Box::new(DimensionExpression::Dimension("Time".into())),
+                    Span::dummy(),
+                    Box::new(DimensionExpression::Dimension(
+                        Span::dummy(),
+                        "Length".into(),
+                    )),
+                    Box::new(DimensionExpression::Dimension(Span::dummy(), "Time".into())),
                 )],
             ),
         );
@@ -1341,7 +1374,12 @@ mod tests {
             Statement::DeclareDimension(
                 "Area".into(),
                 vec![DimensionExpression::Power(
-                    Box::new(DimensionExpression::Dimension("Length".into())),
+                    Span::dummy(),
+                    Box::new(DimensionExpression::Dimension(
+                        Span::dummy(),
+                        "Length".into(),
+                    )),
+                    Span::dummy(),
                     Rational::from_integer(2),
                 )],
             ),
@@ -1352,15 +1390,24 @@ mod tests {
             Statement::DeclareDimension(
                 "Energy".into(),
                 vec![DimensionExpression::Divide(
+                    Span::dummy(),
                     Box::new(DimensionExpression::Multiply(
-                        Box::new(DimensionExpression::Dimension("Mass".into())),
+                        Span::dummy(),
+                        Box::new(DimensionExpression::Dimension(Span::dummy(), "Mass".into())),
                         Box::new(DimensionExpression::Power(
-                            Box::new(DimensionExpression::Dimension("Length".into())),
+                            Span::dummy(),
+                            Box::new(DimensionExpression::Dimension(
+                                Span::dummy(),
+                                "Length".into(),
+                            )),
+                            Span::dummy(),
                             Rational::from_integer(2),
                         )),
                     )),
                     Box::new(DimensionExpression::Power(
-                        Box::new(DimensionExpression::Dimension("Time".into())),
+                        Span::dummy(),
+                        Box::new(DimensionExpression::Dimension(Span::dummy(), "Time".into())),
+                        Span::dummy(),
                         Rational::from_integer(2),
                     )),
                 )],
@@ -1392,7 +1439,10 @@ mod tests {
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
                 return_type_span: Some(Span::dummy()),
-                return_type_annotation: Some(DimensionExpression::Dimension("Scalar".into())),
+                return_type_annotation: Some(DimensionExpression::Dimension(
+                    Span::dummy(),
+                    "Scalar".into(),
+                )),
             },
         );
 
@@ -1436,25 +1486,39 @@ mod tests {
                     (
                         Span::dummy(),
                         "x".into(),
-                        Some(DimensionExpression::Dimension("Length".into())),
+                        Some(DimensionExpression::Dimension(
+                            Span::dummy(),
+                            "Length".into(),
+                        )),
                         false,
                     ),
                     (
                         Span::dummy(),
                         "y".into(),
-                        Some(DimensionExpression::Dimension("Time".into())),
+                        Some(DimensionExpression::Dimension(Span::dummy(), "Time".into())),
                         false,
                     ),
                     (
                         Span::dummy(),
                         "z".into(),
                         Some(DimensionExpression::Multiply(
+                            Span::dummy(),
                             Box::new(DimensionExpression::Power(
-                                Box::new(DimensionExpression::Dimension("Length".into())),
+                                Span::dummy(),
+                                Box::new(DimensionExpression::Dimension(
+                                    Span::dummy(),
+                                    "Length".into(),
+                                )),
+                                Span::dummy(),
                                 Rational::new(3, 1),
                             )),
                             Box::new(DimensionExpression::Power(
-                                Box::new(DimensionExpression::Dimension("Time".into())),
+                                Span::dummy(),
+                                Box::new(DimensionExpression::Dimension(
+                                    Span::dummy(),
+                                    "Time".into(),
+                                )),
+                                Span::dummy(),
                                 Rational::new(2, 1),
                             )),
                         )),
@@ -1463,7 +1527,10 @@ mod tests {
                 ],
                 body: Some(scalar!(1.0)),
                 return_type_span: Some(Span::dummy()),
-                return_type_annotation: Some(DimensionExpression::Dimension("Scalar".into())),
+                return_type_annotation: Some(DimensionExpression::Dimension(
+                    Span::dummy(),
+                    "Scalar".into(),
+                )),
             },
         );
 
@@ -1476,7 +1543,7 @@ mod tests {
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),
-                    Some(DimensionExpression::Dimension("X".into())),
+                    Some(DimensionExpression::Dimension(Span::dummy(), "X".into())),
                     false,
                 )],
                 body: Some(scalar!(1.0)),
@@ -1494,12 +1561,15 @@ mod tests {
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),
-                    Some(DimensionExpression::Dimension("D".into())),
+                    Some(DimensionExpression::Dimension(Span::dummy(), "D".into())),
                     true,
                 )],
                 body: None,
                 return_type_span: Some(Span::dummy()),
-                return_type_annotation: Some(DimensionExpression::Dimension("D".into())),
+                return_type_annotation: Some(DimensionExpression::Dimension(
+                    Span::dummy(),
+                    "D".into(),
+                )),
             },
         );
 
