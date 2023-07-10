@@ -103,10 +103,13 @@ impl ErrorDiagnostic for TypeCheckError {
                 d.with_notes(vec![format!("{self:#}")])
             }
             TypeCheckError::WrongArity {
+                callable_span,
                 callable_name: _,
                 arity: _,
                 num_args: _,
-            } => d.with_notes(vec![format!("{self:#}")]),
+            } => d.with_labels(vec![callable_span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(format!("{self}"))]),
             TypeCheckError::TypeParameterNameClash(_) => d.with_notes(vec![format!("{self:#}")]),
             TypeCheckError::CanNotInferTypeParameters(_, _) => {
                 d.with_notes(vec![format!("{self:#}")])

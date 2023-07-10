@@ -169,7 +169,8 @@ impl Transformer {
                 self.dimension_names.push(name.clone());
                 Statement::DeclareDimension(name, dexprs)
             }
-            Statement::ProcedureCall(procedure, args) => Statement::ProcedureCall(
+            Statement::ProcedureCall(span, procedure, args) => Statement::ProcedureCall(
+                span,
                 procedure,
                 args.into_iter()
                     .map(|arg| self.transform_expression(arg))

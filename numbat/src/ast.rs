@@ -369,7 +369,7 @@ pub enum Statement {
         type_annotation: Option<DimensionExpression>,
         decorators: Vec<Decorator>,
     },
-    ProcedureCall(ProcedureKind, Vec<Expression>),
+    ProcedureCall(Span, ProcedureKind, Vec<Expression>),
     ModuleImport(Span, ModulePath),
 }
 
@@ -554,7 +554,7 @@ impl PrettyPrint for Statement {
                     + m::space()
                     + expr.pretty_print()
             }
-            Statement::ProcedureCall(kind, args) => {
+            Statement::ProcedureCall(_, kind, args) => {
                 let identifier = match kind {
                     ProcedureKind::Print => "print",
                     ProcedureKind::AssertEq => "assert_eq",
@@ -678,7 +678,8 @@ impl ReplaceSpans for Statement {
                 type_annotation: type_annotation.clone(),
                 decorators: decorators.clone(),
             },
-            Statement::ProcedureCall(proc, args) => Statement::ProcedureCall(
+            Statement::ProcedureCall(_, proc, args) => Statement::ProcedureCall(
+                Span::dummy(),
                 proc.clone(),
                 args.iter().map(|a| a.replace_spans()).collect(),
             ),

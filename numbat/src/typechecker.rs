@@ -50,6 +50,7 @@ pub enum TypeCheckError {
     #[error("Function or procedure '{callable_name}' called with {num_args} arguments(s), but needs {}..{}", arity.start(), arity.end())]
     // TODO: better formatting of the arity range (e.g. in case it includes just one number)
     WrongArity {
+        callable_span: Span,
         callable_name: String,
         arity: ArityRange,
         num_args: usize,
@@ -255,6 +256,7 @@ impl TypeChecker {
 
                 if !arity_range.contains(&args.len()) {
                     return Err(TypeCheckError::WrongArity {
+                        callable_span: span,
                         callable_name: function_name.clone(),
                         arity: arity_range,
                         num_args: args.len(),
@@ -596,10 +598,11 @@ impl TypeChecker {
                 }
                 typed_ast::Statement::DeclareDimension(name)
             }
-            ast::Statement::ProcedureCall(kind, args) => {
+            ast::Statement::ProcedureCall(span, kind, args) => {
                 let procedure = ffi::procedures().get(&kind).unwrap();
                 if !procedure.arity.contains(&args.len()) {
                     return Err(TypeCheckError::WrongArity {
+                        callable_span: span,
                         callable_name: procedure.name.clone(),
                         arity: procedure.arity.clone(),
                         num_args: args.len(),
@@ -916,7 +919,7 @@ mod tests {
                 fn f() = 1
                 f(1)
             "),
-            TypeCheckError::WrongArity{callable_name, arity, num_args: 1} if arity == (0..=0) && callable_name == "f"
+            TypeCheckError::WrongArity{callable_span:_, callable_name, arity, num_args: 1} if arity == (0..=0) && callable_name == "f"
         ));
 
         assert!(matches!(
@@ -924,7 +927,7 @@ mod tests {
                 fn f(x: Scalar) = x
                 f()
             "),
-            TypeCheckError::WrongArity{callable_name, arity, num_args: 0} if arity == (1..=1) && callable_name == "f"
+            TypeCheckError::WrongArity{callable_span:_, callable_name, arity, num_args: 0} if arity == (1..=1) && callable_name == "f"
         ));
 
         assert!(matches!(
@@ -932,7 +935,7 @@ mod tests {
                 fn f(x: Scalar) = x
                 f(2, 3)
             "),
-            TypeCheckError::WrongArity{callable_name, arity, num_args: 2} if arity == (1..=1) && callable_name == "f"
+            TypeCheckError::WrongArity{callable_span:_, callable_name, arity, num_args: 2} if arity == (1..=1) && callable_name == "f"
         ));
 
         assert!(matches!(
@@ -940,7 +943,7 @@ mod tests {
                 fn mean<D>(xs: D…) -> D
                 mean()
             "),
-            TypeCheckError::WrongArity{callable_name, arity, num_args: 0} if arity == (1..=usize::MAX) && callable_name == "mean"
+            TypeCheckError::WrongArity{callable_span:_, callable_name, arity, num_args: 0} if arity == (1..=usize::MAX) && callable_name == "mean"
         ));
     }
 
@@ -977,13 +980,13 @@ mod tests {
     fn arity_checks_in_procedure_calls() {
         assert!(matches!(
             get_typecheck_error("assert_eq(1)"),
-            TypeCheckError::WrongArity{callable_name, arity, num_args: 1} if arity == (2..=3) && callable_name == "assert_eq"
+            TypeCheckError::WrongArity{callable_span:_, callable_name, arity, num_args: 1} if arity == (2..=3) && callable_name == "assert_eq"
         ));
         assert_successful_typecheck("assert_eq(1,2)");
         assert_successful_typecheck("assert_eq(1,2,3)");
         assert!(matches!(
             get_typecheck_error("assert_eq(1,2,3,4)"),
-            TypeCheckError::WrongArity{callable_name, arity, num_args: 4} if arity == (2..=3) && callable_name == "assert_eq"
+            TypeCheckError::WrongArity{callable_span:_, callable_name, arity, num_args: 4} if arity == (2..=3) && callable_name == "assert_eq"
         ));
     }
 }

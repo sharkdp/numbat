@@ -503,6 +503,7 @@ impl<'a> Parser<'a> {
             .match_any(&[TokenKind::ProcedurePrint, TokenKind::ProcedureAssertEq])
             .is_some()
         {
+            let span = self.last().unwrap().span;
             let procedure_kind = match self.last().unwrap().kind {
                 TokenKind::ProcedurePrint => ProcedureKind::Print,
                 TokenKind::ProcedureAssertEq => ProcedureKind::AssertEq,
@@ -515,7 +516,11 @@ impl<'a> Parser<'a> {
                     span: self.peek().span,
                 })
             } else {
-                Ok(Statement::ProcedureCall(procedure_kind, self.arguments()?))
+                Ok(Statement::ProcedureCall(
+                    span,
+                    procedure_kind,
+                    self.arguments()?,
+                ))
             }
         } else {
             Ok(Statement::Expression(self.expression()?))
@@ -1525,12 +1530,13 @@ mod tests {
     fn procedure_call() {
         parse_as(
             &["print(2)"],
-            Statement::ProcedureCall(ProcedureKind::Print, vec![scalar!(2.0)]),
+            Statement::ProcedureCall(Span::dummy(), ProcedureKind::Print, vec![scalar!(2.0)]),
         );
 
         parse_as(
             &["print(2, 3, 4)"],
             Statement::ProcedureCall(
+                Span::dummy(),
                 ProcedureKind::Print,
                 vec![scalar!(2.0), scalar!(3.0), scalar!(4.0)],
             ),
