@@ -540,7 +540,7 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParseError::new(
                 ParseErrorKind::CanOnlyCallIdentifier,
-                self.peek().span, // TODO: Ideally, this span should point to whatever we try to call. Once we have spans in the AST, this should be easy to resolve.
+                primary.full_span(),
             ))
         }
     }
@@ -558,10 +558,13 @@ impl<'a> Parser<'a> {
 
     pub fn postfix_apply(&mut self) -> Result<Expression> {
         let mut expr = self.conversion()?;
+        let mut full_span = expr.full_span();
         while self.match_exact(TokenKind::PostfixApply).is_some() {
             let identifier = self.identifier()?;
+            let identifier_span = self.last().unwrap().span;
+            full_span = full_span.extend(&identifier_span);
 
-            expr = Expression::FunctionCall(self.last().unwrap().span, identifier, vec![expr]);
+            expr = Expression::FunctionCall(identifier_span, full_span, identifier, vec![expr]);
         }
         Ok(expr)
     }
@@ -646,12 +649,15 @@ impl<'a> Parser<'a> {
 
     fn modulo(&mut self) -> Result<Expression> {
         let mut expr = self.unary()?;
+        let mut full_span = expr.full_span();
 
         while self.match_exact(TokenKind::Modulo).is_some() {
             let op_span = self.last().unwrap().span;
             let rhs = self.modulo()?;
 
-            expr = Expression::FunctionCall(op_span, "mod".into(), vec![expr, rhs]);
+            full_span = full_span.extend(&rhs.full_span());
+
+            expr = Expression::FunctionCall(op_span, full_span, "mod".into(), vec![expr, rhs]);
         }
 
         Ok(expr)
@@ -743,6 +749,7 @@ impl<'a> Parser<'a> {
             let args = self.arguments()?;
             return Ok(Expression::FunctionCall(
                 primary.full_span(),
+                primary.full_span().extend(&self.last().unwrap().span),
                 function_name,
                 args,
             ));
@@ -1597,6 +1604,7 @@ mod tests {
         parse_as_expression(
             &["1 + 1 // foo"],
             Expression::FunctionCall(
+                Span::dummy(),
                 Span::dummy(),
                 "foo".into(),
                 vec![binop!(scalar!(1.0), Add, scalar!(1.0))],

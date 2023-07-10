@@ -253,7 +253,7 @@ impl TypeChecker {
                     type_,
                 )
             }
-            ast::Expression::FunctionCall(span, function_name, args) => {
+            ast::Expression::FunctionCall(span, _full_span, function_name, args) => {
                 let (
                     callable_definition_span,
                     type_parameters,

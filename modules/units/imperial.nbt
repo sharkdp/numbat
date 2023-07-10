@@ -5,7 +5,7 @@ unit inch: Length = 0.0254 meter
 
 @aliases(feet, ft: short)
 unit foot: Length = 0.3048 meter
-assert_eq(1 foot, 12 inches, 0.001 inch)  # TODO: move those assertions somewhere else
+assert_eq(1 foot, 12 inches, 0.001 inch)  # TODO(minor): move those assertions somewhere else
 
 @aliases(yards, yd: short)
 unit yard: Length = 0.9144 meter

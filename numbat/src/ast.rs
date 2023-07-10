@@ -43,7 +43,7 @@ pub enum Expression {
         rhs: Box<Expression>,
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
-    FunctionCall(Span, String, Vec<Expression>),
+    FunctionCall(Span, Span, String, Vec<Expression>),
 }
 impl Expression {
     pub fn full_span(&self) -> Span {
@@ -64,7 +64,7 @@ impl Expression {
                 }
                 span
             }
-            Expression::FunctionCall(identifier_span, _, _) => *identifier_span, // TODO: this is not the full function call span
+            Expression::FunctionCall(_identifier_span, full_span, _, _) => *full_span,
         }
     }
 }
@@ -285,7 +285,7 @@ impl PrettyPrint for Expression {
                 rhs,
                 span_op: _,
             } => pretty_print_binop(op, lhs, rhs),
-            FunctionCall(_, name, args) => {
+            FunctionCall(_, _, name, args) => {
                 m::identifier(name)
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
@@ -660,7 +660,8 @@ impl ReplaceSpans for Expression {
                 rhs: Box::new(rhs.replace_spans()),
                 span_op: Some(Span::dummy()),
             },
-            Expression::FunctionCall(_, name, args) => Expression::FunctionCall(
+            Expression::FunctionCall(_, _, name, args) => Expression::FunctionCall(
+                Span::dummy(),
                 Span::dummy(),
                 name.clone(),
                 args.iter().map(|a| a.replace_spans()).collect(),

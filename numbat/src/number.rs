@@ -32,8 +32,6 @@ impl Number {
         //
         // [1] https://stackoverflow.com/a/43656339
         //
-        // TODO: this upper bound can be changed if we use a proper big-integer or
-        // big-decimal type.
         if self.is_integer() && self.0.abs() < 1e15 {
             format!("{number}")
         } else if number.abs() > 1e12 || number.abs() < 1e-6 {

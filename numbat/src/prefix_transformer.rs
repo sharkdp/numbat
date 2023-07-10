@@ -18,7 +18,7 @@ pub(crate) struct Transformer {
     pub dimension_names: Vec<String>,
 }
 
-// TODO: generalize this to a general-purpose transformer (not just for prefixes, could also be used for optimization)
+// TODO: generalize this to a general-purpose transformer (not just for prefixes, could also be used for optimization, inlining, span-replacement, etc.), e.g. using visitor pattern
 impl Transformer {
     pub fn new() -> Self {
         Self {
@@ -63,8 +63,9 @@ impl Transformer {
                 rhs: Box::new(self.transform_expression(*rhs)),
                 span_op,
             },
-            Expression::FunctionCall(span, name, args) => Expression::FunctionCall(
+            Expression::FunctionCall(span, full_span, name, args) => Expression::FunctionCall(
                 span,
+                full_span,
                 name,
                 args.into_iter()
                     .map(|arg| self.transform_expression(arg))
