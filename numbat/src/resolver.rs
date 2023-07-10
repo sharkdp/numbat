@@ -5,7 +5,7 @@ use std::{
 
 use crate::{ast::Statement, parser::parse, span::Span, Diagnostic, ParseError};
 
-use codespan_reporting::diagnostic::Label;
+use codespan_reporting::diagnostic::LabelStyle;
 use codespan_reporting::files::SimpleFiles;
 use thiserror::Error;
 
@@ -83,11 +83,10 @@ impl Resolver {
         parse(code, code_source_index).map_err(|inner| {
             let diagnostic = Diagnostic::error()
                 .with_message("while parsing")
-                .with_labels(vec![Label::primary(
-                    inner.span.code_source_index,
-                    (inner.span.start.byte)..(inner.span.end.byte),
-                )
-                .with_message(inner.kind.to_string())]);
+                .with_labels(vec![inner
+                    .span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner.kind.to_string())]);
             ResolverError::ParseError {
                 inner,
                 diagnostic: Box::new(diagnostic),
@@ -114,11 +113,9 @@ impl Resolver {
                     } else {
                         let diagnostic = Diagnostic::error()
                             .with_message("while resolving imports in")
-                            .with_labels(vec![Label::primary(
-                                span.code_source_index,
-                                (span.start.byte)..(span.end.byte),
-                            )
-                            .with_message("Unknown module")]);
+                            .with_labels(vec![span
+                                .diagnostic_label(LabelStyle::Primary)
+                                .with_message("Unknown module")]);
 
                         return Err(ResolverError::UnknownModule(
                             *span,

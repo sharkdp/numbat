@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use std::sync::OnceLock;
 
-use codespan_reporting::diagnostic::Label;
+use codespan_reporting::diagnostic::LabelStyle;
 
 use crate::span::Span;
 use crate::Diagnostic;
@@ -124,11 +124,9 @@ impl PrefixParser {
     fn identifier_clash_error(&self, name: &str, definition_span: Span) -> NameResolutionError {
         let diagnostic = Diagnostic::error()
             .with_message("identifier clash in definition")
-            .with_labels(vec![Label::primary(
-                definition_span.code_source_index,
-                (definition_span.start.byte)..(definition_span.end.byte), // TODO extract this into a function
-            )
-            .with_message("Identifier is already in use")]);
+            .with_labels(vec![definition_span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message("Identifier is already in use")]);
 
         NameResolutionError::IdentifierClash(name.into(), Box::new(diagnostic))
     }

@@ -1,3 +1,5 @@
+use codespan_reporting::diagnostic::{Label, LabelStyle};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SourceCodePositition {
     pub byte: usize,
@@ -40,6 +42,14 @@ impl Span {
             end: other.end,
             code_source_index: self.code_source_index,
         }
+    }
+
+    pub fn diagnostic_label(&self, style: LabelStyle) -> Label<usize> {
+        Label::new(
+            style,
+            self.code_source_index,
+            (self.start.byte)..(self.end.byte),
+        )
     }
 
     // TODO: make this #[cfg(test)]
