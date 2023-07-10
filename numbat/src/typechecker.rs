@@ -27,7 +27,7 @@ pub enum TypeCheckError {
         span_expected: Option<Span>,
         expected_name: &'static str,
         expected_type: BaseRepresentation,
-        span_actual: Option<Span>,
+        span_actual: Span,
         actual_name: &'static str,
         actual_type: BaseRepresentation,
     },
@@ -193,7 +193,7 @@ impl TypeChecker {
                             span_expected: Some(lhs.full_span()),
                             expected_name: " left hand side",
                             expected_type: lhs_type,
-                            span_actual: Some(rhs.full_span()),
+                            span_actual: rhs.full_span(),
                             actual_name: "right hand side",
                             actual_type: rhs_type,
                         })
@@ -346,7 +346,7 @@ impl TypeChecker {
                             span_expected: None, // TODO
                             expected_name: "parameter type",
                             expected_type: parameter_type.clone(),
-                            span_actual: Some(args[idx].full_span()),
+                            span_actual: args[idx].full_span(),
                             actual_name: " argument type",
                             actual_type: argument_type,
                         });
@@ -408,7 +408,7 @@ impl TypeChecker {
                             span_expected: type_annotation_span,
                             expected_name: "specified dimension",
                             expected_type: type_specified,
-                            span_actual: Some(expr.full_span()),
+                            span_actual: expr.full_span(),
                             actual_name: "   actual dimension",
                             actual_type: type_deduced,
                         });
@@ -454,7 +454,7 @@ impl TypeChecker {
                             span_expected: type_annotation_span,
                             expected_name: "specified dimension",
                             expected_type: type_specified,
-                            span_actual: Some(expr.full_span()),
+                            span_actual: expr.full_span(),
                             actual_name: "   actual dimension",
                             actual_type: type_deduced,
                         });
@@ -529,7 +529,7 @@ impl TypeChecker {
                                 span_expected: return_type_span,
                                 expected_name: "specified return type",
                                 expected_type: return_type_specified,
-                                span_actual: Some(body.unwrap().full_span()),
+                                span_actual: body.unwrap().full_span(),
                                 actual_name: "   actual return type",
                                 actual_type: return_type_deduced,
                             });
