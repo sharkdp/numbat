@@ -36,7 +36,7 @@ pub enum Expression {
     Scalar(Span, Number),
     Identifier(Span, String),
     UnitIdentifier(Span, Prefix, String, String),
-    Negate(Box<Expression>),
+    Negate(Span, Box<Expression>),
     BinaryOperator {
         op: BinaryOperator,
         lhs: Box<Expression>,
@@ -63,7 +63,7 @@ macro_rules! identifier {
 #[cfg(test)]
 macro_rules! negate {
     ( $rhs:expr ) => {{
-        Expression::Negate(Box::new($rhs))
+        Expression::Negate(Span::dummy(), Box::new($rhs))
     }};
 }
 
@@ -255,7 +255,7 @@ impl PrettyPrint for Expression {
             UnitIdentifier(_, prefix, _name, full_name) => {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
-            Negate(rhs) => m::operator("-") + with_parens(rhs),
+            Negate(_, rhs) => m::operator("-") + with_parens(rhs),
             BinaryOperator {
                 op,
                 lhs,
@@ -555,7 +555,9 @@ impl ReplaceSpans for Expression {
                 name.clone(),
                 full_name.clone(),
             ),
-            Expression::Negate(expr) => Expression::Negate(Box::new(expr.replace_spans())),
+            Expression::Negate(_, expr) => {
+                Expression::Negate(Span::dummy(), Box::new(expr.replace_spans()))
+            }
             Expression::BinaryOperator {
                 op,
                 lhs,

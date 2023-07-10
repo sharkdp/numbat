@@ -152,7 +152,7 @@ impl TypeChecker {
 
                 typed_ast::Expression::UnitIdentifier(prefix, name, full_name, type_)
             }
-            ast::Expression::Negate(expr) => {
+            ast::Expression::Negate(_, expr) => {
                 let checked_expr = self.check_expression(*expr)?;
                 let type_ = checked_expr.get_type();
                 typed_ast::Expression::Negate(Box::new(checked_expr), type_)

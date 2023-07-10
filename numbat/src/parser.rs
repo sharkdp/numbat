@@ -636,9 +636,10 @@ impl<'a> Parser<'a> {
 
     fn unary(&mut self) -> Result<Expression> {
         if self.match_exact(TokenKind::Minus).is_some() {
+            let span = self.last().unwrap().span;
             let rhs = self.unary()?;
 
-            Ok(Expression::Negate(Box::new(rhs)))
+            Ok(Expression::Negate(span, Box::new(rhs)))
         } else {
             self.ifactor()
         }
