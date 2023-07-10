@@ -3,9 +3,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{ast::Statement, parser::parse, span::Span, Diagnostic, ParseError};
+use crate::{ast::Statement, parser::parse, span::Span, ParseError};
 
-use codespan_reporting::diagnostic::LabelStyle;
 use codespan_reporting::files::SimpleFiles;
 use thiserror::Error;
 
@@ -33,13 +32,10 @@ pub enum CodeSource {
 #[derive(Error, Debug)]
 pub enum ResolverError {
     #[error("Unknown module '{1}'.")]
-    UnknownModule(Span, ModulePath, Box<Diagnostic>),
+    UnknownModule(Span, ModulePath),
 
-    #[error("{inner}")]
-    ParseError {
-        inner: ParseError,
-        diagnostic: Box<Diagnostic>,
-    },
+    #[error("{0}")]
+    ParseError(ParseError),
 }
 
 type Result<T> = std::result::Result<T, ResolverError>;
@@ -80,18 +76,7 @@ impl Resolver {
     }
 
     fn parse(&self, code: &str, code_source_index: usize) -> Result<Vec<Statement>> {
-        parse(code, code_source_index).map_err(|inner| {
-            let diagnostic = Diagnostic::error()
-                .with_message("while parsing")
-                .with_labels(vec![inner
-                    .span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner.kind.to_string())]);
-            ResolverError::ParseError {
-                inner,
-                diagnostic: Box::new(diagnostic),
-            }
-        })
+        parse(code, code_source_index).map_err(|inner| ResolverError::ParseError(inner))
     }
 
     fn inlining_pass(&mut self, program: &[Statement]) -> Result<(Vec<Statement>, bool)> {
@@ -111,17 +96,7 @@ impl Resolver {
                         }
                         performed_imports = true;
                     } else {
-                        let diagnostic = Diagnostic::error()
-                            .with_message("while resolving imports in")
-                            .with_labels(vec![span
-                                .diagnostic_label(LabelStyle::Primary)
-                                .with_message("Unknown module")]);
-
-                        return Err(ResolverError::UnknownModule(
-                            *span,
-                            module_path.clone(),
-                            Box::new(diagnostic),
-                        ));
+                        return Err(ResolverError::UnknownModule(*span, module_path.clone()));
                     }
                 }
                 statement => new_program.push(statement.clone()),

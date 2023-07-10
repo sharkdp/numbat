@@ -2,10 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use std::sync::OnceLock;
 
-use codespan_reporting::diagnostic::LabelStyle;
-
 use crate::span::Span;
-use crate::Diagnostic;
 use crate::{name_resolution::NameResolutionError, prefix::Prefix};
 
 static PREFIXES: OnceLock<Vec<(&'static str, &'static str, Prefix)>> = OnceLock::new();
@@ -122,13 +119,10 @@ impl PrefixParser {
     }
 
     fn identifier_clash_error(&self, name: &str, definition_span: Span) -> NameResolutionError {
-        let diagnostic = Diagnostic::error()
-            .with_message("identifier clash in definition")
-            .with_labels(vec![definition_span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message("Identifier is already in use")]);
-
-        NameResolutionError::IdentifierClash(name.into(), Box::new(diagnostic))
+        NameResolutionError::IdentifierClash {
+            conflicting_identifier: name.to_string(),
+            conflicting_definition: definition_span,
+        }
     }
 
     fn ensure_name_is_available(&self, name: &str, definition_span: Span) -> Result<()> {

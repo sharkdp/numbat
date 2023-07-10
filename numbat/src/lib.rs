@@ -2,6 +2,7 @@ mod arithmetic;
 mod ast;
 mod bytecode_interpreter;
 mod decorator;
+pub mod diagnostic;
 mod dimension;
 mod ffi;
 mod interpreter;
@@ -26,6 +27,7 @@ mod unit_registry;
 mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
+use diagnostic::ErrorDiagnostic;
 use interpreter::{Interpreter, RuntimeError};
 use prefix_transformer::Transformer;
 use resolver::CodeSource;
@@ -37,12 +39,11 @@ use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
 use ast::Statement;
+pub use diagnostic::Diagnostic;
 pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
-
-pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
 
 #[derive(Debug, Error)]
 pub enum NumbatError {
@@ -144,7 +145,7 @@ impl Context {
         Ok((transformed_statements, result))
     }
 
-    pub fn print_diagnostic(&self, diagnostic: &Diagnostic) {
+    pub fn print_diagnostic(&self, error: impl ErrorDiagnostic) {
         use codespan_reporting::term::{
             self,
             termcolor::{ColorChoice, StandardStream},
@@ -158,7 +159,7 @@ impl Context {
             &mut writer.lock(),
             &config,
             &self.resolver.files,
-            diagnostic,
+            &error.diagnostic(),
         )
         .unwrap();
     }
