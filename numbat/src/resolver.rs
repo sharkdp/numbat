@@ -206,7 +206,7 @@ mod tests {
                 Statement::DeclareVariable(
                     Span::dummy(),
                     "a".into(),
-                    Expression::Scalar(Number::from_f64(1.0)),
+                    Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
                     None
                 ),
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))

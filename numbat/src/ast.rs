@@ -33,7 +33,7 @@ impl PrettyPrint for BinaryOperator {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Scalar(Number),
+    Scalar(Span, Number),
     Identifier(Span, String),
     UnitIdentifier(Span, Prefix, String, String),
     Negate(Box<Expression>),
@@ -49,7 +49,7 @@ pub enum Expression {
 #[cfg(test)]
 macro_rules! scalar {
     ( $num:expr ) => {{
-        Expression::Scalar(Number::from_f64($num))
+        Expression::Scalar(Span::dummy(), Number::from_f64($num))
     }};
 }
 
@@ -94,11 +94,11 @@ fn pretty_scalar(Number(n): Number) -> Markup {
 
 fn with_parens(expr: &Expression) -> Markup {
     match expr {
-        Expression::Scalar(_)
-        | Expression::Identifier(_, _)
-        | Expression::UnitIdentifier(_, _, _, _)
-        | Expression::FunctionCall(_, _) => expr.pretty_print(),
-        Expression::Negate(_) | Expression::BinaryOperator { .. } => {
+        Expression::Scalar(..)
+        | Expression::Identifier(..)
+        | Expression::UnitIdentifier(..)
+        | Expression::FunctionCall(..) => expr.pretty_print(),
+        Expression::Negate(..) | Expression::BinaryOperator { .. } => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
         }
     }
@@ -112,8 +112,8 @@ fn with_parens_liberal(expr: &Expression) -> Markup {
             lhs,
             rhs,
             span_op: _,
-        } if matches!(**lhs, Expression::Scalar(_))
-            && matches!(**rhs, Expression::UnitIdentifier(_, _, _, _)) =>
+        } if matches!(**lhs, Expression::Scalar(..))
+            && matches!(**rhs, Expression::UnitIdentifier(..)) =>
         {
             expr.pretty_print()
         }
@@ -128,13 +128,13 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             lhs.pretty_print() + op.pretty_print() + rhs.pretty_print()
         }
         BinaryOperator::Mul => match (lhs, rhs) {
-            (Expression::Scalar(s), Expression::UnitIdentifier(_, prefix, _name, full_name)) => {
+            (Expression::Scalar(_, s), Expression::UnitIdentifier(_, prefix, _name, full_name)) => {
                 // Fuse multiplication of a scalar and a unit to a quantity
                 pretty_scalar(*s)
                     + m::space()
                     + m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
-            (Expression::Scalar(s), Expression::Identifier(_, name)) => {
+            (Expression::Scalar(_, s), Expression::Identifier(_, name)) => {
                 // Fuse multiplication of a scalar and identifier
                 pretty_scalar(*s) + m::space() + m::identifier(name)
             }
@@ -235,10 +235,10 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
 
             add_parens_if_needed(lhs) + op.pretty_print() + add_parens_if_needed(rhs)
         }
-        BinaryOperator::Power if matches!(rhs, Expression::Scalar(n) if n.to_f64() == 2.0) => {
+        BinaryOperator::Power if matches!(rhs, Expression::Scalar(_, n) if n.to_f64() == 2.0) => {
             with_parens(lhs) + m::operator("²")
         }
-        BinaryOperator::Power if matches!(rhs, Expression::Scalar(n) if n.to_f64() == 3.0) => {
+        BinaryOperator::Power if matches!(rhs, Expression::Scalar(_, n) if n.to_f64() == 3.0) => {
             with_parens(lhs) + m::operator("³")
         }
         _ => with_parens(lhs) + op.pretty_print() + with_parens(rhs),
@@ -250,7 +250,7 @@ impl PrettyPrint for Expression {
         use Expression::*;
 
         match self {
-            Scalar(n) => pretty_scalar(*n),
+            Scalar(_, n) => pretty_scalar(*n),
             Identifier(_, name) => m::identifier(name),
             UnitIdentifier(_, prefix, _name, full_name) => {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))
@@ -547,7 +547,7 @@ pub trait ReplaceSpans {
 impl ReplaceSpans for Expression {
     fn replace_spans(&self) -> Self {
         match self {
-            e @ Expression::Scalar(_) => e.clone(),
+            Expression::Scalar(_, name) => Expression::Scalar(Span::dummy(), name.clone()),
             Expression::Identifier(_, name) => Expression::Identifier(Span::dummy(), name.clone()),
             Expression::UnitIdentifier(_, prefix, name, full_name) => Expression::UnitIdentifier(
                 Span::dummy(),

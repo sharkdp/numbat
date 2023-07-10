@@ -699,7 +699,10 @@ impl<'a> Parser<'a> {
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Power,
                 lhs: Box::new(expr),
-                rhs: Box::new(Expression::Scalar(Number::from_f64(exp as f64))),
+                rhs: Box::new(Expression::Scalar(
+                    exponent.span,
+                    Number::from_f64(exp as f64),
+                )),
                 span_op: None,
             };
         }
@@ -743,21 +746,31 @@ impl<'a> Parser<'a> {
         // This function needs to be kept in sync with `next_token_could_start_primary` below.
 
         if let Some(num) = self.match_exact(TokenKind::Number) {
-            Ok(Expression::Scalar(Number::from_f64(
-                num.lexeme.parse::<f64>().unwrap(),
-            )))
+            Ok(Expression::Scalar(
+                self.last().unwrap().span,
+                Number::from_f64(num.lexeme.parse::<f64>().unwrap()),
+            ))
         } else if let Some(hex_int) = self.match_exact(TokenKind::IntegerWithBase(16)) {
-            Ok(Expression::Scalar(Number::from_f64(
-                i128::from_str_radix(&hex_int.lexeme[2..], 16).unwrap() as f64, // TODO: i128 limits our precision here
-            )))
+            Ok(Expression::Scalar(
+                self.last().unwrap().span,
+                Number::from_f64(
+                    i128::from_str_radix(&hex_int.lexeme[2..], 16).unwrap() as f64, // TODO: i128 limits our precision here
+                ),
+            ))
         } else if let Some(oct_int) = self.match_exact(TokenKind::IntegerWithBase(8)) {
-            Ok(Expression::Scalar(Number::from_f64(
-                i128::from_str_radix(&oct_int.lexeme[2..], 8).unwrap() as f64, // TODO: i128 limits our precision here
-            )))
+            Ok(Expression::Scalar(
+                self.last().unwrap().span,
+                Number::from_f64(
+                    i128::from_str_radix(&oct_int.lexeme[2..], 8).unwrap() as f64, // TODO: i128 limits our precision here
+                ),
+            ))
         } else if let Some(bin_int) = self.match_exact(TokenKind::IntegerWithBase(2)) {
-            Ok(Expression::Scalar(Number::from_f64(
-                i128::from_str_radix(&bin_int.lexeme[2..], 2).unwrap() as f64, // TODO: i128 limits our precision here
-            )))
+            Ok(Expression::Scalar(
+                self.last().unwrap().span,
+                Number::from_f64(
+                    i128::from_str_radix(&bin_int.lexeme[2..], 2).unwrap() as f64, // TODO: i128 limits our precision here
+                ),
+            ))
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             let span = self.last().unwrap().span;
             Ok(Expression::Identifier(span, identifier.lexeme.clone()))

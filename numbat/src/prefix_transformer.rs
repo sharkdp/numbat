@@ -32,7 +32,7 @@ impl Transformer {
 
     fn transform_expression(&self, expression: Expression) -> Expression {
         match expression {
-            expr @ Expression::Scalar(_) => expr,
+            expr @ Expression::Scalar(..) => expr,
             Expression::Identifier(span, identifier) => {
                 if let PrefixParserResult::UnitIdentifier(prefix, unit_name, full_name) =
                     self.prefix_parser.parse(&identifier)

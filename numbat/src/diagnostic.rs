@@ -61,7 +61,13 @@ impl ErrorDiagnostic for TypeCheckError {
                 d.with_labels(vec![span.diagnostic_label(LabelStyle::Primary)])
             }
             TypeCheckError::UnknownFunction(_) => d,
-            TypeCheckError::IncompatibleDimensions(_, _, _, _, _) => d,
+            TypeCheckError::IncompatibleDimensions(span, _, _, _, _, _) => {
+                if let Some(span) = span {
+                    d.with_labels(vec![span.diagnostic_label(LabelStyle::Primary)])
+                } else {
+                    d
+                }
+            }
             TypeCheckError::NonScalarExponent(_) => d,
             TypeCheckError::UnsupportedConstEvalExpression(_) => d,
             TypeCheckError::DivisionByZeroInConstEvalExpression => d,

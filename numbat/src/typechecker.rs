@@ -20,8 +20,9 @@ pub enum TypeCheckError {
     #[error("Unknown function '{0}'.")]
     UnknownFunction(String),
 
-    #[error("Incompatible dimensions in {0}:\n    {1}: {2}\n    {3}: {4}")]
+    #[error("Incompatible dimensions in {1}:\n    {2}: {3}\n    {4}: {5}")]
     IncompatibleDimensions(
+        Option<Span>,
         String,
         &'static str,
         BaseRepresentation,
@@ -140,7 +141,7 @@ impl TypeChecker {
 
     pub(crate) fn check_expression(&self, ast: ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
-            ast::Expression::Scalar(n) => typed_ast::Expression::Scalar(n),
+            ast::Expression::Scalar(_, n) => typed_ast::Expression::Scalar(n),
             ast::Expression::Identifier(span, name) => {
                 let type_ = self.type_for_identifier(span, &name)?.clone();
 
@@ -170,6 +171,7 @@ impl TypeChecker {
                     let rhs_type = rhs.get_type();
                     if lhs_type != rhs_type {
                         Err(TypeCheckError::IncompatibleDimensions(
+                            span_op,
                             "binary operator".into(),
                             " left hand side",
                             lhs_type,
@@ -303,6 +305,7 @@ impl TypeChecker {
 
                     if parameter_type != argument_type {
                         return Err(TypeCheckError::IncompatibleDimensions(
+                            None, // TODO
                             format!(
                                 "argument {num} of function call to '{name}'",
                                 num = idx + 1,
@@ -360,6 +363,7 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions(
+                            None, // TODO
                             "variable declaration".into(),
                             "specified dimension",
                             type_specified,
@@ -401,6 +405,7 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions(
+                            None, // TODO
                             "derived unit declaration".into(),
                             "specified dimension",
                             type_specified,
@@ -471,6 +476,7 @@ impl TypeChecker {
                     if let Some(return_type_specified) = return_type_specified {
                         if return_type_deduced != return_type_specified {
                             return Err(TypeCheckError::IncompatibleDimensions(
+                                None, // TODO
                                 "function return type".into(),
                                 "specified return type",
                                 return_type_specified,
@@ -649,7 +655,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("a + b"),
-            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
         ));
     }
 
@@ -709,7 +715,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("let x: A = b"),
-            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
         ));
     }
 
@@ -720,7 +726,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("unit my_c: C = a"),
-            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_c() && t2 == type_a()
+            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_c() && t2 == type_a()
         ));
     }
 
@@ -734,13 +740,13 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
-            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_c() && t2 == type_a() / type_b()
+            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_c() && t2 == type_a() / type_b()
         ));
 
         assert!(matches!(
             get_typecheck_error("fn f(x: A) -> A = a\n\
                                  f(b)"),
-            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
+            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2) if t1 == type_a() && t2 == type_b()
         ));
     }
 
@@ -770,7 +776,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("fn f<T1, T2>(x: T1, y: T2) -> T2/T1 = x/y"),
-            TypeCheckError::IncompatibleDimensions(_, _, t1, _, t2)
+            TypeCheckError::IncompatibleDimensions(_, _, _, t1, _, t2)
                 if t1 == base_type("T2") / base_type("T1") &&
                    t2 == base_type("T1") / base_type("T2")
         ));
@@ -898,7 +904,7 @@ mod tests {
                 mean(1 a, 1 b)
             "
             ),
-            TypeCheckError::IncompatibleDimensions(_, _, _, _, _)
+            TypeCheckError::IncompatibleDimensions(..)
         ));
     }
 
