@@ -33,12 +33,12 @@ pub enum CodeSource {
 #[derive(Error, Debug)]
 pub enum ResolverError {
     #[error("Unknown module '{1}'.")]
-    UnknownModule(Span, ModulePath, Diagnostic),
+    UnknownModule(Span, ModulePath, Box<Diagnostic>),
 
     #[error("{inner}")]
     ParseError {
         inner: ParseError,
-        diagnostic: Diagnostic,
+        diagnostic: Box<Diagnostic>,
     },
 }
 
@@ -88,7 +88,10 @@ impl Resolver {
                     (inner.span.start.byte)..(inner.span.end.byte),
                 )
                 .with_message(inner.kind.to_string())]);
-            ResolverError::ParseError { inner, diagnostic }
+            ResolverError::ParseError {
+                inner,
+                diagnostic: Box::new(diagnostic),
+            }
         })
     }
 
@@ -120,7 +123,7 @@ impl Resolver {
                         return Err(ResolverError::UnknownModule(
                             *span,
                             module_path.clone(),
-                            diagnostic,
+                            Box::new(diagnostic),
                         ));
                     }
                 }
@@ -151,13 +154,8 @@ pub trait ModuleImporter {
     fn import(&self, path: &ModulePath) -> Option<(String, Option<PathBuf>)>;
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct NullImporter {}
-
-impl NullImporter {
-    pub fn new() -> NullImporter {
-        Self {}
-    }
-}
 
 impl ModuleImporter for NullImporter {
     fn import(&self, _: &ModulePath) -> Option<(String, Option<PathBuf>)> {
@@ -165,15 +163,12 @@ impl ModuleImporter for NullImporter {
     }
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct FileSystemImporter {
     root_paths: Vec<PathBuf>,
 }
 
 impl FileSystemImporter {
-    pub fn new() -> Self {
-        Self { root_paths: vec![] }
-    }
-
     pub fn add_path<P: AsRef<Path>>(&mut self, path: P) {
         self.root_paths.push(path.as_ref().to_owned());
     }

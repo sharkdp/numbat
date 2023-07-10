@@ -76,7 +76,7 @@ impl Context {
     }
 
     pub fn new_without_importer() -> Self {
-        Self::new(NullImporter::new())
+        Self::new(NullImporter::default())
     }
 
     pub fn set_debug(&mut self, activate: bool) {

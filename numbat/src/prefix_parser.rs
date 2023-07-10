@@ -130,7 +130,7 @@ impl PrefixParser {
             )
             .with_message("Identifier is already in use")]);
 
-        NameResolutionError::IdentifierClash(name.into(), diagnostic)
+        NameResolutionError::IdentifierClash(name.into(), Box::new(diagnostic))
     }
 
     fn ensure_name_is_available(&self, name: &str, definition_span: Span) -> Result<()> {

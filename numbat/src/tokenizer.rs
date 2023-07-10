@@ -146,9 +146,7 @@ impl Tokenizer {
         tokens.push(Token {
             kind: TokenKind::Eof,
             lexeme: "".into(),
-            span: self
-                .current
-                .to_single_character_span(self.code_source_index),
+            span: self.current.single_character_span(self.code_source_index),
         });
 
         Ok(tokens)
@@ -164,9 +162,7 @@ impl Tokenizer {
                 kind: TokenizerErrorKind::ExpectedDigit {
                     character: self.peek(),
                 },
-                span: self
-                    .current
-                    .to_single_character_span(self.code_source_index),
+                span: self.current.single_character_span(self.code_source_index),
             });
         }
 
@@ -182,9 +178,7 @@ impl Tokenizer {
         {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(self.peek().unwrap()),
-                span: self
-                    .current
-                    .to_single_character_span(self.code_source_index),
+                span: self.current.single_character_span(self.code_source_index),
             });
         }
 
@@ -245,7 +239,7 @@ impl Tokenizer {
         let tokenizer_error = |position: &SourceCodePositition, kind| -> Result<Option<Token>> {
             Err(TokenizerError {
                 kind,
-                span: position.to_single_character_span(code_source_index),
+                span: position.single_character_span(code_source_index),
             })
         };
 

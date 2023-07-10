@@ -16,7 +16,7 @@ impl SourceCodePositition {
         }
     }
 
-    pub fn to_single_character_span(&self, code_source_index: usize) -> Span {
+    pub fn single_character_span(&self, code_source_index: usize) -> Span {
         Span {
             start: *self,
             end: *self,

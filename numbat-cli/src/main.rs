@@ -92,7 +92,7 @@ impl Cli {
     fn new() -> Self {
         let args = Args::parse();
 
-        let mut importer = FileSystemImporter::new();
+        let mut importer = FileSystemImporter::default();
         importer.add_path(Self::get_modules_path());
 
         let mut context = Context::new(importer);
@@ -332,13 +332,13 @@ impl Cli {
             Err(NumbatError::ResolverError(e)) => {
                 match e {
                     numbat::resolver::ResolverError::UnknownModule(_, _, diagnostic) => {
-                        self.print_digagnostic(diagnostic);
+                        self.print_digagnostic(*diagnostic);
                     }
                     numbat::resolver::ResolverError::ParseError {
                         inner: _,
                         diagnostic,
                     } => {
-                        self.print_digagnostic(diagnostic);
+                        self.print_digagnostic(*diagnostic);
                     }
                 }
                 execution_mode.exit_status_in_case_of_error()
@@ -347,7 +347,7 @@ impl Cli {
                 _,
                 diagnostic,
             ))) => {
-                self.print_digagnostic(diagnostic);
+                self.print_digagnostic(*diagnostic);
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::TypeCheckError(e)) => {
