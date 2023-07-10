@@ -41,6 +41,7 @@ pub enum Expression {
         op: BinaryOperator,
         lhs: Box<Expression>,
         rhs: Box<Expression>,
+        span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
     FunctionCall(String, Vec<Expression>),
 }
@@ -73,6 +74,7 @@ macro_rules! binop {
             op: BinaryOperator::$op,
             lhs: Box::new($lhs),
             rhs: Box::new($rhs),
+            span_op: Some(Span::dummy()),
         }
     }};
 }
@@ -109,6 +111,7 @@ fn with_parens_liberal(expr: &Expression) -> Markup {
             op: BinaryOperator::Mul,
             lhs,
             rhs,
+            span_op: _,
         } if matches!(**lhs, Expression::Scalar(_))
             && matches!(**rhs, Expression::UnitIdentifier(_, _, _, _)) =>
         {
@@ -253,7 +256,12 @@ impl PrettyPrint for Expression {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
             Negate(rhs) => m::operator("-") + with_parens(rhs),
-            BinaryOperator { op, lhs, rhs } => pretty_print_binop(op, lhs, rhs),
+            BinaryOperator {
+                op,
+                lhs,
+                rhs,
+                span_op: _,
+            } => pretty_print_binop(op, lhs, rhs),
             FunctionCall(name, args) => {
                 m::identifier(name)
                     + m::operator("(")
@@ -548,10 +556,16 @@ impl ReplaceSpans for Expression {
                 full_name.clone(),
             ),
             Expression::Negate(expr) => Expression::Negate(Box::new(expr.replace_spans())),
-            Expression::BinaryOperator { op, lhs, rhs } => Expression::BinaryOperator {
+            Expression::BinaryOperator {
+                op,
+                lhs,
+                rhs,
+                span_op: _,
+            } => Expression::BinaryOperator {
                 op: *op,
                 lhs: Box::new(lhs.replace_spans()),
                 rhs: Box::new(rhs.replace_spans()),
+                span_op: Some(Span::dummy()),
             },
             Expression::FunctionCall(name, args) => Expression::FunctionCall(
                 name.clone(),

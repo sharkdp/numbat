@@ -547,12 +547,14 @@ impl<'a> Parser<'a> {
     fn conversion(&mut self) -> Result<Expression> {
         let mut expr = self.term()?;
         while self.match_exact(TokenKind::Arrow).is_some() {
+            let span_op = Some(self.last().unwrap().span);
             let rhs = self.term()?;
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::ConvertTo,
                 lhs: Box::new(expr),
                 rhs: Box::new(rhs),
+                span_op,
             };
         }
         Ok(expr)
@@ -561,6 +563,7 @@ impl<'a> Parser<'a> {
     fn term(&mut self) -> Result<Expression> {
         let mut expr = self.factor()?;
         while let Some(operator_token) = self.match_any(&[TokenKind::Plus, TokenKind::Minus]) {
+            let span_op = Some(self.last().unwrap().span);
             let operator = if operator_token.kind == TokenKind::Plus {
                 BinaryOperator::Add
             } else {
@@ -573,6 +576,7 @@ impl<'a> Parser<'a> {
                 op: operator,
                 lhs: Box::new(expr),
                 rhs: Box::new(rhs),
+                span_op,
             };
         }
         Ok(expr)
@@ -581,6 +585,7 @@ impl<'a> Parser<'a> {
     fn factor(&mut self) -> Result<Expression> {
         let mut expr = self.per_factor()?;
         while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
+            let span_op = Some(self.last().unwrap().span);
             let op = if operator_token.kind == TokenKind::Multiply {
                 BinaryOperator::Mul
             } else {
@@ -593,6 +598,7 @@ impl<'a> Parser<'a> {
                 op,
                 lhs: Box::new(expr),
                 rhs: Box::new(rhs),
+                span_op,
             };
         }
         Ok(expr)
@@ -602,12 +608,14 @@ impl<'a> Parser<'a> {
         let mut expr = self.modulo()?;
 
         while self.match_exact(TokenKind::Per).is_some() {
+            let span_op = Some(self.last().unwrap().span);
             let rhs = self.per_factor()?;
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Div,
                 lhs: Box::new(expr),
                 rhs: Box::new(rhs),
+                span_op,
             };
         }
 
@@ -645,6 +653,7 @@ impl<'a> Parser<'a> {
                 op: BinaryOperator::Mul,
                 lhs: Box::new(expr),
                 rhs: Box::new(rhs),
+                span_op: None,
             };
         }
 
@@ -654,12 +663,14 @@ impl<'a> Parser<'a> {
     fn power(&mut self) -> Result<Expression> {
         let mut expr = self.unicode_power()?;
         if self.match_exact(TokenKind::Power).is_some() {
+            let span_op = Some(self.last().unwrap().span);
             let rhs = self.power()?;
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Power,
                 lhs: Box::new(expr),
                 rhs: Box::new(rhs),
+                span_op,
             };
         }
         Ok(expr)
@@ -689,6 +700,7 @@ impl<'a> Parser<'a> {
                 op: BinaryOperator::Power,
                 lhs: Box::new(expr),
                 rhs: Box::new(Expression::Scalar(Number::from_f64(exp as f64))),
+                span_op: None,
             };
         }
 
