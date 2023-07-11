@@ -411,7 +411,7 @@ impl Tokenizer {
         let c = self.input[self.current_index];
         self.last = self.current;
         self.current_index += 1;
-        self.current.byte += c.len_utf8();
+        self.current.byte += c.len_utf8() as u32;
         self.current.position += 1;
         c
     }
@@ -444,7 +444,7 @@ pub fn tokenize(input: &str, code_source_index: usize) -> Result<Vec<Token>> {
 }
 
 #[cfg(test)]
-fn tokenize_reduced(input: &str) -> Vec<(String, TokenKind, (usize, usize))> {
+fn tokenize_reduced(input: &str) -> Vec<(String, TokenKind, (u32, u32))> {
     tokenize(input, 0)
         .unwrap()
         .iter()

@@ -2,9 +2,9 @@ use codespan_reporting::diagnostic::{Label, LabelStyle};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SourceCodePositition {
-    pub byte: usize,
-    pub line: usize,
-    pub position: usize,
+    pub byte: u32,
+    pub line: u32,
+    pub position: u32,
 }
 
 impl SourceCodePositition {
@@ -46,7 +46,7 @@ impl Span {
         Label::new(
             style,
             self.code_source_index,
-            (self.start.byte)..(self.end.byte),
+            (self.start.byte as usize)..(self.end.byte as usize),
         )
     }
 
