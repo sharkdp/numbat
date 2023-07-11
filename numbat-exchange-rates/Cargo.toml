@@ -1,0 +1,8 @@
+[package]
+name = "numbat-exchange-rates"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+quick-xml = "0.29.0"
+reqwest = { version = "0.11.18", features = ["blocking"] }

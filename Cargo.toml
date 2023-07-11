@@ -3,6 +3,7 @@ resolver = "2"
 
 members = [
     "numbat",
+    "numbat-exchange-rates",
     "numbat-cli",
 ]
 
