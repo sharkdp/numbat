@@ -1,3 +1,5 @@
+use units::si
+
 ### Other units
 
 @metric_prefixes
@@ -49,5 +51,4 @@ unit molal: AmountOfSubstance / Mass = 1 mole / kilogram
 @aliases(Wh: short)
 unit watthour = W h
 
-unit mph = miles per hour
 unit kph = kilometer per hour

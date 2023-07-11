@@ -1,3 +1,5 @@
+use units::si
+
 @aliases(knots, kn: short, kt: short)
 unit knot: Speed = 463 m / 900 s
 

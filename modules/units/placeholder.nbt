@@ -1,3 +1,5 @@
+use units::imperial
+
 # Smallest addressable element on a digital display
 dimension Pixel
 

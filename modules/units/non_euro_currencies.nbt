@@ -1,3 +1,6 @@
+use core::scalar
+use units::currency
+
 # This module is currently not part of the prelude, because the 'exchange_rate_XXX' calls
 # are blocking. In the CLI application, we do however load this module asynchronously after
 # prefetching the exchange rates.

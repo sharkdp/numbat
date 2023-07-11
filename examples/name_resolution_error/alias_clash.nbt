@@ -4,4 +4,4 @@ dimension Foo
 unit foo: Length
 
 @aliases(kilofoo)
-unit bar: Length
+unit baz: Length

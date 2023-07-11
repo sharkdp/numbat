@@ -1,3 +1,5 @@
+use units::si
+
 ### Temperature conversion functions K <-> °C and K <-> °F
 
 let offset_celsius = 273.15

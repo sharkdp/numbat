@@ -9,7 +9,7 @@ use highlighter::NumbatHighlighter;
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::{CodeSource, FileSystemImporter};
-use numbat::{markup, NameResolutionError};
+use numbat::{markup, NameResolutionError, RuntimeError};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -359,8 +359,14 @@ impl Cli {
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::RuntimeError(e)) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
+                if execution_mode == ExecutionMode::Interactive
+                    && matches!(e, RuntimeError::NoStatements)
+                {
+                    ControlFlow::Continue(())
+                } else {
+                    self.print_diagnostic(e);
+                    execution_mode.exit_status_in_case_of_error()
+                }
             }
         }
     }

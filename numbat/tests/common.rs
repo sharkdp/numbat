@@ -5,19 +5,20 @@ use numbat::{
     Context,
 };
 
-pub fn get_test_context() -> Context {
+pub fn get_test_context_without_prelude() -> Context {
     let module_path = Path::new("../modules");
 
     let mut importer = FileSystemImporter::default();
     importer.add_path(module_path);
 
-    let mut context = Context::new(importer);
+    Context::new(importer)
+}
+
+pub fn get_test_context() -> Context {
+    let mut context = get_test_context_without_prelude();
 
     assert!(context
-        .interpret(
-            &std::fs::read_to_string(module_path.join("prelude.nbt")).unwrap(),
-            CodeSource::Text
-        )
+        .interpret("use prelude", CodeSource::Text)
         .expect("Error while running prelude")
         .1
         .is_success());

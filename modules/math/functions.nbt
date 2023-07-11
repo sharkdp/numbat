@@ -1,3 +1,5 @@
+use core::scalar
+
 ### Mathematical functions
 
 fn abs<T>(x: T) -> T

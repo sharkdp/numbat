@@ -44,6 +44,7 @@ pub(crate) struct Resolver {
     importer: Box<dyn ModuleImporter + Send>,
     code_sources: Vec<CodeSource>,
     pub files: SimpleFiles<String, String>,
+    imported_modules: Vec<ModulePath>,
 }
 
 impl Resolver {
@@ -52,6 +53,7 @@ impl Resolver {
             importer: Box::new(importer),
             code_sources: vec![],
             files: SimpleFiles::new(),
+            imported_modules: vec![],
         }
     }
 
@@ -86,17 +88,20 @@ impl Resolver {
         for statement in program {
             match statement {
                 Statement::ModuleImport(span, module_path) => {
-                    if let Some((code, filesystem_path)) = self.importer.import(module_path) {
-                        let index = self.add_code_source(
-                            CodeSource::Module(module_path.clone(), filesystem_path),
-                            &code,
-                        );
-                        for statement in self.parse(&code, index)? {
-                            new_program.push(statement);
+                    if !self.imported_modules.contains(module_path) {
+                        self.imported_modules.push(module_path.clone());
+                        if let Some((code, filesystem_path)) = self.importer.import(module_path) {
+                            let index = self.add_code_source(
+                                CodeSource::Module(module_path.clone(), filesystem_path),
+                                &code,
+                            );
+                            for statement in self.parse(&code, index)? {
+                                new_program.push(statement);
+                            }
+                            performed_imports = true;
+                        } else {
+                            return Err(ResolverError::UnknownModule(*span, module_path.clone()));
                         }
-                        performed_imports = true;
-                    } else {
-                        return Err(ResolverError::UnknownModule(*span, module_path.clone()));
                     }
                 }
                 statement => new_program.push(statement.clone()),
@@ -191,6 +196,36 @@ mod tests {
         use crate::ast::ReplaceSpans;
 
         let program = "
+        use foo::bar
+        a
+        ";
+
+        let importer = TestImporter {};
+
+        let mut resolver = Resolver::new(importer);
+        let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
+
+        assert_eq!(
+            &program_inlined.replace_spans(),
+            &[
+                Statement::DeclareVariable {
+                    identifier_span: Span::dummy(),
+                    identifier: "a".into(),
+                    expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
+                    type_annotation_span: None,
+                    type_annotation: None
+                },
+                Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
+            ]
+        );
+    }
+
+    #[test]
+    fn resolver_repeated_includes() {
+        use crate::ast::ReplaceSpans;
+
+        let program = "
+        use foo::bar
         use foo::bar
         a
         ";

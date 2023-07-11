@@ -1,3 +1,5 @@
+use units::imperial
+
 # The furlong–firkin–fortnight system
 # https://en.wikipedia.org/wiki/FFF_system
 

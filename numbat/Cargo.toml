@@ -16,3 +16,4 @@ numbat-exchange-rates = { path = "../numbat-exchange-rates" }
 
 [dev-dependencies]
 approx = "0.5"
+glob = "0.3"

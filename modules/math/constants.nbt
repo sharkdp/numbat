@@ -1,3 +1,6 @@
+use core::scalar
+use math::functions
+
 ### Mathematical constants
 
 let pi = 3.14159265358979323846264338327950288

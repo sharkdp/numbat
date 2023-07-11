@@ -8,8 +8,19 @@ use numbat::{InterpreterResult, NumbatError};
 use std::ffi::OsStr;
 use std::fs;
 
-fn assert_typechecks_and_runs(code: &str) {
+use crate::common::get_test_context_without_prelude;
+
+fn assert_runs(code: &str) {
     let result = get_test_context().interpret(code, CodeSource::Text);
+    assert!(result.is_ok());
+    assert!(matches!(
+        result.unwrap().1,
+        InterpreterResult::Quantity(_) | InterpreterResult::Continue
+    ));
+}
+
+fn assert_runs_without_prelude(code: &str) {
+    let result = get_test_context_without_prelude().interpret(code, CodeSource::Text);
     assert!(result.is_ok());
     assert!(matches!(
         result.unwrap().1,
@@ -45,9 +56,9 @@ fn assert_runtime_error(code: &str) {
     ));
 }
 
-fn run_for_each_numbat_file_in(folder: &str, f: impl Fn(&str)) {
-    for entry in fs::read_dir(folder).unwrap() {
-        let path = entry.unwrap().path();
+fn run_for_each_file(glob_pattern: &str, f: impl Fn(&str)) {
+    for entry in glob::glob(glob_pattern).unwrap() {
+        let path = entry.unwrap();
         if path.extension() != Some(OsStr::new("nbt")) {
             continue;
         }
@@ -60,29 +71,34 @@ fn run_for_each_numbat_file_in(folder: &str, f: impl Fn(&str)) {
 }
 
 #[test]
+fn modules_are_self_consistent() {
+    run_for_each_file("../modules/**/*.nbt", assert_runs_without_prelude);
+}
+
+#[test]
 fn examples_can_be_parsed_and_interpreted() {
-    run_for_each_numbat_file_in("../examples/", assert_typechecks_and_runs);
+    run_for_each_file("../examples/*.nbt", assert_runs);
 }
 
 #[test]
 fn parse_error_examples_fail_as_expected() {
-    run_for_each_numbat_file_in("../examples/parse_error", assert_parse_error);
+    run_for_each_file("../examples/parse_error/*.nbt", assert_parse_error);
 }
 
 #[test]
 fn name_resolution_error_examples_fail_as_expected() {
-    run_for_each_numbat_file_in(
-        "../examples/name_resolution_error",
+    run_for_each_file(
+        "../examples/name_resolution_error/*.nbt",
         assert_name_resolution_error,
     );
 }
 
 #[test]
 fn typecheck_error_examples_fail_as_expected() {
-    run_for_each_numbat_file_in("../examples/typecheck_error", assert_typecheck_error);
+    run_for_each_file("../examples/typecheck_error/*.nbt", assert_typecheck_error);
 }
 
 #[test]
 fn runtime_error_examples_fail_as_expected() {
-    run_for_each_numbat_file_in("../examples/runtime_error", assert_runtime_error);
+    run_for_each_file("../examples/runtime_error/*.nbt", assert_runtime_error);
 }

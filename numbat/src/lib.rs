@@ -30,7 +30,7 @@ mod vm;
 use bytecode_interpreter::BytecodeInterpreter;
 use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
-use interpreter::{Interpreter, RuntimeError};
+use interpreter::Interpreter;
 use prefix_transformer::Transformer;
 use resolver::CodeSource;
 use resolver::ModuleImporter;
@@ -44,6 +44,7 @@ use ast::Statement;
 pub use diagnostic::Diagnostic;
 pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
+pub use interpreter::RuntimeError;
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
 
