@@ -274,7 +274,12 @@ impl Tokenizer {
                     has_advanced = true;
                 }
 
-                if !has_advanced || self.peek().map(is_identifier_char).unwrap_or(false) {
+                if !has_advanced
+                    || self
+                        .peek()
+                        .map(|c| is_identifier_char(c) || c == '.')
+                        .unwrap_or(false)
+                {
                     return tokenizer_error(
                         &self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {

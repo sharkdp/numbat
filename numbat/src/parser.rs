@@ -634,7 +634,7 @@ impl<'a> Parser<'a> {
 
         while self.match_exact(TokenKind::Per).is_some() {
             let span_op = Some(self.last().unwrap().span);
-            let rhs = self.per_factor()?;
+            let rhs = self.modulo()?;
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Div,
@@ -1101,6 +1101,7 @@ mod tests {
         parse_as_expression(&["-123.45"], negate!(scalar!(123.45)));
         parse_as_expression(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
         parse_as_expression(&["-x", " - x"], negate!(identifier!("x")));
+        parse_as_expression(&["-0.61", "-.61", "-  .61"], negate!(scalar!(0.61)));
 
         parse_as_expression(
             &["-1 + 2"],
@@ -1113,6 +1114,8 @@ mod tests {
         parse_as_expression(&["1e3"], scalar!(1.0e3));
         parse_as_expression(&["1e+3"], scalar!(1.0e+3));
         parse_as_expression(&["1e-3"], scalar!(1.0e-3));
+
+        parse_as_expression(&["-1e-3"], negate!(scalar!(1.0e-3)));
 
         parse_as_expression(&["123.456e12"], scalar!(123.456e12));
         parse_as_expression(&["123.456e+12"], scalar!(123.456e+12));
@@ -1147,6 +1150,9 @@ mod tests {
         should_fail(&["0xABCDU"]);
         should_fail(&["0o12348"]);
         should_fail(&["0b10102"]);
+
+        // Until we support hexadecimal float notation
+        should_fail(&["0x1.2", "0b1.0", "0o1.0", "0x.1", "0b.0", "0o.1"]);
     }
 
     #[test]
@@ -1185,6 +1191,11 @@ mod tests {
             binop!(scalar!(1.0), Div, scalar!(2.0)),
         );
 
+        parse_as_expression(
+            &["1/2/3", "(1/2)/3", "1 per 2 per 3"],
+            binop!(binop!(scalar!(1.0), Div, scalar!(2.0)), Div, scalar!(3.0)),
+        );
+
         should_fail(&["1*@", "1*", "1 per", "÷", "×"]);
 
         // 'per' is higher-precedence than '/'
@@ -1196,6 +1207,21 @@ mod tests {
                 binop!(identifier!("meter"), Div, identifier!("second"))
             ),
         );
+    }
+
+    #[test]
+    fn addition_subtraction_multiplication_division_precedence() {
+        parse_as_expression(
+            &["5+3*2", "5+(3*2)"],
+            binop!(scalar!(5.0), Add, binop!(scalar!(3.0), Mul, scalar!(2.0))),
+        );
+
+        parse_as_expression(
+            &["5/3*2", "(5/3)*2"],
+            binop!(binop!(scalar!(5.0), Div, scalar!(3.0)), Mul, scalar!(2.0)),
+        );
+
+        should_fail(&["3+*4", "3*/4", "(3+4", "3+4)", "3+(", "()", "(3+)4"])
     }
 
     #[test]
@@ -1214,12 +1240,12 @@ mod tests {
     #[test]
     fn exponentiation() {
         parse_as_expression(
-            &["2^3", "  2   ^  3    "],
+            &["2^3", "  2   ^  3    ", "2**3"],
             binop!(scalar!(2.0), Power, scalar!(3.0)),
         );
 
         parse_as_expression(
-            &["2^3^4", "  2   ^  3   ^ 4 "],
+            &["2^3^4", "  2   ^  3   ^ 4 ", "2**3**4"],
             binop!(
                 scalar!(2.0),
                 Power,
@@ -1228,7 +1254,7 @@ mod tests {
         );
 
         parse_as_expression(
-            &["(2^3)^4"],
+            &["(2^3)^4", "(2**3)**4"],
             binop!(
                 binop!(scalar!(2.0), Power, scalar!(3.0)),
                 Power,
@@ -1236,7 +1262,7 @@ mod tests {
             ),
         );
 
-        should_fail(&["1^", "1^^2"]);
+        should_fail(&["1^", "1^^2", "1**", "1***3", "1****4"]);
     }
 
     #[test]
@@ -1263,7 +1289,7 @@ mod tests {
             ),
         );
 
-        should_fail(&["1²³", "2⁻", "2⁻3"]);
+        should_fail(&["1²³", "2⁻", "2⁻3", "²", "²3"]);
     }
 
     #[test]
@@ -1284,16 +1310,6 @@ mod tests {
         );
 
         should_fail(&["1 - > 2", "1 -> -> 2"]);
-    }
-
-    #[test]
-    fn grouping() {
-        parse_as_expression(
-            &["1*(2+3)", "1 * ( 2 + 3 )"],
-            binop!(scalar!(1.0), Mul, binop!(scalar!(2.0), Add, scalar!(3.0))),
-        );
-
-        should_fail(&["1 * (2 + 3", "2 + 3)"]);
     }
 
     #[test]
@@ -1332,6 +1348,8 @@ mod tests {
             &["let foo", "let foo 2"],
             ParseErrorKind::ExpectedEqualOrColonAfterLetIdentifier,
         );
+
+        should_fail(&["let x²=2", "let x+y=2", "let 3=5", "let x=", "let x"])
     }
 
     #[test]
@@ -1597,6 +1615,36 @@ mod tests {
             ],
             ParseErrorKind::VariadicParameterOnlyAllowedInForeignFunction,
         );
+    }
+
+    #[test]
+    fn function_call() {
+        parse_as_expression(
+            &["foo()"],
+            Expression::FunctionCall(Span::dummy(), Span::dummy(), "foo".into(), vec![]),
+        );
+
+        parse_as_expression(
+            &["foo(1)"],
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                "foo".into(),
+                vec![scalar!(1.0)],
+            ),
+        );
+
+        parse_as_expression(
+            &["foo(1,2,3)"],
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                "foo".into(),
+                vec![scalar!(1.0), scalar!(2.0), scalar!(3.0)],
+            ),
+        );
+
+        should_fail(&["exp(,)", "exp(1,)"])
     }
 
     #[test]
