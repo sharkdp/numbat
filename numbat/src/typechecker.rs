@@ -154,23 +154,29 @@ impl TypeChecker {
         })
     }
 
-    pub(crate) fn check_expression(&self, ast: ast::Expression) -> Result<typed_ast::Expression> {
+    pub(crate) fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
-            ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar(span, n),
+            ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar(*span, n.clone()),
             ast::Expression::Identifier(span, name) => {
-                let type_ = self.type_for_identifier(span, &name)?.clone();
+                let type_ = self.type_for_identifier(*span, name)?.clone();
 
-                typed_ast::Expression::Identifier(span, name, type_)
+                typed_ast::Expression::Identifier(*span, name.clone(), type_)
             }
             ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
-                let type_ = self.type_for_identifier(span, &name)?.clone();
+                let type_ = self.type_for_identifier(*span, &name)?.clone();
 
-                typed_ast::Expression::UnitIdentifier(span, prefix, name, full_name, type_)
+                typed_ast::Expression::UnitIdentifier(
+                    *span,
+                    prefix.clone(),
+                    name.clone(),
+                    full_name.clone(),
+                    type_,
+                )
             }
             ast::Expression::Negate(span, expr) => {
-                let checked_expr = self.check_expression(*expr)?;
+                let checked_expr = self.check_expression(expr)?;
                 let type_ = checked_expr.get_type();
-                typed_ast::Expression::Negate(span, Box::new(checked_expr), type_)
+                typed_ast::Expression::Negate(*span, Box::new(checked_expr), type_)
             }
             ast::Expression::BinaryOperator {
                 op,
@@ -178,18 +184,18 @@ impl TypeChecker {
                 rhs,
                 span_op,
             } => {
-                let lhs_checked = self.check_expression((*lhs).clone())?;
-                let rhs_checked = self.check_expression((*rhs).clone())?;
+                let lhs_checked = self.check_expression(&lhs)?;
+                let rhs_checked = self.check_expression(&rhs)?;
 
                 let get_type_and_assert_equality = || {
                     let lhs_type = lhs_checked.get_type();
                     let rhs_type = rhs_checked.get_type();
                     if lhs_type != rhs_type {
                         let full_span = ast::Expression::BinaryOperator {
-                            op,
+                            op: *op,
                             lhs: lhs.clone(),
                             rhs: rhs.clone(),
-                            span_op,
+                            span_op: *span_op,
                         }
                         .full_span();
                         Err(TypeCheckError::IncompatibleDimensions {
@@ -247,8 +253,8 @@ impl TypeChecker {
                 };
 
                 typed_ast::Expression::BinaryOperator(
-                    span_op,
-                    op,
+                    span_op.clone(),
+                    op.clone(),
                     Box::new(lhs_checked),
                     Box::new(rhs_checked),
                     type_,
@@ -263,8 +269,8 @@ impl TypeChecker {
                     return_type,
                 ) = self
                     .function_signatures
-                    .get(&function_name)
-                    .ok_or_else(|| TypeCheckError::UnknownCallable(span, function_name.clone()))?;
+                    .get(function_name)
+                    .ok_or_else(|| TypeCheckError::UnknownCallable(*span, function_name.clone()))?;
 
                 let arity_range = if *is_variadic {
                     1..=usize::MAX
@@ -274,7 +280,7 @@ impl TypeChecker {
 
                 if !arity_range.contains(&args.len()) {
                     return Err(TypeCheckError::WrongArity {
-                        callable_span: span,
+                        callable_span: *span,
                         callable_name: function_name.clone(),
                         callable_definition_span: Some(*callable_definition_span),
                         arity: arity_range,
@@ -284,7 +290,7 @@ impl TypeChecker {
 
                 let arguments_checked = args
                     .iter()
-                    .map(|a| self.check_expression(a.clone()))
+                    .map(|a| self.check_expression(a))
                     .collect::<Result<Vec<_>>>()?;
                 let argument_types = arguments_checked.iter().map(|e| e.get_type());
 
@@ -330,7 +336,7 @@ impl TypeChecker {
 
                     if remaining_generic_subtypes.len() > 1 {
                         return Err(TypeCheckError::MultipleUnresolvedTypeParameters(
-                            span,
+                            *span,
                             *parameter_span,
                         ));
                     }
@@ -362,7 +368,7 @@ impl TypeChecker {
 
                     if parameter_type != argument_type {
                         return Err(TypeCheckError::IncompatibleDimensions {
-                            span_operation: span,
+                            span_operation: *span,
                             operation: format!(
                                 "argument {num} of function call to '{name}'",
                                 num = idx + 1,
@@ -393,7 +399,7 @@ impl TypeChecker {
                         .collect();
 
                     return Err(TypeCheckError::CanNotInferTypeParameters(
-                        span,
+                        *span,
                         *callable_definition_span,
                         function_name.clone(),
                         remaining.join(", "),
@@ -403,9 +409,9 @@ impl TypeChecker {
                 let return_type = substitute(&substitutions, return_type);
 
                 typed_ast::Expression::FunctionCall(
-                    span,
-                    full_span,
-                    function_name,
+                    span.clone(),
+                    full_span.clone(),
+                    function_name.clone(),
                     arguments_checked,
                     return_type,
                 )
@@ -413,7 +419,7 @@ impl TypeChecker {
         })
     }
 
-    pub fn check_statement(&mut self, ast: ast::Statement) -> Result<typed_ast::Statement> {
+    pub fn check_statement(&mut self, ast: &ast::Statement) -> Result<typed_ast::Statement> {
         Ok(match ast {
             ast::Statement::Expression(expr) => {
                 let checked_expr = self.check_expression(expr)?;
@@ -430,7 +436,7 @@ impl TypeChecker {
                 type_annotation_span,
                 type_annotation,
             } => {
-                let expr_checked = self.check_expression(expr.clone())?;
+                let expr_checked = self.check_expression(expr)?;
                 let type_deduced = expr_checked.get_type();
 
                 if let Some(ref dexpr) = type_annotation {
@@ -440,7 +446,7 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions {
-                            span_operation: identifier_span,
+                            span_operation: *identifier_span,
                             operation: "variable declaration".into(),
                             span_expected: type_annotation_span.unwrap(),
                             expected_name: "specified dimension",
@@ -453,7 +459,11 @@ impl TypeChecker {
                 }
                 self.identifiers
                     .insert(identifier.clone(), type_deduced.clone());
-                typed_ast::Statement::DeclareVariable(identifier, expr_checked, type_deduced)
+                typed_ast::Statement::DeclareVariable(
+                    identifier.clone(),
+                    expr_checked,
+                    type_deduced,
+                )
             }
             ast::Statement::DeclareBaseUnit(_span, unit_name, dexpr, decorators) => {
                 let type_specified = self
@@ -464,7 +474,11 @@ impl TypeChecker {
                     self.identifiers
                         .insert(name.clone(), type_specified.clone());
                 }
-                typed_ast::Statement::DeclareBaseUnit(unit_name, decorators, type_specified)
+                typed_ast::Statement::DeclareBaseUnit(
+                    unit_name.clone(),
+                    decorators.clone(),
+                    type_specified,
+                )
             }
             ast::Statement::DeclareDerivedUnit {
                 identifier_span,
@@ -476,7 +490,7 @@ impl TypeChecker {
             } => {
                 // TODO: this is the *exact same code* that we have above for
                 // variable declarations => deduplicate this somehow
-                let expr_checked = self.check_expression(expr.clone())?;
+                let expr_checked = self.check_expression(expr)?;
                 let type_deduced = expr_checked.get_type();
 
                 if let Some(ref dexpr) = type_annotation {
@@ -486,7 +500,7 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?;
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions {
-                            span_operation: identifier_span,
+                            span_operation: *identifier_span,
                             operation: "unit definition".into(),
                             span_expected: type_annotation_span.unwrap(),
                             expected_name: "specified dimension",
@@ -500,7 +514,11 @@ impl TypeChecker {
                 for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
                     self.identifiers.insert(name.clone(), type_deduced.clone());
                 }
-                typed_ast::Statement::DeclareDerivedUnit(identifier, expr_checked, decorators)
+                typed_ast::Statement::DeclareDerivedUnit(
+                    identifier.clone(),
+                    expr_checked,
+                    decorators.clone(),
+                )
             }
             ast::Statement::DeclareFunction {
                 function_name_span,
@@ -513,7 +531,7 @@ impl TypeChecker {
             } => {
                 let mut typechecker_fn = self.clone();
 
-                for (span, type_parameter) in &type_parameters {
+                for (span, type_parameter) in type_parameters {
                     match typechecker_fn.registry.add_base_dimension(type_parameter) {
                         Err(RegistryError::EntryExists(name)) => {
                             return Err(TypeCheckError::TypeParameterNameClash(*span, name))
@@ -528,8 +546,8 @@ impl TypeChecker {
                 for (parameter_span, parameter, optional_dexpr, p_is_variadic) in parameters {
                     let parameter_type = typechecker_fn
                         .registry
-                        .get_base_representation(&optional_dexpr.ok_or(
-                            TypeCheckError::ParameterTypesCanNotBeDeduced(parameter_span),
+                        .get_base_representation(&optional_dexpr.clone().ok_or(
+                            TypeCheckError::ParameterTypesCanNotBeDeduced(*parameter_span),
                         )?)
                         // TODO: add type inference, see https://github.com/sharkdp/numbat/issues/29
                         // TODO: once we add type inference, make sure that annotations are required for foreign functions
@@ -538,9 +556,9 @@ impl TypeChecker {
                         .identifiers
                         .insert(parameter.clone(), parameter_type.clone());
                     typed_parameters.push((
-                        parameter_span,
+                        *parameter_span,
                         parameter.clone(),
-                        p_is_variadic,
+                        *p_is_variadic,
                         parameter_type,
                     ));
 
@@ -548,6 +566,7 @@ impl TypeChecker {
                 }
 
                 let return_type_specified = return_type_annotation
+                    .clone()
                     .map(|ref return_type_dexpr| {
                         typechecker_fn
                             .registry
@@ -558,7 +577,7 @@ impl TypeChecker {
 
                 let body_checked = body
                     .clone()
-                    .map(|expr| typechecker_fn.check_expression(expr))
+                    .map(|expr| typechecker_fn.check_expression(&expr))
                     .transpose()?;
 
                 let return_type = if let Some(ref expr) = body_checked {
@@ -566,12 +585,12 @@ impl TypeChecker {
                     if let Some(return_type_specified) = return_type_specified {
                         if return_type_deduced != return_type_specified {
                             return Err(TypeCheckError::IncompatibleDimensions {
-                                span_operation: function_name_span,
+                                span_operation: *function_name_span,
                                 operation: "function return type".into(),
                                 span_expected: return_type_span.unwrap(),
                                 expected_name: "specified return type",
                                 expected_type: return_type_specified,
-                                span_actual: body.unwrap().full_span(),
+                                span_actual: body.as_ref().map(|b| b.full_span()).unwrap(),
                                 actual_name: "   actual return type",
                                 actual_type: return_type_deduced,
                             });
@@ -581,14 +600,14 @@ impl TypeChecker {
                 } else {
                     if !ffi::functions().contains_key(function_name.as_str()) {
                         return Err(TypeCheckError::UnknownForeignFunction(
-                            function_name_span,
-                            function_name,
+                            *function_name_span,
+                            function_name.clone(),
                         ));
                     }
 
                     return_type_specified.ok_or_else(|| {
                         TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(
-                            function_name_span,
+                            *function_name_span,
                             function_name.clone(),
                         )
                     })?
@@ -601,8 +620,8 @@ impl TypeChecker {
                 self.function_signatures.insert(
                     function_name.clone(),
                     (
-                        function_name_span,
-                        type_parameters,
+                        *function_name_span,
+                        type_parameters.clone(),
                         parameter_types,
                         is_variadic,
                         return_type.clone(),
@@ -610,7 +629,7 @@ impl TypeChecker {
                 );
 
                 typed_ast::Statement::DeclareFunction(
-                    function_name,
+                    function_name.clone(),
                     typed_parameters,
                     body_checked,
                     return_type,
@@ -649,13 +668,13 @@ impl TypeChecker {
                         .add_base_dimension(&name)
                         .map_err(TypeCheckError::RegistryError)?;
                 }
-                typed_ast::Statement::DeclareDimension(name)
+                typed_ast::Statement::DeclareDimension(name.clone())
             }
             ast::Statement::ProcedureCall(span, kind, args) => {
                 let procedure = ffi::procedures().get(&kind).unwrap();
                 if !procedure.arity.contains(&args.len()) {
                     return Err(TypeCheckError::WrongArity {
-                        callable_span: span,
+                        callable_span: *span,
                         callable_name: procedure.name.clone(),
                         callable_definition_span: None,
                         arity: procedure.arity.clone(),
@@ -668,7 +687,7 @@ impl TypeChecker {
                     .map(|e| self.check_expression(e))
                     .collect::<Result<Vec<typed_ast::Expression>>>()?;
 
-                typed_ast::Statement::ProcedureCall(kind, checked_args)
+                typed_ast::Statement::ProcedureCall(kind.clone(), checked_args)
             }
             ast::Statement::ModuleImport(_, _) => {
                 unreachable!("Modules should have been inlined by now")
@@ -683,7 +702,7 @@ impl TypeChecker {
         let mut statements_checked = vec![];
 
         for statement in statements.into_iter() {
-            statements_checked.push(self.check_statement(statement)?);
+            statements_checked.push(self.check_statement(&statement)?);
         }
         Ok(statements_checked)
     }
