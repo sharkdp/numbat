@@ -1,4 +1,4 @@
-let p0: Pressure = 101325 Pa
+let p0: Pressure = 1 atm
 let t0: Temperature = 288.15 K
 
 let temperature_gradient = 0.65 K / 100 m
