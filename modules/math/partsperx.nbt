@@ -1,4 +1,4 @@
-let pct = 1e-03
+let pct = 1e-02
 let ppm = 1e-06
 let ppb = 1e-09
 let ppt = 1e-12

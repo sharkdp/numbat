@@ -21,7 +21,7 @@ unit BTU: Energy = 1055.05585262 joule
 unit pound_force: Force = 4.448222 newton
 
 @aliases(ozf: short)
-unit ounce_force: Force = 16 lbf
+unit ounce_force: Force = 1 / 16 * lbf
 
 @aliases(kgf: short)
 unit kilogram_force: Force = 9.80665 newton
