@@ -24,8 +24,6 @@ impl Number {
     }
 
     pub fn pretty_print(self) -> String {
-        let fractional_digits = 6;
-
         let number = self.0;
 
         // 64-bit floats can accurately represent integers up to 2^52 [1].
@@ -34,15 +32,26 @@ impl Number {
         //
         if self.is_integer() && self.0.abs() < 1e15 {
             format!("{number}")
-        } else if number.abs() > 1e12 || number.abs() < 1e-6 {
-            format!("{number:.fractional_digits$e}")
         } else {
-            let formatted_number = format!("{number:.fractional_digits$}");
-            let formatted_number = formatted_number.trim_end_matches('0');
-            if formatted_number.ends_with('.') {
-                format!("{}0", formatted_number)
+            use pretty_dtoa::{dtoa, FmtFloatConfig};
+
+            let config = FmtFloatConfig::default()
+                .max_significant_digits(6)
+                .add_point_zero(false)
+                .lower_e_break(-6)
+                .round();
+
+            let formatted_number = dtoa(number, config);
+
+            if formatted_number.contains('.') && !formatted_number.contains('e') {
+                let formatted_number = formatted_number.trim_end_matches('0');
+                if formatted_number.ends_with('.') {
+                    format!("{}0", formatted_number)
+                } else {
+                    formatted_number.to_string()
+                }
             } else {
-                formatted_number.to_string()
+                formatted_number
             }
         }
     }
@@ -97,21 +106,28 @@ impl std::iter::Product for Number {
 #[test]
 fn test_pretty_print() {
     assert_eq!(Number::from_f64(1.).pretty_print(), "1");
+    assert_eq!(Number::from_f64(100.).pretty_print(), "100");
     assert_eq!(Number::from_f64(1.234).pretty_print(), "1.234");
-    assert_eq!(Number::from_f64(1.234e50).pretty_print(), "1.234000e50");
-    assert_eq!(Number::from_f64(-1.234e50).pretty_print(), "-1.234000e50");
-    assert_eq!(Number::from_f64(1.234e-50).pretty_print(), "1.234000e-50");
-    assert_eq!(Number::from_f64(-1.234e-50).pretty_print(), "-1.234000e-50");
+    assert_eq!(Number::from_f64(1.234e50).pretty_print(), "1.234e50");
+    assert_eq!(Number::from_f64(-1.234e50).pretty_print(), "-1.234e50");
+    assert_eq!(Number::from_f64(1.234e-50).pretty_print(), "1.234e-50");
+    assert_eq!(Number::from_f64(-1.234e-50).pretty_print(), "-1.234e-50");
 
     assert_eq!(Number::from_f64(1234567890.).pretty_print(), "1234567890");
     assert_eq!(
         Number::from_f64(1234567890000000.).pretty_print(),
-        "1.234568e15"
+        "1.23457e15"
     );
 
-    assert_eq!(Number::from_f64(1.23456789).pretty_print(), "1.234568");
+    assert_eq!(Number::from_f64(1.23456789).pretty_print(), "1.23457");
     assert_eq!(
         Number::from_f64(1234567890000.1).pretty_print(),
-        "1.234568e12"
+        "1.23457e12"
     );
+
+    assert_eq!(Number::from_f64(100.00001).pretty_print(), "100.0");
+
+    assert_eq!(Number::from_f64(0.00001).pretty_print(), "0.00001");
+    assert_eq!(Number::from_f64(0.000001).pretty_print(), "0.000001");
+    assert_eq!(Number::from_f64(0.0000001).pretty_print(), "1.0e-7");
 }

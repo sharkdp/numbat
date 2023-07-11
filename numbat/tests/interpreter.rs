@@ -41,9 +41,9 @@ fn test_exponentiation() {
     expect_output("3³*2", "54");
     expect_output("3³(2)", "54");
     expect_output("(1+2)²", "9");
-    expect_output("2²pi", "12.566371"); // TODO: when we support significant digits, this should be 12.5664
-    expect_output("2² pi", "12.566371");
-    expect_output("2²·pi", "12.566371");
+    expect_output("2²pi", "12.5664");
+    expect_output("2² pi", "12.5664");
+    expect_output("2²·pi", "12.5664");
     expect_output("5m² to cm·m", "500 cm·m");
     expect_output("2⁵", "32");
     expect_output("-4¹", "-4");
@@ -124,15 +124,15 @@ fn test_math() {
 #[test]
 fn test_temperature_conversions() {
     expect_output("from_celsius(11.5)", "284.65 K");
-    expect_output("from_fahrenheit(89.3)", "304.983333 K");
+    expect_output("from_fahrenheit(89.3)", "304.983 K");
     expect_output("to_celsius(0 K)", "-273.15");
     expect_output("to_fahrenheit(30 K)", "-405.67");
     expect_output("to_celsius(from_celsius(100))", "100");
     expect_output("to_fahrenheit(from_fahrenheit(100))", "100.0");
     expect_output("from_celsius(to_celsius(123 K))", "123 K");
-    expect_output("from_fahrenheit(to_fahrenheit(123 K))", "123.0 K");
+    expect_output("from_fahrenheit(to_fahrenheit(123 K))", "123 K");
 
-    expect_output("-40 // from_fahrenheit // to_celsius", "-40.0");
+    expect_output("-40 // from_fahrenheit // to_celsius", "-40");
 }
 
 #[test]
@@ -166,18 +166,18 @@ fn test_misc_examples() {
 
     expect_output("2min + 30s", "2.5 min");
     expect_output("2min + 30s -> sec", "150 s");
-    expect_output("4/3 * pi * (6000km)³", "904778684233.860352 km³"); // TODO: insect prints this as 904779000000 km³ (sign. digits)
+    expect_output("4/3 * pi * (6000km)³", "9.04779e11 km³");
     expect_output("40kg * 9.8m/s^2 * 150cm", "588 m²·kg/s²");
     expect_output("sin(30°)", "0.5");
 
     expect_output("60mph -> m/s", "26.8224 m/s");
-    expect_output("240km/day -> km/h", "10.0 km/h");
-    expect_output("1mrad -> °", "0.057296°");
+    expect_output("240km/day -> km/h", "10 km/h");
+    expect_output("1mrad -> °", "0.0572958°");
     expect_output("52weeks -> days", "364 day");
     expect_output("5in + 2ft -> cm", "73.66 cm");
-    expect_output("atan(30cm / 2m) -> deg", "8.530766°");
+    expect_output("atan(30cm / 2m) -> deg", "8.53077°");
     expect_output("6Mbit/s * 1.5h -> GB", "4.05 GB");
-    expect_output("6Mbit/s * 1.5h -> GiB", "3.771856 GiB");
+    expect_output("6Mbit/s * 1.5h -> GiB", "3.77186 GiB");
 
     expect_output("3m/4m", "0.75");
     expect_output("4/2*2", "4");
@@ -206,10 +206,10 @@ fn test_prefixes() {
     expect_output("terahertz picosecond", "1");
     expect_output("petahertz femtosecond", "1");
     expect_output("exahertz attosecond", "1");
-    expect_output("zettahertz zeptosecond", "1.0"); // TODO: this might be "resolved" when we use a high-precision float. type
+    expect_output("zettahertz zeptosecond", "1");
     expect_output("yottahertz yoctosecond", "1");
     expect_output("ronnahertz rontosecond", "1");
-    expect_output("quettahertz quectosecond", "1.0"); // TODO: this might be "resolved" when we use a high-precision float. type
+    expect_output("quettahertz quectosecond", "1");
 }
 
 #[test]
