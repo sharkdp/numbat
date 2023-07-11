@@ -86,9 +86,9 @@ fn to_rational_exponent(exponent_f64: f64) -> Exponent {
 /// need to know not just the *type* but also the *value* of the exponent.
 fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     match expr {
-        typed_ast::Expression::Scalar(n) => Ok(to_rational_exponent(n.to_f64())),
+        typed_ast::Expression::Scalar(_, n) => Ok(to_rational_exponent(n.to_f64())),
         typed_ast::Expression::Negate(_, ref expr, _) => Ok(-evaluate_const_expr(expr)?),
-        typed_ast::Expression::BinaryOperator(span, op, lhs_expr, rhs_expr, _) => {
+        e @ typed_ast::Expression::BinaryOperator(_span_op, op, lhs_expr, rhs_expr, _) => {
             let lhs = evaluate_const_expr(lhs_expr)?;
             let rhs = evaluate_const_expr(rhs_expr)?;
             match op {
@@ -97,7 +97,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 typed_ast::BinaryOperator::Mul => Ok(lhs * rhs),
                 typed_ast::BinaryOperator::Div => {
                     if rhs == Rational::zero() {
-                        Err(TypeCheckError::DivisionByZeroInConstEvalExpression(*span))
+                        Err(TypeCheckError::DivisionByZeroInConstEvalExpression(
+                            e.full_span(),
+                        ))
                     } else {
                         Ok(lhs / rhs)
                     }
@@ -107,24 +109,24 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                         Ok(lhs.pow(rhs.to_integer() as i32)) // TODO: dangerous cast
                     } else {
                         Err(TypeCheckError::UnsupportedConstEvalExpression(
-                            *span,
+                            e.full_span(),
                             "exponentiation with non-integer exponent",
                         ))
                     }
                 }
                 typed_ast::BinaryOperator::ConvertTo => Err(
-                    TypeCheckError::UnsupportedConstEvalExpression(*span, "conversion"),
+                    TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "conversion"),
                 ),
             }
         }
-        typed_ast::Expression::Identifier(span, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(*span, "variable"),
+        e @ typed_ast::Expression::Identifier(..) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "variable"),
         ),
-        typed_ast::Expression::UnitIdentifier(span, _, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(*span, "unit identifier"),
+        e @ typed_ast::Expression::UnitIdentifier(..) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "unit identifier"),
         ),
-        typed_ast::Expression::FunctionCall(span, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(*span, "function call"),
+        e @ typed_ast::Expression::FunctionCall(_, _, _, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
         ),
     }
 }
@@ -154,7 +156,7 @@ impl TypeChecker {
 
     pub(crate) fn check_expression(&self, ast: ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
-            ast::Expression::Scalar(_, n) => typed_ast::Expression::Scalar(n),
+            ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar(span, n),
             ast::Expression::Identifier(span, name) => {
                 let type_ = self.type_for_identifier(span, &name)?.clone();
 
@@ -176,14 +178,6 @@ impl TypeChecker {
                 rhs,
                 span_op,
             } => {
-                let full_span = ast::Expression::BinaryOperator {
-                    op,
-                    lhs: lhs.clone(),
-                    rhs: rhs.clone(),
-                    span_op,
-                }
-                .full_span();
-
                 let lhs_checked = self.check_expression((*lhs).clone())?;
                 let rhs_checked = self.check_expression((*rhs).clone())?;
 
@@ -191,6 +185,13 @@ impl TypeChecker {
                     let lhs_type = lhs_checked.get_type();
                     let rhs_type = rhs_checked.get_type();
                     if lhs_type != rhs_type {
+                        let full_span = ast::Expression::BinaryOperator {
+                            op,
+                            lhs: lhs.clone(),
+                            rhs: rhs.clone(),
+                            span_op,
+                        }
+                        .full_span();
                         Err(TypeCheckError::IncompatibleDimensions {
                             span_operation: span_op.unwrap_or(full_span),
                             operation: match op {
@@ -246,14 +247,14 @@ impl TypeChecker {
                 };
 
                 typed_ast::Expression::BinaryOperator(
-                    full_span,
+                    span_op,
                     op,
                     Box::new(lhs_checked),
                     Box::new(rhs_checked),
                     type_,
                 )
             }
-            ast::Expression::FunctionCall(span, _full_span, function_name, args) => {
+            ast::Expression::FunctionCall(span, full_span, function_name, args) => {
                 let (
                     callable_definition_span,
                     type_parameters,
@@ -403,6 +404,7 @@ impl TypeChecker {
 
                 typed_ast::Expression::FunctionCall(
                     span,
+                    full_span,
                     function_name,
                     arguments_checked,
                     return_type,

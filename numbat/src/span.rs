@@ -3,7 +3,6 @@ use codespan_reporting::diagnostic::{Label, LabelStyle};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SourceCodePositition {
     pub byte: usize,
-    pub index: usize,
     pub line: usize,
     pub position: usize,
 }
@@ -12,7 +11,6 @@ impl SourceCodePositition {
     pub fn start() -> Self {
         Self {
             byte: 0,
-            index: 0,
             line: 1,
             position: 1,
         }

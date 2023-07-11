@@ -105,6 +105,8 @@ struct Tokenizer {
     current: SourceCodePositition,
     last: SourceCodePositition,
     token_start: SourceCodePositition,
+    current_index: usize,
+    token_start_index: usize,
     code_source_index: usize,
 }
 
@@ -130,6 +132,8 @@ impl Tokenizer {
             current: SourceCodePositition::start(),
             last: SourceCodePositition::start(),
             token_start: SourceCodePositition::start(),
+            current_index: 0,
+            token_start_index: 0,
             code_source_index,
         }
     }
@@ -138,6 +142,7 @@ impl Tokenizer {
         let mut tokens = vec![];
         while !self.at_end() {
             self.token_start = self.current;
+            self.token_start_index = self.current_index;
             if let Some(token) = self.scan_single_token()? {
                 tokens.push(token);
             }
@@ -397,26 +402,26 @@ impl Tokenizer {
     }
 
     fn lexeme(&self) -> String {
-        self.input[self.token_start.index..self.current.index]
+        self.input[self.token_start_index..self.current_index]
             .iter()
             .collect()
     }
 
     fn advance(&mut self) -> char {
-        let c = self.input[self.current.index];
+        let c = self.input[self.current_index];
         self.last = self.current;
-        self.current.index += 1;
+        self.current_index += 1;
         self.current.byte += c.len_utf8();
         self.current.position += 1;
         c
     }
 
     fn peek(&self) -> Option<char> {
-        self.input.get(self.current.index).copied()
+        self.input.get(self.current_index).copied()
     }
 
     fn peek2(&self) -> Option<char> {
-        self.input.get(self.current.index + 1).copied()
+        self.input.get(self.current_index + 1).copied()
     }
 
     fn match_char(&mut self, c: char) -> bool {
@@ -429,7 +434,7 @@ impl Tokenizer {
     }
 
     fn at_end(&self) -> bool {
-        self.current.index >= self.input.len()
+        self.current_index >= self.input.len()
     }
 }
 

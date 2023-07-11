@@ -20,7 +20,7 @@ pub struct BytecodeInterpreter {
 impl BytecodeInterpreter {
     fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
         match expr {
-            Expression::Scalar(n) => {
+            Expression::Scalar(_span, n) => {
                 let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
@@ -73,7 +73,7 @@ impl BytecodeInterpreter {
                 };
                 self.vm.add_op(op);
             }
-            Expression::FunctionCall(_span, name, args, _type) => {
+            Expression::FunctionCall(_span, _full_span, name, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg)?;

@@ -45,6 +45,7 @@ pub enum Expression {
     },
     FunctionCall(Span, Span, String, Vec<Expression>),
 }
+
 impl Expression {
     pub fn full_span(&self) -> Span {
         match self {
