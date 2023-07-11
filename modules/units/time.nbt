@@ -6,6 +6,7 @@ use units::si
 unit week: Time = 7 days
 
 # Gregorian year
+@metric_prefixes
 @aliases(years)
 unit year: Time = 365.2425 days
 
