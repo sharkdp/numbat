@@ -167,7 +167,7 @@ pub struct Vm {
     globals: HashMap<String, Quantity>,
 
     /// List of registered native/foreign functions
-    ffi_callables: Vec<ForeignFunction>,
+    ffi_callables: Vec<&'static ForeignFunction>,
 
     /// The call stack
     frames: Vec<CallFrame>,
@@ -188,7 +188,7 @@ impl Vm {
             constants: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
-            ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff.clone()).collect(),
+            ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug: false,
@@ -503,7 +503,7 @@ impl Vm {
                     }
                     args.reverse(); // TODO: use a deque?
 
-                    match self.ffi_callables[function_idx].callable {
+                    match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
                             let result = (function)(&args[..]);
                             self.push(result);

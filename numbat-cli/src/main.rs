@@ -22,9 +22,9 @@ use rustyline::{
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
-use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::{fs, thread};
 
 use crate::ansi_formatter::ansi_format;
 
@@ -143,6 +143,20 @@ impl Cli {
                 }
             }
         }
+
+        let ctx = self.context.clone();
+        thread::spawn(move || {
+            numbat::Context::fetch_exchange_rates();
+
+            // After pre-fetching the exchange rates, we can load the 'non_euro_currencies'
+            // module without blocking the context for long. This allows us to have fast
+            // startup times of the CLI application, but still have currency units available
+            // after a short delay (the limiting factor is the HTTP request).
+            ctx.lock()
+                .unwrap()
+                .interpret("use units::non_euro_currencies", CodeSource::Text)
+                .ok();
+        });
 
         let (code, code_source): (Option<String>, CodeSource) =
             if let Some(ref path) = self.args.file {

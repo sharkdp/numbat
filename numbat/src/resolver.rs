@@ -41,13 +41,13 @@ pub enum ResolverError {
 type Result<T> = std::result::Result<T, ResolverError>;
 
 pub(crate) struct Resolver {
-    importer: Box<dyn ModuleImporter>,
+    importer: Box<dyn ModuleImporter + Send>,
     code_sources: Vec<CodeSource>,
     pub files: SimpleFiles<String, String>,
 }
 
 impl Resolver {
-    pub(crate) fn new(importer: impl ModuleImporter + 'static) -> Self {
+    pub(crate) fn new(importer: impl ModuleImporter + Send + 'static) -> Self {
         Self {
             importer: Box::new(importer),
             code_sources: vec![],

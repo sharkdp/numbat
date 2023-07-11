@@ -1,6 +1,7 @@
 mod arithmetic;
 mod ast;
 mod bytecode_interpreter;
+mod currency;
 mod decorator;
 pub mod diagnostic;
 mod dimension;
@@ -27,6 +28,7 @@ mod unit_registry;
 mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
+use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use interpreter::{Interpreter, RuntimeError};
 use prefix_transformer::Transformer;
@@ -67,7 +69,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(module_importer: impl ModuleImporter + 'static) -> Self {
+    pub fn new(module_importer: impl ModuleImporter + Send + 'static) -> Self {
         Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
@@ -82,6 +84,12 @@ impl Context {
 
     pub fn set_debug(&mut self, activate: bool) {
         self.interpreter.set_debug(activate);
+    }
+
+    /// Fill the currency exchange rate cache. This call is blocking.
+    pub fn fetch_exchange_rates() {
+        let cache = ExchangeRatesCache::new();
+        let _unused = cache.fetch();
     }
 
     pub fn variable_names(&self) -> &[String] {

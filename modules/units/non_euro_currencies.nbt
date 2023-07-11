@@ -1,0 +1,33 @@
+# This module is currently not part of the prelude, because the 'exchange_rate_XXX' calls
+# are blocking. In the CLI application, we do however load this module asynchronously after
+# prefetching the exchange rates.
+
+# TODO: if we ever support strings in the language, use 'exchange_rate("USD")', … instead
+fn exchange_rate_USD() -> Scalar
+fn exchange_rate_JPY() -> Scalar
+fn exchange_rate_GBP() -> Scalar
+fn exchange_rate_CNY() -> Scalar
+fn exchange_rate_AUD() -> Scalar
+fn exchange_rate_CAD() -> Scalar
+fn exchange_rate_CHF() -> Scalar
+
+@aliases(dollars, USD, $: short)
+unit dollar: Money = EUR / exchange_rate_USD()
+
+@aliases(yens, JPY, ¥: short, 円)
+unit yen: Money = EUR / exchange_rate_JPY()
+
+@aliases(pound_sterling, GBP, £: short)
+unit british_pound: Money = EUR / exchange_rate_GBP()
+
+@aliases(CNY: short, 元)
+unit renminbi: Money = EUR / exchange_rate_CNY()
+
+@aliases(australian_dollars, AUD: short, A$)
+unit australian_dollar: Money = EUR / exchange_rate_AUD()
+
+@aliases(canadian_dollars, CAD: short, C$)
+unit canadian_dollar: Money = EUR / exchange_rate_CAD()
+
+@aliases(swiss_francs, CHF: short)
+unit swiss_franc: Money = EUR / exchange_rate_CHF()

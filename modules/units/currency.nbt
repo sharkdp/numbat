@@ -2,6 +2,3 @@ dimension Money
 
 @aliases(euros, EUR, €: short)
 unit euro: Money
-
-@aliases(dollars, USD, $: short)
-unit dollar: Money

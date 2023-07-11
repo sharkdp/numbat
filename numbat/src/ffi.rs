@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use std::sync::OnceLock;
 
+use crate::currency::ExchangeRatesCache;
 use crate::interpreter::RuntimeError;
 use crate::{ast::ProcedureKind, quantity::Quantity};
 
@@ -9,13 +10,11 @@ type ControlFlow = std::ops::ControlFlow<RuntimeError>;
 
 pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
 
-#[derive(Clone)]
 pub(crate) enum Callable {
-    Function(fn(&[Quantity]) -> Quantity),
+    Function(Box<dyn Fn(&[Quantity]) -> Quantity + Send + Sync>),
     Procedure(fn(&[Quantity]) -> ControlFlow),
 }
 
-#[derive(Clone)]
 pub(crate) struct ForeignFunction {
     pub(crate) name: String,
     pub(crate) arity: ArityRange,
@@ -23,7 +22,7 @@ pub(crate) struct ForeignFunction {
 }
 
 static FFI_PROCEDURES: OnceLock<HashMap<ProcedureKind, ForeignFunction>> = OnceLock::new();
-static FFI_FUNCTIONS: OnceLock<HashMap<&'static str, ForeignFunction>> = OnceLock::new();
+static FFI_FUNCTIONS: OnceLock<HashMap<String, ForeignFunction>> = OnceLock::new();
 
 pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
     FFI_PROCEDURES.get_or_init(|| {
@@ -50,214 +49,225 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
     })
 }
 
-pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
+pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
     FFI_FUNCTIONS.get_or_init(|| {
         let mut m = HashMap::new();
 
         m.insert(
-            "abs",
+            "abs".to_string(),
             ForeignFunction {
                 name: "abs".into(),
                 arity: 1..=1,
-                callable: Callable::Function(abs),
+                callable: Callable::Function(Box::new(abs)),
             },
         );
         m.insert(
-            "round",
+            "round".to_string(),
             ForeignFunction {
                 name: "round".into(),
                 arity: 1..=1,
-                callable: Callable::Function(round),
+                callable: Callable::Function(Box::new(round)),
             },
         );
         m.insert(
-            "floor",
+            "floor".to_string(),
             ForeignFunction {
                 name: "floor".into(),
                 arity: 1..=1,
-                callable: Callable::Function(floor),
+                callable: Callable::Function(Box::new(floor)),
             },
         );
         m.insert(
-            "ceil",
+            "ceil".to_string(),
             ForeignFunction {
                 name: "ceil".into(),
                 arity: 1..=1,
-                callable: Callable::Function(ceil),
+                callable: Callable::Function(Box::new(ceil)),
             },
         );
 
         m.insert(
-            "sin",
+            "sin".to_string(),
             ForeignFunction {
                 name: "sin".into(),
                 arity: 1..=1,
-                callable: Callable::Function(sin),
+                callable: Callable::Function(Box::new(sin)),
             },
         );
         m.insert(
-            "cos",
+            "cos".to_string(),
             ForeignFunction {
                 name: "cos".into(),
                 arity: 1..=1,
-                callable: Callable::Function(cos),
+                callable: Callable::Function(Box::new(cos)),
             },
         );
         m.insert(
-            "tan",
+            "tan".to_string(),
             ForeignFunction {
                 name: "tan".into(),
                 arity: 1..=1,
-                callable: Callable::Function(tan),
+                callable: Callable::Function(Box::new(tan)),
             },
         );
         m.insert(
-            "asin",
+            "asin".to_string(),
             ForeignFunction {
                 name: "asin".into(),
                 arity: 1..=1,
-                callable: Callable::Function(asin),
+                callable: Callable::Function(Box::new(asin)),
             },
         );
         m.insert(
-            "acos",
+            "acos".to_string(),
             ForeignFunction {
                 name: "acos".into(),
                 arity: 1..=1,
-                callable: Callable::Function(acos),
+                callable: Callable::Function(Box::new(acos)),
             },
         );
         m.insert(
-            "atan",
+            "atan".to_string(),
             ForeignFunction {
                 name: "atan".into(),
                 arity: 1..=1,
-                callable: Callable::Function(atan),
+                callable: Callable::Function(Box::new(atan)),
             },
         );
         m.insert(
-            "atan2",
+            "atan2".to_string(),
             ForeignFunction {
                 name: "atan2".into(),
                 arity: 2..=2,
-                callable: Callable::Function(atan2),
+                callable: Callable::Function(Box::new(atan2)),
             },
         );
 
         m.insert(
-            "sinh",
+            "sinh".to_string(),
             ForeignFunction {
                 name: "sinh".into(),
                 arity: 1..=1,
-                callable: Callable::Function(sinh),
+                callable: Callable::Function(Box::new(sinh)),
             },
         );
         m.insert(
-            "cosh",
+            "cosh".to_string(),
             ForeignFunction {
                 name: "cosh".into(),
                 arity: 1..=1,
-                callable: Callable::Function(cosh),
+                callable: Callable::Function(Box::new(cosh)),
             },
         );
         m.insert(
-            "tanh",
+            "tanh".to_string(),
             ForeignFunction {
                 name: "tanh".into(),
                 arity: 1..=1,
-                callable: Callable::Function(tanh),
+                callable: Callable::Function(Box::new(tanh)),
             },
         );
         m.insert(
-            "asinh",
+            "asinh".to_string(),
             ForeignFunction {
                 name: "asinh".into(),
                 arity: 1..=1,
-                callable: Callable::Function(asinh),
+                callable: Callable::Function(Box::new(asinh)),
             },
         );
         m.insert(
-            "acosh",
+            "acosh".to_string(),
             ForeignFunction {
                 name: "acosh".into(),
                 arity: 1..=1,
-                callable: Callable::Function(acosh),
+                callable: Callable::Function(Box::new(acosh)),
             },
         );
         m.insert(
-            "atanh",
+            "atanh".to_string(),
             ForeignFunction {
                 name: "atanh".into(),
                 arity: 1..=1,
-                callable: Callable::Function(atanh),
+                callable: Callable::Function(Box::new(atanh)),
             },
         );
 
         m.insert(
-            "mod",
+            "mod".to_string(),
             ForeignFunction {
                 name: "mod".into(),
                 arity: 2..=2,
-                callable: Callable::Function(mod_),
+                callable: Callable::Function(Box::new(mod_)),
             },
         );
         m.insert(
-            "exp",
+            "exp".to_string(),
             ForeignFunction {
                 name: "exp".into(),
                 arity: 1..=1,
-                callable: Callable::Function(exp),
+                callable: Callable::Function(Box::new(exp)),
             },
         );
         m.insert(
-            "ln",
+            "ln".to_string(),
             ForeignFunction {
                 name: "ln".into(),
                 arity: 1..=1,
-                callable: Callable::Function(ln),
+                callable: Callable::Function(Box::new(ln)),
             },
         );
         m.insert(
-            "log10",
+            "log10".to_string(),
             ForeignFunction {
                 name: "log10".into(),
                 arity: 1..=1,
-                callable: Callable::Function(log10),
+                callable: Callable::Function(Box::new(log10)),
             },
         );
         m.insert(
-            "log2",
+            "log2".to_string(),
             ForeignFunction {
                 name: "log2".into(),
                 arity: 1..=1,
-                callable: Callable::Function(log2),
+                callable: Callable::Function(Box::new(log2)),
             },
         );
 
         m.insert(
-            "mean",
+            "mean".to_string(),
             ForeignFunction {
                 name: "mean".into(),
                 arity: 1..=usize::MAX,
-                callable: Callable::Function(mean),
+                callable: Callable::Function(Box::new(mean)),
             },
         );
         m.insert(
-            "maximum",
+            "maximum".to_string(),
             ForeignFunction {
                 name: "maximum".into(),
                 arity: 1..=usize::MAX,
-                callable: Callable::Function(maximum),
+                callable: Callable::Function(Box::new(maximum)),
             },
         );
         m.insert(
-            "minimum",
+            "minimum".to_string(),
             ForeignFunction {
                 name: "minimum".into(),
                 arity: 1..=usize::MAX,
-                callable: Callable::Function(minimum),
+                callable: Callable::Function(Box::new(minimum)),
             },
         );
+
+        for currency in ["USD", "JPY", "GBP", "CNY", "AUD", "CAD", "CHF"] {
+            m.insert(
+                format!("exchange_rate_{currency}"),
+                ForeignFunction {
+                    name: format!("exchange_rate_{currency}"),
+                    arity: 0..=0,
+                    callable: Callable::Function(exchange_rate(currency)),
+                },
+            );
+        }
 
         m
     })
@@ -514,4 +524,11 @@ fn minimum(args: &[Quantity]) -> Quantity {
             .unwrap(),
         output_unit.clone(),
     )
+}
+
+fn exchange_rate(rate: &'static str) -> Box<dyn Fn(&[Quantity]) -> Quantity + Send + Sync> {
+    Box::new(|_args: &[Quantity]| -> Quantity {
+        let exchange_rates = ExchangeRatesCache::new();
+        Quantity::from_scalar(exchange_rates.get_rate(rate).unwrap_or(f64::NAN))
+    })
 }
