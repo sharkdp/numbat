@@ -7,7 +7,7 @@ unit week: Time = 7 days
 
 # Gregorian year
 @metric_prefixes
-@aliases(years)
+@aliases(year: both, years, yr: short)
 unit year: Time = 365.2425 days
 
 @aliases(months)
