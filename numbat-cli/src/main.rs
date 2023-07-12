@@ -32,7 +32,7 @@ type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
 const PROMPT: &str = ">>> ";
 
-#[derive(Debug, Clone, Copy, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, ValueEnum)]
 enum PrettyPrintMode {
     Always,
     Never,
@@ -160,6 +160,13 @@ impl Cli {
                 .ok();
         });
 
+        let pretty_print_mode =
+            if !self.args.file.is_some() && self.args.pretty_print == PrettyPrintMode::Auto {
+                PrettyPrintMode::Always
+            } else {
+                self.args.pretty_print
+            };
+
         let (code, code_source): (Option<String>, CodeSource) =
             if let Some(ref path) = self.args.file {
                 (
@@ -178,7 +185,7 @@ impl Cli {
                 &code,
                 code_source,
                 ExecutionMode::Normal,
-                self.args.pretty_print,
+                pretty_print_mode,
             );
 
             match result {
