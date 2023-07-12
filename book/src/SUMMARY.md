@@ -29,6 +29,7 @@
 
 - [Installation]()
 - [Usage](./cli-usage.md)
+- [Customization](./cli-customization.md)
 
 # Web version
 
