@@ -6,7 +6,7 @@
 
 ## Basics
 
-- [Number notation]()
+- [Number notation](./number-notation.md)
 - [Unit notation]()
   - [List of supported units]()
 - [Operators and their precedence]()
