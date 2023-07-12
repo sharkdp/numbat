@@ -8,7 +8,7 @@ use highlighter::NumbatHighlighter;
 
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::pretty_print::PrettyPrint;
-use numbat::resolver::{CodeSource, FileSystemImporter};
+use numbat::resolver::{CodeSource, FileSystemImporter, ResolverError};
 use numbat::{markup, NameResolutionError, RuntimeError};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
 
@@ -101,7 +101,9 @@ impl Cli {
         let args = Args::parse();
 
         let mut importer = FileSystemImporter::default();
-        importer.add_path(Self::get_modules_path());
+        for path in Self::get_modules_paths() {
+            importer.add_path(path);
+        }
 
         let mut context = Context::new(importer);
         context.set_debug(args.debug);
@@ -117,16 +119,9 @@ impl Cli {
         let load_init = !(self.args.no_prelude || self.args.no_init);
 
         if load_prelude {
-            let modules_path = Self::get_modules_path();
-            let prelude_path = modules_path.join("prelude.nbt");
-
-            let prelude_code = fs::read_to_string(&prelude_path).context(format!(
-                "Error while reading prelude from '{}'",
-                prelude_path.to_string_lossy()
-            ))?;
             let result = self.parse_and_evaluate(
-                &prelude_code,
-                CodeSource::File(prelude_path),
+                "use prelude",
+                CodeSource::Text,
                 ExecutionMode::Normal,
                 PrettyPrintMode::Never,
             );
@@ -358,7 +353,11 @@ impl Cli {
                 }
             }
             Err(NumbatError::ResolverError(e)) => {
-                self.print_diagnostic(e);
+                self.print_diagnostic(e.clone());
+                if matches!(&e, ResolverError::UnknownModule(_, module_path) if module_path.0 == &["prelude"])
+                {
+                    eprintln!("Make sure that you have properly set up Numbat's module path.");
+                }
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::NameResolutionError(
@@ -393,8 +392,14 @@ impl Cli {
         config_dir.join("numbat") // TODO: allow for preludes in system paths, user paths, …
     }
 
-    fn get_modules_path() -> PathBuf {
-        Self::get_config_path().join("modules")
+    fn get_modules_paths() -> Vec<PathBuf> {
+        let mut paths = vec![Self::get_config_path().join("modules")];
+        if cfg!(unix) {
+            paths.push("/usr/share/numbat/modules".into());
+        } else {
+            paths.push("C:\\Program Files\\numbat\\modules".into());
+        }
+        paths
     }
 
     fn get_history_path(&self) -> Result<PathBuf> {

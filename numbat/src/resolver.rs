@@ -29,7 +29,7 @@ pub enum CodeSource {
     Module(ModulePath, Option<PathBuf>),
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Clone, Debug)]
 pub enum ResolverError {
     #[error("Unknown module '{1}'.")]
     UnknownModule(Span, ModulePath),

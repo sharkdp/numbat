@@ -47,7 +47,7 @@ use crate::tokenizer::{Token, TokenKind, TokenizerError, TokenizerErrorKind};
 use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq, Eq)]
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum ParseErrorKind {
     #[error("{0}")]
     TokenizerError(TokenizerErrorKind),
@@ -119,7 +119,7 @@ pub enum ParseErrorKind {
     InlineProcedureUsage,
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, Error)]
 #[error("{kind}")]
 pub struct ParseError {
     pub kind: ParseErrorKind,
