@@ -13,7 +13,7 @@ use numbat::{markup, NameResolutionError, RuntimeError};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use colored::Colorize;
 use rustyline::config::Configurer;
 use rustyline::{
@@ -31,6 +31,13 @@ use crate::ansi_formatter::ansi_format;
 type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
 const PROMPT: &str = ">>> ";
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum PrettyPrintMode {
+    Always,
+    Never,
+    Auto,
+}
 
 #[derive(Parser, Debug)]
 #[command(version, about, name("numbat"))]
@@ -52,8 +59,8 @@ struct Args {
     no_init: bool,
 
     /// Whether or not to pretty-print every input expression.
-    #[arg(long)]
-    pretty_print: bool,
+    #[arg(long, value_name = "WHEN", default_value = "auto")]
+    pretty_print: PrettyPrintMode,
 
     /// Turn on debug mode (e.g. disassembler output).
     #[arg(long, short)]
@@ -121,7 +128,7 @@ impl Cli {
                 &prelude_code,
                 CodeSource::File(prelude_path),
                 ExecutionMode::Normal,
-                false,
+                PrettyPrintMode::Never,
             );
             if result.is_break() {
                 bail!("Interpreter error in Prelude code")
@@ -136,7 +143,7 @@ impl Cli {
                     &user_init_code,
                     CodeSource::File(user_init_path),
                     ExecutionMode::Normal,
-                    false,
+                    PrettyPrintMode::Never,
                 );
                 if result.is_break() {
                     bail!("Interpreter error in user initialization code")
@@ -312,9 +319,15 @@ impl Cli {
         input: &str,
         code_source: CodeSource,
         execution_mode: ExecutionMode,
-        pretty_print: bool,
+        pretty_print_mode: PrettyPrintMode,
     ) -> ControlFlow {
         let result = { self.context.lock().unwrap().interpret(input, code_source) };
+
+        let pretty_print = match pretty_print_mode {
+            PrettyPrintMode::Always => true,
+            PrettyPrintMode::Never => false,
+            PrettyPrintMode::Auto => execution_mode == ExecutionMode::Interactive,
+        };
 
         match result {
             Ok((statements, interpreter_result)) => {
