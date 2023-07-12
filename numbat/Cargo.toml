@@ -2,8 +2,13 @@
 name = "numbat"
 description = "A high precision scientific calculator with full support for physical units."
 authors = ["David Peter <mail@david-peter.de>"]
-version = "0.1.0"
+categories = ["science", "mathematics", "parser-implementations"]
+version = "1.5.0"
 edition = "2021"
+homepage = "https://numbat.dev/"
+repository = "https://github.com/sharkdp/numbat"
+license = "MIT/Apache-2.0"
+readme = "README.md"
 
 [dependencies]
 thiserror = "1"
@@ -13,7 +18,7 @@ num-traits = "0.2"
 codespan-reporting = "0.11"
 strsim = "0.10.0"
 pretty_dtoa = "0.3"
-numbat-exchange-rates = { path = "../numbat-exchange-rates" }
+numbat-exchange-rates = { version = "0.1.0", path = "../numbat-exchange-rates" }
 
 [dev-dependencies]
 approx = "0.5"
