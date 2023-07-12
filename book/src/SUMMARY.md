@@ -8,7 +8,7 @@
 
 - [Number notation](./number-notation.md)
 - [Unit notation]()
-  - [List of supported units]()
+  - [List of supported units](./list-of-units.md)
 - [Operators and their precedence]()
 - [The conversion operator]()
 - [Builtin functions and constants]()
