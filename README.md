@@ -80,3 +80,20 @@ of the parameter `n`.
   - The PureScript implementation is *slow*. A Rust-based parser & interpreter could be much faster. Not just
     on the command-line (startup speed!) but also on the Web (via WASM)
   - It would be a nice playground for a WASM project
+
+## Development
+
+Run Numbat CLI
+```
+cargo run -- <numbat args>
+```
+
+Install the CLI version
+```
+cargo install -f --path numbat-cli
+```
+
+Run all tests
+```
+cargo test
+```
