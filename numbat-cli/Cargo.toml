@@ -1,15 +1,20 @@
 [package]
 name = "numbat-cli"
-description = "A high precision scientific calculator with full support for physical units."
 authors = ["David Peter <mail@david-peter.de>"]
-version = "0.1.0"
+description = "A high precision scientific calculator with full support for physical units."
+categories = ["command-line-utilities", "science", "mathematics", "parser-implementations"]
+homepage = "https://numbat.dev/"
+repository = "https://github.com/sharkdp/numbat"
+version = "1.5.0"
 edition = "2021"
+readme = "../README.md"
+license = "MIT/Apache-2.0"
 
 [dependencies]
 anyhow = "1"
 rustyline = { version = "12", features = ["derive"] }
 dirs = "5"
-numbat = { path = "../numbat" }
+numbat = { version = "1.5.0", path = "../numbat" }
 colored = "2"
 itertools = "0.10"
 
