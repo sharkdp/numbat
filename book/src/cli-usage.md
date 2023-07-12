@@ -1,6 +1,49 @@
 # Usage
 
-## Key bindings
+## Modes
+
+You can run the Numbat command-line application in three different modes:
+
+| Mode | Command to run |
+|---|---|
+| Start an interactive session (REPL) | `numbat` |
+| Run a Numbat program | `numbat script.nbt` |
+| Evaluate a single expression | `numbat -e '30 km/h -> mi/h'` |
+
+## Command-line options
+
+See `numbat --help` for more information.
+
+## Interactive sessions
+
+Interactive sessions allow you to perform a sequence of calculations. You can use the special identifiers
+`ans` or `_` to refer to the result of the last calculation. For example:
+
+```
+>>> 60 kW h / 150 kW
+
+    = 0.4 h
+
+>>> ans -> minutes
+
+    = 24 min
+```
+
+### Commands
+
+There is a set of special commands that only work in interactive mode:
+
+| Command | Action |
+|---------|--------|
+| `list`, `ll`, `ls` | List all constants, units, and dimensions |
+| `clear` | Clear screen |
+| `quit`, `exit` | Quit the session |
+
+### Key bindings
+
+In interactive command-line mode, you can use the following key bindings. Most importantly,
+`Tab` for auto-completion, arrow keys and `Ctrl-R` for browsing the command history, and
+`Ctrl-D` for exiting the interactive session.
 
 | Key sequence | Action |
 |--------------|--------|
