@@ -22,6 +22,7 @@ use rustyline::{
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
+use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
@@ -201,10 +202,13 @@ impl Cli {
     }
 
     fn repl(&mut self) -> Result<()> {
-        println!();
-        println!(" █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀");
-        println!(" █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░");
-        println!();
+        let interactive = std::io::stdin().is_terminal();
+        if interactive {
+            println!();
+            println!(" █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀");
+            println!(" █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░");
+            println!();
+        }
 
         let history_path = self.get_history_path()?;
 
@@ -228,10 +232,12 @@ impl Cli {
 
         let result = self.repl_loop(&mut rl);
 
-        rl.save_history(&history_path).context(format!(
-            "Error while saving history to '{}'",
-            history_path.to_string_lossy()
-        ))?;
+        if interactive {
+            rl.save_history(&history_path).context(format!(
+                "Error while saving history to '{}'",
+                history_path.to_string_lossy()
+            ))?;
+        }
 
         result
     }
