@@ -9,7 +9,7 @@
 - [Number notation](./number-notation.md)
 - [Unit notation]()
   - [List of supported units](./list-of-units.md)
-- [Operators and their precedence]()
+- [Operators and their precedence](./operators.md)
 - [The conversion operator]()
 - [Builtin functions and constants]()
   - [Trigonometric]()
