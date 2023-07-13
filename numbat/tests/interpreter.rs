@@ -195,6 +195,10 @@ fn test_full_simplify() {
              f(5)",
         "500 cm/m",
     );
+
+    expect_output("1 Wh/W", "1 Wh/W"); // This output is not great (and should be improved). But we keep this as a regression test for a bug in previous versions.
+
+    expect_output("1 × (m/s)^2/(m/s)", "1 m/s");
 }
 
 #[test]

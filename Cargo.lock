@@ -872,6 +872,7 @@ dependencies = [
  "codespan-reporting",
  "glob",
  "itertools",
+ "num-integer",
  "num-rational",
  "num-traits",
  "numbat-exchange-rates",

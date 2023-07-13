@@ -45,19 +45,52 @@ impl UnitIdentifier {
         }
     }
 
-    pub fn sort_key(&self) -> String {
+    pub fn sort_key(&self) -> Vec<(String, Exponent)> {
+        use num_integer::Integer;
+
         // TODO: this is more or less a hack. instead of properly sorting by physical
         // dimension, we sort by the name of the corresponding base unit(s).
         match &self.kind {
-            UnitKind::Base => self.name.clone(),
-            UnitKind::Derived(_, base_unit) => itertools::Itertools::intersperse(
-                base_unit
+            UnitKind::Base => vec![(self.name.clone(), Exponent::from_integer(1))],
+            UnitKind::Derived(_, base_unit) => {
+                let mut key: Vec<_> = base_unit
                     .canonicalized()
                     .iter()
-                    .map(|f| f.unit_id.sort_key()),
-                "###".into(),
-            )
-            .collect::<String>(),
+                    .flat_map(|f| {
+                        let mut k = f.unit_id.sort_key();
+                        debug_assert!(k.len() == 1);
+                        k[0].1 = f.exponent;
+                        k
+                    })
+                    .collect();
+
+                if key.len() > 0 {
+                    // Normalize the sign of the exponents. This is useful to consider
+                    // 's' and 'Hz' for merging.
+                    if key[0].1 < 0.into() {
+                        key.iter_mut().for_each(|p| p.1 = -p.1);
+                    }
+
+                    // Multiply by the product of all divisors to make all exponents
+                    // integers. This is needed for the next step.
+                    let factor: i64 = key.iter().map(|p| p.1.numer()).product();
+
+                    key.iter_mut().for_each(|p| p.1 = p.1 * factor);
+
+                    // Now divide every factor by the greatest common divisor. This is
+                    // useful to consider g·m² and g²·m⁴ for merging (but not g·m² and g·m³).
+                    debug_assert!(key[0].1.is_integer());
+                    let mut common_divisor: i64 = key[0].1.to_integer();
+                    for p in &key[1..] {
+                        debug_assert!(p.1.is_integer());
+                        common_divisor = common_divisor.gcd(&p.1.to_integer());
+                    }
+
+                    key.iter_mut().for_each(|p| p.1 = p.1 / common_divisor);
+                }
+
+                key
+            }
         }
     }
 }
