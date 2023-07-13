@@ -8,28 +8,28 @@ assert_eq(1 gallon, 231 inch^3, 0.001 inch^3)
 
 # US liquid pint
 @aliases(pints)
-unit pint = 1/8 × gallon
+unit pint: Volume = 1/8 × gallon
 
 # US cup
 @aliases(cups)
-unit cup = 1/2 × pint
+unit cup: Volume = 1/2 × pint
 
 # US tablespoon
 @aliases(tablespoons, tbsp)
-unit tablespoon = 1/16 × cup
+unit tablespoon: Volume = 1/16 × cup
 
 # US teaspoon
 @aliases(teaspoons, tsp)
-unit teaspoon = 1/3 × tablespoon
+unit teaspoon: Volume = 1/3 × tablespoon
 
 # US fluid ounce
 @aliases(fluidounces, floz: short)
-unit fluidounce = 2 tablespoon
+unit fluidounce: Volume = 2 tablespoon
 
 # US hogshead
 @aliases(hogsheads)
-unit hogshead = 63 gallon
+unit hogshead: Volume = 63 gallon
 
 # US rod
 @aliases(rods)
-unit rod = 16.5 ft
+unit rod: Length = 16.5 ft

@@ -14,4 +14,4 @@ unit year: Time = 365.2425 days
 unit month: Time = year / 12
 
 @aliases(julian_years)
-unit julian_year = 365.25 days
+unit julian_year: Time = 365.25 days

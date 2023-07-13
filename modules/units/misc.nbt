@@ -50,6 +50,6 @@ unit molal: AmountOfSubstance / Mass = 1 mole / kilogram
 
 @metric_prefixes
 @aliases(Wh: short)
-unit watthour = W h
+unit watthour: Energy = W h
 
-unit kph = kilometer per hour
+unit kph: Speed = kilometer per hour

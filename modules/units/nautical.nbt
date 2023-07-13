@@ -4,4 +4,4 @@ use units::si
 unit knot: Speed = 463 m / 900 s
 
 @aliases(nautical_miles, NM: short, nmi: short)
-unit nautical_mile = 1852 m
+unit nautical_mile: Length = 1852 m
