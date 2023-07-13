@@ -167,7 +167,8 @@ impl Unit {
                      exponent,
                  }| { base_unit.corresponding_base_unit().power(*exponent) },
             )
-            .product();
+            .product::<Self>()
+            .canonicalized();
 
         let factor = self
             .iter()
