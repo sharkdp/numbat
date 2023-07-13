@@ -495,7 +495,7 @@ impl Vm {
                     let num_args = self.read_u16() as usize;
                     let foreign_function = &self.ffi_callables[function_idx];
 
-                    assert!(foreign_function.arity.contains(&num_args));
+                    debug_assert!(foreign_function.arity.contains(&num_args));
 
                     let mut args = vec![];
                     for _ in 0..num_args {

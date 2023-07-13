@@ -315,7 +315,7 @@ impl TypeChecker {
                 if *is_variadic {
                     // For a variadic function, we simply duplicate the parameter type
                     // N times, where N is the number of arguments given.
-                    assert!(parameter_types.len() == 1);
+                    debug_assert!(parameter_types.len() == 1);
 
                     for _ in 1..argument_types.len() {
                         parameter_types.push(parameter_types[0].clone());

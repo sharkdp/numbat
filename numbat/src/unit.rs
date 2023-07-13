@@ -169,7 +169,7 @@ impl Unit {
         factor: ConversionFactor,
         base_unit: Unit,
     ) -> Self {
-        assert!(base_unit.iter().all(|f| f.unit_id.is_base()));
+        debug_assert!(base_unit.iter().all(|f| f.unit_id.is_base()));
 
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
@@ -184,8 +184,8 @@ impl Unit {
 
     pub fn with_prefix(self, prefix: Prefix) -> Self {
         let mut factors: Vec<_> = self.into_iter().collect();
-        assert!(!factors.is_empty());
-        assert!(factors[0].prefix == Prefix::none());
+        debug_assert!(!factors.is_empty());
+        debug_assert!(factors[0].prefix == Prefix::none());
         factors[0].prefix = prefix;
         Self::from_factors(factors)
     }
