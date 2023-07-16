@@ -379,7 +379,7 @@ pub enum Statement {
         return_type_annotation: Option<DimensionExpression>,
     },
     DeclareDimension(String, Vec<DimensionExpression>),
-    DeclareBaseUnit(Span, String, DimensionExpression, Vec<Decorator>),
+    DeclareBaseUnit(Span, String, Option<DimensionExpression>, Vec<Decorator>),
     DeclareDerivedUnit {
         identifier_span: Span,
         identifier: String,
@@ -550,9 +550,11 @@ impl PrettyPrint for Statement {
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
-                    + m::operator(":")
-                    + m::space()
-                    + dexpr.pretty_print()
+                    + if let Some(dexpr) = dexpr {
+                        m::operator(":") + m::space() + dexpr.pretty_print()
+                    } else {
+                        Markup::default()
+                    }
             }
             Statement::DeclareDerivedUnit {
                 identifier_span: _,
@@ -726,7 +728,7 @@ impl ReplaceSpans for Statement {
             Statement::DeclareBaseUnit(_, name, type_, decorators) => Statement::DeclareBaseUnit(
                 Span::dummy(),
                 name.clone(),
-                type_.replace_spans(),
+                type_.as_ref().map(|t| t.replace_spans()),
                 decorators.clone(),
             ),
             Statement::DeclareDerivedUnit {

@@ -466,10 +466,19 @@ impl TypeChecker {
                 )
             }
             ast::Statement::DeclareBaseUnit(_span, unit_name, dexpr, decorators) => {
-                let type_specified = self
-                    .registry
-                    .get_base_representation(&dexpr)
-                    .map_err(TypeCheckError::RegistryError)?;
+                let type_specified = if let Some(dexpr) = dexpr {
+                    self.registry
+                        .get_base_representation(&dexpr)
+                        .map_err(TypeCheckError::RegistryError)?
+                } else {
+                    use heck::ToUpperCamelCase;
+                    // In a unit definition like 'unit pixel' without a specified type,
+                    // we add a new type for the user
+                    let type_name = unit_name.to_upper_camel_case();
+                    self.registry
+                        .add_base_dimension(&type_name)
+                        .map_err(TypeCheckError::RegistryError)?
+                };
                 for (name, _) in decorator::name_and_aliases(&unit_name, &decorators) {
                     self.identifiers
                         .insert(name.clone(), type_specified.clone());

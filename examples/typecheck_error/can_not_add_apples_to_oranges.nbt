@@ -1,7 +1,4 @@
-dimension Apple
-unit apple: Apple
-
-dimension Orange
-unit orange: Orange
+unit apple
+unit orange
 
 apple + orange

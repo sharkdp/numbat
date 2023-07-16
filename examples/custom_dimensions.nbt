@@ -1,5 +1,4 @@
-dimension Student
-unit student: Student
+unit student
 
 let lunch_cost = 85 €
 

@@ -468,7 +468,14 @@ impl<'a> Parser<'a> {
                     Ok(Statement::DeclareBaseUnit(
                         identifier_span,
                         unit_name,
-                        dexpr,
+                        Some(dexpr),
+                        decorators,
+                    ))
+                } else if self.is_end_of_statement() {
+                    Ok(Statement::DeclareBaseUnit(
+                        identifier_span,
+                        unit_name,
+                        None,
                         decorators,
                     ))
                 } else {
@@ -993,6 +1000,10 @@ impl<'a> Parser<'a> {
 
     fn last(&self) -> Option<&'a Token> {
         self.tokens.get(self.current - 1)
+    }
+
+    pub fn is_end_of_statement(&self) -> bool {
+        self.peek().kind == TokenKind::Newline || self.is_at_end()
     }
 
     pub fn is_at_end(&self) -> bool {
