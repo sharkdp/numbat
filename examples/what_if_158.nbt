@@ -1,0 +1,55 @@
+# Hot Banana
+#
+# I heard that bananas are radioactive. If they are radioactive, then they
+# radiate energy. How many bananas would you need to power a house?
+#
+# https://what-if.xkcd.com/158/
+
+# Bananas contain Potassium-40 with the following properties:
+
+let molar_mass_40K: MolarMass = 40 g / mol
+let halflife_40K: Time = 1.25 billion years
+
+# 40-K has a natural occcurence of
+
+let occurence_40K = 0.0117 percent
+
+# We can now compute the radioactivity of natural potassium
+
+let decay_rate_40K: Activity = ln(2) / halflife_40K
+let radioactivity_potassium: Activity / Mass = N_A * occurence_40K * decay_rate_40K / molar_mass_40K -> Bq / g
+
+print(radioactivity_potassium)
+
+# Next, we come to bananas
+
+@aliases(bananas)
+unit banana
+
+# https://fdc.nal.usda.gov/fdc-app.html#/food-details/173944/nutrients
+
+let potassium_per_banana = 451 mg / banana
+
+let radioactivity_banana: Activity / Banana = potassium_per_banana * radioactivity_potassium -> Bq / banana
+print(radioactivity_banana)
+
+# A single 40-K decay releases an energy of
+# (https://commons.wikimedia.org/wiki/File:Potassium-40-decay-scheme.svg)
+
+let energy_per_decay: Energy = 11 percent * 1.5 MeV + 89 percent * 1.3 MeV
+
+# Finally: how many bananas do we need to power a single household?
+
+let power_per_banana: Power / Banana = radioactivity_banana * energy_per_decay -> pW / banana
+print(power_per_banana)
+
+unit household
+let power_consumption_household: Power / Household = 3000 kWh per household per year
+
+let bananas_per_household = power_consumption_household / power_per_banana -> bananas / household
+print(bananas_per_household)
+
+# TODO: https://what-if.xkcd.com/158/ says this number should be around 300
+# quadrillion, but we only get 0.1 quadrillion. 300 quadrillion times "a couple
+# of picowatt" would be an average power consumption of at least 300 kW /
+# household, which seems … excessive.
