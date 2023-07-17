@@ -49,3 +49,18 @@ let k_B: Energy / Temperature = 1.380649e-23 J / K
 
 # Ideal gas constant
 let R: Energy / (AmountOfSubstance × Temperature) = 8.31446261815324 J / (K mol)
+
+# Planck length
+let planck_length: Length = sqrt(ℏ gravitational_constant / speed_of_light^3) -> m
+
+# Planck mass
+let planck_mass: Mass = sqrt(ℏ speed_of_light / gravitational_constant) -> kg
+
+# Planck time
+let planck_time: Time = sqrt(ℏ gravitational_constant / speed_of_light^5) -> s
+
+# Planck temperature
+let planck_temperature: Temperature = sqrt(ℏ speed_of_light^5 / (gravitational_constant * k_B^2)) -> K
+
+# Planck energy
+let planck_energy: Energy = sqrt(ℏ speed_of_light^5 / gravitational_constant)
