@@ -38,7 +38,7 @@ unit torr: Pressure = 101325 / 760 × pascal
 unit psi: Pressure = 6.894757 kPa
 
 @aliases(atmospheres, atm: short)
-unit atmosphere: Pressure = 101325 pascal
+unit atmosphere: Pressure = 101_325 pascal
 
 @metric_prefixes
 unit molar: AmountOfSubstance / Volume = 1 mol / litre

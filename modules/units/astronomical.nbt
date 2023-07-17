@@ -2,8 +2,8 @@ use units::si
 
 @metric_prefixes
 @aliases(parsecs, pc: short)
-unit parsec: Length = 648000 / π × au
+unit parsec: Length = 648_000 / π × au
 
 @metric_prefixes
 @aliases(lightyears, ly: short)
-unit lightyear: Length = 9460730472580800 m
+unit lightyear: Length = 9_460_730_472_580_800 m

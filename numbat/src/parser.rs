@@ -788,9 +788,10 @@ impl<'a> Parser<'a> {
         // This function needs to be kept in sync with `next_token_could_start_primary` below.
 
         if let Some(num) = self.match_exact(TokenKind::Number) {
+            let num_string = num.lexeme.replace("_", "");
             Ok(Expression::Scalar(
                 self.last().unwrap().span,
-                Number::from_f64(num.lexeme.parse::<f64>().unwrap()),
+                Number::from_f64(num_string.parse::<f64>().unwrap()),
             ))
         } else if let Some(hex_int) = self.match_exact(TokenKind::IntegerWithBase(16)) {
             Ok(Expression::Scalar(
@@ -1104,6 +1105,24 @@ mod tests {
             &["1234567890000000", "1234567890000000.0"],
             scalar!(1234567890000000.0),
         );
+    }
+
+    #[test]
+    fn decimal_separator() {
+        parse_as_expression(
+            &["50_000_000", "50_000_000.0", "50_000000"],
+            scalar!(50_000_000.0),
+        );
+        parse_as_expression(&["1_000"], scalar!(1000.0));
+        parse_as_expression(&["1.000001", "1.000_001"], scalar!(1.000_001));
+        parse_as_expression(&["1e1_0_0"], scalar!(1e100));
+
+        // Leading underscores are not allowed / will result in parsing as identifier
+        parse_as_expression(&["_50_000_000"], identifier!("_50_000_000"));
+        should_fail(&["1._0", "1e+_0", "1e-_0"]);
+
+        // Trailing underscores are not allowed
+        should_fail(&["100_", "1.00_", "1e2_"]);
     }
 
     #[test]

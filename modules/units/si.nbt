@@ -129,7 +129,7 @@ unit hour: Time = 60 minutes
 unit day: Time = 24 hours
 
 @aliases(astronomicalunits, au: short, AU: short)
-unit astronomicalunit: Length = 149597870700 meter
+unit astronomicalunit: Length = 149_597_870_700 meter
 
 @aliases(degrees, deg, °: short)
 unit degree: Angle = π / 180 × radian

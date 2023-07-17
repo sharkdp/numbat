@@ -13,8 +13,8 @@ let golden_ratio = φ
 ### Named numbers
 
 let hundred =  100
-let thousand =  1000
-let million =  1000000
+let thousand =  1_000
+let million =  1_000_000
 let billion =  10^9
 let trillion =  10^12
 let quadrillion =  10^15

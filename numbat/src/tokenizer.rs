@@ -160,7 +160,8 @@ impl Tokenizer {
     fn consume_stream_of_digits(
         &mut self,
         at_least_one_digit: bool,
-        disallow_dot_and_digits_after_stream: bool,
+        disallow_leading_underscore: bool,
+        disallow_dot_after_stream: bool,
     ) -> Result<()> {
         if at_least_one_digit && !self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
             return Err(TokenizerError {
@@ -171,14 +172,31 @@ impl Tokenizer {
             });
         }
 
-        while self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-            self.advance();
+        // Make sure we don't start with an underscore
+        if disallow_leading_underscore && self.peek().map(|c| c == '_').unwrap_or(false) {
+            return Err(TokenizerError {
+                kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(self.peek().unwrap()),
+                span: self.current.single_character_span(self.code_source_index),
+            });
         }
 
-        if disallow_dot_and_digits_after_stream
+        let mut last_char = None;
+        while self.peek().map(|c| c.is_ascii_digit() || c == '_').unwrap_or(false) {
+            last_char = Some(self.advance());
+        }
+
+        // Make sure we don't end with an underscore
+        if last_char == Some('_') {
+            return Err(TokenizerError {
+                kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral('_'),
+                span: self.last.single_character_span(self.code_source_index),
+            });
+        }
+
+        if disallow_dot_after_stream
             && self
                 .peek()
-                .map(|c| c.is_ascii_digit() || c == '.')
+                .map(|c| c == '.')
                 .unwrap_or(false)
         {
             return Err(TokenizerError {
@@ -199,7 +217,7 @@ impl Tokenizer {
         {
             let _ = self.match_char('+') || self.match_char('-');
 
-            self.consume_stream_of_digits(true, true)?;
+            self.consume_stream_of_digits(true, true, true)?;
         }
 
         Ok(())
@@ -292,11 +310,11 @@ impl Tokenizer {
                 TokenKind::IntegerWithBase(base)
             }
             c if c.is_ascii_digit() => {
-                self.consume_stream_of_digits(false, false)?;
+                self.consume_stream_of_digits(false, false, false)?;
 
                 // decimal part
                 if self.match_char('.') {
-                    self.consume_stream_of_digits(false, true)?;
+                    self.consume_stream_of_digits(false, true, true)?;
                 }
 
                 self.scientific_notation()?;
@@ -304,7 +322,7 @@ impl Tokenizer {
                 TokenKind::Number
             }
             '.' => {
-                self.consume_stream_of_digits(true, true)?;
+                self.consume_stream_of_digits(true, true, true)?;
                 self.scientific_notation()?;
 
                 TokenKind::Number
