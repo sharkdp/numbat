@@ -1,0 +1,6 @@
+let initial_population = 50_000 people
+let growth_rate: Rate = 2 percent per year
+
+fn predict_population(time: Time) = initial_population × e^(growth_rate time) // round
+
+assert_eq(predict_population(10 years), 61_070 person)

@@ -45,3 +45,6 @@ dimension Illuminance = LuminousFlux / Area
 dimension Activity = 1 / Time
 dimension AbsorbedDose = Energy / Mass
 dimension EquivalentDose = Energy / Mass
+
+# Other useful names
+dimension Rate = 1 / Time

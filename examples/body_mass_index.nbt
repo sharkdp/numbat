@@ -1,0 +1,5 @@
+unit BMI: Mass / Length^2 = kg / m^2
+
+fn body_mass_index(mass: Mass, height: Length) = mass / height²
+
+assert_eq(body_mass_index(70 kg, 1.75 m), 22.86 BMI, 0.01 BMI)

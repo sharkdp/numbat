@@ -1,0 +1,14 @@
+@aliases(servings)
+unit serving
+
+fn scale_recipe<D>(quantity: D, original_servings: Serving, desired_servings: Serving) -> D =
+    quantity × desired_servings / original_servings
+
+let milk = 500 ml
+let flour = 250 g
+let original_recipe_servings = 2 servings
+
+let desired_servings = 3 servings
+
+assert_eq(scale_recipe(milk,  original_recipe_servings, desired_servings), 750 ml)
+assert_eq(scale_recipe(flour, original_recipe_servings, desired_servings), 375 g)
