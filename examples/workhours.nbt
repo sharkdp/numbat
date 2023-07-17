@@ -1,7 +1,5 @@
-dimension WorkHour
-
 @aliases(workhours)
-unit workhour: WorkHour
+unit workhour
 
 @aliases(workdays)
 unit workday = 8 workhours
