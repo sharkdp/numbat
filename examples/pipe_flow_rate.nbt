@@ -1,0 +1,16 @@
+dimension DynamicViscosity = Pressure × Time
+dimension FlowRate = Volume / Time
+
+let μ_water: DynamicViscosity = 1 mPa·s
+
+# Hagen-Poiseuille
+fn flow_rate(radius: Length, length: Length, Δp: Pressure) -> FlowRate =
+    π × radius^4 × Δp / (8 μ_water × length)
+
+let pipe_radius = 1 cm
+let pipe_length = 10 m
+let Δp = 0.1 bar
+
+let Q: FlowRate = flow_rate(pipe_radius, pipe_length, Δp) -> L/s
+
+assert_eq(Q, 3.93 L/s, 0.01 L/s)
