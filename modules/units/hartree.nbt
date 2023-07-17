@@ -1,0 +1,4 @@
+@aliases(hartrees)
+unit hartree: Energy = ℏ^2 / (electron_mass a0^2)
+
+unit bohr: Length = a0
