@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use std::sync::OnceLock;
 
@@ -64,14 +64,14 @@ struct UnitInfo {
 #[derive(Debug, Clone)]
 pub struct PrefixParser {
     units: HashMap<String, UnitInfo>,
-    other_identifiers: HashSet<(Span, String)>,
+    other_identifiers: HashMap<String, Span>,
 }
 
 impl PrefixParser {
     pub fn new() -> Self {
         Self {
             units: HashMap::new(),
-            other_identifiers: HashSet::new(),
+            other_identifiers: HashMap::new(),
         }
     }
 
@@ -133,7 +133,7 @@ impl PrefixParser {
     }
 
     fn ensure_name_is_available(&self, name: &str, conflict_span: Span) -> Result<()> {
-        if let Some((original_span, _)) = self.other_identifiers.iter().find(|(_, n)| n == name) {
+        if let Some(original_span) = self.other_identifiers.get(name) {
             return Err(self.identifier_clash_error(name, conflict_span, *original_span));
         }
 
@@ -192,15 +192,11 @@ impl PrefixParser {
     pub fn add_other_identifier(&mut self, identifier: &str, definition_span: Span) -> Result<()> {
         self.ensure_name_is_available(identifier, definition_span)?;
 
-        if let Some((original_span, _)) = self
-            .other_identifiers
-            .iter()
-            .find(|(_, name)| name == identifier)
-        {
+        if let Some(original_span) = self.other_identifiers.get(identifier) {
             Err(self.identifier_clash_error(identifier, definition_span, *original_span))
         } else {
             self.other_identifiers
-                .insert((definition_span, identifier.into()));
+                .insert(identifier.into(), definition_span);
             Ok(())
         }
     }
@@ -215,44 +211,38 @@ impl PrefixParser {
             );
         }
 
-        for (prefix_long, prefix_short, prefix) in Self::prefixes() {
-            let is_metric = prefix.is_metric();
-            let is_binary = prefix.is_binary();
-
-            if input.starts_with(prefix_long) {
-                let suffix_long = &input[prefix_long.len()..];
-                if self.units.iter().any(|(name, info)| {
-                    (info.accepts_prefix.long
-                        && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes))
-                        && name == suffix_long
-                }) {
-                    let unit_name = suffix_long.to_string();
-                    let unit_info = self.units.get(&unit_name).unwrap();
-                    return PrefixParserResult::UnitIdentifier(
-                        unit_info.definition_span,
-                        *prefix,
-                        unit_name,
-                        unit_info.full_name.clone(),
-                    );
-                }
+        for (unit_name, info) in &self.units {
+            if !input.ends_with(unit_name.as_str()) {
+                continue;
             }
 
-            if input.starts_with(prefix_short) {
-                let suffix_short = &input[prefix_short.len()..];
+            for (prefix_long, prefix_short, prefix) in Self::prefixes() {
+                let is_metric = prefix.is_metric();
+                let is_binary = prefix.is_binary();
 
-                if self.units.iter().any(|(name, info)| {
-                    (info.accepts_prefix.short
-                        && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes))
-                        && name == suffix_short
-                }) {
-                    let unit_name = suffix_short.to_string();
-                    let unit_info = self.units.get(&unit_name).unwrap();
-
+                if info.accepts_prefix.long
+                    && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes)
+                    && input.starts_with(prefix_long)
+                    && &input[prefix_long.len()..] == unit_name
+                {
                     return PrefixParserResult::UnitIdentifier(
-                        unit_info.definition_span,
+                        info.definition_span,
                         *prefix,
-                        unit_name,
-                        unit_info.full_name.clone(),
+                        unit_name.to_string(),
+                        info.full_name.clone(),
+                    );
+                }
+
+                if info.accepts_prefix.short
+                    && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes)
+                    && input.starts_with(prefix_short)
+                    && &input[prefix_short.len()..] == unit_name
+                {
+                    return PrefixParserResult::UnitIdentifier(
+                        info.definition_span,
+                        *prefix,
+                        unit_name.to_string(),
+                        info.full_name.clone(),
                     );
                 }
             }
