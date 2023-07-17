@@ -1,0 +1,9 @@
+let molar_mass_NaCl = 58.44 g / mol
+
+fn molarity(mass: Mass, volume: Volume) -> Molarity = (mass / molar_mass_NaCl) / volume
+
+# Isotonic saline
+let salt_mass = 9 g
+let water_volume = 1 L
+
+assert_eq(molarity(salt_mass, water_volume), 154 mmol/l, 0.1 mmol/l)
