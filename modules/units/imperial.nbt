@@ -20,7 +20,7 @@ assert_eq(1 mile, 1760 yard, 0.001 yard)
 @aliases(ounces, oz: short)
 unit ounce: Mass = 28.35 gram
 
-@aliases(pounds, lb: short)
+@aliases(pounds, lb: short, lbs)
 unit pound: Mass = 453.6 gram
 
 @aliases(mils, mil: short)
