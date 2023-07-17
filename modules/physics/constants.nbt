@@ -63,4 +63,7 @@ let planck_time: Time = sqrt(ℏ gravitational_constant / speed_of_light^5) -> s
 let planck_temperature: Temperature = sqrt(ℏ speed_of_light^5 / (gravitational_constant * k_B^2)) -> K
 
 # Planck energy
-let planck_energy: Energy = sqrt(ℏ speed_of_light^5 / gravitational_constant)
+let planck_energy: Energy = sqrt(ℏ speed_of_light^5 / gravitational_constant) -> J
+
+# Bohr radius
+let a0: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
