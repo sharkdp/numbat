@@ -219,47 +219,42 @@ impl PrefixParser {
             let is_metric = prefix.is_metric();
             let is_binary = prefix.is_binary();
 
-            if input.starts_with(prefix_long)
-                && self
-                    .units
-                    .iter()
-                    .filter(|(_, info)| {
-                        info.accepts_prefix.long
-                            && (is_metric && info.metric_prefixes
-                                || is_binary && info.binary_prefixes)
-                    })
-                    .any(|(name, _)| name == &input[prefix_long.len()..])
-            {
-                let unit_name = input[prefix_long.len()..].to_string();
-                let unit_info = self.units.get(&unit_name).unwrap();
-                return PrefixParserResult::UnitIdentifier(
-                    unit_info.definition_span,
-                    *prefix,
-                    unit_name,
-                    unit_info.full_name.clone(),
-                );
+            if input.starts_with(prefix_long) {
+                let suffix_long = &input[prefix_long.len()..];
+                if self.units.iter().any(|(name, info)| {
+                    (info.accepts_prefix.long
+                        && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes))
+                        && name == suffix_long
+                }) {
+                    let unit_name = suffix_long.to_string();
+                    let unit_info = self.units.get(&unit_name).unwrap();
+                    return PrefixParserResult::UnitIdentifier(
+                        unit_info.definition_span,
+                        *prefix,
+                        unit_name,
+                        unit_info.full_name.clone(),
+                    );
+                }
             }
 
-            if input.starts_with(prefix_short)
-                && self
-                    .units
-                    .iter()
-                    .filter(|(_, info)| {
-                        info.accepts_prefix.short
-                            && (is_metric && info.metric_prefixes
-                                || is_binary && info.binary_prefixes)
-                    })
-                    .any(|(name, _)| name == &input[prefix_short.len()..])
-            {
-                let unit_name = input[prefix_short.len()..].to_string();
-                let unit_info = self.units.get(&unit_name).unwrap();
+            if input.starts_with(prefix_short) {
+                let suffix_short = &input[prefix_short.len()..];
 
-                return PrefixParserResult::UnitIdentifier(
-                    unit_info.definition_span,
-                    *prefix,
-                    unit_name,
-                    unit_info.full_name.clone(),
-                );
+                if self.units.iter().any(|(name, info)| {
+                    (info.accepts_prefix.short
+                        && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes))
+                        && name == suffix_short
+                }) {
+                    let unit_name = suffix_short.to_string();
+                    let unit_info = self.units.get(&unit_name).unwrap();
+
+                    return PrefixParserResult::UnitIdentifier(
+                        unit_info.definition_span,
+                        *prefix,
+                        unit_name,
+                        unit_info.full_name.clone(),
+                    );
+                }
             }
         }
 
