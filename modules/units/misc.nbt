@@ -53,3 +53,5 @@ unit molal: AmountOfSubstance / Mass = 1 mole / kilogram
 unit watthour: Energy = W h
 
 unit kph: Speed = kilometer per hour
+
+unit mpg: Length / Volume = miles per gallon
