@@ -1,3 +1,5 @@
+use physics::constants
+
 @aliases(hartrees)
 unit hartree: Energy = ℏ^2 / (electron_mass a0^2)
 

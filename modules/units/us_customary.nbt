@@ -33,3 +33,6 @@ unit hogshead: Volume = 63 gallon
 # US rod
 @aliases(rods)
 unit rod: Length = 16.5 ft
+
+# Mileage, miles per gallon
+unit mpg: Length / Volume = miles per gallon
