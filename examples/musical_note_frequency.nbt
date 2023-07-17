@@ -1,0 +1,9 @@
+# Musical note frequencies in the 12 equal temperament system
+
+let frequency_A4: Frequency = 440 Hz  # the A above middle C, A4
+
+fn note_frequency(n: Scalar) -> Frequency = frequency_A4 * 2^(n / 12)
+
+assert_eq(note_frequency(12), 2 * frequency_A4)  # one octave higher up (A5), double the frequency
+assert_eq(note_frequency(7),  659.255 Hz, 1 mHz)  # E4
+assert_eq(note_frequency(-3), 369.994 Hz, 1 mHz)  # C4
