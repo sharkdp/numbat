@@ -1,3 +1,4 @@
-fn oscillation_time(length: Length) -> Time = 2 pi × sqrt(length / gravity)
+fn oscillation_time(length: Length) -> Time =
+    2 pi × sqrt(length / gravity)
 
 assert_eq(oscillation_time(30 cm), 1.1 s, 0.1 s)

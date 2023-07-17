@@ -5,4 +5,4 @@ let volume: Volume = 4/3 · π · radius³
 let ρ: MassDensity = 5000 kg/m³
 let earth_mass: Mass = ρ · volume
 
-assert_eq(earth_mass, 4.52389 * 10^24 kg, 0.00001 * 10^24 kg)
+assert_eq(earth_mass, 4.52389e24 kg, 0.00001e24 kg)

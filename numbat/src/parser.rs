@@ -251,6 +251,7 @@ impl<'a> Parser<'a> {
                         span: self.peek().span,
                     })
                 } else {
+                    self.skip_empty_lines();
                     let expr = self.expression()?;
 
                     Ok(Statement::DeclareVariable {
@@ -363,6 +364,7 @@ impl<'a> Parser<'a> {
                 let body = if self.match_exact(TokenKind::Equal).is_none() {
                     None
                 } else {
+                    self.skip_empty_lines();
                     Some(self.expression()?)
                 };
 
@@ -391,9 +393,11 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(TokenKind::Dimension).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 if self.match_exact(TokenKind::Equal).is_some() {
+                    self.skip_empty_lines();
                     let mut dexprs = vec![self.dimension_expression()?];
 
                     while self.match_exact(TokenKind::Equal).is_some() {
+                        self.skip_empty_lines();
                         dexprs.push(self.dimension_expression()?);
                     }
 
@@ -455,6 +459,7 @@ impl<'a> Parser<'a> {
                 std::mem::swap(&mut decorators, &mut self.decorator_stack);
 
                 if self.match_exact(TokenKind::Equal).is_some() {
+                    self.skip_empty_lines();
                     let expr = self.expression()?;
                     Ok(Statement::DeclareDerivedUnit {
                         identifier_span,
@@ -1393,6 +1398,7 @@ mod tests {
             &[
                 "dimension Area = Length * Length",
                 "dimension Area = Length × Length",
+                "dimension Area =\n  Length × Length",
             ],
             Statement::DeclareDimension(
                 "Area".into(),
@@ -1474,7 +1480,7 @@ mod tests {
     #[test]
     fn function_declaration() {
         parse_as(
-            &["fn foo() = 1"],
+            &["fn foo() = 1", "fn foo() =\n  1"],
             Statement::DeclareFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
