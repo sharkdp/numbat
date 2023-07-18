@@ -19,7 +19,7 @@ See `numbat --help` for more information.
 Interactive sessions allow you to perform a sequence of calculations. You can use the special identifiers
 `ans` or `_` to refer to the result of the last calculation. For example:
 
-```
+``` numbat
 >>> 60 kW h / 150 kW
 
     = 0.4 h

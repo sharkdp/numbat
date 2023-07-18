@@ -4,7 +4,7 @@
 
 Numbat is a high precision scientific calculator with full support for physical units. You can use
 it for simple mathematical computations:
-```
+``` numbat
 >>> 1920/16*9
 
     = 1080 
@@ -18,10 +18,10 @@ it for simple mathematical computations:
     = 0.512957 
 ```
 The real strengh of Numbat, however, is to perform calculations with physical units:
-```
+``` numbat
 >>> sin(30°)
 
-    = 0.5 
+    = 0.5
 
 >>> 8 km / (1 h + 25 min)
 
@@ -31,7 +31,7 @@ The real strengh of Numbat, however, is to perform calculations with physical un
 
     = 0.468451 kcal
 
->>> 14 € -> JPY
+>>> 14 € -> yen
 
     = 2153.76 ¥
 ```

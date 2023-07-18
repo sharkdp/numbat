@@ -4,6 +4,7 @@ Numbers in Numbat can be written in the following forms:
 
 * Integer notation
     * `12345`
+    * `12_345` — with decimal separators
 * Floating point notation
     * `0.234`
     * `.234` — without the leading zero

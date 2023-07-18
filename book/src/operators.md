@@ -21,8 +21,8 @@ Also, note that `per`-division has a higher precedence than `/`-division. This m
 
 If in doubt, you can always look at the pretty-printing output (second line in the snippet below)
 to make sure that your input was parsed correctly:
-```
->>> 1 / meter  per second
+``` numbat
+>>> 1 / meter per second
 
   1 / (meter / second)
 

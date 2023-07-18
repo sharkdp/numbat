@@ -38,7 +38,7 @@ create a `init.nbt` file in your config folder (e.g. `~/.config/numbat/init.nbt`
 You can also create your own modules that can be loaded on demand. To this end,
 create a new file, say `<module-path>/finance.nbt` in one of the module folders (e.g. `~/.config/numbat/modules/finance.nbt` on Linux). This module can then be loaded using
 
-```
+``` numbat
 use finance
 ```
 
@@ -47,6 +47,6 @@ if you want to have them available all the time.
 
 You can also organize modules into subfolders (e.g. `<module-path>/finance/functions.nbt`). In that case, you can load them using
 
-```
+``` numbat
 use finance::functions
 ```

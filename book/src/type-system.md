@@ -22,7 +22,7 @@ For example, the type *Energy* can be represented as *Mass¹ × Length² × Time
 
 This naturally allows us to *multiply* types (by combining the factors of both products into a single product).
 We can use the `*` operator to construct types for physical dimensions that are products of two or more (base) dimensions. For example:
-```
+``` numbat
 dimension Time
 dimension Current
 dimension Charge = Current * Time
@@ -31,7 +31,7 @@ dimension Charge = Current * Time
 ### Exponentiation
 
 We can also raise units to arbitrary powers \\( n \in \mathbb{Q} \\), by simply multiplying each \\( \alpha_k \\) with \\( n \\). The syntax uses the `^` exponentiation operator:
-```
+``` numbat
 dimension Length
 dimension Volume = Length^3
 
@@ -42,11 +42,11 @@ dimension Frequency = Time^(-1)
 ### Division
 
 Once we have multiplication and exponentiation, we can define the *division* of two types as
-```
+``` numbat
 TypeA / TypeB ≡ TypeA * TypeB^(-1)
 ```
 This is mostly for convenience. It allows us to write definitions like
-```
+``` numbat
 dimension Power = Energy / Time
 ```
 
@@ -57,17 +57,17 @@ dimension Power = Energy / Time
 
 The type checker can infer the types of (most) expressions without explicitly declaring them. For example,
 the following definition does not mention any types:
-```rs
+``` numbat
 let E_pot = 80 kg × 9.8 m/s² × 5 m
 ```
 However, it is often helpful to specify the type anyway. This way, we can make sure that no mistakes were made:
-```rs
+``` numbat
 let E_pot: Energy = 80 kg × 9.8 m/s² × 5 m
 ```
 The type checker will compare the inferred type with the specified type and raise an error in case of inconsistency.
 
 Function definitions also allow for type annotations, both for the parameters as well as the return type. The following example shows a function that takes a quantity of type `Length` and returns a `Pressure`:
-```rs
+``` numbat
 let p0: Pressure = 101325 Pa
 let t0: Temperature = 288.15 K
 
@@ -82,14 +82,14 @@ fn air_pressure(height: Length) -> Pressure = p0 · (1 - gradient · height / t0
 Numbats type system also supports generic types (type polymorphism).
 These can be used for functions that work regardless of the physical dimension of the argument(s).
 For example, the type signature of the absolute value function is given by
-```rs
+``` numbat
 fn abs<D>(x: D) -> D
 ```
 where the angle brackets after the function name introduce new type parameters (`D`).
 This can be read as: `abs` takes an arbitrary physical quantity of dimension `D` and returns a quantity of the *same* physical dimension `D`.
 
 As a more interesting example, we can look at the `sqrt` function. Its type signature can be written as
-```rs
+``` numbat
 fn sqrt<D>(x: D^2) -> D
 ```
 Alternatively, it could also be specified as `fn sqrt<D>(x: D) -> D^(1/2)`.
@@ -97,7 +97,7 @@ Alternatively, it could also be specified as `fn sqrt<D>(x: D) -> D^(1/2)`.
 ## Limitations
 
 The static type system also has some limitations. Let's look at an exponentiation expression like
-```
+``` numbat
 expr1 ^ expr2
 ```
 where `expr1` and `expr2` are arbitrary expressions. In order for that expression

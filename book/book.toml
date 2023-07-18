@@ -8,3 +8,4 @@ title = "Numbat - scientific calculator with full support for physical units"
 [output.html]
 mathjax-support = true
 curly-quotes = true
+additional-js = ["numbat.js"]
