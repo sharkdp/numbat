@@ -21,8 +21,12 @@ syn match numbatComments "#.*"
 highlight default link numbatComments Comment
 
 " Digits/Numbers
-syn match numbatDigits "\d\+\.\d\+\|\d\+"
-highlight default link numbatDigits Number
+syn match numbatNumber '\v<0x[0-9a-fA-F]+>'
+syn match numbatNumber '\v<0o[0-7]+>'
+syn match numbatNumber '\v<0b[01]+>'
+syn match numbatNumber '\v<[0-9]+(_[0-9]+)*([eE][+-]?[0-9]+)?>'
+syn match numbatNumber '\v<([0-9]*\.[0-9]*|[0-9]*\.[0-9]+)([eE][+-]?[0-9]+)?>'
+highlight default link numbatNumber Number
 
 " Operators
 syn match numbatOperators "->\|[+*^=/\-:·×÷²³<>]"
