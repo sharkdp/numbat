@@ -6,25 +6,26 @@ use units::si
 unit inch: Length = 0.0254 meter
 
 @aliases(feet, ft: short)
-unit foot: Length = 0.3048 meter
-assert_eq(1 foot, 12 inches, 0.001 inch)  # TODO(minor): move those assertions somewhere else
+unit foot: Length = 12 inch
+assert_eq(1 foot, 0.3048 meter, 1e-9 m)  # TODO(minor): move those assertions somewhere else
 
 @aliases(yards, yd: short)
-unit yard: Length = 0.9144 meter
-assert_eq(1 yard, 3 feet, 0.001 foot)
+unit yard: Length = 3 feet
+assert_eq(1 yard, 0.9144 meter, 1e-9 m)
 
 @aliases(miles, mi: short)
-unit mile: Length = 1609.344 meter
-assert_eq(1 mile, 1760 yard, 0.001 yard)
+unit mile: Length = 1760 yard
+assert_eq(1 mile, 1609.344 meter, 1e-9 m)
 
 @aliases(ounces, oz: short)
 unit ounce: Mass = 28.35 gram
 
 @aliases(pounds, lb: short, lbs)
-unit pound: Mass = 453.6 gram
+unit pound: Mass = 16 ounces
+assert_eq(1 pound, 453.6 gram, 1e-9 g)
 
 @aliases(mils, mil: short)
-unit thou: Length = 0.0000254 meter
+unit thou: Length = inch / 1000
 
 @aliases(fathoms)
 unit fathom: Length = 2 yard
