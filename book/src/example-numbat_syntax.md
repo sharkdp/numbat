@@ -48,7 +48,8 @@ meter per second  # 'per' keyword can be used for division
 3 in -> cm        # Unit conversion, can also be → or ➞
 3 in to cm        # Unit conversion with the 'to' keyword
 
-cos(pi/3)         # Call mathematical functions
+cos(pi/3 + pi)    # Call mathematical functions
+pi/3 + pi // cos  # equivalent, useful in REPL
 
 # 4. Variable definitions
 
