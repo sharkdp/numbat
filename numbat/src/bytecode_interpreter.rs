@@ -117,12 +117,12 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DeclareVariable(identifier, expr, _dexpr) => {
+            Statement::DefineVariable(identifier, expr, _dexpr) => {
                 self.compile_expression_with_simplify(expr)?;
                 let identifier_idx = self.vm.add_global_identifier(identifier, None);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DeclareFunction(name, parameters, Some(expr), _return_type) => {
+            Statement::DefineFunction(name, parameters, Some(expr), _return_type) => {
                 self.vm.begin_function(name);
                 for parameter in parameters.iter() {
                     self.local_variables.push(parameter.1.clone());
@@ -134,7 +134,7 @@ impl BytecodeInterpreter {
                 }
                 self.vm.end_function();
             }
-            Statement::DeclareFunction(name, parameters, None, _return_type) => {
+            Statement::DefineFunction(name, parameters, None, _return_type) => {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
 
@@ -149,11 +149,11 @@ impl BytecodeInterpreter {
                     },
                 );
             }
-            Statement::DeclareDimension(_name) => {
+            Statement::DefineDimension(_name) => {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DeclareBaseUnit(unit_name, decorators, dexpr) => {
+            Statement::DefineBaseUnit(unit_name, decorators, dexpr) => {
                 self.unit_registry
                     .add_base_unit(unit_name, dexpr.clone())
                     .map_err(RuntimeError::UnitRegistryError)?;
@@ -167,7 +167,7 @@ impl BytecodeInterpreter {
                         .insert((Prefix::none(), name.into()), constant_idx);
                 }
             }
-            Statement::DeclareDerivedUnit(unit_name, expr, decorators) => {
+            Statement::DefineDerivedUnit(unit_name, expr, decorators) => {
                 self.unit_registry
                     .add_derived_unit(unit_name, expr)
                     .map_err(RuntimeError::UnitRegistryError)?;

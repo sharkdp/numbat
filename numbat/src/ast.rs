@@ -359,14 +359,14 @@ pub enum ProcedureKind {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DeclareVariable {
+    DefineVariable {
         identifier_span: Span,
         identifier: String,
         expr: Expression,
         type_annotation_span: Option<Span>,
         type_annotation: Option<DimensionExpression>,
     },
-    DeclareFunction {
+    DefineFunction {
         function_name_span: Span,
         function_name: String,
         type_parameters: Vec<(Span, String)>,
@@ -378,9 +378,9 @@ pub enum Statement {
         /// Optional annotated return type
         return_type_annotation: Option<DimensionExpression>,
     },
-    DeclareDimension(String, Vec<DimensionExpression>),
-    DeclareBaseUnit(Span, String, Option<DimensionExpression>, Vec<Decorator>),
-    DeclareDerivedUnit {
+    DefineDimension(String, Vec<DimensionExpression>),
+    DefineBaseUnit(Span, String, Option<DimensionExpression>, Vec<Decorator>),
+    DefineDerivedUnit {
         identifier_span: Span,
         identifier: String,
         expr: Expression,
@@ -447,7 +447,7 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DeclareVariable {
+            Statement::DefineVariable {
                 identifier_span: _,
                 identifier,
                 expr,
@@ -466,7 +466,7 @@ impl PrettyPrint for Statement {
                     + m::space()
                     + expr.pretty_print()
             }
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: _,
                 function_name,
                 type_parameters,
@@ -529,10 +529,10 @@ impl PrettyPrint for Statement {
                         .unwrap_or_default()
             }
             Statement::Expression(expr) => expr.pretty_print(),
-            Statement::DeclareDimension(identifier, dexprs) if dexprs.is_empty() => {
+            Statement::DefineDimension(identifier, dexprs) if dexprs.is_empty() => {
                 m::keyword("dimension") + m::space() + m::type_identifier(identifier)
             }
-            Statement::DeclareDimension(identifier, dexprs) => {
+            Statement::DefineDimension(identifier, dexprs) => {
                 m::keyword("dimension")
                     + m::space()
                     + m::type_identifier(identifier)
@@ -545,7 +545,7 @@ impl PrettyPrint for Statement {
                     )
                     .sum()
             }
-            Statement::DeclareBaseUnit(_span, identifier, dexpr, decorators) => {
+            Statement::DefineBaseUnit(_span, identifier, dexpr, decorators) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
@@ -556,7 +556,7 @@ impl PrettyPrint for Statement {
                         Markup::default()
                     }
             }
-            Statement::DeclareDerivedUnit {
+            Statement::DefineDerivedUnit {
                 identifier_span: _,
                 identifier,
                 expr,
@@ -678,20 +678,20 @@ impl ReplaceSpans for Statement {
     fn replace_spans(&self) -> Self {
         match self {
             Statement::Expression(expr) => Statement::Expression(expr.replace_spans()),
-            Statement::DeclareVariable {
+            Statement::DefineVariable {
                 identifier_span: _,
                 identifier,
                 expr,
                 type_annotation_span,
                 type_annotation,
-            } => Statement::DeclareVariable {
+            } => Statement::DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: identifier.clone(),
                 expr: expr.replace_spans(),
                 type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
             },
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: _,
                 function_name,
                 type_parameters,
@@ -699,7 +699,7 @@ impl ReplaceSpans for Statement {
                 body,
                 return_type_span,
                 return_type_annotation,
-            } => Statement::DeclareFunction {
+            } => Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: function_name.clone(),
                 type_parameters: type_parameters
@@ -721,24 +721,24 @@ impl ReplaceSpans for Statement {
                 return_type_span: return_type_span.map(|_| Span::dummy()),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
             },
-            Statement::DeclareDimension(name, dexprs) => Statement::DeclareDimension(
+            Statement::DefineDimension(name, dexprs) => Statement::DefineDimension(
                 name.clone(),
                 dexprs.iter().map(|t| t.replace_spans()).collect(),
             ),
-            Statement::DeclareBaseUnit(_, name, type_, decorators) => Statement::DeclareBaseUnit(
+            Statement::DefineBaseUnit(_, name, type_, decorators) => Statement::DefineBaseUnit(
                 Span::dummy(),
                 name.clone(),
                 type_.as_ref().map(|t| t.replace_spans()),
                 decorators.clone(),
             ),
-            Statement::DeclareDerivedUnit {
+            Statement::DefineDerivedUnit {
                 identifier_span: _,
                 identifier,
                 expr,
                 type_annotation_span,
                 type_annotation,
                 decorators,
-            } => Statement::DeclareDerivedUnit {
+            } => Statement::DefineDerivedUnit {
                 identifier_span: Span::dummy(),
                 identifier: identifier.clone(),
                 expr: expr.replace_spans(),

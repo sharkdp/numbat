@@ -108,11 +108,11 @@ impl Transformer {
     fn transform_statement(&mut self, statement: Statement) -> Result<Statement> {
         Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
-            Statement::DeclareBaseUnit(span, name, dexpr, decorators) => {
+            Statement::DefineBaseUnit(span, name, dexpr, decorators) => {
                 self.register_name_and_aliases(&name, &decorators, span)?;
-                Statement::DeclareBaseUnit(span, name, dexpr, decorators)
+                Statement::DefineBaseUnit(span, name, dexpr, decorators)
             }
-            Statement::DeclareDerivedUnit {
+            Statement::DefineDerivedUnit {
                 identifier_span,
                 identifier,
                 expr,
@@ -121,7 +121,7 @@ impl Transformer {
                 decorators,
             } => {
                 self.register_name_and_aliases(&identifier, &decorators, identifier_span)?;
-                Statement::DeclareDerivedUnit {
+                Statement::DefineDerivedUnit {
                     identifier_span,
                     identifier,
                     expr: self.transform_expression(expr),
@@ -130,7 +130,7 @@ impl Transformer {
                     decorators,
                 }
             }
-            Statement::DeclareVariable {
+            Statement::DefineVariable {
                 identifier_span,
                 identifier,
                 expr,
@@ -140,7 +140,7 @@ impl Transformer {
                 self.variable_names.push(identifier.clone());
                 self.prefix_parser
                     .add_other_identifier(&identifier, identifier_span)?;
-                Statement::DeclareVariable {
+                Statement::DefineVariable {
                     identifier_span,
                     identifier,
                     expr: self.transform_expression(expr),
@@ -148,7 +148,7 @@ impl Transformer {
                     type_annotation,
                 }
             }
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span,
                 function_name,
                 type_parameters,
@@ -160,7 +160,7 @@ impl Transformer {
                 self.function_names.push(function_name.clone());
                 self.prefix_parser
                     .add_other_identifier(&function_name, function_name_span)?;
-                Statement::DeclareFunction {
+                Statement::DefineFunction {
                     function_name_span,
                     function_name,
                     type_parameters,
@@ -170,9 +170,9 @@ impl Transformer {
                     return_type_annotation,
                 }
             }
-            Statement::DeclareDimension(name, dexprs) => {
+            Statement::DefineDimension(name, dexprs) => {
                 self.dimension_names.push(name.clone());
-                Statement::DeclareDimension(name, dexprs)
+                Statement::DefineDimension(name, dexprs)
             }
             Statement::ProcedureCall(span, procedure, args) => Statement::ProcedureCall(
                 span,

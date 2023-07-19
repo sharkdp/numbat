@@ -58,7 +58,7 @@ fn foo(x: Scalar) -> Scalar = 2 * x + 3         # A simple function
 fn speed(s: Length, t: Time) -> Speed = s / t   # Two parameters
 fn my_sqrt<T>(x: T^2) -> T = x^(1/2)            # A generic function
 
-# 6. Dimension declarations
+# 6. Dimension definitions
 
 dimension Fame                            # A new base dimension
 dimension Deceleration = Length / Time^2  # A new derived dimension

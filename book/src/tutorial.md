@@ -34,7 +34,7 @@ let decay_rate = ln(2) / halflife
 Notice that we use a [builtin mathematical function](./list-functions.md) `ln(…)`
 here.
 
-
+TODO: finish the tutorial
 
 ## Attribution
 

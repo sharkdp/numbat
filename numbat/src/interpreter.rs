@@ -194,12 +194,12 @@ mod tests {
     }
 
     #[test]
-    fn variable_declarations() {
+    fn variable_definitions() {
         assert_evaluates_to_scalar("let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
     }
 
     #[test]
-    fn function_declarations() {
+    fn function_definitions() {
         assert_evaluates_to_scalar("fn f(x: Scalar) = 2 * x + 3\nf(5)", 2.0 * 5.0 + 3.0);
     }
 

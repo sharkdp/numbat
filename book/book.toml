@@ -9,3 +9,6 @@ title = "Numbat - scientific calculator with full support for physical units"
 mathjax-support = true
 curly-quotes = true
 additional-js = ["numbat.js"]
+
+[output.linkcheck]
+warning-policy = "ignore"

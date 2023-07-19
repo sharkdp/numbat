@@ -1,6 +1,6 @@
-# Dimension declarations
+# Dimension definitions
 
-New (physical) dimensions can be introduced with the `dimension` keyword. Similar to [units](./unit-declarations.md), there are base dimensions (like *length*, *time* and *mass*) and dimensions that are derived from those base dimensions (like *momentum*, which is *mass* · *length* / *time*). Base dimensions are simply introduced by declaring their name:
+New (physical) dimensions can be introduced with the `dimension` keyword. Similar to [units](./unit-definitions.md), there are base dimensions (like *length*, *time* and *mass*) and dimensions that are derived from those base dimensions (like *momentum*, which is *mass* · *length* / *time*). Base dimensions are simply introduced by declaring their name:
 ``` numbat
 dimension Length
 dimension Time

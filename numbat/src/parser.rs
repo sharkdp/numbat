@@ -254,7 +254,7 @@ impl<'a> Parser<'a> {
                     self.skip_empty_lines();
                     let expr = self.expression()?;
 
-                    Ok(Statement::DeclareVariable {
+                    Ok(Statement::DefineVariable {
                         identifier_span,
                         identifier: identifier.lexeme.clone(),
                         expr,
@@ -375,7 +375,7 @@ impl<'a> Parser<'a> {
                     });
                 }
 
-                Ok(Statement::DeclareFunction {
+                Ok(Statement::DefineFunction {
                     function_name_span,
                     function_name: fn_name.lexeme.clone(),
                     type_parameters,
@@ -401,12 +401,12 @@ impl<'a> Parser<'a> {
                         dexprs.push(self.dimension_expression()?);
                     }
 
-                    Ok(Statement::DeclareDimension(
+                    Ok(Statement::DefineDimension(
                         identifier.lexeme.clone(),
                         dexprs,
                     ))
                 } else {
-                    Ok(Statement::DeclareDimension(
+                    Ok(Statement::DefineDimension(
                         identifier.lexeme.clone(),
                         vec![],
                     ))
@@ -461,7 +461,7 @@ impl<'a> Parser<'a> {
                 if self.match_exact(TokenKind::Equal).is_some() {
                     self.skip_empty_lines();
                     let expr = self.expression()?;
-                    Ok(Statement::DeclareDerivedUnit {
+                    Ok(Statement::DefineDerivedUnit {
                         identifier_span,
                         identifier: unit_name,
                         expr,
@@ -470,14 +470,14 @@ impl<'a> Parser<'a> {
                         decorators,
                     })
                 } else if let Some(dexpr) = dexpr {
-                    Ok(Statement::DeclareBaseUnit(
+                    Ok(Statement::DefineBaseUnit(
                         identifier_span,
                         unit_name,
                         Some(dexpr),
                         decorators,
                     ))
                 } else if self.is_end_of_statement() {
-                    Ok(Statement::DeclareBaseUnit(
+                    Ok(Statement::DefineBaseUnit(
                         identifier_span,
                         unit_name,
                         None,
@@ -1348,10 +1348,10 @@ mod tests {
     }
 
     #[test]
-    fn variable_declaration() {
+    fn variable_definition() {
         parse_as(
             &["let foo = 1", "let foo=1"],
-            Statement::DeclareVariable {
+            Statement::DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: "foo".into(),
                 expr: scalar!(1.0),
@@ -1362,7 +1362,7 @@ mod tests {
 
         parse_as(
             &["let x: Length = 1 * meter"],
-            Statement::DeclareVariable {
+            Statement::DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: "x".into(),
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
@@ -1388,10 +1388,10 @@ mod tests {
     }
 
     #[test]
-    fn dimension_declaration() {
+    fn dimension_definition() {
         parse_as(
             &["dimension px"],
-            Statement::DeclareDimension("px".into(), vec![]),
+            Statement::DefineDimension("px".into(), vec![]),
         );
 
         parse_as(
@@ -1400,7 +1400,7 @@ mod tests {
                 "dimension Area = Length × Length",
                 "dimension Area =\n  Length × Length",
             ],
-            Statement::DeclareDimension(
+            Statement::DefineDimension(
                 "Area".into(),
                 vec![DimensionExpression::Multiply(
                     Span::dummy(),
@@ -1418,7 +1418,7 @@ mod tests {
 
         parse_as(
             &["dimension Speed = Length / Time"],
-            Statement::DeclareDimension(
+            Statement::DefineDimension(
                 "Speed".into(),
                 vec![DimensionExpression::Divide(
                     Span::dummy(),
@@ -1433,7 +1433,7 @@ mod tests {
 
         parse_as(
             &["dimension Area = Length^2"],
-            Statement::DeclareDimension(
+            Statement::DefineDimension(
                 "Area".into(),
                 vec![DimensionExpression::Power(
                     Span::dummy(),
@@ -1449,7 +1449,7 @@ mod tests {
 
         parse_as(
             &["dimension Energy = Mass * Length^2 / Time^2"],
-            Statement::DeclareDimension(
+            Statement::DefineDimension(
                 "Energy".into(),
                 vec![DimensionExpression::Divide(
                     Span::dummy(),
@@ -1478,10 +1478,10 @@ mod tests {
     }
 
     #[test]
-    fn function_declaration() {
+    fn function_definition() {
         parse_as(
             &["fn foo() = 1", "fn foo() =\n  1"],
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![],
@@ -1494,7 +1494,7 @@ mod tests {
 
         parse_as(
             &["fn foo() -> Scalar = 1"],
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![],
@@ -1510,7 +1510,7 @@ mod tests {
 
         parse_as(
             &["fn foo(x) = 1"],
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![],
@@ -1523,7 +1523,7 @@ mod tests {
 
         parse_as(
             &["fn foo(x, y, z) = 1"],
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![],
@@ -1540,7 +1540,7 @@ mod tests {
 
         parse_as(
             &["fn foo(x: Length, y: Time, z: Length^3 · Time^2) -> Scalar = 1"],
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![],
@@ -1598,7 +1598,7 @@ mod tests {
 
         parse_as(
             &["fn foo<X>(x: X) = 1"],
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![(Span::dummy(), "X".into())],
@@ -1616,7 +1616,7 @@ mod tests {
 
         parse_as(
             &["fn foo<D>(x: D…) -> D"],
-            Statement::DeclareFunction {
+            Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![(Span::dummy(), "D".into())],

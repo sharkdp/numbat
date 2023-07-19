@@ -43,16 +43,16 @@ impl Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DeclareVariable(String, Expression, Type),
-    DeclareFunction(
+    DefineVariable(String, Expression, Type),
+    DefineFunction(
         String,
         Vec<(Span, String, bool, Type)>,
         Option<Expression>,
         Type,
     ),
-    DeclareDimension(String),
-    DeclareBaseUnit(String, Vec<Decorator>, Type),
-    DeclareDerivedUnit(String, Expression, Vec<Decorator>),
+    DefineDimension(String),
+    DefineBaseUnit(String, Vec<Decorator>, Type),
+    DefineDerivedUnit(String, Expression, Vec<Decorator>),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
 }
 

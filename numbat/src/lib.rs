@@ -136,7 +136,7 @@ impl Context {
             // For example:
             //
             //     >>> let x: Length = 1s      # <-- here we register the name 'x' before type checking
-            //     Type check error: Incompatible dimensions in variable declaration:
+            //     Type check error: Incompatible dimensions in variable definition:
             //         specified dimension: Length
             //         actual dimension: Time
             //     >>> let x: Length = 1m      # <-- here we want to use the name 'x' again

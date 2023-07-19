@@ -208,7 +208,7 @@ mod tests {
         assert_eq!(
             &program_inlined.replace_spans(),
             &[
-                Statement::DeclareVariable {
+                Statement::DefineVariable {
                     identifier_span: Span::dummy(),
                     identifier: "a".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
@@ -238,7 +238,7 @@ mod tests {
         assert_eq!(
             &program_inlined.replace_spans(),
             &[
-                Statement::DeclareVariable {
+                Statement::DefineVariable {
                     identifier_span: Span::dummy(),
                     identifier: "a".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),

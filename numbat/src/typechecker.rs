@@ -429,7 +429,7 @@ impl TypeChecker {
                 }
                 typed_ast::Statement::Expression(checked_expr)
             }
-            ast::Statement::DeclareVariable {
+            ast::Statement::DefineVariable {
                 identifier_span,
                 identifier,
                 expr,
@@ -447,7 +447,7 @@ impl TypeChecker {
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions {
                             span_operation: *identifier_span,
-                            operation: "variable declaration".into(),
+                            operation: "variable definition".into(),
                             span_expected: type_annotation_span.unwrap(),
                             expected_name: "specified dimension",
                             expected_type: type_specified,
@@ -459,13 +459,9 @@ impl TypeChecker {
                 }
                 self.identifiers
                     .insert(identifier.clone(), type_deduced.clone());
-                typed_ast::Statement::DeclareVariable(
-                    identifier.clone(),
-                    expr_checked,
-                    type_deduced,
-                )
+                typed_ast::Statement::DefineVariable(identifier.clone(), expr_checked, type_deduced)
             }
-            ast::Statement::DeclareBaseUnit(_span, unit_name, dexpr, decorators) => {
+            ast::Statement::DefineBaseUnit(_span, unit_name, dexpr, decorators) => {
                 let type_specified = if let Some(dexpr) = dexpr {
                     self.registry
                         .get_base_representation(&dexpr)
@@ -483,13 +479,13 @@ impl TypeChecker {
                     self.identifiers
                         .insert(name.clone(), type_specified.clone());
                 }
-                typed_ast::Statement::DeclareBaseUnit(
+                typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
                     decorators.clone(),
                     type_specified,
                 )
             }
-            ast::Statement::DeclareDerivedUnit {
+            ast::Statement::DefineDerivedUnit {
                 identifier_span,
                 identifier,
                 expr,
@@ -498,7 +494,7 @@ impl TypeChecker {
                 decorators,
             } => {
                 // TODO: this is the *exact same code* that we have above for
-                // variable declarations => deduplicate this somehow
+                // variable definitions => deduplicate this somehow
                 let expr_checked = self.check_expression(expr)?;
                 let type_deduced = expr_checked.get_type();
 
@@ -523,13 +519,13 @@ impl TypeChecker {
                 for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
                     self.identifiers.insert(name.clone(), type_deduced.clone());
                 }
-                typed_ast::Statement::DeclareDerivedUnit(
+                typed_ast::Statement::DefineDerivedUnit(
                     identifier.clone(),
                     expr_checked,
                     decorators.clone(),
                 )
             }
-            ast::Statement::DeclareFunction {
+            ast::Statement::DefineFunction {
                 function_name_span,
                 function_name,
                 type_parameters,
@@ -637,14 +633,14 @@ impl TypeChecker {
                     ),
                 );
 
-                typed_ast::Statement::DeclareFunction(
+                typed_ast::Statement::DefineFunction(
                     function_name.clone(),
                     typed_parameters,
                     body_checked,
                     return_type,
                 )
             }
-            ast::Statement::DeclareDimension(name, dexprs) => {
+            ast::Statement::DefineDimension(name, dexprs) => {
                 if let Some(dexpr) = dexprs.first() {
                     self.registry
                         .add_derived_dimension(&name, dexpr)
@@ -677,7 +673,7 @@ impl TypeChecker {
                         .add_base_dimension(&name)
                         .map_err(TypeCheckError::RegistryError)?;
                 }
-                typed_ast::Statement::DeclareDimension(name.clone())
+                typed_ast::Statement::DefineDimension(name.clone())
             }
             ast::Statement::ProcedureCall(span, kind, args) => {
                 let procedure = ffi::procedures().get(&kind).unwrap();
@@ -836,7 +832,7 @@ mod tests {
     }
 
     #[test]
-    fn variable_declarations() {
+    fn variable_definitions() {
         assert_successful_typecheck(
             "let x: A = a
              let y: B = b",
@@ -854,7 +850,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_declarations() {
+    fn unit_definitions() {
         assert_successful_typecheck("unit my_c: C = a * b");
         assert_successful_typecheck("unit foo: A*B^2 = a b^2");
 
@@ -865,7 +861,7 @@ mod tests {
     }
 
     #[test]
-    fn function_declarations() {
+    fn function_definitions() {
         assert_successful_typecheck("fn f(x: A) -> A = x");
         assert_successful_typecheck("fn f(x: A) -> A·B = 2 * x * b");
         assert_successful_typecheck("fn f(x: A, y: B) -> C = x * y");
