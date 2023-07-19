@@ -21,9 +21,10 @@
 
 # Standard library reference
 
-- [Predefined functions](./list-functions.md)
-- [Predefined constants](./list-constants.md)
-- [List of units](./list-units.md)
+- [The prelude](./prelude.md)
+  - [Predefined functions](./list-functions.md)
+  - [Predefined constants](./list-constants.md)
+  - [List of units](./list-units.md)
 
 # Command line tool
 
