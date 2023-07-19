@@ -23,7 +23,7 @@ hljs.registerLanguage('numbat', function(hljs) {
       },
       {
         className: 'title',
-        begin: /[A-Z][a-zA-Z0-9_]+/,
+        begin: /(?<=(\)\s*(->|[→➞])|[:=<\/\*×·])\s*)\b[A-Z][a-zA-Z0-9_]*\b/,
       },
       {
         className: 'operator',

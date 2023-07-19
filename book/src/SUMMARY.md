@@ -4,6 +4,15 @@
 
 - [Introduction](./introduction.md)
 - [Tutorial](./tutorial.md)
+- [Example programs](./examples.md)
+    - [Medication dosage](./example-medication_dosage.md)
+    - [Workhours](./example-workhours.md)
+    - [Barometric formula](./example-barometric_formula.md)
+    - [Molarity](./example-molarity.md)
+    - [Musical note frequency](./example-musical_note_frequency.md)
+    - [Body mass index](./example-body_mass_index.md)
+    - [Flow rate in a pipe](./example-pipe_flow_rate.md)
+    - [Recipe](./example-recipe.md)
 
 # Numbat language reference
 
@@ -17,7 +26,7 @@
 - [Advanced](./advanced.md)
   - [Unit definitions](./unit-definitions.md)
   - [Dimension definitions](./dimension-definitions.md)
-  - [Syntax overview](./syntax-overview.md)
+  - [Syntax overview](./example-numbat_syntax.md)
 
 # Standard library reference
 

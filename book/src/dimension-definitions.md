@@ -27,7 +27,7 @@ unit dot: Dot
 
 unit dpi = dots / inch
 
-fn inter_dot_spacing(resolution: Dot/Length) -> Length = 1 dot / resolution
+fn inter_dot_spacing(resolution: Dot / Length) -> Length = 1 dot / resolution
 
 inter_dot_spacing(72 dpi) -> µm  # 353 µm
 ```
