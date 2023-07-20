@@ -158,6 +158,22 @@ impl Transformer {
                 self.function_names.push(function_name.clone());
                 self.prefix_parser
                     .add_other_identifier(&function_name, function_name_span)?;
+
+                // We create a clone of the full transformer for the purpose
+                // of checking/transforming the function body. The reason for this
+                // is that we don't want the parameter names to pollute the global
+                // namespace. But we need to register parameter names as identifiers
+                // because they could otherwise shadow global identifiers:
+                //
+                //   fn foo(t: Time) -> Time = t    # not okay: shadows 't' for ton
+                //
+                let mut fn_body_transformer = self.clone();
+                for (param_span, param, _, _) in &parameters {
+                    fn_body_transformer
+                        .prefix_parser
+                        .add_other_identifier(&param, param_span.clone())?;
+                }
+
                 Statement::DefineFunction {
                     function_name_span,
                     function_name,

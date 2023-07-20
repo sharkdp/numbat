@@ -1,0 +1,3 @@
+let foo = 2
+
+fn bar(foo: Scalar) -> Scalar = foo

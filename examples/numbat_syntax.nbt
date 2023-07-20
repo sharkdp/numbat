@@ -55,9 +55,9 @@ let y3: Length / Time = 2 m/s      # more complex type annotation
 
 # 5. Function definitions
 
-fn foo(x: Scalar) -> Scalar = 2 * x + 3         # A simple function
-fn speed(s: Length, t: Time) -> Speed = s / t   # Two parameters
-fn my_sqrt<T>(x: T^2) -> T = x^(1/2)            # A generic function
+fn foo(z: Scalar) -> Scalar = 2 * z + 3                 # A simple function
+fn speed(len: Length, dur: Time) -> Speed = len / dur   # Two parameters
+fn my_sqrt<T>(q: T^2) -> T = q^(1/2)                    # A generic function
 
 # 6. Dimension definitions
 
