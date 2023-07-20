@@ -134,7 +134,6 @@ impl Transformer {
                 identifier_span,
                 identifier,
                 expr,
-                type_annotation_span,
                 type_annotation,
             } => {
                 self.variable_names.push(identifier.clone());
@@ -144,7 +143,6 @@ impl Transformer {
                     identifier_span,
                     identifier,
                     expr: self.transform_expression(expr),
-                    type_annotation_span,
                     type_annotation,
                 }
             }

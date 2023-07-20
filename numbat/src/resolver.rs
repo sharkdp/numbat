@@ -212,7 +212,6 @@ mod tests {
                     identifier_span: Span::dummy(),
                     identifier: "a".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    type_annotation_span: None,
                     type_annotation: None
                 },
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
@@ -242,7 +241,6 @@ mod tests {
                     identifier_span: Span::dummy(),
                     identifier: "a".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    type_annotation_span: None,
                     type_annotation: None
                 },
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))

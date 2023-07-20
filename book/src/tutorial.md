@@ -2,7 +2,7 @@
 
 In this tutorial, you will use Numbat to calculate how many bananas you would need to power a
 house. This is based on [an article](https://what-if.xkcd.com/158/) in the great *what if?* series
-by the xkcd author.
+by the author of the xkcd comics.
 
 <p align="center"><img src="https://what-if.xkcd.com/imgs/a/158/hazard.png"></p>
 

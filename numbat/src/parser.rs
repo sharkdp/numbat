@@ -237,12 +237,10 @@ impl<'a> Parser<'a> {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let identifier_span = self.last().unwrap().span;
 
-                let (type_annotation_span, dexpr) = if self.match_exact(TokenKind::Colon).is_some()
-                {
-                    let type_annotation = self.dimension_expression()?;
-                    (Some(self.last().unwrap().span), Some(type_annotation))
+                let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
+                    Some(self.dimension_expression()?)
                 } else {
-                    (None, None)
+                    None
                 };
 
                 if self.match_exact(TokenKind::Equal).is_none() {
@@ -258,7 +256,6 @@ impl<'a> Parser<'a> {
                         identifier_span,
                         identifier: identifier.lexeme.clone(),
                         expr,
-                        type_annotation_span,
                         type_annotation: dexpr,
                     })
                 }
@@ -1355,7 +1352,6 @@ mod tests {
                 identifier_span: Span::dummy(),
                 identifier: "foo".into(),
                 expr: scalar!(1.0),
-                type_annotation_span: None,
                 type_annotation: None,
             },
         );
@@ -1366,7 +1362,6 @@ mod tests {
                 identifier_span: Span::dummy(),
                 identifier: "x".into(),
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
-                type_annotation_span: Some(Span::dummy()),
                 type_annotation: Some(DimensionExpression::Dimension(
                     Span::dummy(),
                     "Length".into(),

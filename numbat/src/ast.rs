@@ -363,7 +363,6 @@ pub enum Statement {
         identifier_span: Span,
         identifier: String,
         expr: Expression,
-        type_annotation_span: Option<Span>,
         type_annotation: Option<DimensionExpression>,
     },
     DefineFunction {
@@ -451,7 +450,6 @@ impl PrettyPrint for Statement {
                 identifier_span: _,
                 identifier,
                 expr,
-                type_annotation_span: _,
                 type_annotation,
             } => {
                 m::keyword("let")
@@ -682,13 +680,11 @@ impl ReplaceSpans for Statement {
                 identifier_span: _,
                 identifier,
                 expr,
-                type_annotation_span,
                 type_annotation,
             } => Statement::DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: identifier.clone(),
                 expr: expr.replace_spans(),
-                type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
             },
             Statement::DefineFunction {

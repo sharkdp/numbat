@@ -433,7 +433,6 @@ impl TypeChecker {
                 identifier_span,
                 identifier,
                 expr,
-                type_annotation_span,
                 type_annotation,
             } => {
                 let expr_checked = self.check_expression(expr)?;
@@ -448,7 +447,7 @@ impl TypeChecker {
                         return Err(TypeCheckError::IncompatibleDimensions {
                             span_operation: *identifier_span,
                             operation: "variable definition".into(),
-                            span_expected: type_annotation_span.unwrap(),
+                            span_expected: dexpr.full_span(),
                             expected_name: "specified dimension",
                             expected_type: type_specified,
                             span_actual: expr.full_span(),
