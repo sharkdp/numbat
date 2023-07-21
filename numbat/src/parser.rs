@@ -389,6 +389,12 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::Dimension).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                if identifier.lexeme.starts_with("__") {
+                    todo!(
+                        "Parse error: double-underscore type names are reserved for internal use"
+                    );
+                }
+
                 if self.match_exact(TokenKind::Equal).is_some() {
                     self.skip_empty_lines();
                     let mut dexprs = vec![self.dimension_expression()?];
@@ -949,6 +955,9 @@ impl<'a> Parser<'a> {
             self.peek().span,
         ));
         if let Some(token) = self.match_exact(TokenKind::Identifier) {
+            if token.lexeme.starts_with("__") {
+                todo!("Parse error: double-underscore type names are reserved for internal use");
+            }
             let span = self.last().unwrap().span;
             Ok(DimensionExpression::Dimension(span, token.lexeme.clone()))
         } else if let Some(number) = self.match_exact(TokenKind::Number) {

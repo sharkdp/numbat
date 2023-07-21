@@ -200,15 +200,11 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message(inner_error),
                 ]),
-            TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(span, _) => {
-                d.with_labels(vec![span
+            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _) => d
+                .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error)])
-            }
+                    .with_message(inner_error)]),
             TypeCheckError::UnknownForeignFunction(span, _) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
-            TypeCheckError::ParameterTypesCanNotBeDeduced(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
         }

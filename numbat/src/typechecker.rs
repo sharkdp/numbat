@@ -9,6 +9,7 @@ use crate::span::Span;
 use crate::typed_ast::{self, Type};
 use crate::{ast, decorator, ffi};
 
+use ast::DimensionExpression;
 use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
 
@@ -65,11 +66,8 @@ pub enum TypeCheckError {
     #[error("Multiple unresolved generic parameters in a single function parameter type are not (yet) supported. Consider reordering the function parameters")]
     MultipleUnresolvedTypeParameters(Span, Span),
 
-    #[error("Parameter types can not (yet) be deduced, they have to be specified manually: f(x: Length, y: Time) -> …")]
-    ParameterTypesCanNotBeDeduced(Span),
-
-    #[error("Foreign function definition (without body) '{1}' needs a return type annotation.")]
-    ForeignFunctionNeedsReturnTypeAnnotation(Span, String),
+    #[error("Foreign function definition (without body) '{1}' needs parameter and return type annotations.")]
+    ForeignFunctionNeedsTypeAnnotations(Span, String),
 
     #[error("Unknown foreign function (without body) '{1}'")]
     UnknownForeignFunction(Span, String),
@@ -534,9 +532,11 @@ impl TypeChecker {
                 return_type_annotation,
             } => {
                 let mut typechecker_fn = self.clone();
+                let is_ffi_function = body.is_none();
+                let mut type_parameters = type_parameters.clone();
 
-                for (span, type_parameter) in type_parameters {
-                    match typechecker_fn.registry.add_base_dimension(type_parameter) {
+                for (span, type_parameter) in &type_parameters {
+                    match typechecker_fn.registry.add_base_dimension(&type_parameter) {
                         Err(RegistryError::EntryExists(name)) => {
                             return Err(TypeCheckError::TypeParameterNameClash(*span, name))
                         }
@@ -547,15 +547,37 @@ impl TypeChecker {
 
                 let mut typed_parameters = vec![];
                 let mut is_variadic = false;
-                for (parameter_span, parameter, optional_dexpr, p_is_variadic) in parameters {
-                    let parameter_type = typechecker_fn
-                        .registry
-                        .get_base_representation(&optional_dexpr.clone().ok_or(
-                            TypeCheckError::ParameterTypesCanNotBeDeduced(*parameter_span),
-                        )?)
-                        // TODO: add type inference, see https://github.com/sharkdp/numbat/issues/29
-                        // TODO: once we add type inference, make sure that annotations are required for foreign functions
-                        .map_err(TypeCheckError::RegistryError)?;
+                let mut free_type_parameters = vec![];
+                for (parameter_span, parameter, type_annotation, p_is_variadic) in parameters {
+                    let parameter_type = if let Some(type_) = type_annotation {
+                        typechecker_fn
+                            .registry
+                            .get_base_representation(&type_)
+                            .map_err(TypeCheckError::RegistryError)?
+                    } else if is_ffi_function {
+                        return Err(TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
+                            *function_name_span,
+                            function_name.clone(),
+                        ));
+                    } else {
+                        let free_type_parameter =
+                            format!("__T{num}", num = free_type_parameters.len());
+                        free_type_parameters.push((parameter.clone(), free_type_parameter.clone()));
+
+                        typechecker_fn
+                            .registry
+                            .add_base_dimension(&free_type_parameter)
+                            .expect("double-underscore identifiers are only used internally");
+                        type_parameters.push((parameter_span.clone(), free_type_parameter.clone()));
+                        typechecker_fn
+                            .registry
+                            .get_base_representation(&DimensionExpression::Dimension(
+                                parameter_span.clone(),
+                                free_type_parameter,
+                            ))
+                            .map_err(TypeCheckError::RegistryError)?
+                    };
+
                     typechecker_fn
                         .identifiers
                         .insert(parameter.clone(), parameter_type.clone());
@@ -569,12 +591,16 @@ impl TypeChecker {
                     is_variadic |= p_is_variadic;
                 }
 
+                if free_type_parameters.len() > 0 {
+                    // TODO: Perform type inference
+                }
+
                 let return_type_specified = return_type_annotation
                     .clone()
-                    .map(|ref return_type_dexpr| {
+                    .map(|ref annotation| {
                         typechecker_fn
                             .registry
-                            .get_base_representation(return_type_dexpr)
+                            .get_base_representation(annotation)
                             .map_err(TypeCheckError::RegistryError)
                     })
                     .transpose()?;
@@ -610,7 +636,7 @@ impl TypeChecker {
                     }
 
                     return_type_specified.ok_or_else(|| {
-                        TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(
+                        TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
                             *function_name_span,
                             function_name.clone(),
                         )
@@ -1041,7 +1067,7 @@ mod tests {
     fn foreign_function_with_missing_return_type() {
         assert!(matches!(
             get_typecheck_error("fn sin(x: Scalar)"),
-            TypeCheckError::ForeignFunctionNeedsReturnTypeAnnotation(_, name) if name == "sin"
+            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(_, name) if name == "sin"
         ));
     }
 
