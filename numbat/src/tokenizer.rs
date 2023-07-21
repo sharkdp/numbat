@@ -181,7 +181,11 @@ impl Tokenizer {
         }
 
         let mut last_char = None;
-        while self.peek().map(|c| c.is_ascii_digit() || c == '_').unwrap_or(false) {
+        while self
+            .peek()
+            .map(|c| c.is_ascii_digit() || c == '_')
+            .unwrap_or(false)
+        {
             last_char = Some(self.advance());
         }
 
@@ -193,12 +197,7 @@ impl Tokenizer {
             });
         }
 
-        if disallow_dot_after_stream
-            && self
-                .peek()
-                .map(|c| c == '.')
-                .unwrap_or(false)
-        {
+        if disallow_dot_after_stream && self.peek().map(|c| c == '.').unwrap_or(false) {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(self.peek().unwrap()),
                 span: self.current.single_character_span(self.code_source_index),

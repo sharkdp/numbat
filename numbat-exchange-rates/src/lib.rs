@@ -9,8 +9,10 @@ pub fn fetch_exchange_rates() -> Option<ExchangeRates> {
     let mut rates = ExchangeRates::default();
 
     let xml =
-        reqwest::blocking::get("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml").ok()?
-            .text().ok()?;
+        reqwest::blocking::get("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")
+            .ok()?
+            .text()
+            .ok()?;
 
     let mut reader = Reader::from_str(&xml);
     loop {
@@ -20,13 +22,17 @@ pub fn fetch_exchange_rates() -> Option<ExchangeRates> {
                 if e.local_name().as_ref() != b"Cube" {
                     continue;
                 }
-                let currency = &e.try_get_attribute("currency").ok()??.unescape_value().ok()?;
+                let currency = &e
+                    .try_get_attribute("currency")
+                    .ok()??
+                    .unescape_value()
+                    .ok()?;
                 let rate = &e.try_get_attribute("rate").ok()??.unescape_value().ok()?;
                 let rate = rate.parse().ok()?;
 
                 rates.insert(currency.to_string(), rate);
             }
-            _ => {},
+            _ => {}
         }
     }
 
