@@ -34,6 +34,41 @@ fn expect_failure(code: &str, msg_part: &str) {
 }
 
 #[test]
+fn test_factorial() {
+    expect_output("0!", "1");
+    expect_output("4!", "24");
+    expect_output("4.0!", "24");
+    expect_output("4 !", "24");
+    expect_output(" 4 !", "24");
+    expect_output("(4)!", "24");
+    expect_output("3!^3", "216");
+    // Not supported, at least for now.
+    // expect_output("3!³", "216");
+    expect_output("(3!)^3", "216");
+    expect_output("3^3!", "729");
+    expect_output("-5!", "-120");
+    expect_output("-(5!)", "-120");
+    expect_output("-(5)!", "-120");
+
+    expect_failure(
+        "(-1)!",
+        "Expected factorial argument to be a non-negative integer",
+    );
+    expect_failure(
+        "1.5!",
+        "Expected factorial argument to be a finite integer number",
+    );
+    expect_failure(
+        "(-1.5)!",
+        "Expected factorial argument to be a non-negative integer",
+    );
+    expect_failure(
+        "(2m)!",
+        "Argument of factorial needs to be dimensionless (got Length).",
+    );
+}
+
+#[test]
 fn test_exponentiation() {
     expect_output("3²*2", "18");
     expect_output("3² 2", "18");

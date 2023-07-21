@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::prefix::Prefix;
-use crate::typed_ast::{BinaryOperator, Expression, Statement};
+use crate::typed_ast::{BinaryOperator, Expression, Statement, UnaryOperator};
 use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
 use crate::vm::{Constant, Op, Vm};
@@ -55,9 +55,13 @@ impl BytecodeInterpreter {
                     }
                 }
             }
-            Expression::Negate(_span, rhs, _type) => {
+            Expression::UnaryOperator(_span, UnaryOperator::Negate, rhs, _type) => {
                 self.compile_expression(rhs)?;
                 self.vm.add_op(Op::Negate);
+            }
+            Expression::UnaryOperator(_span, UnaryOperator::Factorial, lhs, _type) => {
+                self.compile_expression(lhs)?;
+                self.vm.add_op(Op::Factorial);
             }
             Expression::BinaryOperator(_span, operator, lhs, rhs, _type) => {
                 self.compile_expression(lhs)?;
@@ -101,7 +105,7 @@ impl BytecodeInterpreter {
             | Expression::Identifier(..)
             | Expression::UnitIdentifier(..)
             | Expression::FunctionCall(..)
-            | Expression::Negate(..)
+            | Expression::UnaryOperator(..)
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _) => {}
             Expression::BinaryOperator(..) => {
                 self.vm.add_op(Op::FullSimplify);

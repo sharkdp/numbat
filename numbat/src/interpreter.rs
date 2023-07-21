@@ -10,6 +10,10 @@ use thiserror::Error;
 pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
+    #[error("Expected factorial argument to be a non-negative integer")]
+    FactorialOfNegativeNumber,
+    #[error("Expected factorial argument to be a finite integer number")]
+    FactorialOfNonInteger,
     #[error("No statements in program")]
     NoStatements,
     #[error("{0}")]

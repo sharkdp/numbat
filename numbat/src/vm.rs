@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, Result, RuntimeError},
+    math,
     name_resolution::LAST_RESULT_IDENTIFIERS,
     quantity::Quantity,
     unit::Unit,
@@ -33,6 +34,9 @@ pub enum Op {
 
     /// Negate the top of the stack
     Negate,
+
+    /// Evaluate the factorial of the top of the stack
+    Factorial,
 
     /// Pop two values off the stack, add them, push the result onto the stack.
     Add,
@@ -67,6 +71,7 @@ impl Op {
             Op::SetUnitConstant | Op::Call | Op::FFICallFunction | Op::FFICallProcedure => 2,
             Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::GetLocal => 1,
             Op::Negate
+            | Op::Factorial
             | Op::Add
             | Op::Subtract
             | Op::Multiply
@@ -86,6 +91,7 @@ impl Op {
             Op::GetVariable => "GetVariable",
             Op::GetLocal => "GetLocal",
             Op::Negate => "Negate",
+            Op::Factorial => "Factorial",
             Op::Add => "Add",
             Op::Subtract => "Subtract",
             Op::Multiply => "Multiply",
@@ -480,6 +486,21 @@ impl Vm {
                 Op::Negate => {
                     let rhs = self.pop();
                     self.push(-rhs);
+                }
+                Op::Factorial => {
+                    let lhs = self
+                        .pop()
+                        .as_scalar()
+                        .expect("Expected factorial operand to be scalar")
+                        .to_f64();
+
+                    if lhs < 0. {
+                        return Err(RuntimeError::FactorialOfNegativeNumber);
+                    } else if lhs.fract() != 0. {
+                        return Err(RuntimeError::FactorialOfNonInteger);
+                    }
+
+                    self.push(Quantity::from_scalar(math::factorial(lhs)));
                 }
                 Op::Call => {
                     let function_idx = self.read_u16() as usize;

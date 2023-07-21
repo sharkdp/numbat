@@ -7,6 +7,12 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnaryOperator {
+    Factorial,
+    Negate,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOperator {
     Add,
     Sub,
@@ -36,7 +42,11 @@ pub enum Expression {
     Scalar(Span, Number),
     Identifier(Span, String),
     UnitIdentifier(Span, Prefix, String, String),
-    Negate(Span, Box<Expression>),
+    UnaryOperator {
+        op: UnaryOperator,
+        expr: Box<Expression>,
+        span_op: Span,
+    },
     BinaryOperator {
         op: BinaryOperator,
         lhs: Box<Expression>,
@@ -52,7 +62,11 @@ impl Expression {
             Expression::Scalar(span, _) => *span,
             Expression::Identifier(span, _) => *span,
             Expression::UnitIdentifier(span, _, _, _) => *span,
-            Expression::Negate(span, expr) => span.extend(&expr.full_span()),
+            Expression::UnaryOperator {
+                op: _,
+                expr,
+                span_op,
+            } => span_op.extend(&expr.full_span()),
             Expression::BinaryOperator {
                 op: _,
                 lhs,
@@ -87,7 +101,22 @@ macro_rules! identifier {
 #[cfg(test)]
 macro_rules! negate {
     ( $rhs:expr ) => {{
-        Expression::Negate(Span::dummy(), Box::new($rhs))
+        Expression::UnaryOperator {
+            op: UnaryOperator::Negate,
+            expr: Box::new($rhs),
+            span_op: Span::dummy(),
+        }
+    }};
+}
+
+#[cfg(test)]
+macro_rules! factorial {
+    ( $lhs:expr ) => {{
+        Expression::UnaryOperator {
+            op: UnaryOperator::Factorial,
+            expr: Box::new($lhs),
+            span_op: Span::dummy(),
+        }
     }};
 }
 
@@ -104,6 +133,8 @@ macro_rules! binop {
 }
 #[cfg(test)]
 pub(crate) use binop;
+#[cfg(test)]
+pub(crate) use factorial;
 #[cfg(test)]
 pub(crate) use identifier;
 use itertools::Itertools;
@@ -123,7 +154,7 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::Identifier(..)
         | Expression::UnitIdentifier(..)
         | Expression::FunctionCall(..) => expr.pretty_print(),
-        Expression::Negate(..) | Expression::BinaryOperator { .. } => {
+        Expression::UnaryOperator { .. } | Expression::BinaryOperator { .. } => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
         }
     }
@@ -280,7 +311,16 @@ impl PrettyPrint for Expression {
             UnitIdentifier(_, prefix, _name, full_name) => {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
-            Negate(_, rhs) => m::operator("-") + with_parens(rhs),
+            UnaryOperator {
+                op: self::UnaryOperator::Negate,
+                expr,
+                span_op: _,
+            } => m::operator("-") + with_parens(expr),
+            UnaryOperator {
+                op: self::UnaryOperator::Factorial,
+                expr,
+                span_op: _,
+            } => with_parens(expr) + m::operator("!"),
             BinaryOperator {
                 op,
                 lhs,
@@ -652,9 +692,15 @@ impl ReplaceSpans for Expression {
                 name.clone(),
                 full_name.clone(),
             ),
-            Expression::Negate(_, expr) => {
-                Expression::Negate(Span::dummy(), Box::new(expr.replace_spans()))
-            }
+            Expression::UnaryOperator {
+                op,
+                expr,
+                span_op: _,
+            } => Expression::UnaryOperator {
+                op: *op,
+                expr: Box::new(expr.replace_spans()),
+                span_op: Span::dummy(),
+            },
             Expression::BinaryOperator {
                 op,
                 lhs,

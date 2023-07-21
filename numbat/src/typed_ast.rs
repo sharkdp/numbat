@@ -1,4 +1,4 @@
-pub use crate::ast::{BinaryOperator, DimensionExpression};
+pub use crate::ast::{BinaryOperator, DimensionExpression, UnaryOperator};
 use crate::{
     decorator::Decorator, number::Number, prefix::Prefix, registry::BaseRepresentation, span::Span,
 };
@@ -10,7 +10,7 @@ pub enum Expression {
     Scalar(Span, Number),
     Identifier(Span, String, Type),
     UnitIdentifier(Span, Prefix, String, String, Type),
-    Negate(Span, Box<Expression>, Type),
+    UnaryOperator(Span, UnaryOperator, Box<Expression>, Type),
     BinaryOperator(
         Option<Span>,
         BinaryOperator,
@@ -27,7 +27,7 @@ impl Expression {
             Expression::Scalar(span, ..) => *span,
             Expression::Identifier(span, ..) => *span,
             Expression::UnitIdentifier(span, ..) => *span,
-            Expression::Negate(span, expr, _) => span.extend(&expr.full_span()),
+            Expression::UnaryOperator(span, _, expr, _) => span.extend(&expr.full_span()),
             Expression::BinaryOperator(span_op, _op, lhs, rhs, _) => {
                 let mut span = lhs.full_span().extend(&rhs.full_span());
                 if let Some(span_op) = span_op {
@@ -62,7 +62,7 @@ impl Expression {
             Expression::Scalar(_, _) => Type::unity(),
             Expression::Identifier(_, _, type_) => type_.clone(),
             Expression::UnitIdentifier(_, _, _, _, _type) => _type.clone(),
-            Expression::Negate(_, _, type_) => type_.clone(),
+            Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
             Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
             Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
         }

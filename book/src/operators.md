@@ -5,6 +5,7 @@
 | Operator                  | Syntax               |
 | ------------------------- | -------------------- |
 | square, cube, ...         | `²`, `³`, `⁻¹`, ...  |
+| factorial                 | `!`                  |
 | exponentiation            | `^`, `**`            |
 | multiplication (implicit) | *whitespace*         |
 | modulo                    | `%`                  |

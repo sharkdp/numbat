@@ -8,6 +8,7 @@ mod dimension;
 mod ffi;
 mod interpreter;
 pub mod markup;
+mod math;
 mod name_resolution;
 mod number;
 mod parser;

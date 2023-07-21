@@ -65,6 +65,7 @@ pub enum TokenKind {
     UnicodeExponent,
     At,
     Ellipsis,
+    ExclamationMark,
 
     // Keywords
     Let,
@@ -376,6 +377,7 @@ impl Tokenizer {
             '→' | '➞' => TokenKind::Arrow,
             '-' if self.match_char('>') => TokenKind::Arrow,
             '-' => TokenKind::Minus,
+            '!' => TokenKind::ExclamationMark,
             '⁻' => {
                 let c = self.peek();
                 if c.map(is_exponent_char).unwrap_or(false) {
