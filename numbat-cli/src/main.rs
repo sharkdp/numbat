@@ -406,7 +406,13 @@ impl Cli {
     }
 
     fn get_modules_paths() -> Vec<PathBuf> {
-        let mut paths = vec![Self::get_config_path().join("modules")];
+        let mut paths = vec![];
+
+        if let Some(path) = std::env::var_os("NUMBAT_MODULES_PATH") {
+            paths.push(path.into());
+        }
+
+        paths.push(Self::get_config_path().join("modules"));
         if cfg!(unix) {
             paths.push("/usr/share/numbat/modules".into());
         } else {
