@@ -117,6 +117,39 @@ pub enum ParseErrorKind {
 
     #[error("Procedures can not be used inside an expression")]
     InlineProcedureUsage,
+
+    #[error("Expected decorator name")]
+    ExpectedDecoratorName,
+
+    #[error("Unknown decorator name")]
+    UnknownDecorator,
+
+    #[error("Expected module path after 'use'")]
+    ExpectedModulePathAfterUse,
+
+    #[error("Expected module name after double colon (::)")]
+    ExpectedModuleNameAfterDoubleColon,
+
+    #[error("Overflow in number literal")]
+    OverflowInNumberLiteral,
+
+    #[error("Expected dimension exponent")]
+    ExpectedDimensionExponent,
+
+    #[error("Double-underscore type names are reserved for internal use")]
+    DoubleUnderscoreTypeNamesReserved,
+
+    #[error("Only integer numbers are allowed in dimension exponents")]
+    NumberInDimensionExponentOutOfRange,
+
+    #[error("Decorators can only be used on unit definitions")]
+    DecoratorsCanOnlyBeUsedOnUnitDefinitions,
+
+    #[error("Expected opening parenthesis after decorator")]
+    ExpectedLeftParenAfterDecorator,
+
+    #[error("Unknown alias annotation")]
+    UnknownAliasAnnotation,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -197,7 +230,10 @@ impl<'a> Parser<'a> {
             } else if self.match_exact(TokenKind::None).is_some() {
                 Ok(Some(AcceptsPrefix::none()))
             } else {
-                todo!("Parse error: unknown alias annotation")
+                return Err(ParseError::new(
+                    ParseErrorKind::UnknownAliasAnnotation,
+                    self.peek().span,
+                ));
             }
         } else {
             Ok(None)
@@ -230,7 +266,10 @@ impl<'a> Parser<'a> {
             || self.peek().kind == TokenKind::Unit
             || self.decorator_stack.is_empty())
         {
-            todo!("Parser error: @-decorators can only be used on unit expressions")
+            return Err(ParseError {
+                kind: ParseErrorKind::DecoratorsCanOnlyBeUsedOnUnitDefinitions,
+                span: self.peek().span,
+            });
         }
 
         if self.match_exact(TokenKind::Let).is_some() {
@@ -390,9 +429,10 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(TokenKind::Dimension).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 if identifier.lexeme.starts_with("__") {
-                    todo!(
-                        "Parse error: double-underscore type names are reserved for internal use"
-                    );
+                    return Err(ParseError::new(
+                        ParseErrorKind::DoubleUnderscoreTypeNamesReserved,
+                        self.peek().span,
+                    ));
                 }
 
                 if self.match_exact(TokenKind::Equal).is_some() {
@@ -431,10 +471,16 @@ impl<'a> Parser<'a> {
                         let aliases = self.list_of_aliases()?;
                         Decorator::Aliases(aliases)
                     } else {
-                        todo!("Parse error: expected left paren after decorator")
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek().span,
+                        });
                     }
                 } else {
-                    todo!("Parse error: unknown decorator")
+                    return Err(ParseError {
+                        kind: ParseErrorKind::UnknownDecorator,
+                        span: decorator.span,
+                    });
                 };
 
                 self.decorator_stack.push(decorator); // TODO: make sure that there are no duplicate decorators
@@ -443,7 +489,10 @@ impl<'a> Parser<'a> {
                 self.skip_empty_lines();
                 self.statement()
             } else {
-                todo!("Parse error: …")
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedDecoratorName,
+                    span: self.peek().span,
+                })
             }
         } else if self.match_exact(TokenKind::Unit).is_some() {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
@@ -504,18 +553,24 @@ impl<'a> Parser<'a> {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let mut module_path = vec![identifier.lexeme.clone()];
 
-                while self.match_exact(TokenKind::ColonColon).is_some() {
+                while self.match_exact(TokenKind::DoubleColon).is_some() {
                     if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                         module_path.push(identifier.lexeme.clone());
                     } else {
-                        todo!("Parse error")
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedModuleNameAfterDoubleColon,
+                            span: self.peek().span,
+                        });
                     }
                 }
                 span = span.extend(&self.last().unwrap().span);
 
                 Ok(Statement::ModuleImport(span, ModulePath(module_path)))
             } else {
-                todo!("Parse error")
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedModulePathAfterUse,
+                    span: self.peek().span,
+                })
             }
         } else if self
             .match_any(&[TokenKind::ProcedurePrint, TokenKind::ProcedureAssertEq])
@@ -803,6 +858,13 @@ impl<'a> Parser<'a> {
     fn primary(&mut self) -> Result<Expression> {
         // This function needs to be kept in sync with `next_token_could_start_primary` below.
 
+        let overflow_error = |span| {
+            Err(ParseError::new(
+                ParseErrorKind::OverflowInNumberLiteral,
+                span,
+            ))
+        };
+
         if let Some(num) = self.match_exact(TokenKind::Number) {
             let num_string = num.lexeme.replace("_", "");
             Ok(Expression::Scalar(
@@ -810,24 +872,30 @@ impl<'a> Parser<'a> {
                 Number::from_f64(num_string.parse::<f64>().unwrap()),
             ))
         } else if let Some(hex_int) = self.match_exact(TokenKind::IntegerWithBase(16)) {
+            let span = self.last().unwrap().span;
             Ok(Expression::Scalar(
-                self.last().unwrap().span,
+                span,
                 Number::from_f64(
-                    i128::from_str_radix(&hex_int.lexeme[2..], 16).unwrap() as f64, // TODO: i128 limits our precision here
+                    i128::from_str_radix(&hex_int.lexeme[2..], 16)
+                        .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
         } else if let Some(oct_int) = self.match_exact(TokenKind::IntegerWithBase(8)) {
+            let span = self.last().unwrap().span;
             Ok(Expression::Scalar(
-                self.last().unwrap().span,
+                span,
                 Number::from_f64(
-                    i128::from_str_radix(&oct_int.lexeme[2..], 8).unwrap() as f64, // TODO: i128 limits our precision here
+                    i128::from_str_radix(&oct_int.lexeme[2..], 8)
+                        .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
         } else if let Some(bin_int) = self.match_exact(TokenKind::IntegerWithBase(2)) {
+            let span = self.last().unwrap().span;
             Ok(Expression::Scalar(
-                self.last().unwrap().span,
+                span,
                 Number::from_f64(
-                    i128::from_str_radix(&bin_int.lexeme[2..], 2).unwrap() as f64, // TODO: i128 limits our precision here
+                    i128::from_str_radix(&bin_int.lexeme[2..], 2)
+                        .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
@@ -913,10 +981,17 @@ impl<'a> Parser<'a> {
 
         if let Some(token) = self.match_exact(TokenKind::Number) {
             let span = self.last().unwrap().span;
-            // TODO: only parse integers here
+            let num_str = token.lexeme.replace("_", "");
             Ok((
                 span,
-                Rational::from_f64(token.lexeme.parse::<f64>().unwrap()).unwrap(),
+                Rational::from_i128(num_str.parse::<i128>().map_err(|_| ParseError {
+                    kind: ParseErrorKind::NumberInDimensionExponentOutOfRange,
+                    span: token.span,
+                })?)
+                .ok_or_else(|| ParseError {
+                    kind: ParseErrorKind::NumberInDimensionExponentOutOfRange,
+                    span: token.span,
+                })?,
             ))
         } else if self.match_exact(TokenKind::Minus).is_some() {
             let span = self.last().unwrap().span;
@@ -953,7 +1028,10 @@ impl<'a> Parser<'a> {
                 ))
             }
         } else {
-            todo!("parse error: expected integer number as dimension exponent")
+            Err(ParseError::new(
+                ParseErrorKind::ExpectedDimensionExponent,
+                self.peek().span,
+            ))
         }
     }
 
@@ -964,7 +1042,10 @@ impl<'a> Parser<'a> {
         ));
         if let Some(token) = self.match_exact(TokenKind::Identifier) {
             if token.lexeme.starts_with("__") {
-                todo!("Parse error: double-underscore type names are reserved for internal use");
+                return Err(ParseError::new(
+                    ParseErrorKind::DoubleUnderscoreTypeNamesReserved,
+                    self.peek().span,
+                ));
             }
             let span = self.last().unwrap().span;
             Ok(DimensionExpression::Dimension(span, token.lexeme.clone()))

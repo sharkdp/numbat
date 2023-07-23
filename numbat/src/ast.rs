@@ -109,6 +109,7 @@ pub(crate) use identifier;
 use itertools::Itertools;
 #[cfg(test)]
 pub(crate) use negate;
+use num_traits::Signed;
 #[cfg(test)]
 pub(crate) use scalar;
 
@@ -344,7 +345,11 @@ impl PrettyPrint for DimensionExpression {
                     + lhs.pretty_print()
                     + m::operator(")")
                     + m::operator("^")
-                    + m::value(format!("{exp}"))
+                    + if exp.is_positive() {
+                        m::value(format!("{exp}"))
+                    } else {
+                        m::operator("(") + m::value(format!("{exp}")) + m::operator(")")
+                    }
             }
         }
     }

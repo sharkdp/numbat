@@ -1,7 +1,7 @@
-use num_rational::{Ratio, Rational64};
+use num_rational::Ratio;
 use num_traits::Signed;
 
-pub type Rational = Rational64;
+pub type Rational = Ratio<i128>;
 pub type Exponent = Rational;
 
 pub trait Power {
