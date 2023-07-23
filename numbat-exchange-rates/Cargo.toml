@@ -6,7 +6,7 @@ description = "A library to fetch and parse currency exchange rates from the ECB
 edition = "2021"
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 quick-xml = "0.29.0"

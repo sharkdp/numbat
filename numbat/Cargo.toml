@@ -7,7 +7,7 @@ version = "1.5.0"
 edition = "2021"
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 
 [dependencies]
