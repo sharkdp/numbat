@@ -111,7 +111,7 @@ struct Tokenizer {
 }
 
 fn is_exponent_char(c: char) -> bool {
-    matches!(c, '¹' | '²' | '³' | '⁴' | '⁵')
+    matches!(c, '¹' | '²' | '³' | '⁴' | '⁵' | '⁶' | '⁷' | '⁸' | '⁹')
 }
 
 fn is_currency_char(c: char) -> bool {
@@ -358,7 +358,7 @@ impl Tokenizer {
                     );
                 }
             }
-            '¹' | '²' | '³' | '⁴' | '⁵' => TokenKind::UnicodeExponent,
+            '¹' | '²' | '³' | '⁴' | '⁵' | '⁶' | '⁷' | '⁸' | '⁹' => TokenKind::UnicodeExponent,
             '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so we treat it as a special case here
             '"' => {
                 while self.peek().map(|c| c != '"').unwrap_or(false) {
