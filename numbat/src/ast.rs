@@ -344,7 +344,11 @@ impl PrettyPrint for DimensionExpression {
                     + lhs.pretty_print()
                     + m::operator(")")
                     + m::operator("^")
-                    + m::value(format!("{exp}"))
+                    + if exp.is_positive() {
+                        m::value(format!("{exp}"))
+                    } else {
+                        m::operator("(") + m::value(format!("{exp}")) + m::operator(")")
+                    }
             }
         }
     }
