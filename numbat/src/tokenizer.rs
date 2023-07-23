@@ -114,6 +114,29 @@ fn is_exponent_char(c: char) -> bool {
     matches!(c, '¹' | '²' | '³' | '⁴' | '⁵' | '⁶' | '⁷' | '⁸' | '⁹')
 }
 
+fn is_numerical_fraction_char(c: char) -> bool {
+    matches!(
+        c,
+        '¼' | '½'
+            | '¾'
+            | '⅐'
+            | '⅑'
+            | '⅒'
+            | '⅓'
+            | '⅔'
+            | '⅕'
+            | '⅖'
+            | '⅗'
+            | '⅘'
+            | '⅙'
+            | '⅚'
+            | '⅛'
+            | '⅜'
+            | '⅝'
+            | '⅞'
+    )
+}
+
 fn is_currency_char(c: char) -> bool {
     let c_u32 = c as u32;
 
@@ -121,8 +144,15 @@ fn is_currency_char(c: char) -> bool {
     (0x20A0..=0x20CF).contains(&c_u32) || c == '£' || c == '¥' || c == '$' || c == '฿'
 }
 
-fn is_identifier_char(c: char) -> bool {
-    (c.is_alphanumeric() || c == '_' || is_currency_char(c)) && !is_exponent_char(c)
+fn is_identifier_start(c: char) -> bool {
+    unicode_ident::is_xid_start(c)
+        || is_numerical_fraction_char(c)
+        || is_currency_char(c)
+        || c == '_'
+}
+
+fn is_identifier_continue(c: char) -> bool {
+    (unicode_ident::is_xid_continue(c) || is_currency_char(c)) && !is_exponent_char(c) && c != '·'
 }
 
 impl Tokenizer {
@@ -294,7 +324,7 @@ impl Tokenizer {
                 if !has_advanced
                     || self
                         .peek()
-                        .map(|c| is_identifier_char(c) || c == '.')
+                        .map(|c| is_identifier_continue(c) || c == '.')
                         .unwrap_or(false)
                 {
                     return tokenizer_error(
@@ -358,7 +388,9 @@ impl Tokenizer {
                     );
                 }
             }
-            '¹' | '²' | '³' | '⁴' | '⁵' | '⁶' | '⁷' | '⁸' | '⁹' => TokenKind::UnicodeExponent,
+            '¹' | '²' | '³' | '⁴' | '⁵' | '⁶' | '⁷' | '⁸' | '⁹' => {
+                TokenKind::UnicodeExponent
+            }
             '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so we treat it as a special case here
             '"' => {
                 while self.peek().map(|c| c != '"').unwrap_or(false) {
@@ -379,8 +411,8 @@ impl Tokenizer {
                 }
             }
             '…' => TokenKind::Ellipsis,
-            c if is_identifier_char(c) => {
-                while self.peek().map(is_identifier_char).unwrap_or(false) {
+            c if is_identifier_start(c) => {
+                while self.peek().map(is_identifier_continue).unwrap_or(false) {
                     self.advance();
                 }
 

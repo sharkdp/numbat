@@ -21,6 +21,7 @@ strsim = "0.10.0"
 pretty_dtoa = "0.3"
 numbat-exchange-rates = { version = "0.1.0", path = "../numbat-exchange-rates" }
 heck = { version = "0.4.1", features = ["unicode"] }
+unicode-ident = "1.0.11"
 
 [dev-dependencies]
 approx = "0.5"
