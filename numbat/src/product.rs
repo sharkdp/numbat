@@ -106,7 +106,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord, const CANONICALIZE: bool>
         self.powi(-1)
     }
 
-    pub fn powi(self, exp: i64) -> Self {
+    pub fn powi(self, exp: i128) -> Self {
         self.power(Ratio::from_integer(exp))
     }
 }

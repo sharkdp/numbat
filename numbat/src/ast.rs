@@ -109,6 +109,7 @@ pub(crate) use identifier;
 use itertools::Itertools;
 #[cfg(test)]
 pub(crate) use negate;
+use num_traits::Signed;
 #[cfg(test)]
 pub(crate) use scalar;
 

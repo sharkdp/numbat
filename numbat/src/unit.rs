@@ -73,14 +73,14 @@ impl UnitIdentifier {
 
                     // Multiply by the product of all divisors to make all exponents
                     // integers. This is needed for the next step.
-                    let factor: i64 = key.iter().map(|p| p.1.numer()).product();
+                    let factor: i128 = key.iter().map(|p| p.1.numer()).product();
 
                     key.iter_mut().for_each(|p| p.1 = p.1 * factor);
 
                     // Now divide every factor by the greatest common divisor. This is
                     // useful to consider g·m² and g²·m⁴ for merging (but not g·m² and g·m³).
                     debug_assert!(key[0].1.is_integer());
-                    let mut common_divisor: i64 = key[0].1.to_integer();
+                    let mut common_divisor: i128 = key[0].1.to_integer();
                     for p in &key[1..] {
                         debug_assert!(p.1.is_integer());
                         common_divisor = common_divisor.gcd(&p.1.to_integer());

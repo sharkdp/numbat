@@ -139,7 +139,7 @@ pub enum ParseErrorKind {
     #[error("Double-underscore type names are reserved for internal use")]
     DoubleUnderscoreTypeNamesReserved,
 
-    #[error("Number in dimension exponent out of range")]
+    #[error("Only integer numbers are allowed in dimension exponents")]
     NumberInDimensionExponentOutOfRange,
 
     #[error("Decorators can only be used on unit definitions")]
@@ -984,7 +984,11 @@ impl<'a> Parser<'a> {
             let num_str = token.lexeme.replace("_", "");
             Ok((
                 span,
-                Rational::from_f64(num_str.parse::<f64>().unwrap()).ok_or_else(|| ParseError {
+                Rational::from_i128(num_str.parse::<i128>().map_err(|_| ParseError {
+                    kind: ParseErrorKind::NumberInDimensionExponentOutOfRange,
+                    span: token.span,
+                })?)
+                .ok_or_else(|| ParseError {
                     kind: ParseErrorKind::NumberInDimensionExponentOutOfRange,
                     span: token.span,
                 })?,
