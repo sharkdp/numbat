@@ -9,12 +9,15 @@ use num_traits::{FromPrimitive, Zero};
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum ConversionError {
+pub enum QuantityError {
     #[error("Conversion error: unit '{0}' can not be converted to '{1}'")]
-    IncompatibleUnits(Unit, Unit),
+    IncompatibleUnits(Unit, Unit), // TODO: this can currently be triggered if there are multiple base units for the same dimension (no way to convert between them)
+
+    #[error("Non-rational exponent")]
+    NonRationalExponent,
 }
 
-pub type Result<T> = std::result::Result<T, ConversionError>;
+pub type Result<T> = std::result::Result<T, QuantityError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Quantity {
@@ -111,7 +114,7 @@ impl Quantity {
                 ))
             } else {
                 // TODO: can this even be triggered? replace by an assertion?
-                Err(ConversionError::IncompatibleUnits(
+                Err(QuantityError::IncompatibleUnits(
                     self.unit.clone(),
                     target_unit.clone(),
                 ))
@@ -181,8 +184,10 @@ impl Quantity {
         let exponent_as_scalar = exp.as_scalar()?.to_f64();
         Ok(Quantity::new_f64(
             self.value.to_f64().powf(exponent_as_scalar),
-            self.unit
-                .power(Rational::from_f64(exponent_as_scalar).unwrap()), // TODO: error handling; can this really handle rational exponents?
+            self.unit.power(
+                Rational::from_f64(exponent_as_scalar)
+                    .ok_or_else(|| QuantityError::NonRationalExponent)?,
+            ),
         ))
     }
 }

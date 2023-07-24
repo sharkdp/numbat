@@ -475,7 +475,7 @@ impl Vm {
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         _ => unreachable!(),
                     };
-                    self.push(result.map_err(RuntimeError::ConversionError)?);
+                    self.push(result.map_err(RuntimeError::QuantityError)?);
                 }
                 Op::Negate => {
                     let rhs = self.pop();

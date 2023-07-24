@@ -1,5 +1,5 @@
 use crate::{
-    quantity::{ConversionError, Quantity},
+    quantity::{Quantity, QuantityError},
     typed_ast::Statement,
     unit_registry::UnitRegistryError,
 };
@@ -15,7 +15,7 @@ pub enum RuntimeError {
     #[error("{0}")]
     UnitRegistryError(UnitRegistryError), // TODO: can this even be triggered?
     #[error("{0}")]
-    ConversionError(ConversionError), // TODO: this can currently be triggered if there are multiple base units for the same dimension (no way to convert between them)
+    QuantityError(QuantityError),
     #[error(
         "Assertion failed because the following two quantities are not the same:\n  {0}\n  {1}"
     )]
@@ -234,5 +234,14 @@ mod tests {
     #[test]
     fn division_by_zero_raises_runtime_error() {
         assert_runtime_error("1/0", RuntimeError::DivisionByZero);
+    }
+
+    #[test]
+    fn non_rational_exponent() {
+        // Regression test, found using fuzzing
+        assert_runtime_error(
+            "0**0⁻⁸",
+            RuntimeError::QuantityError(QuantityError::NonRationalExponent),
+        );
     }
 }

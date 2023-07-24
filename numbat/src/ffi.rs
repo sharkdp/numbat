@@ -303,7 +303,7 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
 
         match result {
             Ok(diff) => match diff.convert_to(args[2].unit()) {
-                Err(e) => ControlFlow::Break(RuntimeError::ConversionError(e)),
+                Err(e) => ControlFlow::Break(RuntimeError::QuantityError(e)),
                 Ok(diff_converted) => {
                     if diff_converted.unsafe_value().to_f64().abs()
                         < args[2].unsafe_value().to_f64()
@@ -318,7 +318,7 @@ fn assert_eq(args: &[Quantity]) -> ControlFlow {
                     }
                 }
             },
-            Err(e) => ControlFlow::Break(RuntimeError::ConversionError(e)),
+            Err(e) => ControlFlow::Break(RuntimeError::QuantityError(e)),
         }
     }
 }
