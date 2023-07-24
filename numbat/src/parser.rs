@@ -44,7 +44,7 @@ use crate::resolver::ModulePath;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError, TokenizerErrorKind};
 
-use num_traits::{FromPrimitive, Zero};
+use num_traits::{CheckedDiv, FromPrimitive, Zero};
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -139,7 +139,7 @@ pub enum ParseErrorKind {
     #[error("Double-underscore type names are reserved for internal use")]
     DoubleUnderscoreTypeNamesReserved,
 
-    #[error("Only integer numbers are allowed in dimension exponents")]
+    #[error("Only integer numbers (< 2^128) are allowed in dimension exponents")]
     NumberInDimensionExponentOutOfRange,
 
     #[error("Decorators can only be used on unit definitions")]
@@ -150,6 +150,9 @@ pub enum ParseErrorKind {
 
     #[error("Unknown alias annotation")]
     UnknownAliasAnnotation,
+
+    #[error("Numerical overflow in dimension exponent")]
+    OverflowInDimensionExponent,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -1019,7 +1022,12 @@ impl<'a> Parser<'a> {
                     ))
                 } else {
                     span = span.extend(&self.last().unwrap().span);
-                    Ok((span, exponent / rhs))
+                    Ok((
+                        span,
+                        exponent.checked_div(&rhs).ok_or_else(|| {
+                            ParseError::new(ParseErrorKind::OverflowInDimensionExponent, span)
+                        })?,
+                    ))
                 }
             } else {
                 Err(ParseError::new(
@@ -1567,6 +1575,28 @@ mod tests {
                     )),
                 )],
             ),
+        );
+
+        parse_as(
+            &["dimension X = Length^(12345/67890)"],
+            Statement::DefineDimension(
+                "X".into(),
+                vec![DimensionExpression::Power(
+                    Span::dummy(),
+                    Box::new(DimensionExpression::Dimension(
+                        Span::dummy(),
+                        "Length".into(),
+                    )),
+                    Span::dummy(),
+                    Rational::new(12345, 67890),
+                )],
+            ),
+        );
+
+        // Regression test, found using fuzzing. This should result in an error, but not panic
+        should_fail_with(
+            &["dimension X = Length^(6/(5/(99999999999999999999999999999999999999)))"],
+            ParseErrorKind::OverflowInDimensionExponent,
         );
     }
 
