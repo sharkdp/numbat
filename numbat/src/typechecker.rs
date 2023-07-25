@@ -36,6 +36,9 @@ pub enum TypeCheckError {
     #[error("Exponents need to be dimensionless (got {1}).")]
     NonScalarExponent(Span, BaseRepresentation),
 
+    #[error("Argument of factorial needs to be dimensionless (got {1}).")]
+    NonScalarFactorialArgument(Span, BaseRepresentation),
+
     #[error("Unsupported expression in const-evaluation of exponent: {1}.")]
     UnsupportedConstEvalExpression(Span, &'static str),
 
@@ -85,7 +88,12 @@ fn to_rational_exponent(exponent_f64: f64) -> Exponent {
 fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     match expr {
         typed_ast::Expression::Scalar(_, n) => Ok(to_rational_exponent(n.to_f64())),
-        typed_ast::Expression::Negate(_, ref expr, _) => Ok(-evaluate_const_expr(expr)?),
+        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Negate, ref expr, _) => {
+            Ok(-evaluate_const_expr(expr)?)
+        }
+        e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "factorial"),
+        ),
         e @ typed_ast::Expression::BinaryOperator(_span_op, op, lhs_expr, rhs_expr, _) => {
             let lhs = evaluate_const_expr(lhs_expr)?;
             let rhs = evaluate_const_expr(rhs_expr)?;
@@ -171,10 +179,23 @@ impl TypeChecker {
                     type_,
                 )
             }
-            ast::Expression::Negate(span, expr) => {
+            ast::Expression::UnaryOperator { op, expr, span_op } => {
                 let checked_expr = self.check_expression(expr)?;
                 let type_ = checked_expr.get_type();
-                typed_ast::Expression::Negate(*span, Box::new(checked_expr), type_)
+
+                match *op {
+                    ast::UnaryOperator::Factorial => {
+                        if type_ != Type::unity() {
+                            return Err(TypeCheckError::NonScalarFactorialArgument(
+                                expr.full_span(),
+                                type_,
+                            ));
+                        }
+                    }
+                    ast::UnaryOperator::Negate => {}
+                }
+
+                typed_ast::Expression::UnaryOperator(*span_op, *op, Box::new(checked_expr), type_)
             }
             ast::Expression::BinaryOperator {
                 op,

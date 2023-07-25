@@ -1,15 +1,5 @@
 //! Numbat Parser
 //!
-//! Operator precedence, low to high
-//! * postfix apply ("//")
-//! * conversion ("->")
-//! * addition ("+")
-//! * subtraction ("-")
-//! * multiplication ("*")
-//! * division ("/")
-//! * exponentiation ("^")
-//! * unary minus ("-")
-//!
 //! Grammar:
 //! ```txt
 //! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl | procedure_call | module_import
@@ -23,12 +13,13 @@
 //! postfix_apply   →   conversion ( "//" identifier ) *
 //! conversion      →   term ( "→" term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
-//! factor          →   unary ( ( "*" | "/") per_factor ) *
+//! factor          →   negate ( ( "*" | "/") per_factor ) *
 //! per_factor      →   modulo ( "per" modulo ) *
-//! modulo          →   unary ( "%" unary ) *
-//! unary           →   "-" unary | ifactor
+//! modulo          →   negate ( "%" negate ) *
+//! negate          →   "-" negate | ifactor
 //! ifactor         →   power ( " " power ) *
-//! power           →   unicode_power ( "^" power )
+//! power           →   factorial ( "^" power )
+//! factorial       →   unicode_power "!" *
 //! unicode_power   →   call ( "⁻" ? ("¹" | "²" | "³" | "⁴" | "⁵" ) ) ?
 //! call            →   primary ( "(" arguments? ")" ) ?
 //! arguments       →   expression ( "," expression ) *
@@ -36,7 +27,9 @@
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
-use crate::ast::{BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement};
+use crate::ast::{
+    BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement, UnaryOperator,
+};
 use crate::decorator::Decorator;
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
@@ -721,7 +714,7 @@ impl<'a> Parser<'a> {
     }
 
     fn modulo(&mut self) -> Result<Expression> {
-        let mut expr = self.unary()?;
+        let mut expr = self.negate()?;
         let mut full_span = expr.full_span();
 
         while self.match_exact(TokenKind::Modulo).is_some() {
@@ -736,12 +729,16 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn unary(&mut self) -> Result<Expression> {
+    fn negate(&mut self) -> Result<Expression> {
         if self.match_exact(TokenKind::Minus).is_some() {
             let span = self.last().unwrap().span;
-            let rhs = self.unary()?;
+            let rhs = self.negate()?;
 
-            Ok(Expression::Negate(span, Box::new(rhs)))
+            Ok(Expression::UnaryOperator {
+                op: UnaryOperator::Negate,
+                expr: Box::new(rhs),
+                span_op: span,
+            })
         } else {
             self.ifactor()
         }
@@ -764,7 +761,7 @@ impl<'a> Parser<'a> {
     }
 
     fn power(&mut self) -> Result<Expression> {
-        let mut expr = self.unicode_power()?;
+        let mut expr = self.factorial()?;
         if self.match_exact(TokenKind::Power).is_some() {
             let span_op = Some(self.last().unwrap().span);
             let rhs = self.power()?;
@@ -776,6 +773,22 @@ impl<'a> Parser<'a> {
                 span_op,
             };
         }
+        Ok(expr)
+    }
+
+    fn factorial(&mut self) -> Result<Expression> {
+        let mut expr = self.unicode_power()?;
+
+        while self.match_exact(TokenKind::ExclamationMark).is_some() {
+            let span = self.last().unwrap().span;
+
+            expr = Expression::UnaryOperator {
+                op: UnaryOperator::Factorial,
+                expr: Box::new(expr),
+                span_op: span,
+            };
+        }
+
         Ok(expr)
     }
 
@@ -1144,7 +1157,7 @@ pub fn parse_dexpr(input: &str) -> DimensionExpression {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{binop, identifier, negate, scalar, ReplaceSpans};
+    use crate::ast::{binop, factorial, identifier, negate, scalar, ReplaceSpans};
 
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
@@ -1231,6 +1244,31 @@ mod tests {
 
         // Trailing underscores are not allowed
         should_fail(&["100_", "1.00_", "1e2_"]);
+    }
+
+    #[test]
+    fn factorials() {
+        parse_as_expression(
+            &["4!", "4.0!", "4 !", " 4 !", "(4)!"],
+            factorial!(scalar!(4.0)),
+        );
+        parse_as_expression(
+            &["3!^3", "(3!)^3"],
+            binop!(factorial!(scalar!(3.0)), Power, scalar!(3.0)),
+        );
+        parse_as_expression(
+            &["3²!"],
+            factorial!(binop!(scalar!(3.0), Power, scalar!(2.0))),
+        );
+        parse_as_expression(
+            &["3^3!"],
+            binop!(scalar!(3.0), Power, factorial!(scalar!(3.0))),
+        );
+        parse_as_expression(
+            &["-5!", "-(5!)", "-(5)!"],
+            negate!(factorial!(scalar!(5.0))),
+        );
+        parse_as_expression(&["5!!", "(5!)!"], factorial!(factorial!(scalar!(5.0))));
     }
 
     #[test]

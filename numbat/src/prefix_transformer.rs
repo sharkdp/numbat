@@ -49,9 +49,11 @@ impl Transformer {
             Expression::UnitIdentifier(_, _, _, _) => {
                 unreachable!("Prefixed identifiers should not exist prior to this stage")
             }
-            Expression::Negate(span, expr) => {
-                Expression::Negate(span, Box::new(self.transform_expression(*expr)))
-            }
+            Expression::UnaryOperator { op, expr, span_op } => Expression::UnaryOperator {
+                op,
+                expr: Box::new(self.transform_expression(*expr)),
+                span_op,
+            },
             Expression::BinaryOperator {
                 op,
                 lhs,

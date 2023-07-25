@@ -98,7 +98,8 @@ impl ErrorDiagnostic for TypeCheckError {
                 ];
                 d.with_labels(labels).with_notes(vec![inner_error])
             }
-            TypeCheckError::NonScalarExponent(span, type_) => d
+            TypeCheckError::NonScalarExponent(span, type_)
+            | TypeCheckError::NonScalarFactorialArgument(span, type_) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message(format!("{type_}"))])
