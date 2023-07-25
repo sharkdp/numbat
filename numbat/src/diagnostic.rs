@@ -201,11 +201,10 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message(inner_error),
                 ]),
-            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _) => d
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error)]),
-            TypeCheckError::UnknownForeignFunction(span, _) => d.with_labels(vec![span
+            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
+            | TypeCheckError::UnknownForeignFunction(span, _)
+            | TypeCheckError::NonRationalExponent(span)
+            | TypeCheckError::OverflowInConstExpr(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
         }

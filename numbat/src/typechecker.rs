@@ -10,7 +10,7 @@ use crate::typed_ast::{self, Type};
 use crate::{ast, decorator, ffi};
 
 use ast::DimensionExpression;
-use num_traits::{FromPrimitive, Zero};
+use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -74,12 +74,18 @@ pub enum TypeCheckError {
 
     #[error("Unknown foreign function (without body) '{1}'")]
     UnknownForeignFunction(Span, String),
+
+    #[error("Out-of bounds or non-rational exponent value")]
+    NonRationalExponent(Span),
+
+    #[error("Numerical overflow in const-eval expression")]
+    OverflowInConstExpr(Span),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
 
-fn to_rational_exponent(exponent_f64: f64) -> Exponent {
-    Rational::from_f64(exponent_f64).unwrap() // TODO
+fn to_rational_exponent(exponent_f64: f64) -> Option<Exponent> {
+    Rational::from_f64(exponent_f64)
 }
 
 /// Evaluates a limited set of expressions *at compile time*. This is needed to
@@ -87,7 +93,8 @@ fn to_rational_exponent(exponent_f64: f64) -> Exponent {
 /// need to know not just the *type* but also the *value* of the exponent.
 fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     match expr {
-        typed_ast::Expression::Scalar(_, n) => Ok(to_rational_exponent(n.to_f64())),
+        typed_ast::Expression::Scalar(span, n) => Ok(to_rational_exponent(n.to_f64())
+            .ok_or_else(|| TypeCheckError::NonRationalExponent(*span))?),
         typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Negate, ref expr, _) => {
             Ok(-evaluate_const_expr(expr)?)
         }
@@ -98,21 +105,35 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
             let lhs = evaluate_const_expr(lhs_expr)?;
             let rhs = evaluate_const_expr(rhs_expr)?;
             match op {
-                typed_ast::BinaryOperator::Add => Ok(lhs + rhs),
-                typed_ast::BinaryOperator::Sub => Ok(lhs - rhs),
-                typed_ast::BinaryOperator::Mul => Ok(lhs * rhs),
+                typed_ast::BinaryOperator::Add => Ok(lhs
+                    .checked_add(&rhs)
+                    .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?),
+                typed_ast::BinaryOperator::Sub => Ok(lhs
+                    .checked_sub(&rhs)
+                    .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?),
+                typed_ast::BinaryOperator::Mul => Ok(lhs
+                    .checked_mul(&rhs)
+                    .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?),
                 typed_ast::BinaryOperator::Div => {
                     if rhs == Rational::zero() {
                         Err(TypeCheckError::DivisionByZeroInConstEvalExpression(
                             e.full_span(),
                         ))
                     } else {
-                        Ok(lhs / rhs)
+                        Ok(lhs
+                            .checked_div(&rhs)
+                            .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?)
                     }
                 }
                 typed_ast::BinaryOperator::Power => {
                     if rhs.is_integer() {
-                        Ok(lhs.pow(rhs.to_integer() as i32)) // TODO: dangerous cast
+                        Ok(num_traits::checked_pow(
+                            lhs,
+                            rhs.to_integer().try_into().map_err(|_| {
+                                TypeCheckError::OverflowInConstExpr(expr.full_span())
+                            })?,
+                        )
+                        .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?)
                     } else {
                         Err(TypeCheckError::UnsupportedConstEvalExpression(
                             e.full_span(),
