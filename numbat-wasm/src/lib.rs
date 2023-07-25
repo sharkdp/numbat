@@ -21,6 +21,6 @@ pub fn interpret(code: &str) -> String {
             InterpreterResult::Continue => "Nothing to show".into(),
             InterpreterResult::Exit(_) => "Error!".into(),
         },
-        Err(e) => format!("{:#}", e)
+        Err(e) => format!("{:#}", e),
     }
 }
