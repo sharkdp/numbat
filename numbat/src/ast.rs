@@ -956,11 +956,8 @@ mod tests {
         roundtrip_check("-3^4");
         roundtrip_check("(-3)^4");
         roundtrip_check("sin(2,3,4)");
-
-        // TODO: when we support factorials
-        // roundtrip_check("5!³");
-        // roundtrip_check("2^3!");
-        // roundtrip_check("-3!");
-        // roundtrip_check("(-3)!");
+        roundtrip_check("2^3!");
+        roundtrip_check("-3!");
+        roundtrip_check("(-3)!");
     }
 }
