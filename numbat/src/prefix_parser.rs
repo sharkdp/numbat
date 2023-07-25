@@ -69,6 +69,8 @@ pub struct PrefixParser {
     units_vec: Vec<(String, UnitInfo)>,
 
     other_identifiers: HashMap<String, Span>,
+
+    reserved_identifiers: &'static [&'static str],
 }
 
 impl PrefixParser {
@@ -77,6 +79,7 @@ impl PrefixParser {
             units: HashMap::new(),
             units_vec: Vec::new(),
             other_identifiers: HashMap::new(),
+            reserved_identifiers: &["_", "ans"],
         }
     }
 
@@ -138,6 +141,10 @@ impl PrefixParser {
     }
 
     fn ensure_name_is_available(&self, name: &str, conflict_span: Span) -> Result<()> {
+        if self.reserved_identifiers.contains(&name) {
+            return Err(NameResolutionError::ReservedIdentifier(conflict_span));
+        }
+
         if let Some(original_span) = self.other_identifiers.get(name) {
             return Err(self.identifier_clash_error(name, conflict_span, *original_span));
         }

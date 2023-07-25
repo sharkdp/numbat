@@ -52,6 +52,11 @@ impl ErrorDiagnostic for NameResolutionError {
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message("identifier is already in use"),
                 ]),
+            NameResolutionError::ReservedIdentifier(span) => Diagnostic::error()
+                .with_message("reserved identifier may not be used")
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message("reserved identifier")]),
         }
     }
 }

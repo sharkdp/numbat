@@ -12,4 +12,7 @@ pub enum NameResolutionError {
         conflict_span: Span,
         original_span: Span,
     },
+
+    #[error("Reserved identifier")]
+    ReservedIdentifier(Span),
 }

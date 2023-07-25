@@ -374,7 +374,8 @@ impl Cli {
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::NameResolutionError(
-                e @ NameResolutionError::IdentifierClash { .. },
+                e @ (NameResolutionError::IdentifierClash { .. }
+                | NameResolutionError::ReservedIdentifier(_)),
             )) => {
                 self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
