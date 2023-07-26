@@ -15,3 +15,6 @@ assert_eq(1 maxwell, 1e-8 weber)
 
 @aliases(Oe: short)
 unit oersted: MagneticFieldStrength = 1 / (4 pi) * dyne / maxwell
+
+@metric_prefixes
+unit poise: DynamicViscosity = 1 dyn × s / cm^2

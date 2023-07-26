@@ -5,6 +5,8 @@
 ``` numbat
 # Compute the pH (acidity) of a solution based
 # on the activity of hydrogen ions
+#
+# https://en.wikipedia.org/wiki/PH
 
 fn pH_acidity(activity_hplus: Concentration) -> Scalar =
     - log10(activity_hplus / (mol / L))
