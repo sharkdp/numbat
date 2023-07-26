@@ -40,9 +40,6 @@ unit psi: Pressure = 6.894757 kPa
 @aliases(atmospheres, atm: short)
 unit atmosphere: Pressure = 101_325 pascal
 
-dimension Molarity = AmountOfSubstance / Volume
-dimension Molality = AmountOfSubstance / Mass
-
 @metric_prefixes
 unit molar: Molarity = 1 mol / litre
 

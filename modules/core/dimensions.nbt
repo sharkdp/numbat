@@ -38,6 +38,8 @@ dimension AmountOfSubstance
 dimension Concentration = AmountOfSubstance / Volume
 dimension MolarMass = Mass / AmountOfSubstance
 dimension CatalyticActivity = AmountOfSubstance / Time
+dimension Molarity = AmountOfSubstance / Volume
+dimension Molality = AmountOfSubstance / Mass
 
 dimension LuminousIntensity
 dimension LuminousFlux = LuminousIntensity × Angle^2
@@ -50,4 +52,5 @@ dimension EquivalentDose = Energy / Mass
 dimension DynamicViscosity = Pressure × Time
 
 # Other useful names
+
 dimension Rate = 1 / Time
