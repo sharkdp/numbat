@@ -58,3 +58,6 @@ unit watthour: Energy = W h
 unit kph: Speed = kilometer per hour
 
 unit micron: Length = µm
+
+@aliases(ccm)
+unit cc: Volume = cm^3
