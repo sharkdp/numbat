@@ -1,3 +1,4 @@
+use math::functions
 use units::si
 
 ### Physics constants
@@ -37,6 +38,7 @@ let µ_B: Energy / MagneticFluxDensity = 9.2740100783e-24 J / T
 
 # Fine structure constant
 let α: Scalar = 7.2973525693e-3
+let alpha = α
 
 # Proton mass
 let proton_mass: Mass =  1.67262192369e-27 kg
@@ -66,4 +68,5 @@ let planck_temperature: Temperature = sqrt(ℏ speed_of_light^5 / (gravitational
 let planck_energy: Energy = sqrt(ℏ speed_of_light^5 / gravitational_constant) -> J
 
 # Bohr radius
-let a0: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
+let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
+let a0 = bohr_radius
