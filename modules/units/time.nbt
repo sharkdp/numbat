@@ -15,3 +15,12 @@ unit month: Time = year / 12
 
 @aliases(julian_years)
 unit julian_year: Time = 365.25 days
+
+@aliases(decades)
+unit decade: Time = 10 years
+
+@aliases(centuries)
+unit century: Time = 100 years
+
+@aliases(millenia)
+unit millenium: Time = 1000 years
