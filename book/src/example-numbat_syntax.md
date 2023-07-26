@@ -43,7 +43,7 @@ meter per second  # 'per' keyword can be used for division
 2**3              # Python-style
 2³                # Unicode exponents
 
-17 % 4            # Modulo
+mod(17, 4)        # Modulo
 
 3 in -> cm        # Unit conversion, can also be → or ➞
 3 in to cm        # Unit conversion with the 'to' keyword

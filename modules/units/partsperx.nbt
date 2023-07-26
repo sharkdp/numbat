@@ -1,4 +1,4 @@
-@aliases(pct)
+@aliases(%: short, pct)
 unit percent = 1e-02
 
 @aliases(ppm)

@@ -14,7 +14,7 @@ potassium-40](https://en.wikipedia.org/wiki/Potassium-40):
 
 ``` numbat
 let halflife = 1.25 billion years
-let occurence = 0.0117 percent
+let occurence = 0.0117%
 let molar_mass = 40 g / mol
 ```
 

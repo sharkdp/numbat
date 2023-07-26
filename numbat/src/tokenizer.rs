@@ -55,7 +55,6 @@ pub enum TokenKind {
     Power,
     Divide,
     Per,
-    Modulo,
     Comma,
     Arrow,
     Equal,
@@ -149,6 +148,7 @@ fn is_identifier_start(c: char) -> bool {
     unicode_ident::is_xid_start(c)
         || is_numerical_fraction_char(c)
         || is_currency_char(c)
+        || c == '%'
         || c == '_'
 }
 
@@ -367,7 +367,6 @@ impl Tokenizer {
             '/' if self.match_char('/') => TokenKind::PostfixApply,
             '/' => TokenKind::Divide,
             '÷' => TokenKind::Divide,
-            '%' => TokenKind::Modulo,
             '^' => TokenKind::Power,
             ',' => TokenKind::Comma,
             '=' => TokenKind::Equal,

@@ -35,7 +35,6 @@ hljs.registerLanguage('numbat', function(hljs) {
           { begin: '\\^' },
           { begin: '÷' },
           { begin: '×' },
-          { begin: '%' },
           { begin: '=' },
           { begin: '->' },
           { begin: '→' },

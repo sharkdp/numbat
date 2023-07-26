@@ -8,7 +8,6 @@
 | factorial                 | `!`                  |
 | exponentiation            | `^`, `**`            |
 | multiplication (implicit) | *whitespace*         |
-| modulo                    | `%`                  |
 | division                  | `per`                |
 | division                  | `/`, `÷`             |
 | multiplication (explicit) | `*`, `·`, `×`        |

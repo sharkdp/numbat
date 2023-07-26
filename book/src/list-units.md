@@ -70,7 +70,7 @@ All SI-accepted units support [metric prefixes](https://en.wikipedia.org/wiki/Me
 | [Parts-per-trillion](https://en.wikipedia.org/wiki/Parts-per_notation) | `ppt` |
 | [Parts-per-quadrillion](https://en.wikipedia.org/wiki/Parts-per_notation) | `ppq` |
 | [Pascal](https://en.wikipedia.org/wiki/Pascal_(unit)) | `pascals`, `pascal`, `Pa` |
-| [Percent](https://en.wikipedia.org/wiki/Parts-per_notation) | `percent`, `pct` |
+| [Percent](https://en.wikipedia.org/wiki/Parts-per_notation) | `percent`, `%`, `pct` |
 | [Person](https://en.wiktionary.org/wiki/person) | `persons`, `person`, `people` |
 | [Piece](https://en.wiktionary.org/wiki/piece) | `pieces`, `piece` |
 | [Pint](https://en.wikipedia.org/wiki/Pint) | `pints`, `pint` |

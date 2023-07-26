@@ -14,8 +14,7 @@
 //! conversion      →   term ( "→" term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
 //! factor          →   negate ( ( "*" | "/") per_factor ) *
-//! per_factor      →   modulo ( "per" modulo ) *
-//! modulo          →   negate ( "%" negate ) *
+//! per_factor      →   negate ( "per" negate ) *
 //! negate          →   "-" negate | ifactor
 //! ifactor         →   power ( " " power ) *
 //! power           →   factorial ( "^" power )
@@ -696,11 +695,11 @@ impl<'a> Parser<'a> {
     }
 
     fn per_factor(&mut self) -> Result<Expression> {
-        let mut expr = self.modulo()?;
+        let mut expr = self.negate()?;
 
         while self.match_exact(TokenKind::Per).is_some() {
             let span_op = Some(self.last().unwrap().span);
-            let rhs = self.modulo()?;
+            let rhs = self.negate()?;
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Div,
@@ -708,22 +707,6 @@ impl<'a> Parser<'a> {
                 rhs: Box::new(rhs),
                 span_op,
             };
-        }
-
-        Ok(expr)
-    }
-
-    fn modulo(&mut self) -> Result<Expression> {
-        let mut expr = self.negate()?;
-        let mut full_span = expr.full_span();
-
-        while self.match_exact(TokenKind::Modulo).is_some() {
-            let op_span = self.last().unwrap().span;
-            let rhs = self.modulo()?;
-
-            full_span = full_span.extend(&rhs.full_span());
-
-            expr = Expression::FunctionCall(op_span, full_span, "mod".into(), vec![expr, rhs]);
         }
 
         Ok(expr)
