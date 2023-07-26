@@ -34,5 +34,8 @@ unit hogshead: Volume = 63 gallon
 @aliases(rods)
 unit rod: Length = 16.5 ft
 
+@aliases(acres)
+unit acre: Area = 4840 yard^2
+
 # Mileage, miles per gallon
 unit mpg: Length / Volume = miles per gallon
