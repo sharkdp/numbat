@@ -27,6 +27,10 @@ unit ounce_force: Force = 1 / 16 * lbf
 @aliases(kgf: short)
 unit kilogram_force: Force = 9.80665 newton
 
+# Metric horsepower
+@aliases(hp: short)
+unit horsepower: Power = 735.49875 W
+
 @aliases(RPM: short)
 unit rpm: Frequency = 1 / minute
 
