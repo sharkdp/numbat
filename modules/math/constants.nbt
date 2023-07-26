@@ -24,6 +24,7 @@ let half = 1 / 2
 let semi = 1 / 2
 let double = 2
 let triple = 3
+let dozen = 12
 
 let googol =  10^100
 
