@@ -140,8 +140,10 @@ unit arcminute: Angle = 1 / 60 × degree
 @aliases(arcseconds)
 unit arcsecond: Angle = 1 / 60 × arcminute
 
+unit are: Area = (10 m)^2
+
 @aliases(hectares, ha: short)
-unit hectare: Area = hectometer^2
+unit hectare: Area = 100 are
 
 @metric_prefixes
 @aliases(litres, liter, liters, l: short, L: short)
