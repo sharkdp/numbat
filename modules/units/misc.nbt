@@ -46,6 +46,13 @@ unit molar: Molarity = 1 mol / litre
 @metric_prefixes
 unit molal: Molality = 1 mole / kilogram
 
+# Angles
+
+@aliases(turns)
+unit turn: Angle = 2 π rad
+
+unit gon: Angle = 90° / 100
+
 ### Abbreviations
 
 @metric_prefixes
