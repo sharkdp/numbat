@@ -38,5 +38,5 @@ unit piece: Piece
 # A human being
 dimension Person
 
-@aliases(persons, people)
+@aliases(persons, people, capita)
 unit person: Person
