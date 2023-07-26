@@ -1,0 +1,10 @@
+# Compute the pH (acidity) of a solution based
+# on the activity of hydrogen ions
+#
+# https://en.wikipedia.org/wiki/PH
+
+fn pH_acidity(activity_hplus: Concentration) -> Scalar =
+    - log10(activity_hplus / (mol / L))
+
+print(pH_acidity(5e-6 mol / L))
+assert_eq(pH_acidity(5e-6 mol / L), 5.3, 0.1)
