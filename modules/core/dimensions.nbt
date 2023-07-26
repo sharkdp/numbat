@@ -29,6 +29,7 @@ dimension Resistance = Voltage / Current
 dimension Conductance = 1 / Resistance
 dimension MagneticFluxDensity = Force / (Charge × Speed)
 dimension MagneticFlux = MagneticFluxDensity × Area
+dimension MagneticFieldStrength = Current / Length
 dimension Inductance = MagneticFlux / Current
 
 dimension Temperature
