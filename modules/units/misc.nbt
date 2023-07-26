@@ -56,3 +56,5 @@ unit molal: Molality = 1 mole / kilogram
 unit watthour: Energy = W h
 
 unit kph: Speed = kilometer per hour
+
+unit micron: Length = µm
