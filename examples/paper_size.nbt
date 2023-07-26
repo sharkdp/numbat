@@ -1,0 +1,20 @@
+let A0_width = 841 mm
+let A0_height = 1189 mm
+
+fn paper_width_A(n: Scalar) -> Length =
+    floor(A0_width / 2^(n / 2))
+
+fn paper_height_A(n: Scalar) -> Length =
+    floor(A0_height / 2^(n / 2))
+
+fn paper_area_A(n: Scalar) -> Area =
+    paper_width_A(n) × paper_height_A(n)
+
+assert_eq(paper_width_A(3), 297 mm)
+assert_eq(paper_height_A(3), 420 mm)
+
+assert_eq(paper_width_A(4), 210 mm)
+assert_eq(paper_height_A(4), 297 mm)
+
+assert_eq(paper_width_A(5), 148 mm)
+assert_eq(paper_height_A(5), 210 mm)
