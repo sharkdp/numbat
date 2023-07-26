@@ -50,6 +50,9 @@ unit molar: Molarity = 1 mol / litre
 @metric_prefixes
 unit molal: Molality = 1 mole / kilogram
 
+# Standard FIFA football pitch
+unit footballfield: Area = 105 m × 68 m
+
 # Angles
 
 @aliases(turns)
