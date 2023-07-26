@@ -1,0 +1,11 @@
+unit FLOP
+
+@metric_prefixes
+@aliases(FLOPS: both)
+unit FLOPS = FLOP / second
+
+@aliases(cores)
+unit core
+
+let speed = 16 FLOP × 3.5 GHz / core × 12 cores -> GFLOPS
+print(speed)
