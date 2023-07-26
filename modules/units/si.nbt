@@ -150,7 +150,7 @@ unit hectare: Area = 100 are
 unit litre: Volume = decimeter^3
 
 @metric_prefixes
-@aliases(tonnes, ton: both, tons: both, t: none)
+@aliases(tonnes, ton: both, tons: both, t: none, metricton: none)
 unit tonne: Mass = 10^3 kilogram
 
 @aliases(daltons, Da: short)
