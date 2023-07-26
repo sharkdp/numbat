@@ -144,16 +144,24 @@ fn is_currency_char(c: char) -> bool {
     (0x20A0..=0x20CF).contains(&c_u32) || c == '£' || c == '¥' || c == '$' || c == '฿'
 }
 
+fn is_other_allowed_identifier_char(c: char) -> bool {
+    c == '%'
+}
+
 fn is_identifier_start(c: char) -> bool {
     unicode_ident::is_xid_start(c)
         || is_numerical_fraction_char(c)
         || is_currency_char(c)
-        || c == '%'
+        || is_other_allowed_identifier_char(c)
         || c == '_'
 }
 
 fn is_identifier_continue(c: char) -> bool {
-    (unicode_ident::is_xid_continue(c) || is_currency_char(c)) && !is_exponent_char(c) && c != '·'
+    (unicode_ident::is_xid_continue(c)
+        || is_currency_char(c)
+        || is_other_allowed_identifier_char(c))
+        && !is_exponent_char(c)
+        && c != '·'
 }
 
 impl Tokenizer {
