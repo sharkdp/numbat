@@ -1,0 +1,14 @@
+@aliases(pct)
+unit percent = 1e-02
+
+@aliases(ppm)
+unit partspermillion = 1e-06
+
+@aliases(ppb)
+unit partsperbillion = 1e-09
+
+@aliases(ppt)
+unit partspertrillion = 1e-12
+
+@aliases(ppq)
+unit partsperquadrillion = 1e-15

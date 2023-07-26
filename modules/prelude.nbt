@@ -3,7 +3,6 @@ use core::dimensions
 
 use math::functions
 use math::constants
-use math::partsperx
 
 use units::si
 use units::time
@@ -14,6 +13,7 @@ use units::nautical
 use units::cgs
 use units::fff
 use units::misc
+use units::partsperx
 
 use units::currency
 use units::bit
