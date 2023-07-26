@@ -61,3 +61,5 @@ unit micron: Length = µm
 
 @aliases(ccm)
 unit cc: Volume = cm^3
+
+unit fermi: Length = 1 fm
