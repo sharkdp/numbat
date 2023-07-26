@@ -20,6 +20,11 @@ let trillion =  10^12
 let quadrillion =  10^15
 let quintillion =  10^18
 
+let quarter = 1 / 4
+let semi = 1 / 2
+let double = 2
+let triple = 3
+
 let googol =  10^100
 
 ### Fractions
