@@ -134,10 +134,10 @@ unit astronomicalunit: Length = 149_597_870_700 meter
 @aliases(degrees, deg, °: short)
 unit degree: Angle = π / 180 × radian
 
-@aliases(arcminutes)
+@aliases(arcminutes, arcmin)
 unit arcminute: Angle = 1 / 60 × degree
 
-@aliases(arcseconds)
+@aliases(arcseconds, arcsec)
 unit arcsecond: Angle = 1 / 60 × arcminute
 
 unit are: Area = (10 m)^2

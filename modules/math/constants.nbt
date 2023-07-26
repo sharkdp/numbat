@@ -1,5 +1,4 @@
 use core::scalar
-use math::functions
 
 ### Mathematical constants
 
@@ -7,7 +6,7 @@ let pi = 3.14159265358979323846264338327950288
 let π = pi
 let τ = 2 π
 let e = 2.71828182845904523536028747135266250
-let φ = (1 + sqrt(5)) / 2
+let φ = 1.61803398874989484820458683436563811
 let golden_ratio = φ
 
 ### Named numbers
@@ -21,6 +20,7 @@ let quadrillion =  10^15
 let quintillion =  10^18
 
 let quarter = 1 / 4
+let half = 1 / 2
 let semi = 1 / 2
 let double = 2
 let triple = 3

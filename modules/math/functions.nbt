@@ -1,4 +1,5 @@
 use core::scalar
+use math::constants
 
 ### Mathematical functions
 
@@ -37,3 +38,14 @@ fn sqr<D>(x: D) -> D^2 = x^2
 fn mean<D>(xs: D…) -> D
 fn maximum<D>(xs: D…) -> D
 fn minimum<D>(xs: D…) -> D
+
+### Geometry
+
+# The following functions use a generic dimension instead of
+# 'Length' in order to allow for computations in pixels, for
+# example
+
+fn circle_area<L>(radius: L) -> L^2 = π × radius^2
+fn circle_circumference<L>(radius: L) -> L = 2 π × radius
+fn sphere_area<L>(radius: L) -> L^2 = 4 π × radius^2
+fn sphere_volume<L>(radius: L) -> L^3 = 4/3 × π × radius^3
