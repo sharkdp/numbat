@@ -5,6 +5,7 @@ use crate::{
     interpreter::{InterpreterResult, Result, RuntimeError},
     math,
     name_resolution::LAST_RESULT_IDENTIFIERS,
+    prefix::Prefix,
     quantity::Quantity,
     unit::Unit,
 };
@@ -14,6 +15,10 @@ use crate::{
 pub enum Op {
     /// Push the value of the specified constant onto the stack
     LoadConstant,
+
+    /// Add a prefix to the unit on the stack
+    ApplyPrefix,
+
     /// This is a special operation for declaring derived units.
     /// It takes two operands: a global identifier index and a
     /// constant index.
@@ -69,7 +74,11 @@ impl Op {
     fn num_operands(self) -> usize {
         match self {
             Op::SetUnitConstant | Op::Call | Op::FFICallFunction | Op::FFICallProcedure => 2,
-            Op::LoadConstant | Op::SetVariable | Op::GetVariable | Op::GetLocal => 1,
+            Op::LoadConstant
+            | Op::ApplyPrefix
+            | Op::SetVariable
+            | Op::GetVariable
+            | Op::GetLocal => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
@@ -86,6 +95,7 @@ impl Op {
     fn to_string(self) -> &'static str {
         match self {
             Op::LoadConstant => "LoadConstant",
+            Op::ApplyPrefix => "ApplyPrefix",
             Op::SetUnitConstant => "SetUnitConstant",
             Op::SetVariable => "SetVariable",
             Op::GetVariable => "GetVariable",
@@ -165,6 +175,9 @@ pub struct Vm {
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
     pub constants: Vec<Constant>,
 
+    /// Unit prefixes in use
+    prefixes: Vec<Prefix>,
+
     /// The names of global variables or [Unit]s. The second
     /// entry is the canonical name for units.
     global_identifiers: Vec<(String, Option<String>)>,
@@ -192,6 +205,7 @@ impl Vm {
             bytecode: vec![("<main>".into(), vec![])],
             current_chunk_index: 0,
             constants: vec![],
+            prefixes: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
             ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
@@ -238,6 +252,16 @@ impl Vm {
         self.constants.push(constant);
         assert!(self.constants.len() <= u16::MAX as usize);
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
+    }
+
+    pub fn add_prefix(&mut self, prefix: Prefix) -> u16 {
+        if let Some(idx) = self.prefixes.iter().position(|p| p == &prefix) {
+            idx as u16
+        } else {
+            self.prefixes.push(prefix);
+            assert!(self.constants.len() <= u16::MAX as usize);
+            (self.prefixes.len() - 1) as u16 // TODO: this can overflow, see above
+        }
     }
 
     pub fn add_global_identifier(
@@ -384,7 +408,7 @@ impl Vm {
             // Perform cleanup: clear the stack and move IP to the end.
             // This is useful for the REPL.
             //
-            // TODO(minor): is this really enough? Shouln't we also remove
+            // TODO(minor): is this really enough? Shouldn't we also remove
             // the bytecode?
             self.stack.clear();
 
@@ -397,12 +421,13 @@ impl Vm {
         result
     }
 
-    fn run_without_cleanup(&mut self) -> Result<InterpreterResult> {
-        if self.current_frame().ip >= self.bytecode[self.current_frame().function_idx].1.len() {
-            return Ok(InterpreterResult::Continue);
-        }
+    fn is_at_the_end(&self) -> bool {
+        self.current_frame().ip >= self.bytecode[self.current_frame().function_idx].1.len()
+    }
 
-        loop {
+    fn run_without_cleanup(&mut self) -> Result<InterpreterResult> {
+        let mut result_last_statement = None;
+        while !self.is_at_the_end() {
             self.debug();
 
             let op = unsafe { std::mem::transmute::<u8, Op>(self.read_byte()) };
@@ -412,6 +437,15 @@ impl Vm {
                     let constant_idx = self.read_u16();
                     self.stack
                         .push(self.constants[constant_idx as usize].to_quantity());
+                }
+                Op::ApplyPrefix => {
+                    let quantity = self.pop();
+                    let prefix_idx = self.read_u16();
+                    let prefix = self.prefixes[prefix_idx as usize];
+                    self.push(Quantity::new(
+                        *quantity.unsafe_value(),
+                        quantity.unit().clone().with_prefix(prefix.clone()),
+                    ));
                 }
                 Op::SetUnitConstant => {
                     let identifier_idx = self.read_u16();
@@ -431,8 +465,6 @@ impl Vm {
                         *conversion_value.unsafe_value() * factor,
                         base_unit_representation,
                     ));
-
-                    return Ok(InterpreterResult::Continue);
                 }
                 Op::SetVariable => {
                     let identifier_idx = self.read_u16();
@@ -441,8 +473,6 @@ impl Vm {
                         self.global_identifiers[identifier_idx as usize].0.clone();
 
                     self.globals.insert(identifier, quantity);
-
-                    return Ok(InterpreterResult::Continue);
                 }
                 Op::GetVariable => {
                     let identifier_idx = self.read_u16();
@@ -533,9 +563,7 @@ impl Vm {
                             let result = (procedure)(&args[..]);
 
                             match result {
-                                std::ops::ControlFlow::Continue(()) => {
-                                    return Ok(InterpreterResult::Continue);
-                                }
+                                std::ops::ControlFlow::Continue(()) => {}
                                 std::ops::ControlFlow::Break(runtime_error) => {
                                     return Err(runtime_error);
                                 }
@@ -556,7 +584,7 @@ impl Vm {
                             self.globals.insert(identifier.into(), return_value.clone());
                         }
 
-                        return Ok(InterpreterResult::Quantity(return_value));
+                        result_last_statement = Some(return_value);
                     } else {
                         let discarded_frame = self.frames.pop().unwrap();
 
@@ -573,6 +601,14 @@ impl Vm {
                     }
                 }
             }
+        }
+
+        debug_assert!(self.stack.is_empty());
+
+        if let Some(q) = result_last_statement {
+            Ok(InterpreterResult::Quantity(q))
+        } else {
+            Ok(InterpreterResult::Continue)
         }
     }
 

@@ -14,7 +14,7 @@ pub struct BytecodeInterpreter {
     /// List of local variables currently in scope
     local_variables: Vec<String>,
     // Maps names of units to indices of the respective constants in the VM
-    unit_name_to_constant_index: HashMap<(Prefix, String), u16>,
+    unit_name_to_constant_index: HashMap<String, u16>,
 }
 
 impl BytecodeInterpreter {
@@ -33,26 +33,16 @@ impl BytecodeInterpreter {
                 }
             }
             Expression::UnitIdentifier(_span, prefix, unit_name, _full_name, _type) => {
-                if let Some(index) = self
+                let index = self
                     .unit_name_to_constant_index
-                    .get(&(*prefix, unit_name.clone()))
-                // TODO: (1) resolve the unwrap (2) can we get rid of the clone?
-                {
-                    self.vm.add_op1(Op::LoadConstant, *index);
-                } else {
-                    let index_prefixless = self
-                        .unit_name_to_constant_index
-                        .get(&(Prefix::none(), unit_name.clone()))
-                        .expect("Unit has been defined");
-                    if let Constant::Unit(ref unit) = self.vm.constants[*index_prefixless as usize]
-                    {
-                        let index = self
-                            .vm
-                            .add_constant(Constant::Unit(unit.clone().with_prefix(*prefix)));
-                        self.vm.add_op1(Op::LoadConstant, index);
-                    } else {
-                        unreachable!() // TODO(minor): this is a bit ugly. maybe store the units here instead of extracting them again from the VM constants?
-                    }
+                    .get(unit_name)
+                    .expect("unit should already exist");
+
+                self.vm.add_op1(Op::LoadConstant, *index);
+
+                if prefix != &Prefix::none() {
+                    let prefix_idx = self.vm.add_prefix(prefix.clone());
+                    self.vm.add_op1(Op::ApplyPrefix, prefix_idx as u16);
                 }
             }
             Expression::UnaryOperator(_span, UnaryOperator::Negate, rhs, _type) => {
@@ -168,7 +158,7 @@ impl BytecodeInterpreter {
                 )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
-                        .insert((Prefix::none(), name.into()), constant_idx);
+                        .insert(name.into(), constant_idx);
                 }
             }
             Statement::DefineDerivedUnit(unit_name, expr, decorators) => {
@@ -194,7 +184,7 @@ impl BytecodeInterpreter {
                 // TODO: code duplication with DeclareBaseUnit branch above
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
-                        .insert((Prefix::none(), name.into()), constant_idx);
+                        .insert(name.into(), constant_idx);
                 }
             }
             Statement::ProcedureCall(kind, args) => {
@@ -239,8 +229,15 @@ impl Interpreter for BytecodeInterpreter {
         }
     }
 
-    fn interpret_statement(&mut self, statement: &Statement) -> Result<InterpreterResult> {
-        self.compile_statement(statement)?;
+    fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult> {
+        if statements.is_empty() {
+            return Err(RuntimeError::NoStatements);
+        };
+
+        for statement in statements {
+            self.compile_statement(statement)?;
+        }
+
         self.run()
     }
 }

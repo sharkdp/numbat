@@ -57,19 +57,7 @@ pub type Result<T> = std::result::Result<T, RuntimeError>;
 pub trait Interpreter {
     fn new() -> Self;
 
-    fn interpret_statement(&mut self, statements: &Statement) -> Result<InterpreterResult>;
-
-    fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult> {
-        let mut result = Err(RuntimeError::NoStatements);
-        if statements.is_empty() {
-            return result;
-        }
-
-        for statement in statements {
-            result = Ok(self.interpret_statement(statement)?);
-        }
-        result
-    }
+    fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult>;
 }
 
 #[cfg(test)]
