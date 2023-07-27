@@ -31,7 +31,7 @@ unit fluidounce: Volume = 2 tablespoon
 unit hogshead: Volume = 63 gallon
 
 # US rod
-@aliases(rods)
+@aliases(rods, perch)
 unit rod: Length = 16.5 ft
 
 @aliases(acres)
