@@ -43,6 +43,9 @@ let alpha = α
 # Proton mass
 let proton_mass: Mass =  1.67262192369e-27 kg
 
+# Neutron mass
+let neutron_mass: Mass = 1.67492749804e-27 kg
+
 # Avogadro constant
 let N_A: 1 / AmountOfSubstance = 6.02214076e23 / mol
 
