@@ -81,9 +81,8 @@ impl Resolver {
         parse(code, code_source_index).map_err(|inner| ResolverError::ParseError(inner))
     }
 
-    fn inlining_pass(&mut self, program: &[Statement]) -> Result<(Vec<Statement>, bool)> {
+    fn inlining_pass(&mut self, program: &[Statement]) -> Result<Vec<Statement>> {
         let mut new_program = vec![];
-        let mut performed_imports = false;
 
         for statement in program {
             match statement {
@@ -95,10 +94,12 @@ impl Resolver {
                                 CodeSource::Module(module_path.clone(), filesystem_path),
                                 &code,
                             );
-                            for statement in self.parse(&code, index)? {
+
+                            let imported_program = self.parse(&code, index)?;
+                            let inlined_program = self.inlining_pass(&imported_program)?;
+                            for statement in inlined_program {
                                 new_program.push(statement);
                             }
-                            performed_imports = true;
                         } else {
                             return Err(ResolverError::UnknownModule(*span, module_path.clone()));
                         }
@@ -108,22 +109,16 @@ impl Resolver {
             }
         }
 
-        Ok((new_program, performed_imports))
+        Ok(new_program)
     }
 
     pub fn resolve(&mut self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
         // TODO: handle cyclic dependencies & infinite loops
 
         let index = self.add_code_source(code_source, code);
-        let mut statements = self.parse(code, index)?;
+        let statements = self.parse(code, index)?;
 
-        loop {
-            let result = self.inlining_pass(&statements)?;
-            statements = result.0;
-            if !result.1 {
-                return Ok(statements);
-            }
-        }
+        self.inlining_pass(&statements)
     }
 }
 
@@ -186,6 +181,13 @@ mod tests {
             match path {
                 ModulePath(p) if p == &["foo", "bar"] => Some(("use foo::baz".into(), None)),
                 ModulePath(p) if p == &["foo", "baz"] => Some(("let a = 1".into(), None)),
+                // ----
+                ModulePath(p) if p == &["mod_a"] => Some(("use mod_b".into(), None)),
+                ModulePath(p) if p == &["mod_b"] => Some(("use mod_c\n let x = y".into(), None)),
+                ModulePath(p) if p == &["mod_c"] => Some(("let y = 1".into(), None)),
+                // ----
+                ModulePath(p) if p == &["cycle_a"] => Some(("use cycle_b".into(), None)),
+                ModulePath(p) if p == &["cycle_b"] => Some(("use cycle_a".into(), None)),
                 _ => None,
             }
         }
@@ -246,5 +248,52 @@ mod tests {
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
             ]
         );
+    }
+
+    #[test]
+    fn resolver_depth_first_includes() {
+        use crate::ast::ReplaceSpans;
+
+        let program = "
+        use mod_a
+        use mod_c
+        ";
+
+        let importer = TestImporter {};
+
+        let mut resolver = Resolver::new(importer);
+        let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
+
+        assert_eq!(
+            &program_inlined.replace_spans(),
+            &[
+                Statement::DefineVariable {
+                    identifier_span: Span::dummy(),
+                    identifier: "y".into(),
+                    expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
+                    type_annotation: None
+                },
+                Statement::DefineVariable {
+                    identifier_span: Span::dummy(),
+                    identifier: "x".into(),
+                    expr: Expression::Identifier(Span::dummy(), "y".into()),
+                    type_annotation: None
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn resolved_cyclic_imports() {
+        let program = "
+        use cycle_a
+        ";
+
+        let importer = TestImporter {};
+
+        let mut resolver = Resolver::new(importer);
+        let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
+
+        assert_eq!(&program_inlined, &[]);
     }
 }

@@ -1,4 +1,5 @@
 use units::si
+use units::misc
 
 ### Imperial unit system
 
@@ -34,3 +35,5 @@ unit fathom: Length = 2 yard
 unit league: Length = 3 mile
 
 unit mph: Speed = miles per hour
+
+unit inHg: Pressure = in Hg
