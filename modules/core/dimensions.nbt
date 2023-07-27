@@ -50,6 +50,7 @@ dimension AbsorbedDose = Energy / Mass
 dimension EquivalentDose = Energy / Mass
 
 dimension DynamicViscosity = Pressure × Time
+dimension KinematicViscosity = Length^2 / Time
 
 # Other useful names
 

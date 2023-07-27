@@ -30,4 +30,7 @@ unit thou: Length = inch / 1000
 @aliases(fathoms)
 unit fathom: Length = 2 yard
 
+@aliases(leagues)
+unit league: Length = 3 mile
+
 unit mph: Speed = miles per hour
