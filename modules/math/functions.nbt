@@ -41,6 +41,9 @@ fn minimum<D>(xs: D…) -> D
 
 ### Geometry
 
+fn hypot2<T>(x: T, y: T) -> T = sqrt(x^2 + y^2)
+fn hypot3<T>(x: T, y: T, z: T) -> T = sqrt(x^2 + y^2 + z^2)
+
 # The following functions use a generic dimension instead of
 # 'Length' in order to allow for computations in pixels, for
 # example
