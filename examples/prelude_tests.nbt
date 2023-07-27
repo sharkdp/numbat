@@ -1,0 +1,5 @@
+assert_eq(hypot2(3, 4), 5)
+assert_eq(hypot2(3 m, 4 m), 5 m)
+
+assert_eq(hypot3(8, 9, 12), 17)
+assert_eq(hypot3(8 m, 9 m, 12 m), 17 m)
