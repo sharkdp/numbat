@@ -21,6 +21,7 @@ mod quantity;
 mod registry;
 pub mod resolver;
 mod span;
+mod suggestion;
 mod tokenizer;
 mod typechecker;
 mod typed_ast;

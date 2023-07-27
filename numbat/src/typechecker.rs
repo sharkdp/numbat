@@ -7,7 +7,7 @@ use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::span::Span;
 use crate::typed_ast::{self, Type};
-use crate::{ast, decorator, ffi};
+use crate::{ast, decorator, ffi, suggestion};
 
 use ast::DimensionExpression;
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
@@ -169,15 +169,9 @@ pub struct TypeChecker {
 impl TypeChecker {
     fn type_for_identifier(&self, span: Span, name: &str) -> Result<&Type> {
         self.identifiers.get(name).ok_or_else(|| {
-            let suggestion = self
-                .identifiers
-                .iter()
-                .map(|(id, _)| id)
-                .min_by_key(|id| strsim::damerau_levenshtein(id, name))
-                .filter(|id| {
-                    name.len() >= 3 && id.len() >= 2 && strsim::damerau_levenshtein(id, name) <= 3
-                });
-            TypeCheckError::UnknownIdentifier(span, name.into(), suggestion.cloned())
+            let suggestion =
+                suggestion::did_you_mean(self.identifiers.iter().map(|(id, _)| id), name);
+            TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
         })
     }
 

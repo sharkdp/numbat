@@ -6,6 +6,7 @@ use thiserror::Error;
 use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
     product::{Canonicalize, Product},
+    suggestion,
 };
 
 #[derive(Clone, Error, Debug, PartialEq, Eq)]
@@ -126,17 +127,13 @@ impl<Metadata> Registry<Metadata> {
             self.derived_entries
                 .get(name)
                 .ok_or_else(|| {
-                    let suggestion = self
-                        .base_entries
-                        .iter()
-                        .map(|(id, _)| id.to_string())
-                        .chain(self.derived_entries.keys().map(|s| s.to_string()))
-                        .min_by_key(|id| strsim::damerau_levenshtein(id, name))
-                        .filter(|id| {
-                            name.len() >= 3
-                                && id.len() >= 2
-                                && strsim::damerau_levenshtein(id, name) <= 3
-                        });
+                    let suggestion = suggestion::did_you_mean(
+                        self.base_entries
+                            .iter()
+                            .map(|(id, _)| id.to_string())
+                            .chain(self.derived_entries.keys().map(|s| s.to_string())),
+                        name,
+                    );
                     RegistryError::UnknownEntry(name.to_owned(), suggestion)
                 })
                 .cloned()
