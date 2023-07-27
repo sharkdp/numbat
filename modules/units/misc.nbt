@@ -36,6 +36,8 @@ unit rpm: Frequency = 1 / minute
 
 unit mmHg: Pressure = 133.322387415 pascal
 
+unit Hg: Force / Volume = mmHg / mm
+
 unit torr: Pressure = 101325 / 760 × pascal
 
 @aliases(PSI: short)
