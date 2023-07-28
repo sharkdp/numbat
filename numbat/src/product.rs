@@ -1,8 +1,12 @@
-use std::ops::{Div, Mul};
+use std::{
+    fmt::Display,
+    ops::{Div, Mul},
+};
 
 use crate::arithmetic::{Exponent, Power};
 use itertools::Itertools;
 use num_rational::Ratio;
+use num_traits::Signed;
 
 pub trait Canonicalize {
     type MergeKey: PartialEq;
@@ -15,6 +19,56 @@ pub trait Canonicalize {
 #[derive(Debug, Clone)]
 pub struct Product<Factor, const CANONICALIZE: bool = false> {
     factors: Vec<Factor>,
+}
+
+impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: bool>
+    Product<Factor, CANONICALIZE>
+{
+    pub fn as_string<GetExponent>(
+        &self,
+        get_exponent: GetExponent,
+        times_separator: &'static str,
+        over_separator: &'static str,
+    ) -> String
+    where
+        GetExponent: Fn(&Factor) -> Exponent,
+    {
+        let to_string = |fs: &[Factor]| -> String {
+            let mut result = String::new();
+            for factor in fs.iter() {
+                result.push_str(&factor.to_string());
+                result.push_str(times_separator);
+            }
+            result.trim_end_matches(times_separator).into()
+        };
+
+        let factors_positive: Vec<_> = self
+            .iter()
+            .filter(|f| get_exponent(*f).is_positive())
+            .cloned()
+            .collect();
+        let factors_negative: Vec<_> = self
+            .iter()
+            .filter(|f| !get_exponent(*f).is_positive())
+            .cloned()
+            .collect();
+
+        match (&factors_positive[..], &factors_negative[..]) {
+            (&[], &[]) => "".into(),
+            (&[], negative) => to_string(negative),
+            (positive, &[]) => to_string(positive),
+            (positive, [single_negative]) => format!(
+                "{}{over_separator}{}",
+                to_string(positive),
+                to_string(&[single_negative.clone().invert()])
+            ),
+            (positive, negative) => format!(
+                "{}{over_separator}({})",
+                to_string(positive),
+                to_string(&negative.iter().map(|f| f.clone().invert()).collect_vec())
+            ),
+        }
+    }
 }
 
 impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Factor, CANONICALIZE> {

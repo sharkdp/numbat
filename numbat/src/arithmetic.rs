@@ -6,6 +6,13 @@ pub type Exponent = Rational;
 
 pub trait Power {
     fn power(self, e: Exponent) -> Self;
+
+    fn invert(self) -> Self
+    where
+        Self: Sized,
+    {
+        self.power(Exponent::from_integer(-1))
+    }
 }
 
 pub fn pretty_exponent(e: &Exponent) -> String {

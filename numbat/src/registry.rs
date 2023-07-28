@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
+use itertools::Itertools;
 use num_traits::Zero;
 use thiserror::Error;
 
@@ -27,6 +28,12 @@ pub struct BaseIndex(isize);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BaseRepresentationFactor(pub BaseEntry, pub Exponent);
+
+impl Display for BaseRepresentationFactor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.0, pretty_exponent(&self.1))
+    }
+}
 
 impl Canonicalize for BaseRepresentationFactor {
     type MergeKey = BaseEntry;
@@ -56,20 +63,11 @@ pub type BaseRepresentation = Product<BaseRepresentationFactor, true>;
 
 impl Display for BaseRepresentation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let num_factors = self.iter().count();
-
-        if num_factors == 0 {
-            write!(f, "Scalar")?;
+        if self.iter().count() == 0 {
+            f.write_str("Scalar")
         } else {
-            for (n, BaseRepresentationFactor(name, exp)) in self.iter().enumerate() {
-                write!(f, "{}{}", name, pretty_exponent(exp))?;
-
-                if n != self.iter().count() - 1 {
-                    write!(f, " × ")?;
-                }
-            }
+            f.write_str(&self.as_string(|f| f.1, " × ", " / "))
         }
-        Ok(())
     }
 }
 
@@ -96,6 +94,18 @@ impl<Metadata> Registry<Metadata> {
         self.base_entries.push((name.to_owned(), metadata));
 
         Ok(())
+    }
+
+    pub fn get_derived_entry_names_for(
+        &self,
+        base_representation: &BaseRepresentation,
+    ) -> Vec<String> {
+        self.derived_entries
+            .iter()
+            .filter(|(_, br)| *br == base_representation)
+            .map(|(name, _)| name.clone())
+            .sorted_unstable()
+            .collect()
     }
 
     pub fn is_base_entry(&self, name: &str) -> bool {
