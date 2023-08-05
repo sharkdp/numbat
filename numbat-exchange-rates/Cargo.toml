@@ -9,5 +9,5 @@ repository = "https://github.com/sharkdp/numbat"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+attohttpc = "0.26.0"
 quick-xml = "0.29.0"
-reqwest = { version = "0.11.18", features = ["blocking"] }
