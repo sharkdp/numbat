@@ -8,11 +8,11 @@ pub type ExchangeRates = HashMap<String, f64>;
 pub fn fetch_exchange_rates() -> Option<ExchangeRates> {
     let mut rates = ExchangeRates::default();
 
-    let xml =
-        reqwest::blocking::get("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")
-            .ok()?
-            .text()
-            .ok()?;
+    let xml = attohttpc::get("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")
+        .send()
+        .ok()?
+        .text()
+        .ok()?;
 
     let mut reader = Reader::from_str(&xml);
     loop {
