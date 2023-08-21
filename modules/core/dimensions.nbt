@@ -11,6 +11,7 @@ dimension Time
 dimension Frequency = 1 / Time
 dimension Speed = Length / Time
 dimension Acceleration = Length / Time^2
+dimension Jerk = Length / Time^3
 
 dimension Mass
 dimension Momentum = Mass × Speed
@@ -20,19 +21,32 @@ dimension Power = Energy / Time = Force × Speed
 dimension Pressure = Force / Area = Energy / Volume
 dimension Action = Energy × Time
 dimension MassDensity = Mass / Length^3
+dimension MomentOfInertia = Mass × Length^2
+dimension AngularMomentum = MomentOfInertia × Angle / Time
+dimension Torque = Length × Force
+dimension EnergyDensity = Energy / Volume
 
 dimension Current
 dimension Charge = Current × Time
 dimension Voltage = Energy / Charge = Power / Current
 dimension Capacitance = Charge / Voltage
 dimension Resistance = Voltage / Current
+dimension Resistivity = Resistance × Length
 dimension Conductance = 1 / Resistance
+dimension Conductivity = Conductance / Length
 dimension MagneticFluxDensity = Force / (Charge × Speed)
 dimension MagneticFlux = MagneticFluxDensity × Area
 dimension MagneticFieldStrength = Current / Length
 dimension Inductance = MagneticFlux / Current
+dimension ChargeDensity = Charge / Volume
+dimension CurrentDensity = Current / Area
+dimension ElectricDipoleMoment = Current × Length
+dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
+dimension ElectricFieldStrength = Voltage / Length
 
 dimension Temperature
+dimension Entropy = Energy / Temperature
+dimension HeatCapacity = Energy / Temperature
 
 dimension AmountOfSubstance
 dimension Concentration = AmountOfSubstance / Volume
@@ -40,10 +54,12 @@ dimension MolarMass = Mass / AmountOfSubstance
 dimension CatalyticActivity = AmountOfSubstance / Time
 dimension Molarity = AmountOfSubstance / Volume
 dimension Molality = AmountOfSubstance / Mass
+dimension ChemicalPotential = Energy / AmountOfSubstance
 
 dimension LuminousIntensity
 dimension LuminousFlux = LuminousIntensity × Angle^2
 dimension Illuminance = LuminousFlux / Area
+dimension Irradiance = Power / Area
 
 dimension Activity = 1 / Time
 dimension AbsorbedDose = Energy / Mass
