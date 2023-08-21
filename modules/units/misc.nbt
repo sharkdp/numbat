@@ -16,6 +16,7 @@ unit barn: Area = 1e-28 meter^2
 @aliases(calories, cal: both)
 unit calorie: Energy = 4.184 joule
 
+@aliases(Btu)
 unit BTU: Energy = 1055.05585262 joule
 
 @aliases(lbf: short)
