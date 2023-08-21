@@ -5,6 +5,7 @@ use units::si
 @aliases(dyn)
 unit dyne: Force = 1e-5 N
 
+@aliases(ergs)
 unit erg: Energy = 1 dyn cm
 
 unit gauss: MagneticFluxDensity = 100 µT
