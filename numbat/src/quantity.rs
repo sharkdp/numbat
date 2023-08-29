@@ -375,12 +375,6 @@ mod tests {
     }
 
     #[test]
-    fn full_simplify_convert_to_scalar() {
-        let q = Quantity::new_f64(1.0, Unit::kph() / (Unit::kilometer() / Unit::hour()));
-        assert_eq!(q.full_simplify(), Quantity::from_scalar(1.0));
-    }
-
-    #[test]
     fn full_simplify_convertible_to_scalar() {
         {
             let q = Quantity::new_f64(2.0, Unit::meter() / Unit::millimeter());
@@ -396,6 +390,10 @@ mod tests {
                 q.full_simplify(),
                 Quantity::new_f64(2.0 * 100.0, Unit::second())
             );
+        }
+        {
+            let q = Quantity::new_f64(1.0, Unit::kph() / (Unit::kilometer() / Unit::hour()));
+            assert_eq!(q.full_simplify(), Quantity::from_scalar(1.0));
         }
     }
 
