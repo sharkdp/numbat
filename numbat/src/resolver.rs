@@ -22,6 +22,10 @@ pub enum CodeSource {
     /// User input from the command line or a REPL
     Text,
 
+    /// For internal use, e.g. when executing special statements (like "use prelude")
+    /// during startup.
+    Internal,
+
     /// A file that has been read in
     File(PathBuf),
 
@@ -43,6 +47,8 @@ type Result<T> = std::result::Result<T, ResolverError>;
 pub(crate) struct Resolver {
     importer: Box<dyn ModuleImporter + Send>,
     pub files: SimpleFiles<String, String>,
+    text_code_source_count: usize,
+    internal_code_source_count: usize,
     imported_modules: Vec<ModulePath>,
 }
 
@@ -51,13 +57,22 @@ impl Resolver {
         Self {
             importer: Box::new(importer),
             files: SimpleFiles::new(),
+            text_code_source_count: 0,
+            internal_code_source_count: 0,
             imported_modules: vec![],
         }
     }
 
     fn add_code_source(&mut self, code_source: CodeSource, content: &str) -> usize {
-        let code_source_text = match &code_source {
-            CodeSource::Text => "<input>".to_string(),
+        let code_source_name = match &code_source {
+            CodeSource::Text => {
+                self.text_code_source_count += 1;
+                format!("<input:{}>", self.text_code_source_count)
+            }
+            CodeSource::Internal => {
+                self.internal_code_source_count += 1;
+                format!("<internal:{}>", self.internal_code_source_count)
+            }
             CodeSource::File(path) => format!("File {}", path.to_string_lossy()),
             CodeSource::Module(module_path, path) => format!(
                 "Module '{module_path}', File {path}",
@@ -69,9 +84,7 @@ impl Resolver {
             ),
         };
 
-        let code_source_id = self.files.add(code_source_text, content.to_string()); // TODO: it's a shame we need to clone the full source code here
-
-        code_source_id
+        self.files.add(code_source_name, content.to_string())
     }
 
     fn parse(&self, code: &str, code_source_id: usize) -> Result<Vec<Statement>> {
@@ -200,7 +213,7 @@ mod tests {
         let importer = TestImporter {};
 
         let mut resolver = Resolver::new(importer);
-        let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
+        let program_inlined = resolver.resolve(program, CodeSource::Internal).unwrap();
 
         assert_eq!(
             &program_inlined.replace_spans(),
@@ -229,7 +242,7 @@ mod tests {
         let importer = TestImporter {};
 
         let mut resolver = Resolver::new(importer);
-        let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
+        let program_inlined = resolver.resolve(program, CodeSource::Internal).unwrap();
 
         assert_eq!(
             &program_inlined.replace_spans(),
@@ -257,7 +270,7 @@ mod tests {
         let importer = TestImporter {};
 
         let mut resolver = Resolver::new(importer);
-        let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
+        let program_inlined = resolver.resolve(program, CodeSource::Internal).unwrap();
 
         assert_eq!(
             &program_inlined.replace_spans(),
@@ -287,7 +300,7 @@ mod tests {
         let importer = TestImporter {};
 
         let mut resolver = Resolver::new(importer);
-        let program_inlined = resolver.resolve(program, CodeSource::Text).unwrap();
+        let program_inlined = resolver.resolve(program, CodeSource::Internal).unwrap();
 
         assert_eq!(&program_inlined, &[]);
     }

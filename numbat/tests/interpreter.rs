@@ -7,7 +7,7 @@ use numbat::resolver::CodeSource;
 use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
 
 fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &str) {
-    if let InterpreterResult::Quantity(q) = ctx.interpret(code, CodeSource::Text).unwrap().1 {
+    if let InterpreterResult::Quantity(q) = ctx.interpret(code, CodeSource::Internal).unwrap().1 {
         let fmt = PlainTextFormatter {};
 
         let actual_output = fmt.format(&q.pretty_print(), false);
@@ -24,7 +24,7 @@ fn expect_output(code: &str, expected_output: &str) {
 
 fn expect_failure(code: &str, msg_part: &str) {
     let mut ctx = get_test_context();
-    if let Err(e) = ctx.interpret(code, CodeSource::Text) {
+    if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         let error_message = e.to_string();
         println!("{}", error_message);
         assert!(error_message.contains(msg_part));
@@ -35,7 +35,7 @@ fn expect_failure(code: &str, msg_part: &str) {
 
 fn expect_exact_failure(code: &str, expected: &str) {
     let mut ctx = get_test_context();
-    if let Err(e) = ctx.interpret(code, CodeSource::Text) {
+    if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         assert_eq!(e.to_string(), expected);
     } else {
         panic!();
@@ -108,7 +108,7 @@ fn test_conversions() {
 fn test_implicit_conversion() {
     let mut ctx = get_test_context();
 
-    let _ = ctx.interpret("let x = 5 m", CodeSource::Text).unwrap();
+    let _ = ctx.interpret("let x = 5 m", CodeSource::Internal).unwrap();
 
     expect_output_with_context(&mut ctx, "x", "5 m");
     expect_output_with_context(&mut ctx, "2x", "10 m");
@@ -232,10 +232,10 @@ fn test_other_functions() {
 fn test_last_result_identifier() {
     let mut ctx = get_test_context();
 
-    let _ = ctx.interpret("2 + 3", CodeSource::Text).unwrap();
+    let _ = ctx.interpret("2 + 3", CodeSource::Internal).unwrap();
     expect_output_with_context(&mut ctx, "ans", "5");
 
-    let _ = ctx.interpret("1 + 2", CodeSource::Text).unwrap();
+    let _ = ctx.interpret("1 + 2", CodeSource::Internal).unwrap();
     expect_output_with_context(&mut ctx, "_", "3");
 }
 

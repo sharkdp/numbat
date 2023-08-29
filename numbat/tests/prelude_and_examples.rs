@@ -11,7 +11,7 @@ use std::fs;
 use crate::common::get_test_context_without_prelude;
 
 fn assert_runs(code: &str) {
-    let result = get_test_context().interpret(code, CodeSource::Text);
+    let result = get_test_context().interpret(code, CodeSource::Internal);
     assert!(result.is_ok());
     assert!(matches!(
         result.unwrap().1,
@@ -20,7 +20,7 @@ fn assert_runs(code: &str) {
 }
 
 fn assert_runs_without_prelude(code: &str) {
-    let result = get_test_context_without_prelude().interpret(code, CodeSource::Text);
+    let result = get_test_context_without_prelude().interpret(code, CodeSource::Internal);
     assert!(result.is_ok());
     assert!(matches!(
         result.unwrap().1,
@@ -30,28 +30,28 @@ fn assert_runs_without_prelude(code: &str) {
 
 fn assert_parse_error(code: &str) {
     assert!(matches!(
-        get_test_context().interpret(code, CodeSource::Text),
+        get_test_context().interpret(code, CodeSource::Internal),
         Err(NumbatError::ResolverError(ResolverError::ParseError { .. }))
     ));
 }
 
 fn assert_name_resolution_error(code: &str) {
     assert!(matches!(
-        get_test_context().interpret(code, CodeSource::Text),
+        get_test_context().interpret(code, CodeSource::Internal),
         Err(NumbatError::NameResolutionError(_))
     ));
 }
 
 fn assert_typecheck_error(code: &str) {
     assert!(matches!(
-        get_test_context().interpret(code, CodeSource::Text),
+        get_test_context().interpret(code, CodeSource::Internal),
         Err(NumbatError::TypeCheckError(_))
     ));
 }
 
 fn assert_runtime_error(code: &str) {
     assert!(matches!(
-        get_test_context().interpret(code, CodeSource::Text),
+        get_test_context().interpret(code, CodeSource::Internal),
         Err(NumbatError::RuntimeError(_))
     ));
 }

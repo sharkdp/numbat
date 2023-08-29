@@ -18,7 +18,7 @@ pub fn get_test_context() -> Context {
     let mut context = get_test_context_without_prelude();
 
     assert!(context
-        .interpret("use prelude", CodeSource::Text)
+        .interpret("use prelude", CodeSource::Internal)
         .expect("Error while running prelude")
         .1
         .is_success());

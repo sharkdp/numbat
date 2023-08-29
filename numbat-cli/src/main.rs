@@ -122,7 +122,7 @@ impl Cli {
         if load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
-                CodeSource::Text,
+                CodeSource::Internal,
                 ExecutionMode::Normal,
                 PrettyPrintMode::Never,
             );
@@ -157,7 +157,7 @@ impl Cli {
             // after a short delay (the limiting factor is the HTTP request).
             ctx.lock()
                 .unwrap()
-                .interpret("use units::non_euro_currencies", CodeSource::Text)
+                .interpret("use units::non_euro_currencies", CodeSource::Internal)
                 .ok();
         });
 
