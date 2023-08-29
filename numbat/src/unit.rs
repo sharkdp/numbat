@@ -21,8 +21,8 @@ pub enum UnitKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitIdentifier {
-    name: String,
-    canonical_name: String,
+    pub name: String,
+    pub canonical_name: String,
     kind: UnitKind,
 }
 

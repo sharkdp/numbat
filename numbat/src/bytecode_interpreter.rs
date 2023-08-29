@@ -11,7 +11,6 @@ use crate::{decorator, ffi};
 
 pub struct BytecodeInterpreter {
     vm: Vm,
-    unit_registry: UnitRegistry, // TODO(minor): do we even need the unit registry here?
     /// List of local variables currently in scope
     local_variables: Vec<String>,
     // Maps names of units to indices of the respective constants in the VM
@@ -149,7 +148,8 @@ impl BytecodeInterpreter {
                 // is only relevant for the type checker. Nothing happens at run time.
             }
             Statement::DefineBaseUnit(unit_name, decorators, dexpr) => {
-                self.unit_registry
+                self.vm
+                    .unit_registry
                     .add_base_unit(unit_name, dexpr.clone())
                     .map_err(RuntimeError::UnitRegistryError)?;
 
@@ -163,10 +163,6 @@ impl BytecodeInterpreter {
                 }
             }
             Statement::DefineDerivedUnit(unit_name, expr, decorators) => {
-                self.unit_registry
-                    .add_derived_unit(unit_name, expr)
-                    .map_err(RuntimeError::UnitRegistryError)?;
-
                 let constant_idx = self
                     .vm
                     .add_constant(Constant::Unit(Unit::new_base("<dummy>", "<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
@@ -232,7 +228,6 @@ impl Interpreter for BytecodeInterpreter {
     fn new() -> Self {
         Self {
             vm: Vm::new(),
-            unit_registry: UnitRegistry::new(),
             local_variables: vec![],
             unit_name_to_constant_index: HashMap::new(),
         }
@@ -248,5 +243,9 @@ impl Interpreter for BytecodeInterpreter {
         }
 
         self.run()
+    }
+
+    fn get_unit_registry(&self) -> &UnitRegistry {
+        &self.vm.unit_registry
     }
 }

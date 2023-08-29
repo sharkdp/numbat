@@ -1,7 +1,7 @@
 use crate::{
     quantity::{Quantity, QuantityError},
     typed_ast::Statement,
-    unit_registry::UnitRegistryError,
+    unit_registry::{UnitRegistry, UnitRegistryError},
 };
 
 use thiserror::Error;
@@ -58,6 +58,7 @@ pub trait Interpreter {
     fn new() -> Self;
 
     fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult>;
+    fn get_unit_registry(&self) -> &UnitRegistry;
 }
 
 #[cfg(test)]

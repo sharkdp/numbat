@@ -8,6 +8,7 @@ use crate::{
     prefix::Prefix,
     quantity::Quantity,
     unit::Unit,
+    unit_registry::UnitRegistry,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -205,6 +206,8 @@ pub struct Vm {
 
     /// Whether or not to run in debug mode.
     debug: bool,
+
+    pub unit_registry: UnitRegistry,
 }
 
 impl Vm {
@@ -221,6 +224,7 @@ impl Vm {
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug: false,
+            unit_registry: UnitRegistry::new(),
         }
     }
 
@@ -467,6 +471,10 @@ impl Vm {
 
                     let (base_unit_representation, factor) =
                         defining_unit.to_base_unit_representation();
+
+                    self.unit_registry
+                        .add_derived_unit(&unit_name.0, &base_unit_representation)
+                        .map_err(RuntimeError::UnitRegistryError)?;
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
                         &unit_name.0,
