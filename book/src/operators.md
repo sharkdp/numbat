@@ -14,6 +14,7 @@
 | subtraction               | `-`                  |
 | addition                  | `+`                  |
 | unit conversion           | `->`, `→`, `➞`, `to` |
+| reverse function call     | `//`                 |
 
 Note that *implicit* multiplication has a higher precedence than division, i.e. `50 cm / 2 m` will be parsed as `50 cm / (2 m)`.
 
