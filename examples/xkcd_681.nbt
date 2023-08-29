@@ -2,10 +2,8 @@
 #
 # https://xkcd.com/681/
 
-let G = gravitational_constant
-
 fn depth(mass: Mass, radius: Length) -> Length =
-    G × mass / (gravity × radius) -> km
+    G × mass / (g0 × radius) -> km
 
 let earth_mass = 5.972e24 kg
 let earth_radius = 6371 km

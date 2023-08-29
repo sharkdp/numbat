@@ -1,5 +1,3 @@
-let c = speed_of_light
-
 let λ = 2 × 300 µm
 let ν = c / λ
 

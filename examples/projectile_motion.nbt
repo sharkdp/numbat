@@ -1,7 +1,5 @@
 # https://en.wikipedia.org/wiki/Projectile_motion
 
-let g0 = gravity
-
 fn max_height(v: Speed, θ: Angle) -> Length = v² · sin(θ)^2 / (2 · g0)
 fn max_distance(v: Speed, θ: Angle) -> Length = v² · sin(2 θ) / g0
 fn time_of_flight(v: Speed, θ: Angle) -> Time = 2 v · sin(θ) / g0
