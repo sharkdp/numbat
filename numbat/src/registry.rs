@@ -149,4 +149,12 @@ impl<Metadata> Registry<Metadata> {
                 .cloned()
         }
     }
+
+    pub fn iter_base_entries(&self) -> impl Iterator<Item = String> + '_ {
+        self.base_entries.iter().map(|(name, _)| name.clone())
+    }
+
+    pub fn iter_derived_entries(&self) -> impl Iterator<Item = String> + '_ {
+        self.derived_entries.keys().cloned()
+    }
 }

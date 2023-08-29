@@ -34,6 +34,7 @@ use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use interpreter::Interpreter;
 use prefix_transformer::Transformer;
+use registry::BaseRepresentationFactor;
 use resolver::CodeSource;
 use resolver::ModuleImporter;
 use resolver::NullImporter;
@@ -109,6 +110,27 @@ impl Context {
 
     pub fn dimension_names(&self) -> &[String] {
         &self.prefix_transformer.dimension_names
+    }
+
+    pub fn base_units(&self) -> impl Iterator<Item = String> + '_ {
+        self.interpreter
+            .get_unit_registry()
+            .inner
+            .iter_base_entries()
+    }
+
+    pub fn unit_representations(&self) -> impl Iterator<Item = (String, Vec<(String, i128)>)> + '_ {
+        let registry = self.interpreter.get_unit_registry();
+        registry.inner.iter_derived_entries().map(|unit_name| {
+            let derived_from = registry
+                .inner
+                .get_base_representation_for_name(&unit_name)
+                .unwrap()
+                .iter()
+                .map(|BaseRepresentationFactor(name, exp)| (name.clone(), exp.to_integer())) // TODO: check if to_integer can fail here
+                .collect();
+            (unit_name, derived_from)
+        })
     }
 
     pub fn interpret(
