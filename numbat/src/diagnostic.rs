@@ -1,8 +1,11 @@
 use codespan_reporting::diagnostic::LabelStyle;
 
 use crate::{
-    interpreter::RuntimeError, parser::ParseError, resolver::ResolverError,
-    typechecker::TypeCheckError, NameResolutionError,
+    interpreter::RuntimeError,
+    parser::ParseError,
+    resolver::ResolverError,
+    typechecker::{IncompatibleDimensionsError, TypeCheckError},
+    NameResolutionError,
 };
 
 pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
@@ -81,7 +84,7 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::UnknownCallable(span, _) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message("unknown callable")]),
-            TypeCheckError::IncompatibleDimensions {
+            TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {
                 operation,
                 span_operation,
                 span_actual,
@@ -89,7 +92,7 @@ impl ErrorDiagnostic for TypeCheckError {
                 span_expected,
                 expected_type,
                 ..
-            } => {
+            }) => {
                 let labels = vec![
                     span_operation
                         .diagnostic_label(LabelStyle::Secondary)

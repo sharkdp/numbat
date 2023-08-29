@@ -33,6 +33,15 @@ fn expect_failure(code: &str, msg_part: &str) {
     }
 }
 
+fn expect_exact_failure(code: &str, expected: &str) {
+    let mut ctx = get_test_context();
+    if let Err(e) = ctx.interpret(code, CodeSource::Text) {
+        assert_eq!(e.to_string(), expected);
+    } else {
+        panic!();
+    }
+}
+
 #[test]
 fn test_factorial() {
     expect_output("0!", "1");
@@ -157,6 +166,40 @@ fn test_math() {
         "mod(8 m, 5 s)",
         "parameter type: Length\n argument type: Time",
     )
+}
+
+#[test]
+fn test_incompatible_dimension_errors() {
+    expect_exact_failure(
+        "kg m / s^2 + kg m^2",
+        " left hand side: Length  × Mass × Time⁻²    [= Force]\n\
+         right hand side: Length² × Mass             [= MomentOfInertia]\n\n\
+         Suggested fix: multiply left hand side by Length × Time²",
+    );
+    expect_exact_failure(
+        "1 + m",
+        " left hand side: Scalar    [= Angle, Scalar, SolidAngle]\n\
+         right hand side: Length\n\n\
+         Suggested fix: multiply left hand side by Length",
+    );
+    expect_exact_failure(
+        "m / s + K A",
+        " left hand side: Length / Time            [= Speed]\n\
+         right hand side: Current × Temperature\n\n\
+         Suggested fix: multiply left hand side by Current × Temperature × Time / Length",
+    );
+    expect_exact_failure(
+        "m + 1 / m",
+        " left hand side: Length\n\
+         right hand side: Length⁻¹\n\n\
+         Suggested fix: multiply right hand side by Length²",
+    );
+    expect_exact_failure(
+        "kW -> J",
+        " left hand side: Length² × Mass × Time⁻³    [= Power]\n\
+         right hand side: Length² × Mass × Time⁻²    [= Energy, Torque]\n\n\
+         Suggested fix: multiply left hand side by Time",
+    );
 }
 
 #[test]

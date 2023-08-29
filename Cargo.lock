@@ -674,6 +674,7 @@ dependencies = [
  "strsim",
  "thiserror",
  "unicode-ident",
+ "unicode-width",
 ]
 
 [[package]]

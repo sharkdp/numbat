@@ -39,6 +39,14 @@ impl DimensionRegistry {
         self.registry.get_base_representation_for_name(name)
     }
 
+    pub fn get_derived_entry_names_for(
+        &self,
+        base_representation: &BaseRepresentation,
+    ) -> Vec<String> {
+        self.registry
+            .get_derived_entry_names_for(base_representation)
+    }
+
     pub fn add_base_dimension(&mut self, name: &str) -> Result<BaseRepresentation> {
         self.registry.add_base_entry(name, ())?;
         Ok(self

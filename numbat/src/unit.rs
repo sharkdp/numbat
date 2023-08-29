@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use num_traits::{Signed, ToPrimitive, Zero};
+use num_traits::{ToPrimitive, Zero};
 
 use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
@@ -141,6 +141,18 @@ impl Power for UnitFactor {
             unit_id: self.unit_id,
             exponent: self.exponent * e,
         }
+    }
+}
+
+impl Display for UnitFactor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}{}{}",
+            self.prefix.as_string_short(),
+            self.unit_id.canonical_name,
+            pretty_exponent(&self.exponent)
+        )
     }
 }
 
@@ -318,59 +330,7 @@ impl Unit {
 
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let to_string = |fs: &[UnitFactor]| -> String {
-            let mut result = String::new();
-            for &UnitFactor {
-                prefix,
-                unit_id: ref base_unit,
-                exponent,
-            } in fs.iter()
-            {
-                result.push_str(&prefix.as_string_short());
-                result.push_str(&base_unit.canonical_name);
-                result.push_str(&pretty_exponent(&exponent));
-                result.push('·');
-            }
-            result.trim_end_matches('·').into()
-        };
-
-        let flip_exponents = |fs: &[UnitFactor]| -> Vec<UnitFactor> {
-            fs.iter()
-                .map(|f| UnitFactor {
-                    exponent: -f.exponent,
-                    ..f.clone()
-                })
-                .collect()
-        };
-
-        let factors_positive: Vec<_> = self
-            .iter()
-            .filter(|f| f.exponent.is_positive())
-            .cloned()
-            .collect();
-        let factors_negative: Vec<_> = self
-            .iter()
-            .filter(|f| !f.exponent.is_positive())
-            .cloned()
-            .collect();
-
-        let result: String = match (&factors_positive[..], &factors_negative[..]) {
-            (&[], &[]) => "".into(),
-            (&[], negative) => to_string(negative),
-            (positive, &[]) => to_string(positive),
-            (positive, [single_negative]) => format!(
-                "{}/{}",
-                to_string(positive),
-                to_string(&flip_exponents(&[single_negative.clone()]))
-            ),
-            (positive, negative) => format!(
-                "{}/({})",
-                to_string(positive),
-                to_string(&flip_exponents(negative))
-            ),
-        };
-
-        write!(f, "{}", result)
+        f.write_str(&self.as_string(|f| f.exponent, "·", "/"))
     }
 }
 
