@@ -425,15 +425,11 @@ mod tests {
             let expected = Quantity::new_f64(18000.0, Unit::bit().with_prefix(Prefix::mega()));
             assert_eq!(q.full_simplify(), expected);
         }
-        // TODO
-        // {
-        //     let q = Quantity::new_f64(5.0, Unit::centimeter() * Unit::meter());
-        //     let expected = Quantity::new_f64(
-        //         500.0,
-        //         Unit::centimeter().powi(2),
-        //     );
-        //     assert_eq!(q.full_simplify(), expected);
-        // }
+        {
+            let q = Quantity::new_f64(5.0, Unit::centimeter() * Unit::meter());
+            let expected = Quantity::new_f64(0.05, Unit::meter().powi(2));
+            assert_eq!(q.full_simplify(), expected);
+        }
         {
             let q = Quantity::new_f64(5.0, Unit::meter() * Unit::centimeter());
             let expected = Quantity::new_f64(0.05, Unit::meter().powi(2));
