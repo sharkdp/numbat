@@ -2,8 +2,6 @@
 
 use physics::constants
 
-unit l_s: Length = sqrt(gravitational_constant × electron_charge^2 / 4 π ε0 speed_of_light^4)
-
-unit m_s: Mass = sqrt(electron_charge^2 / 4 π ε0 gravitational_constant)
-
-unit t_s: Time = sqrt(gravitational_constant × electron_charge^2 / 4 π ε0 speed_of_light^6)
+unit stoney_length: Length = sqrt(gravitational_constant × electron_charge^2 / 4 π ε0 speed_of_light^4)
+unit stoney_mass: Mass = sqrt(electron_charge^2 / 4 π ε0 gravitational_constant)
+unit stoney_time: Time = sqrt(gravitational_constant × electron_charge^2 / 4 π ε0 speed_of_light^6)
