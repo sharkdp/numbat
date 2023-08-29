@@ -19,4 +19,5 @@ pub const KEYWORDS: &[&str] = &[
     // procedures
     "print(",
     "assert_eq(",
+    "type(",
 ];

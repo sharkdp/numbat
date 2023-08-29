@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::ast::ProcedureKind;
 use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
 use crate::prefix::Prefix;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, UnaryOperator};
@@ -186,6 +187,14 @@ impl BytecodeInterpreter {
                     self.unit_name_to_constant_index
                         .insert(name.into(), constant_idx);
                 }
+            }
+            Statement::ProcedureCall(ProcedureKind::Type, args) => {
+                assert_eq!(args.len(), 1);
+                let arg = &args[0];
+                let type_str = format!("{}", arg.get_type());
+
+                let idx = self.vm.add_string(type_str);
+                self.vm.add_op1(Op::PrintString, idx);
             }
             Statement::ProcedureCall(kind, args) => {
                 // Put all arguments on top of the stack

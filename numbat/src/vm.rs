@@ -63,6 +63,9 @@ pub enum Op {
     /// Same as above, but call a procedure which does not return anything (does not push a value onto the stack)
     FFICallProcedure,
 
+    /// Print a compile-time string
+    PrintString,
+
     /// Perform a simplification operation to the current value on the stack
     FullSimplify,
 
@@ -78,7 +81,8 @@ impl Op {
             | Op::ApplyPrefix
             | Op::SetVariable
             | Op::GetVariable
-            | Op::GetLocal => 1,
+            | Op::GetLocal
+            | Op::PrintString => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
@@ -111,6 +115,7 @@ impl Op {
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
             Op::FFICallProcedure => "FFICallProcedure",
+            Op::PrintString => "PrintString",
             Op::FullSimplify => "FullSimplify",
             Op::Return => "Return",
         }
@@ -178,6 +183,9 @@ pub struct Vm {
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
 
+    /// Strings that are already available at compile time
+    strings: Vec<String>,
+
     /// The names of global variables or [Unit]s. The second
     /// entry is the canonical name for units.
     global_identifiers: Vec<(String, Option<String>)>,
@@ -206,6 +214,7 @@ impl Vm {
             current_chunk_index: 0,
             constants: vec![],
             prefixes: vec![],
+            strings: vec![],
             global_identifiers: vec![],
             globals: HashMap::new(),
             ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
@@ -571,6 +580,11 @@ impl Vm {
                         }
                     }
                 }
+                Op::PrintString => {
+                    let s_idx = self.read_u16() as usize;
+                    let s = &self.strings[s_idx];
+                    println!("{}", s);
+                }
                 Op::FullSimplify => {
                     let simplified = self.pop().full_simplify();
                     self.push(simplified);
@@ -630,6 +644,12 @@ impl Vm {
                 .collect::<Vec<_>>()
                 .join("] [")
         );
+    }
+
+    pub fn add_string(&mut self, s: String) -> u16 {
+        self.strings.push(s);
+        assert!(self.strings.len() <= u16::MAX as usize);
+        (self.strings.len() - 1) as u16 // TODO: this can overflow, see above
     }
 }
 

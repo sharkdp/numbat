@@ -568,13 +568,18 @@ impl<'a> Parser<'a> {
                 })
             }
         } else if self
-            .match_any(&[TokenKind::ProcedurePrint, TokenKind::ProcedureAssertEq])
+            .match_any(&[
+                TokenKind::ProcedurePrint,
+                TokenKind::ProcedureAssertEq,
+                TokenKind::ProcedureType,
+            ])
             .is_some()
         {
             let span = self.last().unwrap().span;
             let procedure_kind = match self.last().unwrap().kind {
                 TokenKind::ProcedurePrint => ProcedureKind::Print,
                 TokenKind::ProcedureAssertEq => ProcedureKind::AssertEq,
+                TokenKind::ProcedureType => ProcedureKind::Type,
                 _ => unreachable!(),
             };
 

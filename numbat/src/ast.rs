@@ -399,6 +399,7 @@ impl PrettyPrint for DimensionExpression {
 pub enum ProcedureKind {
     Print,
     AssertEq,
+    Type,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -624,6 +625,7 @@ impl PrettyPrint for Statement {
                 let identifier = match kind {
                     ProcedureKind::Print => "print",
                     ProcedureKind::AssertEq => "assert_eq",
+                    ProcedureKind::Type => "type",
                 };
                 m::identifier(identifier)
                     + m::operator("(")

@@ -4,13 +4,16 @@ use std::{
     fmt,
 };
 
-use crate::arithmetic::{pretty_exponent, Exponent, Power, Rational};
 use crate::dimension::DimensionRegistry;
 use crate::ffi::ArityRange;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::span::Span;
 use crate::typed_ast::{self, Type};
+use crate::{
+    arithmetic::{pretty_exponent, Exponent, Power, Rational},
+    ast::ProcedureKind,
+};
 use crate::{ast, decorator, ffi, suggestion};
 
 use ast::DimensionExpression;
@@ -924,6 +927,24 @@ impl TypeChecker {
                 }
                 typed_ast::Statement::DefineDimension(name.clone())
             }
+            ast::Statement::ProcedureCall(span, kind @ ProcedureKind::Type, args) => {
+                if args.len() != 1 {
+                    return Err(TypeCheckError::WrongArity {
+                        callable_span: *span,
+                        callable_name: "type".into(),
+                        callable_definition_span: None,
+                        arity: 1..=1,
+                        num_args: args.len(),
+                    });
+                }
+
+                let checked_args = args
+                    .into_iter()
+                    .map(|e| self.check_expression(e))
+                    .collect::<Result<Vec<_>>>()?;
+
+                typed_ast::Statement::ProcedureCall(kind.clone(), checked_args)
+            }
             ast::Statement::ProcedureCall(span, kind, args) => {
                 let procedure = ffi::procedures().get(&kind).unwrap();
                 if !procedure.arity.contains(&args.len()) {
@@ -939,7 +960,7 @@ impl TypeChecker {
                 let checked_args = args
                     .into_iter()
                     .map(|e| self.check_expression(e))
-                    .collect::<Result<Vec<typed_ast::Expression>>>()?;
+                    .collect::<Result<Vec<_>>>()?;
 
                 typed_ast::Statement::ProcedureCall(kind.clone(), checked_args)
             }

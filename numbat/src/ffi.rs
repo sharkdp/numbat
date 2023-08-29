@@ -44,6 +44,7 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
                 callable: Callable::Procedure(assert_eq),
             },
         );
+        // Note: The 'type' procedure is missing here because it has special handling code in the compiler
 
         m
     })

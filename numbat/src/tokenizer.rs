@@ -81,6 +81,7 @@ pub enum TokenKind {
     // Procedure calls
     ProcedurePrint,
     ProcedureAssertEq,
+    ProcedureType,
 
     // Variable-length tokens
     Number,
@@ -278,6 +279,7 @@ impl Tokenizer {
             m.insert("none", TokenKind::None);
             m.insert("print", TokenKind::ProcedurePrint);
             m.insert("assert_eq", TokenKind::ProcedureAssertEq);
+            m.insert("type", TokenKind::ProcedureType);
             m
         });
 

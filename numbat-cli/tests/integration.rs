@@ -35,6 +35,13 @@ fn pass_expression_on_command_line() {
         .assert()
         .failure()
         .stderr(predicates::str::contains("runtime error"));
+
+    numbat()
+        .arg("--expression")
+        .arg("type(2 m/s)")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("Length / Time"));
 }
 
 #[test]

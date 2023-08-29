@@ -84,3 +84,4 @@ unit thing                       # New base unit with automatically generated
 
 print(2 kilowarhol)              # Print a quantity
 assert_eq(1 ft, 12 in)           # Assert that two quantities are equal
+type(2 m/s)                      # Print the type of an expression
