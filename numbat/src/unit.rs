@@ -109,8 +109,8 @@ impl Ord for UnitIdentifier {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UnitFactor {
-    pub prefix: Prefix,
     pub unit_id: UnitIdentifier,
+    pub prefix: Prefix,
     pub exponent: Exponent,
 }
 
@@ -490,19 +490,19 @@ mod tests {
             (Unit::kilometer() * Unit::second() * Unit::second())
                 .canonicalized()
                 .to_string(),
-            "s²·km"
+            "km·s²"
         );
         assert_eq!(
             (Unit::meter() / (Unit::second() * Unit::second() * Unit::kilogram()))
                 .canonicalized()
                 .to_string(),
-            "m/(s²·kg)"
+            "m/(kg·s²)"
         );
         assert_eq!(
             (Unit::meter() * Unit::second().with_prefix(Prefix::milli()) * Unit::second())
                 .canonicalized()
                 .to_string(),
-            "ms·m·s"
+            "m·ms·s"
         );
 
         assert_eq!(Unit::meter().with_prefix(Prefix::micro()).to_string(), "µm");

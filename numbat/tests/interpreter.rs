@@ -248,7 +248,7 @@ fn test_misc_examples() {
     expect_output("2min + 30s", "2.5 min");
     expect_output("2min + 30s -> sec", "150 s");
     expect_output("4/3 * pi * (6000km)³", "9.04779e11 km³");
-    expect_output("40kg * 9.8m/s^2 * 150cm", "588 m²·kg/s²");
+    expect_output("40kg * 9.8m/s^2 * 150cm", "588 kg·m²/s²");
     expect_output("sin(30°)", "0.5");
 
     expect_output("60mph -> m/s", "26.8224 m/s");
