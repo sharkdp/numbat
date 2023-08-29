@@ -9,5 +9,5 @@ repository = "https://github.com/sharkdp/numbat"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-attohttpc = "0.26.0"
+attohttpc = { version = "0.26.0", default-features = false, features = ["tls-rustls-webpki-roots"] }
 quick-xml = "0.29.0"
