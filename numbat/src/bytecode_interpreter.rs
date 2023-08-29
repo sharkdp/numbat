@@ -42,8 +42,8 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, *index);
 
                 if prefix != &Prefix::none() {
-                    let prefix_idx = self.vm.add_prefix(prefix.clone());
-                    self.vm.add_op1(Op::ApplyPrefix, prefix_idx as u16);
+                    let prefix_idx = self.vm.add_prefix(*prefix);
+                    self.vm.add_op1(Op::ApplyPrefix, prefix_idx);
                 }
             }
             Expression::UnaryOperator(_span, UnaryOperator::Negate, rhs, _type) => {

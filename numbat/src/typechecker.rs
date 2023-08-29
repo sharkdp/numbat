@@ -71,15 +71,15 @@ impl fmt::Display for IncompatibleDimensionsError {
                 if let Some(BaseRepresentationFactor(_, actual_exponent)) =
                     self.actual_type.iter().find(|f| *name == f.0)
                 {
-                    shared_factors.insert(&name, (*expected_exponent, *actual_exponent));
+                    shared_factors.insert(name, (*expected_exponent, *actual_exponent));
                 } else {
-                    expected_factors.insert(&name, *expected_exponent);
+                    expected_factors.insert(name, *expected_exponent);
                 }
             }
 
             for BaseRepresentationFactor(name, exponent) in self.actual_type.iter() {
                 if !shared_factors.contains_key(&name) {
-                    actual_factors.insert(&name, *exponent);
+                    actual_factors.insert(name, *exponent);
                 }
             }
 
@@ -242,8 +242,10 @@ fn to_rational_exponent(exponent_f64: f64) -> Option<Exponent> {
 /// need to know not just the *type* but also the *value* of the exponent.
 fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     match expr {
-        typed_ast::Expression::Scalar(span, n) => Ok(to_rational_exponent(n.to_f64())
-            .ok_or_else(|| TypeCheckError::NonRationalExponent(*span))?),
+        typed_ast::Expression::Scalar(span, n) => {
+            Ok(to_rational_exponent(n.to_f64())
+                .ok_or(TypeCheckError::NonRationalExponent(*span))?)
+        }
         typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Negate, ref expr, _) => {
             Ok(-evaluate_const_expr(expr)?)
         }
@@ -318,26 +320,25 @@ pub struct TypeChecker {
 impl TypeChecker {
     fn type_for_identifier(&self, span: Span, name: &str) -> Result<&Type> {
         self.identifiers.get(name).ok_or_else(|| {
-            let suggestion =
-                suggestion::did_you_mean(self.identifiers.iter().map(|(id, _)| id), name);
+            let suggestion = suggestion::did_you_mean(self.identifiers.keys(), name);
             TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
         })
     }
 
     pub(crate) fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
-            ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar(*span, n.clone()),
+            ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar(*span, *n),
             ast::Expression::Identifier(span, name) => {
                 let type_ = self.type_for_identifier(*span, name)?.clone();
 
                 typed_ast::Expression::Identifier(*span, name.clone(), type_)
             }
             ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
-                let type_ = self.type_for_identifier(*span, &name)?.clone();
+                let type_ = self.type_for_identifier(*span, name)?.clone();
 
                 typed_ast::Expression::UnitIdentifier(
                     *span,
-                    prefix.clone(),
+                    *prefix,
                     name.clone(),
                     full_name.clone(),
                     type_,
@@ -367,8 +368,8 @@ impl TypeChecker {
                 rhs,
                 span_op,
             } => {
-                let lhs_checked = self.check_expression(&lhs)?;
-                let rhs_checked = self.check_expression(&rhs)?;
+                let lhs_checked = self.check_expression(lhs)?;
+                let rhs_checked = self.check_expression(rhs)?;
 
                 let get_type_and_assert_equality = || {
                     let lhs_type = lhs_checked.get_type();
@@ -446,8 +447,8 @@ impl TypeChecker {
                 };
 
                 typed_ast::Expression::BinaryOperator(
-                    span_op.clone(),
-                    op.clone(),
+                    *span_op,
+                    *op,
                     Box::new(lhs_checked),
                     Box::new(rhs_checked),
                     type_,
@@ -610,8 +611,8 @@ impl TypeChecker {
                 let return_type = substitute(&substitutions, return_type);
 
                 typed_ast::Expression::FunctionCall(
-                    span.clone(),
-                    full_span.clone(),
+                    *span,
+                    *full_span,
                     function_name.clone(),
                     arguments_checked,
                     return_type,
@@ -672,7 +673,7 @@ impl TypeChecker {
             ast::Statement::DefineBaseUnit(_span, unit_name, dexpr, decorators) => {
                 let type_specified = if let Some(dexpr) = dexpr {
                     self.registry
-                        .get_base_representation(&dexpr)
+                        .get_base_representation(dexpr)
                         .map_err(TypeCheckError::RegistryError)?
                 } else {
                     use heck::ToUpperCamelCase;
@@ -683,7 +684,7 @@ impl TypeChecker {
                         .add_base_dimension(&type_name)
                         .map_err(TypeCheckError::RegistryError)?
                 };
-                for (name, _) in decorator::name_and_aliases(&unit_name, &decorators) {
+                for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.identifiers
                         .insert(name.clone(), type_specified.clone());
                 }
@@ -732,7 +733,7 @@ impl TypeChecker {
                         ));
                     }
                 }
-                for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
+                for (name, _) in decorator::name_and_aliases(identifier, decorators) {
                     self.identifiers.insert(name.clone(), type_deduced.clone());
                 }
                 typed_ast::Statement::DefineDerivedUnit(
@@ -755,7 +756,7 @@ impl TypeChecker {
                 let mut type_parameters = type_parameters.clone();
 
                 for (span, type_parameter) in &type_parameters {
-                    match typechecker_fn.registry.add_base_dimension(&type_parameter) {
+                    match typechecker_fn.registry.add_base_dimension(type_parameter) {
                         Err(RegistryError::EntryExists(name)) => {
                             return Err(TypeCheckError::TypeParameterNameClash(*span, name))
                         }
@@ -771,7 +772,7 @@ impl TypeChecker {
                     let parameter_type = if let Some(type_) = type_annotation {
                         typechecker_fn
                             .registry
-                            .get_base_representation(&type_)
+                            .get_base_representation(type_)
                             .map_err(TypeCheckError::RegistryError)?
                     } else if is_ffi_function {
                         return Err(TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
@@ -787,11 +788,11 @@ impl TypeChecker {
                             .registry
                             .add_base_dimension(&free_type_parameter)
                             .expect("double-underscore identifiers are only used internally");
-                        type_parameters.push((parameter_span.clone(), free_type_parameter.clone()));
+                        type_parameters.push((*parameter_span, free_type_parameter.clone()));
                         typechecker_fn
                             .registry
                             .get_base_representation(&DimensionExpression::Dimension(
-                                parameter_span.clone(),
+                                *parameter_span,
                                 free_type_parameter,
                             ))
                             .map_err(TypeCheckError::RegistryError)?
@@ -810,7 +811,7 @@ impl TypeChecker {
                     is_variadic |= p_is_variadic;
                 }
 
-                if free_type_parameters.len() > 0 {
+                if !free_type_parameters.is_empty() {
                     // TODO: Perform type inference
                 }
 
@@ -895,12 +896,12 @@ impl TypeChecker {
             ast::Statement::DefineDimension(name, dexprs) => {
                 if let Some(dexpr) = dexprs.first() {
                     self.registry
-                        .add_derived_dimension(&name, dexpr)
+                        .add_derived_dimension(name, dexpr)
                         .map_err(TypeCheckError::RegistryError)?;
 
                     let base_representation = self
                         .registry
-                        .get_base_representation_for_name(&name)
+                        .get_base_representation_for_name(name)
                         .expect("we just inserted it");
 
                     for alternative_expr in &dexprs[1..] {
@@ -922,7 +923,7 @@ impl TypeChecker {
                     }
                 } else {
                     self.registry
-                        .add_base_dimension(&name)
+                        .add_base_dimension(name)
                         .map_err(TypeCheckError::RegistryError)?;
                 }
                 typed_ast::Statement::DefineDimension(name.clone())
@@ -939,14 +940,14 @@ impl TypeChecker {
                 }
 
                 let checked_args = args
-                    .into_iter()
+                    .iter()
                     .map(|e| self.check_expression(e))
                     .collect::<Result<Vec<_>>>()?;
 
                 typed_ast::Statement::ProcedureCall(kind.clone(), checked_args)
             }
             ast::Statement::ProcedureCall(span, kind, args) => {
-                let procedure = ffi::procedures().get(&kind).unwrap();
+                let procedure = ffi::procedures().get(kind).unwrap();
                 if !procedure.arity.contains(&args.len()) {
                     return Err(TypeCheckError::WrongArity {
                         callable_span: *span,
@@ -958,7 +959,7 @@ impl TypeChecker {
                 }
 
                 let checked_args = args
-                    .into_iter()
+                    .iter()
                     .map(|e| self.check_expression(e))
                     .collect::<Result<Vec<_>>>()?;
 

@@ -185,8 +185,7 @@ impl Quantity {
         Ok(Quantity::new_f64(
             self.value.to_f64().powf(exponent_as_scalar),
             self.unit.power(
-                Rational::from_f64(exponent_as_scalar)
-                    .ok_or_else(|| QuantityError::NonRationalExponent)?,
+                Rational::from_f64(exponent_as_scalar).ok_or(QuantityError::NonRationalExponent)?,
             ),
         ))
     }

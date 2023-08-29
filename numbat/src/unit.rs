@@ -64,7 +64,7 @@ impl UnitIdentifier {
                     })
                     .collect();
 
-                if key.len() > 0 {
+                if !key.is_empty() {
                     // Normalize the sign of the exponents. This is useful to consider
                     // 's' and 'Hz' for merging.
                     if key[0].1 < 0.into() {
@@ -75,7 +75,7 @@ impl UnitIdentifier {
                     // integers. This is needed for the next step.
                     let factor: i128 = key.iter().map(|p| p.1.numer()).product();
 
-                    key.iter_mut().for_each(|p| p.1 = p.1 * factor);
+                    key.iter_mut().for_each(|p| p.1 *= factor);
 
                     // Now divide every factor by the greatest common divisor. This is
                     // useful to consider g·m² and g²·m⁴ for merging (but not g·m² and g·m³).
@@ -86,7 +86,7 @@ impl UnitIdentifier {
                         common_divisor = common_divisor.gcd(&p.1.to_integer());
                     }
 
-                    key.iter_mut().for_each(|p| p.1 = p.1 / common_divisor);
+                    key.iter_mut().for_each(|p| p.1 /= common_divisor);
                 }
 
                 key

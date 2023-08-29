@@ -194,7 +194,7 @@ impl ErrorDiagnostic for TypeCheckError {
                 params,
             ) => d.with_labels(vec![
                 span.diagnostic_label(LabelStyle::Primary)
-                    .with_message(format!("… could not be infered for this function call")),
+                    .with_message("… could not be infered for this function call"),
                 callable_definition_span
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message(format!(

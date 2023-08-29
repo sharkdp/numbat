@@ -10,8 +10,10 @@ type ControlFlow = std::ops::ControlFlow<RuntimeError>;
 
 pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
 
+type BoxedFunction = Box<dyn Fn(&[Quantity]) -> Quantity + Send + Sync>;
+
 pub(crate) enum Callable {
-    Function(Box<dyn Fn(&[Quantity]) -> Quantity + Send + Sync>),
+    Function(BoxedFunction),
     Procedure(fn(&[Quantity]) -> ControlFlow),
 }
 
@@ -527,7 +529,7 @@ fn minimum(args: &[Quantity]) -> Quantity {
     )
 }
 
-fn exchange_rate(rate: &'static str) -> Box<dyn Fn(&[Quantity]) -> Quantity + Send + Sync> {
+fn exchange_rate(rate: &'static str) -> BoxedFunction {
     Box::new(|_args: &[Quantity]| -> Quantity {
         let exchange_rates = ExchangeRatesCache::new();
         Quantity::from_scalar(exchange_rates.get_rate(rate).unwrap_or(f64::NAN))

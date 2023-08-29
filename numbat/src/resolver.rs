@@ -78,7 +78,7 @@ impl Resolver {
     }
 
     fn parse(&self, code: &str, code_source_index: usize) -> Result<Vec<Statement>> {
-        parse(code, code_source_index).map_err(|inner| ResolverError::ParseError(inner))
+        parse(code, code_source_index).map_err(ResolverError::ParseError)
     }
 
     fn inlining_pass(&mut self, program: &[Statement]) -> Result<Vec<Statement>> {

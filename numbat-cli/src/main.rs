@@ -162,7 +162,7 @@ impl Cli {
         });
 
         let pretty_print_mode =
-            if !self.args.file.is_some() && self.args.pretty_print == PrettyPrintMode::Auto {
+            if self.args.file.is_none() && self.args.pretty_print == PrettyPrintMode::Auto {
                 PrettyPrintMode::Always
             } else {
                 self.args.pretty_print

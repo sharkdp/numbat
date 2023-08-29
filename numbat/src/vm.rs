@@ -311,7 +311,7 @@ impl Vm {
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: ArityRange) {
-        let ff = ffi::functions().get(name).unwrap().clone();
+        let ff = ffi::functions().get(name).unwrap();
         assert!(ff.arity == arity);
         self.ffi_callables.push(ff);
     }
@@ -453,7 +453,7 @@ impl Vm {
                     let prefix = self.prefixes[prefix_idx as usize];
                     self.push(Quantity::new(
                         *quantity.unsafe_value(),
-                        quantity.unit().clone().with_prefix(prefix.clone()),
+                        quantity.unit().clone().with_prefix(prefix),
                     ));
                 }
                 Op::SetUnitConstant => {

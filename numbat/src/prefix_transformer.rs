@@ -173,7 +173,7 @@ impl Transformer {
                 for (param_span, param, _, _) in &parameters {
                     fn_body_transformer
                         .prefix_parser
-                        .add_other_identifier(&param, param_span.clone())?;
+                        .add_other_identifier(param, *param_span)?;
                 }
 
                 Statement::DefineFunction {

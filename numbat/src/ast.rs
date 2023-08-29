@@ -75,7 +75,7 @@ impl Expression {
             } => {
                 let mut span = lhs.full_span().extend(&rhs.full_span());
                 if let Some(span_op) = span_op {
-                    span = span.extend(&span_op);
+                    span = span.extend(span_op);
                 }
                 span
             }
@@ -363,7 +363,7 @@ impl DimensionExpression {
                 span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
             }
             DimensionExpression::Power(span_op, lhs, span_exponent, _exp) => {
-                span_op.extend(&lhs.full_span()).extend(&span_exponent)
+                span_op.extend(&lhs.full_span()).extend(span_exponent)
             }
         }
     }
@@ -676,7 +676,7 @@ impl ReplaceSpans for DimensionExpression {
                 Span::dummy(),
                 Box::new(lhs.replace_spans()),
                 Span::dummy(),
-                exp.clone(),
+                *exp,
             ),
         }
     }
@@ -686,14 +686,11 @@ impl ReplaceSpans for DimensionExpression {
 impl ReplaceSpans for Expression {
     fn replace_spans(&self) -> Self {
         match self {
-            Expression::Scalar(_, name) => Expression::Scalar(Span::dummy(), name.clone()),
+            Expression::Scalar(_, name) => Expression::Scalar(Span::dummy(), *name),
             Expression::Identifier(_, name) => Expression::Identifier(Span::dummy(), name.clone()),
-            Expression::UnitIdentifier(_, prefix, name, full_name) => Expression::UnitIdentifier(
-                Span::dummy(),
-                prefix.clone(),
-                name.clone(),
-                full_name.clone(),
-            ),
+            Expression::UnitIdentifier(_, prefix, name, full_name) => {
+                Expression::UnitIdentifier(Span::dummy(), *prefix, name.clone(), full_name.clone())
+            }
             Expression::UnaryOperator {
                 op,
                 expr,

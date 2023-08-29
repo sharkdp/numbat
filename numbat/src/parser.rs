@@ -162,7 +162,7 @@ impl ParseError {
 
 type Result<T> = std::result::Result<T, ParseError>;
 
-static PROCEDURES: &'static [TokenKind] = &[
+static PROCEDURES: &[TokenKind] = &[
     TokenKind::ProcedurePrint,
     TokenKind::ProcedureAssertEq,
     TokenKind::ProcedureType,
@@ -869,7 +869,7 @@ impl<'a> Parser<'a> {
         };
 
         if let Some(num) = self.match_exact(TokenKind::Number) {
-            let num_string = num.lexeme.replace("_", "");
+            let num_string = num.lexeme.replace('_', "");
             Ok(Expression::Scalar(
                 self.last().unwrap().span,
                 Number::from_f64(num_string.parse::<f64>().unwrap()),
@@ -984,14 +984,14 @@ impl<'a> Parser<'a> {
 
         if let Some(token) = self.match_exact(TokenKind::Number) {
             let span = self.last().unwrap().span;
-            let num_str = token.lexeme.replace("_", "");
+            let num_str = token.lexeme.replace('_', "");
             Ok((
                 span,
                 Rational::from_i128(num_str.parse::<i128>().map_err(|_| ParseError {
                     kind: ParseErrorKind::NumberInDimensionExponentOutOfRange,
                     span: token.span,
                 })?)
-                .ok_or_else(|| ParseError {
+                .ok_or(ParseError {
                     kind: ParseErrorKind::NumberInDimensionExponentOutOfRange,
                     span: token.span,
                 })?,

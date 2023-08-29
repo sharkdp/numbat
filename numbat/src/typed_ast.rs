@@ -31,7 +31,7 @@ impl Expression {
             Expression::BinaryOperator(span_op, _op, lhs, rhs, _) => {
                 let mut span = lhs.full_span().extend(&rhs.full_span());
                 if let Some(span_op) = span_op {
-                    span = span.extend(&span_op);
+                    span = span.extend(span_op);
                 }
                 span
             }
