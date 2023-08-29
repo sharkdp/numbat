@@ -163,6 +163,10 @@ impl Unit {
         Self::unity()
     }
 
+    pub fn is_scalar(&self) -> bool {
+        self == &Self::scalar()
+    }
+
     pub fn new_base(name: &str, canonical_name: &str) -> Self {
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
@@ -285,6 +289,11 @@ impl Unit {
             Number::from_f64(std::f64::consts::PI / 180.0),
             Self::radian(),
         )
+    }
+
+    #[cfg(test)]
+    pub fn percent() -> Self {
+        Self::new_derived("percent", "%", Number::from_f64(1e-2), Self::scalar())
     }
 
     #[cfg(test)]

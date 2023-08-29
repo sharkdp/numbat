@@ -154,14 +154,24 @@ impl Quantity {
                         .then(f1.exponent.cmp(&f2.exponent))
                 })
                 .expect("At least one unit factor in the group");
-            let exponent = group_as_unit
-                .iter()
-                .map(|f| f.exponent * removed_exponent(f) / removed_exponent(group_representative))
-                .sum();
-            let target_unit = Unit::from_factor(UnitFactor {
-                exponent,
-                ..group_representative.clone()
-            });
+
+            let target_unit = if group_as_unit.to_base_unit_representation().0.is_scalar() {
+                // If the group-representative is convertible to a scalar,
+                // use 'scalar' as the target unit instead. This allows us
+                // to simplify, for example, '3% · kg' to '0.03 kg'.
+                Unit::scalar()
+            } else {
+                let exponent = group_as_unit
+                    .iter()
+                    .map(|f| {
+                        f.exponent * removed_exponent(f) / removed_exponent(group_representative)
+                    })
+                    .sum();
+                Unit::from_factor(UnitFactor {
+                    exponent,
+                    ..group_representative.clone()
+                })
+            };
 
             let converted = Quantity::from_unit(group_as_unit)
                 .convert_to(&target_unit)
@@ -411,6 +421,14 @@ mod tests {
         {
             let q = Quantity::new_f64(1.0, Unit::meter() * Unit::gram() / Unit::centimeter());
             assert_eq!(q.full_simplify(), Quantity::new_f64(100.0, Unit::gram()));
+        }
+    }
+
+    #[test]
+    fn full_simplify_scalarlike_units() {
+        {
+            let q = Quantity::new_f64(3.0, Unit::percent() * Unit::kilogram());
+            assert_eq!(q.full_simplify(), Quantity::new_f64(0.03, Unit::kilogram()));
         }
     }
 
