@@ -123,6 +123,10 @@ impl Quantity {
     }
 
     pub fn full_simplify(&self) -> Self {
+        if let Ok(scalar_result) = self.convert_to(&Unit::scalar()) {
+            return scalar_result;
+        }
+
         let removed_exponent = |u: &UnitFactor| {
             let base_unit = u.unit_id.corresponding_base_unit();
             if let Some(first_factor) = base_unit.into_iter().next() {
@@ -368,6 +372,12 @@ mod tests {
     fn full_simplify_basic() {
         let q = Quantity::new_f64(2.0, Unit::meter() / Unit::second());
         assert_eq!(q.full_simplify(), q);
+    }
+
+    #[test]
+    fn full_simplify_convert_to_scalar() {
+        let q = Quantity::new_f64(1.0, Unit::kph() / (Unit::kilometer() / Unit::hour()));
+        assert_eq!(q.full_simplify(), Quantity::from_scalar(1.0));
     }
 
     #[test]

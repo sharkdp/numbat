@@ -313,6 +313,16 @@ impl Unit {
     }
 
     #[cfg(test)]
+    pub fn kph() -> Self {
+        Self::new_derived(
+            "kilometer_per_hour",
+            "kph",
+            Number::from_f64(1.0 / 3.6),
+            Self::new_base("meter", "m") / Self::second(),
+        )
+    }
+
+    #[cfg(test)]
     pub fn mile() -> Self {
         Self::new_derived("mile", "mi", Number::from_f64(1609.344), Self::meter())
     }
