@@ -2,16 +2,14 @@
 
 ## Mathematical
 
-* `pi`
-* `π`
+* `pi`, `π`
 * `τ`
 * `e`
-* `φ`
-* `golden_ratio`
-* `½`
-* `¼`
+* `golden_ratio`, `φ`
 
 ## Named numbers
+
+Large numbers
 
 * `hundred`
 * `thousand`
@@ -21,6 +19,19 @@
 * `quadrillion`
 * `quintillion`
 * `googol`
+
+Unicode fractions:
+
+* `½`, `⅓`, `⅔`, `¼`, `¾`, …
+
+Colloquial:
+
+* `quarter`
+* `half`
+* `semi`
+* `double`
+* `triple`
+* `dozen`
 
 ## Physics
 
