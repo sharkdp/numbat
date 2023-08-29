@@ -62,8 +62,8 @@ pub enum ParseErrorKind {
     #[error("Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names.")]
     ExpectedIdentifierAfterFn,
 
-    #[error("Expected function name after '//' postfix apply operator")]
-    ExpectedIdentifierInPostfixApply,
+    #[error("Expected identifier")]
+    ExpectedIdentifier,
 
     #[error("Expected dimension identifier, '1', or opening parenthesis")]
     ExpectedDimensionPrimary,
@@ -161,6 +161,12 @@ impl ParseError {
 }
 
 type Result<T> = std::result::Result<T, ParseError>;
+
+static PROCEDURES: &'static [TokenKind] = &[
+    TokenKind::ProcedurePrint,
+    TokenKind::ProcedureAssertEq,
+    TokenKind::ProcedureType,
+];
 
 struct Parser<'a> {
     tokens: &'a [Token],
@@ -567,14 +573,7 @@ impl<'a> Parser<'a> {
                     span: self.peek().span,
                 })
             }
-        } else if self
-            .match_any(&[
-                TokenKind::ProcedurePrint,
-                TokenKind::ProcedureAssertEq,
-                TokenKind::ProcedureType,
-            ])
-            .is_some()
-        {
+        } else if self.match_any(PROCEDURES).is_some() {
             let span = self.last().unwrap().span;
             let procedure_kind = match self.last().unwrap().kind {
                 TokenKind::ProcedurePrint => ProcedureKind::Print,
@@ -620,7 +619,7 @@ impl<'a> Parser<'a> {
             Ok(identifier.lexeme.clone())
         } else {
             Err(ParseError::new(
-                ParseErrorKind::ExpectedIdentifierInPostfixApply,
+                ParseErrorKind::ExpectedIdentifier,
                 self.peek().span,
             ))
         }
