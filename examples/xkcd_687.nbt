@@ -7,6 +7,6 @@ let earth_core_pressure = 3.5 million atmospheres
 let prius_milage = 50 miles per gallon
 let english_channel_min_width = 21 miles
 
-let c: Scalar = planck_energy / earth_core_pressure * prius_milage / english_channel_min_width -> 1  # TODO: get rid of the conversion here
+let c: Scalar = planck_energy / earth_core_pressure * prius_milage / english_channel_min_width
 
 print(c)
