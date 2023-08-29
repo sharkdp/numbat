@@ -42,7 +42,6 @@ type Result<T> = std::result::Result<T, ResolverError>;
 
 pub(crate) struct Resolver {
     importer: Box<dyn ModuleImporter + Send>,
-    code_sources: Vec<CodeSource>,
     pub files: SimpleFiles<String, String>,
     imported_modules: Vec<ModulePath>,
 }
@@ -51,7 +50,6 @@ impl Resolver {
     pub(crate) fn new(importer: impl ModuleImporter + Send + 'static) -> Self {
         Self {
             importer: Box::new(importer),
-            code_sources: vec![],
             files: SimpleFiles::new(),
             imported_modules: vec![],
         }
@@ -71,14 +69,13 @@ impl Resolver {
             ),
         };
 
-        let _file_id = self.files.add(code_source_text, content.to_string()); // TODO: it's a shame we need to clone the full source code here
+        let code_source_id = self.files.add(code_source_text, content.to_string()); // TODO: it's a shame we need to clone the full source code here
 
-        self.code_sources.push(code_source);
-        self.code_sources.len() - 1
+        code_source_id
     }
 
-    fn parse(&self, code: &str, code_source_index: usize) -> Result<Vec<Statement>> {
-        parse(code, code_source_index).map_err(ResolverError::ParseError)
+    fn parse(&self, code: &str, code_source_id: usize) -> Result<Vec<Statement>> {
+        parse(code, code_source_id).map_err(ResolverError::ParseError)
     }
 
     fn inlining_pass(&mut self, program: &[Statement]) -> Result<Vec<Statement>> {
@@ -90,12 +87,12 @@ impl Resolver {
                     if !self.imported_modules.contains(module_path) {
                         self.imported_modules.push(module_path.clone());
                         if let Some((code, filesystem_path)) = self.importer.import(module_path) {
-                            let index = self.add_code_source(
+                            let code_source_id = self.add_code_source(
                                 CodeSource::Module(module_path.clone(), filesystem_path),
                                 &code,
                             );
 
-                            let imported_program = self.parse(&code, index)?;
+                            let imported_program = self.parse(&code, code_source_id)?;
                             let inlined_program = self.inlining_pass(&imported_program)?;
                             for statement in inlined_program {
                                 new_program.push(statement);
@@ -113,8 +110,8 @@ impl Resolver {
     }
 
     pub fn resolve(&mut self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
-        let index = self.add_code_source(code_source, code);
-        let statements = self.parse(code, index)?;
+        let code_source_id = self.add_code_source(code_source, code);
+        let statements = self.parse(code, code_source_id)?;
 
         self.inlining_pass(&statements)
     }

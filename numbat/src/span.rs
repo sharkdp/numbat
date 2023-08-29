@@ -16,11 +16,11 @@ impl SourceCodePositition {
         }
     }
 
-    pub fn single_character_span(&self, code_source_index: usize) -> Span {
+    pub fn single_character_span(&self, code_source_id: usize) -> Span {
         Span {
             start: *self,
             end: *self,
-            code_source_index,
+            code_source_id,
         }
     }
 }
@@ -29,23 +29,23 @@ impl SourceCodePositition {
 pub struct Span {
     pub start: SourceCodePositition,
     pub end: SourceCodePositition,
-    pub code_source_index: usize,
+    pub code_source_id: usize,
 }
 
 impl Span {
     pub fn extend(&self, other: &Span) -> Span {
-        assert_eq!(self.code_source_index, other.code_source_index);
+        assert_eq!(self.code_source_id, other.code_source_id);
         Span {
             start: std::cmp::min(self.start, other.start),
             end: std::cmp::max(self.end, other.end),
-            code_source_index: self.code_source_index,
+            code_source_id: self.code_source_id,
         }
     }
 
     pub fn diagnostic_label(&self, style: LabelStyle) -> Label<usize> {
         Label::new(
             style,
-            self.code_source_index,
+            self.code_source_id,
             (self.start.byte as usize)..(self.end.byte as usize),
         )
     }
@@ -55,7 +55,7 @@ impl Span {
         Self {
             start: SourceCodePositition::start(),
             end: SourceCodePositition::start(),
-            code_source_index: 0,
+            code_source_id: 0,
         }
     }
 }

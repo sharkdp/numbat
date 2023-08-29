@@ -1120,10 +1120,10 @@ impl<'a> Parser<'a> {
     }
 }
 
-pub fn parse(input: &str, code_source_index: usize) -> Result<Vec<Statement>> {
+pub fn parse(input: &str, code_source_id: usize) -> Result<Vec<Statement>> {
     use crate::tokenizer::tokenize;
 
-    let tokens = tokenize(input, code_source_index).map_err(|TokenizerError { kind, span }| {
+    let tokens = tokenize(input, code_source_id).map_err(|TokenizerError { kind, span }| {
         ParseError::new(ParseErrorKind::TokenizerError(kind), span)
     })?;
     let mut parser = Parser::new(&tokens);
