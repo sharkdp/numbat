@@ -17,7 +17,7 @@
 //! per_factor      →   negate ( "per" negate ) *
 //! negate          →   "-" negate | ifactor
 //! ifactor         →   power ( " " power ) *
-//! power           →   factorial ( "^" ( "+" | "-") power )
+//! power           →   factorial ( "^" "-" ? power )
 //! factorial       →   unicode_power "!" *
 //! unicode_power   →   call ( "⁻" ? ("¹" | "²" | "³" | "⁴" | "⁵" ) ) ?
 //! call            →   primary ( "(" arguments? ")" ) ?
@@ -753,25 +753,22 @@ impl<'a> Parser<'a> {
         if self.match_exact(TokenKind::Power).is_some() {
             let span_op = Some(self.last().unwrap().span);
 
-            let op = if self.match_exact(TokenKind::Minus).is_some() {
-                let span_op = self.last().unwrap().span;
+            let unary_op = if self.match_exact(TokenKind::Minus).is_some() {
+                let span_unary_minus = self.last().unwrap().span;
 
-                Some((UnaryOperator::Negate, span_op))
+                Some((UnaryOperator::Negate, span_unary_minus))
             } else {
                 None
             };
 
             let mut rhs = self.power()?;
 
-            match op {
-                Some((op, span_op)) => {
-                    rhs = Expression::UnaryOperator {
-                        op,
-                        expr: Box::new(rhs),
-                        span_op,
-                    };
-                }
-                _ => {}
+            if let Some((op, span_op)) = unary_op {
+                rhs = Expression::UnaryOperator {
+                    op,
+                    expr: Box::new(rhs),
+                    span_op,
+                };
             }
 
             expr = Expression::BinaryOperator {
@@ -1461,7 +1458,18 @@ mod tests {
             ),
         );
 
-        should_fail(&["1^", "1^^2", "1**", "1***3", "1****4"]);
+        parse_as_expression(
+            &["2^-2-3"],
+            binop!(
+                binop!(scalar!(2.0), Power, negate!(scalar!(2.0))),
+                Sub,
+                scalar!(3.0)
+            ),
+        );
+
+        should_fail(&[
+            "1^", "1^^2", "1**", "1***3", "1****4", "2^-", "2^--", "2**--3",
+        ]);
     }
 
     #[test]
