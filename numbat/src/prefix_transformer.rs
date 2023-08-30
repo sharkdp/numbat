@@ -86,7 +86,7 @@ impl Transformer {
         decorators: &[Decorator],
         conflict_span: Span,
     ) -> Result<()> {
-        let mut unit_names = vec![name.to_string()];
+        let mut unit_names = vec![];
         let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
         let binary_prefixes = Self::has_decorator(decorators, Decorator::BinaryPrefixes);
         for (alias, accepts_prefix) in decorator::name_and_aliases(name, decorators) {
