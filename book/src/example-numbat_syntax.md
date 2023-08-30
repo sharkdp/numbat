@@ -8,10 +8,10 @@
 
 # 1. Imports
 
-use prelude       # This is not necessary. The 'prelude'
-                  # module will always be loaded upon startup
+use prelude        # This is not necessary. The 'prelude'
+                   # module will always be loaded upon startup
 
-use physics::temperature_conversion   # Load a specific module
+use units::stoney  # Load a specific module
 
 # 2. Numbers
 
@@ -42,6 +42,7 @@ meter per second  # 'per' keyword can be used for division
 2^3               # Exponentiation
 2**3              # Python-style
 2³                # Unicode exponents
+2^-3              # Negative exponents
 
 mod(17, 4)        # Modulo
 
@@ -49,7 +50,7 @@ mod(17, 4)        # Modulo
 3 in to cm        # Unit conversion with the 'to' keyword
 
 cos(pi/3 + pi)    # Call mathematical functions
-pi/3 + pi // cos  # equivalent, useful in REPL
+pi/3 + pi // cos  # same as above, useful in REPL
 
 # 4. Variable definitions
 
@@ -80,7 +81,7 @@ unit clonk: Time = 0.2 seconds   # Optional type annotation
 
 @metric_prefixes
 @aliases(wh: short)
-unit warhol: Fame                # New base unit for phys. dimension "Fame"
+unit warhol: Fame                # New base unit for the "Fame" dimension
 
 unit thing                       # New base unit with automatically generated
                                  # base dimension "Thing"
