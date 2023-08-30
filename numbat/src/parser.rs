@@ -17,7 +17,7 @@
 //! per_factor      →   negate ( "per" negate ) *
 //! negate          →   "-" negate | ifactor
 //! ifactor         →   power ( " " power ) *
-//! power           →   factorial ( "^" power )
+//! power           →   factorial ( "^" "-" ? power )
 //! factorial       →   unicode_power "!" *
 //! unicode_power   →   call ( "⁻" ? ("¹" | "²" | "³" | "⁴" | "⁵" ) ) ?
 //! call            →   primary ( "(" arguments? ")" ) ?
@@ -749,9 +749,27 @@ impl<'a> Parser<'a> {
 
     fn power(&mut self) -> Result<Expression> {
         let mut expr = self.factorial()?;
+
         if self.match_exact(TokenKind::Power).is_some() {
             let span_op = Some(self.last().unwrap().span);
-            let rhs = self.power()?;
+
+            let unary_op = if self.match_exact(TokenKind::Minus).is_some() {
+                let span_unary_minus = self.last().unwrap().span;
+
+                Some((UnaryOperator::Negate, span_unary_minus))
+            } else {
+                None
+            };
+
+            let mut rhs = self.power()?;
+
+            if let Some((op, span_op)) = unary_op {
+                rhs = Expression::UnaryOperator {
+                    op,
+                    expr: Box::new(rhs),
+                    span_op,
+                };
+            }
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Power,
@@ -760,6 +778,7 @@ impl<'a> Parser<'a> {
                 span_op,
             };
         }
+
         Ok(expr)
     }
 
@@ -1425,7 +1444,32 @@ mod tests {
             ),
         );
 
-        should_fail(&["1^", "1^^2", "1**", "1***3", "1****4"]);
+        parse_as_expression(
+            &["2^-3", "2**-3"],
+            binop!(scalar!(2.0), Power, negate!(scalar!(3.0))),
+        );
+
+        parse_as_expression(
+            &["2^-3^-4"],
+            binop!(
+                scalar!(2.0),
+                Power,
+                negate!(binop!(scalar!(3.0), Power, negate!(scalar!(4.0))))
+            ),
+        );
+
+        parse_as_expression(
+            &["2^-2-3"],
+            binop!(
+                binop!(scalar!(2.0), Power, negate!(scalar!(2.0))),
+                Sub,
+                scalar!(3.0)
+            ),
+        );
+
+        should_fail(&[
+            "1^", "1^^2", "1**", "1***3", "1****4", "2^-", "2^--", "2**--3",
+        ]);
     }
 
     #[test]
