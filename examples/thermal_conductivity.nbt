@@ -1,0 +1,10 @@
+# https://en.wikipedia.org/wiki/Thermal_conductivity
+
+dimension ThermalConductivity = Power / (Length × Temperature)
+
+fn heat_transfer(λ: ThermalConductivity, wall_area: Area, thickness: Length, temp_hot: Temperature, temp_cold: Temperature) -> Power =
+    λ × wall_area × (temp_hot - temp_cold) / thickness
+
+let λ_concrete: ThermalConductivity = 0.92 W / (m · K)
+
+print(heat_transfer(λ_concrete, 3 m × 2 m, 20 cm, from_celsius(20), from_celsius(0)))
