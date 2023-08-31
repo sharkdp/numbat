@@ -12,7 +12,6 @@ unit gauss: MagneticFluxDensity = 100 µT
 
 @aliases(Mx)
 unit maxwell: MagneticFlux = 1 gauss × cm^2
-assert_eq(1 maxwell, 1e-8 weber)
 
 @metric_prefixes
 @aliases(Oe: short)

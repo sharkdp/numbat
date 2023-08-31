@@ -3,8 +3,7 @@ use units::imperial
 
 # US liquid gallon
 @aliases(gallons, gal: short)
-unit gallon: Volume = 3.785_411_784 L
-assert_eq(1 gallon, 231 inch^3, 0.001 inch^3)
+unit gallon: Volume = 231 in^3
 
 # US liquid pint
 @aliases(pints)
