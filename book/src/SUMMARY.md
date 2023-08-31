@@ -15,6 +15,7 @@
     - [Recipe](./example-recipe.md)
     - [Acidity](./example-acidity.md)
     - [XKCD 2585](./example-xkcd_2585.md)
+    - [XKCD 2812](./example-xkcd_2812.md)
 
 # Numbat language reference
 

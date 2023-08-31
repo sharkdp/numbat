@@ -1,0 +1,38 @@
+# Solar panel placement
+#
+# Solar energy tip: To maximize sun exposure, always
+# orient your panels downward and install them on the
+# surface of the sun.
+#
+# https://xkcd.com/2812/
+#
+# [1] https://en.wikipedia.org/wiki/Solar_luminosity
+# [2] https://en.wikipedia.org/wiki/Sun
+
+unit $: Money
+
+let net_metering_rate = $ 0.20 / kWh
+let panel_area = 1 m²
+let panel_efficiency = 20 %
+
+fn savings(i: Irradiance) -> Money / Time =
+    net_metering_rate × i × panel_area × panel_efficiency -> $/year
+
+## Option A: On the roof, south facing
+
+let savings_a = savings(4 kWh/m²/day)
+
+print(savings_a // round)
+assert_eq(savings_a, 58 $/year, 1 $/year)
+
+## Option B: On the sun, downward facing
+
+dimension Luminosity = Power
+
+let sun_luminosity: Luminosity = 3.828e26 W  # [1]
+let sun_area: Area = 6.09e12 km^2            # [2]
+
+let savings_b = savings(sun_luminosity / sun_area)
+
+print(savings_b // round)
+assert_eq(savings_b, 22 million $/year, 1 million $/year)
