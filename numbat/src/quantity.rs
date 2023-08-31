@@ -67,9 +67,12 @@ impl Quantity {
             // to also perform the hour->second conversion, which would be needed, as
             // we go back to base units for now. Removing common factors is just one
             // heuristic, but it would be better to solve this in a more general way.
-            // For more details on this problem, see `examples/xkcd2585.nbt`.
+            // For more details on this problem, see [1].
+            //
+            // [1] https://github.com/sharkdp/numbat/issues/118.
             let mut common_unit_factors = Unit::scalar();
             let target_unit_canonicalized = target_unit.canonicalized();
+
             for factor in self.unit.canonicalized().iter() {
                 if let Some(other_factor) = target_unit_canonicalized
                     .iter()
@@ -128,7 +131,7 @@ impl Quantity {
         }
 
         let removed_exponent = |u: &UnitFactor| {
-            let base_unit = u.unit_id.corresponding_base_unit();
+            let base_unit = u.unit_id.base_unit_and_factor().0;
             if let Some(first_factor) = base_unit.into_iter().next() {
                 first_factor.exponent
             } else {

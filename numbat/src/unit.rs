@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use itertools::Itertools;
 use num_traits::{ToPrimitive, Zero};
 
 use crate::{
@@ -11,8 +12,8 @@ use crate::{
 
 pub type ConversionFactor = Number;
 
-/// A unit can either be a base/fundamental unit or it is derived from one.
-/// In the latter case, a conversion factor to the base unit has to be specified.
+/// A unit can either be a base/fundamental unit or it is derived from another unit.
+/// In the latter case, a conversion factor to the defining unit has to be specified.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnitKind {
     Base,
@@ -26,22 +27,50 @@ pub struct UnitIdentifier {
     kind: UnitKind,
 }
 
+#[derive(Clone)]
+pub struct BaseUnitAndFactor(pub Unit, pub Number);
+
+impl std::iter::Product for BaseUnitAndFactor {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let (fst, snd) = iter.tee();
+        BaseUnitAndFactor(fst.map(|i| i.0).product(), snd.map(|i| i.1).product())
+    }
+}
+
 impl UnitIdentifier {
     pub fn is_base(&self) -> bool {
         matches!(self.kind, UnitKind::Base)
     }
 
-    pub fn corresponding_base_unit(&self) -> Unit {
+    pub fn base_unit_and_factor(&self) -> BaseUnitAndFactor {
         match &self.kind {
-            UnitKind::Base => Unit::new_base(&self.name, &self.canonical_name),
-            UnitKind::Derived(_, base_unit) => base_unit.clone(),
-        }
-    }
+            UnitKind::Base => BaseUnitAndFactor(
+                Unit::new_base(&self.name, &self.canonical_name),
+                Number::from_f64(1.0),
+            ),
+            UnitKind::Derived(factor, defining_unit) => {
+                let BaseUnitAndFactor(base_unit, defining_unit_factor) = defining_unit
+                    .iter()
+                    .map(
+                        |UnitFactor {
+                             unit_id,
+                             prefix,
+                             exponent,
+                         }| {
+                            let BaseUnitAndFactor(base_unit, base_unit_factor) =
+                                unit_id.base_unit_and_factor();
 
-    fn conversion_factor(&self) -> Number {
-        match &self.kind {
-            UnitKind::Base => Number::from_f64(1.0),
-            UnitKind::Derived(factor, _) => *factor,
+                            BaseUnitAndFactor(
+                                base_unit.power(*exponent),
+                                (prefix.factor() * base_unit_factor)
+                                    .pow(&Number::from_f64(exponent.to_f64().unwrap())),
+                            )
+                        },
+                    )
+                    .product();
+
+                BaseUnitAndFactor(base_unit, *factor * defining_unit_factor)
+            }
         }
     }
 
@@ -52,7 +81,8 @@ impl UnitIdentifier {
         // dimension, we sort by the name of the corresponding base unit(s).
         match &self.kind {
             UnitKind::Base => vec![(self.name.clone(), Exponent::from_integer(1))],
-            UnitKind::Derived(_, base_unit) => {
+            UnitKind::Derived(_, defining_unit) => {
+                let base_unit = defining_unit.to_base_unit_representation().0;
                 let mut key: Vec<_> = base_unit
                     .canonicalized()
                     .iter()
@@ -185,8 +215,6 @@ impl Unit {
         factor: ConversionFactor,
         base_unit: Unit,
     ) -> Self {
-        debug_assert!(base_unit.iter().all(|f| f.unit_id.is_base()));
-
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
@@ -207,6 +235,8 @@ impl Unit {
     }
 
     pub fn to_base_unit_representation(&self) -> (Self, ConversionFactor) {
+        // TODO: reduce wrapping/unwrapping and duplication.
+
         let base_unit_representation = self
             .iter()
             .map(
@@ -214,7 +244,7 @@ impl Unit {
                      prefix: _,
                      unit_id: base_unit,
                      exponent,
-                 }| { base_unit.corresponding_base_unit().power(*exponent) },
+                 }| { base_unit.base_unit_and_factor().0.power(*exponent) },
             )
             .product::<Self>()
             .canonicalized();
@@ -227,10 +257,10 @@ impl Unit {
                      unit_id: base_unit,
                      exponent,
                  }| {
-                    (prefix.factor() * base_unit.conversion_factor())
-                        .pow(&Number::from_f64(exponent.to_f64().unwrap()))
+                    (prefix.factor() * base_unit.base_unit_and_factor().1)
+                        .pow(&Number::from_f64(exponent.to_f64().unwrap())) // TODO do we want to use exponent.to_f64?
                 },
-            ) // TODO: reduce wrapping/unwrapping; do we want to use exponent.to_f64?
+            )
             .product();
 
         (base_unit_representation, factor)
@@ -311,14 +341,19 @@ impl Unit {
         Self::new_derived(
             "newton",
             "N",
-            Number::from_f64(1000.0),
-            Unit::gram() * Unit::meter() / Unit::second().powi(2),
+            Number::from_f64(1.0),
+            Unit::kilogram() * Unit::meter() / Unit::second().powi(2),
         )
     }
 
     #[cfg(test)]
+    pub fn minute() -> Self {
+        Self::new_derived("minute", "min", Number::from_f64(60.0), Self::second())
+    }
+
+    #[cfg(test)]
     pub fn hour() -> Self {
-        Self::new_derived("hour", "h", Number::from_f64(3600.0), Self::second())
+        Self::new_derived("hour", "h", Number::from_f64(60.0), Self::minute())
     }
 
     #[cfg(test)]
@@ -326,14 +361,29 @@ impl Unit {
         Self::new_derived(
             "kilometer_per_hour",
             "kph",
-            Number::from_f64(1.0 / 3.6),
-            Self::new_base("meter", "m") / Self::second(),
+            Number::from_f64(1.0),
+            Self::kilometer() / Self::hour(),
         )
     }
 
     #[cfg(test)]
+    pub fn inch() -> Self {
+        Self::new_derived("inch", "in", Number::from_f64(0.0254), Self::meter())
+    }
+
+    #[cfg(test)]
+    pub fn foot() -> Self {
+        Self::new_derived("foot", "ft", Number::from_f64(12.0), Self::inch())
+    }
+
+    #[cfg(test)]
+    pub fn yard() -> Self {
+        Self::new_derived("yard", "yd", Number::from_f64(3.0), Self::foot())
+    }
+
+    #[cfg(test)]
     pub fn mile() -> Self {
-        Self::new_derived("mile", "mi", Number::from_f64(1609.344), Self::meter())
+        Self::new_derived("mile", "mi", Number::from_f64(1760.0), Self::yard())
     }
 
     #[cfg(test)]
@@ -447,7 +497,23 @@ mod tests {
     }
 
     #[test]
-    fn to_base_unit_representation() {
+    fn to_base_unit_representation_basic() {
+        let hour = Unit::hour();
+        let (base_unit_representation, conversion_factor) = hour.to_base_unit_representation();
+        assert_eq!(base_unit_representation, Unit::second());
+        assert_relative_eq!(conversion_factor.to_f64(), 3600.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn to_base_unit_representation_percent() {
+        let percent = Unit::percent();
+        let (base_unit_representation, conversion_factor) = percent.to_base_unit_representation();
+        assert_eq!(base_unit_representation, Unit::scalar());
+        assert_eq!(conversion_factor.to_f64(), 0.01);
+    }
+
+    #[test]
+    fn to_base_unit_representation_combined() {
         let mile_per_hour = Unit::mile() / Unit::hour();
         let (base_unit_representation, conversion_factor) =
             mile_per_hour.to_base_unit_representation();

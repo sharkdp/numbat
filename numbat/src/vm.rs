@@ -469,8 +469,7 @@ impl Vm {
                     let unit_name = &self.global_identifiers[identifier_idx as usize];
                     let defining_unit = conversion_value.unit();
 
-                    let (base_unit_representation, factor) =
-                        defining_unit.to_base_unit_representation();
+                    let (base_unit_representation, _) = defining_unit.to_base_unit_representation();
 
                     self.unit_registry
                         .add_derived_unit(&unit_name.0, &base_unit_representation)
@@ -479,8 +478,8 @@ impl Vm {
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
                         &unit_name.0,
                         unit_name.1.as_ref().unwrap(),
-                        *conversion_value.unsafe_value() * factor,
-                        base_unit_representation,
+                        *conversion_value.unsafe_value(),
+                        defining_unit.clone(),
                     ));
                 }
                 Op::SetVariable => {
