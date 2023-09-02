@@ -266,6 +266,12 @@ fn test_misc_examples() {
 }
 
 #[test]
+fn test_bohr_radius_regression() {
+    // Make sure that the unit is 'm', and not 'F·J²/(C²·kg·m·Hz²)', like we had before
+    expect_output("bohr_radius", "5.29177e-11 m");
+}
+
+#[test]
 fn test_full_simplify() {
     expect_output("5 cm/m", "0.05");
     expect_output("hour/second", "3600");

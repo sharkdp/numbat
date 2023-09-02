@@ -74,14 +74,3 @@ fn without_prelude() {
         .success()
         .stdout(predicates::str::contains("5.2"));
 }
-
-#[test]
-fn regression_test_bohr_radius() {
-    // Make sure that the unit is 'm', and not 'F·J²/(C²·kg·m·Hz²)', like we had before
-    numbat()
-        .arg("--expression")
-        .arg("bohr_radius")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("5.29177e-11 m"));
-}
