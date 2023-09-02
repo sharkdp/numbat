@@ -403,6 +403,50 @@ impl Display for Unit {
     }
 }
 
+/// This function attempts to solves the equation a = b^alpha, where alpha
+/// is a rational exponent. If there is a solution, alpha is returned. If
+/// not, None is returned.
+///
+/// Examples:
+///     - is_multiple_of(m, m²)       = Some(2)
+///     - is_multiple_of(m³, m)       = Some(1/3)
+///     - is_multiple_of(m³, m²)      = Some(2/3)
+///     - is_multiple_of(m·s, m²·s²)  = Some(2)
+///     - is_multiple_of(m, s)        = None
+///     - is_multiple_of(m, m·s)      = None
+///     - is_multiple_of(m·s², m²·s²) = None
+///
+pub fn is_multiple_of(a: &Unit, b: &Unit) -> Option<Exponent> {
+    if a.is_scalar() {
+        if b.is_scalar() {
+            return Some(Exponent::from_integer(1));
+        } else {
+            return None;
+        }
+    }
+
+    let a_first = a
+        .iter()
+        .next()
+        .expect("At least one factor in non-scalar unit");
+
+    if let Some(b_corresponding_factor) = b
+        .iter()
+        .find(|fb| fb.prefix == a_first.prefix && fb.unit_id == a_first.unit_id)
+    {
+        let alpha = a_first.exponent / b_corresponding_factor.exponent;
+
+        // Make sure that this is also correct for all other factors:
+        if a == &b.clone().power(alpha) {
+            Some(alpha)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use approx::assert_relative_eq;
@@ -603,5 +647,83 @@ mod tests {
             Unit::byte().with_prefix(Prefix::gibi()).powi(2).to_string(),
             "GiB²"
         );
+    }
+
+    #[test]
+    fn is_multiple_of_basic() {
+        assert_eq!(
+            is_multiple_of(&Unit::scalar(), &Unit::scalar()),
+            Some(Exponent::from_integer(1))
+        );
+
+        assert_eq!(is_multiple_of(&Unit::scalar(), &Unit::meter()), None);
+        assert_eq!(is_multiple_of(&Unit::meter(), &Unit::scalar()), None);
+        assert_eq!(is_multiple_of(&Unit::scalar(), &Unit::radian()), None);
+        assert_eq!(is_multiple_of(&Unit::radian(), &Unit::scalar()), None);
+
+        assert_eq!(
+            is_multiple_of(&Unit::meter(), &Unit::meter()),
+            Some(Exponent::new(1, 1))
+        );
+        assert_eq!(
+            is_multiple_of(&Unit::meter(), &Unit::meter().powi(3)),
+            Some(Exponent::new(1, 3))
+        );
+        assert_eq!(
+            is_multiple_of(&Unit::meter().powi(2), &Unit::meter()),
+            Some(Exponent::new(2, 1))
+        );
+        assert_eq!(
+            is_multiple_of(&Unit::meter().powi(2), &Unit::meter().powi(3)),
+            Some(Exponent::new(2, 3))
+        );
+
+        assert_eq!(
+            is_multiple_of(&(Unit::meter() * Unit::second()), &Unit::meter()),
+            None
+        );
+        assert_eq!(
+            is_multiple_of(&Unit::meter(), &(Unit::meter() * Unit::second())),
+            None
+        );
+
+        assert_eq!(
+            is_multiple_of(
+                &(Unit::meter() * Unit::second()),
+                &(Unit::meter() * Unit::second())
+            ),
+            Some(Exponent::new(1, 1))
+        );
+        assert_eq!(
+            is_multiple_of(
+                &(Unit::meter() * Unit::second()),
+                &(Unit::meter() * Unit::second()).powi(2)
+            ),
+            Some(Exponent::new(1, 2))
+        );
+        assert_eq!(
+            is_multiple_of(
+                &(Unit::meter() * Unit::second()).powi(3),
+                &(Unit::meter() * Unit::second()).powi(2)
+            ),
+            Some(Exponent::new(3, 2))
+        );
+        assert_eq!(
+            is_multiple_of(
+                &(Unit::meter() * Unit::second()),
+                &(Unit::meter().powi(2) * Unit::second().powi(4))
+            ),
+            None
+        );
+        assert_eq!(
+            is_multiple_of(
+                &(Unit::meter() * Unit::second().powi(2)),
+                &(Unit::meter().powi(2) * Unit::second().powi(4))
+            ),
+            Some(Exponent::new(1, 2))
+        );
+
+        assert_eq!(is_multiple_of(&Unit::meter(), &Unit::kilometer()), None);
+        assert_eq!(is_multiple_of(&Unit::kilometer(), &Unit::meter()), None);
     }
 }
