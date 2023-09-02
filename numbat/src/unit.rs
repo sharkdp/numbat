@@ -377,6 +377,16 @@ impl Unit {
     }
 
     #[cfg(test)]
+    pub fn gallon() -> Self {
+        Self::new_derived(
+            "gallon",
+            "gal",
+            Number::from_f64(231.0),
+            Self::inch().powi(3),
+        )
+    }
+
+    #[cfg(test)]
     pub fn foot() -> Self {
         Self::new_derived("foot", "ft", Number::from_f64(12.0), Self::inch())
     }
