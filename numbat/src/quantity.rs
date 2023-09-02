@@ -1,7 +1,7 @@
 use crate::arithmetic::{Power, Rational};
 use crate::number::Number;
 use crate::pretty_print::PrettyPrint;
-use crate::unit::{Unit, UnitFactor};
+use crate::unit::{is_multiple_of, Unit, UnitFactor};
 
 use itertools::Itertools;
 use num_rational::Ratio;
@@ -126,10 +126,29 @@ impl Quantity {
     }
 
     pub fn full_simplify(&self) -> Self {
+        // Heuristic 1
         if let Ok(scalar_result) = self.convert_to(&Unit::scalar()) {
             return scalar_result;
         }
 
+        // Heuristic 2
+        let unit = self.unit.canonicalized();
+        if unit.iter().count() > 1 {
+            for factor in unit.iter() {
+                let factor_unit = Unit::from_factor(factor.clone());
+
+                if let Some(alpha) = is_multiple_of(&unit, &factor_unit) {
+                    if alpha.is_integer() {
+                        let simplified_unit = factor_unit.power(alpha);
+                        if let Ok(q) = self.convert_to(&simplified_unit) {
+                            return q;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Heuristic 3
         let removed_exponent = |u: &UnitFactor| {
             let base_unit = u.unit_id.base_unit_and_factor().0;
             if let Some(first_factor) = base_unit.into_iter().next() {
@@ -452,17 +471,22 @@ mod tests {
         }
         {
             let q = Quantity::new_f64(5.0, Unit::centimeter() * Unit::meter());
-            let expected = Quantity::new_f64(0.05, Unit::meter().powi(2));
+            let expected = Quantity::new_f64(500.0, Unit::centimeter().powi(2));
             assert_eq!(q.full_simplify(), expected);
         }
         {
             let q = Quantity::new_f64(5.0, Unit::meter() * Unit::centimeter());
-            let expected = Quantity::new_f64(0.05, Unit::meter().powi(2));
+            let expected = Quantity::new_f64(500.0, Unit::centimeter().powi(2));
             assert_eq!(q.full_simplify(), expected);
         }
         {
             let q = Quantity::new_f64(1.0, Unit::hertz() / Unit::second());
             let expected = Quantity::new_f64(1.0, Unit::second().powi(-2));
+            assert_eq!(q.full_simplify(), expected);
+        }
+        {
+            let q = Quantity::new_f64(1.0, Unit::gallon() / Unit::inch());
+            let expected = Quantity::new_f64(231.0, Unit::inch().powi(2));
             assert_eq!(q.full_simplify(), expected);
         }
     }
