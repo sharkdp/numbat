@@ -12,6 +12,6 @@ let total_daily_dose = dosage * body_weight -> mg / day
 print(total_daily_dose)
 assert_eq(total_daily_dose, 4500 mg/day)
 
-let dose = total_daily_dose / frequency -> mg / taking
+let dose = total_daily_dose / frequency
 print(dose)
 assert_eq(dose, 1500 mg/taking)
