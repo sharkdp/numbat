@@ -82,5 +82,5 @@ let planck_temperature: Temperature = sqrt(ℏ c^5 / (G k_B^2)) -> K
 let planck_energy: Energy = sqrt(ℏ c^5 / G) -> J
 
 # Bohr radius
-let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass) -> m  # TODO: remove this conversion once we have better simplification
+let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
 let a0 = bohr_radius
