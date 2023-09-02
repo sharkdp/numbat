@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::Div};
 
 use itertools::Itertools;
 use num_traits::{ToPrimitive, Zero};
@@ -308,7 +308,12 @@ impl Unit {
 
     #[cfg(test)]
     pub fn radian() -> Self {
-        Self::new_base("radian", "rad")
+        Self::new_derived(
+            "radian",
+            "rad",
+            Number::from_f64(1.0),
+            Self::meter() / Self::meter(),
+        )
     }
 
     #[cfg(test)]
@@ -403,41 +408,49 @@ impl Display for Unit {
     }
 }
 
-/// This function attempts to solves the equation a = b^alpha, where alpha
-/// is a rational exponent. If there is a solution, alpha is returned. If
-/// not, None is returned.
+/// This function attempts to solves the equation a = C · b^alpha, where
+/// C is a constant and alpha is a rational exponent. If there is a solution,
+/// `Some(alpha)` is returned. If not, `None` is returned.
 ///
 /// Examples:
-///     - is_multiple_of(m, m²)       = Some(2)
-///     - is_multiple_of(m³, m)       = Some(1/3)
-///     - is_multiple_of(m³, m²)      = Some(2/3)
-///     - is_multiple_of(m·s, m²·s²)  = Some(2)
-///     - is_multiple_of(m, s)        = None
-///     - is_multiple_of(m, m·s)      = None
-///     - is_multiple_of(m·s², m²·s²) = None
+/// - is_multiple_of(m², m)       = Some(2)
+/// - is_multiple_of(m, m³)       = Some(1/3)
+/// - is_multiple_of(m³, m²)      = Some(3/2)
+/// - is_multiple_of(m²·s², m·s)  = Some(2)
+///
+/// - is_multiple_of(m, km)       = Some(1)
+/// - is_multiple_of(m, inch)     = Some(1)
+/// - is_multiple_of(m², inch)    = Some(2)
+///
+/// - is_multiple_of(m, s)        = None
+/// - is_multiple_of(m, m·s)      = None
+/// - is_multiple_of(m·s², m²·s²) = None
 ///
 pub fn is_multiple_of(a: &Unit, b: &Unit) -> Option<Exponent> {
-    if a.is_scalar() {
-        if b.is_scalar() {
-            return Some(Exponent::from_integer(1));
-        } else {
-            return None;
-        }
+    let a_base = a.to_base_unit_representation().0;
+    let b_base = b.to_base_unit_representation().0;
+
+    if (a_base.clone().div(b_base.clone()))
+        .canonicalized()
+        .is_scalar()
+    {
+        return Some(Exponent::from_integer(1));
     }
 
-    let a_first = a
+    if a_base.is_scalar() {
+        return None;
+    }
+
+    let a_first = a_base
         .iter()
         .next()
         .expect("At least one factor in non-scalar unit");
 
-    if let Some(b_corresponding_factor) = b
-        .iter()
-        .find(|fb| fb.prefix == a_first.prefix && fb.unit_id == a_first.unit_id)
-    {
+    if let Some(b_corresponding_factor) = b_base.iter().find(|fb| fb.unit_id == a_first.unit_id) {
         let alpha = a_first.exponent / b_corresponding_factor.exponent;
 
         // Make sure that this is also correct for all other factors:
-        if a == &b.clone().power(alpha) {
+        if a_base.div(b_base.power(alpha)).is_scalar() {
             Some(alpha)
         } else {
             None
@@ -658,8 +671,6 @@ mod tests {
 
         assert_eq!(is_multiple_of(&Unit::scalar(), &Unit::meter()), None);
         assert_eq!(is_multiple_of(&Unit::meter(), &Unit::scalar()), None);
-        assert_eq!(is_multiple_of(&Unit::scalar(), &Unit::radian()), None);
-        assert_eq!(is_multiple_of(&Unit::radian(), &Unit::scalar()), None);
 
         assert_eq!(
             is_multiple_of(&Unit::meter(), &Unit::meter()),
@@ -722,8 +733,35 @@ mod tests {
             ),
             Some(Exponent::new(1, 2))
         );
+    }
 
-        assert_eq!(is_multiple_of(&Unit::meter(), &Unit::kilometer()), None);
-        assert_eq!(is_multiple_of(&Unit::kilometer(), &Unit::meter()), None);
+    #[test]
+    fn is_multiple_of_with_factor() {
+        assert_eq!(
+            is_multiple_of(&Unit::scalar(), &Unit::radian()),
+            Some(Exponent::new(1, 1))
+        );
+        assert_eq!(
+            is_multiple_of(&Unit::radian(), &Unit::scalar()),
+            Some(Exponent::new(1, 1))
+        );
+
+        assert_eq!(
+            is_multiple_of(&Unit::meter(), &Unit::inch()),
+            Some(Exponent::new(1, 1))
+        );
+        assert_eq!(
+            is_multiple_of(&Unit::meter(), &Unit::inch().powi(2)),
+            Some(Exponent::new(1, 2))
+        );
+
+        assert_eq!(
+            is_multiple_of(&Unit::meter(), &Unit::kilometer()),
+            Some(Exponent::new(1, 1))
+        );
+        assert_eq!(
+            is_multiple_of(&Unit::kilometer(), &Unit::meter()),
+            Some(Exponent::new(1, 1))
+        );
     }
 }
