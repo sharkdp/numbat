@@ -1,4 +1,4 @@
-use crate::arithmetic::{Power, Rational};
+use crate::arithmetic::{Exponent, Power, Rational};
 use crate::number::Number;
 use crate::pretty_print::PrettyPrint;
 use crate::unit::{is_multiple_of, Unit, UnitFactor};
@@ -135,7 +135,9 @@ impl Quantity {
         let unit = self.unit.canonicalized();
         if unit.iter().count() > 1 {
             for factor in unit.iter() {
-                let factor_unit = Unit::from_factor(factor.clone());
+                let mut factor = factor.clone();
+                factor.exponent = Exponent::from_integer(1);
+                let factor_unit = Unit::from_factor(factor);
 
                 if let Some(alpha) = is_multiple_of(&unit, &factor_unit) {
                     if alpha.is_integer() {
@@ -487,6 +489,11 @@ mod tests {
         {
             let q = Quantity::new_f64(1.0, Unit::gallon() / Unit::inch());
             let expected = Quantity::new_f64(231.0, Unit::inch().powi(2));
+            assert_eq!(q.full_simplify(), expected);
+        }
+        {
+            let q = Quantity::new_f64(1.0, Unit::gallon() / Unit::inch().powi(2));
+            let expected = Quantity::new_f64(231.0, Unit::inch());
             assert_eq!(q.full_simplify(), expected);
         }
     }
