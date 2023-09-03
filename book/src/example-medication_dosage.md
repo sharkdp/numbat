@@ -16,6 +16,6 @@ let frequency = 3 takings / day
 let total_daily_dose = dosage * body_weight -> mg / day
 print(total_daily_dose)
 
-let dose = total_daily_dose / frequency -> mg / taking
+let dose = total_daily_dose / frequency
 print(dose)
 ```

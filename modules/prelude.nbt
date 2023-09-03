@@ -3,6 +3,7 @@ use core::dimensions
 
 use math::constants
 use math::functions
+use math::trigonometry_extra
 
 use units::si
 use units::time

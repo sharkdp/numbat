@@ -36,6 +36,22 @@
 * `fn acosh(x: Scalar) -> Scalar`
 * `fn atanh(x: Scalar) -> Scalar`
 
+### Trigonometry (extra)
+
+* `fn cot(x: Scalar) -> Scalar`
+* `fn acot(x: Scalar) -> Scalar`
+* `fn coth(x: Scalar) -> Scalar`
+* `fn acoth(x: Scalar) -> Scalar`
+* `fn secant(x: Scalar) -> Scalar`
+* `fn arcsecant(x: Scalar) -> Scalar`
+* `fn cosecant(x: Scalar) -> Scalar`
+* `fn csc(x: Scalar) -> Scalar`
+* `fn acsc(x: Scalar) -> Scalar`
+* `fn sech(x: Scalar) -> Scalar`
+* `fn asech(x: Scalar) -> Scalar`
+* `fn csch(x: Scalar) -> Scalar`
+* `fn acsch(x: Scalar) -> Scalar`
+
 ### Statistics
 
 * `fn mean<D>(xs: D…) -> D`
