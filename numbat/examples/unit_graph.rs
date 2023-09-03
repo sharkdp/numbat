@@ -15,10 +15,7 @@ fn main() {
     importer.add_path("modules");
     let mut ctx = Context::new(importer);
     let result = ctx
-        .interpret(
-            "use prelude\nuse units::non_euro_currencies",
-            CodeSource::Internal,
-        )
+        .interpret("use prelude\nuse units::currencies", CodeSource::Internal)
         .unwrap();
     assert!(result.1.is_success());
 

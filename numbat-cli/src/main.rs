@@ -147,19 +147,21 @@ impl Cli {
             }
         }
 
-        let ctx = self.context.clone();
-        thread::spawn(move || {
-            numbat::Context::fetch_exchange_rates();
+        if load_prelude {
+            let ctx = self.context.clone();
+            thread::spawn(move || {
+                numbat::Context::fetch_exchange_rates();
 
-            // After pre-fetching the exchange rates, we can load the 'non_euro_currencies'
-            // module without blocking the context for long. This allows us to have fast
-            // startup times of the CLI application, but still have currency units available
-            // after a short delay (the limiting factor is the HTTP request).
-            ctx.lock()
-                .unwrap()
-                .interpret("use units::non_euro_currencies", CodeSource::Internal)
-                .ok();
-        });
+                // After pre-fetching the exchange rates, we can load the 'currencies' module
+                // without blocking the context for long. This allows us to have fast startup
+                // times of the CLI application, but still have currency units available after
+                // a short delay (the limiting factor is the HTTP request).
+                ctx.lock()
+                    .unwrap()
+                    .interpret("use units::currencies", CodeSource::Internal)
+                    .ok();
+            });
+        }
 
         let pretty_print_mode =
             if self.args.file.is_none() && self.args.pretty_print == PrettyPrintMode::Auto {
