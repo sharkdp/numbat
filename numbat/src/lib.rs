@@ -6,6 +6,7 @@ mod decorator;
 pub mod diagnostic;
 mod dimension;
 mod ffi;
+mod gamma;
 mod interpreter;
 pub mod markup;
 mod math;

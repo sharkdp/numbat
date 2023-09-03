@@ -29,6 +29,7 @@ fn ln(x: Scalar) -> Scalar
 fn log(x: Scalar) -> Scalar = ln(x)
 fn log10(x: Scalar) -> Scalar
 fn log2(x: Scalar) -> Scalar
+fn gamma(x: Scalar) -> Scalar
 
 fn sqrt<D>(x: D^2) -> D = x^(1/2)
 fn sqr<D>(x: D) -> D^2 = x^2

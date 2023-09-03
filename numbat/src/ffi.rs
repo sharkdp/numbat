@@ -235,6 +235,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 callable: Callable::Function(Box::new(log2)),
             },
         );
+        m.insert(
+            "gamma".to_string(),
+            ForeignFunction {
+                name: "gamma".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(gamma)),
+            },
+        );
 
         m.insert(
             "mean".to_string(),
@@ -488,6 +496,13 @@ fn log2(args: &[Quantity]) -> Quantity {
 
     let input = args[0].as_scalar().unwrap().to_f64();
     Quantity::from_scalar(input.log2())
+}
+
+fn gamma(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    let input = args[0].as_scalar().unwrap().to_f64();
+    Quantity::from_scalar(crate::gamma::gamma(input))
 }
 
 fn mean(args: &[Quantity]) -> Quantity {

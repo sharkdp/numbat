@@ -587,6 +587,7 @@ dependencies = [
  "glob",
  "heck",
  "itertools",
+ "libc",
  "num-integer",
  "num-rational",
  "num-traits",
