@@ -1,3 +1,5 @@
+use math::functions
+
 fn cot(x: Scalar) -> Scalar = 1 / tan(x)
 fn acot(x: Scalar) -> Scalar = atan(1 / x)
 
