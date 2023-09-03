@@ -149,6 +149,9 @@ impl Context {
             .prefix_transformer
             .transform(statements)
             .map_err(NumbatError::NameResolutionError)?;
+
+        let typechecker_old = self.typechecker.clone();
+
         let result = self
             .typechecker
             .check_statements(transformed_statements.clone()) // TODO(minor): get rid of clone?
@@ -165,15 +168,29 @@ impl Context {
             //         actual dimension: Time
             //     >>> let x: Length = 1m      # <-- here we want to use the name 'x' again
             //
-            self.prefix_transformer = prefix_transformer_old;
+            self.prefix_transformer = prefix_transformer_old.clone();
         }
 
         let typed_statements = result?;
 
-        let result = self
-            .interpreter
-            .interpret_statements(&typed_statements)
-            .map_err(NumbatError::RuntimeError)?;
+        let result = self.interpreter.interpret_statements(&typed_statements);
+
+        if result.is_err() {
+            // Similar to above: we need to reset the state of the typechecker and the prefix transformer
+            // here for REPL use cases like:
+            //
+            //    >>> let q = 1 / 0
+            //    error: runtime error
+            //     = Division by zero
+            //
+            //    -> 'q' should not be defined, so 'q' properly leads to a "unknown identifier" error
+            //       and another 'let q = …' works as intended.
+            //
+            self.prefix_transformer = prefix_transformer_old;
+            self.typechecker = typechecker_old;
+        }
+
+        let result = result.map_err(NumbatError::RuntimeError)?;
 
         Ok((transformed_statements, result))
     }
