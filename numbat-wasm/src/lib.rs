@@ -1,5 +1,6 @@
 mod utils;
 
+use numbat::resolver::{CodeSource, NullImporter};
 use numbat::{Context, InterpreterResult};
 
 use wasm_bindgen::prelude::*;
@@ -14,8 +15,8 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn interpret(code: &str) -> String {
     utils::set_panic_hook();
 
-    let mut numbat = Context::new(true);
-    match numbat.interpret(&code) {
+    let mut numbat = Context::new(NullImporter {});
+    match numbat.interpret(&code, CodeSource::Text) {
         Ok((_, result)) => match result {
             InterpreterResult::Quantity(q) => format!("{}", q),
             InterpreterResult::Continue => "Nothing to show".into(),
