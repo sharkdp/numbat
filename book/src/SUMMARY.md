@@ -24,6 +24,7 @@
   - [Unit notation]()
   - [Operators and their precedence](./operators.md)
   - [Unit conversions](./unit-conversions.md)
+  - [Printing, testing, debugging](./procedures.md)
   - [Variable definitions]()
   - [Function definitions]()
 - [Advanced](./advanced.md)
