@@ -1,4 +1,4 @@
-# Conversion operator
+# Unit conversions
 
 The conversion operator `->` attempts to convert the physical quantity on its left hand side to
 the *unit of the expression* on its right hand side. This means that you can write an arbitrary

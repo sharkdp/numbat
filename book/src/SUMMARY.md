@@ -23,7 +23,7 @@
   - [Number notation](./number-notation.md)
   - [Unit notation]()
   - [Operators and their precedence](./operators.md)
-  - [The conversion operator](./conversion-operator.md)
+  - [Unit conversions](./unit-conversions.md)
   - [Variable definitions]()
   - [Function definitions]()
 - [Advanced](./advanced.md)
