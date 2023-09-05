@@ -191,7 +191,7 @@ fn test_incompatible_dimension_errors() {
     expect_exact_failure(
         "m + 1 / m",
         " left hand side: Length\n\
-         right hand side: Length⁻¹\n\n\
+         right hand side: Length⁻¹    [= Wavenumber]\n\n\
          Suggested fix: multiply right hand side by Length²",
     );
     expect_exact_failure(

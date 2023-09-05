@@ -1,38 +1,39 @@
 ### Physical dimensions
 
-dimension Angle = 1
+dimension Angle = 1  # SI: plane angle
 dimension SolidAngle = Angle^2
 
 dimension Length
 dimension Area = Length^2
 dimension Volume = Length^3
+dimension Wavenumber = 1 / Length
 
 dimension Time
 dimension Frequency = 1 / Time
-dimension Speed = Length / Time
+dimension Speed = Length / Time  # also: velocity
 dimension Acceleration = Length / Time^2
 dimension Jerk = Length / Time^3
 
 dimension Mass
 dimension Momentum = Mass × Speed
 dimension Force = Mass × Acceleration = Momentum / Time
-dimension Energy = Momentum^2 / Mass = Mass × Speed^2 = Force × Length
-dimension Power = Energy / Time = Force × Speed
-dimension Pressure = Force / Area = Energy / Volume
+dimension Energy = Momentum^2 / Mass = Mass × Speed^2 = Force × Length  # also: work, amount of heat
+dimension Power = Energy / Time = Force × Speed  # also: radiant flux
+dimension Pressure = Force / Area = Energy / Volume  # also: stress
 dimension Action = Energy × Time
 dimension MassDensity = Mass / Length^3
 dimension MomentOfInertia = Mass × Length^2
 dimension AngularMomentum = MomentOfInertia × Angle / Time
-dimension Torque = Length × Force
+dimension Torque = Length × Force  # also: moment of force
 dimension EnergyDensity = Energy / Volume
 
 dimension Current
-dimension Charge = Current × Time
-dimension Voltage = Energy / Charge = Power / Current
+dimension Charge = Current × Time  # SI: electric charge
+dimension Voltage = Energy / Charge = Power / Current  # ISQ: electric tension, SI: electric potential difference
 dimension Capacitance = Charge / Voltage
-dimension Resistance = Voltage / Current
+dimension Resistance = Voltage / Current  # SI: electric resistance
 dimension Resistivity = Resistance × Length
-dimension Conductance = 1 / Resistance
+dimension Conductance = 1 / Resistance  # SI: electric conductance
 dimension Conductivity = Conductance / Length
 dimension MagneticFluxDensity = Force / (Charge × Speed)
 dimension MagneticFlux = MagneticFluxDensity × Area
@@ -63,11 +64,7 @@ dimension Irradiance = Power / Area
 
 dimension Activity = 1 / Time
 dimension AbsorbedDose = Energy / Mass
-dimension EquivalentDose = Energy / Mass
+dimension EquivalentDose = Energy / Mass  # also: dose equivalent
 
 dimension DynamicViscosity = Pressure × Time
 dimension KinematicViscosity = Length^2 / Time
-
-# Other useful names
-
-dimension Rate = 1 / Time
