@@ -4,6 +4,7 @@ use std::sync::OnceLock;
 
 use crate::currency::ExchangeRatesCache;
 use crate::interpreter::RuntimeError;
+use crate::vm::ExecutionContext;
 use crate::{ast::ProcedureKind, quantity::Quantity};
 
 type ControlFlow = std::ops::ControlFlow<RuntimeError>;
@@ -14,7 +15,7 @@ type BoxedFunction = Box<dyn Fn(&[Quantity]) -> Quantity + Send + Sync>;
 
 pub(crate) enum Callable {
     Function(BoxedFunction),
-    Procedure(fn(&[Quantity]) -> ControlFlow),
+    Procedure(fn(&mut ExecutionContext, &[Quantity]) -> ControlFlow),
 }
 
 pub(crate) struct ForeignFunction {
@@ -284,15 +285,15 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
     })
 }
 
-fn print(args: &[Quantity]) -> ControlFlow {
+fn print(ctx: &mut ExecutionContext, args: &[Quantity]) -> ControlFlow {
     assert!(args.len() == 1);
 
-    println!("{}", args[0]);
+    (ctx.print_fn)(&format!("{}\n", args[0]));
 
     ControlFlow::Continue(())
 }
 
-fn assert_eq(args: &[Quantity]) -> ControlFlow {
+fn assert_eq(_: &mut ExecutionContext, args: &[Quantity]) -> ControlFlow {
     assert!(args.len() == 2 || args.len() == 3);
 
     if args.len() == 2 {

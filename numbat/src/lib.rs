@@ -48,6 +48,7 @@ use ast::Statement;
 pub use diagnostic::Diagnostic;
 pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
+pub use interpreter::InterpreterSettings;
 pub use interpreter::RuntimeError;
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
@@ -139,6 +140,15 @@ impl Context {
         code: &str,
         code_source: CodeSource,
     ) -> Result<(Vec<Statement>, InterpreterResult)> {
+        self.interpret_with_settings(&mut InterpreterSettings::default(), code, code_source)
+    }
+
+    pub fn interpret_with_settings(
+        &mut self,
+        settings: &mut InterpreterSettings,
+        code: &str,
+        code_source: CodeSource,
+    ) -> Result<(Vec<Statement>, InterpreterResult)> {
         let statements = self
             .resolver
             .resolve(code, code_source)
@@ -174,7 +184,9 @@ impl Context {
 
         let typed_statements = result?;
 
-        let result = self.interpreter.interpret_statements(&typed_statements);
+        let result = self
+            .interpreter
+            .interpret_statements(settings, &typed_statements);
 
         if result.is_err() {
             // Similar to above: we need to reset the state of the typechecker and the prefix transformer

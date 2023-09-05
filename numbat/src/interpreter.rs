@@ -54,10 +54,30 @@ impl InterpreterResult {
 
 pub type Result<T> = std::result::Result<T, RuntimeError>;
 
+pub type PrintFunction = dyn FnMut(&str) -> () + Send;
+
+pub struct InterpreterSettings {
+    pub print_fn: Box<PrintFunction>,
+}
+
+impl Default for InterpreterSettings {
+    fn default() -> Self {
+        Self {
+            print_fn: Box::new(move |s: &str| {
+                print!("{}", s);
+            }),
+        }
+    }
+}
+
 pub trait Interpreter {
     fn new() -> Self;
 
-    fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult>;
+    fn interpret_statements(
+        &mut self,
+        settings: &mut InterpreterSettings,
+        statements: &[Statement],
+    ) -> Result<InterpreterResult>;
     fn get_unit_registry(&self) -> &UnitRegistry;
 }
 
@@ -105,7 +125,8 @@ mod tests {
         let statements_typechecked = crate::typechecker::TypeChecker::default()
             .check_statements(statements_transformed)
             .expect("No type check errors for inputs in this test suite");
-        BytecodeInterpreter::new().interpret_statements(&statements_typechecked)
+        BytecodeInterpreter::new()
+            .interpret_statements(&mut InterpreterSettings::default(), &statements_typechecked)
     }
 
     fn assert_evaluates_to(input: &str, expected: Quantity) {

@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
 use crate::ast::ProcedureKind;
-use crate::interpreter::{Interpreter, InterpreterResult, Result, RuntimeError};
+use crate::interpreter::{
+    Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
+};
 use crate::prefix::Prefix;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, UnaryOperator};
 use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
-use crate::vm::{Constant, Op, Vm};
+use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
 pub struct BytecodeInterpreter {
@@ -209,12 +211,16 @@ impl BytecodeInterpreter {
         Ok(())
     }
 
-    fn run(&mut self) -> Result<InterpreterResult> {
-        self.vm.disassemble();
+    fn run(&mut self, settings: &mut InterpreterSettings) -> Result<InterpreterResult> {
+        let mut ctx = ExecutionContext {
+            print_fn: &mut settings.print_fn,
+        };
 
-        let result = self.vm.run();
+        self.vm.disassemble(&mut ctx);
 
-        self.vm.debug();
+        let result = self.vm.run(&mut ctx);
+
+        self.vm.debug(&mut ctx);
 
         result
     }
@@ -233,7 +239,11 @@ impl Interpreter for BytecodeInterpreter {
         }
     }
 
-    fn interpret_statements(&mut self, statements: &[Statement]) -> Result<InterpreterResult> {
+    fn interpret_statements(
+        &mut self,
+        settings: &mut InterpreterSettings,
+        statements: &[Statement],
+    ) -> Result<InterpreterResult> {
         if statements.is_empty() {
             return Err(RuntimeError::NoStatements);
         };
@@ -242,7 +252,7 @@ impl Interpreter for BytecodeInterpreter {
             self.compile_statement(statement)?;
         }
 
-        self.run()
+        self.run(settings)
     }
 
     fn get_unit_registry(&self) -> &UnitRegistry {

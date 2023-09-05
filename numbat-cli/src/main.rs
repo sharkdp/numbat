@@ -9,7 +9,7 @@ use highlighter::NumbatHighlighter;
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::{CodeSource, FileSystemImporter, ResolverError};
-use numbat::{markup, NameResolutionError, RuntimeError};
+use numbat::{markup, InterpreterSettings, NameResolutionError, RuntimeError};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -149,6 +149,12 @@ impl Cli {
 
         if load_prelude {
             let ctx = self.context.clone();
+            let mut no_print_settings = InterpreterSettings {
+                print_fn: Box::new(
+                    move |_: &str| { // ignore any print statements when loading this module asynchronously
+                    },
+                ),
+            };
             thread::spawn(move || {
                 numbat::Context::fetch_exchange_rates();
 
@@ -158,7 +164,11 @@ impl Cli {
                 // a short delay (the limiting factor is the HTTP request).
                 ctx.lock()
                     .unwrap()
-                    .interpret("use units::currencies", CodeSource::Internal)
+                    .interpret_with_settings(
+                        &mut no_print_settings,
+                        "use units::currencies",
+                        CodeSource::Internal,
+                    )
                     .ok();
             });
         }
@@ -331,7 +341,20 @@ impl Cli {
         execution_mode: ExecutionMode,
         pretty_print_mode: PrettyPrintMode,
     ) -> ControlFlow {
-        let result = { self.context.lock().unwrap().interpret(input, code_source) };
+        let to_be_printed: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(vec![]));
+        let to_be_printed_c = to_be_printed.clone();
+        let mut settings = InterpreterSettings {
+            print_fn: Box::new(move |s: &str| {
+                to_be_printed_c.lock().unwrap().push(s.to_string());
+            }),
+        };
+
+        let result = {
+            self.context
+                .lock()
+                .unwrap()
+                .interpret_with_settings(&mut settings, input, code_source)
+        };
 
         let pretty_print = match pretty_print_mode {
             PrettyPrintMode::Always => true,
@@ -349,6 +372,22 @@ impl Cli {
                         println!();
                     }
                 } else if execution_mode == ExecutionMode::Interactive {
+                    println!();
+                }
+
+                let to_be_printed = to_be_printed.lock().unwrap();
+                for s in to_be_printed.iter() {
+                    print!(
+                        "{}{}",
+                        if execution_mode == ExecutionMode::Interactive {
+                            "  "
+                        } else {
+                            ""
+                        },
+                        s
+                    );
+                }
+                if !to_be_printed.is_empty() && execution_mode == ExecutionMode::Interactive {
                     println!();
                 }
 
