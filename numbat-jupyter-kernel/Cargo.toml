@@ -1,0 +1,11 @@
+[package]
+name = "numbat-jupyter-kernel"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = "4.4.2"
+clap_derive = "4.2.0"
+jupyter = "0.1.9"
+jupyter-derive = "0.0.2"
+numbat = { version = "1.5.0", path = "../numbat" }

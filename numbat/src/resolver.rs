@@ -44,7 +44,7 @@ pub enum ResolverError {
 type Result<T> = std::result::Result<T, ResolverError>;
 
 pub struct Resolver {
-    importer: Box<dyn ModuleImporter + Send>,
+    importer: Box<dyn ModuleImporter + Send + Sync>,
     pub files: SimpleFiles<String, String>,
     text_code_source_count: usize,
     internal_code_source_count: usize,
@@ -52,7 +52,7 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub(crate) fn new(importer: impl ModuleImporter + Send + 'static) -> Self {
+    pub(crate) fn new(importer: impl ModuleImporter + Send + Sync + 'static) -> Self {
         Self {
             importer: Box::new(importer),
             files: SimpleFiles::new(),
