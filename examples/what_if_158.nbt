@@ -7,21 +7,21 @@
 
 # Bananas contain Potassium-40 with the following properties:
 
-let molar_mass_40K: MolarMass = 40 g / mol
-let halflife_40K: Time = 1.25 billion years
+let halflife: Time = 1.25 billion years
+let molar_mass: MolarMass = 40 g / mol
 
 # 40-K has a natural occcurence of
 
-let occurence_40K = 0.0117 percent
+let occurence_40K = 0.0117%
 
 # We can now compute the radioactivity of natural potassium
 
-let decay_rate_40K: Activity = ln(2) / halflife_40K
+let decay_rate: Activity = ln(2) / halflife
 
-let radioactivity_potassium: Activity / Mass =
-    N_A × occurence_40K × decay_rate_40K / molar_mass_40K -> Bq / g
+let radioactivity: Activity / Mass =
+    N_A × occurence_40K × decay_rate / molar_mass -> Bq / g
 
-print(radioactivity_potassium)
+print(radioactivity)
 
 # Next, we come to bananas
 
@@ -33,7 +33,7 @@ unit banana
 let potassium_per_banana = 451 mg / banana
 
 let radioactivity_banana: Activity / Banana =
-    potassium_per_banana × radioactivity_potassium -> Bq / banana
+    potassium_per_banana × radioactivity -> Bq / banana
 
 print(radioactivity_banana)
 
