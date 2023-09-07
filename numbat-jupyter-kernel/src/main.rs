@@ -55,10 +55,15 @@ pub struct NumbatContext {
 }
 
 impl NumbatContext {
-    fn plot_function(&mut self, fn_name: &str, arg_name: &str, arg_unit_name: &str) -> bool {
-        let num_points = 200;
-        let x_min = 0.0;
-        let x_max = 5.0;
+    fn plot_function(
+        &mut self,
+        fn_name: &str,
+        arg_name: &str,
+        arg_unit_name: &str,
+        x_min: f64,
+        x_max: f64,
+    ) -> bool {
+        let num_points = 400;
 
         let mut data: Vec<(f64, f64)> = vec![];
 
@@ -86,13 +91,28 @@ impl NumbatContext {
 
         root.fill(&WHITE).unwrap();
 
+        let y_min = data
+            .iter()
+            .map(|(_, y)| y)
+            .min_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap();
+        let y_max = data
+            .iter()
+            .map(|(_, y)| y)
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap();
+
+        let y_range = y_max - y_min;
+        let y_min = y_min - 0.1 * y_range;
+        let y_max = y_max + 0.1 * y_range;
+
         let mut chart = ChartBuilder::on(&root)
             .margin(10)
             //.caption(fn_name, ("sans-serif", 40))
             .set_label_area_size(LabelAreaPosition::Left, 60)
             .set_label_area_size(LabelAreaPosition::Right, 60)
             .set_label_area_size(LabelAreaPosition::Bottom, 40)
-            .build_cartesian_2d(x_min..x_max, -5.0..5.0)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)
             .unwrap();
 
         chart
@@ -138,9 +158,17 @@ impl JupyterKernelProtocol for NumbatContext {
             let args = code.code.split(" ").collect::<Vec<_>>();
             let fn_name = args[1];
             let arg_name = args[2];
-            let unit_name = args[3];
+            let x_min = args[3];
+            let x_max = args[4];
+            let unit_name = args[5];
 
-            if self.plot_function(fn_name, arg_name, unit_name) {
+            if self.plot_function(
+                fn_name,
+                arg_name,
+                unit_name,
+                x_min.parse().unwrap(),
+                x_max.parse().unwrap(),
+            ) {
                 use image::io::Reader as ImageReader;
                 let image = ImageReader::open("/tmp/numbat-plot.png")
                     .unwrap()
