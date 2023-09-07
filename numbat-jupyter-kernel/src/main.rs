@@ -53,6 +53,18 @@ pub struct NumbatContext {
     numbat: Context,
 }
 
+impl NumbatContext {
+    async fn plot_function(&mut self, fn_name: &str) {
+        use image::io::Reader as ImageReader;
+        let img = ImageReader::open("/home/ped1st/software/numbat/assets/numbat-800.png")
+            .unwrap()
+            .decode()
+            .unwrap();
+
+        self.sockets.send_executed(img).await;
+    }
+}
+
 #[async_trait]
 impl JupyterKernelProtocol for NumbatContext {
     fn language_info(&self) -> LanguageInfo {
@@ -66,6 +78,13 @@ impl JupyterKernelProtocol for NumbatContext {
     }
 
     async fn running(&mut self, code: ExecutionRequest) -> ExecutionReply {
+        if code.code.starts_with("plot ") {
+            let args = code.code.split(" ").collect::<Vec<_>>();
+            let fn_name = args[1];
+
+            self.plot_function(fn_name).await;
+        }
+
         let result = self.numbat.interpret(&code.code, CodeSource::Text);
 
         match result {

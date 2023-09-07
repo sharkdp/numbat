@@ -199,6 +199,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "base64"
+version = "0.21.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "414dcefbc63d77c526a76b3afcf6fbb9b5e2791c19c3aa2297733208750c6e53"
+
+[[package]]
 name = "bit_field"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1099,10 +1105,9 @@ dependencies = [
 [[package]]
 name = "jupyter"
 version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "913f0c44170a39e3ea46bb7bc20acc7fe940c0e8e4ba835aead2110024f47620"
 dependencies = [
  "async-trait",
+ "base64",
  "bytes",
  "chrono",
  "clap",
@@ -1112,6 +1117,7 @@ dependencies = [
  "generic-array",
  "hex",
  "hmac",
+ "image",
  "serde",
  "serde_json",
  "sha2",
@@ -1120,18 +1126,6 @@ dependencies = [
  "unicode-segmentation",
  "uuid 1.4.1",
  "zeromq",
-]
-
-[[package]]
-name = "jupyter-derive"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68e92b0e2a3a5bc96fe628e6eb21939efb8beeb8528bde50c900cb5131baa21e"
-dependencies = [
- "image",
- "proc-macro2",
- "quote",
- "syn 2.0.31",
 ]
 
 [[package]]
@@ -1364,8 +1358,8 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "clap_derive",
+ "image",
  "jupyter",
- "jupyter-derive",
  "numbat",
 ]
 
