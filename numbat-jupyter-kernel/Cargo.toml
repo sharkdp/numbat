@@ -10,3 +10,4 @@ image = { version = "0.24.7", no-default-features = true, features = ["png"] }
 jupyter = { version = "0.1.9", features = ["image"], path = "/home/ped1st/software/jupyter-protocol/projects/jupyter" }
 #jupyter-derive = "0.0.2"
 numbat = { version = "1.5.0", path = "../numbat" }
+plotters = "0.3.5"

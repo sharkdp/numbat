@@ -12,6 +12,7 @@ use numbat::{
     resolver::CodeSource,
     Context, InterpreterResult,
 };
+use plotters::{prelude::*, style::WHITE};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -54,14 +55,69 @@ pub struct NumbatContext {
 }
 
 impl NumbatContext {
-    async fn plot_function(&mut self, fn_name: &str) {
-        use image::io::Reader as ImageReader;
-        let img = ImageReader::open("/home/ped1st/software/numbat/assets/numbat-800.png")
-            .unwrap()
-            .decode()
+    fn plot_function(&mut self, fn_name: &str, arg_name: &str, arg_unit_name: &str) -> bool {
+        let num_points = 200;
+        let x_min = 0.0;
+        let x_max = 5.0;
+
+        let mut data: Vec<(f64, f64)> = vec![];
+
+        let mut unit = String::new();
+
+        for i in 0..num_points {
+            let x = (i as f64) * (x_max - x_min) / ((num_points - 1) as f64) + x_min;
+
+            // TODO: this is so uncool
+            let numbat_code = format!("{fn_name}({x} {arg_unit_name})");
+            if let Ok(result) = self.numbat.interpret(&numbat_code, CodeSource::Internal) {
+                let InterpreterResult::Quantity(y_q) = result.1 else { return false; };
+
+                if unit.is_empty() {
+                    unit = format!(" [{}]", y_q.unit());
+                }
+
+                data.push((x, y_q.unsafe_value().0));
+            } else {
+                return false;
+            }
+        }
+
+        let root = BitMapBackend::new("/tmp/numbat-plot.png", (800, 600)).into_drawing_area();
+
+        root.fill(&WHITE).unwrap();
+
+        let mut chart = ChartBuilder::on(&root)
+            .margin(10)
+            //.caption(fn_name, ("sans-serif", 40))
+            .set_label_area_size(LabelAreaPosition::Left, 60)
+            .set_label_area_size(LabelAreaPosition::Right, 60)
+            .set_label_area_size(LabelAreaPosition::Bottom, 40)
+            .build_cartesian_2d(x_min..x_max, -5.0..5.0)
             .unwrap();
 
-        self.sockets.send_executed(img).await;
+        chart
+            .configure_mesh()
+            .x_label_style(("sans-serif", 18))
+            .y_label_style(("sans-serif", 18))
+            .x_labels(20)
+            .max_light_lines(4)
+            .y_desc(format!("{}{}", fn_name, unit))
+            .x_desc(format!("{arg_name} [{arg_unit_name}]"))
+            .draw()
+            .unwrap();
+
+        let linestyle = ShapeStyle {
+            color: RGBColor(0x00, 0x77, 0xff).into(),
+            filled: false,
+            stroke_width: 1,
+        };
+
+        chart.draw_series(LineSeries::new(data, linestyle)).unwrap();
+
+        // To avoid the IO failure being ignored silently, we manually call the present function
+        root.present().expect("Unable to write result to file");
+
+        true
     }
 }
 
@@ -81,30 +137,45 @@ impl JupyterKernelProtocol for NumbatContext {
         if code.code.starts_with("plot ") {
             let args = code.code.split(" ").collect::<Vec<_>>();
             let fn_name = args[1];
+            let arg_name = args[2];
+            let unit_name = args[3];
 
-            self.plot_function(fn_name).await;
-        }
+            if self.plot_function(fn_name, arg_name, unit_name) {
+                use image::io::Reader as ImageReader;
+                let image = ImageReader::open("/tmp/numbat-plot.png")
+                    .unwrap()
+                    .decode()
+                    .unwrap();
 
-        let result = self.numbat.interpret(&code.code, CodeSource::Text);
+                self.sockets.send_executed(image).await;
+            } else {
+                self.sockets
+                    .send_executed(format!(
+                        "error while plotting '{fn_name}({arg_name})' with input-unit '{unit_name}'."
+                    ))
+                    .await;
+            }
+        } else {
+            let result = self.numbat.interpret(&code.code, CodeSource::Text);
 
-        match result {
-            Ok((_statements, interpreter_result)) => match interpreter_result {
-                InterpreterResult::Value(v) => {
-                    let v_pretty = v.pretty_print();
-                    let output = HtmlFormatter {}.format(&v_pretty, true);
+            match result {
+                Ok((_statements, interpreter_result)) => match interpreter_result {
+                    InterpreterResult::Value(v) => {
+                        let v_pretty = v.pretty_print();
+                        let output = HtmlFormatter {}.format(&v_pretty, true);
 
-                    self.sockets
-                        .send_executed(jupyter::value_type::HtmlText::new(output))
-                        .await;
+                        self.sockets
+                            .send_executed(jupyter::value_type::HtmlText::new(output))
+                            .await;
+                    }
+                    InterpreterResult::Continue => {}
+                    InterpreterResult::Exit(_) => {}
+                },
+                Err(e) => {
+                    self.sockets.send_executed(format!("{}", e)).await;
                 }
-                InterpreterResult::Continue => {}
-                InterpreterResult::Exit(_) => {}
-            },
-            Err(e) => {
-                self.sockets.send_executed(format!("{}", e)).await;
             }
         }
-
         ExecutionReply::new(true, code.execution_count)
     }
     async fn bind_execution_socket(&self, sender: UnboundedSender<ExecutionResult>) {
