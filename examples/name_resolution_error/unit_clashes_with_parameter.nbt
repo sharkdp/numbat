@@ -1,1 +1,1 @@
-fn foo(t: Time) -> Scalar = t / hour
+fn foo(L: Length) -> Scalar = L / 1 m
