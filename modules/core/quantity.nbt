@@ -1,0 +1,4 @@
+use core::scalar
+
+fn unit_of<T>(x: T) -> T
+fn value_of<T>(x: T) -> Scalar = x / unit_of(x)

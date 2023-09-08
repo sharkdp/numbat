@@ -1,4 +1,5 @@
 use core::scalar
+use core::quantity
 use core::dimensions
 
 use math::constants

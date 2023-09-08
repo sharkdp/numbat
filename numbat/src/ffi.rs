@@ -58,6 +58,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         let mut m = HashMap::new();
 
         m.insert(
+            "unit_of".to_string(),
+            ForeignFunction {
+                name: "unit_of".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(unit_of)),
+            },
+        );
+        m.insert(
             "abs".to_string(),
             ForeignFunction {
                 name: "abs".into(),
@@ -333,6 +341,12 @@ fn assert_eq(_: &mut ExecutionContext, args: &[Quantity]) -> ControlFlow {
             Err(e) => ControlFlow::Break(RuntimeError::QuantityError(e)),
         }
     }
+}
+
+fn unit_of(args: &[Quantity]) -> Quantity {
+    assert!(args.len() == 1);
+
+    Quantity::new_f64(1.0, args[0].unit().clone())
 }
 
 fn abs(args: &[Quantity]) -> Quantity {
