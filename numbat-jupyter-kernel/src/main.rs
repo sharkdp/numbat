@@ -77,11 +77,13 @@ impl NumbatContext {
             if let Ok(result) = self.numbat.interpret(&numbat_code, CodeSource::Internal) {
                 let InterpreterResult::Quantity(y_q) = result.1 else { return false; };
 
-                if unit.is_empty() {
+                let y = y_q.unsafe_value().0;
+
+                if unit.is_empty() && y != 0.0 {
                     unit = format!(" [{}]", y_q.unit());
                 }
 
-                data.push((x, y_q.unsafe_value().0));
+                data.push((x, y));
             } else {
                 return false;
             }
@@ -119,7 +121,7 @@ impl NumbatContext {
             .configure_mesh()
             .x_label_style(("sans-serif", 18))
             .y_label_style(("sans-serif", 18))
-            .x_labels(20)
+            .x_labels(10)
             .max_light_lines(4)
             .y_desc(format!("{}{}", fn_name, unit))
             .x_desc(format!("{arg_name} [{arg_unit_name}]"))
@@ -206,6 +208,11 @@ impl JupyterKernelProtocol for NumbatContext {
         }
         ExecutionReply::new(true, code.execution_count)
     }
+
+    fn running_time(&self, time: f64) -> String {
+        String::new()
+    }
+
     async fn bind_execution_socket(&self, sender: UnboundedSender<ExecutionResult>) {
         self.sockets.bind_execution_socket(sender).await
     }
