@@ -229,6 +229,9 @@ pub enum TypeCheckError {
 
     #[error("Numerical overflow in const-eval expression")]
     OverflowInConstExpr(Span),
+
+    #[error("Expected dimension type, got {1} instead")]
+    ExpectedDimensionType(Span, Type),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -237,14 +240,18 @@ fn to_rational_exponent(exponent_f64: f64) -> Option<Exponent> {
     Rational::from_f64(exponent_f64)
 }
 
-fn expect_dtype(t: Type) -> Result<DType> {
+fn expect_dtype(span: &Span, t: Type) -> Result<DType> {
     match t {
         Type::Dimension(dtype) => Ok(dtype),
+        _ => Err(TypeCheckError::ExpectedDimensionType(span.clone(), t)),
     }
 }
 
 fn dtype(e: &Expression) -> Result<DType> {
-    expect_dtype(e.get_type())
+    match e.get_type() {
+        Type::Dimension(dtype) => Ok(dtype),
+        t => Err(TypeCheckError::ExpectedDimensionType(e.full_span(), t)),
+    }
 }
 
 /// Evaluates a limited set of expressions *at compile time*. This is needed to
@@ -316,6 +323,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::FunctionCall(_, _, _, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
         ),
+        e @ typed_ast::Expression::Boolean(_, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Boolean value"),
+        ),
     }
 }
 
@@ -359,16 +369,15 @@ impl TypeChecker {
                 let type_ = checked_expr.get_type();
 
                 match *op {
-                    ast::UnaryOperator::Factorial => match &type_ {
-                        Type::Dimension(dtype) => {
-                            if dtype != &DType::unity() {
-                                return Err(TypeCheckError::NonScalarFactorialArgument(
-                                    expr.full_span(),
-                                    dtype.clone(),
-                                ));
-                            }
+                    ast::UnaryOperator::Factorial => {
+                        let dtype_ = expect_dtype(&checked_expr.full_span(), type_.clone())?; // TODO: avoid .full_span() call in non-error cases
+                        if dtype_ != DType::unity() {
+                            return Err(TypeCheckError::NonScalarFactorialArgument(
+                                expr.full_span(),
+                                dtype_,
+                            ));
                         }
-                    },
+                    }
                     ast::UnaryOperator::Negate => {}
                 }
 
@@ -518,7 +527,9 @@ impl TypeChecker {
 
                 let mut parameter_types = parameter_types
                     .into_iter()
-                    .map(|(span, t)| expect_dtype(t.clone()).map(|dtype| (span.clone(), dtype)))
+                    .map(|(span, t)| {
+                        expect_dtype(span, t.clone()).map(|dtype| (span.clone(), dtype))
+                    })
                     .collect::<Result<Vec<(Span, DType)>>>()?;
                 if *is_variadic {
                     // For a variadic function, we simply duplicate the parameter type
@@ -632,6 +643,7 @@ impl TypeChecker {
                     return_type,
                 )
             }
+            ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
         })
     }
 

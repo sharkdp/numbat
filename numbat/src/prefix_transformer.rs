@@ -73,6 +73,7 @@ impl Transformer {
                     .map(|arg| self.transform_expression(arg))
                     .collect(),
             ),
+            expr @ Expression::Boolean(_, _) => expr,
         }
     }
 

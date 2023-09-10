@@ -923,6 +923,15 @@ impl<'a> Parser<'a> {
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             let span = self.last().unwrap().span;
             Ok(Expression::Identifier(span, identifier.lexeme.clone()))
+        } else if let Some(inner) = self.match_any(&[TokenKind::True, TokenKind::False]) {
+            Ok(Expression::Boolean(
+                inner.span,
+                if matches!(inner.kind, TokenKind::True) {
+                    true
+                } else {
+                    false
+                },
+            ))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let inner = self.expression()?;
 

@@ -54,6 +54,8 @@ pub enum Expression {
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
     FunctionCall(Span, Span, String, Vec<Expression>),
+
+    Boolean(Span, bool),
 }
 
 impl Expression {
@@ -80,6 +82,7 @@ impl Expression {
                 span
             }
             Expression::FunctionCall(_identifier_span, full_span, _, _) => *full_span,
+            Expression::Boolean(span, _) => *span,
         }
     }
 }
@@ -153,7 +156,8 @@ fn with_parens(expr: &Expression) -> Markup {
         Expression::Scalar(..)
         | Expression::Identifier(..)
         | Expression::UnitIdentifier(..)
-        | Expression::FunctionCall(..) => expr.pretty_print(),
+        | Expression::FunctionCall(..)
+        | Expression::Boolean(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. } | Expression::BinaryOperator { .. } => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
         }
@@ -336,6 +340,13 @@ impl PrettyPrint for Expression {
                     )
                     .sum()
                     + m::operator(")")
+            }
+            Boolean(_, val) => {
+                if *val {
+                    m::keyword("true")
+                } else {
+                    m::keyword("false")
+                }
             }
         }
     }
@@ -717,6 +728,7 @@ impl ReplaceSpans for Expression {
                 name.clone(),
                 args.iter().map(|a| a.replace_spans()).collect(),
             ),
+            Expression::Boolean(_, val) => Expression::Boolean(Span::dummy(), *val),
         }
     }
 }

@@ -9,12 +9,14 @@ pub type DType = BaseRepresentation;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Dimension(DType),
+    Boolean,
 }
 
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Type::Dimension(d) => d.fmt(f),
+            Type::Boolean => write!(f, "bool"),
         }
     }
 }
@@ -33,6 +35,7 @@ pub enum Expression {
         Type,
     ),
     FunctionCall(Span, Span, String, Vec<Expression>, DType),
+    Boolean(Span, bool),
 }
 
 impl Expression {
@@ -50,6 +53,7 @@ impl Expression {
                 span
             }
             Expression::FunctionCall(_identifier_span, full_span, _, _, _) => *full_span,
+            Expression::Boolean(span, _) => *span,
         }
     }
 }
@@ -79,6 +83,7 @@ impl Expression {
             Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
             Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
             Expression::FunctionCall(_, _, _, _, type_) => Type::Dimension(type_.clone()),
+            Expression::Boolean(_, _) => Type::Boolean,
         }
     }
 }

@@ -212,7 +212,8 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
             | TypeCheckError::UnknownForeignFunction(span, _)
             | TypeCheckError::NonRationalExponent(span)
-            | TypeCheckError::OverflowInConstExpr(span) => d.with_labels(vec![span
+            | TypeCheckError::OverflowInConstExpr(span)
+            | TypeCheckError::ExpectedDimensionType(span, _) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
         }
