@@ -4,8 +4,6 @@ use std::{
     fmt,
 };
 
-use crate::dimension::DimensionRegistry;
-use crate::ffi::ArityRange;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::span::Span;
@@ -15,6 +13,8 @@ use crate::{
     ast::ProcedureKind,
 };
 use crate::{ast, decorator, ffi, suggestion};
+use crate::{dimension::DimensionRegistry, typed_ast::DType};
+use crate::{ffi::ArityRange, typed_ast::Expression};
 
 use ast::DimensionExpression;
 use itertools::Itertools;
@@ -183,10 +183,10 @@ pub enum TypeCheckError {
     IncompatibleDimensions(IncompatibleDimensionsError),
 
     #[error("Exponents need to be dimensionless (got {1}).")]
-    NonScalarExponent(Span, BaseRepresentation),
+    NonScalarExponent(Span, DType),
 
     #[error("Argument of factorial needs to be dimensionless (got {1}).")]
-    NonScalarFactorialArgument(Span, BaseRepresentation),
+    NonScalarFactorialArgument(Span, DType),
 
     #[error("Unsupported expression in const-evaluation of exponent: {1}.")]
     UnsupportedConstEvalExpression(Span, &'static str),
@@ -198,7 +198,7 @@ pub enum TypeCheckError {
     RegistryError(RegistryError),
 
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
-    IncompatibleAlternativeDimensionExpression(String, Span, Type, Span, Type),
+    IncompatibleAlternativeDimensionExpression(String, Span, DType, Span, DType),
 
     #[error("Function or procedure '{callable_name}' called with {num_args} arguments(s), but needs {}..{}", arity.start(), arity.end())]
     WrongArity {
@@ -235,6 +235,16 @@ type Result<T> = std::result::Result<T, TypeCheckError>;
 
 fn to_rational_exponent(exponent_f64: f64) -> Option<Exponent> {
     Rational::from_f64(exponent_f64)
+}
+
+fn expect_dtype(t: Type) -> Result<DType> {
+    match t {
+        Type::Dimension(dtype) => Ok(dtype),
+    }
+}
+
+fn dtype(e: &Expression) -> Result<DType> {
+    expect_dtype(e.get_type())
 }
 
 /// Evaluates a limited set of expressions *at compile time*. This is needed to
@@ -313,7 +323,7 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
 pub struct TypeChecker {
     identifiers: HashMap<String, Type>,
     function_signatures:
-        HashMap<String, (Span, Vec<(Span, String)>, Vec<(Span, Type)>, bool, Type)>,
+        HashMap<String, (Span, Vec<(Span, String)>, Vec<(Span, Type)>, bool, DType)>,
     registry: DimensionRegistry,
 }
 
@@ -349,14 +359,16 @@ impl TypeChecker {
                 let type_ = checked_expr.get_type();
 
                 match *op {
-                    ast::UnaryOperator::Factorial => {
-                        if type_ != Type::unity() {
-                            return Err(TypeCheckError::NonScalarFactorialArgument(
-                                expr.full_span(),
-                                type_,
-                            ));
+                    ast::UnaryOperator::Factorial => match &type_ {
+                        Type::Dimension(dtype) => {
+                            if dtype != &DType::unity() {
+                                return Err(TypeCheckError::NonScalarFactorialArgument(
+                                    expr.full_span(),
+                                    dtype.clone(),
+                                ));
+                            }
                         }
-                    }
+                    },
                     ast::UnaryOperator::Negate => {}
                 }
 
@@ -372,8 +384,8 @@ impl TypeChecker {
                 let rhs_checked = self.check_expression(rhs)?;
 
                 let get_type_and_assert_equality = || {
-                    let lhs_type = lhs_checked.get_type();
-                    let rhs_type = rhs_checked.get_type();
+                    let lhs_type = dtype(&lhs_checked)?;
+                    let rhs_type = dtype(&rhs_checked)?;
                     if lhs_type != rhs_type {
                         let full_span = ast::Expression::BinaryOperator {
                             op: *op,
@@ -417,23 +429,19 @@ impl TypeChecker {
                 let type_ = match op {
                     typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
                     typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::Mul => {
-                        lhs_checked.get_type() * rhs_checked.get_type()
-                    }
-                    typed_ast::BinaryOperator::Div => {
-                        lhs_checked.get_type() / rhs_checked.get_type()
-                    }
+                    typed_ast::BinaryOperator::Mul => dtype(&lhs_checked)? * dtype(&rhs_checked)?,
+                    typed_ast::BinaryOperator::Div => dtype(&lhs_checked)? / dtype(&rhs_checked)?,
                     typed_ast::BinaryOperator::Power => {
-                        let exponent_type = rhs_checked.get_type();
-                        if exponent_type != Type::unity() {
+                        let exponent_type = dtype(&rhs_checked)?;
+                        if exponent_type != DType::unity() {
                             return Err(TypeCheckError::NonScalarExponent(
                                 rhs.full_span(),
                                 exponent_type,
                             ));
                         }
 
-                        let base_type = lhs_checked.get_type();
-                        if base_type == Type::unity() {
+                        let base_type = dtype(&lhs_checked)?;
+                        if base_type == DType::unity() {
                             // Skip evaluating the exponent if the lhs is a scalar. This allows
                             // for arbitrary (decimal) exponents, if the base is a scalar.
 
@@ -451,7 +459,7 @@ impl TypeChecker {
                     *op,
                     Box::new(lhs_checked),
                     Box::new(rhs_checked),
-                    type_,
+                    Type::Dimension(type_),
                 )
             }
             ast::Expression::FunctionCall(span, full_span, function_name, args) => {
@@ -486,11 +494,14 @@ impl TypeChecker {
                     .iter()
                     .map(|a| self.check_expression(a))
                     .collect::<Result<Vec<_>>>()?;
-                let argument_types = arguments_checked.iter().map(|e| e.get_type());
+                let argument_types = arguments_checked
+                    .iter()
+                    .map(|e| dtype(e))
+                    .collect::<Result<Vec<DType>>>()?;
 
-                let mut substitutions: Vec<(String, Type)> = vec![];
+                let mut substitutions: Vec<(String, DType)> = vec![];
 
-                let substitute = |substitutions: &[(String, Type)], type_: &Type| -> Type {
+                let substitute = |substitutions: &[(String, DType)], type_: &DType| -> DType {
                     let mut result_type = type_.clone();
                     for (name, substituted_type) in substitutions {
                         if let Some(factor @ BaseRepresentationFactor(_, exp)) = type_
@@ -498,14 +509,17 @@ impl TypeChecker {
                             .iter()
                             .find(|BaseRepresentationFactor(n, _)| n == name)
                         {
-                            result_type = result_type / Type::from_factor((*factor).clone())
+                            result_type = result_type / DType::from_factor((*factor).clone())
                                 * substituted_type.clone().power(*exp);
                         }
                     }
                     result_type
                 };
 
-                let mut parameter_types = parameter_types.clone();
+                let mut parameter_types = parameter_types
+                    .into_iter()
+                    .map(|(span, t)| expect_dtype(t.clone()).map(|dtype| (span.clone(), dtype)))
+                    .collect::<Result<Vec<(Span, DType)>>>()?;
                 if *is_variadic {
                     // For a variadic function, we simply duplicate the parameter type
                     // N times, where N is the number of arguments given.
@@ -536,7 +550,7 @@ impl TypeChecker {
                     }
 
                     if let Some(&generic_subtype_factor) = remaining_generic_subtypes.first() {
-                        let generic_subtype = Type::from_factor(generic_subtype_factor.clone());
+                        let generic_subtype = DType::from_factor(generic_subtype_factor.clone());
 
                         // The type of the idx-th parameter of the called function has a generic type
                         // parameter inside. We can now instantiate that generic parameter by solving
@@ -638,7 +652,7 @@ impl TypeChecker {
                 type_annotation,
             } => {
                 let expr_checked = self.check_expression(expr)?;
-                let type_deduced = expr_checked.get_type();
+                let type_deduced = dtype(&expr_checked)?;
 
                 if let Some(ref dexpr) = type_annotation {
                     let type_specified = self
@@ -667,8 +681,12 @@ impl TypeChecker {
                     }
                 }
                 self.identifiers
-                    .insert(identifier.clone(), type_deduced.clone());
-                typed_ast::Statement::DefineVariable(identifier.clone(), expr_checked, type_deduced)
+                    .insert(identifier.clone(), Type::Dimension(type_deduced.clone()));
+                typed_ast::Statement::DefineVariable(
+                    identifier.clone(),
+                    expr_checked,
+                    Type::Dimension(type_deduced),
+                )
             }
             ast::Statement::DefineBaseUnit(_span, unit_name, dexpr, decorators) => {
                 let type_specified = if let Some(dexpr) = dexpr {
@@ -686,12 +704,12 @@ impl TypeChecker {
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.identifiers
-                        .insert(name.clone(), type_specified.clone());
+                        .insert(name.clone(), Type::Dimension(type_specified.clone()));
                 }
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
                     decorators.clone(),
-                    type_specified,
+                    Type::Dimension(type_specified),
                 )
             }
             ast::Statement::DefineDerivedUnit {
@@ -705,7 +723,7 @@ impl TypeChecker {
                 // TODO: this is the *exact same code* that we have above for
                 // variable definitions => deduplicate this somehow
                 let expr_checked = self.check_expression(expr)?;
-                let type_deduced = expr_checked.get_type();
+                let type_deduced = dtype(&expr_checked)?;
 
                 if let Some(ref dexpr) = type_annotation {
                     let type_specified = self
@@ -734,7 +752,8 @@ impl TypeChecker {
                     }
                 }
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-                    self.identifiers.insert(name.clone(), type_deduced.clone());
+                    self.identifiers
+                        .insert(name.clone(), Type::Dimension(type_deduced.clone()));
                 }
                 typed_ast::Statement::DefineDerivedUnit(
                     identifier.clone(),
@@ -800,12 +819,12 @@ impl TypeChecker {
 
                     typechecker_fn
                         .identifiers
-                        .insert(parameter.clone(), parameter_type.clone());
+                        .insert(parameter.clone(), Type::Dimension(parameter_type.clone()));
                     typed_parameters.push((
                         *parameter_span,
                         parameter.clone(),
                         *p_is_variadic,
-                        parameter_type,
+                        Type::Dimension(parameter_type),
                     ));
 
                     is_variadic |= p_is_variadic;
@@ -831,7 +850,7 @@ impl TypeChecker {
                     .transpose()?;
 
                 let return_type = if let Some(ref expr) = body_checked {
-                    let return_type_deduced = expr.get_type();
+                    let return_type_deduced = dtype(expr)?;
                     if let Some(return_type_specified) = return_type_specified {
                         if return_type_deduced != return_type_specified {
                             return Err(TypeCheckError::IncompatibleDimensions(
@@ -890,7 +909,7 @@ impl TypeChecker {
                     function_name.clone(),
                     typed_parameters,
                     body_checked,
-                    return_type,
+                    Type::Dimension(return_type),
                 )
             }
             ast::Statement::DefineDimension(name, dexprs) => {

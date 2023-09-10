@@ -3,7 +3,21 @@ use crate::{
     decorator::Decorator, number::Number, prefix::Prefix, registry::BaseRepresentation, span::Span,
 };
 
-pub type Type = BaseRepresentation;
+/// Dimension type
+pub type DType = BaseRepresentation;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Type {
+    Dimension(DType),
+}
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::Dimension(d) => d.fmt(f),
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
@@ -18,7 +32,7 @@ pub enum Expression {
         Box<Expression>,
         Type,
     ),
-    FunctionCall(Span, Span, String, Vec<Expression>, Type),
+    FunctionCall(Span, Span, String, Vec<Expression>, DType),
 }
 
 impl Expression {
@@ -59,12 +73,12 @@ pub enum Statement {
 impl Expression {
     pub(crate) fn get_type(&self) -> Type {
         match self {
-            Expression::Scalar(_, _) => Type::unity(),
+            Expression::Scalar(_, _) => Type::Dimension(DType::unity()),
             Expression::Identifier(_, _, type_) => type_.clone(),
             Expression::UnitIdentifier(_, _, _, _, _type) => _type.clone(),
             Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
             Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
-            Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
+            Expression::FunctionCall(_, _, _, _, type_) => Type::Dimension(type_.clone()),
         }
     }
 }
