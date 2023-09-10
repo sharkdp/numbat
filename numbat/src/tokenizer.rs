@@ -73,6 +73,10 @@ pub enum TokenKind {
     Unit,
     Use,
 
+    Bool,
+    True,
+    False,
+
     Long,
     Short,
     Both,
@@ -280,6 +284,9 @@ impl Tokenizer {
             m.insert("print", TokenKind::ProcedurePrint);
             m.insert("assert_eq", TokenKind::ProcedureAssertEq);
             m.insert("type", TokenKind::ProcedureType);
+            m.insert("bool", TokenKind::Bool);
+            m.insert("true", TokenKind::True);
+            m.insert("false", TokenKind::False);
             m
         });
 

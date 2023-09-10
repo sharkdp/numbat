@@ -126,13 +126,15 @@ impl Op {
 pub enum Constant {
     Scalar(f64),
     Unit(Unit),
+    Boolean(bool),
 }
 
 impl Constant {
-    fn to_quantity(&self) -> Quantity {
+    fn to_value(&self) -> Value {
         match self {
-            Constant::Scalar(n) => Quantity::from_scalar(*n),
-            Constant::Unit(u) => Quantity::from_unit(u.clone()),
+            Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(*n)),
+            Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
+            Constant::Boolean(b) => Value::Boolean(*b),
         }
     }
 }
@@ -142,6 +144,7 @@ impl Display for Constant {
         match self {
             Constant::Scalar(n) => write!(f, "{}", n),
             Constant::Unit(unit) => write!(f, "{}", unit),
+            Constant::Boolean(val) => write!(f, "{}", val),
         }
     }
 }
@@ -171,6 +174,22 @@ impl CallFrame {
 
 pub struct ExecutionContext<'a> {
     pub print_fn: &'a mut PrintFunction,
+}
+
+/// Things that can be placed on the stack
+#[derive(Debug, Clone)]
+enum Value {
+    Quantity(Quantity),
+    Boolean(bool),
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Quantity(q) => write!(f, "{}", q),
+            Value::Boolean(b) => write!(f, "{}", b),
+        }
+    }
 }
 
 pub struct Vm {
@@ -204,9 +223,8 @@ pub struct Vm {
     /// The call stack
     frames: Vec<CallFrame>,
 
-    /// The stack of the VM. Each entry is a [Quantity], i.e. something like
-    /// `3.4 m/s²`.
-    stack: Vec<Quantity>,
+    /// The stack of the VM.
+    stack: Vec<Value>,
 
     /// Whether or not to run in debug mode.
     debug: bool,
@@ -423,11 +441,24 @@ impl Vm {
         u16::from_le_bytes(bytes)
     }
 
-    fn push(&mut self, quantity: Quantity) {
-        self.stack.push(quantity);
+    fn push_quantity(&mut self, quantity: Quantity) {
+        self.stack.push(Value::Quantity(quantity));
     }
 
-    fn pop(&mut self) -> Quantity {
+    fn push(&mut self, value: Value) {
+        self.stack.push(value);
+    }
+
+    fn pop_quantity(&mut self) -> Quantity {
+        match self.pop() {
+            Value::Quantity(q) => q,
+            _ => {
+                panic!("Expected quantity to be on top of the stack")
+            }
+        }
+    }
+
+    fn pop(&mut self) -> Value {
         self.stack.pop().expect("stack should not be empty")
     }
 
@@ -465,13 +496,13 @@ impl Vm {
                 Op::LoadConstant => {
                     let constant_idx = self.read_u16();
                     self.stack
-                        .push(self.constants[constant_idx as usize].to_quantity());
+                        .push(self.constants[constant_idx as usize].to_value());
                 }
                 Op::ApplyPrefix => {
-                    let quantity = self.pop();
+                    let quantity = self.pop_quantity();
                     let prefix_idx = self.read_u16();
                     let prefix = self.prefixes[prefix_idx as usize];
-                    self.push(Quantity::new(
+                    self.push_quantity(Quantity::new(
                         *quantity.unsafe_value(),
                         quantity.unit().clone().with_prefix(prefix),
                     ));
@@ -480,7 +511,7 @@ impl Vm {
                     let identifier_idx = self.read_u16();
                     let constant_idx = self.read_u16();
 
-                    let conversion_value = self.pop();
+                    let conversion_value = self.pop_quantity();
 
                     let unit_name = &self.global_identifiers[identifier_idx as usize];
                     let defining_unit = conversion_value.unit();
@@ -500,7 +531,7 @@ impl Vm {
                 }
                 Op::SetVariable => {
                     let identifier_idx = self.read_u16();
-                    let quantity = self.pop();
+                    let quantity = self.pop_quantity();
                     let identifier: String =
                         self.global_identifiers[identifier_idx as usize].0.clone();
 
@@ -512,7 +543,7 @@ impl Vm {
 
                     let quantity = self.globals.get(identifier).expect("Variable exists");
 
-                    self.push(quantity.clone());
+                    self.push_quantity(quantity.clone());
                 }
                 Op::GetLocal => {
                     let slot_idx = self.read_u16() as usize;
@@ -525,8 +556,8 @@ impl Vm {
                 | Op::Divide
                 | Op::Power
                 | Op::ConvertTo) => {
-                    let rhs = self.pop();
-                    let lhs = self.pop();
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_quantity();
                     let result = match op {
                         Op::Add => &lhs + &rhs,
                         Op::Subtract => &lhs - &rhs,
@@ -543,15 +574,15 @@ impl Vm {
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         _ => unreachable!(),
                     };
-                    self.push(result.map_err(RuntimeError::QuantityError)?);
+                    self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
                 }
                 Op::Negate => {
-                    let rhs = self.pop();
-                    self.push(-rhs);
+                    let rhs = self.pop_quantity();
+                    self.push_quantity(-rhs);
                 }
                 Op::Factorial => {
                     let lhs = self
-                        .pop()
+                        .pop_quantity()
                         .as_scalar()
                         .expect("Expected factorial operand to be scalar")
                         .to_f64();
@@ -562,7 +593,7 @@ impl Vm {
                         return Err(RuntimeError::FactorialOfNonInteger);
                     }
 
-                    self.push(Quantity::from_scalar(math::factorial(lhs)));
+                    self.push_quantity(Quantity::from_scalar(math::factorial(lhs)));
                 }
                 Op::Call => {
                     let function_idx = self.read_u16() as usize;
@@ -582,14 +613,14 @@ impl Vm {
 
                     let mut args = vec![];
                     for _ in 0..num_args {
-                        args.push(self.pop());
+                        args.push(self.pop_quantity());
                     }
                     args.reverse(); // TODO: use a deque?
 
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
                             let result = (function)(&args[..]);
-                            self.push(result);
+                            self.push_quantity(result);
                         }
                         Callable::Procedure(procedure) => {
                             let result = (procedure)(ctx, &args[..]);
@@ -609,12 +640,22 @@ impl Vm {
                     self.println(ctx, s);
                 }
                 Op::FullSimplify => {
-                    let simplified = self.pop().full_simplify();
-                    self.push(simplified);
+                    let simplified = self.pop_quantity().full_simplify();
+                    self.push_quantity(simplified);
                 }
                 Op::Return => {
                     if self.frames.len() == 1 {
-                        let return_value = self.pop();
+                        let return_value = match self.pop() {
+                            Value::Quantity(q) => q,
+                            Value::Boolean(b) => {
+                                // TODO: let's not do this :-)
+                                if b {
+                                    Quantity::from_scalar(1.0)
+                                } else {
+                                    Quantity::from_scalar(0.0)
+                                }
+                            }
+                        };
 
                         // Save the returned value in `ans` and `_`:
                         for &identifier in LAST_RESULT_IDENTIFIERS {

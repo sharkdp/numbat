@@ -84,6 +84,10 @@ impl BytecodeInterpreter {
                     self.vm.add_op2(Op::Call, idx, args.len() as u16); // TODO: check overflow
                 }
             }
+            Expression::Boolean(_, val) => {
+                let index = self.vm.add_constant(Constant::Boolean(*val));
+                self.vm.add_op1(Op::LoadConstant, index);
+            }
         };
 
         Ok(())
@@ -98,7 +102,8 @@ impl BytecodeInterpreter {
             | Expression::UnitIdentifier(..)
             | Expression::FunctionCall(..)
             | Expression::UnaryOperator(..)
-            | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _) => {}
+            | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
+            | Expression::Boolean(..) => {}
             Expression::BinaryOperator(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }
