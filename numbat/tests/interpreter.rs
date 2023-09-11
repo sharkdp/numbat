@@ -8,10 +8,9 @@ use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
 
 fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &str) {
     if let InterpreterResult::Value(val) = ctx.interpret(code, CodeSource::Internal).unwrap().1 {
-        let q = val.unsafe_as_quantity();
         let fmt = PlainTextFormatter {};
 
-        let actual_output = fmt.format(&q.pretty_print(), false);
+        let actual_output = fmt.format(&val.pretty_print(), false);
         assert_eq!(actual_output.trim(), expected_output);
     } else {
         panic!();
@@ -326,4 +325,19 @@ fn test_error_messages() {
     );
     expect_failure("foo", "Unknown identifier 'foo'");
     expect_failure("1/0", "Division by zero");
+}
+
+#[test]
+fn test_comparisons() {
+    expect_output("2 < 3", "true");
+    expect_output("2 m < 3 m", "true");
+    expect_output("20 cm < 3 m", "true");
+
+    expect_output("2 m < 100 cm", "false");
+}
+
+#[test]
+fn test_conditionals() {
+    expect_output("if 1 < 2 then 3 else 4", "3");
+    expect_output("if 4 < 3 then 2 else 1", "1");
 }
