@@ -63,8 +63,12 @@ pub enum TokenKind {
     At,
     Ellipsis,
     ExclamationMark,
+    EqualEqual,
+    NotEqual,
     LessThan,
     GreaterThan,
+    LessOrEqual,
+    GreaterOrEqual,
 
     // Keywords
     Let,
@@ -322,7 +326,11 @@ impl Tokenizer {
         let kind = match current_char {
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
+            '≤' => TokenKind::LessOrEqual,
+            '<' if self.match_char('=') => TokenKind::LessOrEqual,
             '<' => TokenKind::LessThan,
+            '≥' => TokenKind::GreaterOrEqual,
+            '>' if self.match_char('=') => TokenKind::GreaterOrEqual,
             '>' => TokenKind::GreaterThan,
             '0' if self
                 .peek()
@@ -392,6 +400,8 @@ impl Tokenizer {
             '÷' => TokenKind::Divide,
             '^' => TokenKind::Power,
             ',' => TokenKind::Comma,
+            '⩵' => TokenKind::EqualEqual,
+            '=' if self.match_char('=') => TokenKind::EqualEqual,
             '=' => TokenKind::Equal,
             ':' if self.match_char(':') => TokenKind::DoubleColon,
             ':' => TokenKind::Colon,
@@ -399,6 +409,8 @@ impl Tokenizer {
             '→' | '➞' => TokenKind::Arrow,
             '-' if self.match_char('>') => TokenKind::Arrow,
             '-' => TokenKind::Minus,
+            '≠' => TokenKind::NotEqual,
+            '!' if self.match_char('=') => TokenKind::NotEqual,
             '!' => TokenKind::ExclamationMark,
             '⁻' => {
                 let c = self.peek();

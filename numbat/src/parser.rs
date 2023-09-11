@@ -702,12 +702,29 @@ impl<'a> Parser<'a> {
 
     fn comparison(&mut self) -> Result<Expression> {
         let mut expr = self.term()?;
-        while self.match_exact(TokenKind::LessThan).is_some() {
+        while let Some(token) = self.match_any(&[
+            TokenKind::LessThan,
+            TokenKind::GreaterThan,
+            TokenKind::LessOrEqual,
+            TokenKind::GreaterOrEqual,
+            TokenKind::EqualEqual,
+            TokenKind::NotEqual,
+        ]) {
             let span_op = Some(self.last().unwrap().span);
             let rhs = self.term()?;
 
+            let op = match token.kind {
+                TokenKind::LessThan => BinaryOperator::LessThan,
+                TokenKind::GreaterThan => BinaryOperator::GreaterThan,
+                TokenKind::LessOrEqual => BinaryOperator::LessOrEqual,
+                TokenKind::GreaterOrEqual => BinaryOperator::GreaterOrEqual,
+                TokenKind::EqualEqual => BinaryOperator::Equal,
+                TokenKind::NotEqual => BinaryOperator::NotEqual,
+                _ => unreachable!(),
+            };
+
             expr = Expression::BinaryOperator {
-                op: BinaryOperator::LessThan,
+                op,
                 lhs: Box::new(expr),
                 rhs: Box::new(rhs),
                 span_op,
@@ -1985,6 +2002,30 @@ mod tests {
         should_fail_with(
             &["fn print() = 1"],
             ParseErrorKind::ExpectedIdentifierAfterFn,
+        );
+    }
+
+    #[test]
+    fn comparisons() {
+        parse_as_expression(&["1 < 2"], binop!(scalar!(1.0), LessThan, scalar!(2.0)));
+        parse_as_expression(
+            &["1 <= 2", "1 ≤ 2"],
+            binop!(scalar!(1.0), LessOrEqual, scalar!(2.0)),
+        );
+
+        parse_as_expression(&["1 > 2"], binop!(scalar!(1.0), GreaterThan, scalar!(2.0)));
+        parse_as_expression(
+            &["1 >= 2", "1 ≥ 2"],
+            binop!(scalar!(1.0), GreaterOrEqual, scalar!(2.0)),
+        );
+
+        parse_as_expression(
+            &["1 == 2", "1 ⩵ 2"],
+            binop!(scalar!(1.0), Equal, scalar!(2.0)),
+        );
+        parse_as_expression(
+            &["1 != 2", "1 ≠ 2"],
+            binop!(scalar!(1.0), NotEqual, scalar!(2.0)),
         );
     }
 

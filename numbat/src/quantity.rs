@@ -19,7 +19,7 @@ pub enum QuantityError {
 
 pub type Result<T> = std::result::Result<T, QuantityError>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Quantity {
     value: Number,
     unit: Unit,
@@ -289,6 +289,18 @@ impl std::ops::Neg for Quantity {
         }
     }
 }
+
+impl PartialEq for Quantity {
+    fn eq(&self, other: &Self) -> bool {
+        if let Ok(other_converted) = other.convert_to(self.unit()) {
+            self.value == other_converted.value
+        } else {
+            false
+        }
+    }
+}
+
+impl Eq for Quantity {}
 
 impl PartialOrd for Quantity {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {

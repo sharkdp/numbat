@@ -67,6 +67,11 @@ impl BytecodeInterpreter {
                     BinaryOperator::Power => Op::Power,
                     BinaryOperator::ConvertTo => Op::ConvertTo,
                     BinaryOperator::LessThan => Op::LessThan,
+                    BinaryOperator::GreaterThan => Op::GreaterThan,
+                    BinaryOperator::LessOrEqual => Op::LessOrEqual,
+                    BinaryOperator::GreaterOrEqual => Op::GreatorOrEqual,
+                    BinaryOperator::Equal => Op::Equal,
+                    BinaryOperator::NotEqual => Op::NotEqual,
                 };
                 self.vm.add_op(op);
             }

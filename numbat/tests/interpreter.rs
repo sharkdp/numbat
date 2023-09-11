@@ -18,6 +18,7 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &s
 }
 
 fn expect_output(code: &str, expected_output: &str) {
+    println!("Expecting output '{expected_output}' for code '{code}'");
     let mut ctx = get_test_context();
     expect_output_with_context(&mut ctx, code, expected_output)
 }
@@ -332,8 +333,24 @@ fn test_comparisons() {
     expect_output("2 < 3", "true");
     expect_output("2 m < 3 m", "true");
     expect_output("20 cm < 3 m", "true");
-
     expect_output("2 m < 100 cm", "false");
+
+    expect_output("2 > 3", "false");
+    expect_output("2 m > 3 m", "false");
+    expect_output("20 cm > 3 m", "false");
+    expect_output("2 m > 100 cm", "true");
+
+    expect_output("2 <= 2", "true");
+    expect_output("2.1 <= 2", "false");
+
+    expect_output("2 >= 2", "true");
+    expect_output("2 >= 2.1", "false");
+
+    expect_output("200 cm == 2 m", "true");
+    expect_output("201 cm == 2 m", "false");
+
+    expect_output("200 cm != 2 m", "false");
+    expect_output("201 cm != 2 m", "true");
 }
 
 #[test]

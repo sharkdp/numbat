@@ -321,7 +321,12 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 typed_ast::BinaryOperator::ConvertTo => Err(
                     TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "conversion"),
                 ),
-                typed_ast::BinaryOperator::LessThan => Err(
+                typed_ast::BinaryOperator::LessThan
+                | typed_ast::BinaryOperator::GreaterThan
+                | typed_ast::BinaryOperator::LessOrEqual
+                | typed_ast::BinaryOperator::GreaterOrEqual
+                | typed_ast::BinaryOperator::Equal
+                | typed_ast::BinaryOperator::NotEqual => Err(
                     TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "comparison"),
                 ),
             }
@@ -438,7 +443,12 @@ impl TypeChecker {
                                     typed_ast::BinaryOperator::ConvertTo => {
                                         "unit conversion".into()
                                     }
-                                    typed_ast::BinaryOperator::LessThan => "comparison".into(),
+                                    typed_ast::BinaryOperator::LessThan
+                                    | typed_ast::BinaryOperator::GreaterThan
+                                    | typed_ast::BinaryOperator::LessOrEqual
+                                    | typed_ast::BinaryOperator::GreaterOrEqual
+                                    | typed_ast::BinaryOperator::Equal
+                                    | typed_ast::BinaryOperator::NotEqual => "comparison".into(),
                                 },
                                 span_expected: lhs.full_span(),
                                 expected_name: " left hand side",
@@ -489,7 +499,12 @@ impl TypeChecker {
                         }
                     }
                     typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::LessThan => {
+                    typed_ast::BinaryOperator::LessThan
+                    | typed_ast::BinaryOperator::GreaterThan
+                    | typed_ast::BinaryOperator::LessOrEqual
+                    | typed_ast::BinaryOperator::GreaterOrEqual
+                    | typed_ast::BinaryOperator::Equal
+                    | typed_ast::BinaryOperator::NotEqual => {
                         let _ = get_type_and_assert_equality()?;
                         Type::Boolean
                     }
