@@ -382,11 +382,19 @@ impl TypeChecker {
 
                 match *op {
                     ast::UnaryOperator::Factorial => {
-                        let dtype_ = expect_dtype(&checked_expr.full_span(), type_.clone())?; // TODO: avoid .full_span() call in non-error cases
-                        if dtype_ != DType::unity() {
+                        let dtype = match &type_ {
+                            Type::Dimension(d) => d.clone(),
+                            _ => {
+                                return Err(TypeCheckError::ExpectedDimensionType(
+                                    checked_expr.full_span(),
+                                    type_.clone(),
+                                ))
+                            }
+                        };
+                        if dtype != DType::unity() {
                             return Err(TypeCheckError::NonScalarFactorialArgument(
                                 expr.full_span(),
-                                dtype_,
+                                dtype,
                             ));
                         }
                     }
