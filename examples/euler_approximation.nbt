@@ -1,0 +1,8 @@
+# Compute the number e from 1/0! + 1/1! + 1/2! + 1/3! + …
+
+fn approx_e(n: Scalar) -> Scalar =
+  if n == 0
+    then 1
+    else 1 / n! + approx_e(n - 1)
+
+assert_eq(approx_e(20), e, 1e-10)
