@@ -9,6 +9,7 @@ use crate::{
     quantity::Quantity,
     unit::Unit,
     unit_registry::UnitRegistry,
+    value::Value,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -190,22 +191,6 @@ pub struct ExecutionContext<'a> {
     pub print_fn: &'a mut PrintFunction,
 }
 
-/// Things that can be placed on the stack
-#[derive(Debug, Clone)]
-enum Value {
-    Quantity(Quantity),
-    Boolean(bool),
-}
-
-impl std::fmt::Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Value::Quantity(q) => write!(f, "{}", q),
-            Value::Boolean(b) => write!(f, "{}", b),
-        }
-    }
-}
-
 pub struct Vm {
     /// The actual code of the program, structured by function name. The code
     /// for the global scope is at index 0 under the function name `<main>`.
@@ -229,7 +214,7 @@ pub struct Vm {
     global_identifiers: Vec<(String, Option<String>)>,
 
     /// A dictionary of global variables and their respective values.
-    globals: HashMap<String, Quantity>,
+    globals: HashMap<String, Value>,
 
     /// List of registered native/foreign functions
     ffi_callables: Vec<&'static ForeignFunction>,
@@ -475,21 +460,11 @@ impl Vm {
     }
 
     fn pop_quantity(&mut self) -> Quantity {
-        match self.pop() {
-            Value::Quantity(q) => q,
-            _ => {
-                panic!("Expected quantity to be on top of the stack")
-            }
-        }
+        self.pop().unsafe_as_quantity()
     }
 
     fn pop_bool(&mut self) -> bool {
-        match self.pop() {
-            Value::Boolean(b) => b,
-            _ => {
-                panic!("Expected boolean to be on top of the stack")
-            }
-        }
+        self.pop().unsafe_as_bool()
     }
 
     fn pop(&mut self) -> Value {
@@ -565,19 +540,19 @@ impl Vm {
                 }
                 Op::SetVariable => {
                     let identifier_idx = self.read_u16();
-                    let quantity = self.pop_quantity();
+                    let value = self.pop();
                     let identifier: String =
                         self.global_identifiers[identifier_idx as usize].0.clone();
 
-                    self.globals.insert(identifier, quantity);
+                    self.globals.insert(identifier, value);
                 }
                 Op::GetVariable => {
                     let identifier_idx = self.read_u16();
                     let identifier = &self.global_identifiers[identifier_idx as usize].0;
 
-                    let quantity = self.globals.get(identifier).expect("Variable exists");
+                    let value = self.globals.get(identifier).expect("Variable exists");
 
-                    self.push_quantity(quantity.clone());
+                    self.push(value.clone());
                 }
                 Op::GetLocal => {
                     let slot_idx = self.read_u16() as usize;
@@ -697,17 +672,7 @@ impl Vm {
                 },
                 Op::Return => {
                     if self.frames.len() == 1 {
-                        let return_value = match self.pop() {
-                            Value::Quantity(q) => q,
-                            Value::Boolean(b) => {
-                                // TODO: let's not do this :-)
-                                if b {
-                                    Quantity::from_scalar(1.0)
-                                } else {
-                                    Quantity::from_scalar(0.0)
-                                }
-                            }
-                        };
+                        let return_value = self.pop();
 
                         // Save the returned value in `ans` and `_`:
                         for &identifier in LAST_RESULT_IDENTIFIERS {
@@ -735,8 +700,8 @@ impl Vm {
 
         debug_assert!(self.stack.is_empty());
 
-        if let Some(q) = result_last_statement {
-            Ok(InterpreterResult::Quantity(q))
+        if let Some(value) = result_last_statement {
+            Ok(InterpreterResult::Value(value))
         } else {
             Ok(InterpreterResult::Continue)
         }
@@ -801,6 +766,6 @@ fn vm_basic() {
 
     assert_eq!(
         vm.run(&mut ctx).unwrap(),
-        InterpreterResult::Quantity(Quantity::from_scalar(42.0 + 1.0))
+        InterpreterResult::Value(Value::Quantity(Quantity::from_scalar(42.0 + 1.0)))
     );
 }

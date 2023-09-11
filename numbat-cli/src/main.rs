@@ -392,11 +392,11 @@ impl Cli {
                 }
 
                 match interpreter_result {
-                    InterpreterResult::Quantity(quantity) => {
+                    InterpreterResult::Value(value) => {
                         let q_markup = markup::whitespace("    ")
                             + markup::operator("=")
                             + markup::space()
-                            + quantity.pretty_print();
+                            + value.pretty_print();
                         println!("{}", ansi_format(&q_markup, false));
                         println!();
 

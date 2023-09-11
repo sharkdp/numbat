@@ -15,7 +15,7 @@ fn assert_runs(code: &str) {
     assert!(result.is_ok());
     assert!(matches!(
         result.unwrap().1,
-        InterpreterResult::Quantity(_) | InterpreterResult::Continue
+        InterpreterResult::Value(_) | InterpreterResult::Continue
     ));
 }
 
@@ -24,7 +24,7 @@ fn assert_runs_without_prelude(code: &str) {
     assert!(result.is_ok());
     assert!(matches!(
         result.unwrap().1,
-        InterpreterResult::Quantity(_) | InterpreterResult::Continue
+        InterpreterResult::Value(_) | InterpreterResult::Continue
     ));
 }
 
