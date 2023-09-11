@@ -56,6 +56,8 @@ pub enum Op {
     Power,
     /// Similar to Add.
     ConvertTo,
+    /// Similar to Add.
+    LessThan,
 
     /// Call the specified function with the specified number of arguments
     Call,
@@ -92,6 +94,7 @@ impl Op {
             | Op::Divide
             | Op::Power
             | Op::ConvertTo
+            | Op::LessThan
             | Op::FullSimplify
             | Op::Return => 0,
         }
@@ -113,6 +116,7 @@ impl Op {
             Op::Divide => "Divide",
             Op::Power => "Power",
             Op::ConvertTo => "ConvertTo",
+            Op::LessThan => "LessThan",
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
             Op::FFICallProcedure => "FFICallProcedure",
@@ -555,7 +559,8 @@ impl Vm {
                 | Op::Multiply
                 | Op::Divide
                 | Op::Power
-                | Op::ConvertTo) => {
+                | Op::ConvertTo
+                | Op::LessThan) => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
                     let result = match op {
@@ -572,6 +577,10 @@ impl Vm {
                         }
                         Op::Power => lhs.power(rhs),
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
+                        Op::LessThan => {
+                            self.push(Value::Boolean(lhs.unsafe_value() < rhs.unsafe_value())); // TODO!!
+                            continue; // TODO: restructure code to get rid of this 'continue'
+                        }
                         _ => unreachable!(),
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
@@ -639,10 +648,13 @@ impl Vm {
                     let s = &self.strings[s_idx];
                     self.println(ctx, s);
                 }
-                Op::FullSimplify => {
-                    let simplified = self.pop_quantity().full_simplify();
-                    self.push_quantity(simplified);
-                }
+                Op::FullSimplify => match self.pop() {
+                    Value::Quantity(q) => {
+                        let simplified = q.full_simplify();
+                        self.push_quantity(simplified);
+                    }
+                    v => self.push(v),
+                },
                 Op::Return => {
                     if self.frames.len() == 1 {
                         let return_value = match self.pop() {
