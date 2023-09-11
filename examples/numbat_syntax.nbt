@@ -52,10 +52,10 @@ pi/3 + pi // cos  # Same, 'arg // f' is equivalent to 'f(arg)'
 
 # 4. Variable definitions
 
-let x = 4                          # Simple numerical variable
-let y1 = 2 m/s                     # Right hand side can be any expression
-let y2: Speed = 2 m/s              # With optional type annotation
-let y3: Length / Time = 2 m/s      # more complex type annotation
+let n = 4                          # Simple numerical variable
+let q1 = 2 m/s                     # Right hand side can be any expression
+let q2: Speed = 2 m/s              # With optional type annotation
+let q3: Length / Time = 2 m/s      # more complex type annotation
 
 # 5. Function definitions
 
@@ -84,8 +84,15 @@ unit warhol: Fame                # New base unit for the "Fame" dimension
 unit thing                       # New base unit with automatically generated
                                  # base dimension "Thing"
 
-# 8. Procedures
+# 8. Conditionals
 
-print(2 kilowarhol)              # Print a quantity
+fn step(x: Scalar) -> Scalar =   # Numbat has 'if <cond> then <expr> else <expr>'
+  if x < 0 then 0 else 1         # condition expressions
+
+# 9. Procedures
+
+print(2 kilowarhol)              # Print the value of an expression
 assert_eq(1 ft, 12 in)           # Assert that two quantities are equal
+assert_eq(1 yd, 1 m, 10 cm)      # Assert that two quantities are equal, up to
+                                 # the given precision
 type(2 m/s)                      # Print the type of an expression
