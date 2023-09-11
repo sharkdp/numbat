@@ -1454,4 +1454,25 @@ mod tests {
             TypeCheckError::WrongArity{callable_span:_, callable_name, callable_definition_span: _,  arity, num_args: 4} if arity == (2..=3) && callable_name == "assert_eq"
         ));
     }
+
+    #[test]
+    fn conditionals() {
+        assert_successful_typecheck("if true then 1 else 2");
+        assert_successful_typecheck("if true then true else false");
+
+        assert!(matches!(
+            get_typecheck_error("if 1 then 2 else 3"),
+            TypeCheckError::ExpectedBool(_)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("if true then a else b"),
+            TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Dimension(base_type("A")) && t2 == Type::Dimension(base_type("B"))
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("if true then true else a"),
+            TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Boolean && t2 == Type::Dimension(base_type("A"))
+        ));
+    }
 }
