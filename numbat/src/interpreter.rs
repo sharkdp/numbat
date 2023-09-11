@@ -134,7 +134,7 @@ mod tests {
     fn assert_evaluates_to(input: &str, expected: Quantity) {
         if let InterpreterResult::Value(actual) = get_interpreter_result(input).unwrap() {
             let actual = actual.unsafe_as_quantity();
-            assert_eq!(actual, expected);
+            assert_eq!(actual, &expected);
         } else {
             panic!();
         }
