@@ -370,9 +370,13 @@ impl<'a> Parser<'a> {
 
                         parameter_span = parameter_span.extend(&self.last().unwrap().span);
 
-                        if self.match_exact(TokenKind::Comma).is_none()
-                            && self.peek().kind != TokenKind::RightParen
-                        {
+                        let mut has_comma = || -> bool {
+                            let yes = self.match_exact(TokenKind::Comma).is_some();
+                            self.match_exact(TokenKind::Newline);
+                            yes
+                        };
+
+                        if !has_comma() && self.peek().kind != TokenKind::RightParen {
                             return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
                                 span: self.peek().span,
