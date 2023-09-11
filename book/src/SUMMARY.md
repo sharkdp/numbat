@@ -27,6 +27,7 @@
   - [Printing, testing, debugging](./procedures.md)
   - [Variable definitions]()
   - [Function definitions]()
+  - [Conditionals](./conditionals.md)
 - [Advanced](./advanced.md)
   - [Unit definitions](./unit-definitions.md)
   - [Dimension definitions](./dimension-definitions.md)
