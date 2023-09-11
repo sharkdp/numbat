@@ -75,7 +75,7 @@ impl NumbatContext {
             // TODO: this is so uncool
             let numbat_code = format!("{fn_name}({x} {arg_unit_name})");
             if let Ok(result) = self.numbat.interpret(&numbat_code, CodeSource::Internal) {
-                let InterpreterResult::Quantity(y_q) = result.1 else { return false; };
+                let InterpreterResult::Value(Value::Quantity(y_q)) = result.1 else { return false; };
 
                 let y = y_q.unsafe_value().0;
 
