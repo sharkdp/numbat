@@ -6,6 +6,7 @@ Numbat has a builtin `print` procedure that can be used to print the value of an
 
 ```nbt
 print(2 km/h)
+print(3 ft < 1 m)
 ```
 
 ## Testing
@@ -40,4 +41,8 @@ You can use the builtin `type` procedure to see the type (or physical dimension)
 >>> type(g0)
 
   Length / Time²
+
+>>> type(2 < 3)
+
+  bool
 ```
