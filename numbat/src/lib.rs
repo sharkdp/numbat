@@ -28,6 +28,7 @@ mod typechecker;
 mod typed_ast;
 mod unit;
 mod unit_registry;
+pub mod value;
 mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;

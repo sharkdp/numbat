@@ -7,7 +7,8 @@ use numbat::resolver::CodeSource;
 use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
 
 fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &str) {
-    if let InterpreterResult::Quantity(q) = ctx.interpret(code, CodeSource::Internal).unwrap().1 {
+    if let InterpreterResult::Value(val) = ctx.interpret(code, CodeSource::Internal).unwrap().1 {
+        let q = val.unsafe_as_quantity();
         let fmt = PlainTextFormatter {};
 
         let actual_output = fmt.format(&q.pretty_print(), false);

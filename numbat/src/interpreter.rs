@@ -6,6 +6,8 @@ use crate::{
 
 use thiserror::Error;
 
+pub use crate::value::Value;
+
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum RuntimeError {
     #[error("Division by zero")]
@@ -37,7 +39,7 @@ pub enum ExitStatus {
 #[derive(Debug, PartialEq, Eq)]
 #[must_use]
 pub enum InterpreterResult {
-    Quantity(Quantity),
+    Value(Value),
     Continue,
     Exit(ExitStatus),
 }
@@ -45,7 +47,7 @@ pub enum InterpreterResult {
 impl InterpreterResult {
     pub fn is_success(&self) -> bool {
         match self {
-            Self::Quantity(_) => true,
+            Self::Value(_) => true,
             Self::Continue => true,
             Self::Exit(_) => false,
         }
@@ -130,7 +132,8 @@ mod tests {
     }
 
     fn assert_evaluates_to(input: &str, expected: Quantity) {
-        if let InterpreterResult::Quantity(actual) = get_interpreter_result(input).unwrap() {
+        if let InterpreterResult::Value(actual) = get_interpreter_result(input).unwrap() {
+            let actual = actual.unsafe_as_quantity();
             assert_eq!(actual, expected);
         } else {
             panic!();

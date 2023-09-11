@@ -347,13 +347,7 @@ impl PrettyPrint for Expression {
                     .sum()
                     + m::operator(")")
             }
-            Boolean(_, val) => {
-                if *val {
-                    m::keyword("true")
-                } else {
-                    m::keyword("false")
-                }
-            }
+            Boolean(_, val) => val.pretty_print(),
             Condition(_, condition, then, else_) => {
                 m::keyword("if")
                     + m::space()
