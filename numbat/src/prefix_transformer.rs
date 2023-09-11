@@ -74,6 +74,12 @@ impl Transformer {
                     .collect(),
             ),
             expr @ Expression::Boolean(_, _) => expr,
+            Expression::Condition(span, condition, then, else_) => Expression::Condition(
+                span,
+                Box::new(self.transform_expression(*condition)),
+                Box::new(self.transform_expression(*then)),
+                Box::new(self.transform_expression(*else_)),
+            ),
         }
     }
 

@@ -10,7 +10,8 @@
 //! unit_decl       →   …
 //!
 //! expression      →   postfix_apply
-//! postfix_apply   →   conversion ( "//" identifier ) *
+//! postfix_apply   →   condition ( "//" identifier ) *
+//! condition       →   "if" conversion "then" condition "else" condition | conversion
 //! conversion      →   comparison ( "→" comparison ) *
 //! comparison      →   term ( (">" | "<" | …) term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
@@ -146,6 +147,12 @@ pub enum ParseErrorKind {
 
     #[error("Numerical overflow in dimension exponent")]
     OverflowInDimensionExponent,
+
+    #[error("Expected 'then' in if-then-else condition")]
+    ExpectedThen,
+
+    #[error("Expected 'else' in if-then-else condition")]
+    ExpectedElse,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -627,7 +634,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn postfix_apply(&mut self) -> Result<Expression> {
-        let mut expr = self.conversion()?;
+        let mut expr = self.condition()?;
         let mut full_span = expr.full_span();
         while self.match_exact(TokenKind::PostfixApply).is_some() {
             let identifier = self.identifier()?;
@@ -637,6 +644,40 @@ impl<'a> Parser<'a> {
             expr = Expression::FunctionCall(identifier_span, full_span, identifier, vec![expr]);
         }
         Ok(expr)
+    }
+
+    fn condition(&mut self) -> Result<Expression> {
+        if self.match_exact(TokenKind::If).is_some() {
+            let span_if = self.last().unwrap().span;
+            let condition_expr = self.conversion()?;
+
+            if self.match_exact(TokenKind::Then).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedThen,
+                    self.peek().span,
+                ));
+            }
+
+            let then_expr = self.condition()?;
+
+            if self.match_exact(TokenKind::Else).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedElse,
+                    self.peek().span,
+                ));
+            }
+
+            let else_expr = self.condition()?;
+
+            Ok(Expression::Condition(
+                span_if,
+                Box::new(condition_expr),
+                Box::new(then_expr),
+                Box::new(else_expr),
+            ))
+        } else {
+            self.conversion()
+        }
     }
 
     fn conversion(&mut self) -> Result<Expression> {

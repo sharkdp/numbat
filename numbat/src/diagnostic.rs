@@ -209,11 +209,29 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message(inner_error),
                 ]),
+            TypeCheckError::IncompatibleTypesInCondition(
+                if_span,
+                then_type,
+                then_span,
+                else_type,
+                else_span,
+            ) => d.with_labels(vec![
+                then_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(then_type.to_string()),
+                else_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(else_type.to_string()),
+                if_span.diagnostic_label(LabelStyle::Primary).with_message(
+                    "Incompatible types in 'then' and 'else' branches of conditional",
+                ),
+            ]),
             TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
             | TypeCheckError::UnknownForeignFunction(span, _)
             | TypeCheckError::NonRationalExponent(span)
             | TypeCheckError::OverflowInConstExpr(span)
-            | TypeCheckError::ExpectedDimensionType(span, _) => d.with_labels(vec![span
+            | TypeCheckError::ExpectedDimensionType(span, _)
+            | TypeCheckError::ExpectedBool(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
         }

@@ -58,6 +58,7 @@ pub enum Expression {
     FunctionCall(Span, Span, String, Vec<Expression>),
 
     Boolean(Span, bool),
+    Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
 }
 
 impl Expression {
@@ -85,6 +86,9 @@ impl Expression {
             }
             Expression::FunctionCall(_identifier_span, full_span, _, _) => *full_span,
             Expression::Boolean(span, _) => *span,
+            Expression::Condition(span_if, _, _, then_expr) => {
+                span_if.extend(&then_expr.full_span())
+            }
         }
     }
 }
@@ -160,9 +164,9 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::UnitIdentifier(..)
         | Expression::FunctionCall(..)
         | Expression::Boolean(..) => expr.pretty_print(),
-        Expression::UnaryOperator { .. } | Expression::BinaryOperator { .. } => {
-            m::operator("(") + expr.pretty_print() + m::operator(")")
-        }
+        Expression::UnaryOperator { .. }
+        | Expression::BinaryOperator { .. }
+        | Expression::Condition(..) => m::operator("(") + expr.pretty_print() + m::operator(")"),
     }
 }
 
@@ -349,6 +353,19 @@ impl PrettyPrint for Expression {
                 } else {
                     m::keyword("false")
                 }
+            }
+            Condition(_, condition, then, else_) => {
+                m::keyword("if")
+                    + m::space()
+                    + with_parens(&condition)
+                    + m::space()
+                    + m::keyword("then")
+                    + m::space()
+                    + with_parens(&then)
+                    + m::space()
+                    + m::keyword("else")
+                    + m::space()
+                    + with_parens(else_)
             }
         }
     }
@@ -731,6 +748,12 @@ impl ReplaceSpans for Expression {
                 args.iter().map(|a| a.replace_spans()).collect(),
             ),
             Expression::Boolean(_, val) => Expression::Boolean(Span::dummy(), *val),
+            Expression::Condition(_, condition, then, else_) => Expression::Condition(
+                Span::dummy(),
+                Box::new(condition.replace_spans()),
+                Box::new(then.replace_spans()),
+                Box::new(else_.replace_spans()),
+            ),
         }
     }
 }

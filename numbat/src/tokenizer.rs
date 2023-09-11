@@ -76,6 +76,9 @@ pub enum TokenKind {
     Bool,
     True,
     False,
+    If,
+    Then,
+    Else,
 
     Long,
     Short,
@@ -287,6 +290,9 @@ impl Tokenizer {
             m.insert("bool", TokenKind::Bool);
             m.insert("true", TokenKind::True);
             m.insert("false", TokenKind::False);
+            m.insert("if", TokenKind::If);
+            m.insert("then", TokenKind::Then);
+            m.insert("else", TokenKind::Else);
             m
         });
 

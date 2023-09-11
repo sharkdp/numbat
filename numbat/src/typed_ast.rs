@@ -36,6 +36,7 @@ pub enum Expression {
     ),
     FunctionCall(Span, Span, String, Vec<Expression>, DType),
     Boolean(Span, bool),
+    Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
 }
 
 impl Expression {
@@ -54,6 +55,9 @@ impl Expression {
             }
             Expression::FunctionCall(_identifier_span, full_span, _, _, _) => *full_span,
             Expression::Boolean(span, _) => *span,
+            Expression::Condition(span_if, _, _, then_expr) => {
+                span_if.extend(&then_expr.full_span())
+            }
         }
     }
 }
@@ -84,6 +88,7 @@ impl Expression {
             Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
             Expression::FunctionCall(_, _, _, _, type_) => Type::Dimension(type_.clone()),
             Expression::Boolean(_, _) => Type::Boolean,
+            Expression::Condition(_, _, then, _) => then.get_type(),
         }
     }
 }
