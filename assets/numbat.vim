@@ -5,7 +5,7 @@ if exists("b:current_syntax")
 endif
 
 " Numbat Keywords
-syn keyword numbatKeywords per to let fn dimension unit use long short both none print assert_eq type
+syn keyword numbatKeywords per to let fn dimension unit use long short both none print assert_eq type if then else true false bool
 highlight default link numbatKeywords Keyword
 
 " Physical dimensions (every capitalized word)
