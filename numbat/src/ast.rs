@@ -5,6 +5,7 @@ use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint, resolver::ModulePath,
 };
+use num_traits::Signed;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOperator {
@@ -140,8 +141,23 @@ macro_rules! binop {
         }
     }};
 }
+
+#[cfg(test)]
+macro_rules! conditional {
+    ( $cond:expr, $lhs:expr, $rhs: expr ) => {{
+        Expression::Condition(
+            Span::dummy(),
+            Box::new($cond),
+            Box::new($lhs),
+            Box::new($rhs),
+        )
+    }};
+}
+
 #[cfg(test)]
 pub(crate) use binop;
+#[cfg(test)]
+pub(crate) use conditional;
 #[cfg(test)]
 pub(crate) use factorial;
 #[cfg(test)]
@@ -149,7 +165,6 @@ pub(crate) use identifier;
 use itertools::Itertools;
 #[cfg(test)]
 pub(crate) use negate;
-use num_traits::Signed;
 #[cfg(test)]
 pub(crate) use scalar;
 
