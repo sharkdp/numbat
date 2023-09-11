@@ -91,8 +91,10 @@ unit thing                       # New base unit with automatically generated
 
 # 8. Conditionals
 
-fn step(x: Scalar) -> Scalar =   # Numbat has 'if <cond> then <expr> else <expr>'
-  if x < 0 then 0 else 1         # condition expressions
+fn step(x: Scalar) -> Scalar =   # The construct 'if <cond> then <expr> else <expr>'
+  if x < 0                       # is an expression, not a statement. It can span
+    then 0                       # multiple lines.
+    else 1
 
 # 9. Procedures
 

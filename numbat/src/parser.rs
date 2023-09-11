@@ -651,6 +651,8 @@ impl<'a> Parser<'a> {
             let span_if = self.last().unwrap().span;
             let condition_expr = self.conversion()?;
 
+            self.match_exact(TokenKind::Newline);
+
             if self.match_exact(TokenKind::Then).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedThen,
@@ -659,6 +661,8 @@ impl<'a> Parser<'a> {
             }
 
             let then_expr = self.condition()?;
+
+            self.match_exact(TokenKind::Newline);
 
             if self.match_exact(TokenKind::Else).is_none() {
                 return Err(ParseError::new(
