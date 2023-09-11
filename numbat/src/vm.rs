@@ -589,8 +589,7 @@ impl Vm {
                 | Op::Multiply
                 | Op::Divide
                 | Op::Power
-                | Op::ConvertTo
-                | Op::LessThan) => {
+                | Op::ConvertTo) => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
                     let result = match op {
@@ -607,13 +606,14 @@ impl Vm {
                         }
                         Op::Power => lhs.power(rhs),
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
-                        Op::LessThan => {
-                            self.push(Value::Boolean(lhs < rhs));
-                            continue; // TODO: restructure code to get rid of this 'continue'
-                        }
                         _ => unreachable!(),
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
+                }
+                Op::LessThan => {
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_quantity();
+                    self.push(Value::Boolean(lhs < rhs));
                 }
                 Op::Negate => {
                     let rhs = self.pop_quantity();
