@@ -312,6 +312,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 typed_ast::BinaryOperator::ConvertTo => Err(
                     TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "conversion"),
                 ),
+                typed_ast::BinaryOperator::LessThan => Err(
+                    TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "comparison"),
+                ),
             }
         }
         e @ typed_ast::Expression::Identifier(..) => Err(
@@ -415,6 +418,7 @@ impl TypeChecker {
                                     typed_ast::BinaryOperator::ConvertTo => {
                                         "unit conversion".into()
                                     }
+                                    typed_ast::BinaryOperator::LessThan => "comparison".into(),
                                 },
                                 span_expected: lhs.full_span(),
                                 expected_name: " left hand side",
@@ -431,15 +435,19 @@ impl TypeChecker {
                             },
                         ))
                     } else {
-                        Ok(lhs_type)
+                        Ok(Type::Dimension(lhs_type))
                     }
                 };
 
                 let type_ = match op {
                     typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
                     typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::Mul => dtype(&lhs_checked)? * dtype(&rhs_checked)?,
-                    typed_ast::BinaryOperator::Div => dtype(&lhs_checked)? / dtype(&rhs_checked)?,
+                    typed_ast::BinaryOperator::Mul => {
+                        Type::Dimension(dtype(&lhs_checked)? * dtype(&rhs_checked)?)
+                    }
+                    typed_ast::BinaryOperator::Div => {
+                        Type::Dimension(dtype(&lhs_checked)? / dtype(&rhs_checked)?)
+                    }
                     typed_ast::BinaryOperator::Power => {
                         let exponent_type = dtype(&rhs_checked)?;
                         if exponent_type != DType::unity() {
@@ -454,13 +462,17 @@ impl TypeChecker {
                             // Skip evaluating the exponent if the lhs is a scalar. This allows
                             // for arbitrary (decimal) exponents, if the base is a scalar.
 
-                            base_type
+                            Type::Dimension(base_type)
                         } else {
                             let exponent = evaluate_const_expr(&rhs_checked)?;
-                            base_type.power(exponent)
+                            Type::Dimension(base_type.power(exponent))
                         }
                     }
                     typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
+                    typed_ast::BinaryOperator::LessThan => {
+                        let _ = get_type_and_assert_equality()?;
+                        Type::Boolean
+                    }
                 };
 
                 typed_ast::Expression::BinaryOperator(
@@ -468,7 +480,7 @@ impl TypeChecker {
                     *op,
                     Box::new(lhs_checked),
                     Box::new(rhs_checked),
-                    Type::Dimension(type_),
+                    type_,
                 )
             }
             ast::Expression::FunctionCall(span, full_span, function_name, args) => {

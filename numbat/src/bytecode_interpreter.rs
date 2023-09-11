@@ -66,6 +66,7 @@ impl BytecodeInterpreter {
                     BinaryOperator::Div => Op::Divide,
                     BinaryOperator::Power => Op::Power,
                     BinaryOperator::ConvertTo => Op::ConvertTo,
+                    BinaryOperator::LessThan => Op::LessThan,
                 };
                 self.vm.add_op(op);
             }

@@ -45,8 +45,6 @@ pub enum TokenKind {
     // Brackets
     LeftParen,
     RightParen,
-    LeftAngleBracket,
-    RightAngleBracket,
 
     // Operators and special signs
     Plus,
@@ -65,6 +63,8 @@ pub enum TokenKind {
     At,
     Ellipsis,
     ExclamationMark,
+    LessThan,
+    GreaterThan,
 
     // Keywords
     Let,
@@ -316,8 +316,8 @@ impl Tokenizer {
         let kind = match current_char {
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
-            '<' => TokenKind::LeftAngleBracket,
-            '>' => TokenKind::RightAngleBracket,
+            '<' => TokenKind::LessThan,
+            '>' => TokenKind::GreaterThan,
             '0' if self
                 .peek()
                 .map(|c| c == 'x' || c == 'o' || c == 'b')

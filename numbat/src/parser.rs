@@ -11,7 +11,8 @@
 //!
 //! expression      →   postfix_apply
 //! postfix_apply   →   conversion ( "//" identifier ) *
-//! conversion      →   term ( "→" term ) *
+//! conversion      →   comparison ( "→" comparison ) *
+//! comparison      →   term ( (">" | "<" | …) term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
 //! factor          →   negate ( ( "*" | "/") per_factor ) *
 //! per_factor      →   negate ( "per" negate ) *
@@ -309,14 +310,14 @@ impl<'a> Parser<'a> {
             if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
                 let function_name_span = self.last().unwrap().span;
                 let mut type_parameters = vec![];
-                if self.match_exact(TokenKind::LeftAngleBracket).is_some() {
-                    while self.match_exact(TokenKind::RightAngleBracket).is_none() {
+                if self.match_exact(TokenKind::LessThan).is_some() {
+                    while self.match_exact(TokenKind::GreaterThan).is_none() {
                         if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
                             let span = self.last().unwrap().span;
                             type_parameters.push((span, type_parameter_name.lexeme.to_string()));
 
                             if self.match_exact(TokenKind::Comma).is_none()
-                                && self.peek().kind != TokenKind::RightAngleBracket
+                                && self.peek().kind != TokenKind::GreaterThan
                             {
                                 return Err(ParseError {
                                     kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
@@ -639,13 +640,29 @@ impl<'a> Parser<'a> {
     }
 
     fn conversion(&mut self) -> Result<Expression> {
-        let mut expr = self.term()?;
+        let mut expr = self.comparison()?;
         while self.match_exact(TokenKind::Arrow).is_some() {
+            let span_op = Some(self.last().unwrap().span);
+            let rhs = self.comparison()?;
+
+            expr = Expression::BinaryOperator {
+                op: BinaryOperator::ConvertTo,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+                span_op,
+            };
+        }
+        Ok(expr)
+    }
+
+    fn comparison(&mut self) -> Result<Expression> {
+        let mut expr = self.term()?;
+        while self.match_exact(TokenKind::LessThan).is_some() {
             let span_op = Some(self.last().unwrap().span);
             let rhs = self.term()?;
 
             expr = Expression::BinaryOperator {
-                op: BinaryOperator::ConvertTo,
+                op: BinaryOperator::LessThan,
                 lhs: Box::new(expr),
                 rhs: Box::new(rhs),
                 span_op,
