@@ -22,6 +22,11 @@ pub enum BinaryOperator {
     Power,
     ConvertTo,
     LessThan,
+    GreaterThan,
+    LessOrEqual,
+    GreaterOrEqual,
+    Equal,
+    NotEqual,
 }
 
 impl PrettyPrint for BinaryOperator {
@@ -36,6 +41,11 @@ impl PrettyPrint for BinaryOperator {
             Power => m::operator("^"),
             ConvertTo => m::space() + m::operator("➞") + m::space(),
             LessThan => m::space() + m::operator("<") + m::space(),
+            GreaterThan => m::space() + m::operator(">") + m::space(),
+            LessOrEqual => m::space() + m::operator("≤") + m::space(),
+            GreaterOrEqual => m::space() + m::operator("≥") + m::space(),
+            Equal => m::space() + m::operator("==") + m::space(),
+            NotEqual => m::space() + m::operator("≠") + m::space(),
         }
     }
 }

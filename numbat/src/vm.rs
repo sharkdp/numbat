@@ -57,8 +57,13 @@ pub enum Op {
     Power,
     /// Similar to Add.
     ConvertTo,
-    /// Similar to Add.
+    /// Similar to Add:
     LessThan,
+    GreaterThan,
+    LessOrEqual,
+    GreatorOrEqual,
+    Equal,
+    NotEqual,
 
     /// Move IP forward by the given offset argument if the popped-of value on
     /// top of the stack is false.
@@ -104,6 +109,11 @@ impl Op {
             | Op::Power
             | Op::ConvertTo
             | Op::LessThan
+            | Op::GreaterThan
+            | Op::LessOrEqual
+            | Op::GreatorOrEqual
+            | Op::Equal
+            | Op::NotEqual
             | Op::FullSimplify
             | Op::Return => 0,
         }
@@ -126,6 +136,11 @@ impl Op {
             Op::Power => "Power",
             Op::ConvertTo => "ConvertTo",
             Op::LessThan => "LessThan",
+            Op::GreaterThan => "GreaterThan",
+            Op::LessOrEqual => "LessOrEqual",
+            Op::GreatorOrEqual => "GreatorOrEqual",
+            Op::Equal => "Equal",
+            Op::NotEqual => "NotEqual",
             Op::JumpIfFalse => "JumpIfFalse",
             Op::Jump => "Jump",
             Op::Call => "Call",
@@ -588,10 +603,26 @@ impl Vm {
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
                 }
-                Op::LessThan => {
+                op @ (Op::LessThan
+                | Op::GreaterThan
+                | Op::LessOrEqual
+                | Op::GreatorOrEqual
+                | Op::Equal
+                | Op::NotEqual) => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
-                    self.push(Value::Boolean(lhs < rhs));
+
+                    let result = match op {
+                        Op::LessThan => lhs < rhs,
+                        Op::GreaterThan => lhs > rhs,
+                        Op::LessOrEqual => lhs <= rhs,
+                        Op::GreatorOrEqual => lhs >= rhs,
+                        Op::Equal => lhs == rhs,
+                        Op::NotEqual => lhs != rhs,
+                        _ => unreachable!(),
+                    };
+
+                    self.push(Value::Boolean(result));
                 }
                 Op::Negate => {
                     let rhs = self.pop_quantity();
