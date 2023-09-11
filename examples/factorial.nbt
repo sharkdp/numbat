@@ -1,0 +1,10 @@
+# Naive factorial implementation to showcase recursive
+# functions and conditionals.
+
+fn factorial(n: Scalar) -> Scalar =
+  if n < 1
+    then 1
+    else n × factorial(n - 1)
+
+# Compare result with the builtin factorial operator
+assert_eq(factorial(10), 10!)
