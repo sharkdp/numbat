@@ -238,6 +238,9 @@ pub enum TypeCheckError {
 
     #[error("Incompatible types in condition")]
     IncompatibleTypesInCondition(Span, Type, Span, Type, Span),
+
+    #[error("Argument types in assert_eq calls must match")]
+    IncompatibleTypesInAssertEq(Span, Type, Span, Type, Span),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -1051,6 +1054,30 @@ impl TypeChecker {
                     .iter()
                     .map(|e| self.check_expression(e))
                     .collect::<Result<Vec<_>>>()?;
+
+                match kind {
+                    ProcedureKind::Print => {
+                        // no argument type checks required, everything can be printed
+                    }
+                    ProcedureKind::AssertEq => {
+                        let type_first = dtype(&checked_args[0])?;
+                        for arg in &checked_args[1..] {
+                            let type_arg = dtype(&arg)?;
+                            if type_arg != type_first {
+                                return Err(TypeCheckError::IncompatibleTypesInAssertEq(
+                                    *span,
+                                    checked_args[0].get_type(),
+                                    checked_args[0].full_span(),
+                                    arg.get_type(),
+                                    arg.full_span(),
+                                ));
+                            }
+                        }
+                    }
+                    ProcedureKind::Type => {
+                        unreachable!("type() calls have a special handling above")
+                    }
+                }
 
                 typed_ast::Statement::ProcedureCall(kind.clone(), checked_args)
             }

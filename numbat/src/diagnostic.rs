@@ -226,6 +226,23 @@ impl ErrorDiagnostic for TypeCheckError {
                     "Incompatible types in 'then' and 'else' branches of conditional",
                 ),
             ]),
+            TypeCheckError::IncompatibleTypesInAssertEq(
+                procedure_span,
+                first_type,
+                first_span,
+                arg_type,
+                arg_span,
+            ) => d.with_labels(vec![
+                first_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(first_type.to_string()),
+                arg_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(arg_type.to_string()),
+                procedure_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message("Incompatible types in 'assert_eq' call"),
+            ]),
             TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
             | TypeCheckError::UnknownForeignFunction(span, _)
             | TypeCheckError::NonRationalExponent(span)
