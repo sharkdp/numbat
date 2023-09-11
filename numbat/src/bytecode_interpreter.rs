@@ -89,6 +89,28 @@ impl BytecodeInterpreter {
                 let index = self.vm.add_constant(Constant::Boolean(*val));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
+            Expression::Condition(_, condition, then_expr, else_expr) => {
+                self.compile_expression(condition)?;
+
+                let if_jump_offset = self.vm.current_offset() + 1; // +1 for the opcode
+                self.vm.add_op1(Op::JumpIfFalse, 0xffff);
+
+                self.compile_expression(then_expr)?;
+
+                let else_jump_offset = self.vm.current_offset() + 1;
+                self.vm.add_op1(Op::Jump, 0xffff);
+
+                let else_block_offset = self.vm.current_offset();
+                self.vm
+                    .patch_u16_value_at(if_jump_offset, else_block_offset - (if_jump_offset + 2));
+
+                self.compile_expression(else_expr)?;
+
+                let end_offset = self.vm.current_offset();
+
+                self.vm
+                    .patch_u16_value_at(else_jump_offset, end_offset - (else_jump_offset + 2));
+            }
         };
 
         Ok(())
@@ -104,7 +126,8 @@ impl BytecodeInterpreter {
             | Expression::FunctionCall(..)
             | Expression::UnaryOperator(..)
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
-            | Expression::Boolean(..) => {}
+            | Expression::Boolean(..)
+            | Expression::Condition(..) => {}
             Expression::BinaryOperator(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }

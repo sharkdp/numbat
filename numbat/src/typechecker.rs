@@ -232,6 +232,12 @@ pub enum TypeCheckError {
 
     #[error("Expected dimension type, got {1} instead")]
     ExpectedDimensionType(Span, Type),
+
+    #[error("Expected boolean value")]
+    ExpectedBool(Span),
+
+    #[error("Incompatible types in condition")]
+    IncompatibleTypesInCondition(Span, Type, Span, Type, Span),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -328,6 +334,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         ),
         e @ typed_ast::Expression::Boolean(_, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Boolean value"),
+        ),
+        e @ typed_ast::Expression::Condition(..) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Conditional"),
         ),
     }
 }
@@ -656,6 +665,35 @@ impl TypeChecker {
                 )
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
+            ast::Expression::Condition(span, condition, then, else_) => {
+                let condition = self.check_expression(condition)?;
+                if condition.get_type() != Type::Boolean {
+                    return Err(TypeCheckError::ExpectedBool(condition.full_span()));
+                }
+
+                let then = self.check_expression(then)?;
+                let else_ = self.check_expression(else_)?;
+
+                let then_type = then.get_type();
+                let else_type = else_.get_type();
+
+                if then_type != else_type {
+                    return Err(TypeCheckError::IncompatibleTypesInCondition(
+                        *span,
+                        then_type,
+                        then.full_span(),
+                        else_type,
+                        else_.full_span(),
+                    ));
+                }
+
+                typed_ast::Expression::Condition(
+                    *span,
+                    Box::new(condition),
+                    Box::new(then),
+                    Box::new(else_),
+                )
+            }
         })
     }
 

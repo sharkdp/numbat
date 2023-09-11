@@ -59,6 +59,12 @@ pub enum Op {
     /// Similar to Add.
     LessThan,
 
+    /// Move IP forward by the given offset argument if the popped-of value on
+    /// top of the stack is false.
+    JumpIfFalse,
+    /// Unconditionally move IP forward by the given offset argument
+    Jump,
+
     /// Call the specified function with the specified number of arguments
     Call,
     /// Same as above, but call a foreign/native function
@@ -85,7 +91,9 @@ impl Op {
             | Op::SetVariable
             | Op::GetVariable
             | Op::GetLocal
-            | Op::PrintString => 1,
+            | Op::PrintString
+            | Op::JumpIfFalse
+            | Op::Jump => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
@@ -117,6 +125,8 @@ impl Op {
             Op::Power => "Power",
             Op::ConvertTo => "ConvertTo",
             Op::LessThan => "LessThan",
+            Op::JumpIfFalse => "JumpIfFalse",
+            Op::Jump => "Jump",
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
             Op::FFICallProcedure => "FFICallProcedure",
@@ -285,6 +295,17 @@ impl Vm {
         current_chunk.push(op as u8);
         Self::push_u16(current_chunk, arg1);
         Self::push_u16(current_chunk, arg2);
+    }
+
+    pub fn current_offset(&self) -> u16 {
+        self.bytecode[self.current_chunk_index].1.len() as u16
+    }
+
+    pub fn patch_u16_value_at(&mut self, offset: u16, arg: u16) {
+        let offset = offset as usize;
+        let chunk = self.current_chunk_mut();
+        chunk[offset] = (arg & 0xff) as u8;
+        chunk[offset + 1] = ((arg >> 8) & 0xff) as u8;
     }
 
     pub fn add_constant(&mut self, constant: Constant) -> u16 {
@@ -462,6 +483,15 @@ impl Vm {
         }
     }
 
+    fn pop_bool(&mut self) -> bool {
+        match self.pop() {
+            Value::Boolean(b) => b,
+            _ => {
+                panic!("Expected boolean to be on top of the stack")
+            }
+        }
+    }
+
     fn pop(&mut self) -> Value {
         self.stack.pop().expect("stack should not be empty")
     }
@@ -578,7 +608,7 @@ impl Vm {
                         Op::Power => lhs.power(rhs),
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         Op::LessThan => {
-                            self.push(Value::Boolean(lhs.unsafe_value() < rhs.unsafe_value())); // TODO!!
+                            self.push(Value::Boolean(lhs < rhs));
                             continue; // TODO: restructure code to get rid of this 'continue'
                         }
                         _ => unreachable!(),
@@ -603,6 +633,16 @@ impl Vm {
                     }
 
                     self.push_quantity(Quantity::from_scalar(math::factorial(lhs)));
+                }
+                Op::JumpIfFalse => {
+                    let offset = self.read_u16() as usize;
+                    if !self.pop_bool() {
+                        self.current_frame_mut().ip += offset;
+                    }
+                }
+                Op::Jump => {
+                    let offset = self.read_u16() as usize;
+                    self.current_frame_mut().ip += offset;
                 }
                 Op::Call => {
                     let function_idx = self.read_u16() as usize;

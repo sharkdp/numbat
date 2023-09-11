@@ -290,6 +290,13 @@ impl std::ops::Neg for Quantity {
     }
 }
 
+impl PartialOrd for Quantity {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        let other_converted = other.convert_to(self.unit()).ok()?;
+        self.value.partial_cmp(&other_converted.value)
+    }
+}
+
 impl PrettyPrint for Quantity {
     fn pretty_print(&self) -> crate::markup::Markup {
         use crate::markup;
