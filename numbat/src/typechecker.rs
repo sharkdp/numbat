@@ -395,18 +395,18 @@ impl TypeChecker {
             ast::Expression::UnaryOperator { op, expr, span_op } => {
                 let checked_expr = self.check_expression(expr)?;
                 let type_ = checked_expr.get_type();
+                let dtype = match &type_ {
+                    Type::Dimension(d) => d.clone(),
+                    _ => {
+                        return Err(TypeCheckError::ExpectedDimensionType(
+                            checked_expr.full_span(),
+                            type_.clone(),
+                        ))
+                    }
+                };
 
                 match *op {
                     ast::UnaryOperator::Factorial => {
-                        let dtype = match &type_ {
-                            Type::Dimension(d) => d.clone(),
-                            _ => {
-                                return Err(TypeCheckError::ExpectedDimensionType(
-                                    checked_expr.full_span(),
-                                    type_.clone(),
-                                ))
-                            }
-                        };
                         if dtype != DType::unity() {
                             return Err(TypeCheckError::NonScalarFactorialArgument(
                                 expr.full_span(),
@@ -1500,6 +1500,14 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("assert_eq(1,2,3,4)"),
             TypeCheckError::WrongArity{callable_span:_, callable_name, callable_definition_span: _,  arity, num_args: 4} if arity == (2..=3) && callable_name == "assert_eq"
+        ));
+    }
+
+    #[test]
+    fn boolean_values() {
+        assert!(matches!(
+            get_typecheck_error("-true"),
+            TypeCheckError::ExpectedDimensionType(_, _)
         ));
     }
 
