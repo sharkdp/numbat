@@ -1234,7 +1234,7 @@ pub fn parse_dexpr(input: &str) -> DimensionExpression {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{binop, factorial, identifier, negate, scalar, ReplaceSpans};
+    use crate::ast::{binop, conditional, factorial, identifier, negate, scalar, ReplaceSpans};
 
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
@@ -1986,5 +1986,40 @@ mod tests {
             &["fn print() = 1"],
             ParseErrorKind::ExpectedIdentifierAfterFn,
         );
+    }
+
+    #[test]
+    fn conditionals() {
+        parse_as_expression(
+            &[
+                "if 1 < 2 then 3 + 4 else 5 * 6",
+                "if (1 < 2) then (3 + 4) else (5 * 6)",
+                "if 1 < 2\n  then 3 + 4\n  else 5 * 6",
+            ],
+            conditional!(
+                binop!(scalar!(1.0), LessThan, scalar!(2.0)),
+                binop!(scalar!(3.0), Add, scalar!(4.0)),
+                binop!(scalar!(5.0), Mul, scalar!(6.0))
+            ),
+        );
+
+        parse_as_expression(
+            &[
+                "if true then if false then 1 else 2 else 3",
+                "if true then (if false then 1 else 2) else 3",
+            ],
+            conditional!(
+                Expression::Boolean(Span::dummy(), true),
+                conditional!(
+                    Expression::Boolean(Span::dummy(), false),
+                    scalar!(1.0),
+                    scalar!(2.0)
+                ),
+                scalar!(3.0)
+            ),
+        );
+
+        should_fail_with(&["if true 1 else 2"], ParseErrorKind::ExpectedThen);
+        should_fail_with(&["if true then 1"], ParseErrorKind::ExpectedElse);
     }
 }
