@@ -352,8 +352,16 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     identifiers: HashMap<String, Type>,
-    function_signatures:
-        HashMap<String, (Span, Vec<(Span, String)>, Vec<(Span, Type)>, bool, DType)>,
+    function_signatures: HashMap<
+        String,
+        (
+            Span,                // span of the function definition
+            Vec<(Span, String)>, // type parameters
+            Vec<(Span, Type)>,   // parameter types
+            bool,                // whether or not the function is variadic
+            DType,               // return type
+        ),
+    >,
     registry: DimensionRegistry,
 }
 
