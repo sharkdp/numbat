@@ -460,7 +460,10 @@ impl Vm {
     }
 
     fn pop_quantity(&mut self) -> Quantity {
-        self.pop().unsafe_as_quantity()
+        match self.pop() {
+            Value::Quantity(q) => q,
+            _ => panic!("Expected quantity to be on the top of the stack"),
+        }
     }
 
     fn pop_bool(&mut self) -> bool {
@@ -637,14 +640,14 @@ impl Vm {
 
                     let mut args = vec![];
                     for _ in 0..num_args {
-                        args.push(self.pop_quantity());
+                        args.push(self.pop());
                     }
                     args.reverse(); // TODO: use a deque?
 
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
                             let result = (function)(&args[..]);
-                            self.push_quantity(result);
+                            self.push(result);
                         }
                         Callable::Procedure(procedure) => {
                             let result = (procedure)(ctx, &args[..]);
