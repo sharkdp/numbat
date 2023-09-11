@@ -14,6 +14,7 @@
     - [Flow rate in a pipe](./example-pipe_flow_rate.md)
     - [Recipe](./example-recipe.md)
     - [Acidity](./example-acidity.md)
+    - [Factorial](./example-factorial.md)
     - [XKCD 2585](./example-xkcd_2585.md)
     - [XKCD 2812](./example-xkcd_2812.md)
 

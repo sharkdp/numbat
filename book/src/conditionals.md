@@ -19,3 +19,14 @@ fn step(x: Scalar) -> Scalar = if x < 0 then 0 else 1
 ```nbt
 fn min<T>(x: T, y: T) -> T = if x < y then x else y
 ```
+
+## Example: Fibonacci numbers
+
+Naive recursive Fibonacci implementation
+
+```nbt
+fn fib(n: Scalar) -> Scalar =
+  if n ≤ 2
+    then 1
+    else fib(n - 2) + fib(n - 1)
+```
