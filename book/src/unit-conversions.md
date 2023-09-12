@@ -16,8 +16,8 @@ expression on the right hand side — but only the unit part will be extracted. 
   = 0.12 m²·km
 
 # convert x1 to the same unit as x2:
-> x1 = 50 km / h
-> x2 = 3 m/s -> x1
+> let x1 = 50 km / h
+> let x2 = 3 m/s -> x1
 
   x2 = 10.8 km/h
 ```

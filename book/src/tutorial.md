@@ -18,9 +18,10 @@ let occurence = 0.0117%
 let molar_mass = 40 g / mol
 ```
 
-New constants are introduced with the `let` keyword. We define these physical quantities
-with their respective physical units (`years`, `percent`, `g / mol`) in order to profit from
-Numbats unit-safety and unit-conversion features later on.
+New constants are [introduced with the `let` keyword](./constant-definitions.md). We
+define these physical quantities with their respective physical units (`years`,
+`percent`, `g / mol`) in order to profit from Numbats unit-safety and unit-conversion
+features later on.
 
 Our first goal is to compute the radioactivity of natural potassium. Instead of dealing with the
 half-life, we want to know the decay rate. When entering the following computation, you can try
@@ -49,7 +50,7 @@ calculation at the units-level, Numbat would detect that and show an error.
 Unit safety is a powerful concept not just because you can eliminate an entire category
 of errors, but also because it makes your computations more readable.
 
-We are interested in the radioactivity of bananas, so we first introduce a new (base) unit
+We are interested in the radioactivity of bananas, so we first [introduce a new (base) unit](./unit-definitions.md):
 
 ``` numbat
 unit banana
@@ -79,10 +80,10 @@ This also works with custom units since Numbat adds new physical dimensions (typ
 let power_per_banana: Power / Banana = radioactivity_banana * energy_per_decay
 ```
 
-You'll also notice that types can be combined via mathematical operators such as `/` in this example.
+You'll also notice that types can be combined via [mathematical operators](./operations.md) such as `/` in this example.
 
 How many bananas we need to power a household is going to depend on the average power consumption
-of that household. So we are defining a simple function
+of that household. So we are [defining a simple function](./function-definitions.md)
 
 ```numbat
 fn household_power(annual_consumption: Energy) -> Power = annual_consumption / year

@@ -9,7 +9,7 @@ All SI-accepted units support [metric prefixes](https://en.wikipedia.org/wiki/Me
 and — where sensible — units allow for [binary prefixes](https://en.wikipedia.org/wiki/Binary_prefix) (`MiB`, `GiB`, ... or `mebibyte`, `gibibyte`, ...). Note
 that the short-form prefixes can only be used with the short version of the unit, and vice versa (that is: `kmeter` and `kilom` are *not* allowed, only `km` and `kilometer`).
 
-Units can be combined using [mathematical operations](./operators.md) such as multiplication, division and exponentiation: `kg * m/s^2`, `km/h`, `m²`, `meter per second`.
+Units can be combined using [mathematical operations](./operations.md) such as multiplication, division and exponentiation: `kg * m/s^2`, `km/h`, `m²`, `meter per second`.
 
 The following snippet shows various styles of entering units:
 ```nbt

@@ -1,4 +1,4 @@
-# Constant definitions
+# Constants
 
 New constants can be introduced with the `let` keyword:
 ```nbt
