@@ -444,7 +444,7 @@ impl<'a> Parser<'a> {
                 if identifier.lexeme.starts_with("__") {
                     return Err(ParseError::new(
                         ParseErrorKind::DoubleUnderscoreTypeNamesReserved,
-                        self.peek().span,
+                        identifier.span,
                     ));
                 }
 
@@ -1163,7 +1163,7 @@ impl<'a> Parser<'a> {
             if token.lexeme.starts_with("__") {
                 return Err(ParseError::new(
                     ParseErrorKind::DoubleUnderscoreTypeNamesReserved,
-                    self.peek().span,
+                    token.span,
                 ));
             }
             let span = self.last().unwrap().span;
