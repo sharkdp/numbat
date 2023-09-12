@@ -781,6 +781,7 @@ impl TypeChecker {
                 typed_ast::Statement::DefineVariable(
                     identifier.clone(),
                     expr_checked,
+                    type_annotation.clone(),
                     Type::Dimension(type_deduced),
                 )
             }
@@ -805,6 +806,7 @@ impl TypeChecker {
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
                     decorators.clone(),
+                    dexpr.clone(),
                     Type::Dimension(type_specified),
                 )
             }
@@ -855,6 +857,7 @@ impl TypeChecker {
                     identifier.clone(),
                     expr_checked,
                     decorators.clone(),
+                    type_annotation.clone(),
                 )
             }
             ast::Statement::DefineFunction {
@@ -926,6 +929,7 @@ impl TypeChecker {
                         *parameter_span,
                         parameter.clone(),
                         *p_is_variadic,
+                        type_annotation.clone(),
                         Type::Dimension(parameter_type),
                     ));
 
@@ -949,7 +953,7 @@ impl TypeChecker {
                 let add_function_signature = |tc: &mut TypeChecker, return_type: DType| {
                     let parameter_types = typed_parameters
                         .iter()
-                        .map(|(span, _, _, t)| (*span, t.clone()))
+                        .map(|(span, _, _, _, t)| (*span, t.clone()))
                         .collect();
                     tc.function_signatures.insert(
                         function_name.clone(),
@@ -1021,8 +1025,13 @@ impl TypeChecker {
 
                 typed_ast::Statement::DefineFunction(
                     function_name.clone(),
+                    type_parameters
+                        .iter()
+                        .map(|(_, name)| name.clone())
+                        .collect(),
                     typed_parameters,
                     body_checked,
+                    return_type_annotation.clone(),
                     Type::Dimension(return_type),
                 )
             }
@@ -1059,7 +1068,7 @@ impl TypeChecker {
                         .add_base_dimension(name)
                         .map_err(TypeCheckError::RegistryError)?;
                 }
-                typed_ast::Statement::DefineDimension(name.clone())
+                typed_ast::Statement::DefineDimension(name.clone(), dexprs.clone())
             }
             ast::Statement::ProcedureCall(span, kind @ ProcedureKind::Type, args) => {
                 if args.len() != 1 {

@@ -45,7 +45,6 @@ use resolver::ResolverError;
 use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
-use ast::Statement;
 pub use diagnostic::Diagnostic;
 pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
@@ -140,7 +139,7 @@ impl Context {
         &mut self,
         code: &str,
         code_source: CodeSource,
-    ) -> Result<(Vec<Statement>, InterpreterResult)> {
+    ) -> Result<(Vec<typed_ast::Statement>, InterpreterResult)> {
         self.interpret_with_settings(&mut InterpreterSettings::default(), code, code_source)
     }
 
@@ -149,7 +148,7 @@ impl Context {
         settings: &mut InterpreterSettings,
         code: &str,
         code_source: CodeSource,
-    ) -> Result<(Vec<Statement>, InterpreterResult)> {
+    ) -> Result<(Vec<typed_ast::Statement>, InterpreterResult)> {
         let statements = self
             .resolver
             .resolve(code, code_source)
@@ -181,7 +180,7 @@ impl Context {
 
         let result = self
             .typechecker
-            .check_statements(transformed_statements.clone()) // TODO(minor): get rid of clone?
+            .check_statements(transformed_statements)
             .map_err(NumbatError::TypeCheckError);
 
         if result.is_err() {
@@ -222,7 +221,7 @@ impl Context {
 
         let result = result.map_err(NumbatError::RuntimeError)?;
 
-        Ok((transformed_statements, result))
+        Ok((typed_statements, result))
     }
 
     pub fn print_diagnostic(&self, error: impl ErrorDiagnostic) {
