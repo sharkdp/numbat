@@ -22,7 +22,7 @@
 
 - [Basics](./basics.md)
   - [Number notation](./number-notation.md)
-  - [Unit notation]()
+  - [Unit notation](./unit-notation.md)
   - [Operators and their precedence](./operators.md)
   - [Unit conversions](./unit-conversions.md)
   - [Printing, testing, debugging](./procedures.md)
