@@ -22,5 +22,5 @@ unit decade: Time = 10 years
 @aliases(centuries)
 unit century: Time = 100 years
 
-@aliases(millenia)
-unit millenium: Time = 1000 years
+@aliases(millennia)
+unit millennium: Time = 1000 years
