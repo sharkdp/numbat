@@ -1,12 +1,25 @@
 use core::scalar
 use math::constants
 
-### Mathematical functions
+## Basics
 
 fn abs<T>(x: T) -> T
 fn round<T>(x: T) -> T
 fn floor<T>(x: T) -> T
 fn ceil<T>(x: T) -> T
+fn mod<T>(a: T, b: T) -> T
+fn sqrt<D>(x: D^2) -> D = x^(1/2)
+fn sqr<D>(x: D) -> D^2 = x^2
+
+## Exponential and logarithm
+
+fn exp(x: Scalar) -> Scalar
+fn ln(x: Scalar) -> Scalar
+fn log(x: Scalar) -> Scalar = ln(x)
+fn log10(x: Scalar) -> Scalar
+fn log2(x: Scalar) -> Scalar
+
+## Trigonometry
 
 fn sin(x: Scalar) -> Scalar
 fn cos(x: Scalar) -> Scalar
@@ -23,18 +36,13 @@ fn asinh(x: Scalar) -> Scalar
 fn acosh(x: Scalar) -> Scalar
 fn atanh(x: Scalar) -> Scalar
 
-fn mod<T>(a: T, b: T) -> T
-fn exp(x: Scalar) -> Scalar
-fn ln(x: Scalar) -> Scalar
-fn log(x: Scalar) -> Scalar = ln(x)
-fn log10(x: Scalar) -> Scalar
-fn log2(x: Scalar) -> Scalar
+# Note: there are even more functions in `math::trigonmetry_extra`.
+
+## Others
+
 fn gamma(x: Scalar) -> Scalar
 
-fn sqrt<D>(x: D^2) -> D = x^(1/2)
-fn sqr<D>(x: D) -> D^2 = x^2
-
-### Statistics functions
+### Statistics
 
 fn mean<D>(xs: D…) -> D
 fn maximum<D>(xs: D…) -> D

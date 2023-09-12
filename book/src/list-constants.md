@@ -49,6 +49,7 @@ Colloquial:
 | Bohr magneton | `bohr_magneton`, `µ_B` | `Energy / MagneticFluxDensity` |
 | Fine structure constant | `fine_structure_constant`, `alpha`, `α` | `Scalar` |
 | Proton mass | `proton_mass` | `Mass` |
+| Neutron mass | `neutron_mass` | `Mass` |
 | Avogadro constant | `avogadro_constant`, `N_A` | `1 / AmountOfSubstance` |
 | Boltzmann constant | `boltzmann_constant`, `k_B` | `Energy / Temperature` |
 | Ideal gas constant | `gas_constant`, `R` | `Energy / (AmountOfSubstance × Temperature)` |

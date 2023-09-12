@@ -1,6 +1,6 @@
 use core::scalar
 
-### Mathematical constants
+### Mathematical
 
 let pi = 3.14159265358979323846264338327950288
 let π = pi
@@ -11,6 +11,8 @@ let golden_ratio = φ
 
 ### Named numbers
 
+#### Large numbers
+
 let hundred =  100
 let thousand =  1_000
 let million =  1_000_000
@@ -19,16 +21,9 @@ let trillion =  10^12
 let quadrillion =  10^15
 let quintillion =  10^18
 
-let quarter = 1 / 4
-let half = 1 / 2
-let semi = 1 / 2
-let double = 2
-let triple = 3
-let dozen = 12
-
 let googol =  10^100
 
-### Fractions
+### Unicode fractions
 
 let ½ = 1 / 2
 
@@ -56,3 +51,13 @@ let ⅞ = 7 / 8
 let ⅑ = 1 / 9
 
 let ⅒ = 1 / 10
+
+#### Colloquial
+
+let quarter = 1 / 4
+let half = 1 / 2
+let semi = 1 / 2
+let double = 2
+let triple = 3
+let dozen = 12
+

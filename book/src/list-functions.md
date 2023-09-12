@@ -22,6 +22,8 @@
 
 ### Trigonometry
 
+Basic:
+
 * `fn cos(x: Scalar) -> Scalar`
 * `fn sin(x: Scalar) -> Scalar`
 * `fn tan(x: Scalar) -> Scalar`
@@ -29,6 +31,9 @@
 * `fn acos(x: Scalar) -> Scalar`
 * `fn atan(x: Scalar) -> Scalar`
 * `fn atan2<T>(y: T, x: T) -> Scalar`
+
+Hyperbolic:
+
 * `fn sinh(x: Scalar) -> Scalar`
 * `fn cosh(x: Scalar) -> Scalar`
 * `fn tanh(x: Scalar) -> Scalar`
@@ -36,7 +41,8 @@
 * `fn acosh(x: Scalar) -> Scalar`
 * `fn atanh(x: Scalar) -> Scalar`
 
-### Trigonometry (extra)
+When importing the `math::trigonometry_extra` module (`use math::trigonometry_extra`),
+you also get access to:
 
 * `fn cot(x: Scalar) -> Scalar`
 * `fn acot(x: Scalar) -> Scalar`
@@ -52,11 +58,24 @@
 * `fn csch(x: Scalar) -> Scalar`
 * `fn acsch(x: Scalar) -> Scalar`
 
+### Others
+
+* `fn gamma(x: Scalar) -> Scalar`
+
 ### Statistics
 
 * `fn mean<D>(xs: D…) -> D`
 * `fn maximum<D>(xs: D…) -> D`
 * `fn minimum<D>(xs: D…) -> D`
+
+### Geometry
+
+* `fn hypot2<T>(x: T, y: T) -> T`
+* `fn hypot3<T>(x: T, y: T, z: T) -> T`
+* `fn circle_area<L>(radius: L) -> L^2`
+* `fn circle_circumference<L>(radius: L) -> L`
+* `fn sphere_area<L>(radius: L) -> L^2`
+* `fn sphere_volume<L>(radius: L) -> L^3`
 
 ## Physics
 
