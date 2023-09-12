@@ -147,12 +147,19 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DefineVariable(identifier, expr, _dexpr) => {
+            Statement::DefineVariable(identifier, expr, _type_annotation, _type) => {
                 self.compile_expression_with_simplify(expr)?;
                 let identifier_idx = self.vm.add_global_identifier(identifier, None);
                 self.vm.add_op1(Op::SetVariable, identifier_idx);
             }
-            Statement::DefineFunction(name, parameters, Some(expr), _return_type) => {
+            Statement::DefineFunction(
+                name,
+                _type_parameters,
+                parameters,
+                Some(expr),
+                _return_type_annotation,
+                _return_type,
+            ) => {
                 self.vm.begin_function(name);
                 for parameter in parameters.iter() {
                     self.local_variables.push(parameter.1.clone());
@@ -164,7 +171,14 @@ impl BytecodeInterpreter {
                 }
                 self.vm.end_function();
             }
-            Statement::DefineFunction(name, parameters, None, _return_type) => {
+            Statement::DefineFunction(
+                name,
+                _type_parameters,
+                parameters,
+                None,
+                _return_type_annotation,
+                _return_type,
+            ) => {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
 
@@ -179,14 +193,14 @@ impl BytecodeInterpreter {
                     },
                 );
             }
-            Statement::DefineDimension(_name) => {
+            Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DefineBaseUnit(unit_name, decorators, dexpr) => {
+            Statement::DefineBaseUnit(unit_name, decorators, _type_annotation, type_) => {
                 self.vm
                     .unit_registry
-                    .add_base_unit(unit_name, dexpr.clone())
+                    .add_base_unit(unit_name, type_.clone())
                     .map_err(RuntimeError::UnitRegistryError)?;
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
@@ -198,7 +212,7 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::DefineDerivedUnit(unit_name, expr, decorators) => {
+            Statement::DefineDerivedUnit(unit_name, expr, decorators, _type_annotation) => {
                 let constant_idx = self
                     .vm
                     .add_constant(Constant::Unit(Unit::new_base("<dummy>", "<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
