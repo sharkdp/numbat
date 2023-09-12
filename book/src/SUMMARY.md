@@ -26,7 +26,7 @@
   - [Operators and their precedence](./operators.md)
   - [Unit conversions](./unit-conversions.md)
   - [Printing, testing, debugging](./procedures.md)
-  - [Variable definitions]()
+  - [Constant definitions](./constant-definitions.md)
   - [Function definitions]()
   - [Conditionals](./conditionals.md)
 - [Advanced](./advanced.md)

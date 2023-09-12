@@ -50,9 +50,9 @@ pi/3 + pi // cos  # Same, 'arg // f' is equivalent to 'f(arg)'
                   # which makes it very useful for interactive
                   # terminals (press up-arrow, and add '// f')
 
-# 4. Variable definitions
+# 4. Constants
 
-let n = 4                          # Simple numerical variable
+let n = 4                          # Simple numerical constant
 let q1 = 2 m/s                     # Right hand side can be any expression
 let q2: Speed = 2 m/s              # With optional type annotation
 let q3: Length / Time = 2 m/s      # more complex type annotation
