@@ -649,4 +649,17 @@ mod tests {
         roundtrip_check("-3!");
         roundtrip_check("(-3)!");
     }
+
+    #[test]
+    fn pretty_print_dexpr() {
+        roundtrip_check("unit z: Length");
+        roundtrip_check("unit z: Length * Time");
+        roundtrip_check("unit z: Length * Time^2");
+        roundtrip_check("unit z: Length^-3 * Time^2");
+        roundtrip_check("unit z: Length / Time");
+        roundtrip_check("unit z: Length / Time^2");
+        roundtrip_check("unit z: Length / Time^(-2)");
+        roundtrip_check("unit z: Length / (Time * Mass)");
+        roundtrip_check("unit z: Length^5 * Time^4 / (Time^2 * Mass^3)");
+    }
 }
