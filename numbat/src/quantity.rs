@@ -319,7 +319,7 @@ impl PrettyPrint for Quantity {
 
         markup::value(formatted_number)
             + if unit_str == "°" {
-                markup::Markup::default()
+                markup::empty()
             } else {
                 markup::space()
             }

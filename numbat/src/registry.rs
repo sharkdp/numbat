@@ -6,6 +6,7 @@ use thiserror::Error;
 
 use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
+    pretty_print::PrettyPrint,
     product::{Canonicalize, Product},
     suggestion,
 };
@@ -66,7 +67,17 @@ impl Display for BaseRepresentation {
         if self.iter().count() == 0 {
             f.write_str("Scalar")
         } else {
-            f.write_str(&self.as_string(|f| f.1, " × ", " / "))
+            f.write_str(&self.as_string(|f| f.1, '×', '/', true))
+        }
+    }
+}
+
+impl PrettyPrint for BaseRepresentation {
+    fn pretty_print(&self) -> crate::markup::Markup {
+        if self.iter().count() == 0 {
+            crate::markup::type_identifier("Scalar")
+        } else {
+            self.pretty_print_with(|f| f.1, '×', '/', true)
         }
     }
 }

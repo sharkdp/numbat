@@ -4,6 +4,7 @@ use std::{
 };
 
 use crate::arithmetic::{Exponent, Power};
+use crate::markup::{self as m, Formatter, PlainTextFormatter};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::Signed;
@@ -24,22 +25,37 @@ pub struct Product<Factor, const CANONICALIZE: bool = false> {
 impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: bool>
     Product<Factor, CANONICALIZE>
 {
-    pub fn as_string<GetExponent>(
+    pub fn pretty_print_with<GetExponent>(
         &self,
         get_exponent: GetExponent,
-        times_separator: &'static str,
-        over_separator: &'static str,
-    ) -> String
+        times_separator: char,
+        over_separator: char,
+        separator_padding: bool,
+    ) -> m::Markup
     where
         GetExponent: Fn(&Factor) -> Exponent,
     {
-        let to_string = |fs: &[Factor]| -> String {
-            let mut result = String::new();
-            for factor in fs.iter() {
-                result.push_str(&factor.to_string());
-                result.push_str(times_separator);
+        let separator_padding = if separator_padding {
+            m::space()
+        } else {
+            m::empty()
+        };
+
+        let to_string = |fs: &[Factor]| -> m::Markup {
+            let mut result = m::empty();
+            let num_factors = fs.len();
+            for (i, factor) in fs.iter().enumerate() {
+                result = result
+                    + m::type_identifier(&factor.to_string()) // TODO: for units, this should be m::unit. This is not a problem so far, since we only plain-text format units
+                    + if i == num_factors - 1 {
+                        m::empty()
+                    } else {
+                        separator_padding.clone()
+                            + m::operator(times_separator.to_string())
+                            + separator_padding.clone()
+                    };
             }
-            result.trim_end_matches(times_separator).into()
+            result
         };
 
         let factors_positive: Vec<_> = self
@@ -54,20 +70,47 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
             .collect();
 
         match (&factors_positive[..], &factors_negative[..]) {
-            (&[], &[]) => "".into(),
+            (&[], &[]) => m::empty(),
             (&[], negative) => to_string(negative),
             (positive, &[]) => to_string(positive),
-            (positive, [single_negative]) => format!(
-                "{}{over_separator}{}",
-                to_string(positive),
-                to_string(&[single_negative.clone().invert()])
-            ),
-            (positive, negative) => format!(
-                "{}{over_separator}({})",
-                to_string(positive),
-                to_string(&negative.iter().map(|f| f.clone().invert()).collect_vec())
-            ),
+            (positive, [single_negative]) => {
+                to_string(positive)
+                    + separator_padding.clone()
+                    + m::operator(over_separator.to_string())
+                    + separator_padding.clone()
+                    + to_string(&[single_negative.clone().invert()])
+            }
+            (positive, negative) => {
+                to_string(positive)
+                    + separator_padding.clone()
+                    + m::operator(over_separator.to_string())
+                    + separator_padding.clone()
+                    + m::operator("(")
+                    + to_string(&negative.iter().map(|f| f.clone().invert()).collect_vec())
+                    + m::operator(")")
+            }
         }
+    }
+
+    pub fn as_string<GetExponent>(
+        &self,
+        get_exponent: GetExponent,
+        times_separator: char,
+        over_separator: char,
+        separator_padding: bool,
+    ) -> String
+    where
+        GetExponent: Fn(&Factor) -> Exponent,
+    {
+        PlainTextFormatter {}.format(
+            &self.pretty_print_with(
+                get_exponent,
+                times_separator,
+                over_separator,
+                separator_padding,
+            ),
+            false,
+        )
     }
 }
 

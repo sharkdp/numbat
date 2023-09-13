@@ -30,7 +30,7 @@ impl std::fmt::Display for Type {
 impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
-            Type::Dimension(d) => m::type_identifier(d.to_string()), // TODO: properly pretty-print the type. ideally, look up the abbreviated name
+            Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::keyword("bool"),
         }
     }
@@ -145,12 +145,12 @@ fn accepts_prefix_markup(accepts_prefix: &Option<AcceptsPrefix>) -> Markup {
                 } => m::keyword("none"),
             }
     } else {
-        Markup::default()
+        m::empty()
     }
 }
 
 fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
-    let mut markup_decorators = Markup::default();
+    let mut markup_decorators = m::empty();
     for decorator in decorators {
         markup_decorators = markup_decorators
             + match decorator {
@@ -206,7 +206,7 @@ impl PrettyPrint for Statement {
                 return_type,
             ) => {
                 let markup_type_parameters = if type_parameters.is_empty() {
-                    Markup::default()
+                    m::empty()
                 } else {
                     m::operator("<")
                         + Itertools::intersperse(
@@ -228,7 +228,7 @@ impl PrettyPrint for Statement {
                                 + if *is_variadic {
                                     m::operator("…")
                                 } else {
-                                    Markup::default()
+                                    m::empty()
                                 }
                         }),
                     m::operator(", "),
