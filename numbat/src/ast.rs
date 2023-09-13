@@ -204,6 +204,17 @@ impl DimensionExpression {
     }
 }
 
+fn with_parens(dexpr: &DimensionExpression) -> Markup {
+    match dexpr {
+        expr @ (DimensionExpression::Unity(..)
+        | DimensionExpression::Dimension(..)
+        | DimensionExpression::Power(..)) => expr.pretty_print(),
+        expr @ (DimensionExpression::Multiply(..) | DimensionExpression::Divide(..)) => {
+            m::operator("(") + expr.pretty_print() + m::operator(")")
+        }
+    }
+}
+
 impl PrettyPrint for DimensionExpression {
     fn pretty_print(&self) -> Markup {
         match self {
@@ -213,12 +224,10 @@ impl PrettyPrint for DimensionExpression {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
             }
             DimensionExpression::Divide(_, lhs, rhs) => {
-                lhs.pretty_print() + m::space() + m::operator("/") + m::space() + rhs.pretty_print()
+                lhs.pretty_print() + m::space() + m::operator("/") + m::space() + with_parens(rhs)
             }
             DimensionExpression::Power(_, lhs, _, exp) => {
-                m::operator("(")
-                    + lhs.pretty_print()
-                    + m::operator(")")
+                with_parens(lhs)
                     + m::operator("^")
                     + if exp.is_positive() {
                         m::value(format!("{exp}"))
