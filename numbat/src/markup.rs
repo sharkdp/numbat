@@ -48,7 +48,7 @@ impl std::ops::Add for Markup {
 
 impl std::iter::Sum for Markup {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Markup::default(), |acc, n| acc + n)
+        iter.fold(empty(), |acc, n| acc + n)
     }
 }
 
@@ -58,6 +58,10 @@ pub fn space() -> Markup {
         FormatType::Whitespace,
         " ".to_string(),
     ))
+}
+
+pub fn empty() -> Markup {
+    Markup::default()
 }
 
 pub fn whitespace(text: impl AsRef<str>) -> Markup {

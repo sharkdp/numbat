@@ -414,7 +414,7 @@ impl Unit {
 
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.as_string(|f| f.exponent, "·", "/"))
+        f.write_str(&self.as_string(|f| f.exponent, '·', '/', false))
     }
 }
 
