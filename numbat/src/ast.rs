@@ -183,7 +183,12 @@ pub enum DimensionExpression {
     Dimension(Span, String),
     Multiply(Span, Box<DimensionExpression>, Box<DimensionExpression>),
     Divide(Span, Box<DimensionExpression>, Box<DimensionExpression>),
-    Power(Span, Box<DimensionExpression>, Span, Exponent),
+    Power(
+        Option<Span>, // operator span, not available for unicode exponents
+        Box<DimensionExpression>,
+        Span, // span for the exponent
+        Exponent,
+    ),
 }
 
 impl DimensionExpression {
@@ -197,9 +202,10 @@ impl DimensionExpression {
             DimensionExpression::Divide(span_op, lhs, rhs) => {
                 span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
             }
-            DimensionExpression::Power(span_op, lhs, span_exponent, _exp) => {
-                span_op.extend(&lhs.full_span()).extend(span_exponent)
-            }
+            DimensionExpression::Power(span_op, lhs, span_exponent, _exp) => match span_op {
+                Some(span_op) => span_op.extend(&lhs.full_span()).extend(span_exponent),
+                None => lhs.full_span().extend(span_exponent),
+            },
         }
     }
 }
@@ -304,8 +310,8 @@ impl ReplaceSpans for DimensionExpression {
                 Box::new(lhs.replace_spans()),
                 Box::new(rhs.replace_spans()),
             ),
-            DimensionExpression::Power(_, lhs, _, exp) => DimensionExpression::Power(
-                Span::dummy(),
+            DimensionExpression::Power(span_op, lhs, _, exp) => DimensionExpression::Power(
+                span_op.map(|_| Span::dummy()),
                 Box::new(lhs.replace_spans()),
                 Span::dummy(),
                 *exp,
