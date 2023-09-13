@@ -881,33 +881,37 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    fn unicode_exponent_to_int(lexeme: &str) -> i32 {
+        match lexeme {
+            "⁻¹" => -1,
+            "⁻²" => -2,
+            "⁻³" => -3,
+            "⁻⁴" => -4,
+            "⁻⁵" => -5,
+            "⁻⁶" => -6,
+            "⁻⁷" => -7,
+            "⁻⁸" => -8,
+            "⁻⁹" => -9,
+            "¹" => 1,
+            "²" => 2,
+            "³" => 3,
+            "⁴" => 4,
+            "⁵" => 5,
+            "⁶" => 6,
+            "⁷" => 7,
+            "⁸" => 8,
+            "⁹" => 9,
+            _ => unreachable!(
+                "Tokenizer should not generate unicode exponent tokens for anything else"
+            ),
+        }
+    }
+
     fn unicode_power(&mut self) -> Result<Expression> {
         let mut expr = self.call()?;
 
         if let Some(exponent) = self.match_exact(TokenKind::UnicodeExponent) {
-            let exp = match exponent.lexeme.as_str() {
-                "⁻¹" => -1,
-                "⁻²" => -2,
-                "⁻³" => -3,
-                "⁻⁴" => -4,
-                "⁻⁵" => -5,
-                "⁻⁶" => -6,
-                "⁻⁷" => -7,
-                "⁻⁸" => -8,
-                "⁻⁹" => -9,
-                "¹" => 1,
-                "²" => 2,
-                "³" => 3,
-                "⁴" => 4,
-                "⁵" => 5,
-                "⁶" => 6,
-                "⁷" => 7,
-                "⁸" => 8,
-                "⁹" => 9,
-                _ => unreachable!(
-                    "Tokenizer should not generate unicode exponent tokens for anything else"
-                ),
-            };
+            let exp = Self::unicode_exponent_to_int(exponent.lexeme.as_str());
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Power,
@@ -1080,10 +1084,20 @@ impl<'a> Parser<'a> {
             let (span_exponent, exponent) = self.dimension_exponent()?;
 
             Ok(DimensionExpression::Power(
-                span,
+                Some(span),
                 Box::new(expr),
                 span_exponent,
                 exponent,
+            ))
+        } else if let Some(exponent) = self.match_exact(TokenKind::UnicodeExponent) {
+            let span_exponent = self.last().unwrap().span;
+            let exp = Self::unicode_exponent_to_int(exponent.lexeme.as_str());
+
+            Ok(DimensionExpression::Power(
+                None,
+                Box::new(expr),
+                span_exponent,
+                Exponent::from_integer(exp as i128),
             ))
         } else {
             Ok(expr)
@@ -1698,7 +1712,7 @@ mod tests {
             Statement::DefineDimension(
                 "Area".into(),
                 vec![DimensionExpression::Power(
-                    Span::dummy(),
+                    Some(Span::dummy()),
                     Box::new(DimensionExpression::Dimension(
                         Span::dummy(),
                         "Length".into(),
@@ -1719,7 +1733,7 @@ mod tests {
                         Span::dummy(),
                         Box::new(DimensionExpression::Dimension(Span::dummy(), "Mass".into())),
                         Box::new(DimensionExpression::Power(
-                            Span::dummy(),
+                            Some(Span::dummy()),
                             Box::new(DimensionExpression::Dimension(
                                 Span::dummy(),
                                 "Length".into(),
@@ -1729,7 +1743,7 @@ mod tests {
                         )),
                     )),
                     Box::new(DimensionExpression::Power(
-                        Span::dummy(),
+                        Some(Span::dummy()),
                         Box::new(DimensionExpression::Dimension(Span::dummy(), "Time".into())),
                         Span::dummy(),
                         Rational::from_integer(2),
@@ -1743,7 +1757,7 @@ mod tests {
             Statement::DefineDimension(
                 "X".into(),
                 vec![DimensionExpression::Power(
-                    Span::dummy(),
+                    Some(Span::dummy()),
                     Box::new(DimensionExpression::Dimension(
                         Span::dummy(),
                         "Length".into(),
@@ -1850,7 +1864,7 @@ mod tests {
                         Some(DimensionExpression::Multiply(
                             Span::dummy(),
                             Box::new(DimensionExpression::Power(
-                                Span::dummy(),
+                                Some(Span::dummy()),
                                 Box::new(DimensionExpression::Dimension(
                                     Span::dummy(),
                                     "Length".into(),
@@ -1859,7 +1873,7 @@ mod tests {
                                 Rational::new(3, 1),
                             )),
                             Box::new(DimensionExpression::Power(
-                                Span::dummy(),
+                                Some(Span::dummy()),
                                 Box::new(DimensionExpression::Dimension(
                                     Span::dummy(),
                                     "Time".into(),
