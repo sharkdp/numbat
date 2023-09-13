@@ -493,60 +493,75 @@ mod tests {
     use super::*;
     use crate::ast::ReplaceSpans;
     use crate::markup::{Formatter, PlainTextFormatter};
-    use crate::{prefix_parser::AcceptsPrefix, prefix_transformer::Transformer};
+    use crate::prefix_transformer::Transformer;
 
     fn parse(code: &str) -> Statement {
-        let mut transformer = Transformer::new();
-        transformer
-            .register_name_and_aliases(
-                &"meter".into(),
-                &[
-                    Decorator::Aliases(vec![("m".into(), Some(AcceptsPrefix::only_short()))]),
-                    Decorator::MetricPrefixes,
-                ],
-                Span::dummy(),
-            )
-            .unwrap();
-        transformer
-            .register_name_and_aliases(
-                &"second".into(),
-                &[
-                    Decorator::Aliases(vec![("s".into(), Some(AcceptsPrefix::only_short()))]),
-                    Decorator::MetricPrefixes,
-                ],
-                Span::dummy(),
-            )
-            .unwrap();
-        transformer
-            .register_name_and_aliases(
-                &"radian".into(),
-                &[
-                    Decorator::Aliases(vec![("rad".into(), Some(AcceptsPrefix::only_short()))]),
-                    Decorator::MetricPrefixes,
-                ],
-                Span::dummy(),
-            )
-            .unwrap();
-        transformer
-            .register_name_and_aliases(
-                &"degree".into(),
-                &[Decorator::Aliases(vec![("°".into(), None)])],
-                Span::dummy(),
-            )
-            .unwrap();
-        transformer
-            .register_name_and_aliases(
-                &"inch".into(),
-                &[Decorator::Aliases(vec![("in".into(), None)])],
-                Span::dummy(),
-            )
-            .unwrap();
+        let statements = crate::parser::parse(
+            &format!(
+                "dimension Scalar = 1
+                 dimension Length
+                 dimension Time
+                 dimension Mass
 
-        let statements = crate::parser::parse(code, 0).unwrap();
+                 fn sin(x: Scalar) -> Scalar
+                 fn cos(x: Scalar) -> Scalar
+                 fn asin(x: Scalar) -> Scalar
+                 fn atan(x: Scalar) -> Scalar
+                 fn atan2<T>(x: T, y: T) -> Scalar
+                 fn sqrt(x) = x^(1/2)
+                 let pi = 2 asin(1)
+
+                 @aliases(m: short)
+                 @metric_prefixes
+                 unit meter: Length
+
+                 @aliases(s: short)
+                 @metric_prefixes
+                 unit second: Time
+
+                 @aliases(g: short)
+                 @metric_prefixes
+                 unit gram: Mass
+
+                 @aliases(rad: short)
+                 @metric_prefixes
+                 unit radian: Scalar
+
+                 @aliases(°: none)
+                 unit degree = 180/pi × radian
+
+                 @aliases(in: short)
+                 unit inch = 0.0254 m
+
+                 let a = 1
+                 let b = 1
+                 let c = 1
+                 let d = 1
+                 let e = 1
+                 let f = 1
+                 let x = 1
+                 let r = 2 m
+                 let vol = 3 m^3
+                 let density = 1000 kg / m^3
+                 let länge = 1
+                 let x_2 = 1
+                 let µ = 1
+                 let _prefixed = 1
+
+                 {code}"
+            ),
+            0,
+        )
+        .unwrap();
+
+        let mut transformer = Transformer::new();
         let transformed_statements = transformer.transform(statements).unwrap().replace_spans();
+
         crate::typechecker::TypeChecker::default()
             .check_statements(transformed_statements)
-            .unwrap()[0]
+            .unwrap()
+            .last()
+            .unwrap()
             .clone()
     }
 
@@ -557,8 +572,10 @@ mod tests {
     }
 
     fn equal_pretty(input: &str, expected: &str) {
+        println!();
+        println!("expected: '{expected}'");
         let actual = pretty_print(&parse(input));
-        println!("actual: '{actual}', expected: '{expected}'");
+        println!("actual:   '{actual}'");
         assert_eq!(actual, expected);
     }
 
@@ -583,12 +600,14 @@ mod tests {
         equal_pretty("2 * 3 + 4 * 5", "2 × 3 + 4 × 5");
         equal_pretty("2 * 3 / 4", "2 × 3 / 4");
         equal_pretty("123.123 km² / s²", "123.123 × kilometer² / second²");
-        equal_pretty(" sin(  2  ,  3  ,  4   )  ", "sin(2, 3, 4)");
     }
 
     fn roundtrip_check(code: &str) {
+        println!("Roundtrip check for code = '{code}'");
         let ast1 = parse(code);
-        let ast2 = parse(&pretty_print(&ast1));
+        let code_pretty = pretty_print(&ast1);
+        println!("     pretty printed code = '{code_pretty}'");
+        let ast2 = parse(&code_pretty);
         assert_eq!(ast1, ast2);
     }
 
@@ -606,17 +625,17 @@ mod tests {
         roundtrip_check("-3^4+2/(4+2*3)");
         roundtrip_check("1-2-3-4-(5-6-7)");
         roundtrip_check("1/2/3/4/(5/6/7)");
-        roundtrip_check("kg");
+        roundtrip_check("kilogram");
         roundtrip_check("2meter/second");
         roundtrip_check("a+b*c^d-e*f");
         roundtrip_check("sin(x)^3");
-        roundtrip_check("sin(cos(atanh(x)+2))^3");
+        roundtrip_check("sin(cos(atan(x)+2))^3");
         roundtrip_check("2^3^4^5");
         roundtrip_check("(2^3)^(4^5)");
         roundtrip_check("sqrt(1.4^2 + 1.5^2) * cos(pi/3)^2");
         roundtrip_check("40 kilometer * 9.8meter/second^2 * 150centimeter");
         roundtrip_check("4/3 * pi * r³");
-        roundtrip_check("vol * density -> kg");
+        roundtrip_check("vol * density -> kilogram");
         roundtrip_check("atan(30 centimeter / 2 meter)");
         roundtrip_check("500kilometer/second -> centimeter/second");
         roundtrip_check("länge * x_2 * µ * _prefixed");
@@ -625,7 +644,7 @@ mod tests {
         roundtrip_check("-sqrt(-30meter^3)");
         roundtrip_check("-3^4");
         roundtrip_check("(-3)^4");
-        roundtrip_check("sin(2,3,4)");
+        roundtrip_check("atan2(2,3)");
         roundtrip_check("2^3!");
         roundtrip_check("-3!");
         roundtrip_check("(-3)!");
