@@ -157,10 +157,25 @@ impl Context {
 
         let prefix_transformer_old = self.prefix_transformer.clone();
 
-        let transformed_statements = self
+        let result = self
             .prefix_transformer
             .transform(statements)
-            .map_err(NumbatError::NameResolutionError)?;
+            .map_err(NumbatError::NameResolutionError);
+
+        if result.is_err() {
+            // Reset the state of the prefix transformer to what we had before. This is necessary
+            // for REPL use cases where we want to back track from type-check errors.
+            // For example:
+            //
+            //     >>> fn f(h) = 1
+            //     error: identifier clash in definition
+            //         …
+            //     >>> fn f(h_) = 1     # <-- here we want to use 'f' again
+            //
+            self.prefix_transformer = prefix_transformer_old.clone();
+        }
+
+        let transformed_statements = result?;
 
         let typechecker_old = self.typechecker.clone();
 
@@ -181,6 +196,7 @@ impl Context {
             //     >>> let x: Length = 1m      # <-- here we want to use the name 'x' again
             //
             self.prefix_transformer = prefix_transformer_old.clone();
+            self.typechecker = typechecker_old.clone();
         }
 
         let typed_statements = result?;
