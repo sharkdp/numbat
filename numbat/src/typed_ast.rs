@@ -108,7 +108,7 @@ pub enum Statement {
 }
 
 impl Expression {
-    pub(crate) fn get_type(&self) -> Type {
+    pub fn get_type(&self) -> Type {
         match self {
             Expression::Scalar(_, _) => Type::Dimension(DType::unity()),
             Expression::Identifier(_, _, type_) => type_.clone(),
