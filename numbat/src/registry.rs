@@ -127,6 +127,11 @@ impl<Metadata> Registry<Metadata> {
         Ok(())
     }
 
+    pub fn contains(&self, name: &str) -> bool {
+        self.base_entries.iter().find(|(n, _)| n == name).is_some()
+            || self.derived_entries.contains_key(name)
+    }
+
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
         if self.is_base_entry(name) {
             Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(

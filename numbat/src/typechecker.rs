@@ -895,14 +895,20 @@ impl TypeChecker {
                             function_name.clone(),
                         ));
                     } else {
-                        let free_type_parameter =
-                            format!("__T{num}", num = free_type_parameters.len());
+                        let mut free_type_parameter = "".into();
+                        for i in 0.. {
+                            free_type_parameter = format!("T{i}");
+                            if !typechecker_fn.registry.contains(&free_type_parameter) {
+                                break;
+                            }
+                        }
+
                         free_type_parameters.push((parameter.clone(), free_type_parameter.clone()));
 
                         typechecker_fn
                             .registry
                             .add_base_dimension(&free_type_parameter)
-                            .expect("double-underscore identifiers are only used internally");
+                            .expect("we selected a name that is free");
                         type_parameters.push((*parameter_span, free_type_parameter.clone()));
                         typechecker_fn
                             .registry

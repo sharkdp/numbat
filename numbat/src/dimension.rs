@@ -67,6 +67,10 @@ impl DimensionRegistry {
             .get_base_representation_for_name(name)
             .unwrap())
     }
+
+    pub fn contains(&self, dimension_name: &str) -> bool {
+        self.registry.contains(dimension_name)
+    }
 }
 
 #[test]
