@@ -52,6 +52,7 @@ pub use interpreter::InterpreterSettings;
 pub use interpreter::RuntimeError;
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
+pub use typed_ast::Statement;
 
 #[derive(Debug, Error)]
 pub enum NumbatError {

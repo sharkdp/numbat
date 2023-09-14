@@ -393,10 +393,21 @@ impl Cli {
 
                 match interpreter_result {
                     InterpreterResult::Value(value) => {
+                        let type_ = statements.last().map_or(crate::markup::empty(), |s| {
+                            if let numbat::Statement::Expression(e) = s {
+                                crate::markup::whitespace("    [") // TODO
+                                    + e.get_type().pretty_print()
+                                    + crate::markup::whitespace("]") // TODO
+                            } else {
+                                crate::markup::empty()
+                            }
+                        });
+
                         let q_markup = markup::whitespace("    ")
                             + markup::operator("=")
                             + markup::space()
-                            + value.pretty_print();
+                            + value.pretty_print()
+                            + type_;
                         println!("{}", ansi_format(&q_markup, false));
                         println!();
 
