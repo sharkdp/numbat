@@ -65,6 +65,7 @@ dimension Irradiance = Power / Area
 dimension Activity = 1 / Time
 dimension AbsorbedDose = Energy / Mass
 dimension EquivalentDose = Energy / Mass  # also: dose equivalent
+dimension SpecificActivity = Activity / Mass
 
 dimension DynamicViscosity = Pressure × Time
 dimension KinematicViscosity = Length^2 / Time
