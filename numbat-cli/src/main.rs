@@ -152,7 +152,7 @@ impl Cli {
             let ctx = self.context.clone();
             let mut no_print_settings = InterpreterSettings {
                 print_fn: Box::new(
-                    move |_: &str| { // ignore any print statements when loading this module asynchronously
+                    move |_: &m::Markup| { // ignore any print statements when loading this module asynchronously
                     },
                 ),
             };
@@ -342,11 +342,11 @@ impl Cli {
         execution_mode: ExecutionMode,
         pretty_print_mode: PrettyPrintMode,
     ) -> ControlFlow {
-        let to_be_printed: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(vec![]));
+        let to_be_printed: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
         let to_be_printed_c = to_be_printed.clone();
         let mut settings = InterpreterSettings {
-            print_fn: Box::new(move |s: &str| {
-                to_be_printed_c.lock().unwrap().push(s.to_string());
+            print_fn: Box::new(move |s: &m::Markup| {
+                to_be_printed_c.lock().unwrap().push(s.clone());
             }),
         };
 
@@ -380,14 +380,9 @@ impl Cli {
 
                 let to_be_printed = to_be_printed.lock().unwrap();
                 for s in to_be_printed.iter() {
-                    print!(
-                        "{}{}",
-                        if execution_mode == ExecutionMode::Interactive {
-                            "  "
-                        } else {
-                            ""
-                        },
-                        s
+                    println!(
+                        "{}",
+                        ansi_format(s, execution_mode == ExecutionMode::Interactive)
                     );
                 }
                 if !to_be_printed.is_empty() && execution_mode == ExecutionMode::Interactive {
@@ -403,9 +398,9 @@ impl Cli {
                                 if type_ == Type::scalar() {
                                     m::empty()
                                 } else {
-                                    m::text("    [")
+                                    m::dimmed("    [")
                                         + e.get_type().to_readable_type(&registry)
-                                        + m::text("]")
+                                        + m::dimmed("]")
                                 }
                             } else {
                                 m::empty()

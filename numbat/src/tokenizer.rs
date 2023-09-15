@@ -84,6 +84,8 @@ pub enum TokenKind {
     Then,
     Else,
 
+    Str,
+
     Long,
     Short,
     Both,
@@ -297,6 +299,7 @@ impl Tokenizer {
             m.insert("if", TokenKind::If);
             m.insert("then", TokenKind::Then);
             m.insert("else", TokenKind::Else);
+            m.insert("str", TokenKind::Str);
             m
         });
 

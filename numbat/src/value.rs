@@ -4,6 +4,7 @@ use crate::{pretty_print::PrettyPrint, quantity::Quantity};
 pub enum Value {
     Quantity(Quantity),
     Boolean(bool),
+    String(String),
 }
 
 impl Value {
@@ -29,6 +30,7 @@ impl std::fmt::Display for Value {
         match self {
             Value::Quantity(q) => write!(f, "{}", q),
             Value::Boolean(b) => write!(f, "{}", b),
+            Value::String(s) => write!(f, "\"{}\"", s),
         }
     }
 }
@@ -38,6 +40,7 @@ impl PrettyPrint for Value {
         match self {
             Value::Quantity(q) => q.pretty_print(),
             Value::Boolean(b) => b.pretty_print(),
+            Value::String(s) => s.pretty_print(),
         }
     }
 }

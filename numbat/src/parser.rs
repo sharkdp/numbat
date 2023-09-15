@@ -1019,6 +1019,11 @@ impl<'a> Parser<'a> {
                     false
                 },
             ))
+        } else if let Some(token) = self.match_exact(TokenKind::String) {
+            Ok(Expression::String(
+                token.span,
+                token.lexeme.trim_matches('"').to_string(),
+            ))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let inner = self.expression()?;
 

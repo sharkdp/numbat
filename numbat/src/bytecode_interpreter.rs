@@ -5,6 +5,7 @@ use crate::interpreter::{
     Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
 };
 use crate::prefix::Prefix;
+use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, UnaryOperator};
 use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
@@ -94,6 +95,10 @@ impl BytecodeInterpreter {
                 let index = self.vm.add_constant(Constant::Boolean(*val));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
+            Expression::String(_, string) => {
+                let index = self.vm.add_constant(Constant::String(string.clone()));
+                self.vm.add_op1(Op::LoadConstant, index)
+            }
             Expression::Condition(_, condition, then_expr, else_expr) => {
                 self.compile_expression(condition)?;
 
@@ -132,6 +137,7 @@ impl BytecodeInterpreter {
             | Expression::UnaryOperator(..)
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
             | Expression::Boolean(..)
+            | Expression::String(..)
             | Expression::Condition(..) => {}
             Expression::BinaryOperator(..) => {
                 self.vm.add_op(Op::FullSimplify);
@@ -237,9 +243,11 @@ impl BytecodeInterpreter {
             Statement::ProcedureCall(ProcedureKind::Type, args) => {
                 assert_eq!(args.len(), 1);
                 let arg = &args[0];
-                let type_str = format!("{}", arg.get_type());
 
-                let idx = self.vm.add_string(type_str);
+                use crate::markup as m;
+                let idx = self.vm.add_string(
+                    m::dimmed("=") + m::whitespace(" ") + arg.get_type().pretty_print(),
+                );
                 self.vm.add_op1(Op::PrintString, idx);
             }
             Statement::ProcedureCall(kind, args) => {
@@ -264,11 +272,11 @@ impl BytecodeInterpreter {
             print_fn: &mut settings.print_fn,
         };
 
-        self.vm.disassemble(&mut ctx);
+        self.vm.disassemble();
 
         let result = self.vm.run(&mut ctx);
 
-        self.vm.debug(&mut ctx);
+        self.vm.debug();
 
         result
     }

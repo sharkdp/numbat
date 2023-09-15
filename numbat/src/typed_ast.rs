@@ -21,7 +21,7 @@ impl DType {
             [single] => m::type_identifier(single),
             ref multiple => Itertools::intersperse(
                 multiple.iter().map(|n| m::type_identifier(n)),
-                m::text(" or "),
+                m::dimmed(" or "),
             )
             .sum(),
         }
@@ -32,6 +32,7 @@ impl DType {
 pub enum Type {
     Dimension(DType),
     Boolean,
+    String,
 }
 
 impl std::fmt::Display for Type {
@@ -39,6 +40,7 @@ impl std::fmt::Display for Type {
         match self {
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "bool"),
+            Type::String => write!(f, "str"),
         }
     }
 }
@@ -48,6 +50,7 @@ impl PrettyPrint for Type {
         match self {
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::keyword("bool"),
+            Type::String => m::keyword("str"),
         }
     }
 }
@@ -56,7 +59,7 @@ impl Type {
     pub fn to_readable_type(&self, registry: &DimensionRegistry) -> Markup {
         match self {
             Type::Dimension(d) => d.to_readable_type(registry),
-            Type::Boolean => self.pretty_print(),
+            _ => self.pretty_print(),
         }
     }
 
@@ -81,6 +84,7 @@ pub enum Expression {
     FunctionCall(Span, Span, String, Vec<Expression>, DType),
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
+    String(Span, String),
 }
 
 impl Expression {
@@ -102,6 +106,7 @@ impl Expression {
             Expression::Condition(span_if, _, _, then_expr) => {
                 span_if.extend(&then_expr.full_span())
             }
+            Expression::String(span, _) => *span,
         }
     }
 }
@@ -142,6 +147,7 @@ impl Expression {
             Expression::FunctionCall(_, _, _, _, type_) => Type::Dimension(type_.clone()),
             Expression::Boolean(_, _) => Type::Boolean,
             Expression::Condition(_, _, then, _) => then.get_type(),
+            Expression::String(_, _) => Type::String,
         }
     }
 }
@@ -335,7 +341,8 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::Identifier(..)
         | Expression::UnitIdentifier(..)
         | Expression::FunctionCall(..)
-        | Expression::Boolean(..) => expr.pretty_print(),
+        | Expression::Boolean(..)
+        | Expression::String(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::Condition(..) => m::operator("(") + expr.pretty_print() + m::operator(")"),
@@ -485,6 +492,7 @@ impl PrettyPrint for Expression {
                     + m::operator(")")
             }
             Boolean(_, val) => val.pretty_print(),
+            String(_, string) => string.pretty_print(),
             Condition(_, condition, then, else_) => {
                 m::keyword("if")
                     + m::space()

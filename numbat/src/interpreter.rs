@@ -1,4 +1,5 @@
 use crate::{
+    markup::Markup,
     quantity::{Quantity, QuantityError},
     typed_ast::Statement,
     unit_registry::{UnitRegistry, UnitRegistryError},
@@ -56,7 +57,7 @@ impl InterpreterResult {
 
 pub type Result<T> = std::result::Result<T, RuntimeError>;
 
-pub type PrintFunction = dyn FnMut(&str) -> () + Send;
+pub type PrintFunction = dyn FnMut(&Markup) -> () + Send;
 
 pub struct InterpreterSettings {
     pub print_fn: Box<PrintFunction>,
@@ -65,7 +66,7 @@ pub struct InterpreterSettings {
 impl Default for InterpreterSettings {
     fn default() -> Self {
         Self {
-            print_fn: Box::new(move |s: &str| {
+            print_fn: Box::new(move |s: &Markup| {
                 print!("{}", s);
             }),
         }

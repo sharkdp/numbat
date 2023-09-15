@@ -9,3 +9,9 @@ impl PrettyPrint for bool {
         crate::markup::keyword(if *self { "true" } else { "false" })
     }
 }
+
+impl PrettyPrint for String {
+    fn pretty_print(&self) -> Markup {
+        crate::markup::text(format!("\"{self}\""))
+    }
+}

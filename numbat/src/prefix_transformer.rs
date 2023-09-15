@@ -80,6 +80,7 @@ impl Transformer {
                 Box::new(self.transform_expression(*then)),
                 Box::new(self.transform_expression(*else_)),
             ),
+            expr @ Expression::String(_, _) => expr,
         }
     }
 

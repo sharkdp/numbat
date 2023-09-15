@@ -66,8 +66,8 @@ pub enum Expression {
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
     FunctionCall(Span, Span, String, Vec<Expression>),
-
     Boolean(Span, bool),
+    String(Span, String),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
 }
 
@@ -99,6 +99,7 @@ impl Expression {
             Expression::Condition(span_if, _, _, then_expr) => {
                 span_if.extend(&then_expr.full_span())
             }
+            Expression::String(span, _) => *span,
         }
     }
 }
@@ -362,6 +363,7 @@ impl ReplaceSpans for Expression {
                 Box::new(then.replace_spans()),
                 Box::new(else_.replace_spans()),
             ),
+            Expression::String(_, string) => Expression::String(Span::dummy(), string.clone()),
         }
     }
 }

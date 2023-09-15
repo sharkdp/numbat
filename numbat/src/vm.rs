@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
+    markup::Markup,
     math,
     name_resolution::LAST_RESULT_IDENTIFIERS,
     prefix::Prefix,
@@ -157,6 +158,7 @@ pub enum Constant {
     Scalar(f64),
     Unit(Unit),
     Boolean(bool),
+    String(String),
 }
 
 impl Constant {
@@ -165,6 +167,7 @@ impl Constant {
             Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(*n)),
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
+            Constant::String(s) => Value::String(s.clone()),
         }
     }
 }
@@ -175,6 +178,7 @@ impl Display for Constant {
             Constant::Scalar(n) => write!(f, "{}", n),
             Constant::Unit(unit) => write!(f, "{}", unit),
             Constant::Boolean(val) => write!(f, "{}", val),
+            Constant::String(val) => write!(f, "\"{}\"", val),
         }
     }
 }
@@ -221,8 +225,8 @@ pub struct Vm {
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
 
-    /// Strings that are already available at compile time
-    strings: Vec<String>,
+    /// Strings/text that is already available at compile time
+    strings: Vec<Markup>,
 
     /// The names of global variables or [Unit]s. The second
     /// entry is the canonical name for units.
@@ -374,25 +378,22 @@ impl Vm {
         Some(position as u16)
     }
 
-    pub fn disassemble(&self, ctx: &mut ExecutionContext) {
+    pub fn disassemble(&self) {
         if !self.debug {
             return;
         }
 
-        self.println(ctx, "");
-        self.println(ctx, ".CONSTANTS");
+        eprintln!("");
+        eprintln!(".CONSTANTS");
         for (idx, constant) in self.constants.iter().enumerate() {
-            self.println(ctx, format!("  {:04} {}", idx, constant));
+            eprintln!("  {:04} {}", idx, constant);
         }
-        self.println(ctx, ".IDENTIFIERS");
+        eprintln!(".IDENTIFIERS");
         for (idx, identifier) in self.global_identifiers.iter().enumerate() {
-            self.println(ctx, format!("  {:04} {}", idx, identifier.0));
+            eprintln!("  {:04} {}", idx, identifier.0);
         }
         for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
-            self.println(
-                ctx,
-                format!(".CODE {idx} ({name})", idx = idx, name = function_name),
-            );
+            eprintln!(".CODE {idx} ({name})", idx = idx, name = function_name);
             let mut offset = 0;
             while offset < bytecode.len() {
                 let this_offset = offset;
@@ -414,34 +415,25 @@ impl Vm {
                     .collect::<Vec<String>>()
                     .join(" ");
 
-                self.print(
-                    ctx,
-                    format!(
-                        "  {:04} {:<13} {}",
-                        this_offset,
-                        op.to_string(),
-                        operands_str,
-                    ),
+                eprint!(
+                    "  {:04} {:<13} {}",
+                    this_offset,
+                    op.to_string(),
+                    operands_str,
                 );
 
                 if op == Op::LoadConstant {
-                    self.print(
-                        ctx,
-                        format!("     (value: {})", self.constants[operands[0] as usize]),
-                    );
+                    eprint!("     (value: {})", self.constants[operands[0] as usize]);
                 } else if op == Op::Call {
-                    self.print(
-                        ctx,
-                        format!(
-                            "   ({}, num_args={})",
-                            self.bytecode[operands[0] as usize].0, operands[1] as usize
-                        ),
+                    eprint!(
+                        "   ({}, num_args={})",
+                        self.bytecode[operands[0] as usize].0, operands[1] as usize
                     );
                 }
-                self.println(ctx, "");
+                eprintln!();
             }
         }
-        self.println(ctx, "");
+        eprintln!();
     }
 
     // The following functions are helpers for the actual execution of the code
@@ -515,7 +507,7 @@ impl Vm {
     fn run_without_cleanup(&mut self, ctx: &mut ExecutionContext) -> Result<InterpreterResult> {
         let mut result_last_statement = None;
         while !self.is_at_the_end() {
-            self.debug(ctx);
+            self.debug();
 
             let op = unsafe { std::mem::transmute::<u8, Op>(self.read_byte()) };
 
@@ -695,7 +687,7 @@ impl Vm {
                 Op::PrintString => {
                     let s_idx = self.read_u16() as usize;
                     let s = &self.strings[s_idx];
-                    self.println(ctx, s);
+                    self.print(ctx, s);
                 }
                 Op::FullSimplify => match self.pop() {
                     Value::Quantity(q) => {
@@ -741,44 +733,34 @@ impl Vm {
         }
     }
 
-    pub fn debug(&self, ctx: &mut ExecutionContext) {
+    pub fn debug(&self) {
         if !self.debug {
             return;
         }
 
         let frame = self.current_frame();
-        self.print(
-            ctx,
-            format!(
-                "FRAME = {}, IP = {}, ",
-                self.bytecode[frame.function_idx].0, frame.ip
-            ),
+        eprint!(
+            "FRAME = {}, IP = {}, ",
+            self.bytecode[frame.function_idx].0, frame.ip
         );
-        self.println(
-            ctx,
-            format!(
-                "Stack: [{}]",
-                self.stack
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join("] [")
-            ),
+        eprintln!(
+            "Stack: [{}]",
+            self.stack
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join("] [")
         );
     }
 
-    pub fn add_string(&mut self, s: String) -> u16 {
-        self.strings.push(s);
+    pub fn add_string(&mut self, m: Markup) -> u16 {
+        self.strings.push(m);
         assert!(self.strings.len() <= u16::MAX as usize);
         (self.strings.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
-    fn print<S: AsRef<str>>(&self, ctx: &mut ExecutionContext, s: S) {
-        (ctx.print_fn)(s.as_ref());
-    }
-
-    fn println<S: AsRef<str>>(&self, ctx: &mut ExecutionContext, s: S) {
-        self.print(ctx, format!("{}\n", s.as_ref()));
+    fn print(&self, ctx: &mut ExecutionContext, m: &Markup) {
+        (ctx.print_fn)(&m);
     }
 }
 
@@ -793,7 +775,7 @@ fn vm_basic() {
     vm.add_op(Op::Add);
     vm.add_op(Op::Return);
 
-    let mut print_fn = |_: &str| {};
+    let mut print_fn = |_: &Markup| {};
     let mut ctx = ExecutionContext {
         print_fn: &mut print_fn,
     };

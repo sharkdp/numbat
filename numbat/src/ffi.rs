@@ -4,6 +4,7 @@ use std::sync::OnceLock;
 
 use crate::currency::ExchangeRatesCache;
 use crate::interpreter::RuntimeError;
+use crate::pretty_print::PrettyPrint;
 use crate::value::Value;
 use crate::vm::ExecutionContext;
 use crate::{ast::ProcedureKind, quantity::Quantity};
@@ -297,7 +298,10 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
 fn print(ctx: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
     assert!(args.len() == 1);
 
-    (ctx.print_fn)(&format!("{}\n", args[0]));
+    match &args[0] {
+        Value::String(string) => (ctx.print_fn)(&crate::markup::text(string)), // print string without quotes
+        arg => (ctx.print_fn)(&arg.pretty_print()),
+    }
 
     ControlFlow::Continue(())
 }

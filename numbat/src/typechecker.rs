@@ -343,6 +343,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::Boolean(_, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Boolean value"),
         ),
+        e @ typed_ast::Expression::String(_, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "String"),
+        ),
         e @ typed_ast::Expression::Condition(..) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Conditional"),
         ),
@@ -699,6 +702,9 @@ impl TypeChecker {
                 )
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
+            ast::Expression::String(span, string) => {
+                typed_ast::Expression::String(*span, string.clone())
+            }
             ast::Expression::Condition(span, condition, then, else_) => {
                 let condition = self.check_expression(condition)?;
                 if condition.get_type() != Type::Boolean {
