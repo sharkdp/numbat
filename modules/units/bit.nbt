@@ -1,17 +1,17 @@
 use units::si
 
-dimension Bit
+dimension DigitalInformation
 
 @metric_prefixes
 @binary_prefixes
 @aliases(bit: both, bits: both)
-unit bit: Bit
+unit bit: DigitalInformation
 
 @metric_prefixes
 @binary_prefixes
 @aliases(B: short, byte: both, bytes: both, Byte: both, Bytes: both, octet, octets, Octet, Octets)
-unit byte: Bit = 8 bit
+unit byte: DigitalInformation = 8 bit
 
 @metric_prefixes
 @aliases(bps: short)
-unit bps: Bit / Time = bit / second
+unit bps: DigitalInformation / Time = bit / second
