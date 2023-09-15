@@ -349,11 +349,13 @@ impl Cli {
             }),
         };
 
-        let result = {
-            self.context
-                .lock()
-                .unwrap()
-                .interpret_with_settings(&mut settings, input, code_source)
+        let (result, registry) = {
+            let mut ctx = self.context.lock().unwrap();
+            let registry = ctx.dimension_registry().clone(); // TODO: get rid of this clone
+            (
+                ctx.interpret_with_settings(&mut settings, input, code_source),
+                registry,
+            )
         };
 
         let pretty_print = match pretty_print_mode {
@@ -395,9 +397,9 @@ impl Cli {
                     InterpreterResult::Value(value) => {
                         let type_ = statements.last().map_or(crate::markup::empty(), |s| {
                             if let numbat::Statement::Expression(e) = s {
-                                crate::markup::whitespace("    [") // TODO
-                                    + e.get_type().pretty_print()
-                                    + crate::markup::whitespace("]") // TODO
+                                crate::markup::text("    [")
+                                    + e.get_type().pretty_print_with_lookup(&registry, false)
+                                    + crate::markup::text("]")
                             } else {
                                 crate::markup::empty()
                             }

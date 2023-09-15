@@ -2,6 +2,7 @@ use itertools::Itertools;
 
 use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, DimensionExpression, UnaryOperator};
+use crate::dimension::DimensionRegistry;
 use crate::markup as m;
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
@@ -32,6 +33,36 @@ impl PrettyPrint for Type {
         match self {
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::keyword("bool"),
+        }
+    }
+}
+
+impl Type {
+    pub fn pretty_print_with_lookup(
+        &self,
+        registry: &DimensionRegistry,
+        only_if_single_match: bool,
+    ) -> Markup {
+        match self {
+            Type::Dimension(d) => {
+                let alternative_names = registry.get_derived_entry_names_for(d);
+                match &alternative_names[..] {
+                    [] => d.pretty_print(),
+                    [single] => m::type_identifier(single),
+                    ref multiple => {
+                        if only_if_single_match {
+                            d.pretty_print()
+                        } else {
+                            Itertools::intersperse(
+                                multiple.iter().map(|n| m::type_identifier(n)),
+                                m::text(" or "),
+                            )
+                            .sum()
+                        }
+                    }
+                }
+            }
+            Type::Boolean => self.pretty_print(),
         }
     }
 }

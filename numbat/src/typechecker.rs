@@ -1148,6 +1148,10 @@ impl TypeChecker {
         }
         Ok(statements_checked)
     }
+
+    pub(crate) fn registry(&self) -> &DimensionRegistry {
+        &self.registry
+    }
 }
 
 #[cfg(test)]

@@ -11,6 +11,7 @@ impl Formatter for ANSIFormatter {
     ) -> String {
         (match format_type {
             FormatType::Whitespace => text.normal(),
+            FormatType::Text => text.dimmed(),
             FormatType::Keyword => text.magenta(),
             FormatType::Value => text.yellow(),
             FormatType::Unit => text.cyan(),

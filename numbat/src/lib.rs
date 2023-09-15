@@ -34,6 +34,7 @@ mod vm;
 use bytecode_interpreter::BytecodeInterpreter;
 use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
+use dimension::DimensionRegistry;
 use interpreter::Interpreter;
 use prefix_transformer::Transformer;
 use registry::BaseRepresentationFactor;
@@ -113,6 +114,10 @@ impl Context {
 
     pub fn dimension_names(&self) -> &[String] {
         &self.prefix_transformer.dimension_names
+    }
+
+    pub fn dimension_registry(&self) -> &DimensionRegistry {
+        self.typechecker.registry()
     }
 
     pub fn base_units(&self) -> impl Iterator<Item = String> + '_ {

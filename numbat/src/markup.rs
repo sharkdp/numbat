@@ -3,6 +3,7 @@ use std::fmt::Display;
 #[derive(Debug, Clone)]
 pub enum FormatType {
     Whitespace,
+    Text,
     Keyword,
     Value,
     Unit,
@@ -68,6 +69,14 @@ pub fn whitespace(text: impl AsRef<str>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Whitespace,
+        text.as_ref().to_string(),
+    ))
+}
+
+pub fn text(text: impl AsRef<str>) -> Markup {
+    Markup::from(FormattedString(
+        OutputType::Normal,
+        FormatType::Text,
         text.as_ref().to_string(),
     ))
 }
