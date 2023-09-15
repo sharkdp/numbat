@@ -4,7 +4,6 @@ use std::{
     fmt,
 };
 
-use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::span::Span;
 use crate::typed_ast::{self, Type};
@@ -15,6 +14,7 @@ use crate::{
 use crate::{ast, decorator, ffi, suggestion};
 use crate::{dimension::DimensionRegistry, typed_ast::DType};
 use crate::{ffi::ArityRange, typed_ast::Expression};
+use crate::{name_resolution::LAST_RESULT_IDENTIFIERS, pretty_print::PrettyPrint};
 
 use ast::DimensionExpression;
 use itertools::Itertools;
@@ -776,17 +776,22 @@ impl TypeChecker {
                         ));
                     }
                 }
+
                 self.identifiers
                     .insert(identifier.clone(), Type::Dimension(type_deduced.clone()));
+
                 typed_ast::Statement::DefineVariable(
                     identifier.clone(),
                     expr_checked,
-                    type_annotation.clone(),
+                    type_annotation
+                        .as_ref()
+                        .map(|d| d.pretty_print())
+                        .unwrap_or_else(|| type_deduced.to_readable_type(&self.registry)),
                     Type::Dimension(type_deduced),
                 )
             }
-            ast::Statement::DefineBaseUnit(_span, unit_name, dexpr, decorators) => {
-                let type_specified = if let Some(dexpr) = dexpr {
+            ast::Statement::DefineBaseUnit(_span, unit_name, type_annotation, decorators) => {
+                let type_specified = if let Some(dexpr) = type_annotation {
                     self.registry
                         .get_base_representation(dexpr)
                         .map_err(TypeCheckError::RegistryError)?
@@ -806,7 +811,10 @@ impl TypeChecker {
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
                     decorators.clone(),
-                    dexpr.clone(),
+                    type_annotation
+                        .as_ref()
+                        .map(|d| d.pretty_print())
+                        .unwrap_or_else(|| type_specified.to_readable_type(&self.registry)),
                     Type::Dimension(type_specified),
                 )
             }
@@ -857,7 +865,10 @@ impl TypeChecker {
                     identifier.clone(),
                     expr_checked,
                     decorators.clone(),
-                    type_annotation.clone(),
+                    type_annotation
+                        .as_ref()
+                        .map(|d| d.pretty_print())
+                        .unwrap_or_else(|| type_deduced.to_readable_type(&self.registry)),
                 )
             }
             ast::Statement::DefineFunction {
@@ -929,7 +940,10 @@ impl TypeChecker {
                         *parameter_span,
                         parameter.clone(),
                         *p_is_variadic,
-                        type_annotation.clone(),
+                        type_annotation
+                            .as_ref()
+                            .map(|d| d.pretty_print())
+                            .unwrap_or_else(|| parameter_type.to_readable_type(&self.registry)),
                         Type::Dimension(parameter_type),
                     ));
 
@@ -1031,7 +1045,10 @@ impl TypeChecker {
                         .collect(),
                     typed_parameters,
                     body_checked,
-                    return_type_annotation.clone(),
+                    return_type_annotation
+                        .as_ref()
+                        .map(|d| d.pretty_print())
+                        .unwrap_or_else(|| return_type.to_readable_type(&self.registry)),
                     Type::Dimension(return_type),
                 )
             }

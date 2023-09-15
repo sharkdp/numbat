@@ -13,6 +13,21 @@ use crate::{
 /// Dimension type
 pub type DType = BaseRepresentation;
 
+impl DType {
+    pub fn to_readable_type(&self, registry: &DimensionRegistry) -> crate::markup::Markup {
+        let alternative_names = registry.get_derived_entry_names_for(self);
+        match &alternative_names[..] {
+            [] => self.pretty_print(),
+            [single] => m::type_identifier(single),
+            ref multiple => Itertools::intersperse(
+                multiple.iter().map(|n| m::type_identifier(n)),
+                m::text(" or "),
+            )
+            .sum(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Dimension(DType),
@@ -38,32 +53,15 @@ impl PrettyPrint for Type {
 }
 
 impl Type {
-    pub fn pretty_print_with_lookup(
-        &self,
-        registry: &DimensionRegistry,
-        only_if_single_match: bool,
-    ) -> Markup {
+    pub fn to_readable_type(&self, registry: &DimensionRegistry) -> Markup {
         match self {
-            Type::Dimension(d) => {
-                let alternative_names = registry.get_derived_entry_names_for(d);
-                match &alternative_names[..] {
-                    [] => d.pretty_print(),
-                    [single] => m::type_identifier(single),
-                    ref multiple => {
-                        if only_if_single_match {
-                            d.pretty_print()
-                        } else {
-                            Itertools::intersperse(
-                                multiple.iter().map(|n| m::type_identifier(n)),
-                                m::text(" or "),
-                            )
-                            .sum()
-                        }
-                    }
-                }
-            }
+            Type::Dimension(d) => d.to_readable_type(registry),
             Type::Boolean => self.pretty_print(),
         }
+    }
+
+    pub fn scalar() -> Type {
+        Type::Dimension(DType::unity())
     }
 }
 
@@ -111,30 +109,25 @@ impl Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DefineVariable(String, Expression, Option<DimensionExpression>, Type),
+    DefineVariable(String, Expression, Markup, Type),
     DefineFunction(
         String,
         Vec<String>, // type parameters
         Vec<(
             // parameter:
-            Span,                        // span of the parameter
-            String,                      // parameter name
-            bool,                        // whether or not it is variadic
-            Option<DimensionExpression>, // parameter type annotation
-            Type,                        // parameter type
+            Span,   // span of the parameter
+            String, // parameter name
+            bool,   // whether or not it is variadic
+            Markup, // readable parameter type
+            Type,   // parameter type
         )>,
-        Option<Expression>,          // function body
-        Option<DimensionExpression>, // return type annotation
-        Type,                        // return type
+        Option<Expression>, // function body
+        Markup,             // readable return type
+        Type,               // return type
     ),
     DefineDimension(String, Vec<DimensionExpression>),
-    DefineBaseUnit(String, Vec<Decorator>, Option<DimensionExpression>, Type),
-    DefineDerivedUnit(
-        String,
-        Expression,
-        Vec<Decorator>,
-        Option<DimensionExpression>,
-    ),
+    DefineBaseUnit(String, Vec<Decorator>, Markup, Type),
+    DefineDerivedUnit(String, Expression, Vec<Decorator>, Markup),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
 }
 
@@ -205,24 +198,16 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
     markup_decorators
 }
 
-fn annotation_or_actual_type(annotation: &Option<DimensionExpression>, type_: &Type) -> Markup {
-    if let Some(annotation) = annotation {
-        annotation.pretty_print()
-    } else {
-        type_.pretty_print()
-    }
-}
-
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DefineVariable(identifier, expr, type_annotation, type_) => {
+            Statement::DefineVariable(identifier, expr, readable_type, _type) => {
                 m::keyword("let")
                     + m::space()
                     + m::identifier(identifier)
                     + m::operator(":")
                     + m::space()
-                    + annotation_or_actual_type(type_annotation, type_)
+                    + readable_type.clone()
                     + m::space()
                     + m::operator("=")
                     + m::space()
@@ -233,8 +218,8 @@ impl PrettyPrint for Statement {
                 type_parameters,
                 parameters,
                 body,
-                return_type_annotation,
-                return_type,
+                readable_return_type,
+                _return_type,
             ) => {
                 let markup_type_parameters = if type_parameters.is_empty() {
                     m::empty()
@@ -251,11 +236,11 @@ impl PrettyPrint for Statement {
                 let markup_parameters = Itertools::intersperse(
                     parameters
                         .iter()
-                        .map(|(_span, name, is_variadic, type_annotation, type_)| {
+                        .map(|(_span, name, is_variadic, readable_type, _type)| {
                             m::identifier(name)
                                 + m::operator(":")
                                 + m::space()
-                                + annotation_or_actual_type(type_annotation, type_)
+                                + readable_type.clone()
                                 + if *is_variadic {
                                     m::operator("…")
                                 } else {
@@ -266,10 +251,8 @@ impl PrettyPrint for Statement {
                 )
                 .sum();
 
-                let markup_return_type = m::space()
-                    + m::operator("->")
-                    + m::space()
-                    + annotation_or_actual_type(return_type_annotation, return_type);
+                let markup_return_type =
+                    m::space() + m::operator("->") + m::space() + readable_return_type.clone();
 
                 m::keyword("fn")
                     + m::space()
@@ -301,23 +284,23 @@ impl PrettyPrint for Statement {
                     )
                     .sum()
             }
-            Statement::DefineBaseUnit(identifier, decorators, type_annotation, type_) => {
+            Statement::DefineBaseUnit(identifier, decorators, readable_type, _type) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
                     + m::space()
-                    + annotation_or_actual_type(type_annotation, type_)
+                    + readable_type.clone()
             }
-            Statement::DefineDerivedUnit(identifier, expr, decorators, type_annotation) => {
+            Statement::DefineDerivedUnit(identifier, expr, decorators, readable_type) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
                     + m::space()
-                    + annotation_or_actual_type(type_annotation, &expr.get_type())
+                    + readable_type.clone()
                     + m::space()
                     + m::operator("=")
                     + m::space()

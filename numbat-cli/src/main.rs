@@ -7,9 +7,10 @@ use completer::NumbatCompleter;
 use highlighter::NumbatHighlighter;
 
 use numbat::diagnostic::ErrorDiagnostic;
+use numbat::markup as m;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::{CodeSource, FileSystemImporter, ResolverError};
-use numbat::{markup, InterpreterSettings, NameResolutionError, RuntimeError};
+use numbat::{markup, InterpreterSettings, NameResolutionError, RuntimeError, Type};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -395,19 +396,25 @@ impl Cli {
 
                 match interpreter_result {
                     InterpreterResult::Value(value) => {
-                        let type_ = statements.last().map_or(crate::markup::empty(), |s| {
+                        let type_ = statements.last().map_or(m::empty(), |s| {
                             if let numbat::Statement::Expression(e) = s {
-                                crate::markup::text("    [")
-                                    + e.get_type().pretty_print_with_lookup(&registry, false)
-                                    + crate::markup::text("]")
+                                let type_ = e.get_type();
+
+                                if type_ == Type::scalar() {
+                                    m::empty()
+                                } else {
+                                    m::text("    [")
+                                        + e.get_type().to_readable_type(&registry)
+                                        + m::text("]")
+                                }
                             } else {
-                                crate::markup::empty()
+                                m::empty()
                             }
                         });
 
-                        let q_markup = markup::whitespace("    ")
-                            + markup::operator("=")
-                            + markup::space()
+                        let q_markup = m::whitespace("    ")
+                            + m::operator("=")
+                            + m::space()
                             + value.pretty_print()
                             + type_;
                         println!("{}", ansi_format(&q_markup, false));

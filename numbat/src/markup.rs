@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FormatType {
     Whitespace,
     Text,
@@ -13,16 +13,16 @@ pub enum FormatType {
     Decorator,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum OutputType {
     Normal,
     Optional,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FormattedString(pub OutputType, pub FormatType, pub String);
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Markup(pub Vec<FormattedString>);
 
 impl Markup {
