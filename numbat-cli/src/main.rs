@@ -10,8 +10,8 @@ use numbat::diagnostic::ErrorDiagnostic;
 use numbat::markup as m;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::{CodeSource, FileSystemImporter, ResolverError};
-use numbat::{markup, InterpreterSettings, NameResolutionError, RuntimeError, Type};
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
+use numbat::{InterpreterSettings, NameResolutionError, RuntimeError, Type};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::{Parser, ValueEnum};
