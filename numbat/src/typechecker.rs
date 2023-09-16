@@ -1612,4 +1612,34 @@ mod tests {
             TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Boolean && t2 == Type::Dimension(base_type("A"))
         ));
     }
+
+    #[test]
+    fn non_dtype_return_types() {
+        assert!(matches!(
+            get_typecheck_error("fn f() -> str = 1"),
+            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+        ));
+        assert!(matches!(
+            get_typecheck_error("fn f() -> Scalar = \"test\""),
+            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("fn f() -> bool = 1"),
+            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+        ));
+        assert!(matches!(
+            get_typecheck_error("fn f() -> Scalar = true"),
+            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("fn f() -> str = true"),
+            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+        ));
+        assert!(matches!(
+            get_typecheck_error("fn f() -> bool = \"test\""),
+            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+        ));
+    }
 }
