@@ -162,7 +162,7 @@ impl Transformer {
                 type_parameters,
                 parameters,
                 body,
-                return_type_span,
+                return_type_annotation_span: return_type_span,
                 return_type_annotation,
             } => {
                 self.function_names.push(function_name.clone());
@@ -190,7 +190,7 @@ impl Transformer {
                     type_parameters,
                     parameters,
                     body: body.map(|expr| self.transform_expression(expr)),
-                    return_type_span,
+                    return_type_annotation_span: return_type_span,
                     return_type_annotation,
                 }
             }

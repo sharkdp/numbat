@@ -4,7 +4,6 @@ use std::{
     fmt,
 };
 
-use crate::registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
 use crate::span::Span;
 use crate::typed_ast::{self, Type};
 use crate::{
@@ -12,6 +11,10 @@ use crate::{
     ast::ProcedureKind,
 };
 use crate::{ast, decorator, ffi, suggestion};
+use crate::{
+    ast::TypeAnnotation,
+    registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError},
+};
 use crate::{dimension::DimensionRegistry, typed_ast::DType};
 use crate::{ffi::ArityRange, typed_ast::Expression};
 use crate::{name_resolution::LAST_RESULT_IDENTIFIERS, pretty_print::PrettyPrint};
@@ -241,6 +244,9 @@ pub enum TypeCheckError {
 
     #[error("Argument types in assert_eq calls must match")]
     IncompatibleTypesInAssertEq(Span, Type, Span, Type, Span),
+
+    #[error("Incompatible types in function definition")]
+    IncompatibleReturnTypeAnnotation(Span, Type, Span, Type, Span),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -362,7 +368,7 @@ pub struct TypeChecker {
             Vec<(Span, String)>, // type parameters
             Vec<(Span, Type)>,   // parameter types
             bool,                // whether or not the function is variadic
-            DType,               // return type
+            Type,                // return type
         ),
     >,
     registry: DimensionRegistry,
@@ -691,7 +697,10 @@ impl TypeChecker {
                     ));
                 }
 
-                let return_type = substitute(&substitutions, return_type);
+                let return_type = match return_type {
+                    Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
+                    type_ => type_.clone(),
+                };
 
                 typed_ast::Expression::FunctionCall(
                     *span,
@@ -883,7 +892,7 @@ impl TypeChecker {
                 type_parameters,
                 parameters,
                 body,
-                return_type_span,
+                return_type_annotation_span,
                 return_type_annotation,
             } => {
                 let mut typechecker_fn = self.clone();
@@ -961,16 +970,11 @@ impl TypeChecker {
                 }
 
                 let return_type_specified = return_type_annotation
-                    .clone()
-                    .map(|ref annotation| {
-                        typechecker_fn
-                            .registry
-                            .get_base_representation(annotation)
-                            .map_err(TypeCheckError::RegistryError)
-                    })
+                    .as_ref()
+                    .map(|annotation| typechecker_fn.type_from_annotation(annotation))
                     .transpose()?;
 
-                let add_function_signature = |tc: &mut TypeChecker, return_type: DType| {
+                let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
                     let parameter_types = typed_parameters
                         .iter()
                         .map(|(span, _, _, _, t)| (*span, t.clone()))
@@ -1001,30 +1005,53 @@ impl TypeChecker {
                     .transpose()?;
 
                 let return_type = if let Some(ref expr) = body_checked {
-                    let return_type_deduced = dtype(expr)?;
+                    let type_deduced = expr.get_type();
+
                     if let Some(return_type_specified) = return_type_specified {
-                        if return_type_deduced != return_type_specified {
-                            return Err(TypeCheckError::IncompatibleDimensions(
-                                IncompatibleDimensionsError {
-                                    span_operation: *function_name_span,
-                                    operation: "function return type".into(),
-                                    span_expected: return_type_span.unwrap(),
-                                    expected_name: "specified return type",
-                                    expected_dimensions: self
-                                        .registry
-                                        .get_derived_entry_names_for(&return_type_specified),
-                                    expected_type: return_type_specified,
-                                    span_actual: body.as_ref().map(|b| b.full_span()).unwrap(),
-                                    actual_name: "   actual return type",
-                                    actual_dimensions: self
-                                        .registry
-                                        .get_derived_entry_names_for(&return_type_deduced),
-                                    actual_type: return_type_deduced,
-                                },
-                            ));
+                        match (type_deduced, return_type_specified) {
+                            (Type::Dimension(dtype_deduced), Type::Dimension(dtype_specified)) => {
+                                if dtype_deduced != dtype_specified {
+                                    return Err(TypeCheckError::IncompatibleDimensions(
+                                        IncompatibleDimensionsError {
+                                            span_operation: *function_name_span,
+                                            operation: "function return type".into(),
+                                            span_expected: return_type_annotation_span.unwrap(),
+                                            expected_name: "specified return type",
+                                            expected_dimensions: self
+                                                .registry
+                                                .get_derived_entry_names_for(&dtype_specified),
+                                            expected_type: dtype_specified,
+                                            span_actual: body
+                                                .as_ref()
+                                                .map(|b| b.full_span())
+                                                .unwrap(),
+                                            actual_name: "   actual return type",
+                                            actual_dimensions: self
+                                                .registry
+                                                .get_derived_entry_names_for(&dtype_deduced),
+                                            actual_type: dtype_deduced,
+                                        },
+                                    ));
+                                }
+
+                                Type::Dimension(dtype_deduced)
+                            }
+                            (type_deduced, type_specified) => {
+                                if type_deduced != type_specified {
+                                    return Err(TypeCheckError::IncompatibleReturnTypeAnnotation(
+                                        *function_name_span,
+                                        type_specified,
+                                        return_type_annotation_span.unwrap(),
+                                        type_deduced,
+                                        body.as_ref().map(|b| b.full_span()).unwrap(),
+                                    ));
+                                }
+                                type_specified
+                            }
                         }
+                    } else {
+                        type_deduced
                     }
-                    return_type_deduced
                 } else {
                     if !ffi::functions().contains_key(function_name.as_str()) {
                         return Err(TypeCheckError::UnknownForeignFunction(
@@ -1055,7 +1082,7 @@ impl TypeChecker {
                         .as_ref()
                         .map(|d| d.pretty_print())
                         .unwrap_or_else(|| return_type.to_readable_type(&self.registry)),
-                    Type::Dimension(return_type),
+                    return_type,
                 )
             }
             ast::Statement::DefineDimension(name, dexprs) => {
@@ -1174,6 +1201,18 @@ impl TypeChecker {
 
     pub(crate) fn registry(&self) -> &DimensionRegistry {
         &self.registry
+    }
+
+    fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
+        match annotation {
+            TypeAnnotation::DimensionExpression(dexpr) => self
+                .registry
+                .get_base_representation(&dexpr)
+                .map(Type::Dimension)
+                .map_err(TypeCheckError::RegistryError),
+            TypeAnnotation::Bool => Ok(Type::Boolean),
+            TypeAnnotation::String => Ok(Type::String),
+        }
     }
 }
 

@@ -178,6 +178,23 @@ pub(crate) use negate;
 pub(crate) use scalar;
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum TypeAnnotation {
+    DimensionExpression(DimensionExpression),
+    Bool,
+    String,
+}
+
+impl PrettyPrint for TypeAnnotation {
+    fn pretty_print(&self) -> Markup {
+        match self {
+            TypeAnnotation::DimensionExpression(d) => d.pretty_print(),
+            TypeAnnotation::Bool => m::type_identifier("bool"),
+            TypeAnnotation::String => m::type_identifier("str"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 
 pub enum DimensionExpression {
     Unity(Span),
@@ -270,9 +287,9 @@ pub enum Statement {
         parameters: Vec<(Span, String, Option<DimensionExpression>, bool)>,
         /// Function body. If it is absent, the function is implemented via FFI
         body: Option<Expression>,
-        return_type_span: Option<Span>,
+        return_type_annotation_span: Option<Span>,
         /// Optional annotated return type
-        return_type_annotation: Option<DimensionExpression>,
+        return_type_annotation: Option<TypeAnnotation>,
     },
     DefineDimension(String, Vec<DimensionExpression>),
     DefineBaseUnit(Span, String, Option<DimensionExpression>, Vec<Decorator>),
@@ -291,6 +308,18 @@ pub enum Statement {
 #[cfg(test)]
 pub trait ReplaceSpans {
     fn replace_spans(&self) -> Self;
+}
+
+#[cfg(test)]
+impl ReplaceSpans for TypeAnnotation {
+    fn replace_spans(&self) -> Self {
+        match self {
+            TypeAnnotation::DimensionExpression(d) => {
+                TypeAnnotation::DimensionExpression(d.replace_spans())
+            }
+            ta @ (TypeAnnotation::Bool | TypeAnnotation::String) => ta.clone(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -390,7 +419,7 @@ impl ReplaceSpans for Statement {
                 type_parameters,
                 parameters,
                 body,
-                return_type_span,
+                return_type_annotation_span: return_type_span,
                 return_type_annotation,
             } => Statement::DefineFunction {
                 function_name_span: Span::dummy(),
@@ -411,7 +440,7 @@ impl ReplaceSpans for Statement {
                     })
                     .collect(),
                 body: body.clone().map(|b| b.replace_spans()),
-                return_type_span: return_type_span.map(|_| Span::dummy()),
+                return_type_annotation_span: return_type_span.map(|_| Span::dummy()),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
             },
             Statement::DefineDimension(name, dexprs) => Statement::DefineDimension(

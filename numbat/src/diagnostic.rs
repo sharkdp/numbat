@@ -251,6 +251,23 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::ExpectedBool(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
+            TypeCheckError::IncompatibleReturnTypeAnnotation(
+                fn_name_span,
+                annotation,
+                annotation_span,
+                deduced_type,
+                body_span,
+            ) => d.with_labels(vec![
+                annotation_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(annotation.to_string()),
+                body_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(deduced_type.to_string()),
+                fn_name_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message("Incompatible types in function definition"),
+            ]),
         }
     }
 }

@@ -29,7 +29,8 @@
 
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{
-    BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement, UnaryOperator,
+    BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement, TypeAnnotation,
+    UnaryOperator,
 };
 use crate::decorator::Decorator;
 use crate::number::Number;
@@ -392,8 +393,7 @@ impl<'a> Parser<'a> {
 
                 let (return_type_span, return_type_annotation) =
                     if self.match_exact(TokenKind::Arrow).is_some() {
-                        // Parse return type
-                        let return_type_annotation = self.dimension_expression()?;
+                        let return_type_annotation = self.type_annotation()?;
                         (
                             Some(self.last().unwrap().span),
                             Some(return_type_annotation),
@@ -430,7 +430,7 @@ impl<'a> Parser<'a> {
                     type_parameters,
                     parameters,
                     body,
-                    return_type_span,
+                    return_type_annotation_span: return_type_span,
                     return_type_annotation,
                 })
             } else {
@@ -1062,7 +1062,19 @@ impl<'a> Parser<'a> {
         )
     }
 
-    pub(crate) fn dimension_expression(&mut self) -> Result<DimensionExpression> {
+    fn type_annotation(&mut self) -> Result<TypeAnnotation> {
+        if self.match_exact(TokenKind::Bool).is_some() {
+            Ok(TypeAnnotation::Bool)
+        } else if self.match_exact(TokenKind::Str).is_some() {
+            Ok(TypeAnnotation::String)
+        } else {
+            Ok(TypeAnnotation::DimensionExpression(
+                self.dimension_expression()?,
+            ))
+        }
+    }
+
+    fn dimension_expression(&mut self) -> Result<DimensionExpression> {
         self.dimension_factor()
     }
 
@@ -1790,7 +1802,7 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
-                return_type_span: None,
+                return_type_annotation_span: None,
                 return_type_annotation: None,
             },
         );
@@ -1803,10 +1815,9 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
-                return_type_span: Some(Span::dummy()),
-                return_type_annotation: Some(DimensionExpression::Dimension(
-                    Span::dummy(),
-                    "Scalar".into(),
+                return_type_annotation_span: Some(Span::dummy()),
+                return_type_annotation: Some(TypeAnnotation::DimensionExpression(
+                    DimensionExpression::Dimension(Span::dummy(), "Scalar".into()),
                 )),
             },
         );
@@ -1819,7 +1830,7 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None, false)],
                 body: Some(scalar!(1.0)),
-                return_type_span: None,
+                return_type_annotation_span: None,
                 return_type_annotation: None,
             },
         );
@@ -1836,7 +1847,7 @@ mod tests {
                     (Span::dummy(), "z".into(), None, false),
                 ],
                 body: Some(scalar!(1.0)),
-                return_type_span: None,
+                return_type_annotation_span: None,
                 return_type_annotation: None,
             },
         );
@@ -1891,10 +1902,9 @@ mod tests {
                     ),
                 ],
                 body: Some(scalar!(1.0)),
-                return_type_span: Some(Span::dummy()),
-                return_type_annotation: Some(DimensionExpression::Dimension(
-                    Span::dummy(),
-                    "Scalar".into(),
+                return_type_annotation_span: Some(Span::dummy()),
+                return_type_annotation: Some(TypeAnnotation::DimensionExpression(
+                    DimensionExpression::Dimension(Span::dummy(), "Scalar".into()),
                 )),
             },
         );
@@ -1912,7 +1922,7 @@ mod tests {
                     false,
                 )],
                 body: Some(scalar!(1.0)),
-                return_type_span: None,
+                return_type_annotation_span: None,
                 return_type_annotation: None,
             },
         );
@@ -1930,10 +1940,9 @@ mod tests {
                     true,
                 )],
                 body: None,
-                return_type_span: Some(Span::dummy()),
-                return_type_annotation: Some(DimensionExpression::Dimension(
-                    Span::dummy(),
-                    "D".into(),
+                return_type_annotation_span: Some(Span::dummy()),
+                return_type_annotation: Some(TypeAnnotation::DimensionExpression(
+                    DimensionExpression::Dimension(Span::dummy(), "D".into()),
                 )),
             },
         );
