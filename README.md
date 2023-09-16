@@ -1,12 +1,11 @@
 <p align="center"><img src="assets/numbat-410.png"></p>
 
 *Numbat* is a statically typed programming language for scientific computations with
-first class support for physical units.
+first class support for physical dimensions and units.
 
 ## Key features
 
-  * First class support for physical units and dimensions
-  * Static type checking (unit safety)
+  * Static type checking with physical dimensions as types
   * Type inference
   * Strict syntax
   * REPL mode
