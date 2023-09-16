@@ -95,7 +95,7 @@ impl PrefixParser {
                 ("femto", "f", Prefix::Metric(-15)),
                 ("pico", "p", Prefix::Metric(-12)),
                 ("nano", "n", Prefix::Metric(-9)),
-                ("micro", "µ", Prefix::Metric(-6)), // TODO: support 'u' as well. and other unicode characters
+                ("micro", "µ", Prefix::Metric(-6)),
                 ("milli", "m", Prefix::Metric(-3)),
                 ("centi", "c", Prefix::Metric(-2)),
                 ("deci", "d", Prefix::Metric(-1)),

@@ -459,7 +459,7 @@ impl Cli {
 
     fn get_config_path() -> PathBuf {
         let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        config_dir.join("numbat") // TODO: allow for preludes in system paths, user paths, …
+        config_dir.join("numbat")
     }
 
     fn get_modules_paths() -> Vec<PathBuf> {

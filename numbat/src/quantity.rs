@@ -106,7 +106,6 @@ impl Quantity {
 
             let quantity_base_unit_representation = (self.clone()
                 / Quantity::from_unit(common_unit_factors))
-            .unwrap()
             .to_base_unit_representation();
             let own_base_unit_representation = own_unit_reduced.to_base_unit_representation().0;
 
@@ -227,6 +226,14 @@ impl Quantity {
             ),
         ))
     }
+
+    pub fn checked_div(self, other: Self) -> Option<Self> {
+        if other.is_zero() {
+            None
+        } else {
+            Some(self / other)
+        }
+    }
 }
 
 impl From<&Number> for Quantity {
@@ -258,24 +265,24 @@ impl std::ops::Sub for &Quantity {
 }
 
 impl std::ops::Mul for Quantity {
-    type Output = Result<Quantity>;
+    type Output = Quantity;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Ok(Quantity {
+        Quantity {
             value: self.value * rhs.value,
             unit: self.unit * rhs.unit,
-        })
+        }
     }
 }
 
 impl std::ops::Div for Quantity {
-    type Output = Result<Quantity>;
+    type Output = Quantity;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Ok(Quantity {
+        Quantity {
             value: self.value / rhs.value,
             unit: self.unit / rhs.unit,
-        })
+        }
     }
 }
 

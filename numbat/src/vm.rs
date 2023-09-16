@@ -580,15 +580,10 @@ impl Vm {
                     let result = match op {
                         Op::Add => &lhs + &rhs,
                         Op::Subtract => &lhs - &rhs,
-                        Op::Multiply => lhs * rhs,
-                        Op::Divide => {
-                            // TODO: should this be implemented in Quantity::div?
-                            if rhs.is_zero() {
-                                return Err(RuntimeError::DivisionByZero);
-                            } else {
-                                lhs / rhs
-                            }
-                        }
+                        Op::Multiply => Ok(lhs * rhs),
+                        Op::Divide => Ok(lhs
+                            .checked_div(rhs)
+                            .ok_or_else(|| RuntimeError::DivisionByZero)?),
                         Op::Power => lhs.power(rhs),
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         _ => unreachable!(),

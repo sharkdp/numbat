@@ -177,7 +177,7 @@ mod tests {
 
         assert_evaluates_to(
             "2 meter + 3 meter",
-            (Quantity::from_scalar(2.0 + 3.0) * Quantity::from_unit(Unit::meter())).unwrap(),
+            Quantity::from_scalar(2.0 + 3.0) * Quantity::from_unit(Unit::meter()),
         );
 
         assert_evaluates_to(
@@ -185,17 +185,14 @@ mod tests {
              @aliases(px: short)
              unit pixel : Pixel
              2 * pixel",
-            (Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_base("pixel", "px")))
-                .unwrap(),
+            Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_base("pixel", "px")),
         );
 
         assert_evaluates_to(
             "fn speed(distance: Length, time: Time) -> Speed = distance / time
              speed(10 * meter, 2 * second)",
-            (Quantity::from_scalar(5.0)
-                * (Quantity::from_unit(Unit::meter()) / Quantity::from_unit(Unit::second()))
-                    .unwrap())
-            .unwrap(),
+            Quantity::from_scalar(5.0)
+                * (Quantity::from_unit(Unit::meter()) / Quantity::from_unit(Unit::second())),
         );
     }
 

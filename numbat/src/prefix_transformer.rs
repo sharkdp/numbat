@@ -18,7 +18,6 @@ pub(crate) struct Transformer {
     pub dimension_names: Vec<String>,
 }
 
-// TODO: generalize this to a general-purpose transformer (not just for prefixes, could also be used for optimization, inlining, span-replacement, etc.), e.g. using visitor pattern
 impl Transformer {
     pub fn new() -> Self {
         Self {

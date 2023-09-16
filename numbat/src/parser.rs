@@ -1122,8 +1122,6 @@ impl<'a> Parser<'a> {
     }
 
     fn dimension_exponent(&mut self) -> Result<(Span, Exponent)> {
-        // TODO: potentially allow for ², ³, etc.
-
         if let Some(token) = self.match_exact(TokenKind::Number) {
             let span = self.last().unwrap().span;
             let num_str = token.lexeme.replace('_', "");

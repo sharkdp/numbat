@@ -5,7 +5,8 @@ use units::currency
 # are blocking. In the CLI application, we do however load this module asynchronously after
 # prefetching the exchange rates.
 
-# TODO: if we ever support strings in the language, use 'exchange_rate("USD")', … instead
+# TODO: once we support strings as function parameters, use 'exchange_rate("USD")' and
+# similar instead of separate functions.
 fn exchange_rate_USD() -> Scalar
 fn exchange_rate_JPY() -> Scalar
 fn exchange_rate_GBP() -> Scalar
