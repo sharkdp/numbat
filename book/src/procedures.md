@@ -9,6 +9,14 @@ print(2 km/h)
 print(3 ft < 1 m)
 ```
 
+You can also print out simple messages as strings. This is particularly useful when combined
+with string interpolation to print results of a computation:
+
+```nbt
+let radius: Length = sqrt(footballfield / 4 pi) -> meter
+print("A football field would fit on a sphere of radius {radius}")
+```
+
 ## Testing
 
 The `assert_eq` procedure can be used to test for (approximate) equality of two quantities.
@@ -29,7 +37,7 @@ assert_eq(1 ft × 77 in², 4 gal)
 
 assert_eq(alpha, 1 / 137, 1e-4)
 assert_eq(3.3 ft, 1 m, 1 cm)
-``` 
+```
 
 A runtime error is thrown if an assertion fails. Otherwise, nothing happens.
 

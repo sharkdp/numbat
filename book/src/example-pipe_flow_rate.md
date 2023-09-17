@@ -8,8 +8,6 @@
 # viscosity of water and allows for inputs of pipe radius,
 # pipe length, and pressure difference.
 
-dimension FlowRate = Volume / Time
-
 let μ_water: DynamicViscosity = 1 mPa·s
 
 fn flow_rate(radius: Length, length: Length, Δp: Pressure) -> FlowRate =
