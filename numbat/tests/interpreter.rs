@@ -357,4 +357,14 @@ fn test_comparisons() {
 fn test_conditionals() {
     expect_output("if 1 < 2 then 3 else 4", "3");
     expect_output("if 4 < 3 then 2 else 1", "1");
+    expect_output(
+        "if 4 > 3 then \"four is larger!\" else \"four is not larger!\"",
+        "four is larger!",
+    );
+}
+
+#[test]
+fn test_string_interpolation() {
+    expect_output("\"pi = {pi}!\"", "pi = 3.14159!");
+    expect_output("if 4 < 3 then 2 else 1", "1");
 }

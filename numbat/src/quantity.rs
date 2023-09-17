@@ -340,7 +340,7 @@ impl std::fmt::Display for Quantity {
 
         let markup = self.pretty_print();
         let formatter = PlainTextFormatter {};
-        write!(f, "{}", formatter.format(&markup, false))
+        write!(f, "{}", formatter.format(&markup, false).trim())
     }
 }
 

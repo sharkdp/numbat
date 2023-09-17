@@ -50,6 +50,29 @@ impl PrettyPrint for BinaryOperator {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum StringPart {
+    Fixed(String),
+    Interpolation(Span, String),
+}
+
+impl PrettyPrint for StringPart {
+    fn pretty_print(&self) -> Markup {
+        match self {
+            StringPart::Fixed(s) => s.pretty_print(),
+            StringPart::Interpolation(_, identifier) => {
+                m::operator("{") + m::identifier(identifier) + m::operator("}")
+            }
+        }
+    }
+}
+
+impl PrettyPrint for &Vec<StringPart> {
+    fn pretty_print(&self) -> Markup {
+        m::operator("\"") + self.iter().map(|p| p.pretty_print()).sum() + m::operator("\"")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Scalar(Span, Number),
     Identifier(Span, String),
@@ -67,7 +90,7 @@ pub enum Expression {
     },
     FunctionCall(Span, Span, String, Vec<Expression>),
     Boolean(Span, bool),
-    String(Span, String),
+    String(Span, Vec<StringPart>),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
 }
 
@@ -351,6 +374,18 @@ impl ReplaceSpans for DimensionExpression {
 }
 
 #[cfg(test)]
+impl ReplaceSpans for StringPart {
+    fn replace_spans(&self) -> Self {
+        match self {
+            f @ StringPart::Fixed(_) => f.clone(),
+            StringPart::Interpolation(_, identifier) => {
+                StringPart::Interpolation(Span::dummy(), identifier.clone())
+            }
+        }
+    }
+}
+
+#[cfg(test)]
 impl ReplaceSpans for Expression {
     fn replace_spans(&self) -> Self {
         match self {
@@ -392,7 +427,10 @@ impl ReplaceSpans for Expression {
                 Box::new(then.replace_spans()),
                 Box::new(else_.replace_spans()),
             ),
-            Expression::String(_, string) => Expression::String(Span::dummy(), string.clone()),
+            Expression::String(_, parts) => Expression::String(
+                Span::dummy(),
+                parts.iter().map(|p| p.replace_spans()).collect(),
+            ),
         }
     }
 }

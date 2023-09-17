@@ -5,6 +5,7 @@ pub enum FormatType {
     Whitespace,
     Dimmed,
     Text,
+    String,
     Keyword,
     Value,
     Unit,
@@ -86,6 +87,14 @@ pub fn text(text: impl AsRef<str>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Text,
+        text.as_ref().to_string(),
+    ))
+}
+
+pub fn string(text: impl AsRef<str>) -> Markup {
+    Markup::from(FormattedString(
+        OutputType::Normal,
+        FormatType::String,
         text.as_ref().to_string(),
     ))
 }

@@ -4,13 +4,13 @@ use std::{
     fmt,
 };
 
-use crate::span::Span;
 use crate::typed_ast::{self, Type};
 use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
     ast::ProcedureKind,
 };
 use crate::{ast, decorator, ffi, suggestion};
+use crate::{ast::StringPart, span::Span};
 use crate::{
     ast::TypeAnnotation,
     registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError},
@@ -358,9 +358,15 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     }
 }
 
+#[derive(Clone, PartialEq)]
+enum IdentifierKind {
+    Variable,
+    Other,
+}
+
 #[derive(Clone, Default)]
 pub struct TypeChecker {
-    identifiers: HashMap<String, Type>,
+    identifiers: HashMap<String, (Type, IdentifierKind)>,
     function_signatures: HashMap<
         String,
         (
@@ -375,23 +381,27 @@ pub struct TypeChecker {
 }
 
 impl TypeChecker {
-    fn type_for_identifier(&self, span: Span, name: &str) -> Result<&Type> {
+    fn identifier_type_and_kind(&self, span: Span, name: &str) -> Result<&(Type, IdentifierKind)> {
         self.identifiers.get(name).ok_or_else(|| {
             let suggestion = suggestion::did_you_mean(self.identifiers.keys(), name);
             TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
         })
     }
 
+    fn identifier_type(&self, span: Span, name: &str) -> Result<&Type> {
+        self.identifier_type_and_kind(span, name).map(|(t, _)| t)
+    }
+
     pub(crate) fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
             ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar(*span, *n),
             ast::Expression::Identifier(span, name) => {
-                let type_ = self.type_for_identifier(*span, name)?.clone();
+                let type_ = self.identifier_type(*span, name)?.clone();
 
                 typed_ast::Expression::Identifier(*span, name.clone(), type_)
             }
             ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
-                let type_ = self.type_for_identifier(*span, name)?.clone();
+                let type_ = self.identifier_type(*span, name)?.clone();
 
                 typed_ast::Expression::UnitIdentifier(
                     *span,
@@ -711,8 +721,22 @@ impl TypeChecker {
                 )
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
-            ast::Expression::String(span, string) => {
-                typed_ast::Expression::String(*span, string.clone())
+            ast::Expression::String(span, string_parts) => {
+                for part in string_parts {
+                    if let StringPart::Interpolation(span, identifier) = part {
+                        let (_, kind) = self.identifier_type_and_kind(*span, identifier)?; // Make sure identifier exists
+                        if kind != &IdentifierKind::Variable {
+                            // String interpolation only works for variables, so far
+                            return Err(TypeCheckError::UnknownIdentifier(
+                                *span,
+                                identifier.clone(),
+                                None,
+                            ));
+                        }
+                    }
+                }
+
+                typed_ast::Expression::String(*span, string_parts.clone())
             }
             ast::Expression::Condition(span, condition, then, else_) => {
                 let condition = self.check_expression(condition)?;
@@ -751,8 +775,10 @@ impl TypeChecker {
             ast::Statement::Expression(expr) => {
                 let checked_expr = self.check_expression(expr)?;
                 for &identifier in LAST_RESULT_IDENTIFIERS {
-                    self.identifiers
-                        .insert(identifier.into(), checked_expr.get_type());
+                    self.identifiers.insert(
+                        identifier.into(),
+                        (checked_expr.get_type(), IdentifierKind::Variable),
+                    );
                 }
                 typed_ast::Statement::Expression(checked_expr)
             }
@@ -792,8 +818,13 @@ impl TypeChecker {
                     }
                 }
 
-                self.identifiers
-                    .insert(identifier.clone(), Type::Dimension(type_deduced.clone()));
+                self.identifiers.insert(
+                    identifier.clone(),
+                    (
+                        Type::Dimension(type_deduced.clone()),
+                        IdentifierKind::Variable,
+                    ),
+                );
 
                 typed_ast::Statement::DefineVariable(
                     identifier.clone(),
@@ -820,8 +851,13 @@ impl TypeChecker {
                         .map_err(TypeCheckError::RegistryError)?
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
-                    self.identifiers
-                        .insert(name.clone(), Type::Dimension(type_specified.clone()));
+                    self.identifiers.insert(
+                        name.clone(),
+                        (
+                            Type::Dimension(type_specified.clone()),
+                            IdentifierKind::Other,
+                        ),
+                    );
                 }
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
@@ -873,8 +909,10 @@ impl TypeChecker {
                     }
                 }
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-                    self.identifiers
-                        .insert(name.clone(), Type::Dimension(type_deduced.clone()));
+                    self.identifiers.insert(
+                        name.clone(),
+                        (Type::Dimension(type_deduced.clone()), IdentifierKind::Other),
+                    );
                 }
                 typed_ast::Statement::DefineDerivedUnit(
                     identifier.clone(),
@@ -948,9 +986,13 @@ impl TypeChecker {
                             .map_err(TypeCheckError::RegistryError)?
                     };
 
-                    typechecker_fn
-                        .identifiers
-                        .insert(parameter.clone(), Type::Dimension(parameter_type.clone()));
+                    typechecker_fn.identifiers.insert(
+                        parameter.clone(),
+                        (
+                            Type::Dimension(parameter_type.clone()),
+                            IdentifierKind::Variable,
+                        ),
+                    );
                     typed_parameters.push((
                         *parameter_span,
                         parameter.clone(),

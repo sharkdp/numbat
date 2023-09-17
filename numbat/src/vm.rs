@@ -82,6 +82,9 @@ pub enum Op {
     /// Print a compile-time string
     PrintString,
 
+    /// Combine N strings on the stack into a single part, used by string interpolation
+    JoinString,
+
     /// Perform a simplification operation to the current value on the stack
     FullSimplify,
 
@@ -99,6 +102,7 @@ impl Op {
             | Op::GetVariable
             | Op::GetLocal
             | Op::PrintString
+            | Op::JoinString
             | Op::JumpIfFalse
             | Op::Jump => 1,
             Op::Negate
@@ -148,6 +152,7 @@ impl Op {
             Op::FFICallFunction => "FFICallFunction",
             Op::FFICallProcedure => "FFICallProcedure",
             Op::PrintString => "PrintString",
+            Op::JoinString => "JoinString",
             Op::FullSimplify => "FullSimplify",
             Op::Return => "Return",
         }
@@ -683,6 +688,19 @@ impl Vm {
                     let s_idx = self.read_u16() as usize;
                     let s = &self.strings[s_idx];
                     self.print(ctx, s);
+                }
+                Op::JoinString => {
+                    let num_parts = self.read_u16() as usize;
+                    let mut joined = String::new();
+                    for _ in 0..num_parts {
+                        let part = match self.pop() {
+                            Value::Quantity(q) => q.to_string(),
+                            Value::Boolean(b) => b.to_string(),
+                            Value::String(s) => s,
+                        };
+                        joined = part + &joined; // reverse order
+                    }
+                    self.push(Value::String(joined))
                 }
                 Op::FullSimplify => match self.pop() {
                     Value::Quantity(q) => {

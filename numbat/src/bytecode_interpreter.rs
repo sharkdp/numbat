@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::ProcedureKind;
+use crate::ast::{ProcedureKind, StringPart};
 use crate::interpreter::{
     Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
 };
@@ -21,6 +21,15 @@ pub struct BytecodeInterpreter {
 }
 
 impl BytecodeInterpreter {
+    fn compile_load_identifier(&mut self, identifier: &str) {
+        if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
+            self.vm.add_op1(Op::GetLocal, position as u16); // TODO: check overflow
+        } else {
+            let identifier_idx = self.vm.add_global_identifier(identifier, None);
+            self.vm.add_op1(Op::GetVariable, identifier_idx);
+        }
+    }
+
     fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
         match expr {
             Expression::Scalar(_span, n) => {
@@ -28,12 +37,7 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(_span, identifier, _type) => {
-                if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
-                    self.vm.add_op1(Op::GetLocal, position as u16); // TODO: check overflow
-                } else {
-                    let identifier_idx = self.vm.add_global_identifier(identifier, None);
-                    self.vm.add_op1(Op::GetVariable, identifier_idx);
-                }
+                self.compile_load_identifier(identifier);
             }
             Expression::UnitIdentifier(_span, prefix, unit_name, _full_name, _type) => {
                 let index = self
@@ -95,9 +99,19 @@ impl BytecodeInterpreter {
                 let index = self.vm.add_constant(Constant::Boolean(*val));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
-            Expression::String(_, string) => {
-                let index = self.vm.add_constant(Constant::String(string.clone()));
-                self.vm.add_op1(Op::LoadConstant, index)
+            Expression::String(_, string_parts) => {
+                for part in string_parts {
+                    match part {
+                        StringPart::Fixed(s) => {
+                            let index = self.vm.add_constant(Constant::String(s.clone()));
+                            self.vm.add_op1(Op::LoadConstant, index)
+                        }
+                        StringPart::Interpolation(_, identifier) => {
+                            self.compile_load_identifier(identifier);
+                        }
+                    }
+                }
+                self.vm.add_op1(Op::JoinString, string_parts.len() as u16); // TODO: this can overflow
             }
             Expression::Condition(_, condition, then_expr, else_expr) => {
                 self.compile_expression(condition)?;

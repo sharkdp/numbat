@@ -29,14 +29,14 @@
 
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{
-    BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement, TypeAnnotation,
-    UnaryOperator,
+    BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement, StringPart,
+    TypeAnnotation, UnaryOperator,
 };
 use crate::decorator::Decorator;
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::resolver::ModulePath;
-use crate::span::Span;
+use crate::span::{SourceCodePositition, Span};
 use crate::tokenizer::{Token, TokenKind, TokenizerError, TokenizerErrorKind};
 
 use num_traits::{CheckedDiv, FromPrimitive, Zero};
@@ -154,6 +154,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected 'else' in if-then-else condition")]
     ExpectedElse,
+
+    #[error("Unfinished string-interpolation field")]
+    UnfinishedStringInterpolationField,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -1022,7 +1025,11 @@ impl<'a> Parser<'a> {
         } else if let Some(token) = self.match_exact(TokenKind::String) {
             Ok(Expression::String(
                 token.span,
-                token.lexeme.trim_matches('"').to_string(),
+                parse_string_interpolation(
+                    token.span.start,
+                    token.span.code_source_id,
+                    &token.lexeme,
+                )?,
             ))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let inner = self.expression()?;
@@ -1258,6 +1265,91 @@ impl<'a> Parser<'a> {
     pub fn is_at_end(&self) -> bool {
         self.peek().kind == TokenKind::Eof
     }
+}
+
+fn parse_string_interpolation(
+    pos: SourceCodePositition,
+    code_source_id: usize,
+    string: &str,
+) -> Result<Vec<StringPart>> {
+    let mut parts = vec![];
+    let mut pos = pos;
+
+    let mut last_pos = pos;
+
+    let mut chars = string.chars();
+    let mut advance = || -> Option<(char, SourceCodePositition)> {
+        if let Some(c) = chars.next() {
+            pos.byte += c.len_utf8() as u32;
+            pos.position += 1;
+            Some((c, pos))
+        } else {
+            None
+        }
+    };
+
+    let mut lexeme = String::new();
+    let (_, mut lexeme_start) = advance().unwrap(); // Skip the initial quote for the beginning of the string
+
+    let mut in_fixed_mode = true;
+
+    loop {
+        if let Some((c, current_pos)) = advance() {
+            if in_fixed_mode {
+                if c == '"' {
+                    parts.push(StringPart::Fixed(lexeme.clone()));
+                    break;
+                } else if c == '{' {
+                    parts.push(StringPart::Fixed(lexeme.clone()));
+
+                    lexeme_start = current_pos;
+                    lexeme.clear();
+
+                    in_fixed_mode = false;
+                } else {
+                    lexeme.push(c);
+                }
+            } else {
+                if c == '}' {
+                    let span = Span {
+                        start: lexeme_start,
+                        end: last_pos,
+                        code_source_id,
+                    };
+
+                    parts.push(StringPart::Interpolation(span, lexeme.clone()));
+
+                    lexeme_start = current_pos;
+                    lexeme.clear();
+
+                    in_fixed_mode = true;
+                } else if c == '"' {
+                    let span = Span {
+                        start: lexeme_start,
+                        end: last_pos,
+                        code_source_id,
+                    };
+                    return Err(ParseError {
+                        kind: ParseErrorKind::UnfinishedStringInterpolationField,
+                        span,
+                    });
+                } else {
+                    lexeme.push(c);
+                }
+            }
+
+            last_pos = current_pos;
+        } else {
+            break;
+        }
+    }
+
+    parts = parts
+        .into_iter()
+        .filter(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()))
+        .collect();
+
+    Ok(parts)
 }
 
 pub fn parse(input: &str, code_source_id: usize) -> Result<Vec<Statement>> {
@@ -2092,5 +2184,55 @@ mod tests {
 
         should_fail_with(&["if true 1 else 2"], ParseErrorKind::ExpectedThen);
         should_fail_with(&["if true then 1"], ParseErrorKind::ExpectedElse);
+    }
+
+    #[test]
+    fn string_interpolation() {
+        parse_as_expression(
+            &["\"pi = {pi}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![
+                    StringPart::Fixed("pi = ".into()),
+                    StringPart::Interpolation(Span::dummy(), "pi".into()),
+                ],
+            ),
+        );
+
+        parse_as_expression(
+            &["\"{pi}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Interpolation(Span::dummy(), "pi".into())],
+            ),
+        );
+
+        parse_as_expression(
+            &["\"{pi}{e}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![
+                    StringPart::Interpolation(Span::dummy(), "pi".into()),
+                    StringPart::Interpolation(Span::dummy(), "e".into()),
+                ],
+            ),
+        );
+
+        parse_as_expression(
+            &["\"{pi} + {e}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![
+                    StringPart::Interpolation(Span::dummy(), "pi".into()),
+                    StringPart::Fixed(" + ".into()),
+                    StringPart::Interpolation(Span::dummy(), "e".into()),
+                ],
+            ),
+        );
+
+        should_fail_with(
+            &["\"pi = {pi\"", "\"pi = {\"", "\"pi = {pi}, e = {e\""],
+            ParseErrorKind::UnfinishedStringInterpolationField,
+        );
     }
 }

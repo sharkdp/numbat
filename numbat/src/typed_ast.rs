@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
-use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, DimensionExpression, UnaryOperator};
+use crate::ast::{ProcedureKind, StringPart};
 use crate::dimension::DimensionRegistry;
 use crate::markup as m;
 use crate::{
@@ -84,7 +84,7 @@ pub enum Expression {
     FunctionCall(Span, Span, String, Vec<Expression>, Type),
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
-    String(Span, String),
+    String(Span, Vec<StringPart>),
 }
 
 impl Expression {
@@ -492,7 +492,7 @@ impl PrettyPrint for Expression {
                     + m::operator(")")
             }
             Boolean(_, val) => val.pretty_print(),
-            String(_, string) => string.pretty_print(),
+            String(_, parts) => parts.pretty_print(),
             Condition(_, condition, then, else_) => {
                 m::keyword("if")
                     + m::space()

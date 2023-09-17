@@ -629,6 +629,13 @@ fn test_tokenize_basic() {
         ]
     );
 
+    assert!(tokenize("~", 0).is_err());
+}
+
+#[test]
+fn test_tokenize_string() {
+    use TokenKind::*;
+
     assert_eq!(
         tokenize_reduced("\"foo\""),
         [
@@ -637,7 +644,7 @@ fn test_tokenize_basic() {
         ]
     );
 
-    assert!(tokenize("~", 0).is_err());
+    assert!(tokenize("\"foo", 0).is_err());
 }
 
 #[test]

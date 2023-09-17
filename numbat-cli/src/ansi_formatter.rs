@@ -13,6 +13,7 @@ impl Formatter for ANSIFormatter {
             FormatType::Whitespace => text.normal(),
             FormatType::Dimmed => text.dimmed(),
             FormatType::Text => text.normal(),
+            FormatType::String => text.green(),
             FormatType::Keyword => text.magenta(),
             FormatType::Value => text.yellow(),
             FormatType::Unit => text.cyan(),
