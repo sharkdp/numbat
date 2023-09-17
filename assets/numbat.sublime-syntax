@@ -7,7 +7,7 @@ file_extensions:
 scope: source.nbt
 contexts:
   main:
-    - match: \b(per|to|let|fn|dimension|unit|use|long|short|both|none|print|assert_eq|type|if|then|else|true|false|bool)\b
+    - match: \b(per|to|let|fn|dimension|unit|use|long|short|both|none|print|assert_eq|type|if|then|else|true|false|bool|str)\b
       scope: keyword.control.nbt
     - match: '#(.*)'
       scope: comment.line.nbt
@@ -25,3 +25,10 @@ contexts:
       scope: punctuation.definition.parenthesis.nbt
     - match: ','
       scope: punctuation.separator.comma.nbt
+    - match: '"'
+      scope: punctuation.definition.string.begin.nbt
+      push:
+        - meta_scope: string.quoted.double.nbt
+        - match: '"'
+          scope: punctuation.definition.string.end.nbt
+          pop: true

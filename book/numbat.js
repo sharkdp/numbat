@@ -4,11 +4,12 @@ hljs.registerLanguage('numbat', function(hljs) {
     aliases: ['nbt'],
     case_insensitive: false,
     keywords: {
-      keyword: 'per to let fn dimension unit use long short both none print assert_eq type if then else true false bool',
+      keyword: 'per to let fn dimension unit use long short both none print assert_eq type if then else true false bool str',
     },
     contains: [
       hljs.HASH_COMMENT_MODE,
       hljs.BINARY_NUMBER_MODE,
+      hljs.QUOTE_STRING_MODE,
       {
         className: 'number',
         begin: /\b0o[0-7]+\b/

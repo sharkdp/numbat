@@ -5,7 +5,7 @@ if exists("b:current_syntax")
 endif
 
 " Numbat Keywords
-syn keyword numbatKeywords per to let fn dimension unit use long short both none print assert_eq type if then else true false bool
+syn keyword numbatKeywords per to let fn dimension unit use long short both none print assert_eq type if then else true false bool str
 highlight default link numbatKeywords Keyword
 
 " Physical dimensions (every capitalized word)
@@ -39,6 +39,10 @@ highlight default link numbatDecorator Constant
 " Special units
 syn match numbatSpecialUnits "[\u00B0]" " degree symbol
 highlight default link numbatSpecialUnits SpecialChar
+
+" Strings
+syntax match numbatString /"\([^"]*\)"/
+highlight link numbatString String
 
 " Load the matchit.vim script for the "%" matching, if it's available
 if exists(":DoMatchIt")
