@@ -67,6 +67,7 @@ let q3: Length / Time = 2 m/s      # more complex type annotation
 fn foo(z: Scalar) -> Scalar = 2 * z + 3                 # A simple function
 fn speed(len: Length, dur: Time) -> Speed = len / dur   # Two parameters
 fn my_sqrt<T>(q: T^2) -> T = q^(1/2)                    # A generic function
+fn is_non_negative(x: Scalar) -> bool = x ≥ 0           # Returns a bool
 
 # 6. Dimension definitions
 
