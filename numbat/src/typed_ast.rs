@@ -14,7 +14,11 @@ use crate::{
 pub type DType = BaseRepresentation;
 
 impl DType {
-    pub fn to_readable_type(&self, registry: &DimensionRegistry) -> crate::markup::Markup {
+    pub fn to_readable_type(&self, registry: &DimensionRegistry) -> m::Markup {
+        if self == &DType::unity() {
+            return m::type_identifier("Scalar");
+        }
+
         let alternative_names = registry.get_derived_entry_names_for(self);
         match &alternative_names[..] {
             [] => self.pretty_print(),
