@@ -13,6 +13,7 @@ dimension Frequency = 1 / Time
 dimension Speed = Length / Time  # also: velocity
 dimension Acceleration = Length / Time^2
 dimension Jerk = Length / Time^3
+dimension FlowRate = Volume / Time
 
 dimension Mass
 dimension Momentum = Mass × Speed
@@ -44,6 +45,8 @@ dimension CurrentDensity = Current / Area
 dimension ElectricDipoleMoment = Current × Length
 dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
 dimension ElectricFieldStrength = Voltage / Length
+dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3
+dimension MagneticPermeability = Length × Mass / Time^2 / Current^2
 
 dimension Temperature
 dimension Entropy = Energy / Temperature
