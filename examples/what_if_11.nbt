@@ -14,4 +14,5 @@ let earth_radius = 6371 km
 
 let frequency = (300 billion birds / 4 pi earth_radius^2) × (1 poop / bird / hour) × (16 hours / day) × (1 mouth / poop) × (15 cm^2 / mouth)
 let period = 1 / frequency
-print(period -> years)
+
+print("It happens once every ~{period -> year}s")

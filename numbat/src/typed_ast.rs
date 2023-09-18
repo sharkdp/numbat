@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
+use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, DimensionExpression, UnaryOperator};
-use crate::ast::{ProcedureKind, StringPart};
 use crate::dimension::DimensionRegistry;
 use crate::markup as m;
 use crate::{
@@ -69,6 +69,29 @@ impl Type {
 
     pub fn scalar() -> Type {
         Type::Dimension(DType::unity())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum StringPart {
+    Fixed(String),
+    Interpolation(Span, Box<Expression>),
+}
+
+impl PrettyPrint for StringPart {
+    fn pretty_print(&self) -> Markup {
+        match self {
+            StringPart::Fixed(s) => s.pretty_print(),
+            StringPart::Interpolation(_, expr) => {
+                m::operator("{") + expr.pretty_print() + m::operator("}")
+            }
+        }
+    }
+}
+
+impl PrettyPrint for &Vec<StringPart> {
+    fn pretty_print(&self) -> Markup {
+        m::operator("\"") + self.iter().map(|p| p.pretty_print()).sum() + m::operator("\"")
     }
 }
 

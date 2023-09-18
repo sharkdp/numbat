@@ -721,23 +721,21 @@ impl TypeChecker {
                 )
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
-            ast::Expression::String(span, string_parts) => {
-                for part in string_parts {
-                    if let StringPart::Interpolation(span, identifier) = part {
-                        let (_, kind) = self.identifier_type_and_kind(*span, identifier)?; // Make sure identifier exists
-                        if kind != &IdentifierKind::Variable {
-                            // String interpolation only works for variables, so far
-                            return Err(TypeCheckError::UnknownIdentifier(
+            ast::Expression::String(span, parts) => typed_ast::Expression::String(
+                *span,
+                parts
+                    .into_iter()
+                    .map(|p| match p {
+                        StringPart::Fixed(s) => Ok(typed_ast::StringPart::Fixed(s.clone())),
+                        StringPart::Interpolation(span, expr) => {
+                            Ok(typed_ast::StringPart::Interpolation(
                                 *span,
-                                identifier.clone(),
-                                None,
-                            ));
+                                Box::new(self.check_expression(expr)?),
+                            ))
                         }
-                    }
-                }
-
-                typed_ast::Expression::String(*span, string_parts.clone())
-            }
+                    })
+                    .collect::<Result<_>>()?,
+            ),
             ast::Expression::Condition(span, condition, then, else_) => {
                 let condition = self.check_expression(condition)?;
                 if condition.get_type() != Type::Boolean {

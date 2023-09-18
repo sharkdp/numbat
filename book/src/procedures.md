@@ -17,6 +17,13 @@ let radius: Length = sqrt(footballfield / 4 pi) -> meter
 print("A football field would fit on a sphere of radius {radius}")
 ```
 
+You can use almost every expression inside a string interpolation field. For example:
+
+```nbt
+let speed = 25 km/h
+print("Speed of the bicycle: {speed} ({speed -> mph})")
+```
+
 ## Testing
 
 The `assert_eq` procedure can be used to test for (approximate) equality of two quantities.

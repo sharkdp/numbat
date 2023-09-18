@@ -1,12 +1,9 @@
 let time = 17.47 hours
 
-let time_seconds = time -> seconds
-let num_seconds = mod(time_seconds, 60 seconds)
-let num_minutes = mod(time - num_seconds, 60 minutes) -> minutes
+let num_seconds = mod(time -> seconds, 60 seconds)
+let num_minutes = mod(time - num_seconds, 60 minutes) -> minutes // floor
 let num_hours = floor((time - num_minutes - num_seconds) / 1 hour) × hour -> hours
 
-print(num_hours)
-print(num_minutes)
-print(num_seconds)
+assert_eq(num_hours + num_minutes + num_seconds -> s, time -> s, 1ms)
 
-assert_eq(num_hours + num_minutes + num_seconds, time)
+print("{num_hours/h}:{num_minutes/min}:{num_seconds/s}")

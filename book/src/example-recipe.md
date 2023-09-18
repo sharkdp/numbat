@@ -14,15 +14,8 @@ let desired_servings = 3 servings
 fn scale<D>(quantity: D) -> D =
     quantity × desired_servings / original_recipe_servings
 
-let milk = 500 ml
-print(scale(milk))
-
-let flour = 250 g
-print(scale(flour))
-
-let sugar = 2 cups
-print(scale(sugar))
-
-let baking_powder = 4 tablespoons
-print(scale(baking_powder))
+print("Milk:          {scale(500 ml)}")
+print("Flour:         {scale(250 g)}")
+print("Sugar:         {scale(2 cups)}")
+print("Baking powder: {scale(4 tablespoons)}")
 ```

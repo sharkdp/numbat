@@ -36,7 +36,7 @@ use crate::decorator::Decorator;
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::resolver::ModulePath;
-use crate::span::{SourceCodePositition, Span};
+use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError, TokenizerErrorKind};
 
 use num_traits::{CheckedDiv, FromPrimitive, Zero};
@@ -154,9 +154,6 @@ pub enum ParseErrorKind {
 
     #[error("Expected 'else' in if-then-else condition")]
     ExpectedElse,
-
-    #[error("Unfinished string-interpolation field")]
-    UnfinishedStringInterpolationField,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -1022,15 +1019,42 @@ impl<'a> Parser<'a> {
                     false
                 },
             ))
-        } else if let Some(token) = self.match_exact(TokenKind::String) {
+        } else if let Some(token) = self.match_exact(TokenKind::StringFixed) {
             Ok(Expression::String(
                 token.span,
-                parse_string_interpolation(
-                    token.span.start,
-                    token.span.code_source_id,
-                    &token.lexeme,
-                )?,
+                vec![StringPart::Fixed(strip_first_and_last(&token.lexeme))],
             ))
+        } else if let Some(token) = self.match_exact(TokenKind::StringInterpolationStart) {
+            let mut parts = vec![StringPart::Fixed(strip_first_and_last(&token.lexeme))];
+
+            let expr = self.expression()?;
+            parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
+
+            while let Some(inner_token) = self.match_any(&[
+                TokenKind::StringInterpolationMiddle,
+                TokenKind::StringInterpolationEnd,
+            ]) {
+                match inner_token.kind {
+                    TokenKind::StringInterpolationMiddle => {
+                        parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
+
+                        let expr = self.expression()?;
+                        parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
+                    }
+                    TokenKind::StringInterpolationEnd => {
+                        parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
+                        break;
+                    }
+                    _ => unreachable!(),
+                }
+            }
+
+            parts = parts
+                .into_iter()
+                .filter(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()))
+                .collect();
+
+            Ok(Expression::String(token.span, parts))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let inner = self.expression()?;
 
@@ -1267,89 +1291,8 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn parse_string_interpolation(
-    pos: SourceCodePositition,
-    code_source_id: usize,
-    string: &str,
-) -> Result<Vec<StringPart>> {
-    let mut parts = vec![];
-    let mut pos = pos;
-
-    let mut last_pos = pos;
-
-    let mut chars = string.chars();
-    let mut advance = || -> Option<(char, SourceCodePositition)> {
-        if let Some(c) = chars.next() {
-            pos.byte += c.len_utf8() as u32;
-            pos.position += 1;
-            Some((c, pos))
-        } else {
-            None
-        }
-    };
-
-    let mut lexeme = String::new();
-    let (_, mut lexeme_start) = advance().unwrap(); // Skip the initial quote for the beginning of the string
-
-    let mut in_fixed_mode = true;
-
-    loop {
-        if let Some((c, current_pos)) = advance() {
-            if in_fixed_mode {
-                if c == '"' {
-                    parts.push(StringPart::Fixed(lexeme.clone()));
-                    break;
-                } else if c == '{' {
-                    parts.push(StringPart::Fixed(lexeme.clone()));
-
-                    lexeme_start = current_pos;
-                    lexeme.clear();
-
-                    in_fixed_mode = false;
-                } else {
-                    lexeme.push(c);
-                }
-            } else {
-                if c == '}' {
-                    let span = Span {
-                        start: lexeme_start,
-                        end: last_pos,
-                        code_source_id,
-                    };
-
-                    parts.push(StringPart::Interpolation(span, lexeme.clone()));
-
-                    lexeme_start = current_pos;
-                    lexeme.clear();
-
-                    in_fixed_mode = true;
-                } else if c == '"' {
-                    let span = Span {
-                        start: lexeme_start,
-                        end: last_pos,
-                        code_source_id,
-                    };
-                    return Err(ParseError {
-                        kind: ParseErrorKind::UnfinishedStringInterpolationField,
-                        span,
-                    });
-                } else {
-                    lexeme.push(c);
-                }
-            }
-
-            last_pos = current_pos;
-        } else {
-            break;
-        }
-    }
-
-    parts = parts
-        .into_iter()
-        .filter(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()))
-        .collect();
-
-    Ok(parts)
+fn strip_first_and_last(s: &str) -> String {
+    (&s[1..(s.len() - 1)]).to_string()
 }
 
 pub fn parse(input: &str, code_source_id: usize) -> Result<Vec<Statement>> {
@@ -2187,14 +2130,19 @@ mod tests {
     }
 
     #[test]
-    fn string_interpolation() {
+    fn strings() {
+        parse_as_expression(
+            &["\"hello world\""],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("hello world".into())]),
+        );
+
         parse_as_expression(
             &["\"pi = {pi}\""],
             Expression::String(
                 Span::dummy(),
                 vec![
                     StringPart::Fixed("pi = ".into()),
-                    StringPart::Interpolation(Span::dummy(), "pi".into()),
+                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
                 ],
             ),
         );
@@ -2203,7 +2151,10 @@ mod tests {
             &["\"{pi}\""],
             Expression::String(
                 Span::dummy(),
-                vec![StringPart::Interpolation(Span::dummy(), "pi".into())],
+                vec![StringPart::Interpolation(
+                    Span::dummy(),
+                    Box::new(identifier!("pi")),
+                )],
             ),
         );
 
@@ -2212,8 +2163,8 @@ mod tests {
             Expression::String(
                 Span::dummy(),
                 vec![
-                    StringPart::Interpolation(Span::dummy(), "pi".into()),
-                    StringPart::Interpolation(Span::dummy(), "e".into()),
+                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
+                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("e"))),
                 ],
             ),
         );
@@ -2223,16 +2174,25 @@ mod tests {
             Expression::String(
                 Span::dummy(),
                 vec![
-                    StringPart::Interpolation(Span::dummy(), "pi".into()),
+                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
                     StringPart::Fixed(" + ".into()),
-                    StringPart::Interpolation(Span::dummy(), "e".into()),
+                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("e"))),
                 ],
             ),
         );
 
-        should_fail_with(
-            &["\"pi = {pi\"", "\"pi = {\"", "\"pi = {pi}, e = {e\""],
-            ParseErrorKind::UnfinishedStringInterpolationField,
+        parse_as_expression(
+            &["\"1 + 2 = {1 + 2}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![
+                    StringPart::Fixed("1 + 2 = ".into()),
+                    StringPart::Interpolation(
+                        Span::dummy(),
+                        Box::new(binop!(scalar!(1.0), Add, scalar!(2.0))),
+                    ),
+                ],
+            ),
         );
     }
 }

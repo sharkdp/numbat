@@ -15,5 +15,5 @@ let lapse_rate: TemperatureGradient = 0.65 K / 100 m
 fn air_pressure(height: Length) -> Pressure =
     p0 · (1 - lapse_rate · height / t0)^5.255
 
-print(air_pressure(1500 m))
+print("Air pressure 1500 m above sea level: {air_pressure(1500 m) -> hPa}")
 ```

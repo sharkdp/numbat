@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expression, Statement},
+    ast::{Expression, Statement, StringPart},
     decorator::{self, Decorator},
     name_resolution::NameResolutionError,
     prefix_parser::{PrefixParser, PrefixParserResult},
@@ -79,7 +79,19 @@ impl Transformer {
                 Box::new(self.transform_expression(*then)),
                 Box::new(self.transform_expression(*else_)),
             ),
-            expr @ Expression::String(_, _) => expr,
+            Expression::String(span, parts) => Expression::String(
+                span,
+                parts
+                    .into_iter()
+                    .map(|p| match p {
+                        f @ StringPart::Fixed(_) => f,
+                        StringPart::Interpolation(span, expr) => StringPart::Interpolation(
+                            span,
+                            Box::new(self.transform_expression(*expr)),
+                        ),
+                    })
+                    .collect(),
+            ),
         }
     }
 

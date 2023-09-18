@@ -366,5 +366,5 @@ fn test_conditionals() {
 #[test]
 fn test_string_interpolation() {
     expect_output("\"pi = {pi}!\"", "pi = 3.14159!");
-    expect_output("if 4 < 3 then 2 else 1", "1");
+    expect_output("\"1 + 2 = {1 + 2}\"", "1 + 2 = 3");
 }

@@ -13,5 +13,5 @@ print("Total daily dose: {total_daily_dose}")
 assert_eq(total_daily_dose, 4500 mg/day)
 
 let single_dose = total_daily_dose / frequency
-print("Single dose: {single_dose}")
+print("Single dose:      {single_dose}")
 assert_eq(single_dose, 1500 mg/taking)

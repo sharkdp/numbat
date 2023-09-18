@@ -36,7 +36,7 @@ generate_example pipe_flow_rate "Flow rate in a pipe" true
 generate_example recipe "Recipe" true
 generate_example acidity "Acidity" true
 generate_example factorial "Factorial" false
-generate_example xkcd_2585 "XKCD 2585" false
+generate_example xkcd_2585 "XKCD 2585" true
 generate_example xkcd_2812 "XKCD 2812" true
 
 generate_example numbat_syntax "Syntax overview" false

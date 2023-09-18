@@ -4,9 +4,6 @@
 
 ``` numbat
 # https://xkcd.com/2585/
-#
-# I can ride my bike at 45 mph.
-# If you round.
 
 17 mph
 
@@ -34,5 +31,6 @@ ans -> knots         // round
 ans -> furlongs/min  // round
 ans -> mph           // round
 
-assert_eq(ans, 45 mph)
+print("I can ride my bike at {ans}.")
+print("If you round.")
 ```

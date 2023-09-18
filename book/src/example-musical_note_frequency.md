@@ -9,7 +9,7 @@ let frequency_A4: Frequency = 440 Hz  # the A above middle C, A4
 
 fn note_frequency(n: Scalar) -> Frequency = frequency_A4 * 2^(n / 12)
 
-print(note_frequency(12))  # one octave higher up (A5), 880 Hz
-print(note_frequency(7))   # E4
-print(note_frequency(-3))  # C4
+print("A5: {note_frequency(12)}")  # one octave higher up, 880 Hz
+print("E4: {note_frequency(7)}")
+print("C4: {note_frequency(-3)}")
 ```

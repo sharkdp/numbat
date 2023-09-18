@@ -17,5 +17,5 @@ let total_daily_dose = dosage * body_weight -> mg / day
 print("Total daily dose: {total_daily_dose}")
 
 let single_dose = total_daily_dose / frequency
-print("Single dose: {single_dose}")
+print("Single dose:      {single_dose}")
 ```

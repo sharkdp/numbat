@@ -23,13 +23,14 @@ let panel_efficiency = 20 %
 fn savings(i: Irradiance) -> Money / Time =
     net_metering_rate × i × panel_area × panel_efficiency -> $/year
 
-## Option A: On the roof, south facing
+print("Option A: On the roof, south facing")
 
 let savings_a = savings(4 kWh/m²/day)
 
 print(savings_a // round)
 
-## Option B: On the sun, downward facing
+print()
+print("Option B: On the sun, downward facing")
 
 dimension Luminosity = Power
 

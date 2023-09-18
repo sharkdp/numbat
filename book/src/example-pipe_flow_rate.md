@@ -17,6 +17,6 @@ let pipe_radius = 1 cm
 let pipe_length = 10 m
 let Δp = 0.1 bar
 
-let Q: FlowRate = flow_rate(pipe_radius, pipe_length, Δp) -> L/s
-print(Q)
+let Q = flow_rate(pipe_radius, pipe_length, Δp)
+print("Flow rate: {Q -> L/s}")
 ```

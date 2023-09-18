@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use crate::ast::{ProcedureKind, StringPart};
+use crate::ast::ProcedureKind;
 use crate::interpreter::{
     Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
 };
 use crate::prefix::Prefix;
 use crate::pretty_print::PrettyPrint;
-use crate::typed_ast::{BinaryOperator, Expression, Statement, UnaryOperator};
+use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
 use crate::unit::Unit;
 use crate::unit_registry::UnitRegistry;
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
@@ -21,15 +21,6 @@ pub struct BytecodeInterpreter {
 }
 
 impl BytecodeInterpreter {
-    fn compile_load_identifier(&mut self, identifier: &str) {
-        if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
-            self.vm.add_op1(Op::GetLocal, position as u16); // TODO: check overflow
-        } else {
-            let identifier_idx = self.vm.add_global_identifier(identifier, None);
-            self.vm.add_op1(Op::GetVariable, identifier_idx);
-        }
-    }
-
     fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
         match expr {
             Expression::Scalar(_span, n) => {
@@ -37,7 +28,12 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(_span, identifier, _type) => {
-                self.compile_load_identifier(identifier);
+                if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
+                    self.vm.add_op1(Op::GetLocal, position as u16); // TODO: check overflow
+                } else {
+                    let identifier_idx = self.vm.add_global_identifier(identifier, None);
+                    self.vm.add_op1(Op::GetVariable, identifier_idx);
+                }
             }
             Expression::UnitIdentifier(_span, prefix, unit_name, _full_name, _type) => {
                 let index = self
@@ -106,8 +102,8 @@ impl BytecodeInterpreter {
                             let index = self.vm.add_constant(Constant::String(s.clone()));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
-                        StringPart::Interpolation(_, identifier) => {
-                            self.compile_load_identifier(identifier);
+                        StringPart::Interpolation(_, expr) => {
+                            self.compile_expression_with_simplify(expr)?;
                         }
                     }
                 }

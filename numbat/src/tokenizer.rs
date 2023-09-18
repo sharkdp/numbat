@@ -29,6 +29,12 @@ pub enum TokenizerErrorKind {
 
     #[error("Unterminated string")]
     UnterminatedString,
+
+    #[error("Unterminated {{...}} interpolation in this string")]
+    UnterminatedStringInterpolation,
+
+    #[error("Unexpected '{{' inside string interpolation")]
+    UnexpectedCurlyInInterpolation,
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -100,7 +106,15 @@ pub enum TokenKind {
     Number,
     IntegerWithBase(usize),
     Identifier,
-    String,
+
+    // A normal string without interpolation: `"hello world"`
+    StringFixed,
+    // A part of a string which *starts* an interpolation: `"foo = {`
+    StringInterpolationStart,
+    // A part of a string between two interpolations: `}, and bar = {`
+    StringInterpolationMiddle,
+    // A part of a string which ends an interpolation: `}."`
+    StringInterpolationEnd,
 
     // Other
     Newline,
@@ -112,16 +126,6 @@ pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String, // TODO(minor): could be a &'str view into the input
     pub span: Span,
-}
-
-struct Tokenizer {
-    input: Vec<char>,
-    current: SourceCodePositition,
-    last: SourceCodePositition,
-    token_start: SourceCodePositition,
-    current_index: usize,
-    token_start_index: usize,
-    code_source_id: usize,
 }
 
 fn is_exponent_char(c: char) -> bool {
@@ -178,6 +182,37 @@ fn is_identifier_continue(c: char) -> bool {
         && c != '·'
 }
 
+/// When scanning a string interpolation like `"foo = {foo}, and bar = {bar}."`,
+/// the tokenizer needs to keep track of where it currently is, because we allow
+/// for (almost) arbitrary expressions inside the {…} part.
+enum InterpolationState {
+    /// We are not inside curly braces.
+    Outside,
+    /// We are currently scanning the inner part of an interpolation.
+    Inside,
+}
+
+impl InterpolationState {
+    fn is_inside(&self) -> bool {
+        matches!(self, InterpolationState::Inside)
+    }
+}
+
+struct Tokenizer {
+    input: Vec<char>,
+    current: SourceCodePositition,
+    last: SourceCodePositition,
+    token_start: SourceCodePositition,
+    current_index: usize,
+    token_start_index: usize,
+    code_source_id: usize,
+
+    // Special fields / state for parsing string interpolations
+    string_start: SourceCodePositition,
+    interpolation_start: SourceCodePositition,
+    interpolation_state: InterpolationState,
+}
+
 impl Tokenizer {
     fn new(input: &str, code_source_id: usize) -> Self {
         Tokenizer {
@@ -188,6 +223,9 @@ impl Tokenizer {
             current_index: 0,
             token_start_index: 0,
             code_source_id,
+            string_start: SourceCodePositition::start(),
+            interpolation_start: SourceCodePositition::start(),
+            interpolation_state: InterpolationState::Outside,
         }
     }
 
@@ -431,23 +469,69 @@ impl Tokenizer {
                 TokenKind::UnicodeExponent
             }
             '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so we treat it as a special case here
-            '"' => {
-                while self.peek().map(|c| c != '"').unwrap_or(false) {
-                    self.advance();
-                }
+            '"' => match self.interpolation_state {
+                InterpolationState::Outside => {
+                    self.string_start = self.token_start;
 
-                if self.match_char('"') {
-                    TokenKind::String
-                } else {
+                    while self.peek().map(|c| c != '"' && c != '{').unwrap_or(false) {
+                        self.advance();
+                    }
+
+                    if self.match_char('"') {
+                        TokenKind::StringFixed
+                    } else if self.match_char('{') {
+                        self.interpolation_state = InterpolationState::Inside;
+                        self.interpolation_start = self.last;
+                        TokenKind::StringInterpolationStart
+                    } else {
+                        return Err(TokenizerError {
+                            kind: TokenizerErrorKind::UnterminatedString,
+                            span: Span {
+                                start: self.token_start,
+                                end: self.current,
+                                code_source_id: self.code_source_id,
+                            },
+                        });
+                    }
+                }
+                InterpolationState::Inside => {
                     return Err(TokenizerError {
-                        kind: TokenizerErrorKind::UnterminatedString,
+                        kind: TokenizerErrorKind::UnterminatedStringInterpolation,
                         span: Span {
-                            start: self.token_start,
-                            end: self.last,
+                            start: self.string_start,
+                            end: self.current,
                             code_source_id: self.code_source_id,
                         },
                     });
                 }
+            },
+            '}' if self.interpolation_state.is_inside() => {
+                while self.peek().map(|c| c != '"' && c != '{').unwrap_or(false) {
+                    self.advance();
+                }
+
+                if self.match_char('"') {
+                    self.interpolation_state = InterpolationState::Outside;
+                    TokenKind::StringInterpolationEnd
+                } else if self.match_char('{') {
+                    self.interpolation_start = self.last;
+                    TokenKind::StringInterpolationMiddle
+                } else {
+                    return Err(TokenizerError {
+                        kind: TokenizerErrorKind::UnterminatedString,
+                        span: Span {
+                            start: self.string_start,
+                            end: self.current,
+                            code_source_id: self.code_source_id,
+                        },
+                    });
+                }
+            }
+            '{' if self.interpolation_state.is_inside() => {
+                return Err(TokenizerError {
+                    kind: TokenizerErrorKind::UnexpectedCurlyInInterpolation,
+                    span: self.last.single_character_span(code_source_id),
+                });
             }
             '…' => TokenKind::Ellipsis,
             c if is_identifier_start(c) => {
@@ -639,12 +723,65 @@ fn test_tokenize_string() {
     assert_eq!(
         tokenize_reduced("\"foo\""),
         [
-            ("\"foo\"".to_string(), String, (1, 1)),
+            ("\"foo\"".to_string(), StringFixed, (1, 1)),
             ("".to_string(), Eof, (1, 6))
         ]
     );
 
-    assert!(tokenize("\"foo", 0).is_err());
+    assert_eq!(
+        tokenize_reduced("\"foo = {foo}\""),
+        [
+            ("\"foo = {".to_string(), StringInterpolationStart, (1, 1)),
+            ("foo".to_string(), Identifier, (1, 9)),
+            ("}\"".to_string(), StringInterpolationEnd, (1, 12)),
+            ("".to_string(), Eof, (1, 14))
+        ]
+    );
+
+    assert_eq!(
+        tokenize_reduced("\"foo = {foo}, and bar = {bar}\""),
+        [
+            ("\"foo = {".to_string(), StringInterpolationStart, (1, 1)),
+            ("foo".to_string(), Identifier, (1, 9)),
+            (
+                "}, and bar = {".to_string(),
+                StringInterpolationMiddle,
+                (1, 12)
+            ),
+            ("bar".to_string(), Identifier, (1, 26)),
+            ("}\"".to_string(), StringInterpolationEnd, (1, 29)),
+            ("".to_string(), Eof, (1, 31))
+        ]
+    );
+
+    assert_eq!(
+        tokenize_reduced("\"1 + 2 = {1 + 2}\""),
+        [
+            ("\"1 + 2 = {".to_string(), StringInterpolationStart, (1, 1)),
+            ("1".to_string(), Number, (1, 11)),
+            ("+".to_string(), Plus, (1, 13)),
+            ("2".to_string(), Number, (1, 15)),
+            ("}\"".to_string(), StringInterpolationEnd, (1, 16)),
+            ("".to_string(), Eof, (1, 18))
+        ]
+    );
+
+    assert_eq!(
+        tokenize("\"foo", 0).unwrap_err().kind,
+        TokenizerErrorKind::UnterminatedString
+    );
+    assert_eq!(
+        tokenize("\"foo = {foo\"", 0).unwrap_err().kind,
+        TokenizerErrorKind::UnterminatedStringInterpolation
+    );
+    assert_eq!(
+        tokenize("\"foo = {foo}.", 0).unwrap_err().kind,
+        TokenizerErrorKind::UnterminatedString
+    );
+    assert_eq!(
+        tokenize("\"foo = {foo, bar = {bar}\"", 0).unwrap_err().kind,
+        TokenizerErrorKind::UnexpectedCurlyInInterpolation
+    );
 }
 
 #[test]

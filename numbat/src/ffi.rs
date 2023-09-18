@@ -37,7 +37,7 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
             ProcedureKind::Print,
             ForeignFunction {
                 name: "print".into(),
-                arity: 1..=1,
+                arity: 0..=1,
                 callable: Callable::Procedure(print),
             },
         );
@@ -296,11 +296,15 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
 }
 
 fn print(ctx: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
-    assert!(args.len() == 1);
+    assert!(args.len() <= 1);
 
-    match &args[0] {
-        Value::String(string) => (ctx.print_fn)(&crate::markup::text(string)), // print string without quotes
-        arg => (ctx.print_fn)(&arg.pretty_print()),
+    if args.len() == 0 {
+        (ctx.print_fn)(&crate::markup::text(""))
+    } else {
+        match &args[0] {
+            Value::String(string) => (ctx.print_fn)(&crate::markup::text(string)), // print string without quotes
+            arg => (ctx.print_fn)(&arg.pretty_print()),
+        }
     }
 
     ControlFlow::Continue(())

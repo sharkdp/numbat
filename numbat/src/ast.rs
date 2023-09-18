@@ -52,24 +52,7 @@ impl PrettyPrint for BinaryOperator {
 #[derive(Debug, Clone, PartialEq)]
 pub enum StringPart {
     Fixed(String),
-    Interpolation(Span, String),
-}
-
-impl PrettyPrint for StringPart {
-    fn pretty_print(&self) -> Markup {
-        match self {
-            StringPart::Fixed(s) => s.pretty_print(),
-            StringPart::Interpolation(_, identifier) => {
-                m::operator("{") + m::identifier(identifier) + m::operator("}")
-            }
-        }
-    }
-}
-
-impl PrettyPrint for &Vec<StringPart> {
-    fn pretty_print(&self) -> Markup {
-        m::operator("\"") + self.iter().map(|p| p.pretty_print()).sum() + m::operator("\"")
-    }
+    Interpolation(Span, Box<Expression>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -378,8 +361,8 @@ impl ReplaceSpans for StringPart {
     fn replace_spans(&self) -> Self {
         match self {
             f @ StringPart::Fixed(_) => f.clone(),
-            StringPart::Interpolation(_, identifier) => {
-                StringPart::Interpolation(Span::dummy(), identifier.clone())
+            StringPart::Interpolation(_, expr) => {
+                StringPart::Interpolation(Span::dummy(), Box::new(expr.replace_spans()))
             }
         }
     }
