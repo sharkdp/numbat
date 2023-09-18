@@ -20,6 +20,8 @@ print("A football field would fit on a sphere of radius {radius}")
 You can use almost every expression inside a string interpolation field. For example:
 
 ```nbt
+print("3² + 4² = {hypot2(3, 4)}²")
+
 let speed = 25 km/h
 print("Speed of the bicycle: {speed} ({speed -> mph})")
 ```
