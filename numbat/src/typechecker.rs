@@ -245,8 +245,8 @@ pub enum TypeCheckError {
     #[error("Argument types in assert_eq calls must match")]
     IncompatibleTypesInAssertEq(Span, Type, Span, Type, Span),
 
-    #[error("Incompatible types in function definition")]
-    IncompatibleReturnTypeAnnotation(Span, Type, Span, Type, Span),
+    #[error("Incompatible types in {0}")]
+    IncompatibleTypesInAnnotation(String, Span, Type, Span, Type, Span),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -787,41 +787,52 @@ impl TypeChecker {
                 type_annotation,
             } => {
                 let expr_checked = self.check_expression(expr)?;
-                let type_deduced = dtype(&expr_checked)?;
+                let type_deduced = expr_checked.get_type();
 
-                if let Some(ref dexpr) = type_annotation {
-                    let type_specified = self
-                        .registry
-                        .get_base_representation(dexpr)
-                        .map_err(TypeCheckError::RegistryError)?;
-                    if type_deduced != type_specified {
-                        return Err(TypeCheckError::IncompatibleDimensions(
-                            IncompatibleDimensionsError {
-                                span_operation: *identifier_span,
-                                operation: "variable definition".into(),
-                                span_expected: dexpr.full_span(),
-                                expected_name: "specified dimension",
-                                expected_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&type_specified),
-                                expected_type: type_specified,
-                                span_actual: expr.full_span(),
-                                actual_name: "   actual dimension",
-                                actual_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&type_deduced),
-                                actual_type: type_deduced,
-                            },
-                        ));
+                if let Some(ref type_annotation) = type_annotation {
+                    let type_annotated = self.type_from_annotation(type_annotation)?;
+
+                    match (&type_deduced, type_annotated) {
+                        (Type::Dimension(dexpr_deduced), Type::Dimension(dexpr_specified)) => {
+                            if dexpr_deduced != &dexpr_specified {
+                                return Err(TypeCheckError::IncompatibleDimensions(
+                                    IncompatibleDimensionsError {
+                                        span_operation: *identifier_span,
+                                        operation: "variable definition".into(),
+                                        span_expected: type_annotation.full_span(),
+                                        expected_name: "specified dimension",
+                                        expected_dimensions: self
+                                            .registry
+                                            .get_derived_entry_names_for(&dexpr_specified),
+                                        expected_type: dexpr_specified,
+                                        span_actual: expr.full_span(),
+                                        actual_name: "   actual dimension",
+                                        actual_dimensions: self
+                                            .registry
+                                            .get_derived_entry_names_for(&dexpr_deduced),
+                                        actual_type: dexpr_deduced.clone(),
+                                    },
+                                ));
+                            }
+                        }
+                        (deduced, annotated) => {
+                            if deduced != &annotated {
+                                return Err(TypeCheckError::IncompatibleTypesInAnnotation(
+                                    "definition".into(),
+                                    *identifier_span,
+                                    annotated,
+                                    type_annotation.full_span(),
+                                    deduced.clone(),
+                                    expr_checked.full_span(),
+                                ));
+                            }
+                        }
                     }
                 }
 
                 self.identifiers.insert(
                     identifier.clone(),
-                    (
-                        Type::Dimension(type_deduced.clone()),
-                        IdentifierKind::Variable,
-                    ),
+                    (type_deduced.clone(), IdentifierKind::Variable),
                 );
 
                 typed_ast::Statement::DefineVariable(
@@ -831,7 +842,7 @@ impl TypeChecker {
                         .as_ref()
                         .map(|d| d.pretty_print())
                         .unwrap_or_else(|| type_deduced.to_readable_type(&self.registry)),
-                    Type::Dimension(type_deduced),
+                    type_deduced,
                 )
             }
             ast::Statement::DefineBaseUnit(_span, unit_name, type_annotation, decorators) => {
@@ -1078,7 +1089,8 @@ impl TypeChecker {
                             }
                             (type_deduced, type_specified) => {
                                 if type_deduced != type_specified {
-                                    return Err(TypeCheckError::IncompatibleReturnTypeAnnotation(
+                                    return Err(TypeCheckError::IncompatibleTypesInAnnotation(
+                                        "function definition".into(),
                                         *function_name_span,
                                         type_specified,
                                         return_type_annotation_span.unwrap(),
@@ -1250,8 +1262,8 @@ impl TypeChecker {
                 .get_base_representation(&dexpr)
                 .map(Type::Dimension)
                 .map_err(TypeCheckError::RegistryError),
-            TypeAnnotation::Bool => Ok(Type::Boolean),
-            TypeAnnotation::String => Ok(Type::String),
+            TypeAnnotation::Bool(_) => Ok(Type::Boolean),
+            TypeAnnotation::String(_) => Ok(Type::String),
         }
     }
 }
@@ -1386,9 +1398,28 @@ mod tests {
 
         assert_successful_typecheck("let x: A = c / b");
 
+        assert_successful_typecheck("let x: bool = true");
+        assert_successful_typecheck("let x: str = \"hello\"");
+
         assert!(matches!(
             get_typecheck_error("let x: A = b"),
             TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a() && actual_type == type_b()
+        ));
+        assert!(matches!(
+            get_typecheck_error("let x: A = true"),
+            TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Dimension(type_a()) && actual_type == Type::Boolean
+        ));
+        assert!(matches!(
+            get_typecheck_error("let x: A = \"foo\""),
+            TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Dimension(type_a()) && actual_type == Type::String
+        ));
+        assert!(matches!(
+            get_typecheck_error("let x: bool = a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Boolean && actual_type == Type::Dimension(type_a())
+        ));
+        assert!(matches!(
+            get_typecheck_error("let x: str = true"),
+            TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::String && actual_type == Type::Boolean
         ));
     }
 
@@ -1657,29 +1688,29 @@ mod tests {
     fn non_dtype_return_types() {
         assert!(matches!(
             get_typecheck_error("fn f() -> str = 1"),
-            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
         assert!(matches!(
             get_typecheck_error("fn f() -> Scalar = \"test\""),
-            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
 
         assert!(matches!(
             get_typecheck_error("fn f() -> bool = 1"),
-            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
         assert!(matches!(
             get_typecheck_error("fn f() -> Scalar = true"),
-            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
 
         assert!(matches!(
             get_typecheck_error("fn f() -> str = true"),
-            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
         assert!(matches!(
             get_typecheck_error("fn f() -> bool = \"test\""),
-            TypeCheckError::IncompatibleReturnTypeAnnotation(..)
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
     }
 }

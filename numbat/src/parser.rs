@@ -297,8 +297,8 @@ impl<'a> Parser<'a> {
             if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
                 let identifier_span = self.last().unwrap().span;
 
-                let dexpr = if self.match_exact(TokenKind::Colon).is_some() {
-                    Some(self.dimension_expression()?)
+                let type_annotation = if self.match_exact(TokenKind::Colon).is_some() {
+                    Some(self.type_annotation()?)
                 } else {
                     None
                 };
@@ -316,7 +316,7 @@ impl<'a> Parser<'a> {
                         identifier_span,
                         identifier: identifier.lexeme.clone(),
                         expr,
-                        type_annotation: dexpr,
+                        type_annotation,
                     })
                 }
             } else {
@@ -1041,6 +1041,7 @@ impl<'a> Parser<'a> {
             let expr = self.expression()?;
             parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
 
+            let mut span_full_string = token.span;
             while let Some(inner_token) = self.match_any(&[
                 TokenKind::StringInterpolationMiddle,
                 TokenKind::StringInterpolationEnd,
@@ -1053,6 +1054,7 @@ impl<'a> Parser<'a> {
                         parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
                     }
                     TokenKind::StringInterpolationEnd => {
+                        span_full_string = span_full_string.extend(&inner_token.span);
                         parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
                         break;
                     }
@@ -1065,7 +1067,7 @@ impl<'a> Parser<'a> {
                 .filter(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()))
                 .collect();
 
-            Ok(Expression::String(token.span, parts))
+            Ok(Expression::String(span_full_string, parts))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let inner = self.expression()?;
 
@@ -1105,10 +1107,10 @@ impl<'a> Parser<'a> {
     }
 
     fn type_annotation(&mut self) -> Result<TypeAnnotation> {
-        if self.match_exact(TokenKind::Bool).is_some() {
-            Ok(TypeAnnotation::Bool)
-        } else if self.match_exact(TokenKind::Str).is_some() {
-            Ok(TypeAnnotation::String)
+        if let Some(token) = self.match_exact(TokenKind::Bool) {
+            Ok(TypeAnnotation::Bool(token.span))
+        } else if let Some(token) = self.match_exact(TokenKind::Str) {
+            Ok(TypeAnnotation::String(token.span))
         } else {
             Ok(TypeAnnotation::DimensionExpression(
                 self.dimension_expression()?,
@@ -1704,9 +1706,8 @@ mod tests {
                 identifier_span: Span::dummy(),
                 identifier: "x".into(),
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
-                type_annotation: Some(DimensionExpression::Dimension(
-                    Span::dummy(),
-                    "Length".into(),
+                type_annotation: Some(TypeAnnotation::DimensionExpression(
+                    DimensionExpression::Dimension(Span::dummy(), "Length".into()),
                 )),
             },
         );

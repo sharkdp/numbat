@@ -186,16 +186,26 @@ pub(crate) use scalar;
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeAnnotation {
     DimensionExpression(DimensionExpression),
-    Bool,
-    String,
+    Bool(Span),
+    String(Span),
+}
+
+impl TypeAnnotation {
+    pub fn full_span(&self) -> Span {
+        match self {
+            TypeAnnotation::DimensionExpression(d) => d.full_span(),
+            TypeAnnotation::Bool(span) => *span,
+            TypeAnnotation::String(span) => *span,
+        }
+    }
 }
 
 impl PrettyPrint for TypeAnnotation {
     fn pretty_print(&self) -> Markup {
         match self {
             TypeAnnotation::DimensionExpression(d) => d.pretty_print(),
-            TypeAnnotation::Bool => m::type_identifier("bool"),
-            TypeAnnotation::String => m::type_identifier("str"),
+            TypeAnnotation::Bool(_) => m::type_identifier("bool"),
+            TypeAnnotation::String(_) => m::type_identifier("str"),
         }
     }
 }
@@ -283,7 +293,7 @@ pub enum Statement {
         identifier_span: Span,
         identifier: String,
         expr: Expression,
-        type_annotation: Option<DimensionExpression>,
+        type_annotation: Option<TypeAnnotation>,
     },
     DefineFunction {
         function_name_span: Span,
@@ -323,7 +333,8 @@ impl ReplaceSpans for TypeAnnotation {
             TypeAnnotation::DimensionExpression(d) => {
                 TypeAnnotation::DimensionExpression(d.replace_spans())
             }
-            ta @ (TypeAnnotation::Bool | TypeAnnotation::String) => ta.clone(),
+            TypeAnnotation::Bool(_) => TypeAnnotation::Bool(Span::dummy()),
+            TypeAnnotation::String(_) => TypeAnnotation::String(Span::dummy()),
         }
     }
 }
