@@ -31,7 +31,7 @@ with first class support for physical dimensions and units.
 
 Numbat has a static type system where physical dimensions like `Length` and `Time` *are* types.
 Definitions of constants and functions can optionally contain type annotations that will be statically enforced.
-If the types are not specified, they will be inferred (`Speed`, `Money` and `Frequency` on the right).
+If the types are not specified, they will be inferred (`Speed`, `Money` and `Frequency` in the screenshot).
 
 See [this article](https://numbat.dev/doc/type-system.html) to learn more about Numbats type system.
 </details>
@@ -53,7 +53,8 @@ as well as a large range of [mathematical functions](https://numbat.dev/doc/list
 </summary>
 <p></p>
 
-Numbats parser never tries to be "smart" on syntactically incorrect input. This means you will either get a (descriptive) error message, or you can trust the result of your calculation. On the interactive terminal, we also pretty-print the user input for a quick double-check.
+Numbats parser never tries to be "smart" on syntactically incorrect input.
+This means you will either get a (descriptive) error message, or you can trust the result of your calculation.
 </details>
 
 <details>
@@ -72,8 +73,8 @@ Numbat aims to provide descriptive and helpful error messages:
 </summary>
 <p></p>
 
-…
-
+Numbat has been designed for an interactive use-case with small "one off" computations. In the [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop),
+you get a familiar readline interface with the usual features like a command history, Ctrl-R search and tab completion.
 </details>
 
 <details>
@@ -82,7 +83,11 @@ Numbat aims to provide descriptive and helpful error messages:
 </summary>
 <p></p>
 
-The whole system of physical dimensions and units is specified in Numbat language and can be modified or replaced
+The whole system of physical dimensions and units is specified Numbats standard library, which is
+[written in the Numbat language](https://github.com/sharkdp/numbat/tree/master/modules). It is therefore
+easily extensible by [providing a `init.nbt` file](https://numbat.dev/doc/cli-customization.html).
+Users can even choose to write their own `prelude` module, allowing for arbitrary modifications to the
+unit system.
 
 </details>
 
