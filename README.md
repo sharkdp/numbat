@@ -2,12 +2,13 @@
 
 <h1>Numbat</h1>
 
-**[Features]   •   [Documentation]   •   [Installation]   •   [Development]**
+**[Features] • [Documentation] • [Syntax reference] • [Installation] • [Development]**
 
 <img src="assets/numbat-410.png">
 
 [Features]: #key-features
 [Documentation]: https://numbat.dev/doc/
+[Syntax reference]: https://numbat.dev/doc/example-numbat_syntax.html
 [Installation]: #installation
 [Development]: #development
 
@@ -17,6 +18,8 @@
 first class support for physical dimensions and units.
 
 ## Key features
+
+<img src="assets/numbat-interactive.png" align="right">
 
 *Click to learn more.*
 
