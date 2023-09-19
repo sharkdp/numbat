@@ -20,7 +20,8 @@ with first class support for physical dimensions and units.
 
 ## Key features
 
-<img src="assets/numbat-interactive.png" align="right">
+<div>
+<img src="assets/numbat-interactive.png" align="right" style="max-height:100%; max-width:100%;">
 
 *Click to learn more.*
 
@@ -108,19 +109,32 @@ own `prelude` module, allowing for arbitrary modifications to the unit system.
 
 <details>
 <summary>
+<b>Assertions</b>
+</summary>
+<p></p>
+
+With its static type system, Numbat already enforces correctness of your calculations on a physical dimension level.
+But some checks can only be made at runtime. Numbat provides an `assert_eq` procedure that allows you to check for
+exact equality using `assert_eq(12 ft, 1 in)` or approximate equality using `assert_eq(c, 300_000 km/s, 1% × c)`.
+This can be useful to make sure that intermediate results do not change during a restructuring of your calculation.
+</details>
+
+<details>
+<summary>
 <b>Non-features</b>
 </summary>
 <p></p>
 
 Numbat is a scientific calculator. It's not a computer algebra system that solves differential equations
-or computes intergrals. Try [WolframAlpha](http://www.wolframalpha.com/) instead. There is no graphical
-user interface with buttons like `x²`, `1/x` or `DEG/RAD`. [Qalculate!](http://qalculate.github.io/) is a
-fantastic tool that supports both text as well as graphical input. Numbat supports a huge range of physical
-units. If you need something even more comprehensive, please consider contributing. Or try
-[GNU units](https://www.gnu.org/software/units/).
-
+or computes intergrals. Try [WolframAlpha](http://www.wolframalpha.com/) instead.<br>
+There is no graphical user interface with buttons like `x²`, `1/x` or `DEG/RAD`.
+[Qalculate!](http://qalculate.github.io/) is a fantastic tool that supports both text as well as graphical
+input.<br>
+Numbat supports a huge range of physical units. If you need something even more comprehensive,
+please consider contributing. Or try [GNU units](https://www.gnu.org/software/units/).
 </details>
 
+</div>
 
 
 ## Installation
