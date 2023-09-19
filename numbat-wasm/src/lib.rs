@@ -18,7 +18,7 @@ pub fn interpret(code: &str) -> String {
     let mut numbat = Context::new(NullImporter {});
     match numbat.interpret(&code, CodeSource::Text) {
         Ok((_, result)) => match result {
-            InterpreterResult::Quantity(q) => format!("{}", q),
+            InterpreterResult::Value(q) => format!("{}", q),
             InterpreterResult::Continue => "Nothing to show".into(),
             InterpreterResult::Exit(_) => "Error!".into(),
         },
