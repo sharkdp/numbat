@@ -10,7 +10,7 @@
 [Documentation]: https://numbat.dev/doc/
 [Tutorial]: https://numbat.dev/doc/tutorial.html
 [Syntax reference]: https://numbat.dev/doc/example-numbat_syntax.html
-[Installation]: #installation
+[Installation]: https://numbat.dev/doc/cli-installation.html
 [Development]: #development
 
 *Numbat* is a statically typed programming language for scientific computations<br>
@@ -137,10 +137,6 @@ please consider contributing. Or try [GNU units](https://www.gnu.org/software/un
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
-
-## Installation
-
-Numbat does not have a first official release yet, but you can try out a pre-release version [here](https://numbat.dev/).
 
 ## Development
 

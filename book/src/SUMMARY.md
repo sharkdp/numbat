@@ -44,7 +44,7 @@
 
 # Command line tool
 
-- [Installation]()
+- [Installation](./cli-installation.md)
 - [Usage](./cli-usage.md)
 - [Customization](./cli-customization.md)
 
