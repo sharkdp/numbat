@@ -2,12 +2,13 @@
 
 <h1>Numbat</h1>
 
-**[Features] • [Documentation] • [Syntax reference] • [Installation] • [Development]**
+**[Features] • [Documentation] • [Tutorial] • [Syntax reference] • [Installation] • [Development]**
 
 <img src="assets/numbat-410.png">
 
 [Features]: #key-features
 [Documentation]: https://numbat.dev/doc/
+[Tutorial]: https://numbat.dev/doc/tutorial.html
 [Syntax reference]: https://numbat.dev/doc/example-numbat_syntax.html
 [Installation]: #installation
 [Development]: #development
