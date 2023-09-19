@@ -27,7 +27,6 @@ generate_example() {
 }
 
 generate_example medication_dosage "Medication dosage" true
-generate_example workhours "Workhours" true
 generate_example barometric_formula "Barometric formula" true
 generate_example molarity "Molarity" true
 generate_example musical_note_frequency "Musical note frequency" true
@@ -36,6 +35,7 @@ generate_example pipe_flow_rate "Flow rate in a pipe" true
 generate_example recipe "Recipe" true
 generate_example acidity "Acidity" true
 generate_example factorial "Factorial" false
+generate_example xkcd_687 "XKCD 687" true
 generate_example xkcd_2585 "XKCD 2585" true
 generate_example xkcd_2812 "XKCD 2812" true
 
