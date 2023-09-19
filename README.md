@@ -18,10 +18,9 @@ with first class support for physical dimensions and units.
 
 </div>
 
-## Key features
+## Key Features
 
-<div>
-<img src="assets/numbat-interactive.png" align="right" style="max-height:100%; max-width:100%;">
+<img src="assets/numbat-interactive.png" align="right">
 
 *Click to learn more.*
 
@@ -134,8 +133,10 @@ Numbat supports a huge range of physical units. If you need something even more 
 please consider contributing. Or try [GNU units](https://www.gnu.org/software/units/).
 </details>
 
-</div>
-
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 
 ## Installation
 
