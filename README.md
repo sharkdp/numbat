@@ -25,47 +25,39 @@ first class support for physical dimensions and units.
 
 <details>
 <summary>
-Physical dimensions as types
+<b>Physical dimensions as types</b>
 </summary>
 <p></p>
 
-Numbat has a static type system where physical dimensions like `Length` and `Time` *are* the types.
+Numbat has a static type system where physical dimensions like `Length` and `Time` *are* types.
+Definitions of constants and functions can optionally contain type annotations that will be statically enforced.
+If the types are not specified, they will be inferred (`Speed`, `Money` and `Frequency` on the right).
 
+See [this article](https://numbat.dev/doc/type-system.html) to learn more about Numbats type system.
 </details>
 
 <details>
 <summary>
-Type inference
-</summary>
- <p></p>
-
-…
-
-</details>
-
-<details>
-<summary>
-Strict syntax
-</summary>
- <p></p>
-
-…
-
-</details>
-
-<details>
-<summary>
-Excellent error messages
+<b>Strict syntax</b>
 </summary>
 <p></p>
 
-…
-
+Numbats parser never tries to be "smart" on syntactically incorrect input. This means you will either get a (descriptive) error message, or you can trust the result of your calculation. On the interactive terminal, we also pretty-print the user input for a quick double-check.
 </details>
 
 <details>
 <summary>
-Focus on interactive use
+<b>Excellent error messages</b>
+</summary>
+<p></p>
+
+Numbat aims to provide descriptive and helpful error messages:
+<img src="assets/numbat-error.png" width="500">
+</details>
+
+<details>
+<summary>
+<b>Focus on interactive use</b>
 </summary>
 <p></p>
 
@@ -75,7 +67,7 @@ Focus on interactive use
 
 <details>
 <summary>
-Modular and customizable
+<b>Modular and customizable</b>
 </summary>
 <p></p>
 
