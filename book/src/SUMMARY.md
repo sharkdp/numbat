@@ -13,10 +13,11 @@
     - [Medication dosage](./example-medication_dosage.md)
     - [Molarity](./example-molarity.md)
     - [Musical note frequency](./example-musical_note_frequency.md)
+    - [Population growth](./example-population_growth.md)
     - [Recipe](./example-recipe.md)
-    - [XKCD 687](./example-xkcd_687.md)
     - [XKCD 2585](./example-xkcd_2585.md)
     - [XKCD 2812](./example-xkcd_2812.md)
+    - [XKCD 687](./example-xkcd_687.md)
 
 # Numbat language reference
 
