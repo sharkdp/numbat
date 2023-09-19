@@ -91,27 +91,39 @@ p.links a {
 
 /* syntax highlighting */
 
-.hl-emphasized {
-    font-weight: 700 !important;
+.hl-dimmed {
+    color: #3e3e3e !important;
 }
 
-.hl-error {
-    color: #F92672 !important;
+.hl-string {
+    color: #1f9829 !important;
+}
+
+.hl-keyword {
+    font-weight: 700 !important;
+    color: #f03495 !important;
 }
 
 .hl-value {
-    color: #66D9EF !important;
-}
-
-.hl-identifier {
-    color: #FD971F !important;
-}
-
-.hl-function {
-    font-style: italic !important;
+    color: #dba717 !important;
 }
 
 .hl-unit {
+    color: #1d9ecd !important;
+}
+
+.hl-identifier {}
+
+.hl-type-identifier {
+    color: #1d4fba !important;
+    font-style: italic !important;
+}
+
+.hl-operator {
+    font-weight: 700 !important;
+}
+
+.hl-decorator {
     color: #A6E22E !important;
 }
 

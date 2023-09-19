@@ -62,10 +62,6 @@ function interpret(line) {
   return output;
 }
 
-function emph(str) {
-  return "[[;;;hl-emphasized]" + str + "]";
-}
-
 function colored(col, str) {
   return "[[;#" + col + ";]" + str + "]";
 }
