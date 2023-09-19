@@ -30,11 +30,24 @@ with first class support for physical dimensions and units.
 </summary>
 <p></p>
 
-Numbat has a static type system where physical dimensions like `Length` and `Time` *are* types.
+Numbat has a static type system where physical dimensions like `Length` and `Time` act as types.
 Definitions of constants and functions can optionally contain type annotations that will be statically enforced.
 If the types are not specified, they will be inferred (`Speed`, `Money` and `Frequency` in the screenshot).
 
 See [this article](https://numbat.dev/doc/type-system.html) to learn more about Numbats type system.
+</details>
+
+<details>
+<summary>
+<b>First-class physical units</b>
+</summary>
+<p></p>
+
+Numbat is focused on computations with units. Units are therefore treated as first-class citizens. They can be
+[entered in various ways](https://numbat.dev/doc/unit-notation.html) (`km/h` or `kilometer/hour`, `GiB` or
+`gibibytes`, `°` or `degree`, `m²` or `m^2`).
+New (helper) units can be [introduced](https://numbat.dev/doc/unit-definitions.html) on the spot (`unit pixel`).
+Compatible units can be converted [using the `->` operator](https://numbat.dev/doc/unit-conversions.html).
 </details>
 
 <details>
@@ -71,12 +84,13 @@ Numbat aims to provide descriptive and helpful error messages:
 
 <details>
 <summary>
-<b>Focus on interactive use</b>
+<b>Interactive terminal</b>
 </summary>
 <p></p>
 
-Numbat has been designed for an interactive use-case with small "one off" computations. In the [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop),
-you get a familiar readline interface with the usual features like a command history, Ctrl-R search and tab completion.
+Numbat has been designed for an interactive use-case with small "one off" computations. Opening the `numbat` interpreter
+without any arguments starts a [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) with a familiar
+readline interface, including all the usual features like a command history, Ctrl-R search or tab completion.
 </details>
 
 <details>
@@ -86,12 +100,14 @@ you get a familiar readline interface with the usual features like a command his
 <p></p>
 
 The whole system of physical dimensions and units is specified Numbats standard library, which is
-[written in the Numbat language](https://github.com/sharkdp/numbat/tree/master/modules). It is therefore
-easily extensible by [providing a `init.nbt` file](https://numbat.dev/doc/cli-customization.html).
-Users can even choose to write their own `prelude` module, allowing for arbitrary modifications to the
-unit system.
-
+[written in the Numbat language](https://github.com/sharkdp/numbat/tree/master/modules) itself. It is therefore
+easily extensible by [providing a `init.nbt` file](https://numbat.dev/doc/cli-customization.html). For example,
+a single line (`unit bathtub = 150 L`) is usually enough to add a new unit. Users can even choose to write their
+own `prelude` module, allowing for arbitrary modifications to the unit system.
 </details>
+
+
+
 
 ## Installation
 
