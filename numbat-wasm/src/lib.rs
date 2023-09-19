@@ -1,13 +1,16 @@
-mod html_formatter;
+mod jquery_terminal_formatter;
 mod utils;
+mod wasm_importer;
 
-use html_formatter::HtmlFormatter;
+use jquery_terminal_formatter::{jt_format, JqueryTerminalFormatter};
 use numbat::markup::Formatter;
 use numbat::pretty_print::PrettyPrint;
-use numbat::resolver::{CodeSource, NullImporter};
+use numbat::resolver::CodeSource;
 use numbat::{Context, InterpreterResult};
 
 use wasm_bindgen::prelude::*;
+
+use crate::wasm_importer::WasmImporter;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -16,18 +19,33 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-pub fn interpret(code: &str) -> String {
+pub fn setup_panic_hook() {
     utils::set_panic_hook();
+}
 
-    let html_formatter = HtmlFormatter {};
+#[wasm_bindgen]
+pub struct Numbat {
+    ctx: Context,
+}
 
-    let mut numbat = Context::new(NullImporter {});
-    match numbat.interpret(&code, CodeSource::Text) {
-        Ok((_, result)) => match result {
-            InterpreterResult::Value(q) => html_formatter.format(&q.pretty_print(), true),
-            InterpreterResult::Continue => "Nothing to show".into(),
-            InterpreterResult::Exit(_) => "Error!".into(),
-        },
-        Err(e) => format!("{:#}", e),
+#[wasm_bindgen]
+impl Numbat {
+    pub fn new() -> Self {
+        let mut ctx = Context::new(WasmImporter {});
+        let _ = ctx.interpret("use prelude", CodeSource::Internal).unwrap();
+        Numbat { ctx }
+    }
+
+    pub fn interpret(&mut self, code: &str) -> String {
+        let fmt = JqueryTerminalFormatter {};
+
+        match self.ctx.interpret(&code, CodeSource::Text) {
+            Ok((_, result)) => match result {
+                InterpreterResult::Value(q) => fmt.format(&q.pretty_print(), true),
+                InterpreterResult::Continue => "".into(),
+                InterpreterResult::Exit(_) => jt_format("error", "Error!".into()),
+            },
+            Err(e) => format!("{:#}", e),
+        }
     }
 }
