@@ -7,5 +7,11 @@ unit FLOPS = FLOP / second
 @aliases(cores)
 unit core
 
-let speed = 16 FLOP × 3.5 GHz / core × 12 cores -> GFLOPS
+unit cycle
+
+let flop = 16 FLOP / core / cycle
+let num_cores = 12 cores
+let clock_rate: Cycle / Time = 3.5 GHz cycle
+
+let speed = flop × clock_rate × num_cores -> GFLOPS
 print(speed)
