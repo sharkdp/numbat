@@ -56,6 +56,9 @@ pub enum ParseErrorKind {
     #[error("Trailing characters: '{0}'")]
     TrailingCharacters(String),
 
+    #[error("Trailing '=' sign. Use `let {0} = …` if you intended to define a new constant.")]
+    TrailingEqualSign(String),
+
     #[error("Expected identifier after 'let' keyword")]
     ExpectedIdentifierAfterLet,
 
@@ -216,6 +219,14 @@ impl<'a> Parser<'a> {
                 }
                 TokenKind::Eof => {
                     break;
+                }
+                TokenKind::Equal => {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::TrailingEqualSign(
+                            self.last().unwrap().lexeme.clone(),
+                        ),
+                        span: self.peek().span,
+                    });
                 }
                 _ => {
                     return Err(ParseError {
@@ -1708,6 +1719,11 @@ mod tests {
         should_fail_with(
             &["let foo", "let foo 2"],
             ParseErrorKind::ExpectedEqualOrColonAfterLetIdentifier,
+        );
+
+        should_fail_with(
+            &["foo = 2"],
+            ParseErrorKind::TrailingEqualSign("foo".into()),
         );
 
         should_fail(&["let x²=2", "let x+y=2", "let 3=5", "let x=", "let x"])
