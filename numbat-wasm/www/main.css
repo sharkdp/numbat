@@ -85,8 +85,6 @@ p.links a {
 
 .prompt {
     font-weight: bold;
-    /* workaround for https://github.com/sharkdp/insect/issues/78 */
-    letter-spacing: 1px;
 }
 
 /* syntax highlighting */

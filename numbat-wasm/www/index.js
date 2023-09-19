@@ -80,7 +80,7 @@ $(document).ready(function() {
     greetings: greeting,
     name: "terminal",
     height: 550,
-    prompt: "[[;;;prompt]&gt; ]",
+    prompt: "[[;;;prompt]>>> ]",
     // clear: false, // do not include 'clear' command
     // exit: false, // do not include 'exit' command
     checkArity: false,
