@@ -216,13 +216,6 @@ impl Cli {
 
     fn repl(&mut self) -> Result<()> {
         let interactive = std::io::stdin().is_terminal();
-        if interactive {
-            println!();
-            println!(" █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀");
-            println!(" █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░");
-            println!();
-        }
-
         let history_path = self.get_history_path()?;
 
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
