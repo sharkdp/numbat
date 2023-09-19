@@ -12,10 +12,10 @@
 [Installation]: #installation
 [Development]: #development
 
-</div>
+*Numbat* is a statically typed programming language for scientific computations<br>
+with first class support for physical dimensions and units.
 
-*Numbat* is a statically typed programming language for scientific computations with
-first class support for physical dimensions and units.
+</div>
 
 ## Key features
 
