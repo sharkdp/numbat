@@ -7,6 +7,8 @@ pub struct WasmImporter {}
 
 impl ModuleImporter for WasmImporter {
     fn import(&self, path: &ModulePath) -> Option<(String, Option<PathBuf>)> {
+        // TODO: yeah, this is not great.
+
         let path = path.to_string();
         let code = match path.as_str() {
             "core::dimensions" => include_str!("../../modules/core/dimensions.nbt"),

@@ -15,18 +15,19 @@ impl Formatter for JqueryTerminalFormatter {
         &self,
         FormattedString(_output_type, format_type, s): &FormattedString,
     ) -> String {
-        match format_type {
-            FormatType::Whitespace => format!("{s}"),
-            FormatType::Dimmed => format!("{s}"),
-            FormatType::Text => format!("{s}"),
-            FormatType::String => jt_format("emphasized", s),
-            FormatType::Keyword => format!("{s}"),
-            FormatType::Value => jt_format("value", s),
-            FormatType::Unit => format!("{s}"),
-            FormatType::Identifier => format!("{s}"),
-            FormatType::TypeIdentifier => format!("{s}"),
-            FormatType::Operator => jt_format("emphasized", s),
-            FormatType::Decorator => format!("{s}"),
-        }
+        let css_class = match format_type {
+            FormatType::Whitespace => return s.clone(),
+            FormatType::Dimmed => "dimmed",
+            FormatType::Text => return s.clone(),
+            FormatType::String => "string",
+            FormatType::Keyword => "keyword",
+            FormatType::Value => "value",
+            FormatType::Unit => "unit",
+            FormatType::Identifier => "identifier",
+            FormatType::TypeIdentifier => "type-identifier",
+            FormatType::Operator => "operator",
+            FormatType::Decorator => "decorator",
+        };
+        jt_format(&css_class, s)
     }
 }
