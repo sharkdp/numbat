@@ -140,7 +140,7 @@ please consider contributing. Or try [GNU units](https://www.gnu.org/software/un
 
 ## Installation
 
-
+Numbat does not have a first official release yet, but you can try out a pre-release version [here](https://numbat.dev/).
 
 ## Development
 
