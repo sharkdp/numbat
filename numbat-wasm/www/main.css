@@ -1,0 +1,144 @@
+html {
+    font-family: 'Exo 2', sans-serif;
+    background-color: #ECF0F1;
+}
+
+.github-corner svg {
+    fill: #272822;
+    color: #ECF0F1;
+}
+
+body {
+    font-size: 1.2em;
+    margin: 0px;
+    margin-top: 18px;
+}
+
+#content {
+    max-width: 90%;
+    width: 850px;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin: 0 auto;
+}
+
+h1 {
+    font-weight: 400;
+    font-size: 3em;
+    line-height: 100%;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+p.desc {
+    margin-top: 0.6em;
+    margin-bottom: 1.8em;
+}
+
+p.links {
+    font-size: 0.8em;
+    text-align: center;
+}
+
+p.links a {
+    color: #aaa;
+}
+
+#terminal {
+    border-radius: 4px;
+    box-shadow: 0px 3px 8px #1a1a1a;
+}
+
+/* jQuery Terminal */
+
+.terminal {
+    --color: #F8F8F2;
+    --background: #272822;
+    --size: 1.6;
+    --link-color: #F8F8F2;
+    font-family: 'Fira Mono', monospace;
+}
+
+.terminal, .terminal .terminal-fill {
+    padding: 1.2em;
+    margin-bottom: 2em;
+}
+
+.terminal,
+.terminal-output > :not(.raw) span,
+.terminal-output > :not(.raw) a,
+.terminal-output > :not(.raw) div,
+.cmd,
+.cmd span,
+.cmd div {
+    font-family: 'Fira Mono', monospace;
+}
+
+.terminal-output > div {
+    padding-bottom: 1em;
+}
+
+.terminal-output > div.terminal-command {
+    padding-bottom: 0em;
+}
+
+.prompt {
+    font-weight: bold;
+    /* workaround for https://github.com/sharkdp/insect/issues/78 */
+    letter-spacing: 1px;
+}
+
+/* syntax highlighting */
+
+.hl-emphasized {
+    font-weight: 700 !important;
+}
+
+.hl-error {
+    color: #F92672 !important;
+}
+
+.hl-value {
+    color: #66D9EF !important;
+}
+
+.hl-identifier {
+    color: #FD971F !important;
+}
+
+.hl-function {
+    font-style: italic !important;
+}
+
+.hl-unit {
+    color: #A6E22E !important;
+}
+
+/* Github Badge */
+
+.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}
+
+@media (prefers-color-scheme: dark) {
+    html {
+        background: #1A1A1A;
+        color: #ECF0F1;
+    }
+
+    .github-corner svg {
+        fill: #ECF0F1;
+        color: #1A1A1A;
+    }
+
+    #terminal {
+        box-shadow: 0px 3px 8px #121212;
+    }
+
+    #insect-logo {
+        color: black;
+        filter: drop-shadow(0 0 10px #ECF0F1);
+    }
+
+    #insect-logo > path {
+        display: none;
+    }
+}
