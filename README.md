@@ -2,7 +2,7 @@
 
 <h1>Numbat</h1>
 
-**[Features] • [Documentation] • [Tutorial] • [Syntax reference] • [Installation] • [Development]**
+**[Documentation] • [Tutorial] • [Syntax reference] • [Installation] • [Development]**
 
 <img src="assets/numbat-410.png">
 
@@ -47,7 +47,8 @@ Numbat is focused on computations with units. Units are therefore treated as fir
 [entered in various ways](https://numbat.dev/doc/unit-notation.html) (`km/h` or `kilometer/hour`, `GiB` or
 `gibibytes`, `°` or `degree`, `m²` or `m^2`).
 New (helper) units can be [introduced](https://numbat.dev/doc/unit-definitions.html) on the spot (`unit pixel`).
-Compatible units can be converted [using the `->` operator](https://numbat.dev/doc/unit-conversions.html).
+Compatible units can be converted easily [using the `->` operator](https://numbat.dev/doc/unit-conversions.html) (`30 km/h -> mph`, `1 mrad -> degree`, `5 in + 2 ft -> cm`, `27 weeks -> days`).
+And unit expressions are simplified using various heuristics (`15 km/h * 30 min = 7.5 km`).
 </details>
 
 <details>
@@ -78,8 +79,7 @@ This means you will either get a (descriptive) error message, or you can trust t
 </summary>
 <p></p>
 
-Numbat aims to provide descriptive and helpful error messages:
-<img src="assets/numbat-error.png" width="500">
+Numbat aims to provide [descriptive and helpful error messages](https://github.com/sharkdp/numbat/blob/master/assets/numbat-error.png).
 </details>
 
 <details>
@@ -106,6 +106,20 @@ a single line (`unit bathtub = 150 L`) is usually enough to add a new unit. User
 own `prelude` module, allowing for arbitrary modifications to the unit system.
 </details>
 
+<details>
+<summary>
+<b>Non-features</b>
+</summary>
+<p></p>
+
+Numbat is a scientific calculator. It's not a computer algebra system that solves differential equations
+or computes intergrals. Try [WolframAlpha](http://www.wolframalpha.com/) instead. There is no graphical
+user interface with buttons like `x²`, `1/x` or `DEG/RAD`. [Qalculate!](http://qalculate.github.io/) is a
+fantastic tool that supports both text as well as graphical input. Numbat supports a huge range of physical
+units. If you need something even more comprehensive, please consider contributing. Or try
+[GNU units](https://www.gnu.org/software/units/).
+
+</details>
 
 
 
