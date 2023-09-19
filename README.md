@@ -38,7 +38,7 @@ See [this article](https://numbat.dev/doc/type-system.html) to learn more about 
 
 <details>
 <summary>
-<b>Rich set of physical units, constants and mathematical functions</b>
+<b>Rich set of units, constants and functions</b>
 </summary>
 <p></p>
 
