@@ -12,5 +12,5 @@ it can be desirable to add type annotations, as it often improves readabililty a
 you to catch potential errors early:
 ```nbt
 let μ_water: DynamicViscosity = 1 mPa·s
-let flow_rate: Volume / Time = π × pipe_radius^4 × Δp / (8 μ_water × pipe_length)
+let Q: FlowRate = π × pipe_radius^4 × Δp / (8 μ_water × pipe_length)
 ```

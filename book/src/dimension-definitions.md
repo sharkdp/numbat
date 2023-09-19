@@ -31,3 +31,23 @@ fn inter_dot_spacing(resolution: Dot / Length) -> Length = 1 dot / resolution
 
 inter_dot_spacing(72 dpi) -> µm  # 353 µm
 ```
+
+There is also a shorthand notation for creating a new dimension and a corresponding
+unit:
+
+``` numbat
+unit book
+
+@aliases(pages)
+unit page
+
+@aliases(words)
+unit word
+
+let words_per_book = 500 words/page × 300 pages/book
+```
+
+Here, the base unit definitions will implicitly create new dimensions which are capitalized
+versions of the unit names (`Book`, `Page`, `Word`). This allows you to count books, pages
+and words independently without any risk of mixing them. The `words_per_book` constant in this
+examples has a type of `Word / Book`.
