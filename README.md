@@ -39,13 +39,14 @@ See [this article](https://numbat.dev/doc/type-system.html) to learn more about 
 
 <details>
 <summary>
-<b>Rich set of units, constants and functions</b>
+<b>Comprehensive standard library</b>
 </summary>
 <p></p>
 
-Numbat comes with a comprehensive standard library that includes a large number of physical units (SI, US Customary, Imperial, Nautical, Astronomical, Atomic, Nuclear, …).
-See [this reference page](https://numbat.dev/doc/list-units.html) for a complete overview. It also contains a lot of [mathematical and physical constants](https://numbat.dev/doc/list-constants.html)
-as well as a large range of [mathematical functions](https://numbat.dev/doc/list-functions.html).
+Numbats [standard library](https://numbat.dev/doc/prelude.html) comes with a large number of physical dimensions and units (SI, US Customary, Imperial, Nautical, Astronomical, Atomic, Nuclear, …).
+See [this reference page](https://numbat.dev/doc/list-units.html) for a complete overview.
+It also contains a lot of [mathematical and physical constants](https://numbat.dev/doc/list-constants.html)
+as well as a large range of [pre-defined functions](https://numbat.dev/doc/list-functions.html).
 </details>
 
 <details>
