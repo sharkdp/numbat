@@ -63,7 +63,7 @@ struct Args {
     pretty_print: PrettyPrintMode,
 
     /// Turn on debug mode (e.g. disassembler output).
-    #[arg(long, short)]
+    #[arg(long, short, hide = true)]
     debug: bool,
 }
 
