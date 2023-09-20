@@ -90,7 +90,7 @@ p.links a {
 /* syntax highlighting */
 
 .hl-dimmed {
-    color: #3e3e3e !important;
+    color: #606060 !important;
 }
 
 .hl-string {
@@ -113,7 +113,7 @@ p.links a {
 .hl-identifier {}
 
 .hl-type-identifier {
-    color: #1d4fba !important;
+    color: #5179ce !important;
     font-style: italic !important;
 }
 
