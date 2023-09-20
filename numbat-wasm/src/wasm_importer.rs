@@ -34,6 +34,7 @@ impl ModuleImporter for WasmImporter {
             "units::nautical" => include_str!("../../modules/units/nautical.nbt"),
             "units::partsperx" => include_str!("../../modules/units/partsperx.nbt"),
             "units::placeholder" => include_str!("../../modules/units/placeholder.nbt"),
+            "units::planck" => include_str!("../../modules/units/planck.nbt"),
             "units::si" => include_str!("../../modules/units/si.nbt"),
             "units::stoney" => include_str!("../../modules/units/stoney.nbt"),
             "units::time" => include_str!("../../modules/units/time.nbt"),
