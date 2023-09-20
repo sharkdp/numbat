@@ -6,8 +6,6 @@ use rustyline::{
     completion::{extract_word, Completer, Pair},
 };
 
-use numbat::keywords::KEYWORDS;
-
 pub struct NumbatCompleter {
     pub context: Arc<Mutex<Context>>,
 }
