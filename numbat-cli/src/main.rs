@@ -3,6 +3,7 @@ mod completer;
 mod highlighter;
 mod keywords;
 
+use ansi_formatter::ansi_format;
 use completer::NumbatCompleter;
 use highlighter::NumbatHighlighter;
 
@@ -27,8 +28,6 @@ use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
-
-use crate::ansi_formatter::ansi_format;
 
 type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
 
