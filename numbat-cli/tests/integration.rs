@@ -1,6 +1,13 @@
+use std::path::Path;
+
 use assert_cmd::Command;
 
 fn numbat() -> Command {
+    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap())
+        .join("..")
+        .join("modules");
+    std::env::set_var("NUMBAT_MODULES_PATH", module_path);
+
     let mut cmd = Command::cargo_bin("numbat").unwrap();
     cmd.arg("--no-init");
     cmd

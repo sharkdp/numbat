@@ -20,6 +20,4 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: |
-        export NUMBAT_MODULES_PATH="$PWD/modules/"
-        cargo test --verbose
+      run: cargo test --verbose

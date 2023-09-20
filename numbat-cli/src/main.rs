@@ -456,8 +456,10 @@ impl Cli {
     fn get_modules_paths() -> Vec<PathBuf> {
         let mut paths = vec![];
 
-        if let Some(path) = std::env::var_os("NUMBAT_MODULES_PATH") {
-            paths.push(path.into());
+        if let Some(modules_path) = std::env::var_os("NUMBAT_MODULES_PATH") {
+            for path in modules_path.to_string_lossy().split(':') {
+                paths.push(path.into());
+            }
         }
 
         paths.push(Self::get_config_path().join("modules"));
