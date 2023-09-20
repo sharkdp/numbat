@@ -66,18 +66,10 @@ function colored(col, str) {
   return "[[;#" + col + ";]" + str + "]";
 }
 
-var visitedBefore = localStorage.getItem("visitedBefore") === "yes";
-var greeting = "";
-if (!visitedBefore) {
-  greeting = colored("75715E", "Welcome to Numbat. Type '?' if this is your first visit.");
-  localStorage.setItem("visitedBefore", "yes");
-} else {
-  greeting = colored("75715E", "Welcome to Numbat. Enter '?' for help.");
-}
 
 $(document).ready(function() {
   var term = $('#terminal').terminal(interpret, {
-    greetings: greeting,
+    greetings: false,
     name: "terminal",
     height: 550,
     prompt: "[[;;;prompt]>>> ]",

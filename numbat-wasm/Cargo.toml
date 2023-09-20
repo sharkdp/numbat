@@ -26,6 +26,8 @@ wee_alloc = { version = "0.4.5", optional = true }
 
 numbat = { path = "../numbat" }
 html-escape = "0.2.13"
+termcolor = "1.3.0"
+codespan-reporting = "0.11.1"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

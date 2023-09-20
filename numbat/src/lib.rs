@@ -142,6 +142,10 @@ impl Context {
         })
     }
 
+    pub fn resolver(&self) -> &Resolver {
+        &self.resolver
+    }
+
     pub fn interpret(
         &mut self,
         code: &str,

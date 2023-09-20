@@ -125,6 +125,18 @@ p.links a {
     color: #A6E22E !important;
 }
 
+.hl-diagnostic-red {
+    color: #d4122c !important;
+}
+
+.hl-diagnostic-blue {
+    color: #5179ce !important;
+}
+
+.hl-diagnostic-bold {
+    font-weight: 700 !important;
+}
+
 /* Github Badge */
 
 .github-corner:hover .octo-arm {
