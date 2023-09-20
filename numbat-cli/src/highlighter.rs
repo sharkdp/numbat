@@ -1,4 +1,5 @@
 use colored::Colorize;
+use numbat::keywords::KEYWORDS;
 use numbat::{markup, Context};
 use rustyline::{highlight::Highlighter, CompletionType};
 
@@ -7,7 +8,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{ansi_formatter::ansi_format, keywords::KEYWORDS};
+use crate::ansi_formatter::ansi_format;
 
 pub struct NumbatHighlighter {
     pub context: Arc<Mutex<Context>>,
