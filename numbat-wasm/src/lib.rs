@@ -125,6 +125,13 @@ impl Numbat {
         }
     }
 
+    pub fn get_completions_for(&self, input: &str) -> Vec<JsValue> {
+        self.ctx
+            .get_completions_for(input)
+            .map(|s| s.trim().trim_end_matches('(').into())
+            .collect()
+    }
+
     fn print_diagnostic(&self, error: &dyn ErrorDiagnostic) -> String {
         use codespan_reporting::term::{self, Config};
 
