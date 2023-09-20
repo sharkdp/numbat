@@ -157,6 +157,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected 'else' in if-then-else condition")]
     ExpectedElse,
+
+    #[error("Unterminated string interpolation")]
+    UnterminatedStringInterpolation,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -1042,10 +1045,12 @@ impl<'a> Parser<'a> {
             parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
 
             let mut span_full_string = token.span;
+            let mut has_end = false;
             while let Some(inner_token) = self.match_any(&[
                 TokenKind::StringInterpolationMiddle,
                 TokenKind::StringInterpolationEnd,
             ]) {
+                span_full_string = span_full_string.extend(&inner_token.span);
                 match inner_token.kind {
                     TokenKind::StringInterpolationMiddle => {
                         parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
@@ -1054,12 +1059,19 @@ impl<'a> Parser<'a> {
                         parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
                     }
                     TokenKind::StringInterpolationEnd => {
-                        span_full_string = span_full_string.extend(&inner_token.span);
                         parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
+                        has_end = true;
                         break;
                     }
                     _ => unreachable!(),
                 }
+            }
+
+            if !has_end {
+                return Err(ParseError::new(
+                    ParseErrorKind::UnterminatedStringInterpolation,
+                    span_full_string,
+                ));
             }
 
             parts = parts
@@ -2210,6 +2222,11 @@ mod tests {
                     ),
                 ],
             ),
+        );
+
+        should_fail_with(
+            &["\"test {1"],
+            ParseErrorKind::UnterminatedStringInterpolation,
         );
     }
 }
