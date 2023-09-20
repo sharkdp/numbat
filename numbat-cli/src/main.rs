@@ -1,7 +1,6 @@
 mod ansi_formatter;
 mod completer;
 mod highlighter;
-mod keywords;
 
 use ansi_formatter::ansi_format;
 use completer::NumbatCompleter;

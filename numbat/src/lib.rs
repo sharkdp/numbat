@@ -8,6 +8,7 @@ mod dimension;
 mod ffi;
 mod gamma;
 mod interpreter;
+pub mod keywords;
 pub mod markup;
 mod math;
 mod name_resolution;
@@ -36,6 +37,7 @@ use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
 use interpreter::Interpreter;
+use keywords::KEYWORDS;
 use prefix_transformer::Transformer;
 use registry::BaseRepresentationFactor;
 use resolver::CodeSource;
@@ -115,6 +117,35 @@ impl Context {
 
     pub fn dimension_names(&self) -> &[String] {
         &self.prefix_transformer.dimension_names
+    }
+
+    pub fn get_completions_for<'a>(&self, word_part: &'a str) -> impl Iterator<Item = String> + 'a {
+        let mut words: Vec<_> = KEYWORDS.iter().map(|k| k.to_string()).collect();
+
+        {
+            for variable in self.variable_names() {
+                words.push(variable.clone());
+            }
+
+            for function in self.function_names() {
+                words.push(format!("{}(", function));
+            }
+
+            for dimension in self.dimension_names() {
+                words.push(dimension.clone());
+            }
+
+            for unit_names in self.unit_names() {
+                for unit in unit_names {
+                    words.push(unit.clone());
+                }
+            }
+        }
+
+        words.sort();
+        words.dedup();
+
+        words.into_iter().filter(move |w| w.starts_with(word_part))
     }
 
     pub fn dimension_registry(&self) -> &DimensionRegistry {

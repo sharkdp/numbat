@@ -338,6 +338,7 @@ impl Tokenizer {
             m.insert("then", TokenKind::Then);
             m.insert("else", TokenKind::Else);
             m.insert("str", TokenKind::Str);
+            // Keep this list in sync with keywords::KEYWORDS!
             m
         });
 
