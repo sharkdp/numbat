@@ -416,7 +416,9 @@ impl Cli {
                 self.print_diagnostic(e.clone());
                 if matches!(&e, ResolverError::UnknownModule(_, module_path) if module_path.0 == &["prelude"])
                 {
-                    eprintln!("Make sure that you have properly set up Numbat's module path.");
+                    eprintln!("Make sure that you have installed Numbat's standard library");
+                    eprintln!("in one of the standard locations, or set NUMBAT_MODULES_PATH.");
+                    eprintln!("For details, see https://numbat.dev/doc/cli-installation.html");
                 }
                 execution_mode.exit_status_in_case_of_error()
             }
