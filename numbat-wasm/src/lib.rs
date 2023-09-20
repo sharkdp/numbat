@@ -63,16 +63,23 @@ impl Numbat {
                 output.push_str("\n");
                 for statement in &statements {
                     output.push_str(&fmt.format(&statement.pretty_print(), true));
-                    output.push_str("\n\n");
+                    output.push_str("\n");
                 }
+                output.push_str("\n");
 
                 // print(…) and type(…) results
-                for content in to_be_printed.lock().unwrap().iter() {
+                let to_be_printed = to_be_printed.lock().unwrap();
+                for content in to_be_printed.iter() {
                     output.push_str(&fmt.format(content, true));
+                    output.push_str("\n");
                 }
 
                 match result {
                     InterpreterResult::Value(value) => {
+                        if !to_be_printed.is_empty() {
+                            output.push_str("\n");
+                        }
+
                         // TODO: the following statement is copied from numbat-cli. Move this to the numbat crate
                         // to avoid duplication.
                         let type_ = statements.last().map_or(m::empty(), |s| {
