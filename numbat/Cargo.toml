@@ -1,25 +1,27 @@
 [package]
 name = "numbat"
-description = "A high precision scientific calculator with full support for physical units."
+description = " A statically typed programming language for scientific computations with first class support for physical dimensions and units"
 authors = ["David Peter <mail@david-peter.de>"]
-categories = ["science", "mathematics", "parser-implementations"]
-version = "1.5.0"
-edition = "2021"
+categories = ["science", "mathematics", "compilers"]
+keywords = ["language", "compiler", "physics", "units", "calculation"]
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
+version = "1.6.0"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+rust-version = "1.70"
 
 [dependencies]
 thiserror = "1"
-itertools = "0.10"
+itertools = "0.11"
 num-rational = "0.4"
 num-integer = "0.1.45"
 num-traits = "0.2"
 codespan-reporting = "0.11"
 strsim = "0.10.0"
 pretty_dtoa = "0.3"
-numbat-exchange-rates = { version = "0.1.0", path = "../numbat-exchange-rates" }
+numbat-exchange-rates = { version = "0.2.0", path = "../numbat-exchange-rates" }
 heck = { version = "0.4.1", features = ["unicode"] }
 unicode-ident = "1.0.11"
 unicode-width = "0.1.10"
