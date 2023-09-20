@@ -25,6 +25,7 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 
 numbat = { path = "../numbat" }
+html-escape = "0.2.13"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
