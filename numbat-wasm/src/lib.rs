@@ -2,18 +2,20 @@ mod jquery_terminal_formatter;
 mod utils;
 mod wasm_importer;
 
+use numbat::diagnostic::ErrorDiagnostic;
 use std::sync::{Arc, Mutex};
+use wasm_bindgen::prelude::*;
 
 use jquery_terminal_formatter::{jt_format, JqueryTerminalFormatter};
+use wasm_importer::WasmImporter;
+
 use numbat::markup::Formatter;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::{markup as m, Type};
+use numbat::{markup as m, NameResolutionError, NumbatError, Type};
 use numbat::{Context, InterpreterResult, InterpreterSettings};
 
-use wasm_bindgen::prelude::*;
-
-use crate::wasm_importer::WasmImporter;
+use crate::jquery_terminal_formatter::JqueryTerminalWriter;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -113,7 +115,26 @@ impl Numbat {
 
                 output
             }
-            Err(e) => format!("{:#}", e),
+            Err(NumbatError::ResolverError(e)) => self.print_diagnostic(&e),
+            Err(NumbatError::NameResolutionError(
+                e @ (NameResolutionError::IdentifierClash { .. }
+                | NameResolutionError::ReservedIdentifier(_)),
+            )) => self.print_diagnostic(&e),
+            Err(NumbatError::TypeCheckError(e)) => self.print_diagnostic(&e),
+            Err(NumbatError::RuntimeError(e)) => self.print_diagnostic(&e),
         }
+    }
+
+    fn print_diagnostic(&self, error: &dyn ErrorDiagnostic) -> String {
+        use codespan_reporting::term::{self, Config};
+
+        let mut writer = JqueryTerminalWriter::new();
+        let config = Config::default();
+
+        let resolver = self.ctx.resolver();
+
+        term::emit(&mut writer, &config, &resolver.files, &error.diagnostic()).unwrap();
+
+        writer.to_string()
     }
 }

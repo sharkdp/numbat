@@ -1,5 +1,7 @@
 use numbat::markup::{FormatType, FormattedString, Formatter};
 
+use termcolor::{Color, WriteColor};
+
 pub struct JqueryTerminalFormatter;
 
 pub fn jt_format(class: Option<&str>, content: &str) -> String {
@@ -37,5 +39,70 @@ impl Formatter for JqueryTerminalFormatter {
             FormatType::Decorator => Some("decorator"),
         };
         jt_format(css_class, s)
+    }
+}
+
+pub struct JqueryTerminalWriter {
+    buffer: Vec<u8>,
+    color: Option<termcolor::ColorSpec>,
+}
+
+impl JqueryTerminalWriter {
+    pub fn new() -> Self {
+        JqueryTerminalWriter {
+            buffer: vec![],
+            color: None,
+        }
+    }
+
+    pub fn to_string(self) -> String {
+        String::from_utf8_lossy(&self.buffer).into()
+    }
+}
+
+impl std::io::Write for JqueryTerminalWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        if let Some(color) = &self.color {
+            if color.fg() == Some(&Color::Red) {
+                self.buffer.write("[[;;;hl-diagnostic-red]".as_bytes())?;
+                let size = self.buffer.write(buf)?;
+                self.buffer.write("]".as_bytes())?;
+                Ok(size)
+            } else if color.fg() == Some(&Color::Blue) {
+                self.buffer.write("[[;;;hl-diagnostic-blue]".as_bytes())?;
+                let size = self.buffer.write(buf)?;
+                self.buffer.write("]".as_bytes())?;
+                Ok(size)
+            } else if color.bold() {
+                self.buffer.write("[[;;;hl-diagnostic-bold]".as_bytes())?;
+                let size = self.buffer.write(buf)?;
+                self.buffer.write("]".as_bytes())?;
+                Ok(size)
+            } else {
+                self.buffer.write(buf)
+            }
+        } else {
+            self.buffer.write(buf)
+        }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.buffer.flush()
+    }
+}
+
+impl WriteColor for JqueryTerminalWriter {
+    fn supports_color(&self) -> bool {
+        true
+    }
+
+    fn set_color(&mut self, spec: &termcolor::ColorSpec) -> std::io::Result<()> {
+        self.color = Some(spec.clone());
+        Ok(())
+    }
+
+    fn reset(&mut self) -> std::io::Result<()> {
+        self.color = None;
+        Ok(())
     }
 }
