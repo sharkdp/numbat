@@ -5,10 +5,10 @@ mod wasm_importer;
 use std::sync::{Arc, Mutex};
 
 use jquery_terminal_formatter::{jt_format, JqueryTerminalFormatter};
-use numbat::markup as m;
 use numbat::markup::Formatter;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
+use numbat::{markup as m, Type};
 use numbat::{Context, InterpreterResult, InterpreterSettings};
 
 use wasm_bindgen::prelude::*;
@@ -42,6 +42,8 @@ impl Numbat {
     pub fn interpret(&mut self, code: &str) -> String {
         let mut output = String::new();
 
+        let registry = self.ctx.dimension_registry().clone();
+
         let fmt = JqueryTerminalFormatter {};
 
         let to_be_printed: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
@@ -56,18 +58,49 @@ impl Numbat {
             .ctx
             .interpret_with_settings(&mut settings, &code, CodeSource::Text)
         {
-            Ok((_, result)) => {
+            Ok((statements, result)) => {
+                // Pretty print
+                output.push_str("\n");
+                for statement in &statements {
+                    output.push_str(&fmt.format(&statement.pretty_print(), true));
+                    output.push_str("\n\n");
+                }
+
+                // print(…) and type(…) results
                 for content in to_be_printed.lock().unwrap().iter() {
                     output.push_str(&fmt.format(content, true));
                 }
 
                 match result {
-                    InterpreterResult::Value(q) => {
-                        output.push_str(&fmt.format(&q.pretty_print(), true))
+                    InterpreterResult::Value(value) => {
+                        // TODO: the following statement is copied from numbat-cli. Move this to the numbat crate
+                        // to avoid duplication.
+                        let type_ = statements.last().map_or(m::empty(), |s| {
+                            if let numbat::Statement::Expression(e) = s {
+                                let type_ = e.get_type();
+
+                                if type_ == Type::scalar() {
+                                    m::empty()
+                                } else {
+                                    m::dimmed("    [")
+                                        + e.get_type().to_readable_type(&registry)
+                                        + m::dimmed("]")
+                                }
+                            } else {
+                                m::empty()
+                            }
+                        });
+
+                        let markup = m::whitespace("    ")
+                            + m::operator("=")
+                            + m::space()
+                            + value.pretty_print()
+                            + type_;
+                        output.push_str(&fmt.format(&markup, true));
                     }
                     InterpreterResult::Continue => {}
                     InterpreterResult::Exit(_) => {
-                        output.push_str(&jt_format("error", "Error!".into()))
+                        output.push_str(&jt_format(Some("error"), "Error!".into()))
                     }
                 }
 
