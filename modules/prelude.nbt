@@ -13,6 +13,7 @@ use units::imperial
 use units::us_customary
 use units::nautical
 use units::cgs
+use units::planck
 use units::fff
 use units::misc
 use units::partsperx

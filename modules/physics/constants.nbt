@@ -66,21 +66,6 @@ let k_B = boltzmann_constant
 let gas_constant: Energy / (AmountOfSubstance × Temperature) = 8.31446261815324 J / (K mol)
 let R = gas_constant
 
-# Planck length
-let planck_length: Length = sqrt(ℏ G / c^3) -> m
-
-# Planck mass
-let planck_mass: Mass = sqrt(ℏ c / G) -> kg
-
-# Planck time
-let planck_time: Time = sqrt(ℏ G / c^5) -> s
-
-# Planck temperature
-let planck_temperature: Temperature = sqrt(ℏ c^5 / (G k_B^2)) -> K
-
-# Planck energy
-let planck_energy: Energy = sqrt(ℏ c^5 / G) -> J
-
 # Bohr radius
 let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
 let a0 = bohr_radius
