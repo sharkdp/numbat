@@ -1,0 +1,28 @@
+# This file uses the dimensionful_angles prelude
+
+print("h = {planck_constant}")
+print("ћ = {ћ}")
+print("ȟ = {ȟ}")
+
+# harmonic oscillation
+let ω = 2π rad / s
+let t = 0.4 s
+let amplitude = Sin(ω·t)
+print("Amplitude: {amplitude}")
+
+# Tangential velocity
+let r = 20 cm
+let v: Speed = r ω / θC  # This is one of the "text book formulas" that needs adaptation
+print("Linear velocity: {v}")
+
+# Arc length
+fn arc_length(radius: Length, θ: Angle) -> Length = radius × θ / θC
+print(arc_length(1 m, 45°))
+
+# Rotational energy
+let mass = 1 kg
+let radius = 1 m
+let I: MomentOfInertia = mass × radius^2 / θC^2
+let ω_rot: AngularFrequency = 180° / 5 s
+let E_rot: Energy = 1/2 * I * ω_rot^2
+print("E_rot = {E_rot -> J}")

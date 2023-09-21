@@ -35,7 +35,7 @@ unit candela: LuminousIntensity
 
 @metric_prefixes
 @aliases(radians, rad: short)
-unit radian: Angle = meter / meter
+unit radian: Angle
 
 @metric_prefixes
 @aliases(steradians, sr: short)

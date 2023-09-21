@@ -1,6 +1,6 @@
 ### Physical dimensions
 
-dimension Angle = 1  # SI: plane angle
+dimension Angle  # SI: plane angle
 dimension SolidAngle = Angle^2
 
 dimension Length
