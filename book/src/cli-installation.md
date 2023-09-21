@@ -17,14 +17,6 @@ to try it immediately (unpacks to `/tmp` and executes from there).
 For a proper installation, download the latest release
 [here](https://github.com/sharkdp/numbat/releases).
 
-Unpack the archive and move the `modules/` folder to `~/.config/numbat`,
-or one of the [other supported directories](./cli-customization.md#module-paths).
-
-``` bash
-mkdir -p ~/.config/numbat
-cp -r numbat/modules ~/.config/numbat/
-```
-
 ## From source
 
 Clone the Git repository, and build Numbat with `cargo`:
@@ -35,10 +27,8 @@ cd numbat/
 cargo install -f --path numbat-cli
 ```
 
-And copy the `modules/` folder to `~/.config/numbat/`, or the
-[respective folder on your operating system](./cli-customization.md#module-paths).
+Or install the latest release using
 
 ``` bash
-mkdir -p ~/.config/numbat
-cp -r modules/ ~/.config/numbat/
+cargo install numbat-cli
 ```

@@ -5,10 +5,7 @@
 //
 
 use itertools::Itertools;
-use numbat::{
-    resolver::{CodeSource, FileSystemImporter},
-    Context,
-};
+use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context};
 
 fn main() {
     let mut importer = FileSystemImporter::default();

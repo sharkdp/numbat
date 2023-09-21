@@ -2,9 +2,9 @@
 
 ## Startup
 
-By default, Numbat will load the following files during startup:
+By default, Numbat will load the following modules/files during startup, in order:
 
-- Numbat Prelude (a module called `prelude`, from `<module-path>/prelude.nbt`)
+- Numbat Prelude (a module called `prelude`, either from `<module-path>/prelude.nbt` if available, or the builtin version)
 - The user initialization file, if available (a file called `init.nbt` from `<config-path>/init.nbt`)
 
 ### Config path
@@ -19,12 +19,14 @@ Numbat's configuration folder (`<config-path>` above) can be found under:
 
 ## Module paths
 
-Numbat will load modules from the following directories (`<module-path>` above).
+Numbat will load modules from the following sources.
 Entries higher up in the list take precedence.
 
+* `$NUMBAT_MODULES_PATH` — If present, this environment variable can point to a single directory or contain a `:`-separated list of paths
 * `<config-path>/modules` — User-customized module folder
-* `/usr/share/numbat/modules` — on Linux and macOS
-* `C:\Program Files\numbat\modules` — on Windows
+* `/usr/share/numbat/modules` — System-wide module folder (Linux and macOS)
+* `C:\Program Files\numbat\modules` — System-wide module folder (Windows)
+* Builtin modules inside the `numbat` binary
 
 ## Customization
 
@@ -36,17 +38,23 @@ create a `init.nbt` file in your config folder (e.g. `~/.config/numbat/init.nbt`
 ### Custom modules
 
 You can also create your own modules that can be loaded on demand. To this end,
-create a new file, say `<module-path>/finance.nbt` in one of the module folders (e.g. `~/.config/numbat/modules/finance.nbt` on Linux). This module can then be loaded using
+create a new file, say `<module-path>/user/finance.nbt` in one of the module folders
+(e.g. `~/.config/numbat/modules/custom/finance.nbt` on Linux). This module can then be
+loaded using
 
 ``` numbat
-use finance
+use custom::finance
 ```
 
 in your Numbat scripts or in the REPL. You can also load custom modules from `init.nbt`
 if you want to have them available all the time.
 
-You can also organize modules into subfolders (e.g. `<module-path>/finance/functions.nbt`). In that case, you can load them using
+You can also organize modules into subfolders (e.g. `<module-path>/custom/finance/functions.nbt`).
+In that case, you can load them using
 
 ``` numbat
-use finance::functions
+use custom::finance::functions
 ```
+
+In fact, the `custom` folder is just a convention to avoid name clashes with the
+[standard library](https://github.com/sharkdp/numbat/tree/master/modules).

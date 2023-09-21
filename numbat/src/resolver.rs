@@ -1,9 +1,8 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
-use crate::{ast::Statement, parser::parse, span::Span, ParseError};
+use crate::{
+    ast::Statement, module_importer::ModuleImporter, parser::parse, span::Span, ParseError,
+};
 
 use codespan_reporting::files::SimpleFiles;
 use thiserror::Error;
@@ -127,49 +126,6 @@ impl Resolver {
         let statements = self.parse(code, code_source_id)?;
 
         self.inlining_pass(&statements)
-    }
-}
-
-pub trait ModuleImporter {
-    fn import(&self, path: &ModulePath) -> Option<(String, Option<PathBuf>)>;
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct NullImporter {}
-
-impl ModuleImporter for NullImporter {
-    fn import(&self, _: &ModulePath) -> Option<(String, Option<PathBuf>)> {
-        None
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct FileSystemImporter {
-    root_paths: Vec<PathBuf>,
-}
-
-impl FileSystemImporter {
-    pub fn add_path<P: AsRef<Path>>(&mut self, path: P) {
-        self.root_paths.push(path.as_ref().to_owned());
-    }
-}
-
-impl ModuleImporter for FileSystemImporter {
-    fn import(&self, module_path: &ModulePath) -> Option<(String, Option<PathBuf>)> {
-        for path in &self.root_paths {
-            let mut path = path.clone();
-            for part in &module_path.0 {
-                path = path.join(part);
-            }
-
-            path.set_extension("nbt");
-
-            if let Ok(code) = fs::read_to_string(&path) {
-                return Some((code, Some(path.to_owned())));
-            }
-        }
-
-        None
     }
 }
 
