@@ -101,7 +101,7 @@ readline interface, including all the usual features like a command history, Ctr
 <p></p>
 
 The whole system of physical dimensions and units is specified Numbats standard library, which is
-[written in the Numbat language](https://github.com/sharkdp/numbat/tree/master/modules) itself. It is therefore
+[written in the Numbat language](https://github.com/sharkdp/numbat/tree/master/numbat/modules) itself. It is therefore
 easily extensible by [providing a `init.nbt` file](https://numbat.dev/doc/cli-customization.html). For example,
 a single line (`unit bathtub = 150 L`) is usually enough to add a new unit. Users can even choose to write their
 own `prelude` module, allowing for arbitrary modifications to the unit system.
@@ -158,10 +158,10 @@ cargo test
 
 ### Working on the `prelude`
 
-If you are working on [Numbats standard library](modules/), it is convenient to point
-the `NUMBAT_MODULES_PATH` environment variable to the `modules/` folder. This way,
+If you are working on [Numbats standard library](numbat/modules/), it is convenient to point
+the `NUMBAT_MODULES_PATH` environment variable to the `numbat/modules/` folder. This way,
 you don't have to recompile Numbat to see your changes.
 
-Alternatively, you can create a symlink from `~/.config/numbat/modules` to the `modules/`
+Alternatively, you can create a symlink from `~/.config/numbat/modules` to the `numbat/modules/`
 folder in the repository (see [this page](https://numbat.dev/doc/cli-customization.html#module-paths)
 for the standard paths on other operating systems.

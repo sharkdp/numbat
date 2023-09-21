@@ -7,7 +7,6 @@ pub fn get_test_context_without_prelude() -> Context {
         &std::env::var_os("CARGO_MANIFEST_DIR")
             .expect("CARGO_MANIFEST_DIR variable should be set when calling 'cargo test'"),
     )
-    .join("..")
     .join("modules");
 
     let mut importer = FileSystemImporter::default();

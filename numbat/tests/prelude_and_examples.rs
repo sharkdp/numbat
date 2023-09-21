@@ -72,7 +72,7 @@ fn run_for_each_file(glob_pattern: &str, f: impl Fn(&str)) {
 
 #[test]
 fn modules_are_self_consistent() {
-    run_for_each_file("../modules/**/*.nbt", assert_runs_without_prelude);
+    run_for_each_file("modules/**/*.nbt", assert_runs_without_prelude);
 }
 
 #[test]

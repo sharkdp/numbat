@@ -57,4 +57,4 @@ use custom::finance::functions
 ```
 
 In fact, the `custom` folder is just a convention to avoid name clashes with the
-[standard library](https://github.com/sharkdp/numbat/tree/master/modules).
+[standard library](https://github.com/sharkdp/numbat/tree/master/numbat/modules).

@@ -9,7 +9,7 @@ use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context}
 
 fn main() {
     let mut importer = FileSystemImporter::default();
-    importer.add_path("modules");
+    importer.add_path("numbat/modules");
     let mut ctx = Context::new(importer);
     let result = ctx
         .interpret("use prelude\nuse units::currencies", CodeSource::Internal)
