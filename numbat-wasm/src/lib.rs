@@ -1,13 +1,12 @@
 mod jquery_terminal_formatter;
 mod utils;
-mod wasm_importer;
 
 use numbat::diagnostic::ErrorDiagnostic;
+use numbat::module_importer::BuiltinModuleImporter;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 
 use jquery_terminal_formatter::{jt_format, JqueryTerminalFormatter};
-use wasm_importer::WasmImporter;
 
 use numbat::markup::Formatter;
 use numbat::pretty_print::PrettyPrint;
@@ -36,7 +35,7 @@ pub struct Numbat {
 #[wasm_bindgen]
 impl Numbat {
     pub fn new() -> Self {
-        let mut ctx = Context::new(WasmImporter {});
+        let mut ctx = Context::new(BuiltinModuleImporter::default());
         let _ = ctx.interpret("use prelude", CodeSource::Internal).unwrap();
         Numbat { ctx }
     }

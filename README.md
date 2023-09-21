@@ -141,10 +141,6 @@ please consider contributing. Or try [GNU units](https://www.gnu.org/software/un
 
 ## Development
 
-Clone the repository and make sure to properly set up the Numbat modules path. This can
-either be done by copying the `modules/` folder to the [appropriate location](https://numbat.dev/doc/cli-customization.html#module-paths)
-on your operating system, or by pointing the `NUMBAT_MODULES_PATH` environment variable to the `modules/` folder.
-
 Run Numbat CLI
 ```
 cargo run -- <numbat args>
@@ -159,3 +155,13 @@ Run all tests
 ```
 cargo test
 ```
+
+### Working on the `prelude`
+
+If you are working on [Numbats standard library](modules/), it is convenient to point
+the `NUMBAT_MODULES_PATH` environment variable to the `modules/` folder. This way,
+you don't have to recompile Numbat to see your changes.
+
+Alternatively, you can create a symlink from `~/.config/numbat/modules` to the `modules/`
+folder in the repository (see [this page](https://numbat.dev/doc/cli-customization.html#module-paths)
+for the standard paths on other operating systems.
