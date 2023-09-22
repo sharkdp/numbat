@@ -1,6 +1,6 @@
 html {
     font-family: 'Exo 2', sans-serif;
-    background-color: #ecebe5;
+    background-color: #f2f2f2;
 }
 
 .github-corner svg {
@@ -16,18 +16,10 @@ body {
 
 #content {
     max-width: 90%;
-    width: 850px;
+    width: 900px;
     padding-left: 20px;
     padding-right: 20px;
     margin: 0 auto;
-}
-
-h1 {
-    font-weight: 400;
-    font-size: 3em;
-    line-height: 100%;
-    margin-bottom: 0;
-    padding: 0;
 }
 
 p.desc {
@@ -41,7 +33,7 @@ p.links {
 }
 
 p.links a {
-    color: #aaa;
+    color: #666;
 }
 
 #terminal {
@@ -52,10 +44,10 @@ p.links a {
 /* jQuery Terminal */
 
 .terminal {
-    --color: #F8F8F2;
-    --background: #272822;
+    --color: #f1f1f0;
+    --background: #282a36;
     --size: 1.6;
-    --link-color: #F8F8F2;
+    --link-color: #59f78d;
     font-family: 'Fira Mono', monospace;
 }
 
@@ -83,37 +75,42 @@ p.links a {
     padding-bottom: 0em;
 }
 
+.terminal {
+    --size: 1.4;
+}
+
 .prompt {
     font-weight: bold;
 }
 
 /* syntax highlighting */
+/* snazzy color scheme (https://github.com/sindresorhus/hyper-snazzy) */
 
 .hl-dimmed {
-    color: #606060 !important;
+    color: #888 !important;
 }
 
 .hl-string {
-    color: #1f9829 !important;
+    color: #59f78d !important;
 }
 
 .hl-keyword {
     font-weight: 700 !important;
-    color: #f03495 !important;
+    color: #ff69c0 !important;
 }
 
 .hl-value {
-    color: #dba717 !important;
+    color: #f3f99d !important;
 }
 
 .hl-unit {
-    color: #1d9ecd !important;
+    color: #99ecfe !important;
 }
 
 .hl-identifier {}
 
 .hl-type-identifier {
-    color: #5179ce !important;
+    color: #57c7ff !important;
     font-style: italic !important;
 }
 
@@ -122,15 +119,15 @@ p.links a {
 }
 
 .hl-decorator {
-    color: #A6E22E !important;
+    color: #59f78d !important;
 }
 
 .hl-diagnostic-red {
-    color: #d4122c !important;
+    color: #ff5b56 !important;
 }
 
 .hl-diagnostic-blue {
-    color: #5179ce !important;
+    color: #56c7ff !important;
 }
 
 .hl-diagnostic-bold {
@@ -161,37 +158,74 @@ p.links a {
     }
 }
 
-@media (max-width:500px) {
-    .github-corner:hover .octo-arm {
-        animation: none
+@media (max-width:600px) {
+    html {
+        height: 100%;
+    }
+    body {
+        margin: 0px;
+        height: 100%;
     }
 
-    .github-corner .octo-arm {
-        animation: octocat-wave 560ms ease-in-out
+    .github-corner {
+        display: none;
+    }
+
+    #logo {
+        display: none;
+    }
+
+    .desc {
+        display: none;
+    }
+
+    .links {
+        display: none;
+    }
+
+    #container {
+        display: none;
+    }
+
+    #content {
+        max-width: 100%;
+        height: 100%;
+        padding-top: 0px;
+        padding-left: 0px;
+        padding-right: 0px;
+        margin: 0 auto;
+    }
+
+    .terminal,
+    .terminal .terminal-fill {
+        padding: 0.2em;
+        margin-bottom: 2em;
+    }
+
+    .terminal {
+        --size: 1.2;
+    }
+
+    #terminal {
+        height: 100% !important;
+        border-radius: 0px;
+        box-shadow: none;
+        margin: 0px;
     }
 }
 
 @media (prefers-color-scheme: dark) {
     html {
-        background: #1A1A1A;
+        background: #121319;
         color: #ECF0F1;
     }
 
     .github-corner svg {
-        fill: #ECF0F1;
+        fill: #3e4153;
         color: #1A1A1A;
     }
 
     #terminal {
         box-shadow: 0px 3px 8px #121212;
-    }
-
-    #insect-logo {
-        color: black;
-        filter: drop-shadow(0 0 10px #ECF0F1);
-    }
-
-    #insect-logo>path {
-        display: none;
     }
 }

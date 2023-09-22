@@ -18,21 +18,20 @@ function updateUrlQuery(query) {
   history.replaceState(null, null, url);
 }
 
-function interpret(line) {
-  // Skip empty lines or line comments
-  var lineTrimmed = line.trim();
-  if (lineTrimmed === "" || lineTrimmed[0] === "#") {
+function interpret(input) {
+  // Skip empty lines or comments
+  var input_trimmed = input.trim();
+  if (input_trimmed === "" || (input_trimmed[0] === "#" && input_trimmed.indexOf("\n") == -1)) {
     return;
   }
 
-  if (lineTrimmed == "clear") {
+  if (input_trimmed == "clear") {
     this.clear();
     var output = "";
   } else {
-    var output = numbat.interpret(line);
+    var output = numbat.interpret(input);
+    updateUrlQuery(input);
   }
-
-  updateUrlQuery(line);
 
   return output;
 }
