@@ -15,6 +15,9 @@ let r = 20 cm
 let v: Speed = r ω / θC  # This is one of the "text book formulas" that needs adaptation
 print("Linear velocity: {v}")
 
+# Rotational motion
+assert_eq(60 rpm, 360° / s)
+
 # Arc length
 fn arc_length(radius: Length, θ: Angle) -> Length = radius × θ / θC
 print(arc_length(1 m, 45°))

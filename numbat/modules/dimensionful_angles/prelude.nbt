@@ -54,3 +54,8 @@ fn ATan2<Q>(y: Q, x: Q) -> Angle = atan2(y, x) × θC
 let planck_constant: Action = 6.62607015e-34 J s
 let ћ: AngularMomentum = planck_constant / 2π θC
 let ȟ: Action = planck_constant / 2π
+
+unit rev: Angle = 360°
+
+@aliases(RPM: short)
+unit rpm: Angle / Time = rev/min
