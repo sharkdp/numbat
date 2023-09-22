@@ -72,7 +72,10 @@ impl ModuleImporter for BuiltinModuleImporter {
                 let content = embedded_file.data.into_owned();
                 String::from_utf8(content).expect("Numbat modules are properly UTF-8 encoded")
             })
-            .map(|content| (content, None))
+            .map(|content| {
+                let user_facing_path = PathBuf::from("<builtin>").join("modules").join(path);
+                (content, Some(user_facing_path))
+            })
     }
 }
 
