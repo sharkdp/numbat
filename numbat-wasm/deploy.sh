@@ -2,10 +2,13 @@
 
 set -euo pipefail
 
-wasm-pack build
+wasm-pack build --features=wee_alloc
 
-cd www/
-npm run build
+(
+    cd www/
+    rm -rf dist/
+    npm run build
+)
 
-rsync --archive --stats --progress --human-readable -r ~/software/numbat/numbat-wasm/www/ shark.fish:numbat.dev/
-rsync --archive --stats --progress --human-readable -r ~/software/numbat/numbat-wasm/www/dist/ shark.fish:numbat.dev/
+rsync --archive --stats --progress --human-readable -r www/ shark.fish:numbat.dev/
+rsync --archive --stats --progress --human-readable -r www/dist/ shark.fish:numbat.dev/

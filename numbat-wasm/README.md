@@ -8,9 +8,14 @@ Test:
 wasm-pack test --headless --firefox
 ```
 
-Serve
+Serve:
 ```bash
 export NODE_OPTIONS=--openssl-legacy-provider # workaround for https://github.com/webpack/webpack/issues/14532
 cd www
 npm run start
+```
+
+Deploy:
+```bash
+bash deploy.sh
 ```
