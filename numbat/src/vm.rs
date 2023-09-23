@@ -355,6 +355,10 @@ impl Vm {
     }
 
     pub(crate) fn begin_function(&mut self, name: &str) {
+        // This allows us to overwrite functions
+        self.bytecode.retain(|(n, _)| n != name);
+        self.ffi_callables.retain(|ff| ff.name != name);
+
         self.bytecode.push((name.into(), vec![]));
         self.current_chunk_index = self.bytecode.len() - 1
     }

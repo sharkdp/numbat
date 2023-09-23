@@ -243,14 +243,6 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message("Incompatible types in 'assert_eq' call"),
             ]),
-            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
-            | TypeCheckError::UnknownForeignFunction(span, _)
-            | TypeCheckError::NonRationalExponent(span)
-            | TypeCheckError::OverflowInConstExpr(span)
-            | TypeCheckError::ExpectedDimensionType(span, _)
-            | TypeCheckError::ExpectedBool(span) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
             TypeCheckError::IncompatibleTypesInAnnotation(
                 what,
                 what_span,
@@ -269,6 +261,31 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message(format!("Incompatible types in {what}")),
             ]),
+            TypeCheckError::NameAlreadyUsedBy(_, definition_span, previous_definition_span) => {
+                let mut labels = vec![];
+
+                if let Some(span) = previous_definition_span {
+                    labels.push(
+                        span.diagnostic_label(LabelStyle::Secondary)
+                            .with_message("Previously defined here"),
+                    );
+                }
+
+                labels.push(
+                    definition_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                );
+                d.with_labels(labels)
+            }
+            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
+            | TypeCheckError::UnknownForeignFunction(span, _)
+            | TypeCheckError::NonRationalExponent(span)
+            | TypeCheckError::OverflowInConstExpr(span)
+            | TypeCheckError::ExpectedDimensionType(span, _)
+            | TypeCheckError::ExpectedBool(span) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
         }
     }
 }
