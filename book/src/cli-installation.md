@@ -19,12 +19,17 @@ For a proper installation, download the latest release
 
 ### Arch Linux
 
-In Arch Linux and Arch based distributions, you can install Numbat from the [AUR](https://aur.archlinux.org/packages/numbat-bin). So far, this AUR package only supports the `x86-64` (AMD64) architecture.
+In Arch Linux and Arch based distributions, you can install the prebuilt package of numbat from the [AUR](https://aur.archlinux.org/packages/numbat-bin). So far, this AUR package only supports the `x86-64` (amd64) architecture.
 
 ```bash
 yay -S numbat-bin
 ```
-For other architectures, install from source (read below).
+
+For other architectures, you can install the [numbat](https://aur.archlinux.org/packages/numbat) AUR package, which will download the source and compile it.
+
+```bash
+yay -S numbat
+```
 
 ## From source
 
