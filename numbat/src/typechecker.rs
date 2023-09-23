@@ -247,9 +247,6 @@ pub enum TypeCheckError {
 
     #[error("Incompatible types in {0}")]
     IncompatibleTypesInAnnotation(String, Span, Type, Span, Type, Span),
-
-    #[error("This name is already used by {0}")]
-    NameAlreadyUsedBy(&'static str, Span, Option<Span>),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -361,9 +358,15 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     }
 }
 
+#[derive(Clone, PartialEq)]
+enum IdentifierKind {
+    Variable,
+    Other,
+}
+
 #[derive(Clone, Default)]
 pub struct TypeChecker {
-    identifiers: HashMap<String, (Type, Option<Span>)>,
+    identifiers: HashMap<String, (Type, IdentifierKind)>,
     function_signatures: HashMap<
         String,
         (
@@ -378,14 +381,15 @@ pub struct TypeChecker {
 }
 
 impl TypeChecker {
+    fn identifier_type_and_kind(&self, span: Span, name: &str) -> Result<&(Type, IdentifierKind)> {
+        self.identifiers.get(name).ok_or_else(|| {
+            let suggestion = suggestion::did_you_mean(self.identifiers.keys(), name);
+            TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
+        })
+    }
+
     fn identifier_type(&self, span: Span, name: &str) -> Result<&Type> {
-        self.identifiers
-            .get(name)
-            .ok_or_else(|| {
-                let suggestion = suggestion::did_you_mean(self.identifiers.keys(), name);
-                TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
-            })
-            .map(|(type_, _)| type_)
+        self.identifier_type_and_kind(span, name).map(|(t, _)| t)
     }
 
     pub(crate) fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
@@ -769,8 +773,10 @@ impl TypeChecker {
             ast::Statement::Expression(expr) => {
                 let checked_expr = self.check_expression(expr)?;
                 for &identifier in LAST_RESULT_IDENTIFIERS {
-                    self.identifiers
-                        .insert(identifier.into(), (checked_expr.get_type(), None));
+                    self.identifiers.insert(
+                        identifier.into(),
+                        (checked_expr.get_type(), IdentifierKind::Variable),
+                    );
                 }
                 typed_ast::Statement::Expression(checked_expr)
             }
@@ -780,16 +786,6 @@ impl TypeChecker {
                 expr,
                 type_annotation,
             } => {
-                // Make sure that identifier does not clash with a function name. We do not
-                // check for clashes with unit names, as this is handled by the prefix parser.
-                if let Some(entry) = self.function_signatures.get(identifier) {
-                    return Err(TypeCheckError::NameAlreadyUsedBy(
-                        "a function",
-                        *identifier_span,
-                        Some(entry.0),
-                    ));
-                }
-
                 let expr_checked = self.check_expression(expr)?;
                 let type_deduced = expr_checked.get_type();
 
@@ -836,7 +832,7 @@ impl TypeChecker {
 
                 self.identifiers.insert(
                     identifier.clone(),
-                    (type_deduced.clone(), Some(*identifier_span)),
+                    (type_deduced.clone(), IdentifierKind::Variable),
                 );
 
                 typed_ast::Statement::DefineVariable(
@@ -849,7 +845,7 @@ impl TypeChecker {
                     type_deduced,
                 )
             }
-            ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
+            ast::Statement::DefineBaseUnit(_span, unit_name, type_annotation, decorators) => {
                 let type_specified = if let Some(dexpr) = type_annotation {
                     self.registry
                         .get_base_representation(dexpr)
@@ -866,7 +862,10 @@ impl TypeChecker {
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.identifiers.insert(
                         name.clone(),
-                        (Type::Dimension(type_specified.clone()), Some(*span)),
+                        (
+                            Type::Dimension(type_specified.clone()),
+                            IdentifierKind::Other,
+                        ),
                     );
                 }
                 typed_ast::Statement::DefineBaseUnit(
@@ -921,10 +920,7 @@ impl TypeChecker {
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
                     self.identifiers.insert(
                         name.clone(),
-                        (
-                            Type::Dimension(type_deduced.clone()),
-                            Some(*identifier_span),
-                        ),
+                        (Type::Dimension(type_deduced.clone()), IdentifierKind::Other),
                     );
                 }
                 typed_ast::Statement::DefineDerivedUnit(
@@ -946,16 +942,6 @@ impl TypeChecker {
                 return_type_annotation_span,
                 return_type_annotation,
             } => {
-                // Make sure that function name does not clash with an identifier. We do not
-                // check for clashes with unit names, as this is handled by the prefix parser.
-                if let Some((_, span)) = self.identifiers.get(function_name) {
-                    return Err(TypeCheckError::NameAlreadyUsedBy(
-                        "a constant",
-                        *function_name_span,
-                        span.clone(),
-                    ));
-                }
-
                 let mut typechecker_fn = self.clone();
                 let is_ffi_function = body.is_none();
                 let mut type_parameters = type_parameters.clone();
@@ -1013,7 +999,7 @@ impl TypeChecker {
                         parameter.clone(),
                         (
                             Type::Dimension(parameter_type.clone()),
-                            Some(*parameter_span),
+                            IdentifierKind::Variable,
                         ),
                     );
                     typed_parameters.push((
