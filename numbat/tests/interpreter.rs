@@ -305,26 +305,35 @@ fn test_prefixes() {
 }
 
 #[test]
-fn test_error_messages() {
+fn test_parse_errors() {
     expect_failure(
         "3kg+",
         "Expected one of: number, identifier, parenthesized expression",
     );
-    expect_failure("let kg=2", "Identifier is already in use: 'kg'");
-    expect_failure("let pi=2", "Identifier is already in use: 'pi'");
-    expect_failure("let sin=2", "Identifier is already in use: 'sin'");
     expect_failure("let print=2", "Expected identifier after 'let' keyword");
-    expect_failure("fn kg(x: Scalar) = 1", "Identifier is already in use: 'kg'");
-    expect_failure("fn pi(x: Scalar) = 1", "Identifier is already in use: 'pi'");
-    expect_failure(
-        "fn sin(x: Scalar) = 1",
-        "Identifier is already in use: 'sin'",
-    );
     expect_failure(
         "fn print(x: Scalar) = 1",
         "Expected identifier after 'fn' keyword",
     );
+}
+
+#[test]
+fn test_name_clash_errors() {
+    expect_failure("let kg=2", "Identifier is already in use: 'kg'");
+    expect_failure("fn kg(x: Scalar) = 1", "Identifier is already in use: 'kg'");
+    expect_failure("fn _()=0", "Reserved identifier");
+}
+
+#[test]
+fn test_type_check_errors() {
     expect_failure("foo", "Unknown identifier 'foo'");
+
+    expect_failure("let sin=2", "This name is already used by a function");
+    expect_failure("fn pi() = 1", "This name is already used by a constant");
+}
+
+#[test]
+fn test_runtime_errors() {
     expect_failure("1/0", "Division by zero");
 }
 
@@ -367,4 +376,16 @@ fn test_conditionals() {
 fn test_string_interpolation() {
     expect_output("\"pi = {pi}!\"", "pi = 3.14159!");
     expect_output("\"1 + 2 = {1 + 2}\"", "1 + 2 = 3");
+}
+
+#[test]
+fn test_override_constants() {
+    expect_output("let x = 1\nlet x = 2\nx", "2");
+    expect_output("let pi = 4\npi", "4");
+}
+
+#[test]
+fn test_overwrite_functions() {
+    expect_output("fn f(x)=0\nfn f(x)=1\nf(2)", "1");
+    expect_output("fn sin(x)=0\nsin(1)", "0");
 }
