@@ -140,13 +140,20 @@ impl PrefixParser {
         }
     }
 
-    fn ensure_name_is_available(&self, name: &str, conflict_span: Span) -> Result<()> {
+    fn ensure_name_is_available(
+        &self,
+        name: &str,
+        conflict_span: Span,
+        clash_with_other_identifiers: bool,
+    ) -> Result<()> {
         if self.reserved_identifiers.contains(&name) {
             return Err(NameResolutionError::ReservedIdentifier(conflict_span));
         }
 
-        if let Some(original_span) = self.other_identifiers.get(name) {
-            return Err(self.identifier_clash_error(name, conflict_span, *original_span));
+        if clash_with_other_identifiers {
+            if let Some(original_span) = self.other_identifiers.get(name) {
+                return Err(self.identifier_clash_error(name, conflict_span, *original_span));
+            }
         }
 
         match self.parse(name) {
@@ -166,7 +173,7 @@ impl PrefixParser {
         full_name: &str,
         definition_span: Span,
     ) -> Result<()> {
-        self.ensure_name_is_available(unit_name, definition_span)?;
+        self.ensure_name_is_available(unit_name, definition_span, true)?;
 
         for (prefix_long, prefix_short, prefix) in Self::prefixes() {
             if !(prefix.is_metric() && metric || prefix.is_binary() && binary) {
@@ -177,12 +184,14 @@ impl PrefixParser {
                 self.ensure_name_is_available(
                     &format!("{}{}", prefix_long, unit_name),
                     definition_span,
+                    true,
                 )?;
             }
             if accepts_prefix.short {
                 self.ensure_name_is_available(
                     &format!("{}{}", prefix_short, unit_name),
                     definition_span,
+                    true,
                 )?;
             }
         }
@@ -201,15 +210,11 @@ impl PrefixParser {
     }
 
     pub fn add_other_identifier(&mut self, identifier: &str, definition_span: Span) -> Result<()> {
-        self.ensure_name_is_available(identifier, definition_span)?;
+        self.ensure_name_is_available(identifier, definition_span, false)?;
 
-        if let Some(original_span) = self.other_identifiers.get(identifier) {
-            Err(self.identifier_clash_error(identifier, definition_span, *original_span))
-        } else {
-            self.other_identifiers
-                .insert(identifier.into(), definition_span);
-            Ok(())
-        }
+        self.other_identifiers
+            .insert(identifier.into(), definition_span);
+        Ok(())
     }
 
     pub fn parse(&self, input: &str) -> PrefixParserResult {
