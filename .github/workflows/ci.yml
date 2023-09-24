@@ -192,6 +192,9 @@ jobs:
         # README and LICENSE files
         cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "$ARCHIVE_DIR"
 
+        # Numbat prelude, examples
+        cp -r numbat/modules/ examples/ "$ARCHIVE_DIR"
+
         # base compressed package
         pushd "${PKG_STAGING}/" >/dev/null
         case ${{ matrix.job.target }} in
@@ -237,6 +240,10 @@ jobs:
         install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/README.md"
         install -Dm644 "LICENSE-MIT" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-MIT"
         install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-APACHE"
+
+        # Numbat prelude, examples
+        install -Dm644 "modules/" "${DPKG_DIR}/usr/share/${DPKG_BASENAME}/modules"
+        install -Dm644 "examples/" "${DPKG_DIR}/usr/share/${DPKG_BASENAME}/examples"
 
         cat > "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/copyright" <<EOF
         Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
