@@ -141,7 +141,7 @@ please consider contributing. Or try [GNU units](https://www.gnu.org/software/un
 
 ## Installation
 
-See https://numbat.dev/doc/cli-installation.html for details.
+See [this page](https://numbat.dev/doc/cli-installation.html) for details on how to install the native command-line version of Numbat.
 
 ## Development
 
