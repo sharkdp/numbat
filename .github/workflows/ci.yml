@@ -214,7 +214,7 @@ jobs:
       shell: bash
       if: startsWith(matrix.job.os, 'ubuntu')
       run: |
-        COPYRIGHT_YEARS="2018 - "$(date "+%Y")
+        COPYRIGHT_YEARS="2022 - "$(date "+%Y")
         DPKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/debian-package"
         DPKG_DIR="${DPKG_STAGING}/dpkg"
         mkdir -p "${DPKG_DIR}"
