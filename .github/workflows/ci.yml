@@ -245,8 +245,8 @@ jobs:
         install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-APACHE"
 
         # Numbat prelude, examples
-        install -Dm644 "numbat/modules/" "${DPKG_DIR}/usr/share/${DPKG_BASENAME}/modules"
-        install -Dm644 "examples/" "${DPKG_DIR}/usr/share/${DPKG_BASENAME}/examples"
+        cp -r "numbat/modules/" "${DPKG_DIR}/usr/share/${DPKG_BASENAME}/"
+        cp -r "examples/" "${DPKG_DIR}/usr/share/${DPKG_BASENAME}/"
 
         cat > "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/copyright" <<EOF
         Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
