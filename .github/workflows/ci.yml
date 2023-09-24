@@ -50,9 +50,12 @@ jobs:
     steps:
     - uses: dtolnay/rust-toolchain@stable
     - uses: actions/checkout@v3
-    - run: |
+    - name: Install mdbook
+      run: |
         cargo install mdbook
-    - run: |
+        cargo install mdbook-linkcheck
+    - name: Build documentation
+      run: |
         cd book
         bash build.sh
         if [ -n "$(git status --porcelain)" ]; then 
