@@ -12,7 +12,7 @@ use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystem
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
-use numbat::{InterpreterSettings, NameResolutionError, RuntimeError, Type};
+use numbat::{InterpreterSettings, NameResolutionError, Type};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::{Parser, ValueEnum};
@@ -434,14 +434,8 @@ impl Cli {
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::RuntimeError(e)) => {
-                if execution_mode == ExecutionMode::Interactive
-                    && matches!(e, RuntimeError::NoStatements)
-                {
-                    ControlFlow::Continue(())
-                } else {
-                    self.print_diagnostic(e);
-                    execution_mode.exit_status_in_case_of_error()
-                }
+                self.print_diagnostic(e);
+                execution_mode.exit_status_in_case_of_error()
             }
         }
     }

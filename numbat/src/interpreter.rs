@@ -17,8 +17,6 @@ pub enum RuntimeError {
     FactorialOfNegativeNumber,
     #[error("Expected factorial argument to be a finite integer number")]
     FactorialOfNonInteger,
-    #[error("No statements in program")]
-    NoStatements,
     #[error("{0}")]
     UnitRegistryError(UnitRegistryError), // TODO: can this even be triggered?
     #[error("{0}")]

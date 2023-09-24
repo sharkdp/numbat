@@ -310,10 +310,6 @@ impl Interpreter for BytecodeInterpreter {
         settings: &mut InterpreterSettings,
         statements: &[Statement],
     ) -> Result<InterpreterResult> {
-        if statements.is_empty() {
-            return Err(RuntimeError::NoStatements);
-        };
-
         for statement in statements {
             self.compile_statement(statement)?;
         }
