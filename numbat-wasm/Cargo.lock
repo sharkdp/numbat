@@ -311,7 +311,7 @@ dependencies = [
 
 [[package]]
 name = "numbat"
-version = "1.6.1"
+version = "1.6.2"
 dependencies = [
  "codespan-reporting",
  "heck",
