@@ -355,10 +355,6 @@ impl Vm {
     }
 
     pub(crate) fn begin_function(&mut self, name: &str) {
-        // This allows us to overwrite functions
-        self.bytecode.retain(|(n, _)| n != name);
-        self.ffi_callables.retain(|ff| ff.name != name);
-
         self.bytecode.push((name.into(), vec![]));
         self.current_chunk_index = self.bytecode.len() - 1
     }
@@ -369,7 +365,15 @@ impl Vm {
     }
 
     pub(crate) fn get_function_idx(&self, name: &str) -> u16 {
-        let position = self.bytecode.iter().position(|(n, _)| n == name).unwrap();
+        // We search backwards to allow for functions
+        // to be overwritten.
+        let rev_position = self
+            .bytecode
+            .iter()
+            .rev()
+            .position(|(n, _)| n == name)
+            .unwrap();
+        let position = self.bytecode.len() - 1 - rev_position;
         assert!(position <= u16::MAX as usize);
         position as u16
     }
