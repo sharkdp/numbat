@@ -385,7 +385,51 @@ fn test_override_constants() {
 }
 
 #[test]
-fn test_overwrite_functions() {
-    expect_output("fn f(x)=0\nfn f(x)=1\nf(2)", "1");
-    expect_output("fn sin(x)=0\nsin(1)", "0");
+fn test_overwrite_regular_function() {
+    expect_output(
+        "
+        fn f(x)=0
+        fn f(x)=1
+        f(2)",
+        "1",
+    );
+}
+
+#[test]
+fn test_overwrite_inner_function() {
+    expect_output(
+        "
+        fn inner() = 0
+        fn outer() = inner()
+
+        fn inner(x) = 1
+        outer()
+        ",
+        "0",
+    );
+}
+
+#[test]
+fn test_overwrite_ffi_function() {
+    expect_output(
+        "
+        fn sin(x)=0
+        sin(1)
+        ",
+        "0",
+    );
+}
+
+#[test]
+fn test_overwrite_captured_constant() {
+    expect_output(
+        "
+        let x = 1
+        fn f() = sin(x)
+
+        let x = 1 m
+        f()
+        ",
+        "0.841471",
+    );
 }
