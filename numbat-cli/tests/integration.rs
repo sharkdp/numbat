@@ -51,10 +51,13 @@ fn pass_expression_on_command_line() {
 
 #[test]
 fn read_code_from_file() {
-    numbat().arg("../examples/pendulum.nbt").assert().success();
+    numbat()
+        .arg("tests/examples/pendulum.nbt")
+        .assert()
+        .success();
 
     numbat()
-        .arg("../examples/parse_error/trailing_characters.nbt")
+        .arg("tests/examples/parser_error.nbt")
         .assert()
         .failure()
         .stderr(predicates::str::contains("while parsing"));
@@ -63,10 +66,12 @@ fn read_code_from_file() {
 #[test]
 fn print_calls() {
     numbat()
-        .arg("../examples/print.nbt")
+        .arg("tests/examples/print.nbt")
         .assert()
         .success()
-        .stdout(predicates::str::contains("1 \n2 m"));
+        .stdout(predicates::str::contains(
+            "1 \n2 m\nhello world\npi = 3.14159\n1 + 2 = 3\n",
+        ));
 }
 
 #[test]
