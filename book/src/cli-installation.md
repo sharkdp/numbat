@@ -55,3 +55,30 @@ Or install the latest release using
 ``` bash
 cargo install numbat-cli
 ```
+
+## Guidelines for package maintainers
+
+Thank you for packaging Numbat! This section contains instructions that are not strictly necessary
+to create a Numbat package, but provide users with the best-possible experience on your target platform.
+
+Numbat has a [standard library](./prelude.md) that is written in Numbat itself. The sources for this
+so called "prelude" are available in the [`numbat/modules`](https://github.com/sharkdp/numbat/tree/master/numbat/modules) folder.
+We also include this `modules` folder in the pre-built [GitHub releases](https://github.com/sharkdp/numbat/releases).
+Installing this folder as part of the package installation is not necessary for Numbat to work, as the prelude is also
+stored inside the `numbat` binary. But ideally, this folder should be made available for users. There are three reasons for this:
+
+- Users might want to look at the code in the standard library to get a better understanding of the language itself.
+- For some error messages, Numbat refers to locations in the source code. For example, if you type `let meter = 2`, the compiler
+  will let you know that this identifier is already in use, and has been previously defined at a certain location inside the
+  standard library. If the corresponding module is available as a file on the users system, they will see the proper path and
+  can read the corresponding file.
+- Users might want to make changes to the prelude. Ideally, this should be done via a [user module folder](./cli-customization.md),
+  but the system-wide folder can serve as a template.
+
+In order for this to work, the `modules` folder should ideally be placed in the [standard location for the
+target operating system](./cli-customization.md). If this is not possible, package maintainers can customize
+numbat during compilation by setting the environment variable `NUMBAT_SYSTEM_MODULE_PATH` to the final locatiom.
+If this variable is set during compilation, the specified path will be compiled into the `numbat` binary.
+
+In order to test that everything is working as intended, you can open `numbat` and type `let meter = 2`. The
+path in the error message should point to the specified location (and *not* to `<builtin>/…`).

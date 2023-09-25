@@ -460,6 +460,13 @@ impl Cli {
 
         paths.push(Self::get_config_path().join("modules"));
 
+        // We read the value of this environment variable at compile time to
+        // allow package maintainers to control the system-wide module path
+        // for Numbat.
+        if let Some(system_module_path) = option_env!("NUMBAT_SYSTEM_MODULE_PATH") {
+            paths.push(system_module_path.into());
+        }
+
         if cfg!(unix) {
             paths.push("/usr/share/numbat/modules".into());
         } else {
