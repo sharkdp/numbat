@@ -1,29 +1,42 @@
 # Installation
 
-## From pre-built binaries (Linux, macOS, Windows)
-
-There are pre-built binaries for lots of different operating systems and platforms
-available [on the release page](https://github.com/sharkdp/numbat/releases).
-
-The sections below refer to more specific installation methods.
-
 ## Linux
 
-### Arch Linux
+### On Ubuntu
+
+*... and other Debian-based Linux distributions.*
+
+Download the latest `.deb` package from [the release page](https://github.com/sharkdp/numbat/releases)
+and install it via `dpkg`. For example:
+
+``` bash
+curl -LO https://github.com/sharkdp/numbat/releases/download/v1.6.2/numbat_1.6.2_amd64.deb
+sudo dpkg -i numbat_1.6.2_amd64.deb  
+```
+
+### On Arch Linux
 
 In Arch Linux and Arch based distributions, you can install the prebuilt package of Numbat from the
 [AUR](https://aur.archlinux.org/packages/numbat-bin).
 
-```bash
+``` bash
 yay -S numbat-bin
 ```
 
 You can also install the [numbat](https://aur.archlinux.org/packages/numbat)
 AUR package, which will download the source and compile it.
 
-```bash
+``` bash
 yay -S numbat
 ```
+
+## macOS
+
+There are pre-built binaries available [on the release page](https://github.com/sharkdp/numbat/releases).
+
+## Windows
+
+There are pre-built binaries available [on the release page](https://github.com/sharkdp/numbat/releases).
 
 ## From source
 
