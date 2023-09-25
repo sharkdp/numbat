@@ -32,11 +32,13 @@ yay -S numbat
 
 ## macOS
 
-There are pre-built binaries available [on the release page](https://github.com/sharkdp/numbat/releases).
+### Homebrew
 
-## Windows
+You can install Numbat with Homebrew:
 
-There are pre-built binaries available [on the release page](https://github.com/sharkdp/numbat/releases).
+``` bash
+brew install numbat
+```
 
 ## From source
 
