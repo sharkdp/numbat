@@ -16,8 +16,8 @@ sudo dpkg -i numbat_1.6.2_amd64.deb
 
 ### On Arch Linux
 
-In Arch Linux and Arch based distributions, you can install the prebuilt package of Numbat from the
-[AUR](https://aur.archlinux.org/packages/numbat-bin).
+In Arch Linux and Arch based distributions, you can install the
+[prebuilt package of Numbat](https://aur.archlinux.org/packages/numbat-bin) from the AUR:
 
 ``` bash
 yay -S numbat-bin
