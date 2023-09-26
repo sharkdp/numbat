@@ -99,7 +99,7 @@ impl<T> Default for Registry<T> {
 
 impl<Metadata> Registry<Metadata> {
     pub fn add_base_entry(&mut self, name: &str, metadata: Metadata) -> Result<()> {
-        if self.is_base_entry(name) {
+        if self.contains(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
         self.base_entries.push((name.to_owned(), metadata));
@@ -128,7 +128,7 @@ impl<Metadata> Registry<Metadata> {
         name: &str,
         base_representation: BaseRepresentation,
     ) -> Result<()> {
-        if self.derived_entries.contains_key(name) {
+        if self.contains(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
 
