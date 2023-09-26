@@ -465,12 +465,12 @@ impl Cli {
         // for Numbat.
         if let Some(system_module_path) = option_env!("NUMBAT_SYSTEM_MODULE_PATH") {
             paths.push(system_module_path.into());
-        }
-
-        if cfg!(unix) {
-            paths.push("/usr/share/numbat/modules".into());
         } else {
-            paths.push("C:\\Program Files\\numbat\\modules".into());
+            if cfg!(unix) {
+                paths.push("/usr/share/numbat/modules".into());
+            } else {
+                paths.push("C:\\Program Files\\numbat\\modules".into());
+            }
         }
         paths
     }

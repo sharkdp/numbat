@@ -22,11 +22,16 @@ Numbat's configuration folder (`<config-path>` above) can be found under:
 Numbat will load modules from the following sources.
 Entries higher up in the list take precedence.
 
-* `$NUMBAT_MODULES_PATH` — If present, this environment variable can point to a single directory or contain a `:`-separated list of paths
-* `<config-path>/modules` — User-customized module folder
-* `/usr/share/numbat/modules` — System-wide module folder (Linux and macOS)
-* `C:\Program Files\numbat\modules` — System-wide module folder (Windows)
-* Builtin modules inside the `numbat` binary
+|Location|Description|
+|---|---|
+|`$NUMBAT_MODULES_PATH`|This environment variable can point to a<br>single directory or contain a `:`-separated<br>list of paths|
+|`<config-path>/modules`|User-customized module folder|
+|`/usr/share/numbat/modules`|System-wide module folder (Linux and macOS)|
+|`C:\Program Files\numbat\modules`|System-wide module folder (Windows)|
+|`<builtin>`|Builtin modules inside the `numbat` binary|
+
+Note that the System-location might be different for some installation methods.
+Refer to your [package manager for details](./cli-installation.html#guidelines-for-package-maintainers).
 
 ## Customization
 
