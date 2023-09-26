@@ -46,7 +46,8 @@ p.links a {
 .terminal {
     --color: #f1f1f0;
     --background: #282a36;
-    --size: 1.6;
+    --size: 1.5;
+    --font: 'Fira Mono', monospace;
     --link-color: #59f78d;
     font-family: 'Fira Mono', monospace;
 }
@@ -73,10 +74,6 @@ p.links a {
 
 .terminal-output>div.terminal-command {
     padding-bottom: 0em;
-}
-
-.terminal {
-    --size: 1.4;
 }
 
 .prompt {
@@ -162,6 +159,7 @@ p.links a {
     html {
         height: 100%;
     }
+
     body {
         margin: 0px;
         height: 100%;
