@@ -1,8 +1,8 @@
 use clap::Parser;
 use clap_derive::{Parser, Subcommand};
 use jupyter::{
-    async_trait, ExecutionReply, ExecutionRequest, InstallAction,
-    JupyterKernelProtocol, JupyterKernelSockets, JupyterConnection, JupyterResult, LanguageInfo, OpenAction,
+    async_trait, ExecutionReply, ExecutionRequest, InstallAction, JupyterConnection,
+    JupyterKernelProtocol, JupyterKernelSockets, JupyterResult, LanguageInfo, OpenAction,
     StartAction, UninstallAction,
 };
 use numbat::{
@@ -10,8 +10,8 @@ use numbat::{
     module_importer::BuiltinModuleImporter,
     pretty_print::PrettyPrint,
     resolver::CodeSource,
-    Context, InterpreterResult,
     value::Value,
+    Context, InterpreterResult,
 };
 use plotters::{prelude::*, style::WHITE};
 use std::path::PathBuf;
@@ -147,7 +147,7 @@ impl NumbatContext {
 #[async_trait]
 impl JupyterKernelProtocol for NumbatContext {
     fn language_info(&self) -> LanguageInfo {
-        let mut info = LanguageInfo::new("numbat", "Numbat")
+        let info = LanguageInfo::new("numbat", "Numbat")
             .with_file_extensions("*.nbt", "application/x-numbat")
             .with_version(env!("CARGO_PKG_VERSION"))
             .with_syntax("python", "python");
@@ -207,14 +207,16 @@ impl JupyterKernelProtocol for NumbatContext {
                     InterpreterResult::Exit(_) => {}
                 },
                 Err(e) => {
-                    self.sockets.send_executed(format!("{}", e), &code.header).await;
+                    self.sockets
+                        .send_executed(format!("{}", e), &code.header)
+                        .await;
                 }
             }
         }
         ExecutionReply::new(true)
     }
 
-    fn running_time(&self, time: f64) -> String {
+    fn running_time(&self, _time: f64) -> String {
         String::new()
     }
 }
