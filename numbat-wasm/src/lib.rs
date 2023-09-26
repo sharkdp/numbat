@@ -40,6 +40,11 @@ impl Numbat {
         Numbat { ctx }
     }
 
+    pub fn set_exchange_rates(&mut self, xml_content: &str) {
+        Context::set_exchange_rates(xml_content);
+        let _ = self.ctx.interpret("use units::currencies", CodeSource::Internal).unwrap();
+    }
+
     pub fn interpret(&mut self, code: &str) -> String {
         let mut output = String::new();
 

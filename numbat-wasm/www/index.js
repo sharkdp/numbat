@@ -1,8 +1,25 @@
 import { setup_panic_hook, Numbat } from "numbat-wasm";
 
+async function fetch_exchange_rates() {
+  try {
+      const response = await fetch("https://numbat.dev/ecb-exchange-rates.php");
+
+      if (!response.ok) {
+          return;
+      }
+
+      const xml_content = await response.text();
+      numbat.set_exchange_rates(xml_content);
+  } catch (error) {
+      return;
+  }
+}
+
 setup_panic_hook();
 
 var numbat = Numbat.new();
+
+fetch_exchange_rates();
 
 // Load KeyboardEvent polyfill for old browsers
 keyboardeventKeyPolyfill.polyfill();
