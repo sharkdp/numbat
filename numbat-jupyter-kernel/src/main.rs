@@ -1,9 +1,9 @@
 use clap::Parser;
 use clap_derive::{Parser, Subcommand};
 use jupyter::{
-    async_trait, ExecutionReply, ExecutionRequest, ExecutionResult, InstallAction,
-    JupyterKernelProtocol, JupyterKernelSockets, JupyterResult, LanguageInfo, OpenAction,
-    StartAction, UnboundedSender, UninstallAction,
+    async_trait, ExecutionReply, ExecutionRequest, InstallAction,
+    JupyterKernelProtocol, JupyterKernelSockets, JupyterConnection, JupyterResult, LanguageInfo, OpenAction,
+    StartAction, UninstallAction,
 };
 use numbat::{
     markup::{FormattedString, Formatter},
@@ -155,6 +155,10 @@ impl JupyterKernelProtocol for NumbatContext {
         info
     }
 
+    fn connected(&mut self, context: JupyterConnection) {
+        self.sockets = context.sockets;
+    }
+
     async fn running(&mut self, code: ExecutionRequest) -> ExecutionReply {
         if code.code.starts_with("plot ") {
             let args = code.code.split(" ").collect::<Vec<_>>();
@@ -177,12 +181,12 @@ impl JupyterKernelProtocol for NumbatContext {
                     .decode()
                     .unwrap();
 
-                self.sockets.send_executed(image).await;
+                self.sockets.send_executed(image, &code.header).await;
             } else {
                 self.sockets
                     .send_executed(format!(
                         "error while plotting '{fn_name}({arg_name})' with input-unit '{unit_name}'."
-                    ))
+                    ), &code.header)
                     .await;
             }
         } else {
@@ -195,26 +199,22 @@ impl JupyterKernelProtocol for NumbatContext {
                         let output = HtmlFormatter {}.format(&v_pretty, true);
 
                         self.sockets
-                            .send_executed(jupyter::value_type::HtmlText::new(output))
+                            .send_executed(jupyter::value_type::HtmlText::new(output), &code.header)
                             .await;
                     }
                     InterpreterResult::Continue => {}
                     InterpreterResult::Exit(_) => {}
                 },
                 Err(e) => {
-                    self.sockets.send_executed(format!("{}", e)).await;
+                    self.sockets.send_executed(format!("{}", e), &code.header).await;
                 }
             }
         }
-        ExecutionReply::new(true, code.execution_count)
+        ExecutionReply::new(true)
     }
 
     fn running_time(&self, time: f64) -> String {
         String::new()
-    }
-
-    async fn bind_execution_socket(&self, sender: UnboundedSender<ExecutionResult>) {
-        self.sockets.bind_execution_socket(sender).await
     }
 }
 
