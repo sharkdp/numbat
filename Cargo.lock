@@ -613,7 +613,7 @@ dependencies = [
 
 [[package]]
 name = "numbat"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "approx",
  "codespan-reporting",
@@ -635,7 +635,7 @@ dependencies = [
 
 [[package]]
 name = "numbat-cli"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -650,7 +650,7 @@ dependencies = [
 
 [[package]]
 name = "numbat-exchange-rates"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "attohttpc",
  "quick-xml",
