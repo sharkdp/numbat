@@ -9,7 +9,8 @@ unit bar: Pressure = 100 kPa
 @aliases(angstroms, Å: short)
 unit angstrom: Length = 1e-10 meter
 
-@aliases(barns)
+@metric_prefixes
+@aliases(barns, b: short)
 unit barn: Area = 1e-28 meter^2
 
 @metric_prefixes
