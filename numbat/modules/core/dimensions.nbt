@@ -47,6 +47,7 @@ dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
 dimension ElectricFieldStrength = Voltage / Length
 dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3
 dimension MagneticPermeability = Length × Mass / Time^2 / Current^2
+dimension Polarizability = ElectricDipoleMoment / ElectricFieldStrength = Current^2 × Time^4 / Mass
 
 dimension Temperature
 dimension Entropy = Energy / Temperature
