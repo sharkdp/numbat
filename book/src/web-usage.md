@@ -24,8 +24,9 @@ There is a set of special commands that only work in the web version:
 
 | Command | Action |
 |---------|--------|
-| `clear` | Clear screen |
+| `list`, `ll`, `ls` | List all constants, units, and dimensions |
 | `reset` | Reset state (clear constants, functions, units, …) |
+| `clear` | Clear screen |
 
 ### Key bindings
 

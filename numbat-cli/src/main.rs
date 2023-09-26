@@ -16,7 +16,6 @@ use numbat::{InterpreterSettings, NameResolutionError, Type};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::{Parser, ValueEnum};
-use colored::Colorize;
 use rustyline::config::Configurer;
 use rustyline::{
     self, error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter,
@@ -264,34 +263,8 @@ impl Cli {
                             "list" | "ls" | "ll" => {
                                 let ctx = self.context.lock().unwrap();
 
-                                let mut functions = Vec::from(ctx.function_names());
-                                functions.sort();
-                                let mut dimensions = Vec::from(ctx.dimension_names());
-                                dimensions.sort();
-                                let mut units = Vec::from(ctx.unit_names());
-                                units.sort();
-                                let mut variables = Vec::from(ctx.variable_names());
-                                variables.sort();
-
-                                println!("{}", "List of functions:".bold());
-                                for function in functions {
-                                    println!("  {function}");
-                                }
-                                println!();
-                                println!("{}", "List of dimensions:".bold());
-                                for dimension in dimensions {
-                                    println!("  {dimension}");
-                                }
-                                println!();
-                                println!("{}", "List of units:".bold());
-                                for unit_names in units {
-                                    println!("  {}", itertools::join(unit_names.iter(), ", "));
-                                }
-                                println!();
-                                println!("{}", "List of variables:".bold());
-                                for variable in variables {
-                                    println!("  {variable}");
-                                }
+                                let markup = ctx.print_environment();
+                                println!("{}", ansi_format(&markup, false));
                             }
                             "clear" => {
                                 rl.clear_screen()?;

@@ -31,6 +31,8 @@ function interpret(input) {
   } else if (input_trimmed == "reset") {
     numbat = Numbat.new();
     this.clear();
+  } else if (input_trimmed == "list" || input_trimmed == "ll" || input_trimmed == "ls") {
+    output = numbat.print_environment();
   } else {
     var output = numbat.interpret(input);
     updateUrlQuery(input);

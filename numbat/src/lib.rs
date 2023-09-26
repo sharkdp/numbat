@@ -39,6 +39,8 @@ use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
 use interpreter::Interpreter;
 use keywords::KEYWORDS;
+use markup as m;
+use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
 use registry::BaseRepresentationFactor;
@@ -117,6 +119,47 @@ impl Context {
 
     pub fn dimension_names(&self) -> &[String] {
         &self.prefix_transformer.dimension_names
+    }
+
+    pub fn print_environment(&self) -> Markup {
+        let mut functions = Vec::from(self.function_names());
+        functions.sort();
+        let mut dimensions = Vec::from(self.dimension_names());
+        dimensions.sort();
+        let mut units = Vec::from(self.unit_names());
+        units.sort();
+        let mut variables = Vec::from(self.variable_names());
+        variables.sort();
+
+        let mut output = m::empty();
+
+        output += m::text("List of functions:") + m::nl();
+        for function in functions {
+            output += m::whitespace("  ") + m::identifier(function) + m::nl();
+        }
+        output += m::nl();
+
+        output += m::text("List of dimensions:") + m::nl();
+        for dimension in dimensions {
+            output += m::whitespace("  ") + m::type_identifier(dimension) + m::nl();
+        }
+        output += m::nl();
+
+        output += m::text("List of units:") + m::nl();
+        for unit_names in units {
+            output += m::whitespace("  ")
+                + itertools::intersperse(unit_names.iter().map(|n| m::unit(n)), m::text(", "))
+                    .sum()
+                + m::nl();
+        }
+        output += m::nl();
+
+        output += m::text("List of variables:") + m::nl();
+        for variable in variables {
+            output += m::whitespace("  ") + m::identifier(variable) + m::nl();
+        }
+
+        output
     }
 
     pub fn get_completions_for<'a>(&self, word_part: &'a str) -> impl Iterator<Item = String> + 'a {

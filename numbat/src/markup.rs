@@ -49,6 +49,12 @@ impl std::ops::Add for Markup {
     }
 }
 
+impl std::ops::AddAssign for Markup {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0.extend(rhs.0.into_iter())
+    }
+}
+
 impl std::iter::Sum for Markup {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(empty(), |acc, n| acc + n)
