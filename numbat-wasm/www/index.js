@@ -47,6 +47,7 @@ function interpret(input) {
     var output = "";
   } else if (input_trimmed == "reset") {
     numbat = Numbat.new();
+    numbat.interpret("use units::currencies");
     this.clear();
   } else if (input_trimmed == "list" || input_trimmed == "ll" || input_trimmed == "ls") {
     output = numbat.print_environment();
