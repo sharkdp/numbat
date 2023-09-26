@@ -11,6 +11,7 @@ use numbat::{
     pretty_print::PrettyPrint,
     resolver::CodeSource,
     Context, InterpreterResult,
+    value::Value,
 };
 use plotters::{prelude::*, style::WHITE};
 use std::path::PathBuf;
@@ -228,7 +229,7 @@ enum JupyterCommands {
 
 impl JupyterApplication {
     pub fn run(&self) -> JupyterResult<()> {
-        let mut importer = BuiltinModuleImporter::default();
+        let importer = BuiltinModuleImporter::default();
         let mut numbat = Context::new(importer);
         let _ = numbat.interpret("use prelude", CodeSource::Internal);
 
