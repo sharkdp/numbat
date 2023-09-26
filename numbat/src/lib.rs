@@ -105,6 +105,10 @@ impl Context {
         let _unused = cache.fetch();
     }
 
+    pub fn set_exchange_rates(xml_content: &str) {
+        ExchangeRatesCache::set_from_xml(xml_content);
+    }
+
     pub fn variable_names(&self) -> &[String] {
         &self.prefix_transformer.variable_names
     }
