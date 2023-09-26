@@ -1,6 +1,6 @@
 # Usage
 
-The browser-based version of Numbat is online at <https://numbat.dev/>.
+The browser-based version of Numbat is available at <https://numbat.dev/>.
 
 ## Interactive terminal
 
@@ -25,6 +25,7 @@ There is a set of special commands that only work in the web version:
 | Command | Action |
 |---------|--------|
 | `clear` | Clear screen |
+| `reset` | Reset state (clear constants, functions, units, …) |
 
 ### Key bindings
 

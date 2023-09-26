@@ -28,6 +28,9 @@ function interpret(input) {
   if (input_trimmed == "clear") {
     this.clear();
     var output = "";
+  } else if (input_trimmed == "reset") {
+    numbat = Numbat.new();
+    this.clear();
   } else {
     var output = numbat.interpret(input);
     updateUrlQuery(input);
