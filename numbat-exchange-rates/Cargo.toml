@@ -10,5 +10,8 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.70"
 
 [dependencies]
-attohttpc = { version = "0.26.0", default-features = false, features = ["tls-rustls-webpki-roots"] }
+attohttpc = { version = "0.26.0", default-features = false, features = ["tls-rustls-webpki-roots"], optional = true }
 quick-xml = "0.30.0"
+
+[features]
+default = ["attohttpc"]

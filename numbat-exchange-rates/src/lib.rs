@@ -5,16 +5,10 @@ use quick_xml::reader::Reader;
 
 pub type ExchangeRates = HashMap<String, f64>;
 
-pub fn fetch_exchange_rates() -> Option<ExchangeRates> {
+pub fn parse_exchange_rates(xml_content: &str) -> Option<ExchangeRates> {
     let mut rates = ExchangeRates::default();
 
-    let xml = attohttpc::get("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")
-        .send()
-        .ok()?
-        .text()
-        .ok()?;
-
-    let mut reader = Reader::from_str(&xml);
+    let mut reader = Reader::from_str(&xml_content);
     loop {
         match reader.read_event().ok()? {
             Event::Eof => break,
@@ -37,6 +31,22 @@ pub fn fetch_exchange_rates() -> Option<ExchangeRates> {
     }
 
     Some(rates)
+}
+
+const ECB_XML_URL: &str = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
+
+#[cfg(not(feature = "wasm"))]
+fn fetch_ecb_xml() -> Option<String> {
+    attohttpc::get(ECB_XML_URL)
+        .send()
+        .ok()?
+        .text()
+        .ok()
+}
+
+pub fn fetch_exchange_rates() -> Option<ExchangeRates> {
+    let xml_content = fetch_ecb_xml()?;
+    parse_exchange_rates(&xml_content)
 }
 
 #[cfg(test)]
