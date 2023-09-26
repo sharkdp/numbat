@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>numbat.dev</ShortName>
+  <Description>Scientific calculator with full support for physical units</Description>
+  <Tags>calculator scientific math physics unit conversion quantity SI imperial precision</Tags>
+  <Url type="text/html" method="get" template="https://numbat.dev/?q={searchTerms}"/>
+  <InputEncoding>UTF-8</InputEncoding>
+  <Url type="application/opensearchdescription+xml" rel="self" template="https://numbat.dev/opensearch.xml"/>
+</OpenSearchDescription>
