@@ -437,7 +437,9 @@ impl Cli {
         // allow package maintainers to control the system-wide module path
         // for Numbat.
         if let Some(system_module_path) = option_env!("NUMBAT_SYSTEM_MODULE_PATH") {
-            paths.push(system_module_path.into());
+            if !system_module_path.is_empty() {
+                paths.push(system_module_path.into());
+            }
         } else {
             if cfg!(unix) {
                 paths.push("/usr/share/numbat/modules".into());
