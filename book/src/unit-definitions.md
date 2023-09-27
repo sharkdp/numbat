@@ -27,7 +27,7 @@ If a unit may be used with metric prefixes such as `milli`/`m`, `kilo`/`k` or `m
 @metric_prefixes
 unit second: Time
 ```
-This allows identifiers suchs as `millisecond` to be used in calculations. See the section below how prefixes interact with aliases.
+This allows identifiers such as `millisecond` to be used in calculations. See the section below how prefixes interact with aliases.
 
 Similarly, if a unit should be prependable with *binary* (IEC) prefixes such as `kibi`/`Ki`, `mebi`/`Mi` or `gibi`/`Gi`, you can
 add the `@binary_prefixes` decorator. A unit might also allow for both metric and binary prefixes, for example:
