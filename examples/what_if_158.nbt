@@ -12,14 +12,14 @@ let molar_mass: MolarMass = 40 g / mol
 
 # 40-K has a natural occcurence of
 
-let occurence_40K = 0.0117%
+let occurrence_40K = 0.0117%
 
 # We can now compute the radioactivity of natural potassium
 
 let decay_rate: Activity = ln(2) / halflife
 
 let radioactivity: Activity / Mass =
-    N_A × occurence_40K × decay_rate / molar_mass -> Bq / g
+    N_A × occurrence_40K × decay_rate / molar_mass -> Bq / g
 
 print("Radioactivity of potassium: {radioactivity}")
 
