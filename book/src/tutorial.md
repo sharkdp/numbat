@@ -14,7 +14,7 @@ potassium-40](https://en.wikipedia.org/wiki/Potassium-40):
 
 ``` numbat
 let halflife = 1.25 billion years
-let occurence = 0.0117%
+let occurrence = 0.0117%
 let molar_mass = 40 g / mol
 ```
 
@@ -38,7 +38,7 @@ mass of potassium:
 
 ``` numbat
 let radioactivity =
-    N_A * occurence * decay_rate / molar_mass -> Bq / g
+    N_A * occurrence * decay_rate / molar_mass -> Bq / g
 ```
 
 The `-> Bq / g` part at the end converts the expression to Becquerel per gram. If you type
@@ -64,7 +64,7 @@ let potassium_per_banana = 451 mg / banana
 let radioactivity_banana = potassium_per_banana * radioactivity -> Bq / banana
 ```
 
-and should give you a result of rougly `14 Bq / banana`. Adding unit conversions at the end
+and should give you a result of roughly `14 Bq / banana`. Adding unit conversions at the end
 of unit definitions is one way to enforce unit safety. An even more powerful way to do this
 is to add *type annotations*: For example, to define the [decay energy for a single
 potassium-40 atom](https://commons.wikimedia.org/wiki/File:Potassium-40-decay-scheme.svg),
