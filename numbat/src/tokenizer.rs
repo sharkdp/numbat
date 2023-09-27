@@ -171,6 +171,7 @@ fn is_identifier_start(c: char) -> bool {
         || is_numerical_fraction_char(c)
         || is_currency_char(c)
         || is_other_allowed_identifier_char(c)
+        || c == '°'
         || c == '_'
 }
 
@@ -469,7 +470,6 @@ impl Tokenizer {
             '¹' | '²' | '³' | '⁴' | '⁵' | '⁶' | '⁷' | '⁸' | '⁹' => {
                 TokenKind::UnicodeExponent
             }
-            '°' => TokenKind::Identifier, // '°' is not an alphanumeric character, so we treat it as a special case here
             '"' => match self.interpolation_state {
                 InterpolationState::Outside => {
                     self.string_start = self.token_start;
