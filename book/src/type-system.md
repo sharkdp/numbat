@@ -7,7 +7,7 @@ The expression `3 inch` *also* has a type of `Length`.
 The combined expression `2 meter + 3 inch` is therefore well-typed.
 On the other hand, `2 meter + 3 second` is ill-typed, as `3 second` is of type `Time`.
 
-The type system is *static* which means that the correctness of an Numbat program is verified before the program starts executing.
+The type system is *static* which means that the correctness of a Numbat program is verified before the program starts executing.
 Note that certain *runtime* errors (like division-by-zero) can still occur.
 
 ## Algebra of types
