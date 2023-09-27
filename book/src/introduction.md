@@ -20,7 +20,7 @@ You can use it for simple mathematical computations:
     = 0.512957
 ```
 
-The real strengh of Numbat, however, is to perform calculations with physical units:
+The real strength of Numbat, however, is to perform calculations with physical units:
 
 ``` numbat
 >>> 8 km / (1 h + 25 min)
