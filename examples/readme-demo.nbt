@@ -2,6 +2,6 @@ use units::currencies
 
 8 km / (1 h + 25 min)
 140 € -> GBP
-atan2(30 cm, 1 m) -> deg
-let ω = 2π c / 660 nm
+ATan2(30 cm, 1 m) -> deg
+let ω = 2π θC c / 660 nm
 print("Energy of red photon: {ℏ ω -> eV}")

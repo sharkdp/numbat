@@ -14,6 +14,8 @@ dimension Speed = Length / Time  # also: velocity
 dimension Acceleration = Length / Time^2
 dimension Jerk = Length / Time^3
 dimension FlowRate = Volume / Time
+dimension AngularFrequency = Angle / Time
+dimension AngularAcceleration = Angle / Time^2
 
 dimension Mass
 dimension Momentum = Mass × Speed

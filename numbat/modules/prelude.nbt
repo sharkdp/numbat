@@ -1,3 +1,26 @@
+# The following prelude is based on a proposal to treat angles
+# as dimensionful quantities [1].
+#
+#
+# Literature
+# ----------
+#
+# Pro:
+#   - [1] Angles in the SI: a detailed proposal for solving the problem, https://arxiv.org/abs/2108.05704
+#   - [2] Angles are inherently neither length ratios nor dimensionless, https://arxiv.org/abs/1909.08389
+#   - [3] Brownstein K R, Angles—let’s treat them squarely, Am. J. Phys. 65 605–14 (1997).
+#   - [4] Dimensionless units in the SI, https://arxiv.org/abs/1409.2794
+#
+# Contra:
+#   - [4] Dimensional angles and universal constants, https://doi.org/10.1119/1.18964
+#   - [5] M. Grötschel, H. Hanche-Olsen, H. Holden, Comment on ‘Angles are inherently neither length ratios nor dimensionless’.
+#     (and companion paper https://arxiv.org/abs/2011.05779v4)
+#   - [6] Comment on 'Angles in the SI: a detailed proposal for solving the problem', B P Leonard, https://iopscience.iop.org/article/10.1088/1681-7575/ac5433/meta
+#     (and reply to comment: https://iopscience.iop.org/article/10.1088/1681-7575/ac5434)
+#
+# Review:
+#   - [7] Implications of adopting plane angle as a base quantity in the SI, https://arxiv.org/pdf/1604.02373.pdf
+
 use core::scalar
 use core::quantities
 use core::dimensions
@@ -26,3 +49,11 @@ use units::placeholder
 
 use physics::constants
 use physics::temperature_conversion
+
+fn Sin(θ: Angle) -> Scalar = sin(θ / θC)
+fn Cos(θ: Angle) -> Scalar = cos(θ / θC)
+fn Tan(θ: Angle) -> Scalar = tan(θ / θC)
+fn ASin(x: Scalar) -> Angle = asin(x) × θC
+fn ACos(x: Scalar) -> Angle = acos(x) × θC
+fn ATan(x: Scalar) -> Angle = atan(x) × θC
+fn ATan2<Q>(y: Q, x: Q) -> Angle = atan2(y, x) × θC

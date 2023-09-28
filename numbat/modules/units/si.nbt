@@ -37,6 +37,10 @@ unit candela: LuminousIntensity
 @aliases(radians, rad: short)
 unit radian: Angle
 
+# The "Cotes angle"
+let theta_C = 1 rad
+let θC = theta_C
+
 @metric_prefixes
 @aliases(steradians, sr: short)
 unit steradian: SolidAngle = radian^2

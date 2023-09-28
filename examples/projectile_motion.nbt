@@ -1,8 +1,8 @@
 # https://en.wikipedia.org/wiki/Projectile_motion
 
-fn max_height(v: Speed, θ: Angle) -> Length = v² · sin(θ)^2 / (2 · g0)
-fn max_distance(v: Speed, θ: Angle) -> Length = v² · sin(2 θ) / g0
-fn time_of_flight(v: Speed, θ: Angle) -> Time = 2 v · sin(θ) / g0
+fn max_height(v: Speed, θ: Angle) -> Length = v² · Sin(θ)^2 / (2 · g0)
+fn max_distance(v: Speed, θ: Angle) -> Length = v² · Sin(2 θ) / g0
+fn time_of_flight(v: Speed, θ: Angle) -> Time = 2 v · Sin(θ) / g0
 
 assert_eq(max_height(10 m/s, 45 deg),      2.55 m,  1 cm)
 assert_eq(max_distance(10 m/s, 45 deg),   10.20 m,  1 cm)

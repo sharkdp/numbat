@@ -1,5 +1,3 @@
-assert_eq(1 rad , 1 m² / m²)
-assert_eq(1 sr  , 1 m² / m²)
 assert_eq(1 Hz  , 1 / s)
 assert_eq(1 N   , 1 kg * m / s^2)
 assert_eq(1 Pa  , 1 N / m²)

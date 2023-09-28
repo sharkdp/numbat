@@ -1,7 +1,7 @@
 # This file uses the dimensionful_angles prelude
 
 print("h = {planck_constant}")
-print("ћ = {ћ}")
+print("ℏ = {ℏ}")
 print("ȟ = {ȟ}")
 
 # harmonic oscillation

@@ -37,7 +37,7 @@ unit horsepower: Power = 735.49875 W
 unit revolution: Angle = 360°
 
 @aliases(RPM: short)
-unit rpm: Frequency = 1 / minute
+unit rpm: Angle / Time = rev/min
 
 unit mmHg: Pressure = 133.322387415 pascal
 
