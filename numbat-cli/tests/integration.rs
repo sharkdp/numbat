@@ -21,6 +21,15 @@ fn pass_expression_on_command_line() {
         .stdout(predicates::str::contains("5 m"));
 
     numbat()
+        .arg("-e")
+        .arg("let x = 2")
+        .arg("-e")
+        .arg("x^3")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("8"));
+
+    numbat()
         .arg("--expression")
         .arg("2 ++ 3")
         .assert()

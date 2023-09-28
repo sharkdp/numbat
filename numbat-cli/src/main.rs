@@ -6,6 +6,7 @@ use ansi_formatter::ansi_format;
 use completer::NumbatCompleter;
 use highlighter::NumbatHighlighter;
 
+use itertools::Itertools;
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
@@ -40,15 +41,21 @@ enum PrettyPrintMode {
 }
 
 #[derive(Parser, Debug)]
-#[command(version, about, name("numbat"))]
+#[command(version, about, name("numbat"), max_term_width = 90)]
 struct Args {
     /// Path to source file with Numbat code. If none is given, an interactive
     /// session is started.
     file: Option<PathBuf>,
 
-    /// Evaluate a single expression
-    #[arg(short, long, value_name = "CODE", conflicts_with = "file")]
-    expression: Option<String>,
+    /// Evaluate a single expression. Can be specified multiple times to evaluate several expressions in sequence.
+    #[arg(
+        short,
+        long,
+        value_name = "CODE",
+        conflicts_with = "file",
+        action = clap::ArgAction::Append
+    )]
+    expression: Option<Vec<String>>,
 
     /// Do not load the prelude with predefined physical dimensions and units. This implies --no-init.
     #[arg(long)]
@@ -170,20 +177,21 @@ impl Cli {
                 self.args.pretty_print
             };
 
-        let (code, code_source): (Option<String>, CodeSource) =
-            if let Some(ref path) = self.args.file {
-                (
-                    Some(fs::read_to_string(path).context(format!(
-                        "Could not load source file '{}'",
-                        path.to_string_lossy()
-                    ))?),
-                    CodeSource::File(path.clone()),
-                )
-            } else {
-                (self.args.expression.clone(), CodeSource::Text)
-            };
+        let code_and_source: Option<(String, CodeSource)> = if let Some(ref path) = self.args.file {
+            Some((
+                fs::read_to_string(path).context(format!(
+                    "Could not load source file '{}'",
+                    path.to_string_lossy()
+                ))?,
+                CodeSource::File(path.clone()),
+            ))
+        } else if let Some(exprs) = &self.args.expression {
+            Some((exprs.iter().join("\n"), CodeSource::Text))
+        } else {
+            None
+        };
 
-        if let Some(code) = code {
+        if let Some((code, code_source)) = code_and_source {
             let result = self.parse_and_evaluate(
                 &code,
                 code_source,
