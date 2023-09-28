@@ -26,7 +26,7 @@ dimension Pressure = Force / Area = Energy / Volume  # also: stress
 dimension Action = Energy × Time
 dimension MassDensity = Mass / Length^3
 dimension MomentOfInertia = Mass × Length^2 / Angle^2
-dimension AngularMomentum = MomentOfInertia × Angle / Time = Mass × Length^2 / Time / Angle
+dimension AngularMomentum = MomentOfInertia × AngularFrequency = Mass × Length^2 / Time / Angle
 dimension Torque = Length × Force / Angle  # also: moment of force
 dimension EnergyDensity = Energy / Volume
 
