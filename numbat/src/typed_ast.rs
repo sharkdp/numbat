@@ -1,5 +1,6 @@
 use itertools::Itertools;
 
+use crate::arithmetic::Exponent;
 use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, DimensionExpression, UnaryOperator};
 use crate::dimension::DimensionRegistry;
@@ -19,8 +20,15 @@ impl DType {
             return m::type_identifier("Scalar");
         }
 
-        let alternative_names = registry.get_derived_entry_names_for(self);
-        match &alternative_names[..] {
+        let mut names = vec![];
+
+        let factors: Vec<_> = self.iter().collect();
+        if factors.len() == 1 && factors[0].1 == Exponent::from_integer(1) {
+            names.push(factors[0].0.clone());
+        }
+
+        names.extend(registry.get_derived_entry_names_for(self));
+        match &names[..] {
             [] => self.pretty_print(),
             [single] => m::type_identifier(single),
             ref multiple => Itertools::intersperse(
