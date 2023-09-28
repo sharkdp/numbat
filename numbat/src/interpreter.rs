@@ -27,6 +27,8 @@ pub enum RuntimeError {
     AssertEq2Failed(Quantity, Quantity),
     #[error("Assertion failed because the following two quantities differ by more than {2}:\n  {0}\n  {1}")]
     AssertEq3Failed(Quantity, Quantity, Quantity),
+    #[error("Could not load exchange rates from European Central Bank.")]
+    CouldNotLoadExchangeRates,
 }
 
 #[derive(Debug, PartialEq, Eq)]

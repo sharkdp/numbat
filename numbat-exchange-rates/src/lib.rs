@@ -35,7 +35,6 @@ pub fn parse_exchange_rates(xml_content: &str) -> Option<ExchangeRates> {
 
 const ECB_XML_URL: &str = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
 
-#[cfg(not(feature = "wasm"))]
 fn fetch_ecb_xml() -> Option<String> {
     attohttpc::get(ECB_XML_URL).send().ok()?.text().ok()
 }

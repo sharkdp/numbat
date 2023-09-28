@@ -79,6 +79,7 @@ pub struct Context {
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
     resolver: Resolver,
+    load_currency_module_on_demand: bool,
 }
 
 impl Context {
@@ -88,6 +89,7 @@ impl Context {
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(),
             resolver: Resolver::new(module_importer),
+            load_currency_module_on_demand: false,
         }
     }
 
@@ -99,10 +101,13 @@ impl Context {
         self.interpreter.set_debug(activate);
     }
 
+    pub fn load_currency_module_on_demand(&mut self, yes: bool) {
+        self.load_currency_module_on_demand = yes;
+    }
+
     /// Fill the currency exchange rate cache. This call is blocking.
-    pub fn fetch_exchange_rates() {
-        let cache = ExchangeRatesCache::new();
-        let _unused = cache.fetch();
+    pub fn prefetch_exchange_rates() {
+        let _unused = ExchangeRatesCache::fetch();
     }
 
     pub fn set_exchange_rates(xml_content: &str) {
@@ -240,7 +245,7 @@ impl Context {
     ) -> Result<(Vec<typed_ast::Statement>, InterpreterResult)> {
         let statements = self
             .resolver
-            .resolve(code, code_source)
+            .resolve(code, code_source.clone())
             .map_err(NumbatError::ResolverError)?;
 
         let prefix_transformer_old = self.prefix_transformer.clone();
@@ -285,6 +290,81 @@ impl Context {
             //
             self.prefix_transformer = prefix_transformer_old.clone();
             self.typechecker = typechecker_old.clone();
+
+            if self.load_currency_module_on_demand {
+                if let Err(NumbatError::TypeCheckError(TypeCheckError::UnknownIdentifier(
+                    _,
+                    identifier,
+                    _,
+                ))) = &result
+                {
+                    // TODO: maybe we can somehow load this list of identifiers from units::currencies?
+                    const CURRENCY_IDENTIFIERS: &[&str] = &[
+                        "$",
+                        "USD",
+                        "dollar",
+                        "dollars",
+                        "A$",
+                        "AUD",
+                        "australian_dollar",
+                        "australian_dollars",
+                        "C$",
+                        "CAD",
+                        "canadian_dollar",
+                        "canadian_dollars",
+                        "CHF",
+                        "swiss_franc",
+                        "swiss_francs",
+                        "CNY",
+                        "renminbi",
+                        "元",
+                        "EUR",
+                        "euro",
+                        "euros",
+                        "€",
+                        "GBP",
+                        "british_pound",
+                        "pound_sterling",
+                        "£",
+                        "JPY",
+                        "yen",
+                        "yens",
+                        "¥",
+                        "円",
+                    ];
+                    if CURRENCY_IDENTIFIERS.contains(&identifier.as_str()) {
+                        let mut no_print_settings = InterpreterSettings {
+                            print_fn: Box::new(
+                                move |_: &m::Markup| { // ignore any print statements when loading this module asynchronously
+                                },
+                            ),
+                        };
+
+                        // We also call this from a thread at program startup, so if a user only starts
+                        // to use currencies later on, this will already be available and return immediately.
+                        // Otherwise, we fetch it now and make sure to block on this call.
+                        {
+                            let erc = ExchangeRatesCache::fetch();
+
+                            if erc.is_none() {
+                                return Err(NumbatError::RuntimeError(
+                                    RuntimeError::CouldNotLoadExchangeRates,
+                                ));
+                            }
+                        }
+
+                        self.interpret_with_settings(
+                            &mut no_print_settings,
+                            "use units::currencies",
+                            CodeSource::Internal,
+                        )
+                        .ok();
+
+                        // Now we try to evaluate the user expression again:
+                        return self.interpret_with_settings(settings, code, code_source);
+                    }
+                }
+            }
         }
 
         let typed_statements = result?;

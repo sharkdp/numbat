@@ -152,28 +152,14 @@ impl Cli {
         }
 
         if load_prelude {
-            let ctx = self.context.clone();
-            let mut no_print_settings = InterpreterSettings {
-                print_fn: Box::new(
-                    move |_: &m::Markup| { // ignore any print statements when loading this module asynchronously
-                    },
-                ),
-            };
-            thread::spawn(move || {
-                numbat::Context::fetch_exchange_rates();
-
-                // After pre-fetching the exchange rates, we can load the 'currencies' module
-                // without blocking the context for long. This allows us to have fast startup
-                // times of the CLI application, but still have currency units available after
-                // a short delay (the limiting factor is the HTTP request).
-                ctx.lock()
+            {
+                self.context
+                    .lock()
                     .unwrap()
-                    .interpret_with_settings(
-                        &mut no_print_settings,
-                        "use units::currencies",
-                        CodeSource::Internal,
-                    )
-                    .ok();
+                    .load_currency_module_on_demand(true);
+            }
+            thread::spawn(move || {
+                numbat::Context::prefetch_exchange_rates();
             });
         }
 

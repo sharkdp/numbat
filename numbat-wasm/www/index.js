@@ -11,6 +11,7 @@ async function fetch_exchange_rates() {
       const xml_content = await response.text();
       numbat.set_exchange_rates(xml_content);
   } catch (error) {
+      console.error("Failed to load currency exchange rates from the European Central Bank");
       return;
   }
 }
@@ -20,11 +21,9 @@ setup_panic_hook();
 var numbat = Numbat.new();
 var combined_input = "";
 
-fetch_exchange_rates();
-
 // Load KeyboardEvent polyfill for old browsers
 keyboardeventKeyPolyfill.polyfill();
-  
+
 function updateUrlQuery(query) {
   let url = new URL(window.location);
   if (query == null) {
@@ -67,27 +66,31 @@ function interpret(input) {
   return output;
 }
 
-$(document).ready(function() {
-  var term = $('#terminal').terminal(interpret, {
-    greetings: false,
-    name: "terminal",
-    height: 550,
-    prompt: "[[;;;prompt]>>> ]",
-    checkArity: false,
-    historySize: 200,
-    historyFilter(line) {
-      return line.trim() !== "";
-    },
-    completion(inp, cb) {
-      cb(numbat.get_completions_for(inp));
+function main() {
+  $(document).ready(function() {
+    var term = $('#terminal').terminal(interpret, {
+        greetings: false,
+        name: "terminal",
+        height: 550,
+        prompt: "[[;;;prompt]>>> ]",
+        checkArity: false,
+        historySize: 200,
+        historyFilter(line) {
+          return line.trim() !== "";
+        },
+        completion(inp, cb) {
+          cb(numbat.get_completions_for(inp));
+        }
+      });
+
+    // evaluate expression in query string if supplied (via opensearch)
+    if (location.search) {
+      var queryParams = new URLSearchParams(location.search);
+      if (queryParams.has("q")) {
+        term.exec(queryParams.get("q"));
+      }
     }
   });
+}
 
-  // evaluate expression in query string if supplied (via opensearch)
-  if (location.search) {
-    var queryParams = new URLSearchParams(location.search);
-    if (queryParams.has("q")) {
-      term.exec(queryParams.get("q"));
-    }
-  }
-});
+fetch_exchange_rates().then(main);
