@@ -33,6 +33,21 @@ pub struct Numbat {
 }
 
 #[wasm_bindgen]
+#[derive(Debug, Clone)]
+pub struct InterpreterOutput {
+    output: String,
+    pub is_error: bool,
+}
+
+#[wasm_bindgen]
+impl InterpreterOutput {
+    #[wasm_bindgen(getter)]
+    pub fn output(&self) -> String {
+        self.output.clone()
+    }
+}
+
+#[wasm_bindgen]
 impl Numbat {
     pub fn new() -> Self {
         let mut ctx = Context::new(BuiltinModuleImporter::default());
@@ -42,10 +57,13 @@ impl Numbat {
 
     pub fn set_exchange_rates(&mut self, xml_content: &str) {
         Context::set_exchange_rates(xml_content);
-        let _ = self.ctx.interpret("use units::currencies", CodeSource::Internal).unwrap();
+        let _ = self
+            .ctx
+            .interpret("use units::currencies", CodeSource::Internal)
+            .unwrap();
     }
 
-    pub fn interpret(&mut self, code: &str) -> String {
+    pub fn interpret(&mut self, code: &str) -> InterpreterOutput {
         let mut output = String::new();
 
         let registry = self.ctx.dimension_registry().clone();
@@ -117,7 +135,10 @@ impl Numbat {
                     }
                 }
 
-                output
+                InterpreterOutput {
+                    output,
+                    is_error: false,
+                }
             }
             Err(NumbatError::ResolverError(e)) => self.print_diagnostic(&e),
             Err(NumbatError::NameResolutionError(
@@ -142,7 +163,7 @@ impl Numbat {
             .collect()
     }
 
-    fn print_diagnostic(&self, error: &dyn ErrorDiagnostic) -> String {
+    fn print_diagnostic(&self, error: &dyn ErrorDiagnostic) -> InterpreterOutput {
         use codespan_reporting::term::{self, Config};
 
         let mut writer = JqueryTerminalWriter::new();
@@ -152,6 +173,9 @@ impl Numbat {
 
         term::emit(&mut writer, &config, &resolver.files, &error.diagnostic()).unwrap();
 
-        writer.to_string()
+        InterpreterOutput {
+            output: writer.to_string(),
+            is_error: true,
+        }
     }
 }

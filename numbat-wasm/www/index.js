@@ -18,6 +18,7 @@ async function fetch_exchange_rates() {
 setup_panic_hook();
 
 var numbat = Numbat.new();
+var combined_input = "";
 
 fetch_exchange_rates();
 
@@ -48,12 +49,19 @@ function interpret(input) {
   } else if (input_trimmed == "reset") {
     numbat = Numbat.new();
     numbat.interpret("use units::currencies");
+    combined_input = "";
+    updateUrlQuery(null);
     this.clear();
   } else if (input_trimmed == "list" || input_trimmed == "ll" || input_trimmed == "ls") {
     output = numbat.print_environment();
   } else {
-    var output = numbat.interpret(input);
-    updateUrlQuery(input);
+    var result = numbat.interpret(input);
+    output = result.output;
+
+    if (!result.is_error) {
+        combined_input += input + "\n";
+        updateUrlQuery(combined_input.trim());
+    }
   }
 
   return output;
@@ -72,9 +80,6 @@ $(document).ready(function() {
     },
     completion(inp, cb) {
       cb(numbat.get_completions_for(inp));
-    },
-    onClear() {
-      updateUrlQuery(null);
     }
   });
 
