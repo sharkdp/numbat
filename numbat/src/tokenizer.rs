@@ -386,9 +386,9 @@ impl Tokenizer {
             {
                 let (base, is_digit_in_base): (_, Box<dyn Fn(char) -> bool>) =
                     match self.peek().unwrap() {
-                        'x' => (16, Box::new(|c| c.is_ascii_hexdigit())),
-                        'o' => (8, Box::new(|c| ('0'..='7').contains(&c))),
-                        'b' => (2, Box::new(|c| c == '0' || c == '1')),
+                        'x' => (16, Box::new(|c| c.is_ascii_hexdigit() || c == '_')),
+                        'o' => (8, Box::new(|c| ('0'..='7').contains(&c) || c == '_')),
+                        'b' => (2, Box::new(|c| c == '0' || c == '1' || c == '_')),
                         _ => unreachable!(),
                     };
 

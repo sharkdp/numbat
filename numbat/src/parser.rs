@@ -1030,7 +1030,7 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
-                    i128::from_str_radix(&hex_int.lexeme[2..], 16)
+                    i128::from_str_radix(&hex_int.lexeme[2..].replace('_', ""), 16)
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
@@ -1039,7 +1039,7 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
-                    i128::from_str_radix(&oct_int.lexeme[2..], 8)
+                    i128::from_str_radix(&oct_int.lexeme[2..].replace('_', ""), 8)
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
@@ -1048,7 +1048,7 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
-                    i128::from_str_radix(&bin_int.lexeme[2..], 2)
+                    i128::from_str_radix(&bin_int.lexeme[2..].replace('_', ""), 2)
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
