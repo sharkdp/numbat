@@ -2,29 +2,56 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       →   expression | variable_decl | function_decl | dimension_decl | unit_decl | procedure_call | module_import
+//! statement       →   variable_decl | function_decl | dimension_decl | decorator | unit_decl | module_import | procedure_call | expression
 //!
-//! variable_decl   →   …
-//! function_decl   →   …
-//! dimension_decl  →   …
-//! unit_decl       →   …
+//! variable_decl   →   "let" identifier ( ":" type_annotation ) ? "=" expression
+//! type_annotation →   boolean | string | dimension_expr
+//! function_decl   →   "fn" identifier ( fn_decl_generic ) ? fn_decl_param "->" type_annotation "=" expression
+//! fn_decl_generic →   "<" ( identifier "," ) * identifier ? ">"
+//! fn_decl_param   →   "(" ( identifier ( ":" dimension_expr ) ? "," )* ( identifier ( ":" dimension_expr ) ) ? ")"
+//! dimension_decl  →   "dimension" identifier ( "=" dimension_expr ) *
+//! decorator       →   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_alsiases ")" ) )
+//! unit_decl       →   "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
+//! procedure_call  →   ( "print" | "assert_eq" | "type" ) ( "(" arguments? ")" ) ?
+//! module_import   →   "use" ident ( "::" ident) *
+//!
+//! dimension_expr  →   dim_factor
+//! dim_factor      →   dim_power ( (multiply | divide) dim_power ) *
+//! dim_power       →   dim_primary ( power dim_exponent | unicode_exponent ) ?
+//! dim_exponent    →   number | minus dim_exponent | "(" dim_exponent ( divide dim_exponent ) ? ")"
+//! dim_primary     →   identifier | number | ( "(" dimension_expr ")"
+//!
+//!
 //!
 //! expression      →   postfix_apply
 //! postfix_apply   →   condition ( "//" identifier ) *
-//! condition       →   "if" conversion "then" condition "else" condition | conversion
-//! conversion      →   comparison ( "→" comparison ) *
-//! comparison      →   term ( (">" | "<" | …) term ) *
+//! condition       →   ( "if" conversion "then" condition "else" condition ) | conversion
+//! conversion      →   comparison ( ( "→" | "->" | "to" ) comparison ) *
+//! comparison      →   term ( (">" | ">="| "≥" | "<" | "<=" | "≤" | "==" | "!=" | "≠" ) term ) *
 //! term            →   factor ( ( "+" | "-") factor ) *
 //! factor          →   negate ( ( "*" | "/") per_factor ) *
 //! per_factor      →   negate ( "per" negate ) *
-//! negate          →   "-" negate | ifactor
+//! negate          →   ( "-" negate ) | ifactor
 //! ifactor         →   power ( " " power ) *
-//! power           →   factorial ( "^" "-" ? power )
+//! power           →   factorial ( "^" "-" ? power ) ?
 //! factorial       →   unicode_power "!" *
-//! unicode_power   →   call ( "⁻" ? ("¹" | "²" | "³" | "⁴" | "⁵" ) ) ?
+//! unicode_power   →   call ( "⁻" ? ( "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ) ) ?
 //! call            →   primary ( "(" arguments? ")" ) ?
 //! arguments       →   expression ( "," expression ) *
-//! primary         →   number | hex-number | oct-number | bin-number | identifier | "(" expression ")"
+//! primary         →   boolean | string | hex_number | oct_number | bin_number | number | identifier | "(" expression ")"
+//!
+//! number          →   /[0-9][0-9_]*(\.([0-9][0-9_]*)?)?([eE][+-]?[0-9][0-9_]*)?/
+//! hex_number      →   /0x[0-9a-fA-F]*/
+//! oct_number      →   /0o[0-7]*/
+//! bin_number      →   /0b[01]*/
+//! identifier      →   [a-zA-Z_] [a-zA-Z_0-9] *
+//! boolean         →   true | false
+//! bool            →   true | false
+//! plus            →   "+"
+//! minus           →   "-"
+//! multiply        →   "*" | "x" | "×"
+//! divide          →   "/" | "÷"
+//! string          →   "\" ... "\""
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
@@ -332,6 +359,7 @@ impl<'a> Parser<'a> {
             if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
                 let function_name_span = self.last().unwrap().span;
                 let mut type_parameters = vec![];
+                // Parsing the generic parameters if there is any
                 if self.match_exact(TokenKind::LessThan).is_some() {
                     while self.match_exact(TokenKind::GreaterThan).is_none() {
                         if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
