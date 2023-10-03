@@ -6,17 +6,13 @@
 # TODO: This could really benefit from logical and/or operators
 
 fn binomial_coefficient(n: Scalar, k: Scalar) -> Scalar =
-    if k < 0
-        then 0
-        else if k > n
-            then 0
-            else if k > n - k # Take advantage of symmetry
-                then binomial_coefficient(n, n - k)
-                else if k == 0
-                    then 1
-                    else if n <= 1
-                        then 1
-                        else binomial_coefficient(n - 1, k) + binomial_coefficient(n - 1, k - 1)
+    if or(k < 0, k > n)
+      then 0
+      else if k > n - k # Take advantage of symmetry
+        then binomial_coefficient(n, n - k)
+        else if or(k == 0, n <= 1)
+          then 1
+          else binomial_coefficient(n - 1, k) + binomial_coefficient(n - 1, k - 1)
 
 assert_eq(binomial_coefficient(10, 0), 1)
 assert_eq(binomial_coefficient(10, 1), 10)

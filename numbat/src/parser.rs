@@ -398,7 +398,7 @@ impl<'a> Parser<'a> {
                     if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
                         let span = self.last().unwrap().span;
                         let param_type_dexpr = if self.match_exact(TokenKind::Colon).is_some() {
-                            Some(self.dimension_expression()?)
+                            Some(self.type_annotation()?)
                         } else {
                             None
                         };
@@ -1953,41 +1953,44 @@ mod tests {
                     (
                         Span::dummy(),
                         "x".into(),
-                        Some(DimensionExpression::Dimension(
-                            Span::dummy(),
-                            "Length".into(),
+                        Some(TypeAnnotation::DimensionExpression(
+                            DimensionExpression::Dimension(Span::dummy(), "Length".into()),
                         )),
                         false,
                     ),
                     (
                         Span::dummy(),
                         "y".into(),
-                        Some(DimensionExpression::Dimension(Span::dummy(), "Time".into())),
+                        Some(TypeAnnotation::DimensionExpression(
+                            DimensionExpression::Dimension(Span::dummy(), "Time".into()),
+                        )),
                         false,
                     ),
                     (
                         Span::dummy(),
                         "z".into(),
-                        Some(DimensionExpression::Multiply(
-                            Span::dummy(),
-                            Box::new(DimensionExpression::Power(
-                                Some(Span::dummy()),
-                                Box::new(DimensionExpression::Dimension(
-                                    Span::dummy(),
-                                    "Length".into(),
-                                )),
+                        Some(TypeAnnotation::DimensionExpression(
+                            DimensionExpression::Multiply(
                                 Span::dummy(),
-                                Rational::new(3, 1),
-                            )),
-                            Box::new(DimensionExpression::Power(
-                                Some(Span::dummy()),
-                                Box::new(DimensionExpression::Dimension(
+                                Box::new(DimensionExpression::Power(
+                                    Some(Span::dummy()),
+                                    Box::new(DimensionExpression::Dimension(
+                                        Span::dummy(),
+                                        "Length".into(),
+                                    )),
                                     Span::dummy(),
-                                    "Time".into(),
+                                    Rational::new(3, 1),
                                 )),
-                                Span::dummy(),
-                                Rational::new(2, 1),
-                            )),
+                                Box::new(DimensionExpression::Power(
+                                    Some(Span::dummy()),
+                                    Box::new(DimensionExpression::Dimension(
+                                        Span::dummy(),
+                                        "Time".into(),
+                                    )),
+                                    Span::dummy(),
+                                    Rational::new(2, 1),
+                                )),
+                            ),
                         )),
                         false,
                     ),
@@ -2009,7 +2012,9 @@ mod tests {
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),
-                    Some(DimensionExpression::Dimension(Span::dummy(), "X".into())),
+                    Some(TypeAnnotation::DimensionExpression(
+                        DimensionExpression::Dimension(Span::dummy(), "X".into()),
+                    )),
                     false,
                 )],
                 body: Some(scalar!(1.0)),
@@ -2027,7 +2032,9 @@ mod tests {
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),
-                    Some(DimensionExpression::Dimension(Span::dummy(), "D".into())),
+                    Some(TypeAnnotation::DimensionExpression(
+                        DimensionExpression::Dimension(Span::dummy(), "D".into()),
+                    )),
                     true,
                 )],
                 body: None,

@@ -300,7 +300,7 @@ pub enum Statement {
         function_name: String,
         type_parameters: Vec<(Span, String)>,
         /// Parameters, optionally with type annotations. The boolean argument specifies whether or not the parameter is variadic
-        parameters: Vec<(Span, String, Option<DimensionExpression>, bool)>,
+        parameters: Vec<(Span, String, Option<TypeAnnotation>, bool)>,
         /// Function body. If it is absent, the function is implemented via FFI
         body: Option<Expression>,
         return_type_annotation_span: Option<Span>,
