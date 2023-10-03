@@ -1,0 +1,4 @@
+use core::scalar
+
+fn str_length(a: str) -> Scalar
+fn str_concat(a: str, b: str) -> str = "{a}{b}"

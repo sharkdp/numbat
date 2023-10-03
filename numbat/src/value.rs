@@ -23,6 +23,14 @@ impl Value {
             panic!("Expected value to be a bool");
         }
     }
+
+    pub fn unsafe_as_string(&self) -> &str {
+        if let Value::String(s) = self {
+            s
+        } else {
+            panic!("Expected value to be a bool");
+        }
+    }
 }
 
 impl std::fmt::Display for Value {
