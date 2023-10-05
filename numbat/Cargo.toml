@@ -31,3 +31,4 @@ rust-embed = { version = "8.0.0", features = ["interpolate-folder-path"] }
 [dev-dependencies]
 approx = "0.5"
 glob = "0.3"
+insta = "1.33.0"
