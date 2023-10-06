@@ -800,7 +800,6 @@ fn test_tokenize_numbers() {
     "###
     );
 
-    println!("here");
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b01").unwrap(),
         @r###"
@@ -879,7 +878,6 @@ fn test_tokenize_numbers() {
         @"Error at (1, 3): `Expected base-2 digit`"
     );
 
-    println!("here");
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b1_").unwrap_err(),
         @"Error at (1, 5): `Expected base-2 digit`"

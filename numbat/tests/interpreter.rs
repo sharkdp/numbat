@@ -6,7 +6,10 @@ use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
 use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
 
-fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &str) {
+#[track_caller]
+fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: impl AsRef<str>) {
+    let expected_output = expected_output.as_ref();
+    println!("Expecting output '{expected_output}' for code '{code}'");
     if let InterpreterResult::Value(val) = ctx.interpret(code, CodeSource::Internal).unwrap().1 {
         let fmt = PlainTextFormatter {};
 
@@ -17,12 +20,13 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &s
     }
 }
 
-fn expect_output(code: &str, expected_output: &str) {
-    println!("Expecting output '{expected_output}' for code '{code}'");
+#[track_caller]
+fn expect_output(code: &str, expected_output: impl AsRef<str>) {
     let mut ctx = get_test_context();
     expect_output_with_context(&mut ctx, code, expected_output)
 }
 
+#[track_caller]
 fn expect_failure(code: &str, msg_part: &str) {
     let mut ctx = get_test_context();
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
@@ -34,6 +38,7 @@ fn expect_failure(code: &str, msg_part: &str) {
     }
 }
 
+#[track_caller]
 fn expect_exact_failure(code: &str, expected: &str) {
     let mut ctx = get_test_context();
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
@@ -41,6 +46,48 @@ fn expect_exact_failure(code: &str, expected: &str) {
     } else {
         panic!();
     }
+}
+
+#[test]
+fn simple_value() {
+    expect_output("0", "0");
+    expect_output("0_0", "0");
+    expect_output("0_0.0_0", "0");
+    expect_output(".0", "0");
+    expect_failure("_.0", "Unexpected character in identifier: '.'");
+    expect_failure("._0", "Expected digit");
+    expect_output(".0_0", "0");
+    expect_failure(".0_", "Unexpected character in number literal: '_'");
+
+    expect_output("0b0", "0");
+    expect_output("0b01", "1");
+    expect_output("0b0_0", "0");
+    expect_failure("0b012", "Expected base-2 digit");
+    expect_failure("0b", "Expected base-2 digit");
+    expect_failure("0b_", "Expected base-2 digit");
+    expect_failure("0b_0", "Expected base-2 digit");
+    expect_failure("0b0_", "Expected base-2 digit");
+    expect_failure("0b0.0", "Expected base-2 digit");
+
+    expect_output("0o0", "0");
+    expect_output("0o01234567", 0o01234567.to_string());
+    expect_output("0o0_0", "0");
+    expect_failure("0o012345678", "Expected base-8 digit");
+    expect_failure("0o", "Expected base-8 digit");
+    expect_failure("0o_", "Expected base-8 digit");
+    expect_failure("0o_0", "Expected base-8 digit");
+    expect_failure("0o0_", "Expected base-8 digit");
+    expect_failure("0o0.0", "Expected base-8 digit");
+
+    expect_output("0x0", "0");
+    expect_output("0x0123456789abcdef", "8.19855e16");
+    expect_output("0x0_0", "0");
+    expect_failure("0x0123456789abcdefg", "Expected base-16 digit");
+    expect_failure("0x", "Expected base-16 digit");
+    expect_failure("0x_", "Expected base-16 digit");
+    expect_failure("0x_0", "Expected base-16 digit");
+    expect_failure("0x0_", "Expected base-16 digit");
+    expect_failure("0x0.0", "Expected base-16 digit");
 }
 
 #[test]
