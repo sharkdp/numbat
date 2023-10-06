@@ -394,7 +394,7 @@ impl Tokenizer {
 
                 self.advance(); // skip over the x/o/b
 
-                // If the first value is not a number that's an error.
+                // If the first character is not a digits, that's an error.
                 if !self.peek().map(&is_digit_in_base).unwrap_or(false) {
                     println!("here while checking {:?}", self.peek());
                     return tokenizer_error(
@@ -417,7 +417,7 @@ impl Tokenizer {
                     self.advance();
                 }
 
-                // Value should not end with a `_` either.
+                // Numeric literal should not end with a `_` either.
                 if last_char == Some('_')
                     || self
                         .peek()
