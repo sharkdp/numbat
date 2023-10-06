@@ -2,7 +2,7 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       →   variable_decl | function_decl | dimension_decl | decorator | unit_decl | module_import | procedure_call | expression
+//! statement       →   variable_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
 //!
 //! variable_decl   →   "let" identifier ( ":" type_annotation ) ? "=" expression
 //! type_annotation →   "bool" | "str" | dimension_expr
@@ -11,7 +11,7 @@
 //! fn_decl_param   →   "(" ( identifier ( ":" type_annotation ) ? "," )* ( identifier ( ":" type_annotation ) ) ? ")"
 //! dimension_decl  →   "dimension" identifier ( "=" dimension_expr ) *
 //! decorator       →   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
-//! unit_decl       →   "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
+//! unit_decl       →   decorator * "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
 //! procedure_call  →   ( "print" | "assert_eq" | "type" ) "(" arguments? ")"
 //! module_import   →   "use" ident ( "::" ident) *
 //!
@@ -20,8 +20,6 @@
 //! dim_power       →   dim_primary ( power dim_exponent | unicode_exponent ) ?
 //! dim_exponent    →   integer | minus dim_exponent | "(" dim_exponent ( divide dim_exponent ) ? ")"
 //! dim_primary     →   identifier | "1" | ( "(" dimension_expr ")"
-//!
-//!
 //!
 //! expression      →   postfix_apply
 //! postfix_apply   →   condition ( "//" identifier ) *
@@ -46,8 +44,7 @@
 //! bin_number      →   /0b[01]*/
 //! integer          →   /[0-9]([0-9_]*[0-9])?/
 //! identifier      →   [a-zA-Z_] [a-zA-Z_0-9] *
-//! boolean         →   true | false
-//! bool            →   true | false
+//! boolean         →   "true" | "false"
 //! plus            →   "+"
 //! minus           →   "-"
 //! multiply        →   "*" | "x" | "×"
