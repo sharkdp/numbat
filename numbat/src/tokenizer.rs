@@ -396,7 +396,6 @@ impl Tokenizer {
 
                 // If the first character is not a digits, that's an error.
                 if !self.peek().map(&is_digit_in_base).unwrap_or(false) {
-                    println!("here while checking {:?}", self.peek());
                     return tokenizer_error(
                         &self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {
