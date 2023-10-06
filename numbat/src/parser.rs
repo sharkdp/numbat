@@ -5,8 +5,8 @@
 //! statement       →   variable_decl | function_decl | dimension_decl | decorator | unit_decl | module_import | procedure_call | expression
 //!
 //! variable_decl   →   "let" identifier ( ":" type_annotation ) ? "=" expression
-//! type_annotation →   boolean | string | dimension_expr
-//! function_decl   →   "fn" identifier ( fn_decl_generic ) ? fn_decl_param "->" type_annotation "=" expression
+//! type_annotation →   "bool" | "str" | dimension_expr
+//! function_decl   →   "fn" identifier ( fn_decl_generic ) ? fn_decl_param ( "->" type_annotation ) ? ( "=" expression ) ?
 //! fn_decl_generic →   "<" ( identifier "," ) * identifier ? ">"
 //! fn_decl_param   →   "(" ( identifier ( ":" dimension_expr ) ? "," )* ( identifier ( ":" dimension_expr ) ) ? ")"
 //! dimension_decl  →   "dimension" identifier ( "=" dimension_expr ) *
@@ -18,8 +18,8 @@
 //! dimension_expr  →   dim_factor
 //! dim_factor      →   dim_power ( (multiply | divide) dim_power ) *
 //! dim_power       →   dim_primary ( power dim_exponent | unicode_exponent ) ?
-//! dim_exponent    →   number | minus dim_exponent | "(" dim_exponent ( divide dim_exponent ) ? ")"
-//! dim_primary     →   identifier | number | ( "(" dimension_expr ")"
+//! dim_exponent    →   integer | minus dim_exponent | "(" dim_exponent ( divide dim_exponent ) ? ")"
+//! dim_primary     →   identifier | "1" | ( "(" dimension_expr ")"
 //!
 //!
 //!
@@ -44,6 +44,7 @@
 //! hex_number      →   /0x[0-9a-fA-F]*/
 //! oct_number      →   /0o[0-7]*/
 //! bin_number      →   /0b[01]*/
+//! integer          →   /[0-9]([0-9_]*[0-9])?/
 //! identifier      →   [a-zA-Z_] [a-zA-Z_0-9] *
 //! boolean         →   true | false
 //! bool            →   true | false
