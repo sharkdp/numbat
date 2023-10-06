@@ -7,12 +7,12 @@
 //! variable_decl   →   "let" identifier ( ":" type_annotation ) ? "=" expression
 //! type_annotation →   "bool" | "str" | dimension_expr
 //! function_decl   →   "fn" identifier ( fn_decl_generic ) ? fn_decl_param ( "->" type_annotation ) ? ( "=" expression ) ?
-//! fn_decl_generic →   "<" ( identifier "," ) * identifier ? ">"
-//! fn_decl_param   →   "(" ( identifier ( ":" dimension_expr ) ? "," )* ( identifier ( ":" dimension_expr ) ) ? ")"
+//! fn_decl_generic →   "<" ( identifier "," ) * identifier ">"
+//! fn_decl_param   →   "(" ( identifier ( ":" type_annotation ) ? "," )* ( identifier ( ":" type_annotation ) ) ? ")"
 //! dimension_decl  →   "dimension" identifier ( "=" dimension_expr ) *
-//! decorator       →   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_alsiases ")" ) )
+//! decorator       →   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
 //! unit_decl       →   "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
-//! procedure_call  →   ( "print" | "assert_eq" | "type" ) ( "(" arguments? ")" ) ?
+//! procedure_call  →   ( "print" | "assert_eq" | "type" ) "(" arguments? ")"
 //! module_import   →   "use" ident ( "::" ident) *
 //!
 //! dimension_expr  →   dim_factor
@@ -360,7 +360,7 @@ impl<'a> Parser<'a> {
             if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
                 let function_name_span = self.last().unwrap().span;
                 let mut type_parameters = vec![];
-                // Parsing the generic parameters if there is any
+                // Parsing the generic parameters if there are any
                 if self.match_exact(TokenKind::LessThan).is_some() {
                     while self.match_exact(TokenKind::GreaterThan).is_none() {
                         if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
