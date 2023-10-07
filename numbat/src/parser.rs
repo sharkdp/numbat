@@ -44,7 +44,9 @@
 //! oct_number      ::=   "0o" [0-7]*
 //! bin_number      ::=   "0b" [01]*
 //! integer         ::=   [0-9]([0-9_]*[0-9])?
-//! identifier      ::=   [Unicode XID_Start|Unicode currency symbol|%|°|_] [Unicode XID_Continue |Unicode currency symbol|%|^·] *
+//! identifier      ::=   identifier_s identifier_c*
+//! identifier_s    ::=   Unicode_XID_Start | Unicode_Currency | "%" | "°" | "_"
+//! identifier_c    ::=   Unicode_XID_Continue | Unicode_Currency  | "%"
 //! boolean         ::=   "true" | "false"
 //! plus            ::=   "+"
 //! minus           ::=   "-"
