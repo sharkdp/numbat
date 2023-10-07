@@ -43,13 +43,13 @@
 //! oct_number      →   /0o[0-7]*/
 //! bin_number      →   /0b[01]*/
 //! integer          →   /[0-9]([0-9_]*[0-9])?/
-//! identifier      →   [a-zA-Z_] [a-zA-Z_0-9] *
+//! identifier      →   [Unicode XID_Start|Unicode currency symbol|%|°|_] [Unicode XID_Continue |Unicode currency symbol|%|^·] *
 //! boolean         →   "true" | "false"
 //! plus            →   "+"
 //! minus           →   "-"
 //! multiply        →   "*" | "×" | "·"
 //! divide          →   "/" | "÷"
-//! string          →   "\" ... "\""
+//! string          →   "\"" ... "\""
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
