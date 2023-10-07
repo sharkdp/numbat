@@ -47,7 +47,7 @@
 //! boolean         →   "true" | "false"
 //! plus            →   "+"
 //! minus           →   "-"
-//! multiply        →   "*" | "x" | "×"
+//! multiply        →   "*" | "×" | "·"
 //! divide          →   "/" | "÷"
 //! string          →   "\" ... "\""
 //! ```
