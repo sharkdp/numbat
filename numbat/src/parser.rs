@@ -2,55 +2,55 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       →   variable_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
+//! statement       ::=   variable_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
 //!
-//! variable_decl   →   "let" identifier ( ":" type_annotation ) ? "=" expression
-//! type_annotation →   "bool" | "str" | dimension_expr
-//! function_decl   →   "fn" identifier ( fn_decl_generic ) ? fn_decl_param ( "->" type_annotation ) ? ( "=" expression ) ?
-//! fn_decl_generic →   "<" ( identifier "," ) * identifier ">"
-//! fn_decl_param   →   "(" ( identifier ( ":" type_annotation ) ? "," )* ( identifier ( ":" type_annotation ) ) ? ")"
-//! dimension_decl  →   "dimension" identifier ( "=" dimension_expr ) *
-//! unit_decl       →   decorator * "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
-//! procedure_call  →   ( "print" | "assert_eq" | "type" ) "(" arguments? ")"
-//! module_import   →   "use" ident ( "::" ident) *
+//! variable_decl   ::=   "let" identifier ( ":" type_annotation ) ? "=" expression
+//! function_decl   ::=   "fn" identifier ( fn_decl_generic ) ? fn_decl_param ( "->" type_annotation ) ? ( "=" expression ) ?
+//! fn_decl_generic ::=   "<" ( identifier "," ) * identifier ">"
+//! fn_decl_param   ::=   "(" ( identifier ( ":" type_annotation ) ? "," )* ( identifier ( ":" type_annotation ) ) ? ")"
+//! dimension_decl  ::=   "dimension" identifier ( "=" dimension_expr ) *
+//! unit_decl       ::=   decorator * "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
+//! module_import   ::=   "use" ident ( "::" ident) *
+//! procedure_call  ::=   ( "print" | "assert_eq" | "type" ) "(" arguments? ")"
 //!
-//! decorator       →   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
+//! decorator       ::=   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
 //!
-//! dimension_expr  →   dim_factor
-//! dim_factor      →   dim_power ( (multiply | divide) dim_power ) *
-//! dim_power       →   dim_primary ( power dim_exponent | unicode_exponent ) ?
-//! dim_exponent    →   integer | minus dim_exponent | "(" dim_exponent ( divide dim_exponent ) ? ")"
-//! dim_primary     →   identifier | "1" | ( "(" dimension_expr ")"
+//! type_annotation ::=   "bool" | "str" | dimension_expr
+//! dimension_expr  ::=   dim_factor
+//! dim_factor      ::=   dim_power ( (multiply | divide) dim_power ) *
+//! dim_power       ::=   dim_primary ( power dim_exponent | unicode_exponent ) ?
+//! dim_exponent    ::=   integer | minus dim_exponent | "(" dim_exponent ( divide dim_exponent ) ? ")"
+//! dim_primary     ::=   identifier | "1" | "(" dimension_expr ")"
 //!
-//! expression      →   postfix_apply
-//! postfix_apply   →   condition ( "//" identifier ) *
-//! condition       →   ( "if" conversion "then" condition "else" condition ) | conversion
-//! conversion      →   comparison ( ( "→" | "->" | "to" ) comparison ) *
-//! comparison      →   term ( (">" | ">="| "≥" | "<" | "<=" | "≤" | "==" | "!=" | "≠" ) term ) *
-//! term            →   factor ( ( "+" | "-") factor ) *
-//! factor          →   negate ( ( "*" | "/") per_factor ) *
-//! per_factor      →   negate ( "per" negate ) *
-//! negate          →   ( "-" negate ) | ifactor
-//! ifactor         →   power ( " " power ) *
-//! power           →   factorial ( "^" "-" ? power ) ?
-//! factorial       →   unicode_power "!" *
-//! unicode_power   →   call ( "⁻" ? ( "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ) ) ?
-//! call            →   primary ( "(" arguments? ")" ) ?
-//! arguments       →   expression ( "," expression ) *
-//! primary         →   boolean | string | hex_number | oct_number | bin_number | number | identifier | "(" expression ")"
+//! expression      ::=   postfix_apply
+//! postfix_apply   ::=   condition ( "//" identifier ) *
+//! condition       ::=   ( "if" conversion "then" condition "else" condition ) | conversion
+//! conversion      ::=   comparison ( ( "→" | "->" | "to" ) comparison ) *
+//! comparison      ::=   term ( (">" | ">="| "≥" | "<" | "<=" | "≤" | "==" | "!=" | "≠" ) term ) *
+//! term            ::=   factor ( ( "+" | "-") factor ) *
+//! factor          ::=   negate ( ( "*" | "/") per_factor ) *
+//! per_factor      ::=   negate ( "per" negate ) *
+//! negate          ::=   ( "-" negate ) | ifactor
+//! ifactor         ::=   power ( " " power ) *
+//! power           ::=   factorial ( "^" "-" ? power ) ?
+//! factorial       ::=   unicode_power "!" *
+//! unicode_power   ::=   call ( "⁻" ? ( "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ) ) ?
+//! call            ::=   primary ( "(" arguments? ")" ) ?
+//! arguments       ::=   expression ( "," expression ) *
+//! primary         ::=   boolean | string | hex_number | oct_number | bin_number | number | identifier | "(" expression ")"
 //!
-//! number          →   /[0-9][0-9_]*(\.([0-9][0-9_]*)?)?([eE][+-]?[0-9][0-9_]*)?/
-//! hex_number      →   /0x[0-9a-fA-F]*/
-//! oct_number      →   /0o[0-7]*/
-//! bin_number      →   /0b[01]*/
-//! integer          →   /[0-9]([0-9_]*[0-9])?/
-//! identifier      →   [Unicode XID_Start|Unicode currency symbol|%|°|_] [Unicode XID_Continue |Unicode currency symbol|%|^·] *
-//! boolean         →   "true" | "false"
-//! plus            →   "+"
-//! minus           →   "-"
-//! multiply        →   "*" | "×" | "·"
-//! divide          →   "/" | "÷"
-//! string          →   "\"" ... "\""
+//! number          ::=   [0-9][0-9_]*("." ([0-9][0-9_]*)?)?([eE][+-]?[0-9][0-9_]*)?
+//! hex_number      ::=   "0x" [0-9a-fA-F]*
+//! oct_number      ::=   "0o" [0-7]*
+//! bin_number      ::=   "0b" [01]*
+//! integer         ::=   [0-9]([0-9_]*[0-9])?
+//! identifier      ::=   [Unicode XID_Start|Unicode currency symbol|%|°|_] [Unicode XID_Continue |Unicode currency symbol|%|^·] *
+//! boolean         ::=   "true" | "false"
+//! plus            ::=   "+"
+//! minus           ::=   "-"
+//! multiply        ::=   "*" | "×" | "·"
+//! divide          ::=   "/" | "÷"
+//! string          ::=   '"' [^"]* '"'
 //! ```
 
 use crate::arithmetic::{Exponent, Rational};
