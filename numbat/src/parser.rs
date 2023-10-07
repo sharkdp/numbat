@@ -10,10 +10,11 @@
 //! fn_decl_generic →   "<" ( identifier "," ) * identifier ">"
 //! fn_decl_param   →   "(" ( identifier ( ":" type_annotation ) ? "," )* ( identifier ( ":" type_annotation ) ) ? ")"
 //! dimension_decl  →   "dimension" identifier ( "=" dimension_expr ) *
-//! decorator       →   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
 //! unit_decl       →   decorator * "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
 //! procedure_call  →   ( "print" | "assert_eq" | "type" ) "(" arguments? ")"
 //! module_import   →   "use" ident ( "::" ident) *
+//!
+//! decorator       →   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
 //!
 //! dimension_expr  →   dim_factor
 //! dim_factor      →   dim_power ( (multiply | divide) dim_power ) *
