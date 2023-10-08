@@ -180,7 +180,7 @@ pub enum TypeCheckError {
     UnknownIdentifier(Span, String, Option<String>),
 
     #[error("Unknown callable '{1}'.")]
-    UnknownCallable(Span, String),
+    UnknownCallable(Span, String, Option<String>),
 
     #[error(transparent)]
     IncompatibleDimensions(IncompatibleDimensionsError),
@@ -572,10 +572,16 @@ impl TypeChecker {
                     is_variadic,
                     return_type,
                     is_foreign: _,
-                } = self
-                    .function_signatures
-                    .get(function_name)
-                    .ok_or_else(|| TypeCheckError::UnknownCallable(*span, function_name.clone()))?;
+                } = self.function_signatures.get(function_name).ok_or_else(|| {
+                    let suggestion = suggestion::did_you_mean(
+                        self.function_signatures
+                            .keys()
+                            .chain(ffi::procedures().values().map(|p| &p.name)),
+                        function_name,
+                    );
+
+                    TypeCheckError::UnknownCallable(*span, function_name.clone(), suggestion)
+                })?;
 
                 let arity_range = if *is_variadic {
                     1..=usize::MAX
@@ -1629,7 +1635,7 @@ mod tests {
     fn unknown_function() {
         assert!(matches!(
             get_typecheck_error("foo(2)"),
-            TypeCheckError::UnknownCallable(_, name) if name == "foo"
+            TypeCheckError::UnknownCallable(_, name, _) if name == "foo"
         ));
     }
 
