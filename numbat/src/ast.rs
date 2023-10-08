@@ -4,6 +4,7 @@ use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint, resolver::ModulePath,
 };
+use itertools::Itertools;
 use num_traits::Signed;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -216,6 +217,7 @@ pub enum TypeAnnotation {
     Bool(Span),
     String(Span),
     DateTime(Span),
+    Fn(Span, Vec<TypeAnnotation>, Box<TypeAnnotation>),
 }
 
 impl TypeAnnotation {
@@ -225,6 +227,7 @@ impl TypeAnnotation {
             TypeAnnotation::Bool(span) => *span,
             TypeAnnotation::String(span) => *span,
             TypeAnnotation::DateTime(span) => *span,
+            TypeAnnotation::Fn(span, _, _) => *span,
         }
     }
 }
@@ -236,6 +239,21 @@ impl PrettyPrint for TypeAnnotation {
             TypeAnnotation::Bool(_) => m::type_identifier("Bool"),
             TypeAnnotation::String(_) => m::type_identifier("String"),
             TypeAnnotation::DateTime(_) => m::type_identifier("DateTime"),
+            TypeAnnotation::Fn(_, parameter_types, return_type) => {
+                m::type_identifier("Fn")
+                    + m::operator("[(")
+                    + Itertools::intersperse(
+                        parameter_types.iter().map(|t| t.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
+                    + m::space()
+                    + m::operator("->")
+                    + m::space()
+                    + return_type.pretty_print()
+                    + m::operator("]")
+            }
         }
     }
 }
@@ -368,6 +386,9 @@ impl ReplaceSpans for TypeAnnotation {
             TypeAnnotation::Bool(_) => TypeAnnotation::Bool(Span::dummy()),
             TypeAnnotation::String(_) => TypeAnnotation::String(Span::dummy()),
             TypeAnnotation::DateTime(_) => TypeAnnotation::DateTime(Span::dummy()),
+            TypeAnnotation::Fn(_, pt, rt) => {
+                TypeAnnotation::Fn(Span::dummy(), pt.clone(), rt.clone())
+            }
         }
     }
 }

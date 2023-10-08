@@ -1,0 +1,6 @@
+let eps = 1e-10
+
+#fn diff<X, Y>(f: Fn[(X) -> Y], x: X) -> Y / X =
+#  (f(x + eps · unit_of(x)) - f(x)) / (eps · unit_of(x))
+
+fn test(f: Fn[(Scalar) -> Scalar], x0: Scalar) = x0

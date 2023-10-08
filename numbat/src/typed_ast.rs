@@ -58,6 +58,7 @@ pub enum Type {
     Boolean,
     String,
     DateTime,
+    Fn(Vec<Type>, Box<Type>),
 }
 
 impl std::fmt::Display for Type {
@@ -67,6 +68,13 @@ impl std::fmt::Display for Type {
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
             Type::DateTime => write!(f, "DateTime"),
+            Type::Fn(param_types, return_type) => {
+                write!(
+                    f,
+                    "Fn[({ps}) -> {return_type}]",
+                    ps = param_types.iter().map(|p| p.to_string()).join(", ")
+                )
+            }
         }
     }
 }
@@ -78,6 +86,21 @@ impl PrettyPrint for Type {
             Type::Boolean => m::keyword("Bool"),
             Type::String => m::keyword("String"),
             Type::DateTime => m::keyword("DateTime"),
+            Type::Fn(param_types, return_type) => {
+                m::type_identifier("Fn")
+                    + m::operator("[(")
+                    + Itertools::intersperse(
+                        param_types.iter().map(|t| t.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
+                    + m::space()
+                    + m::operator("->")
+                    + m::space()
+                    + return_type.pretty_print()
+                    + m::operator("]")
+            }
         }
     }
 }
@@ -96,6 +119,10 @@ impl Type {
 
     pub fn is_dtype(&self) -> bool {
         matches!(self, Type::Dimension(..))
+    }
+
+    pub fn is_fn_type(&self) -> bool {
+        matches!(self, Type::Fn(..))
     }
 }
 
