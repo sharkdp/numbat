@@ -360,19 +360,20 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     }
 }
 
+#[derive(Clone)]
+struct FunctionSignature {
+    definition_span: Span,
+    type_parameters: Vec<(Span, String)>,
+    parameter_types: Vec<(Span, Type)>,
+    is_variadic: bool,
+    return_type: Type,
+    is_foreign: bool,
+}
+
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     identifiers: HashMap<String, (Type, Option<Span>)>,
-    function_signatures: HashMap<
-        String,
-        (
-            Span,                // span of the function definition
-            Vec<(Span, String)>, // type parameters
-            Vec<(Span, Type)>,   // parameter types
-            bool,                // whether or not the function is variadic
-            Type,                // return type
-        ),
-    >,
+    function_signatures: HashMap<String, FunctionSignature>,
     registry: DimensionRegistry,
 }
 
@@ -558,13 +559,14 @@ impl TypeChecker {
                 )
             }
             ast::Expression::FunctionCall(span, full_span, function_name, args) => {
-                let (
-                    callable_definition_span,
+                let FunctionSignature {
+                    definition_span,
                     type_parameters,
                     parameter_types,
                     is_variadic,
                     return_type,
-                ) = self
+                    is_foreign: _,
+                } = self
                     .function_signatures
                     .get(function_name)
                     .ok_or_else(|| TypeCheckError::UnknownCallable(*span, function_name.clone()))?;
@@ -579,7 +581,7 @@ impl TypeChecker {
                     return Err(TypeCheckError::WrongArity {
                         callable_span: *span,
                         callable_name: function_name.clone(),
-                        callable_definition_span: Some(*callable_definition_span),
+                        callable_definition_span: Some(*definition_span),
                         arity: arity_range,
                         num_args: args.len(),
                     });
@@ -721,7 +723,7 @@ impl TypeChecker {
 
                     return Err(TypeCheckError::CanNotInferTypeParameters(
                         *span,
-                        *callable_definition_span,
+                        *definition_span,
                         function_name.clone(),
                         remaining.join(", "),
                     ));
@@ -806,11 +808,19 @@ impl TypeChecker {
             } => {
                 // Make sure that identifier does not clash with a function name. We do not
                 // check for clashes with unit names, as this is handled by the prefix parser.
-                if let Some(entry) = self.function_signatures.get(identifier) {
+                if let Some(ref signature) = self.function_signatures.get(identifier) {
                     return Err(TypeCheckError::NameAlreadyUsedBy(
                         "a function",
                         *identifier_span,
-                        Some(entry.0),
+                        Some(signature.definition_span),
+                    ));
+                }
+
+                if let Some(entry) = self.identifiers.get(identifier) {
+                    return Err(TypeCheckError::NameAlreadyUsedBy(
+                        "a constant",
+                        *identifier_span,
+                        entry.1,
                     ));
                 }
 
@@ -980,6 +990,16 @@ impl TypeChecker {
                     ));
                 }
 
+                if let Some(ref signature) = self.function_signatures.get(function_name) {
+                    if signature.is_foreign {
+                        return Err(TypeCheckError::NameAlreadyUsedBy(
+                            "a foreign function",
+                            *function_name_span,
+                            Some(signature.definition_span),
+                        ));
+                    }
+                }
+
                 let mut typechecker_fn = self.clone();
                 let is_ffi_function = body.is_none();
                 let mut type_parameters = type_parameters.clone();
@@ -1059,29 +1079,35 @@ impl TypeChecker {
                     .map(|annotation| typechecker_fn.type_from_annotation(annotation))
                     .transpose()?;
 
-                let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
-                    let parameter_types = typed_parameters
-                        .iter()
-                        .map(|(span, _, _, _, t)| (*span, t.clone()))
-                        .collect();
-                    tc.function_signatures.insert(
-                        function_name.clone(),
-                        (
-                            *function_name_span,
-                            type_parameters.clone(),
-                            parameter_types,
-                            is_variadic,
-                            return_type,
-                        ),
-                    );
-                };
+                let add_function_signature =
+                    |tc: &mut TypeChecker, return_type: Type, is_foreign: bool| {
+                        let parameter_types = typed_parameters
+                            .iter()
+                            .map(|(span, _, _, _, t)| (*span, t.clone()))
+                            .collect();
+                        tc.function_signatures.insert(
+                            function_name.clone(),
+                            FunctionSignature {
+                                definition_span: *function_name_span,
+                                type_parameters: type_parameters.clone(),
+                                parameter_types,
+                                is_variadic,
+                                return_type,
+                                is_foreign,
+                            },
+                        );
+                    };
 
                 if let Some(ref return_type_specified) = return_type_specified {
                     // This is needed for recursive functions. If the return type
                     // has been specified, we can already provide a function
                     // signature before we check the body of the function. This
                     // way, the 'typechecker_fn' can resolve the recursive call.
-                    add_function_signature(&mut typechecker_fn, return_type_specified.clone());
+                    add_function_signature(
+                        &mut typechecker_fn,
+                        return_type_specified.clone(),
+                        body.is_none(),
+                    );
                 }
 
                 let body_checked = body
@@ -1154,7 +1180,7 @@ impl TypeChecker {
                     })?
                 };
 
-                add_function_signature(self, return_type.clone());
+                add_function_signature(self, return_type.clone(), body.is_none());
 
                 typed_ast::Statement::DefineFunction(
                     function_name.clone(),
