@@ -83,6 +83,8 @@ pub enum TokenKind {
     Unit,
     Use,
 
+    To,
+
     Bool,
     True,
     False,
@@ -320,7 +322,7 @@ impl Tokenizer {
         let keywords = KEYWORDS.get_or_init(|| {
             let mut m = HashMap::new();
             m.insert("per", TokenKind::Per);
-            m.insert("to", TokenKind::Arrow);
+            m.insert("to", TokenKind::To);
             m.insert("let", TokenKind::Let);
             m.insert("fn", TokenKind::Fn);
             m.insert("dimension", TokenKind::Dimension);
@@ -679,7 +681,7 @@ fn test_tokenize_basic() {
         tokenize_reduced("foo to bar"),
         [
             ("foo".to_string(), Identifier, (1, 1)),
-            ("to".to_string(), Arrow, (1, 5)),
+            ("to".to_string(), To, (1, 5)),
             ("bar".to_string(), Identifier, (1, 8)),
             ("".to_string(), Eof, (1, 11))
         ]

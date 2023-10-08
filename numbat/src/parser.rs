@@ -735,7 +735,7 @@ impl<'a> Parser<'a> {
 
     fn conversion(&mut self) -> Result<Expression> {
         let mut expr = self.comparison()?;
-        while self.match_exact(TokenKind::Arrow).is_some() {
+        while self.match_any(&[TokenKind::Arrow, TokenKind::To]).is_some() {
             let span_op = Some(self.last().unwrap().span);
             let rhs = self.comparison()?;
 
