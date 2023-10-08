@@ -595,12 +595,7 @@ impl Vm {
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
                 }
-                op @ (Op::LessThan
-                | Op::GreaterThan
-                | Op::LessOrEqual
-                | Op::GreatorOrEqual
-                | Op::Equal
-                | Op::NotEqual) => {
+                op @ (Op::LessThan | Op::GreaterThan | Op::LessOrEqual | Op::GreatorOrEqual) => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
 
@@ -609,11 +604,20 @@ impl Vm {
                         Op::GreaterThan => lhs > rhs,
                         Op::LessOrEqual => lhs <= rhs,
                         Op::GreatorOrEqual => lhs >= rhs,
+                        _ => unreachable!(),
+                    };
+
+                    self.push(Value::Boolean(result));
+                }
+                op @ (Op::Equal | Op::NotEqual) => {
+                    let rhs = self.pop();
+                    let lhs = self.pop();
+
+                    let result = match op {
                         Op::Equal => lhs == rhs,
                         Op::NotEqual => lhs != rhs,
                         _ => unreachable!(),
                     };
-
                     self.push(Value::Boolean(result));
                 }
                 Op::Negate => {

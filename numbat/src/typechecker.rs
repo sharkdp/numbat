@@ -250,6 +250,9 @@ pub enum TypeCheckError {
 
     #[error("Incompatible types in {0}")]
     IncompatibleTypesInAnnotation(String, Span, Type, Span, Type, Span),
+
+    #[error("Incompatible types in comparison operator")]
+    IncompatibleTypesInComparison(Span, Type, Span, Type, Span),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -525,10 +528,27 @@ impl TypeChecker {
                     typed_ast::BinaryOperator::LessThan
                     | typed_ast::BinaryOperator::GreaterThan
                     | typed_ast::BinaryOperator::LessOrEqual
-                    | typed_ast::BinaryOperator::GreaterOrEqual
-                    | typed_ast::BinaryOperator::Equal
-                    | typed_ast::BinaryOperator::NotEqual => {
+                    | typed_ast::BinaryOperator::GreaterOrEqual => {
                         let _ = get_type_and_assert_equality()?;
+                        Type::Boolean
+                    }
+                    typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
+                        let lhs_type = lhs_checked.get_type();
+                        let rhs_type = rhs_checked.get_type();
+                        if lhs_type.is_dtype() || rhs_type.is_dtype() {
+                            let _ = get_type_and_assert_equality()?;
+                        } else {
+                            if lhs_type != rhs_type {
+                                return Err(TypeCheckError::IncompatibleTypesInComparison(
+                                    span_op.unwrap(),
+                                    lhs_type,
+                                    lhs.full_span(),
+                                    rhs_type,
+                                    rhs.full_span(),
+                                ));
+                            }
+                        }
+
                         Type::Boolean
                     }
                 };
