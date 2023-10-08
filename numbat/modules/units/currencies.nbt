@@ -1,37 +1,30 @@
 use core::scalar
 use units::currency
 
-# This module is currently not part of the prelude, because the 'exchange_rate_XXX' calls
-# are blocking. In the CLI application, we do however load this module asynchronously after
-# prefetching the exchange rates.
+# This module is currently not part of the prelude, because the 'exchange_rate("XYZ")' calls
+# are blocking. For the CLI application, we do however load this module on demand if one of
+# the identifiers below is. For the Web version, we asynchronously load exchange rates and then
+# pull in this module.
 
-# TODO: once we support strings as function parameters, use 'exchange_rate("USD")' and
-# similar instead of separate functions.
-fn exchange_rate_USD() -> Scalar
-fn exchange_rate_JPY() -> Scalar
-fn exchange_rate_GBP() -> Scalar
-fn exchange_rate_CNY() -> Scalar
-fn exchange_rate_AUD() -> Scalar
-fn exchange_rate_CAD() -> Scalar
-fn exchange_rate_CHF() -> Scalar
+fn exchange_rate(currency: str) -> Scalar
 
 @aliases(dollars, USD, $: short)
-unit dollar: Money = EUR / exchange_rate_USD()
+unit dollar: Money = EUR / exchange_rate("USD")
 
 @aliases(yens, JPY, ¥: short, 円)
-unit yen: Money = EUR / exchange_rate_JPY()
+unit yen: Money = EUR / exchange_rate("JPY")
 
 @aliases(pound_sterling, GBP, £: short)
-unit british_pound: Money = EUR / exchange_rate_GBP()
+unit british_pound: Money = EUR / exchange_rate("GBP")
 
 @aliases(CNY: short, 元)
-unit renminbi: Money = EUR / exchange_rate_CNY()
+unit renminbi: Money = EUR / exchange_rate("CNY")
 
 @aliases(australian_dollars, AUD: short, A$)
-unit australian_dollar: Money = EUR / exchange_rate_AUD()
+unit australian_dollar: Money = EUR / exchange_rate("AUD")
 
 @aliases(canadian_dollars, CAD: short, C$)
-unit canadian_dollar: Money = EUR / exchange_rate_CAD()
+unit canadian_dollar: Money = EUR / exchange_rate("CAD")
 
 @aliases(swiss_francs, CHF: short)
-unit swiss_franc: Money = EUR / exchange_rate_CHF()
+unit swiss_franc: Money = EUR / exchange_rate("CHF")

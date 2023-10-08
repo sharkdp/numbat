@@ -298,16 +298,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
             },
         );
 
-        for currency in ["USD", "JPY", "GBP", "CNY", "AUD", "CAD", "CHF"] {
-            m.insert(
-                format!("exchange_rate_{currency}"),
-                ForeignFunction {
-                    name: format!("exchange_rate_{currency}"),
-                    arity: 0..=0,
-                    callable: Callable::Function(exchange_rate(currency)),
-                },
-            );
-        }
+        m.insert(
+            format!("exchange_rate"),
+            ForeignFunction {
+                name: "exchange_rate".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(exchange_rate)),
+            },
+        );
 
         m.insert(
             "str_length".to_string(),
@@ -694,13 +692,16 @@ fn minimum(args: &[Value]) -> Result<Value> {
     )))
 }
 
-fn exchange_rate(rate: &'static str) -> BoxedFunction {
-    Box::new(|_args: &[Value]| -> Result<Value> {
-        let exchange_rates = ExchangeRatesCache::new();
-        Ok(Value::Quantity(Quantity::from_scalar(
-            exchange_rates.get_rate(rate).unwrap_or(f64::NAN),
-        )))
-    })
+fn exchange_rate(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let rate = args[0].unsafe_as_string();
+
+    let exchange_rates = ExchangeRatesCache::new();
+
+    Ok(Value::Quantity(Quantity::from_scalar(
+        exchange_rates.get_rate(rate).unwrap_or(f64::NAN),
+    )))
 }
 
 fn str_length(args: &[Value]) -> Result<Value> {
