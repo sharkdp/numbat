@@ -282,6 +282,7 @@ impl PrettyPrint for DimensionExpression {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ProcedureKind {
     Print,
+    Assert,
     AssertEq,
     Type,
 }

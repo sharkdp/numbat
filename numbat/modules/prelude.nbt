@@ -1,7 +1,6 @@
 use core::scalar
 use core::quantities
 use core::dimensions
-use core::booleans
 use core::strings
 
 use math::constants

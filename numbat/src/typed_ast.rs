@@ -350,6 +350,7 @@ impl PrettyPrint for Statement {
             Statement::ProcedureCall(kind, args) => {
                 let identifier = match kind {
                     ProcedureKind::Print => "print",
+                    ProcedureKind::Assert => "assert",
                     ProcedureKind::AssertEq => "assert_eq",
                     ProcedureKind::Type => "type",
                 };

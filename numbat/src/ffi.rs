@@ -42,6 +42,14 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
             },
         );
         m.insert(
+            ProcedureKind::Assert,
+            ForeignFunction {
+                name: "assert".into(),
+                arity: 1..=1,
+                callable: Callable::Procedure(assert),
+            },
+        );
+        m.insert(
             ProcedureKind::AssertEq,
             ForeignFunction {
                 name: "assert_eq".into(),
@@ -317,6 +325,16 @@ fn print(ctx: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
     }
 
     ControlFlow::Continue(())
+}
+
+fn assert(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
+    assert!(args.len() == 1);
+
+    if args[0].unsafe_as_bool() {
+        ControlFlow::Continue(())
+    } else {
+        ControlFlow::Break(RuntimeError::AssertFailed)
+    }
 }
 
 fn assert_eq(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {

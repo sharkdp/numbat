@@ -21,6 +21,8 @@ pub enum RuntimeError {
     UnitRegistryError(UnitRegistryError), // TODO: can this even be triggered?
     #[error("{0}")]
     QuantityError(QuantityError),
+    #[error("Assertion failed")]
+    AssertFailed,
     #[error(
         "Assertion failed because the following two quantities are not the same:\n  {0}\n  {1}"
     )]

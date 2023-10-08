@@ -48,6 +48,13 @@ assert_eq(alpha, 1 / 137, 1e-4)
 assert_eq(3.3 ft, 1 m, 1 cm)
 ```
 
+There is also a plain `assert` procedure that can test any boolean condition. For example:
+
+```nbt
+assert(1 yard < 1 meter)
+assert(π != 3)
+```
+
 A runtime error is thrown if an assertion fails. Otherwise, nothing happens.
 
 ## Debugging

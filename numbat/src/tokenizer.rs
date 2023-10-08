@@ -99,6 +99,7 @@ pub enum TokenKind {
 
     // Procedure calls
     ProcedurePrint,
+    ProcedureAssert,
     ProcedureAssertEq,
     ProcedureType,
 
@@ -330,6 +331,7 @@ impl Tokenizer {
             m.insert("both", TokenKind::Both);
             m.insert("none", TokenKind::None);
             m.insert("print", TokenKind::ProcedurePrint);
+            m.insert("assert", TokenKind::ProcedureAssert);
             m.insert("assert_eq", TokenKind::ProcedureAssertEq);
             m.insert("type", TokenKind::ProcedureType);
             m.insert("bool", TokenKind::Bool);
