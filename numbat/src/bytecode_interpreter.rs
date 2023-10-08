@@ -63,7 +63,7 @@ impl BytecodeInterpreter {
                 } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
                     self.vm.add_op(Op::GetLastResult);
                 } else {
-                    unreachable!("Unknown identifier {identifier}")
+                    unreachable!("Unknown identifier '{identifier}'")
                 }
             }
             Expression::UnitIdentifier(_span, prefix, unit_name, _full_name, _type) => {

@@ -1228,6 +1228,40 @@ impl<'a> Parser<'a> {
             Ok(TypeAnnotation::String(token.span))
         } else if let Some(token) = self.match_exact(TokenKind::DateTime) {
             Ok(TypeAnnotation::DateTime(token.span))
+        } else if self.match_exact(TokenKind::CapitalFn).is_some() {
+            let span = self.last().unwrap().span;
+            if self.match_exact(TokenKind::LeftBracket).is_none() {
+                todo!()
+            }
+            if self.match_exact(TokenKind::LeftParen).is_none() {
+                todo!()
+            }
+
+            let mut params = vec![];
+            if self.peek().kind != TokenKind::RightParen {
+                params.push(self.type_annotation()?);
+                while self.match_exact(TokenKind::Comma).is_some() {
+                    params.push(self.type_annotation()?);
+                }
+            }
+
+            if self.match_exact(TokenKind::RightParen).is_none() {
+                todo!()
+            }
+
+            if self.match_exact(TokenKind::Arrow).is_none() {
+                todo!()
+            }
+
+            let return_type = self.type_annotation()?;
+
+            if self.match_exact(TokenKind::RightBracket).is_none() {
+                todo!()
+            }
+
+            let span = span.extend(&self.last().unwrap().span);
+
+            Ok(TypeAnnotation::Fn(span, params, Box::new(return_type)))
         } else {
             Ok(TypeAnnotation::DimensionExpression(
                 self.dimension_expression()?,

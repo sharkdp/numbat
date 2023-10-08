@@ -51,6 +51,8 @@ pub enum TokenKind {
     // Brackets
     LeftParen,
     RightParen,
+    LeftBracket,
+    RightBracket,
 
     // Operators and special signs
     Plus,
@@ -80,7 +82,7 @@ pub enum TokenKind {
 
     // Keywords
     Let,
-    Fn,
+    Fn, // 'fn'
     Dimension,
     Unit,
     Use,
@@ -96,6 +98,8 @@ pub enum TokenKind {
 
     String,
     DateTime,
+
+    CapitalFn, // 'Fn'
 
     Long,
     Short,
@@ -355,6 +359,7 @@ impl Tokenizer {
             m.insert("else", TokenKind::Else);
             m.insert("String", TokenKind::String);
             m.insert("DateTime", TokenKind::DateTime);
+            m.insert("Fn", TokenKind::CapitalFn);
             // Keep this list in sync with keywords::KEYWORDS!
             m
         });
@@ -385,6 +390,8 @@ impl Tokenizer {
         let kind = match current_char {
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
+            '[' => TokenKind::LeftBracket,
+            ']' => TokenKind::RightBracket,
             '≤' => TokenKind::LessOrEqual,
             '<' if self.match_char('=') => TokenKind::LessOrEqual,
             '<' => TokenKind::LessThan,
