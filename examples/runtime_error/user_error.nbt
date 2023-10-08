@@ -1,0 +1,6 @@
+fn foo(n: Scalar) -> Scalar =
+  if n > 0
+    then sqrt(n) + 1
+    else error("Argument of foo(n) can not be negative")
+
+foo(-3)
