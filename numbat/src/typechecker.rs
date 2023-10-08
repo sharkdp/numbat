@@ -816,14 +816,6 @@ impl TypeChecker {
                     ));
                 }
 
-                if let Some(entry) = self.identifiers.get(identifier) {
-                    return Err(TypeCheckError::NameAlreadyUsedBy(
-                        "a constant",
-                        *identifier_span,
-                        entry.1,
-                    ));
-                }
-
                 let expr_checked = self.check_expression(expr)?;
                 let type_deduced = expr_checked.get_type();
 

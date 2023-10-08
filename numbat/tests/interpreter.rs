@@ -334,9 +334,6 @@ fn test_type_check_errors() {
         "fn sin(x)=0",
         "This name is already used by a foreign function",
     );
-
-    // TODO: this restriction should be lifted in the future:
-    expect_failure("let pi = 1", "This name is already used by a constant");
 }
 
 #[test]
@@ -407,5 +404,25 @@ fn test_overwrite_inner_function() {
         outer()
         ",
         "0",
+    );
+}
+
+#[test]
+fn test_override_constants() {
+    expect_output("let x = 1\nlet x = 2\nx", "2");
+    expect_output("let pi = 4\npi", "4");
+}
+
+#[test]
+fn test_overwrite_captured_constant() {
+    expect_output(
+        "
+        let x = 1
+        fn f() = sin(x)
+
+        let x = 1 m
+        f()
+        ",
+        "0.841471",
     );
 }
