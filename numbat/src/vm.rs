@@ -1,11 +1,10 @@
-use std::{collections::HashMap, fmt::Display};
+use std::fmt::Display;
 
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
     markup::Markup,
     math,
-    name_resolution::LAST_RESULT_IDENTIFIERS,
     prefix::Prefix,
     quantity::Quantity,
     unit::Unit,
@@ -31,14 +30,15 @@ pub enum Op {
     /// `1 <new_unit>` to the constant with the given index.
     SetUnitConstant,
 
-    /// Set the specified variable to the value on top of the stack
-    SetVariable,
-    /// Push the value of the specified variable onto the stack
-    GetVariable,
-
     /// Push the value of the specified local variable onto the stack (even
     /// though it is already on the stack, somewhere lower down).
     GetLocal,
+
+    /// Similar to GetLocal, but get variable from surrounding scope
+    GetUpvalue,
+
+    /// Get the last stored result (_ and ans)
+    GetLastResult,
 
     /// Negate the top of the stack
     Negate,
@@ -98,9 +98,8 @@ impl Op {
             Op::SetUnitConstant | Op::Call | Op::FFICallFunction | Op::FFICallProcedure => 2,
             Op::LoadConstant
             | Op::ApplyPrefix
-            | Op::SetVariable
-            | Op::GetVariable
             | Op::GetLocal
+            | Op::GetUpvalue
             | Op::PrintString
             | Op::JoinString
             | Op::JumpIfFalse
@@ -120,7 +119,8 @@ impl Op {
             | Op::Equal
             | Op::NotEqual
             | Op::FullSimplify
-            | Op::Return => 0,
+            | Op::Return
+            | Op::GetLastResult => 0,
         }
     }
 
@@ -129,9 +129,9 @@ impl Op {
             Op::LoadConstant => "LoadConstant",
             Op::ApplyPrefix => "ApplyPrefix",
             Op::SetUnitConstant => "SetUnitConstant",
-            Op::SetVariable => "SetVariable",
-            Op::GetVariable => "GetVariable",
             Op::GetLocal => "GetLocal",
+            Op::GetUpvalue => "GetUpvalue",
+            Op::GetLastResult => "GetLastResult",
             Op::Negate => "Negate",
             Op::Factorial => "Factorial",
             Op::Add => "Add",
@@ -237,8 +237,8 @@ pub struct Vm {
     /// entry is the canonical name for units.
     global_identifiers: Vec<(String, Option<String>)>,
 
-    /// A dictionary of global variables and their respective values.
-    globals: HashMap<String, Value>,
+    /// Result of the last expression
+    last_result: Option<Value>,
 
     /// List of registered native/foreign functions
     ffi_callables: Vec<&'static ForeignFunction>,
@@ -264,7 +264,7 @@ impl Vm {
             prefixes: vec![],
             strings: vec![],
             global_identifiers: vec![],
-            globals: HashMap::new(),
+            last_result: None,
             ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
             frames: vec![CallFrame::root()],
             stack: vec![],
@@ -561,26 +561,17 @@ impl Vm {
                         defining_unit.clone(),
                     ));
                 }
-                Op::SetVariable => {
-                    let identifier_idx = self.read_u16();
-                    let value = self.pop();
-                    let identifier: String =
-                        self.global_identifiers[identifier_idx as usize].0.clone();
-
-                    self.globals.insert(identifier, value);
-                }
-                Op::GetVariable => {
-                    let identifier_idx = self.read_u16();
-                    let identifier = &self.global_identifiers[identifier_idx as usize].0;
-
-                    let value = self.globals.get(identifier).expect("Variable exists");
-
-                    self.push(value.clone());
-                }
                 Op::GetLocal => {
                     let slot_idx = self.read_u16() as usize;
                     let stack_idx = self.current_frame().fp + slot_idx;
                     self.push(self.stack[stack_idx].clone());
+                }
+                Op::GetUpvalue => {
+                    let stack_idx = self.read_u16() as usize;
+                    self.push(self.stack[stack_idx].clone());
+                }
+                Op::GetLastResult => {
+                    self.push(self.last_result.as_ref().unwrap().clone());
                 }
                 op @ (Op::Add
                 | Op::Subtract
@@ -725,10 +716,7 @@ impl Vm {
                     if self.frames.len() == 1 {
                         let return_value = self.pop();
 
-                        // Save the returned value in `ans` and `_`:
-                        for &identifier in LAST_RESULT_IDENTIFIERS {
-                            self.globals.insert(identifier.into(), return_value.clone());
-                        }
+                        self.last_result = Some(return_value.clone());
 
                         result_last_statement = Some(return_value);
                     } else {
@@ -748,8 +736,6 @@ impl Vm {
                 }
             }
         }
-
-        debug_assert!(self.stack.is_empty());
 
         if let Some(value) = result_last_statement {
             Ok(InterpreterResult::Value(value))

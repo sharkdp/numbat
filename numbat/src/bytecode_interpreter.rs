@@ -4,6 +4,7 @@ use crate::ast::ProcedureKind;
 use crate::interpreter::{
     Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
 };
+use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
 use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
@@ -12,10 +13,16 @@ use crate::unit_registry::UnitRegistry;
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
+#[derive(Debug)]
+pub struct Local {
+    identifier: String,
+    depth: usize,
+}
+
 pub struct BytecodeInterpreter {
     vm: Vm,
-    /// List of local variables currently in scope
-    local_variables: Vec<String>,
+    /// List of local variables currently in scope, one vector for each scope (for now: 0: 'global' scope, 1: function scope)
+    locals: Vec<Vec<Local>>,
     // Maps names of units to indices of the respective constants in the VM
     unit_name_to_constant_index: HashMap<String, u16>,
 }
@@ -28,11 +35,24 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(_span, identifier, _type) => {
-                if let Some(position) = self.local_variables.iter().position(|n| n == identifier) {
+                // Searching in reverse order ensures that we find the innermost identifer of that name first (shadowing)
+
+                let current_depth = self.locals.len() - 1;
+
+                if let Some(position) = self.locals[current_depth]
+                    .iter()
+                    .rposition(|l| &l.identifier == identifier && l.depth == current_depth)
+                {
                     self.vm.add_op1(Op::GetLocal, position as u16); // TODO: check overflow
+                } else if let Some(upvalue_position) = self.locals[0]
+                    .iter()
+                    .rposition(|l| &l.identifier == identifier)
+                {
+                    self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
+                } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
+                    self.vm.add_op(Op::GetLastResult);
                 } else {
-                    let identifier_idx = self.vm.add_global_identifier(identifier, None);
-                    self.vm.add_op1(Op::GetVariable, identifier_idx);
+                    unreachable!("Unknown identifier {identifier}")
                 }
             }
             Expression::UnitIdentifier(_span, prefix, unit_name, _full_name, _type) => {
@@ -165,8 +185,11 @@ impl BytecodeInterpreter {
             }
             Statement::DefineVariable(identifier, expr, _type_annotation, _type) => {
                 self.compile_expression_with_simplify(expr)?;
-                let identifier_idx = self.vm.add_global_identifier(identifier, None);
-                self.vm.add_op1(Op::SetVariable, identifier_idx);
+                let current_depth = self.current_depth();
+                self.locals[current_depth].push(Local {
+                    identifier: identifier.clone(),
+                    depth: 0,
+                });
             }
             Statement::DefineFunction(
                 name,
@@ -177,14 +200,22 @@ impl BytecodeInterpreter {
                 _return_type,
             ) => {
                 self.vm.begin_function(name);
-                for parameter in parameters.iter() {
-                    self.local_variables.push(parameter.1.clone());
+
+                self.locals.push(vec![]);
+
+                let current_depth = self.current_depth();
+                for parameter in parameters {
+                    self.locals[current_depth].push(Local {
+                        identifier: parameter.1.clone(),
+                        depth: current_depth,
+                    });
                 }
+
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
-                for _ in parameters {
-                    self.local_variables.pop();
-                }
+
+                self.locals.pop();
+
                 self.vm.end_function();
             }
             Statement::DefineFunction(
@@ -294,13 +325,17 @@ impl BytecodeInterpreter {
     pub(crate) fn set_debug(&mut self, activate: bool) {
         self.vm.set_debug(activate);
     }
+
+    fn current_depth(&self) -> usize {
+        self.locals.len() - 1
+    }
 }
 
 impl Interpreter for BytecodeInterpreter {
     fn new() -> Self {
         Self {
             vm: Vm::new(),
-            local_variables: vec![],
+            locals: vec![vec![]],
             unit_name_to_constant_index: HashMap::new(),
         }
     }
