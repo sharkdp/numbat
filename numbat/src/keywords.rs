@@ -17,10 +17,10 @@ pub const KEYWORDS: &[&str] = &[
     "if",
     "then",
     "else",
-    "bool",
+    "Bool",
     "true",
     "false",
-    "str",
+    "String",
     // decorators
     "metric_prefixes",
     "binary_prefixes",

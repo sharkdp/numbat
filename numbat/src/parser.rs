@@ -15,7 +15,7 @@
 //!
 //! decorator       ::=   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
 //!
-//! type_annotation ::=   "bool" | "str" | dimension_expr
+//! type_annotation ::=   "Bool" | "String" | dimension_expr
 //! dimension_expr  ::=   dim_factor
 //! dim_factor      ::=   dim_power ( (multiply | divide) dim_power ) *
 //! dim_power       ::=   dim_primary ( power dim_exponent | unicode_exponent ) ?
@@ -1152,7 +1152,7 @@ impl<'a> Parser<'a> {
     fn type_annotation(&mut self) -> Result<TypeAnnotation> {
         if let Some(token) = self.match_exact(TokenKind::Bool) {
             Ok(TypeAnnotation::Bool(token.span))
-        } else if let Some(token) = self.match_exact(TokenKind::Str) {
+        } else if let Some(token) = self.match_exact(TokenKind::String) {
             Ok(TypeAnnotation::String(token.span))
         } else {
             Ok(TypeAnnotation::DimensionExpression(

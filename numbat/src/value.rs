@@ -28,7 +28,7 @@ impl Value {
         if let Value::String(s) = self {
             s
         } else {
-            panic!("Expected value to be a bool");
+            panic!("Expected value to be a string");
         }
     }
 }

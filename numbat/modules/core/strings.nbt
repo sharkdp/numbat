@@ -1,19 +1,19 @@
 use core::scalar
 
-fn str_length(s: str) -> Scalar
+fn str_length(s: String) -> Scalar
 
-fn str_slice(s: str, start: Scalar, end: Scalar) -> str
+fn str_slice(s: String, start: Scalar, end: Scalar) -> String
 
-fn str_append(a: str, b: str) -> str = "{a}{b}"
+fn str_append(a: String, b: String) -> String = "{a}{b}"
 
-fn str_contains(haystack: str, needle: str) -> bool =
+fn str_contains(haystack: String, needle: String) -> Bool =
   if str_length(haystack) == 0
     then false
     else if str_slice(haystack, 0, str_length(needle)) == needle
       then true
       else str_contains(str_slice(haystack, 1, str_length(haystack)), needle)
 
-fn str_replace(s: str, pattern: str, replacement: str) -> str =
+fn str_replace(s: String, pattern: String, replacement: String) -> String =
   if pattern == ""
     then s
     else if str_contains(s, pattern)
@@ -22,7 +22,7 @@ fn str_replace(s: str, pattern: str, replacement: str) -> str =
                else str_append(str_slice(s, 0, 1), str_replace(str_slice(s, 1, str_length(s)), pattern, replacement))
            else s
 
-fn str_repeat(a: str, n: Scalar) -> str =
+fn str_repeat(a: String, n: Scalar) -> String =
   if n > 0
     then str_append(a, str_repeat(a, n - 1))
     else ""

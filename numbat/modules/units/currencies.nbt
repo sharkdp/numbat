@@ -6,7 +6,7 @@ use units::currency
 # the identifiers below is. For the Web version, we asynchronously load exchange rates and then
 # pull in this module.
 
-fn exchange_rate(currency: str) -> Scalar
+fn exchange_rate(currency: String) -> Scalar
 
 @aliases(dollars, USD, $: short)
 unit dollar: Money = EUR / exchange_rate("USD")

@@ -92,7 +92,7 @@ pub enum TokenKind {
     Then,
     Else,
 
-    Str,
+    String,
 
     Long,
     Short,
@@ -336,13 +336,13 @@ impl Tokenizer {
             m.insert("assert", TokenKind::ProcedureAssert);
             m.insert("assert_eq", TokenKind::ProcedureAssertEq);
             m.insert("type", TokenKind::ProcedureType);
-            m.insert("bool", TokenKind::Bool);
+            m.insert("Bool", TokenKind::Bool);
             m.insert("true", TokenKind::True);
             m.insert("false", TokenKind::False);
             m.insert("if", TokenKind::If);
             m.insert("then", TokenKind::Then);
             m.insert("else", TokenKind::Else);
-            m.insert("str", TokenKind::Str);
+            m.insert("String", TokenKind::String);
             // Keep this list in sync with keywords::KEYWORDS!
             m
         });

@@ -1471,8 +1471,8 @@ mod tests {
 
         assert_successful_typecheck("let x: A = c / b");
 
-        assert_successful_typecheck("let x: bool = true");
-        assert_successful_typecheck("let x: str = \"hello\"");
+        assert_successful_typecheck("let x: Bool = true");
+        assert_successful_typecheck("let x: String = \"hello\"");
 
         assert!(matches!(
             get_typecheck_error("let x: A = b"),
@@ -1487,11 +1487,11 @@ mod tests {
             TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Dimension(type_a()) && actual_type == Type::String
         ));
         assert!(matches!(
-            get_typecheck_error("let x: bool = a"),
+            get_typecheck_error("let x: Bool = a"),
             TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Boolean && actual_type == Type::Dimension(type_a())
         ));
         assert!(matches!(
-            get_typecheck_error("let x: str = true"),
+            get_typecheck_error("let x: String = true"),
             TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::String && actual_type == Type::Boolean
         ));
     }
@@ -1760,7 +1760,7 @@ mod tests {
     #[test]
     fn non_dtype_return_types() {
         assert!(matches!(
-            get_typecheck_error("fn f() -> str = 1"),
+            get_typecheck_error("fn f() -> String = 1"),
             TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
         assert!(matches!(
@@ -1769,7 +1769,7 @@ mod tests {
         ));
 
         assert!(matches!(
-            get_typecheck_error("fn f() -> bool = 1"),
+            get_typecheck_error("fn f() -> Bool = 1"),
             TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
         assert!(matches!(
@@ -1778,11 +1778,11 @@ mod tests {
         ));
 
         assert!(matches!(
-            get_typecheck_error("fn f() -> str = true"),
+            get_typecheck_error("fn f() -> String = true"),
             TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
         assert!(matches!(
-            get_typecheck_error("fn f() -> bool = \"test\""),
+            get_typecheck_error("fn f() -> Bool = \"test\""),
             TypeCheckError::IncompatibleTypesInAnnotation(..)
         ));
     }

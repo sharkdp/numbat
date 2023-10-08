@@ -1,6 +1,6 @@
-fn not(a: bool) = if a then false else true
-fn and(a: bool, b: bool) = if a then b else false
-fn or(a: bool, b: bool) = if a then true else b
+fn not(a: Bool) = if a then false else true
+fn and(a: Bool, b: Bool) = if a then b else false
+fn or(a: Bool, b: Bool) = if a then true else b
 
 assert(not(false))
 assert(not(not(true)))

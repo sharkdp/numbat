@@ -51,8 +51,8 @@ impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Type::Dimension(d) => d.fmt(f),
-            Type::Boolean => write!(f, "bool"),
-            Type::String => write!(f, "str"),
+            Type::Boolean => write!(f, "Bool"),
+            Type::String => write!(f, "String"),
         }
     }
 }
@@ -61,8 +61,8 @@ impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
             Type::Dimension(d) => d.pretty_print(),
-            Type::Boolean => m::keyword("bool"),
-            Type::String => m::keyword("str"),
+            Type::Boolean => m::keyword("Bool"),
+            Type::String => m::keyword("String"),
         }
     }
 }

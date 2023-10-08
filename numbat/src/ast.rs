@@ -204,8 +204,8 @@ impl PrettyPrint for TypeAnnotation {
     fn pretty_print(&self) -> Markup {
         match self {
             TypeAnnotation::DimensionExpression(d) => d.pretty_print(),
-            TypeAnnotation::Bool(_) => m::type_identifier("bool"),
-            TypeAnnotation::String(_) => m::type_identifier("str"),
+            TypeAnnotation::Bool(_) => m::type_identifier("Bool"),
+            TypeAnnotation::String(_) => m::type_identifier("String"),
         }
     }
 }
