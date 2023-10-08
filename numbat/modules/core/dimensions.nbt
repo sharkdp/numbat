@@ -61,6 +61,7 @@ dimension CatalyticActivity = AmountOfSubstance / Time
 dimension Molarity = AmountOfSubstance / Volume
 dimension Molality = AmountOfSubstance / Mass
 dimension ChemicalPotential = Energy / AmountOfSubstance
+dimension MolarHeatCapacity = HeatCapacity / AmountOfSubstance
 
 dimension LuminousIntensity
 dimension LuminousFlux = LuminousIntensity × Angle^2
