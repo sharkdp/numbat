@@ -382,7 +382,13 @@ impl TypeChecker {
         self.identifiers
             .get(name)
             .ok_or_else(|| {
-                let suggestion = suggestion::did_you_mean(self.identifiers.keys(), name);
+                let suggestion = suggestion::did_you_mean(
+                    self.identifiers
+                        .keys()
+                        .map(|k| k.as_str())
+                        .chain(["true", "false"].into_iter()), // These are parsed as keywords, but can act like identifiers
+                    name,
+                );
                 TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
             })
             .map(|(type_, _)| type_)
