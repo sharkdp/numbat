@@ -52,6 +52,7 @@ dimension Polarizability = ElectricDipoleMoment / ElectricFieldStrength = Curren
 dimension Temperature
 dimension Entropy = Energy / Temperature
 dimension HeatCapacity = Energy / Temperature
+dimension SpecificHeatCapacity = HeatCapacity / Mass
 
 dimension AmountOfSubstance
 dimension Concentration = AmountOfSubstance / Volume
