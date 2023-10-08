@@ -88,9 +88,9 @@ you also get access to:
 
 ## Strings
 
-* `fn str_length(s: str) -> Scalar`
-* `fn str_slice(s: str, start: Scalar, end: Scalar) -> str`
-* `fn str_append(a: str, b: str) -> str`
-* `fn str_contains(haystack: str, needle: str) -> bool`
-* `fn str_replace(s: str, pattern: str, replacement: str) -> str`
-* `fn str_repeat(a: str, n: Scalar) -> str`
+* `fn str_length(s: String) -> Scalar`
+* `fn str_slice(s: String, start: Scalar, end: Scalar) -> String`
+* `fn str_append(a: String, b: String) -> String`
+* `fn str_contains(haystack: String, needle: String) -> Bool`
+* `fn str_replace(s: String, pattern: String, replacement: String) -> String`
+* `fn str_repeat(a: String, n: Scalar) -> String`

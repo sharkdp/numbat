@@ -68,5 +68,5 @@ You can use the builtin `type` procedure to see the type (or physical dimension)
 
 >>> type(2 < 3)
 
-  bool
+  Bool
 ```
