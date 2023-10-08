@@ -26,8 +26,8 @@ let h_bar = ℏ
 let electron_mass: Mass = 9.1093837015e-31 kg
 
 # Elementary charge (charge of the electron)
-let elementary_charge: Charge =  1.602176634e-19 C
-let electron_charge: Charge = elementary_charge
+let elementary_charge: ElectricCharge =  1.602176634e-19 C
+let electron_charge: ElectricCharge = elementary_charge
 
 # Magnetic constant (vacuum magnetic permeability)
 let magnetic_constant: Force / Current^2 =  1.25663706212e-6 N / A²

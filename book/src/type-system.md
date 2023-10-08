@@ -25,7 +25,7 @@ We can use the `*` operator to construct types for physical dimensions that are 
 ``` numbat
 dimension Time
 dimension Current
-dimension Charge = Current * Time
+dimension ElectricCharge = Current * Time
 ```
 
 ### Exponentiation

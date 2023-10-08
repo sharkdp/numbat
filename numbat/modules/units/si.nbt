@@ -63,7 +63,7 @@ unit watt: Power = joule / second
 
 @metric_prefixes
 @aliases(coulombs, C: short)
-unit coulomb: Charge = ampere second
+unit coulomb: ElectricCharge = ampere second
 
 @metric_prefixes
 @aliases(volts, V: short)
@@ -75,11 +75,11 @@ unit farad: Capacitance = coulomb / volt
 
 @metric_prefixes
 @aliases(ohms, Ω: short)
-unit ohm: Resistance = volt / ampere
+unit ohm: ElectricResistance = volt / ampere
 
 @metric_prefixes
 @aliases(S: short)
-unit siemens: Conductance = 1 / ohm
+unit siemens: ElectricConductance = 1 / ohm
 
 @metric_prefixes
 @aliases(webers, Wb: short)

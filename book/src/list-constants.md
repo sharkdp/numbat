@@ -43,7 +43,7 @@ Colloquial:
 | The Planck constant | `planck_constant` | `Mass × Length^2 / Time` |
 | The reduced Planck constant | `h_bar`, `ℏ` | `Mass × Length^2 / Time` |
 | Mass of the electron | `electron_mass` | `Mass` |
-| Elementary charge (charge of the electron) | `elementary_charge`, `electron_charge` | `Charge` |
+| Elementary charge (charge of the electron) | `elementary_charge`, `electron_charge` | `ElectricCharge` |
 | Magnetic constant (vacuum magnetic permeability) | `magnetic_constant`, `µ0`, `mu0` | `Force / Current^2` |
 | Electric constant (vacuum electric permittivity) | `electric_constant`, `ε0`, `eps0` | `Capacitance / Length` |
 | Bohr magneton | `bohr_magneton`, `µ_B` | `Energy / MagneticFluxDensity` |

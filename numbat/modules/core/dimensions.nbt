@@ -19,7 +19,7 @@ dimension Mass
 dimension Momentum = Mass × Speed
 dimension Force = Mass × Acceleration = Momentum / Time
 dimension Energy = Momentum^2 / Mass = Mass × Speed^2 = Force × Length  # also: work, amount of heat
-dimension Power = Energy / Time = Force × Speed  # also: radiant flux
+dimension Power = Energy / Time = Force × Speed
 dimension Pressure = Force / Area = Energy / Volume  # also: stress
 dimension Action = Energy × Time
 dimension MassDensity = Mass / Length^3
@@ -29,20 +29,20 @@ dimension Torque = Length × Force  # also: moment of force
 dimension EnergyDensity = Energy / Volume
 
 dimension Current
-dimension Charge = Current × Time  # SI: electric charge
-dimension Voltage = Energy / Charge = Power / Current  # ISQ: electric tension, SI: electric potential difference
-dimension Capacitance = Charge / Voltage
-dimension Resistance = Voltage / Current  # SI: electric resistance
-dimension Resistivity = Resistance × Length
-dimension Conductance = 1 / Resistance  # SI: electric conductance
-dimension Conductivity = Conductance / Length
-dimension MagneticFluxDensity = Force / (Charge × Speed)
-dimension MagneticFlux = MagneticFluxDensity × Area
+dimension ElectricCharge = Current × Time
+dimension Voltage = Energy / ElectricCharge = Power / Current  # ISQ: electric tension, SI: electric potential difference
+dimension Capacitance = ElectricCharge / Voltage
+dimension ElectricResistance = Voltage / Current
+dimension Resistivity = ElectricResistance × Length
+dimension ElectricConductance = 1 / ElectricResistance
+dimension Conductivity = ElectricConductance / Length
+dimension MagneticFluxDensity = Force / (ElectricCharge × Speed)
+dimension MagneticFlux = MagneticFluxDensity × Area = Voltage × Time
 dimension MagneticFieldStrength = Current / Length
 dimension Inductance = MagneticFlux / Current
-dimension ChargeDensity = Charge / Volume
+dimension ElectricChargeDensity = ElectricCharge / Volume
 dimension CurrentDensity = Current / Area
-dimension ElectricDipoleMoment = Charge × Length
+dimension ElectricDipoleMoment = ElectricCharge × Length
 dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
 dimension ElectricFieldStrength = Voltage / Length
 dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3
