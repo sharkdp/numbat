@@ -78,6 +78,10 @@ impl Type {
     pub fn scalar() -> Type {
         Type::Dimension(DType::unity())
     }
+
+    pub fn is_dtype(&self) -> bool {
+        matches!(self, Type::Dimension(..))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -226,6 +226,23 @@ impl ErrorDiagnostic for TypeCheckError {
                     "Incompatible types in 'then' and 'else' branches of conditional",
                 ),
             ]),
+            TypeCheckError::IncompatibleTypesInComparison(
+                op_span,
+                lhs_type,
+                lhs_span,
+                rhs_type,
+                rhs_span,
+            ) => d.with_labels(vec![
+                lhs_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(lhs_type.to_string()),
+                rhs_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(rhs_type.to_string()),
+                op_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message("Incompatible types comparison operator"),
+            ]),
             TypeCheckError::IncompatibleTypeInAssert(procedure_span, type_, type_span) => d
                 .with_labels(vec![
                     type_span

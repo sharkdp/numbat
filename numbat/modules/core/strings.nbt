@@ -6,6 +6,13 @@ fn str_slice(s: str, start: Scalar, end: Scalar) -> str
 
 fn str_append(a: str, b: str) -> str = "{a}{b}"
 
+fn str_contains(haystack: str, needle: str) -> bool =
+  if str_length(haystack) == 0
+    then false
+    else if str_slice(haystack, 0, str_length(needle)) == needle
+      then true
+      else str_contains(str_slice(haystack, 1, str_length(haystack)), needle)
+
 fn str_repeat(a: str, n: Scalar) -> str =
   if n > 0
     then str_append(a, str_repeat(a, n - 1))
