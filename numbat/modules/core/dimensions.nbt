@@ -45,18 +45,22 @@ dimension CurrentDensity = Current / Area
 dimension ElectricDipoleMoment = ElectricCharge × Length
 dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
 dimension ElectricFieldStrength = Voltage / Length
-dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3
-dimension MagneticPermeability = Length × Mass / Time^2 / Current^2
+dimension ElectricDisplacementFieldStrength = ElectricCharge / Area
+dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3 = ElectricDisplacementFieldStrength / ElectricFieldStrength
+dimension MagneticPermeability = Length × Mass / Time^2 / Current^2 = MagneticFluxDensity / MagneticFieldStrength
 dimension Polarizability = ElectricDipoleMoment / ElectricFieldStrength = Current^2 × Time^4 / Mass
+dimension ElectricMobility = Speed / ElectricFieldStrength
 
 dimension Temperature
 dimension Entropy = Energy / Temperature
 dimension HeatCapacity = Energy / Temperature
 dimension SpecificHeatCapacity = HeatCapacity / Mass
+dimension ThermalConductivity = Power / (Length × Temperature)
 
 dimension AmountOfSubstance
-dimension Concentration = AmountOfSubstance / Volume
+dimension MolarConcentration = AmountOfSubstance / Volume
 dimension MolarMass = Mass / AmountOfSubstance
+dimension MolarVolume = Volume / AmountOfSubstance
 dimension CatalyticActivity = AmountOfSubstance / Time
 dimension Molarity = AmountOfSubstance / Volume
 dimension Molality = AmountOfSubstance / Mass

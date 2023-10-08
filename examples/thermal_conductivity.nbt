@@ -1,7 +1,5 @@
 # https://en.wikipedia.org/wiki/Thermal_conductivity
 
-dimension ThermalConductivity = Power / (Length × Temperature)
-
 fn heat_transfer(λ: ThermalConductivity,
                  wall_area: Area,
                  thickness: Length,
