@@ -62,6 +62,9 @@ let N_A = avogadro_constant
 let boltzmann_constant: Energy / Temperature = 1.380649e-23 J / K
 let k_B = boltzmann_constant
 
+# Stefan-Boltzmann constant
+let stefan_boltzmann_constant: Power / (Area × Temperature^4) = 2 π^5 k_B^4 / (15 planck_constant^3 c^2)
+
 # Ideal gas constant
 let gas_constant: Energy / (AmountOfSubstance × Temperature) = 8.31446261815324 J / (K mol)
 let R = gas_constant

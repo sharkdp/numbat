@@ -52,6 +52,7 @@ Colloquial:
 | Neutron mass | `neutron_mass` | `Mass` |
 | Avogadro constant | `avogadro_constant`, `N_A` | `1 / AmountOfSubstance` |
 | Boltzmann constant | `boltzmann_constant`, `k_B` | `Energy / Temperature` |
+| Stefan-Boltzmann constant | `stefan_boltzmann_constant` | `Power / (Area × Temperature^4)` |
 | Ideal gas constant | `gas_constant`, `R` | `Energy / (AmountOfSubstance × Temperature)` |
 | Planck length | `planck_length` | `Length` |
 | Planck mass | `planck_mass` | `Mass` |
