@@ -242,6 +242,9 @@ pub enum TypeCheckError {
     #[error("Incompatible types in condition")]
     IncompatibleTypesInCondition(Span, Type, Span, Type, Span),
 
+    #[error("Argument types in assert call must be boolean")]
+    IncompatibleTypeInAssert(Span, Type, Span),
+
     #[error("Argument types in assert_eq calls must match")]
     IncompatibleTypesInAssertEq(Span, Type, Span, Type, Span),
 
@@ -1207,6 +1210,15 @@ impl TypeChecker {
                 match kind {
                     ProcedureKind::Print => {
                         // no argument type checks required, everything can be printed
+                    }
+                    ProcedureKind::Assert => {
+                        if checked_args[0].get_type() != Type::Boolean {
+                            return Err(TypeCheckError::IncompatibleTypeInAssert(
+                                *span,
+                                checked_args[0].get_type(),
+                                checked_args[0].full_span(),
+                            ));
+                        }
                     }
                     ProcedureKind::AssertEq => {
                         let type_first = dtype(&checked_args[0])?;

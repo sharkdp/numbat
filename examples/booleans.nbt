@@ -1,0 +1,16 @@
+fn not(a: bool) = if a then false else true
+fn and(a: bool, b: bool) = if a then b else false
+fn or(a: bool, b: bool) = if a then true else b
+
+assert(not(false))
+assert(not(not(true)))
+
+assert(and(true, true))
+assert(not(and(true, false)))
+assert(not(and(false, true)))
+assert(not(and(false, false)))
+
+assert(or(true, true))
+assert(or(true, false))
+assert(or(false, true))
+assert(not(or(false, false)))

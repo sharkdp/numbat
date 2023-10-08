@@ -226,6 +226,15 @@ impl ErrorDiagnostic for TypeCheckError {
                     "Incompatible types in 'then' and 'else' branches of conditional",
                 ),
             ]),
+            TypeCheckError::IncompatibleTypeInAssert(procedure_span, type_, type_span) => d
+                .with_labels(vec![
+                    type_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(type_.to_string()),
+                    procedure_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message("Non-boolean type in 'assert' call"),
+                ]),
             TypeCheckError::IncompatibleTypesInAssertEq(
                 procedure_span,
                 first_type,

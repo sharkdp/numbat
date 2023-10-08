@@ -32,7 +32,7 @@
             "patterns": [
                 {
                     "name": "keyword.control.numbat",
-                    "match": "\\b(per|to|let|fn|dimension|unit|use|long|short|both|none|print|assert_eq|type|if|then|else|true|false|bool|str)\\b"
+                    "match": "\\b(per|to|let|fn|dimension|unit|use|long|short|both|none|print|assert|assert_eq|type|if|then|else|true|false|bool|str)\\b"
                 }
             ]
         },

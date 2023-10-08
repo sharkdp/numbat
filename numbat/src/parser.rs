@@ -11,7 +11,7 @@
 //! dimension_decl  ::=   "dimension" identifier ( "=" dimension_expr ) *
 //! unit_decl       ::=   decorator * "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
 //! module_import   ::=   "use" ident ( "::" ident) *
-//! procedure_call  ::=   ( "print" | "assert_eq" | "type" ) "(" arguments? ")"
+//! procedure_call  ::=   ( "print" | "assert" | "assert_eq" | "type" ) "(" arguments? ")"
 //!
 //! decorator       ::=   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
 //!
@@ -207,6 +207,7 @@ type Result<T> = std::result::Result<T, ParseError>;
 
 static PROCEDURES: &[TokenKind] = &[
     TokenKind::ProcedurePrint,
+    TokenKind::ProcedureAssert,
     TokenKind::ProcedureAssertEq,
     TokenKind::ProcedureType,
 ];
@@ -632,6 +633,7 @@ impl<'a> Parser<'a> {
             let span = self.last().unwrap().span;
             let procedure_kind = match self.last().unwrap().kind {
                 TokenKind::ProcedurePrint => ProcedureKind::Print,
+                TokenKind::ProcedureAssert => ProcedureKind::Assert,
                 TokenKind::ProcedureAssertEq => ProcedureKind::AssertEq,
                 TokenKind::ProcedureType => ProcedureKind::Type,
                 _ => unreachable!(),
