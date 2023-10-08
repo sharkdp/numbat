@@ -1,4 +1,12 @@
 use core::scalar
 
-fn str_length(a: str) -> Scalar
-fn str_concat(a: str, b: str) -> str = "{a}{b}"
+fn str_length(s: str) -> Scalar
+
+fn str_slice(s: str, start: Scalar, end: Scalar) -> str
+
+fn str_append(a: str, b: str) -> str = "{a}{b}"
+
+fn str_repeat(a: str, n: Scalar) -> str =
+  if n > 0
+    then str_append(a, str_repeat(a, n - 1))
+    else ""
