@@ -13,6 +13,15 @@ fn str_contains(haystack: str, needle: str) -> bool =
       then true
       else str_contains(str_slice(haystack, 1, str_length(haystack)), needle)
 
+fn str_replace(s: str, pattern: str, replacement: str) -> str =
+  if pattern == ""
+    then s
+    else if str_contains(s, pattern)
+           then if str_slice(s, 0, str_length(pattern)) == pattern
+               then str_replace(str_append(replacement, str_slice(s, str_length(pattern), str_length(s))), pattern, replacement)
+               else str_append(str_slice(s, 0, 1), str_replace(str_slice(s, 1, str_length(s)), pattern, replacement))
+           else s
+
 fn str_repeat(a: str, n: Scalar) -> str =
   if n > 0
     then str_append(a, str_repeat(a, n - 1))

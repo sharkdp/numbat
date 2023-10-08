@@ -85,3 +85,12 @@ you also get access to:
 * `fn to_celsius(t_kelvin: Temperature) -> Scalar`
 * `fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature`
 * `fn to_fahrenheit(t_kelvin: Temperature) -> Scalar`
+
+## Strings
+
+* `fn str_length(s: str) -> Scalar`
+* `fn str_slice(s: str, start: Scalar, end: Scalar) -> str`
+* `fn str_append(a: str, b: str) -> str`
+* `fn str_contains(haystack: str, needle: str) -> bool`
+* `fn str_replace(s: str, pattern: str, replacement: str) -> str`
+* `fn str_repeat(a: str, n: Scalar) -> str`
