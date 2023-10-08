@@ -674,7 +674,7 @@ impl Vm {
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
                             let result = (function)(&args[..]);
-                            self.push(result);
+                            self.push(result?);
                         }
                         Callable::Procedure(procedure) => {
                             let result = (procedure)(ctx, &args[..]);

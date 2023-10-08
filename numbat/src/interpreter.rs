@@ -31,6 +31,8 @@ pub enum RuntimeError {
     AssertEq3Failed(Quantity, Quantity, Quantity),
     #[error("Could not load exchange rates from European Central Bank.")]
     CouldNotLoadExchangeRates,
+    #[error("User error: {0}")]
+    UserError(String),
 }
 
 #[derive(Debug, PartialEq, Eq)]

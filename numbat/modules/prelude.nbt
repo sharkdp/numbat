@@ -2,6 +2,7 @@ use core::scalar
 use core::quantities
 use core::dimensions
 use core::strings
+use core::error
 
 use math::constants
 use math::functions

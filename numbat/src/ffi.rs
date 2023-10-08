@@ -13,7 +13,9 @@ type ControlFlow = std::ops::ControlFlow<RuntimeError>;
 
 pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
 
-type BoxedFunction = Box<dyn Fn(&[Value]) -> Value + Send + Sync>;
+type Result<T> = std::result::Result<T, RuntimeError>;
+
+type BoxedFunction = Box<dyn Fn(&[Value]) -> Result<Value> + Send + Sync>;
 
 pub(crate) enum Callable {
     Function(BoxedFunction),
@@ -67,6 +69,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
     FFI_FUNCTIONS.get_or_init(|| {
         let mut m = HashMap::new();
 
+        m.insert(
+            "error".to_string(),
+            ForeignFunction {
+                name: "error".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(error)),
+            },
+        );
         m.insert(
             "unit_of".to_string(),
             ForeignFunction {
@@ -386,106 +396,124 @@ fn assert_eq(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
     }
 }
 
-fn unit_of(args: &[Value]) -> Value {
+fn error(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
-    Value::Quantity(Quantity::new_f64(
+    Err(RuntimeError::UserError(args[0].unsafe_as_string().into()))
+}
+
+fn unit_of(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    Ok(Value::Quantity(Quantity::new_f64(
         1.0,
         args[0].unsafe_as_quantity().unit().clone(),
-    ))
+    )))
 }
 
-fn abs(args: &[Value]) -> Value {
+fn abs(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let value = arg.unsafe_value().to_f64();
-    Value::Quantity(Quantity::new_f64(value.abs(), arg.unit().clone()))
+    Ok(Value::Quantity(Quantity::new_f64(
+        value.abs(),
+        arg.unit().clone(),
+    )))
 }
 
-fn round(args: &[Value]) -> Value {
+fn round(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let value = arg.unsafe_value().to_f64();
-    Value::Quantity(Quantity::new_f64(value.round(), arg.unit().clone()))
+    Ok(Value::Quantity(Quantity::new_f64(
+        value.round(),
+        arg.unit().clone(),
+    )))
 }
 
-fn floor(args: &[Value]) -> Value {
+fn floor(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let value = arg.unsafe_value().to_f64();
-    Value::Quantity(Quantity::new_f64(value.floor(), arg.unit().clone()))
+    Ok(Value::Quantity(Quantity::new_f64(
+        value.floor(),
+        arg.unit().clone(),
+    )))
 }
 
-fn ceil(args: &[Value]) -> Value {
+fn ceil(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let value = arg.unsafe_value().to_f64();
-    Value::Quantity(Quantity::new_f64(value.ceil(), arg.unit().clone()))
+    Ok(Value::Quantity(Quantity::new_f64(
+        value.ceil(),
+        arg.unit().clone(),
+    )))
 }
 
-fn sin(args: &[Value]) -> Value {
+fn sin(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.sin()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.sin())))
 }
 
-fn cos(args: &[Value]) -> Value {
+fn cos(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.cos()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.cos())))
 }
 
-fn tan(args: &[Value]) -> Value {
+fn tan(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.tan()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.tan())))
 }
 
-fn asin(args: &[Value]) -> Value {
+fn asin(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.asin()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.asin())))
 }
 
-fn acos(args: &[Value]) -> Value {
+fn acos(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.acos()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.acos())))
 }
 
-fn atan(args: &[Value]) -> Value {
+fn atan(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.atan()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.atan())))
 }
 
-fn atan2(args: &[Value]) -> Value {
+fn atan2(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 2);
 
     let y = args[0].unsafe_as_quantity();
@@ -493,64 +521,64 @@ fn atan2(args: &[Value]) -> Value {
 
     let input0 = y.unsafe_value().to_f64();
     let input1 = x.convert_to(y.unit()).unwrap().unsafe_value().to_f64();
-    Value::Quantity(Quantity::from_scalar(input0.atan2(input1)))
+    Ok(Value::Quantity(Quantity::from_scalar(input0.atan2(input1))))
 }
 
-fn sinh(args: &[Value]) -> Value {
+fn sinh(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.sinh()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.sinh())))
 }
 
-fn cosh(args: &[Value]) -> Value {
+fn cosh(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.cosh()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.cosh())))
 }
 
-fn tanh(args: &[Value]) -> Value {
+fn tanh(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.tanh()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.tanh())))
 }
 
-fn asinh(args: &[Value]) -> Value {
+fn asinh(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.asinh()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.asinh())))
 }
 
-fn acosh(args: &[Value]) -> Value {
+fn acosh(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.acosh()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.acosh())))
 }
 
-fn atanh(args: &[Value]) -> Value {
+fn atanh(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.atanh()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.atanh())))
 }
 
-fn mod_(args: &[Value]) -> Value {
+fn mod_(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 2);
 
     let x = args[0].unsafe_as_quantity();
@@ -558,62 +586,64 @@ fn mod_(args: &[Value]) -> Value {
 
     let input0 = x.unsafe_value().to_f64();
     let input1 = y.convert_to(x.unit()).unwrap().unsafe_value().to_f64();
-    Value::Quantity(Quantity::new_f64(
+    Ok(Value::Quantity(Quantity::new_f64(
         input0.rem_euclid(input1),
         x.unit().clone(),
-    ))
+    )))
 }
 
-fn exp(args: &[Value]) -> Value {
+fn exp(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.exp()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.exp())))
 }
 
-fn ln(args: &[Value]) -> Value {
+fn ln(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.ln()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.ln())))
 }
 
-fn log10(args: &[Value]) -> Value {
+fn log10(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.log10()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.log10())))
 }
 
-fn log2(args: &[Value]) -> Value {
+fn log2(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(input.log2()))
+    Ok(Value::Quantity(Quantity::from_scalar(input.log2())))
 }
 
-fn gamma(args: &[Value]) -> Value {
+fn gamma(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
-    Value::Quantity(Quantity::from_scalar(crate::gamma::gamma(input)))
+    Ok(Value::Quantity(Quantity::from_scalar(crate::gamma::gamma(
+        input,
+    ))))
 }
 
-fn mean(args: &[Value]) -> Value {
+fn mean(args: &[Value]) -> Result<Value> {
     assert!(!args.is_empty());
 
     let output_unit = args[0].unsafe_as_quantity().unit();
-    Value::Quantity(Quantity::new_f64(
+    Ok(Value::Quantity(Quantity::new_f64(
         args.iter()
             .map(|q| {
                 q.unsafe_as_quantity()
@@ -625,14 +655,14 @@ fn mean(args: &[Value]) -> Value {
             .sum::<f64>()
             / (args.len() as f64),
         output_unit.clone(),
-    ))
+    )))
 }
 
-fn maximum(args: &[Value]) -> Value {
+fn maximum(args: &[Value]) -> Result<Value> {
     assert!(!args.is_empty());
 
     let output_unit = args[0].unsafe_as_quantity().unit();
-    Value::Quantity(Quantity::new(
+    Ok(Value::Quantity(Quantity::new(
         args.iter()
             .map(|q| {
                 *q.unsafe_as_quantity()
@@ -643,14 +673,14 @@ fn maximum(args: &[Value]) -> Value {
             .max_by(|l, r| l.partial_cmp(r).unwrap())
             .unwrap(),
         output_unit.clone(),
-    ))
+    )))
 }
 
-fn minimum(args: &[Value]) -> Value {
+fn minimum(args: &[Value]) -> Result<Value> {
     assert!(!args.is_empty());
 
     let output_unit = args[0].unsafe_as_quantity().unit();
-    Value::Quantity(Quantity::new(
+    Ok(Value::Quantity(Quantity::new(
         args.iter()
             .map(|q| {
                 *q.unsafe_as_quantity()
@@ -661,26 +691,26 @@ fn minimum(args: &[Value]) -> Value {
             .min_by(|l, r| l.partial_cmp(r).unwrap())
             .unwrap(),
         output_unit.clone(),
-    ))
+    )))
 }
 
 fn exchange_rate(rate: &'static str) -> BoxedFunction {
-    Box::new(|_args: &[Value]| -> Value {
+    Box::new(|_args: &[Value]| -> Result<Value> {
         let exchange_rates = ExchangeRatesCache::new();
-        Value::Quantity(Quantity::from_scalar(
+        Ok(Value::Quantity(Quantity::from_scalar(
             exchange_rates.get_rate(rate).unwrap_or(f64::NAN),
-        ))
+        )))
     })
 }
 
-fn str_length(args: &[Value]) -> Value {
+fn str_length(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let len = args[0].unsafe_as_string().len();
-    Value::Quantity(Quantity::from_scalar(len as f64))
+    Ok(Value::Quantity(Quantity::from_scalar(len as f64)))
 }
 
-fn str_slice(args: &[Value]) -> Value {
+fn str_slice(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 3);
 
     let input = args[0].unsafe_as_string();
@@ -689,5 +719,5 @@ fn str_slice(args: &[Value]) -> Value {
 
     let output = input.get(start..end).unwrap_or_default();
 
-    Value::String(output.into())
+    Ok(Value::String(output.into()))
 }
