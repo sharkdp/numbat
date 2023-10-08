@@ -307,6 +307,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 callable: Callable::Function(Box::new(str_length)),
             },
         );
+        m.insert(
+            "str_slice".to_string(),
+            ForeignFunction {
+                name: "str_slice".into(),
+                arity: 3..=3,
+                callable: Callable::Function(Box::new(str_slice)),
+            },
+        );
 
         m
     })
@@ -670,4 +678,16 @@ fn str_length(args: &[Value]) -> Value {
 
     let len = args[0].unsafe_as_string().len();
     Value::Quantity(Quantity::from_scalar(len as f64))
+}
+
+fn str_slice(args: &[Value]) -> Value {
+    assert!(args.len() == 3);
+
+    let input = args[0].unsafe_as_string();
+    let start = args[1].unsafe_as_quantity().unsafe_value().to_f64() as usize;
+    let end = args[2].unsafe_as_quantity().unsafe_value().to_f64() as usize;
+
+    let output = input.get(start..end).unwrap_or_default();
+
+    Value::String(output.into())
 }
