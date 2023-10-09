@@ -1,10 +1,8 @@
 <div align="center">
 
-<h1>Numbat</h1>
+<img src="numbat-wasm/www/numbat.svg">
 
 **[Try online!] • [Documentation] • [Tutorial] • [Syntax reference] • [Installation] • [Development]**
-
-<img src="assets/numbat-410.png">
 
 [Try online!]: https://numbat.dev/
 [Features]: #key-features
