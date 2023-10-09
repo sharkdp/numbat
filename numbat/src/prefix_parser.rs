@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 use crate::span::Span;
 use crate::{name_resolution::NameResolutionError, prefix::Prefix};
 
-static PREFIXES: OnceLock<Vec<(&'static str, &'static str, Prefix)>> = OnceLock::new();
+static PREFIXES: OnceLock<Vec<(&'static str, &'static [&'static str], Prefix)>> = OnceLock::new();
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PrefixParserResult {
@@ -83,43 +83,51 @@ impl PrefixParser {
         }
     }
 
-    fn prefixes() -> &'static [(&'static str, &'static str, Prefix)] {
+    fn prefixes() -> &'static [(&'static str, &'static [&'static str], Prefix)] {
         PREFIXES.get_or_init(|| {
             vec![
                 // Metric prefixes:
-                ("quecto", "q", Prefix::Metric(-30)),
-                ("ronto", "r", Prefix::Metric(-27)),
-                ("yocto", "y", Prefix::Metric(-24)),
-                ("zepto", "z", Prefix::Metric(-21)),
-                ("atto", "a", Prefix::Metric(-18)),
-                ("femto", "f", Prefix::Metric(-15)),
-                ("pico", "p", Prefix::Metric(-12)),
-                ("nano", "n", Prefix::Metric(-9)),
-                ("micro", "µ", Prefix::Metric(-6)),
-                ("milli", "m", Prefix::Metric(-3)),
-                ("centi", "c", Prefix::Metric(-2)),
-                ("deci", "d", Prefix::Metric(-1)),
-                ("deca", "da", Prefix::Metric(1)),
-                ("hecto", "h", Prefix::Metric(2)),
-                ("kilo", "k", Prefix::Metric(3)),
-                ("mega", "M", Prefix::Metric(6)),
-                ("giga", "G", Prefix::Metric(9)),
-                ("tera", "T", Prefix::Metric(12)),
-                ("peta", "P", Prefix::Metric(15)),
-                ("exa", "E", Prefix::Metric(18)),
-                ("zetta", "Z", Prefix::Metric(21)),
-                ("yotta", "Y", Prefix::Metric(24)),
-                ("ronna", "R", Prefix::Metric(27)),
-                ("quetta", "Q", Prefix::Metric(30)),
+                ("quecto", &["q"], Prefix::Metric(-30)),
+                ("ronto", &["r"], Prefix::Metric(-27)),
+                ("yocto", &["y"], Prefix::Metric(-24)),
+                ("zepto", &["z"], Prefix::Metric(-21)),
+                ("atto", &["a"], Prefix::Metric(-18)),
+                ("femto", &["f"], Prefix::Metric(-15)),
+                ("pico", &["p"], Prefix::Metric(-12)),
+                ("nano", &["n"], Prefix::Metric(-9)),
+                (
+                    "micro",
+                    &[
+                        "µ", // Micro Sign (U+00B5)
+                        "μ", // Greek Small Letter Mu (U+03BC)
+                        "u",
+                    ],
+                    Prefix::Metric(-6),
+                ),
+                ("milli", &["m"], Prefix::Metric(-3)),
+                ("centi", &["c"], Prefix::Metric(-2)),
+                ("deci", &["d"], Prefix::Metric(-1)),
+                ("deca", &["da"], Prefix::Metric(1)),
+                ("hecto", &["h"], Prefix::Metric(2)),
+                ("kilo", &["k"], Prefix::Metric(3)),
+                ("mega", &["M"], Prefix::Metric(6)),
+                ("giga", &["G"], Prefix::Metric(9)),
+                ("tera", &["T"], Prefix::Metric(12)),
+                ("peta", &["P"], Prefix::Metric(15)),
+                ("exa", &["E"], Prefix::Metric(18)),
+                ("zetta", &["Z"], Prefix::Metric(21)),
+                ("yotta", &["Y"], Prefix::Metric(24)),
+                ("ronna", &["R"], Prefix::Metric(27)),
+                ("quetta", &["Q"], Prefix::Metric(30)),
                 // Binary prefixes:
-                ("kibi", "Ki", Prefix::Binary(10)),
-                ("mebi", "Mi", Prefix::Binary(20)),
-                ("gibi", "Gi", Prefix::Binary(30)),
-                ("tebi", "Ti", Prefix::Binary(40)),
-                ("pebi", "Pi", Prefix::Binary(50)),
-                ("exbi", "Ei", Prefix::Binary(60)),
-                ("zebi", "Zi", Prefix::Binary(70)),
-                ("yobi", "Yi", Prefix::Binary(80)),
+                ("kibi", &["Ki"], Prefix::Binary(10)),
+                ("mebi", &["Mi"], Prefix::Binary(20)),
+                ("gibi", &["Gi"], Prefix::Binary(30)),
+                ("tebi", &["Ti"], Prefix::Binary(40)),
+                ("pebi", &["Pi"], Prefix::Binary(50)),
+                ("exbi", &["Ei"], Prefix::Binary(60)),
+                ("zebi", &["Zi"], Prefix::Binary(70)),
+                ("yobi", &["Yi"], Prefix::Binary(80)),
                 // The following two prefixes are not yet approved by IEC as of 2023-02-16
                 // ("robi", "Ri", Prefix::Binary(90)),
                 // ("quebi", "Qi", Prefix::Binary(100)),
@@ -175,7 +183,7 @@ impl PrefixParser {
     ) -> Result<()> {
         self.ensure_name_is_available(unit_name, definition_span, true)?;
 
-        for (prefix_long, prefix_short, prefix) in Self::prefixes() {
+        for (prefix_long, prefixes_short, prefix) in Self::prefixes() {
             if !(prefix.is_metric() && metric || prefix.is_binary() && binary) {
                 continue;
             }
@@ -188,11 +196,13 @@ impl PrefixParser {
                 )?;
             }
             if accepts_prefix.short {
-                self.ensure_name_is_available(
-                    &format!("{}{}", prefix_short, unit_name),
-                    definition_span,
-                    true,
-                )?;
+                for prefix_short in *prefixes_short {
+                    self.ensure_name_is_available(
+                        &format!("{}{}", prefix_short, unit_name),
+                        definition_span,
+                        true,
+                    )?;
+                }
             }
         }
 
@@ -232,7 +242,7 @@ impl PrefixParser {
                 continue;
             }
 
-            for (prefix_long, prefix_short, prefix) in Self::prefixes() {
+            for (prefix_long, prefixes_short, prefix) in Self::prefixes() {
                 let is_metric = prefix.is_metric();
                 let is_binary = prefix.is_binary();
 
@@ -251,8 +261,9 @@ impl PrefixParser {
 
                 if info.accepts_prefix.short
                     && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes)
-                    && input.starts_with(prefix_short)
-                    && &input[prefix_short.len()..] == unit_name
+                    && prefixes_short.iter().any(|prefix_short| {
+                        input.starts_with(prefix_short) && &input[prefix_short.len()..] == unit_name
+                    })
                 {
                     return PrefixParserResult::UnitIdentifier(
                         info.definition_span,
@@ -434,6 +445,33 @@ mod tests {
             PrefixParserResult::UnitIdentifier(
                 Span::dummy(),
                 Prefix::milli(),
+                "m".into(),
+                "meter".into()
+            )
+        );
+        assert_eq!(
+            prefix_parser.parse("µm"),
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::micro(),
+                "m".into(),
+                "meter".into()
+            )
+        );
+        assert_eq!(
+            prefix_parser.parse("μm"),
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::micro(),
+                "m".into(),
+                "meter".into()
+            )
+        );
+        assert_eq!(
+            prefix_parser.parse("um"),
+            PrefixParserResult::UnitIdentifier(
+                Span::dummy(),
+                Prefix::micro(),
                 "m".into(),
                 "meter".into()
             )
