@@ -103,6 +103,9 @@ print(2 kilowarhol)              # Print the value of an expression
 print("hello world")             # Print a message
 print("value of pi = {pi}")      # String interpolation
 print("sqrt(10) = {sqrt(10)}")   # Expressions in string interpolation
+
+assert(1 yard < 1 meter)         # Assertion
+
 assert_eq(1 ft, 12 in)           # Assert that two quantities are equal
 assert_eq(1 yd, 1 m, 10 cm)      # Assert that two quantities are equal, up to
                                  # the given precision
