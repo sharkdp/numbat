@@ -8,6 +8,8 @@
 #   500g rice to cups
 #
 
+use units::si
+
 let water = 1 / (1000 g/L)
 let butter = 1 / (911 g/L)
 let olive_oil = 1 / (920 g/L)
