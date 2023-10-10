@@ -45,7 +45,7 @@ dimension Inductance = MagneticFlux / Current
 dimension ElectricChargeDensity = ElectricCharge / Volume
 dimension CurrentDensity = Current / Area
 dimension ElectricDipoleMoment = ElectricCharge × Length
-dimension MagneticDipoleMoment = Current × Area #= Torque / MagneticFluxDensity
+dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity * Angle
 dimension ElectricFieldStrength = Voltage / Length
 dimension ElectricDisplacementFieldStrength = ElectricCharge / Area
 dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3 × Angle = ElectricDisplacementFieldStrength / ElectricFieldStrength × Angle
