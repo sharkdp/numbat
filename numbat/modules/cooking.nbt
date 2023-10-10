@@ -1,0 +1,21 @@
+# (Inverse) densities for various cooking ingredients.
+#
+# Example usage:
+#
+#   use cooking
+#
+#   200g butter to tablespoons
+#   500g rice to cups
+#
+
+let water = 1 / (1000 g/L)
+let butter = 1 / (911 g/L)
+let olive_oil = 1 / (920 g/L)
+let milk = 1 / (1030 g/L)
+let sugar = 1 / (845 g/L) # Granulated sugar
+let honey = 1 / (1420 g/L)
+let flour = 1 / (550 g/L)
+let salt = 1 / (1217 g/L)
+let rice = 1 / (785 g/L)
+let egg_raw = 1 / (1029 g/L)
+let yogurt = 1 / (1045 g/L)
