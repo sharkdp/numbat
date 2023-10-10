@@ -103,6 +103,7 @@ fn test_conversions() {
     expect_output("5m^2 -> m*cm", "500 m·cm");
     expect_output("5m^2 -> cm*m", "500 cm·m");
     expect_output("1 kB / 10 ms -> MB/s", "0.1 MB/s");
+    expect_output("55! / (6! (55 - 6)!) -> million", "28.9897 million");
 }
 
 #[test]
