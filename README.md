@@ -45,7 +45,7 @@ See [this article](https://numbat.dev/doc/type-system.html) to learn more about 
 Numbat is focused on computations with units. Units are therefore treated as first-class citizens. They can be
 [entered in various ways](https://numbat.dev/doc/unit-notation.html) (`km/h` or `kilometer/hour`, `GiB` or
 `gibibytes`, `°` or `degree`, `m²` or `m^2`).
-New (helper) units can be [introduced](https://numbat.dev/doc/unit-definitions.html) on the spot (`unit pixel`).
+New units can be [introduced](https://numbat.dev/doc/unit-definitions.html) on the spot (`unit pixel`).
 Compatible units can be converted easily [using the `->` operator](https://numbat.dev/doc/unit-conversions.html) (`30 km/h -> mph`, `1 mrad -> degree`, `5 in + 2 ft -> cm`, `27 weeks -> days`).
 And unit expressions are simplified using various heuristics (`15 km/h * 30 min = 7.5 km`).
 </details>
