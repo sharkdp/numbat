@@ -39,7 +39,7 @@ unit radian: Angle = meter / meter
 
 @metric_prefixes
 @aliases(steradians, sr: short)
-unit steradian: SolidAngle = meter^2 / meter^2
+unit steradian: SolidAngle = radian^2
 
 @metric_prefixes
 @aliases(Hz: short)

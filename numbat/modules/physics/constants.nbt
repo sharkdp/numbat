@@ -19,7 +19,7 @@ let g0 = gravity
 let planck_constant = 6.62607015e-34 J / Hz
 
 # The reduced Planck constant
-let ℏ = planck_constant / 2π
+let ℏ: AngularMomentum = planck_constant / 2π
 let h_bar = ℏ
 
 # Mass of the electron
@@ -30,12 +30,12 @@ let elementary_charge: ElectricCharge =  1.602176634e-19 C
 let electron_charge: ElectricCharge = elementary_charge
 
 # Magnetic constant (vacuum magnetic permeability)
-let magnetic_constant: Force / Current^2 =  1.25663706212e-6 N / A²
+let magnetic_constant: MagneticPermeability =  1.25663706212e-6 N / A²
 let µ0 = magnetic_constant
 let mu0 = magnetic_constant
 
 # Electric constant ( vacuum electric permittivity)
-let electric_constant: Capacitance / Length = 8.8541878128e-12 F / m
+let electric_constant: ElectricPermittivity = 8.8541878128e-12 F / m
 let ε0 = electric_constant
 let eps0 = electric_constant
 
