@@ -30,6 +30,6 @@ unit fathom: Length = 2 yard
 @aliases(leagues)
 unit league: Length = 3 mile
 
-unit mph: Speed = miles per hour
+unit mph: Velocity = miles per hour
 
 unit inHg: Pressure = in Hg

@@ -102,8 +102,8 @@ mod tests {
         dimension Time
         dimension Mass
 
-        dimension Speed = Length / Time
-        dimension Momentum = Mass * Speed
+        dimension Velocity = Length / Time
+        dimension Momentum = Mass * Velocity
         dimension Frequency = 1 / Time
 
         @metric_prefixes
@@ -193,7 +193,7 @@ mod tests {
         );
 
         assert_evaluates_to(
-            "fn speed(distance: Length, time: Time) -> Speed = distance / time
+            "fn speed(distance: Length, time: Time) -> Velocity = distance / time
              speed(10 * meter, 2 * second)",
             Quantity::from_scalar(5.0)
                 * (Quantity::from_unit(Unit::meter()) / Quantity::from_unit(Unit::second())),

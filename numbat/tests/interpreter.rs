@@ -198,7 +198,7 @@ fn test_incompatible_dimension_errors() {
     );
     expect_exact_failure(
         "m / s + K A",
-        " left hand side: Length / Time            [= Speed]\n\
+        " left hand side: Length / Time            [= Velocity]\n\
          right hand side: Current × Temperature\n\n\
          Suggested fix: multiply left hand side by Current × Temperature × Time / Length",
     );

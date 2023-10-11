@@ -4,7 +4,7 @@ use units::si
 ### Physics constants
 
 # The speed of light in vacuum
-let speed_of_light: Speed = 299_792_458 m / s
+let speed_of_light: Velocity = 299_792_458 m / s
 let c = speed_of_light
 
 # The Newtonian constant of gravitation

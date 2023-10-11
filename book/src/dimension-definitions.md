@@ -8,10 +8,10 @@ dimension Mass
 ```
 Derived dimensions need to specify their relation to base dimensions (or other derived dimensions). For example:
 ``` numbat
-dimension Speed = Length / Time
-dimension Momentum = Mass * Speed
+dimension Velocity = Length / Time
+dimension Momentum = Mass * Velocity
 dimension Force = Mass * Acceleration = Momentum / Time
-dimension Energy = Momentum^2 / Mass = Mass * Speed^2 = Force * Length
+dimension Energy = Momentum^2 / Mass = Mass * Velocity^2 = Force * Length
 ```
 In the definition of `Force` and `Energy`, we can see that *alternative definitions* can be given. This is entirely optional. If specified, the compiler will make sure that all definitions are equivalent.
 

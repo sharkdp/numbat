@@ -1,2 +1,2 @@
-dimension MyEnergy = Momentum^2 / Mass = Mass × Speed^2 = Force × Length^2
+dimension MyEnergy = Momentum^2 / Mass = Mass × Velocity^2 = Force × Length^2
 

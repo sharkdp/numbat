@@ -2,6 +2,6 @@ let c_w = 1.4
 let area: Area = 3 m²
 let rho: MassDensity = 1.29 kg/m³
 
-fn air_resistance(v: Speed) -> Force = ½ c_w · area · rho · v²
+fn air_resistance(v: Velocity) -> Force = ½ c_w · area · rho · v²
 
 assert_eq(air_resistance(40 m/s), 4334.4 N, 0.1 N)

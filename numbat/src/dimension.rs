@@ -83,7 +83,7 @@ fn basic() {
     registry.add_base_dimension("Length").unwrap();
     registry.add_base_dimension("Time").unwrap();
     registry
-        .add_derived_dimension("Speed", &parse_dexpr("Length / Time"))
+        .add_derived_dimension("Velocity", &parse_dexpr("Length / Time"))
         .unwrap();
     registry
         .add_derived_dimension("Acceleration", &parse_dexpr("Length / Time^2"))
@@ -91,7 +91,7 @@ fn basic() {
 
     registry.add_base_dimension("Mass").unwrap();
     registry
-        .add_derived_dimension("Momentum", &parse_dexpr("Mass * Speed"))
+        .add_derived_dimension("Momentum", &parse_dexpr("Mass * Velocity"))
         .unwrap();
     registry
         .add_derived_dimension("Energy", &parse_dexpr("Momentum^2 / Mass"))
@@ -119,7 +119,7 @@ fn basic() {
         )))
     );
     assert_eq!(
-        registry.get_base_representation(&parse_dexpr("Speed")),
+        registry.get_base_representation(&parse_dexpr("Velocity")),
         Ok(BaseRepresentation::from_factors([
             BaseRepresentationFactor("Length".into(), Rational::from_integer(1)),
             BaseRepresentationFactor("Time".into(), Rational::from_integer(-1))
@@ -150,7 +150,7 @@ fn basic() {
     );
 
     registry
-        .add_derived_dimension("Momentum2", &parse_dexpr("Speed * Mass"))
+        .add_derived_dimension("Momentum2", &parse_dexpr("Velocity * Mass"))
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Momentum2")),
@@ -162,7 +162,7 @@ fn basic() {
     );
 
     registry
-        .add_derived_dimension("Energy2", &parse_dexpr("Mass * Speed^2"))
+        .add_derived_dimension("Energy2", &parse_dexpr("Mass * Velocity^2"))
         .unwrap();
     assert_eq!(
         registry.get_base_representation(&parse_dexpr("Energy2")),
@@ -174,10 +174,10 @@ fn basic() {
     );
 
     registry
-        .add_derived_dimension("Speed2", &parse_dexpr("Momentum / Mass"))
+        .add_derived_dimension("Velocity2", &parse_dexpr("Momentum / Mass"))
         .unwrap();
     assert_eq!(
-        registry.get_base_representation(&parse_dexpr("Speed2")),
+        registry.get_base_representation(&parse_dexpr("Velocity2")),
         Ok(BaseRepresentation::from_factors([
             BaseRepresentationFactor("Length".into(), Rational::from_integer(1)),
             BaseRepresentationFactor("Time".into(), Rational::from_integer(-1))
