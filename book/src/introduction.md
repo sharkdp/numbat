@@ -27,7 +27,7 @@ The real strength of Numbat, however, is to perform calculations with physical u
 
   8 kilometer / (1 hour + 25 minute)
 
-    = 5.64706 km/h    [Speed]
+    = 5.64706 km/h    [Velocity]
 
 >>> 140 € -> GBP
 

@@ -8,7 +8,7 @@
 #
 # https://en.wikipedia.org/wiki/PH
 
-fn pH_acidity(activity_hplus: MolarConcentration) -> Scalar =
+fn pH_acidity(activity_hplus: Molarity) -> Scalar =
     - log10(activity_hplus / (mol / L))
 
 print(pH_acidity(5e-6 mol / L))

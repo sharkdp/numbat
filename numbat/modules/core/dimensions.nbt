@@ -10,7 +10,7 @@ dimension Wavenumber = 1 / Length
 
 dimension Time
 dimension Frequency = 1 / Time
-dimension Speed = Length / Time  # also: velocity
+dimension Velocity = Length / Time
 dimension Acceleration = Length / Time^2
 dimension Jerk = Length / Time^3
 dimension FlowRate = Volume / Time
@@ -18,10 +18,10 @@ dimension AngularFrequency = Angle / Time
 dimension AngularAcceleration = Angle / Time^2
 
 dimension Mass
-dimension Momentum = Mass × Speed
+dimension Momentum = Mass × Velocity
 dimension Force = Mass × Acceleration = Momentum / Time
-dimension Energy = Momentum^2 / Mass = Mass × Speed^2 = Force × Length  # also: work, amount of heat
-dimension Power = Energy / Time = Force × Speed
+dimension Energy = Momentum^2 / Mass = Mass × Velocity^2 = Force × Length  # also: work, amount of heat
+dimension Power = Energy / Time = Force × Velocity
 dimension Pressure = Force / Area = Energy / Volume  # also: stress
 dimension Action = Energy × Time
 dimension MassDensity = Mass / Length^3
@@ -29,6 +29,7 @@ dimension MomentOfInertia = Mass × Length^2 / Angle^2
 dimension AngularMomentum = MomentOfInertia × AngularFrequency = Mass × Length^2 / Time / Angle
 dimension Torque = Length × Force / Angle  # also: moment of force
 dimension EnergyDensity = Energy / Volume
+dimension MassFlow = Mass / Time
 
 dimension Current
 dimension ElectricCharge = Current × Time
@@ -38,20 +39,21 @@ dimension ElectricResistance = Voltage / Current
 dimension Resistivity = ElectricResistance × Length
 dimension ElectricConductance = 1 / ElectricResistance
 dimension Conductivity = ElectricConductance / Length
-dimension MagneticFluxDensity = Force / (ElectricCharge × Speed)
+dimension MagneticFluxDensity = Force / (ElectricCharge × Velocity)
 dimension MagneticFlux = MagneticFluxDensity × Area = Voltage × Time
 dimension MagneticFieldStrength = Current / Length
 dimension Inductance = MagneticFlux / Current
 dimension ElectricChargeDensity = ElectricCharge / Volume
 dimension CurrentDensity = Current / Area
 dimension ElectricDipoleMoment = ElectricCharge × Length
+dimension ElectricQuadrupoleMoment = ElectricCharge × Length^2
 dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity * Angle
 dimension ElectricFieldStrength = Voltage / Length
 dimension ElectricDisplacementFieldStrength = ElectricCharge / Area
 dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3 × Angle = ElectricDisplacementFieldStrength / ElectricFieldStrength × Angle
 dimension MagneticPermeability = Length × Mass / Time^2 / Current^2 / Angle = MagneticFluxDensity / MagneticFieldStrength / Angle
 dimension Polarizability = ElectricDipoleMoment / ElectricFieldStrength = Current^2 × Time^4 / Mass
-dimension ElectricMobility = Speed / ElectricFieldStrength
+dimension ElectricMobility = Velocity / ElectricFieldStrength
 
 dimension Temperature
 dimension Entropy = Energy / Temperature
@@ -60,7 +62,6 @@ dimension SpecificHeatCapacity = HeatCapacity / Mass
 dimension ThermalConductivity = Power / (Length × Temperature)
 
 dimension AmountOfSubstance
-dimension MolarConcentration = AmountOfSubstance / Volume
 dimension MolarMass = Mass / AmountOfSubstance
 dimension MolarVolume = Volume / AmountOfSubstance
 dimension CatalyticActivity = AmountOfSubstance / Time

@@ -12,7 +12,7 @@ print("Amplitude: {amplitude}")
 
 # Tangential velocity
 let r = 20 cm
-let v: Speed = r ω / θC  # This is one of the "text book formulas" that needs adaptation
+let v: Velocity = r ω / θC  # This is one of the "text book formulas" that needs adaptation
 print("Linear velocity: {v}")
 
 # Rotational motion
@@ -29,3 +29,6 @@ let I: MomentOfInertia = mass × radius^2 / θC^2
 let ω_rot: AngularFrequency = 180° / 5 s
 let E_rot: Energy = 1/2 * I * ω_rot^2
 print("E_rot = {E_rot -> J}")
+
+# Cyclotron frequency
+let ω_cyc: AngularFrequency = electron_charge/electron_mass × 50 µT × θC

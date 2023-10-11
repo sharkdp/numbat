@@ -495,6 +495,7 @@ impl Vm {
     }
 
     pub fn run(&mut self, ctx: &mut ExecutionContext) -> Result<InterpreterResult> {
+        let old_stack = self.stack.clone();
         let result = self.run_without_cleanup(ctx);
         if result.is_err() {
             // Perform cleanup: clear the stack and move IP to the end.
@@ -502,7 +503,7 @@ impl Vm {
             //
             // TODO(minor): is this really enough? Shouldn't we also remove
             // the bytecode?
-            self.stack.clear();
+            self.stack = old_stack;
 
             // Reset the call stack
             // TODO: move the following to a function?

@@ -1,5 +1,12 @@
 # Predefined functions
 
+## Utility
+
+```nbt
+fn unit_of<T>(x: T) -> T
+fn value_of<T>(x: T) -> Scalar
+```
+
 ## Math
 
 ### Basics

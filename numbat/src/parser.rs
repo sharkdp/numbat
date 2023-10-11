@@ -1803,9 +1803,9 @@ mod tests {
         );
 
         parse_as(
-            &["dimension Speed = Length / Time"],
+            &["dimension Velocity = Length / Time"],
             Statement::DefineDimension(
-                "Speed".into(),
+                "Velocity".into(),
                 vec![DimensionExpression::Divide(
                     Span::dummy(),
                     Box::new(DimensionExpression::Dimension(

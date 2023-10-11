@@ -76,7 +76,7 @@ unit gon: Angle = 90° / 100
 @aliases(Wh: short)
 unit watthour: Energy = W h
 
-unit kph: Speed = kilometer per hour
+unit kph: Velocity = kilometer per hour
 
 unit micron: Length = µm
 

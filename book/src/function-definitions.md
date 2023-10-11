@@ -5,12 +5,13 @@ it is also possible to add new functions. A function definition is introduced wi
 the `fn` keyword:
 
 ```nbt
-fn max_distance(v: Speed, θ: Angle) -> Length = v² · sin(2 θ) / g0
+fn max_distance(v: Velocity, θ: Angle) -> Length = v² · sin(2 θ) / g0
 ```
 
 This exemplary function computes the maximum distance of a projectile under the
-influence of Earths gravity. It takes two parameters (The initial speed `v` and
-the launch angle `θ`), which are both annotated with their corresponding physical dimension (their type). The function returns a distance, and so the return type
+influence of Earths gravity. It takes two parameters (The initial velocity `v` and
+the launch angle `θ`), which are both annotated with their corresponding physical
+dimension (their type). The function returns a distance, and so the return type
 is specified as `Length`.
 
 ## Type inference

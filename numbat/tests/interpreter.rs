@@ -103,6 +103,7 @@ fn test_conversions() {
     expect_output("5m^2 -> m*cm", "500 m·cm");
     expect_output("5m^2 -> cm*m", "500 cm·m");
     expect_output("1 kB / 10 ms -> MB/s", "0.1 MB/s");
+    expect_output("55! / (6! (55 - 6)!) -> million", "28.9897 million");
 }
 
 #[test]
@@ -118,6 +119,18 @@ fn test_implicit_conversion() {
     expect_output_with_context(&mut ctx, "x²", "25 m²");
 
     expect_failure("x2", "Unknown identifier 'x2'");
+}
+
+#[test]
+fn test_reset_after_runtime_error() {
+    let mut ctx = get_test_context();
+
+    let _ = ctx.interpret("let x = 1", CodeSource::Internal).unwrap();
+    let res = ctx.interpret("1/0", CodeSource::Internal);
+
+    assert!(res.is_err());
+
+    expect_output_with_context(&mut ctx, "x", "1");
 }
 
 #[test]
@@ -185,7 +198,7 @@ fn test_incompatible_dimension_errors() {
     );
     expect_exact_failure(
         "m / s + K A",
-        " left hand side: Length / Time            [= Speed]\n\
+        " left hand side: Length / Time            [= Velocity]\n\
          right hand side: Current × Temperature\n\n\
          Suggested fix: multiply left hand side by Current × Temperature × Time / Length",
     );

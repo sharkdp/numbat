@@ -1,7 +1,7 @@
 let reaction_time: Time = 500 ms
 let braking_power: Acceleration = 0.8 × gravity
 
-fn stopping_distance(v: Speed) -> Length =
+fn stopping_distance(v: Velocity) -> Length =
     v × reaction_time + ½ v² / braking_power
 
 assert_eq(stopping_distance(50 km/h), 19.2385 m, 0.001 m)
