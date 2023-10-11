@@ -58,8 +58,8 @@ function interpret(input) {
     output = result.output;
 
     if (!result.is_error) {
-        combined_input += input + "\n";
-        updateUrlQuery(combined_input.trim());
+        combined_input += input.trim() + "⏎";
+        updateUrlQuery(combined_input);
     }
   }
 
@@ -87,7 +87,12 @@ function main() {
     if (location.search) {
       var queryParams = new URLSearchParams(location.search);
       if (queryParams.has("q")) {
-        term.exec(queryParams.get("q"));
+        // feed in the query line by line, as if the user typed it in
+        for (const line of queryParams.get("q").split("⏎")) {
+          if (line.trim().length > 0) {
+            term.exec(line.trim() + "\n");
+          }
+        }
       }
     }
   });
