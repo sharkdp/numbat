@@ -115,7 +115,7 @@ mod tests {
 
         @aliases(Hz: short)
         unit hertz: Frequency = 1 / second
-        
+
         fn sin(x: Scalar) -> Scalar
         fn atan2<D>(y: D, x: D) -> Scalar
         fn mean<D>(xs: D…) -> D

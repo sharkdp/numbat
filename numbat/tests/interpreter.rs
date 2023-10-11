@@ -122,6 +122,18 @@ fn test_implicit_conversion() {
 }
 
 #[test]
+fn test_reset_after_runtime_error() {
+    let mut ctx = get_test_context();
+
+    let _ = ctx.interpret("let x = 1", CodeSource::Internal).unwrap();
+    let res = ctx.interpret("1/0", CodeSource::Internal);
+
+    assert!(res.is_err());
+
+    expect_output_with_context(&mut ctx, "x", "1");
+}
+
+#[test]
 fn test_function_inverses() {
     expect_output("sin(asin(0.1234))", "0.1234");
     expect_output("cos(acos(0.1234))", "0.1234");
