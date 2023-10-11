@@ -1,0 +1,23 @@
+use units::si
+use units::astronomical
+use physics::constants
+
+unit lyr: Length = lightyear
+
+@aliases(lsec)
+unit lightsecond: Length = speed_of_light × 1 s
+
+unit lunar_mass: Mass = 7.342e22 kg
+unit lunar_radius: Length = 1737.4 km
+
+unit earth_mass: Mass = 5.9722e24 kg
+unit earth_radius: Length = 6378.1 km
+
+unit jupiter_mass: Mass = 1.89813e27 kg
+unit jupiter_radius: Length = 71_492 km
+
+unit solar_mass: Mass = 1.98847e30 kg
+unit solar_radius: Length = 6.957e5 km
+
+dimension RadiantFlux = Power
+unit solar_luminosity: RadiantFlux = 3.828e26 W
