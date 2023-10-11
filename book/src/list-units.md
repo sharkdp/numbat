@@ -121,6 +121,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | [Renminbi](https://en.wikipedia.org/wiki/Renminbi) | `renminbi`, `CNY`, `元` |
 | [Rod](https://en.wikipedia.org/wiki/Rod_(unit)) | `rods`, `rod` |
 | [Second](https://en.wikipedia.org/wiki/Second) | `seconds`, `second`, `sec`, `s` |
+| [Sidereal day](https://en.wikipedia.org/wiki/Sidereal_time#Sidereal_day) | `sidereal_day`, `sidereal_days` |
 | [Siemens](https://en.wikipedia.org/wiki/Siemens_(unit)) | `siemens`, `S` |
 | [Sievert](https://en.wikipedia.org/wiki/Sievert) | `sieverts`, `sievert`, `Sv` |
 | [Steradian](https://en.wikipedia.org/wiki/Steradian) | `steradian`, `steradians`, `sr` |

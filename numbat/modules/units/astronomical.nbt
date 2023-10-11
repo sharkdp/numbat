@@ -7,3 +7,6 @@ unit parsec: Length = 648_000 / π × au
 @metric_prefixes
 @aliases(lightyears, ly: short)
 unit lightyear: Length = 9_460_730_472_580_800 m
+
+@aliases(sidereal_days)
+unit sidereal_day: Time = 86164.0905 s
