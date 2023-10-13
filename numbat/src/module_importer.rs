@@ -80,14 +80,14 @@ impl ModuleImporter for BuiltinModuleImporter {
 }
 
 pub struct ChainedImporter {
-    main: Box<dyn ModuleImporter + Send>,
-    fallback: Box<dyn ModuleImporter + Send>,
+    main: Box<dyn ModuleImporter + Send + Sync>,
+    fallback: Box<dyn ModuleImporter + Send + Sync>,
 }
 
 impl ChainedImporter {
     pub fn new(
-        main: Box<dyn ModuleImporter + Send>,
-        fallback: Box<dyn ModuleImporter + Send>,
+        main: Box<dyn ModuleImporter + Send + Sync>,
+        fallback: Box<dyn ModuleImporter + Send + Sync>,
     ) -> Self {
         Self { main, fallback }
     }
