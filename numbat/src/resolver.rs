@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     ast::Statement, module_importer::ModuleImporter, parser::parse, span::Span, ParseError,
@@ -43,8 +43,9 @@ pub enum ResolverError {
 
 type Result<T> = std::result::Result<T, ResolverError>;
 
+#[derive(Clone)]
 pub struct Resolver {
-    importer: Box<dyn ModuleImporter + Send>,
+    importer: Arc<dyn ModuleImporter>,
     pub files: SimpleFiles<String, String>,
     text_code_source_count: usize,
     internal_code_source_count: usize,
@@ -54,7 +55,7 @@ pub struct Resolver {
 impl Resolver {
     pub(crate) fn new(importer: impl ModuleImporter + Send + 'static) -> Self {
         Self {
-            importer: Box::new(importer),
+            importer: Arc::new(importer),
             files: SimpleFiles::new(),
             text_code_source_count: 0,
             internal_code_source_count: 0,

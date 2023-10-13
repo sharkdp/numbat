@@ -13,12 +13,13 @@ use crate::unit_registry::UnitRegistry;
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Local {
     identifier: String,
     depth: usize,
 }
 
+#[derive(Clone)]
 pub struct BytecodeInterpreter {
     vm: Vm,
     /// List of local variables currently in scope, one vector for each scope (for now: 0: 'global' scope, 1: function scope)
