@@ -663,6 +663,7 @@ dependencies = [
  "num-rational",
  "num-traits",
  "numbat-exchange-rates",
+ "once_cell",
  "pretty_dtoa",
  "rust-embed",
  "strsim",

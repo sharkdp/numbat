@@ -159,6 +159,7 @@ impl Op {
     }
 }
 
+#[derive(Clone)]
 pub enum Constant {
     Scalar(f64),
     Unit(Unit),
@@ -188,6 +189,7 @@ impl Display for Constant {
     }
 }
 
+#[derive(Clone)]
 struct CallFrame {
     /// The function being executed, index into [Vm]s `bytecode` vector.
     function_idx: usize,
@@ -215,6 +217,7 @@ pub struct ExecutionContext<'a> {
     pub print_fn: &'a mut PrintFunction,
 }
 
+#[derive(Clone)]
 pub struct Vm {
     /// The actual code of the program, structured by function name. The code
     /// for the global scope is at index 0 under the function name `<main>`.

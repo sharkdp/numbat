@@ -7,7 +7,7 @@ use rust_embed::RustEmbed;
 
 use crate::resolver::ModulePath;
 
-pub trait ModuleImporter {
+pub trait ModuleImporter: Send + Sync {
     fn import(&self, path: &ModulePath) -> Option<(String, Option<PathBuf>)>;
 }
 
@@ -80,15 +80,12 @@ impl ModuleImporter for BuiltinModuleImporter {
 }
 
 pub struct ChainedImporter {
-    main: Box<dyn ModuleImporter + Send>,
-    fallback: Box<dyn ModuleImporter + Send>,
+    main: Box<dyn ModuleImporter>,
+    fallback: Box<dyn ModuleImporter>,
 }
 
 impl ChainedImporter {
-    pub fn new(
-        main: Box<dyn ModuleImporter + Send>,
-        fallback: Box<dyn ModuleImporter + Send>,
-    ) -> Self {
+    pub fn new(main: Box<dyn ModuleImporter>, fallback: Box<dyn ModuleImporter>) -> Self {
         Self { main, fallback }
     }
 }

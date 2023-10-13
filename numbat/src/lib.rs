@@ -74,6 +74,7 @@ pub enum NumbatError {
 
 type Result<T> = std::result::Result<T, NumbatError>;
 
+#[derive(Clone)]
 pub struct Context {
     prefix_transformer: Transformer,
     typechecker: TypeChecker,
@@ -83,7 +84,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(module_importer: impl ModuleImporter + Send + 'static) -> Self {
+    pub fn new(module_importer: impl ModuleImporter + Send + Sync + 'static) -> Self {
         Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),

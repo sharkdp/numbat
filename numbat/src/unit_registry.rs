@@ -12,6 +12,7 @@ pub enum UnitRegistryError {
 
 pub type Result<T> = std::result::Result<T, UnitRegistryError>;
 
+#[derive(Clone)]
 pub struct UnitRegistry {
     pub inner: Registry<Type>,
 }
