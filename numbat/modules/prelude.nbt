@@ -18,6 +18,7 @@ use units::cgs
 use units::planck
 use units::fff
 use units::misc
+use units::humorous
 use units::partsperx
 
 use units::currency

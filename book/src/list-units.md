@@ -124,6 +124,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | [Sidereal day](https://en.wikipedia.org/wiki/Sidereal_time#Sidereal_day) | `sidereal_day`, `sidereal_days` |
 | [Siemens](https://en.wikipedia.org/wiki/Siemens_(unit)) | `siemens`, `S` |
 | [Sievert](https://en.wikipedia.org/wiki/Sievert) | `sieverts`, `sievert`, `Sv` |
+| [Smoot](https://en.wikipedia.org/wiki/Smoot) | `smoots`, `smoot` |
 | [Steradian](https://en.wikipedia.org/wiki/Steradian) | `steradian`, `steradians`, `sr` |
 | [Stokes](https://en.wikipedia.org/wiki/Viscosity#Units) | `stokes`, `St` |
 | [Stoney length](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_length` |
