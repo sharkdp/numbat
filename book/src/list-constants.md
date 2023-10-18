@@ -40,7 +40,7 @@ Colloquial:
 | The speed of light in vacuum | `speed_of_light`, `c` | `Velocity` |
 | The Newtonian constant of gravitation | `gravitational_constant`, `G` | `Force × Length^2 / Mass^2` |
 | Standard acceleration of gravity on earth | `gravity`, `g0` | `Acceleration` |
-| The Planck constant | `planck_constant` | `Mass × Length^2 / Time` |
+| The Planck constant | `planck_constant`, `ℎ` | `Mass × Length^2 / Time` |
 | The reduced Planck constant | `h_bar`, `ℏ` | `Mass × Length^2 / Time` |
 | Mass of the electron | `electron_mass` | `Mass` |
 | Elementary charge (charge of the electron) | `elementary_charge`, `electron_charge` | `ElectricCharge` |
