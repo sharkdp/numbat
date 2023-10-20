@@ -136,6 +136,7 @@ mod tests {
             .interpret_statements(&mut InterpreterSettings::default(), &statements_typechecked)
     }
 
+    #[track_caller]
     fn assert_evaluates_to(input: &str, expected: Quantity) {
         if let InterpreterResult::Value(actual) = get_interpreter_result(input).unwrap() {
             let actual = actual.unsafe_as_quantity();
@@ -145,10 +146,12 @@ mod tests {
         }
     }
 
+    #[track_caller]
     fn assert_evaluates_to_scalar(input: &str, expected: f64) {
         assert_evaluates_to(input, Quantity::from_scalar(expected))
     }
 
+    #[track_caller]
     fn assert_runtime_error(input: &str, err_expected: RuntimeError) {
         if let Err(err_actual) = get_interpreter_result(input) {
             assert_eq!(err_actual, err_expected);
@@ -173,6 +176,10 @@ mod tests {
         assert_evaluates_to_scalar("2 * -3", 2.0 * -3.0);
         assert_evaluates_to_scalar("2 - 3 - 4", 2.0 - 3.0 - 4.0);
         assert_evaluates_to_scalar("2 - -3", 2.0 - -3.0);
+
+        assert_evaluates_to_scalar("+2 * 3", 2.0 * 3.0);
+        assert_evaluates_to_scalar("2 * +3", 2.0 * 3.0);
+        assert_evaluates_to_scalar("+2 - +3", 2.0 - 3.0);
     }
 
     #[test]

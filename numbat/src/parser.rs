@@ -28,9 +28,9 @@
 //! conversion      ::=   comparison ( ( "→" | "->" | "to" ) comparison ) *
 //! comparison      ::=   term ( (">" | ">="| "≥" | "<" | "<=" | "≤" | "==" | "!=" | "≠" ) term ) *
 //! term            ::=   factor ( ( "+" | "-") factor ) *
-//! factor          ::=   negate ( ( "*" | "/") per_factor ) *
-//! per_factor      ::=   negate ( "per" negate ) *
-//! negate          ::=   ( "-" negate ) | ifactor
+//! factor          ::=   unary ( ( "*" | "/") per_factor ) *
+//! per_factor      ::=   unary ( "per" unary ) *
+//! unary           ::=   ( ( minus | plus ) unary ) | ifactor
 //! ifactor         ::=   power ( " " power ) *
 //! power           ::=   factorial ( "^" "-" ? power ) ?
 //! factorial       ::=   unicode_power "!" *
@@ -827,11 +827,11 @@ impl<'a> Parser<'a> {
     }
 
     fn per_factor(&mut self) -> Result<Expression> {
-        let mut expr = self.negate()?;
+        let mut expr = self.unary()?;
 
         while self.match_exact(TokenKind::Per).is_some() {
             let span_op = Some(self.last().unwrap().span);
-            let rhs = self.negate()?;
+            let rhs = self.unary()?;
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Div,
@@ -844,16 +844,20 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn negate(&mut self) -> Result<Expression> {
+    fn unary(&mut self) -> Result<Expression> {
         if self.match_exact(TokenKind::Minus).is_some() {
             let span = self.last().unwrap().span;
-            let rhs = self.negate()?;
+            let rhs = self.unary()?;
 
             Ok(Expression::UnaryOperator {
                 op: UnaryOperator::Negate,
                 expr: Box::new(rhs),
                 span_op: span,
             })
+        } else if self.match_exact(TokenKind::Plus).is_some() {
+            // A unary `+` is equivalent to nothing. We can get rid of the
+            // symbol without inserting any nodes in the AST.
+            self.unary()
         } else {
             self.ifactor()
         }
@@ -1377,6 +1381,7 @@ mod tests {
     use super::*;
     use crate::ast::{binop, conditional, factorial, identifier, negate, scalar, ReplaceSpans};
 
+    #[track_caller]
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
             let statements = parse(input, 0).expect("parse error").replace_spans();
@@ -1388,16 +1393,19 @@ mod tests {
         }
     }
 
+    #[track_caller]
     fn parse_as_expression(inputs: &[&str], expr_expected: Expression) {
         parse_as(inputs, Statement::Expression(expr_expected));
     }
 
+    #[track_caller]
     fn should_fail(inputs: &[&str]) {
         for input in inputs {
             assert!(parse(input, 0).is_err());
         }
     }
 
+    #[track_caller]
     fn should_fail_with(inputs: &[&str], error_kind: ParseErrorKind) {
         for input in inputs {
             match parse(input, 0) {
@@ -1490,7 +1498,7 @@ mod tests {
     }
 
     #[test]
-    fn negation() {
+    fn unary() {
         parse_as_expression(&["-1", "  - 1   "], negate!(scalar!(1.0)));
         parse_as_expression(&["-123.45"], negate!(scalar!(123.45)));
         parse_as_expression(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
@@ -1500,6 +1508,22 @@ mod tests {
         parse_as_expression(
             &["-1 + 2"],
             binop!(negate!(scalar!(1.0)), Add, scalar!(2.0)),
+        );
+
+        parse_as_expression(&["+1", "  + 1   "], scalar!(1.0));
+        parse_as_expression(&["+123.45"], scalar!(123.45));
+        parse_as_expression(&["++1", " +  + 1   "], scalar!(1.0));
+        parse_as_expression(&["+x", " + x"], identifier!("x"));
+        parse_as_expression(&["+0.61", "+.61", "+  .61"], scalar!(0.61));
+
+        parse_as_expression(
+            &["+1 + 2", "1 +++++ 2"],
+            binop!(scalar!(1.0), Add, scalar!(2.0)),
+        );
+
+        parse_as_expression(
+            &["+1 - 2", "+1 - +2 "],
+            binop!(scalar!(1.0), Sub, scalar!(2.0)),
         );
     }
 
