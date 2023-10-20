@@ -33,8 +33,8 @@ fn pass_expression_on_command_line() {
         .arg("--expression")
         .arg("2 ++ 3")
         .assert()
-        .failure()
-        .stderr(predicates::str::contains("while parsing"));
+        .success()
+        .stdout(predicates::str::contains("5"));
 
     numbat()
         .arg("--expression")
