@@ -31,10 +31,9 @@ fn pass_expression_on_command_line() {
 
     numbat()
         .arg("--expression")
-        .arg("2 ++ 3")
+        .arg("2 +/ 3")
         .assert()
-        .success()
-        .stdout(predicates::str::contains("5"));
+        .stderr(predicates::str::contains("while parsing"));
 
     numbat()
         .arg("--expression")
