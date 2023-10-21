@@ -90,12 +90,11 @@ pub trait Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use crate::unit::Unit;
-    use crate::{bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer};
-
     use super::*;
+    use crate::{bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer};
+    use insta::assert_snapshot;
 
-    static TEST_PRELUDE: &str = "
+    const TEST_PRELUDE: &str = "
         dimension Scalar = 1
 
         dimension Length
@@ -122,8 +121,13 @@ mod tests {
         fn maximum<D>(xs: D…) -> D
         fn minimum<D>(xs: D…) -> D";
 
-    fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
-        let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
+    #[track_caller]
+    fn get_interpreter_result(input: impl AsRef<str>) -> Result<InterpreterResult> {
+        let full_code = format!(
+            "{prelude}\n{input}",
+            prelude = TEST_PRELUDE,
+            input = input.as_ref()
+        );
         let statements = crate::parser::parse(&full_code, 0)
             .expect("No parse errors for inputs in this test suite");
         let statements_transformed = Transformer::new()
@@ -137,137 +141,112 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_evaluates_to(input: &str, expected: Quantity) {
-        if let InterpreterResult::Value(actual) = get_interpreter_result(input).unwrap() {
-            let actual = actual.unsafe_as_quantity();
-            assert_eq!(actual, &expected);
-        } else {
-            panic!();
-        }
-    }
-
-    #[track_caller]
-    fn assert_evaluates_to_scalar(input: &str, expected: f64) {
-        assert_evaluates_to(input, Quantity::from_scalar(expected))
-    }
-
-    #[track_caller]
-    fn assert_runtime_error(input: &str, err_expected: RuntimeError) {
-        if let Err(err_actual) = get_interpreter_result(input) {
-            assert_eq!(err_actual, err_expected);
-        } else {
-            panic!();
+    fn evaluates(input: impl AsRef<str>) -> String {
+        match get_interpreter_result(input.as_ref()) {
+            Ok(InterpreterResult::Value(value)) => format!("{}", value),
+            Ok(_) => panic!("Received non value result"),
+            Err(e) => format!("{e:?}: `{e}`"),
         }
     }
 
     #[test]
     fn simple_arithmetic() {
-        assert_evaluates_to_scalar("0", 0.0);
-        assert_evaluates_to_scalar("1", 1.0);
-        assert_evaluates_to_scalar("1+2", 1.0 + 2.0);
-        assert_evaluates_to_scalar("-1", -1.0);
+        assert_snapshot!(evaluates("0"), @"0");
+        assert_snapshot!(evaluates("1"), @"1");
+        assert_snapshot!(evaluates("1+2"), @"3");
+        assert_snapshot!(evaluates("-1"), @"-1");
 
-        assert_evaluates_to_scalar("2+3*4", 2.0 + 3.0 * 4.0);
-        assert_evaluates_to_scalar("2*3+4", 2.0 * 3.0 + 4.0);
-        assert_evaluates_to_scalar("(2+3)*4", (2.0 + 3.0) * 4.0);
+        assert_snapshot!(evaluates("2+3*4"), @"14");
+        assert_snapshot!(evaluates("2*3+4"), @"10");
+        assert_snapshot!(evaluates("(2+3)*4"), @"20");
 
-        assert_evaluates_to_scalar("(2/3)*4", (2.0 / 3.0) * 4.0);
-        assert_evaluates_to_scalar("-2 * 3", -2.0 * 3.0);
-        assert_evaluates_to_scalar("2 * -3", 2.0 * -3.0);
-        assert_evaluates_to_scalar("2 - 3 - 4", 2.0 - 3.0 - 4.0);
-        assert_evaluates_to_scalar("2 - -3", 2.0 - -3.0);
+        assert_snapshot!(evaluates("(2/3)*4"), @"2.66667");
+        assert_snapshot!(evaluates("-2 * 3"), @"-6");
+        assert_snapshot!(evaluates("2 * -3"), @"-6");
+        assert_snapshot!(evaluates("2 - 3 - 4"), @"-5");
+        assert_snapshot!(evaluates("2 - -3"), @"5");
 
-        assert_evaluates_to_scalar("+2 * 3", 2.0 * 3.0);
-        assert_evaluates_to_scalar("2 * +3", 2.0 * 3.0);
-        assert_evaluates_to_scalar("+2 - +3", 2.0 - 3.0);
+        assert_snapshot!(evaluates("+2 * 3"), @"6");
+        assert_snapshot!(evaluates("2 * +3"), @"6");
+        assert_snapshot!(evaluates("+2 - +3"), @"-1");
     }
 
     #[test]
     fn arithmetic_with_units() {
-        use crate::unit::Unit;
+        assert_snapshot!(evaluates(
+            "2 meter + 3 meter"), @"5 m");
 
-        assert_evaluates_to(
-            "2 meter + 3 meter",
-            Quantity::from_scalar(2.0 + 3.0) * Quantity::from_unit(Unit::meter()),
-        );
-
-        assert_evaluates_to(
+        assert_snapshot!(evaluates(
             "dimension Pixel
              @aliases(px: short)
              unit pixel : Pixel
-             2 * pixel",
-            Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_base("pixel", "px")),
-        );
+             2 * pixel"), @"2 px");
 
-        assert_evaluates_to(
+        assert_snapshot!(evaluates(
             "fn speed(distance: Length, time: Time) -> Velocity = distance / time
-             speed(10 * meter, 2 * second)",
-            Quantity::from_scalar(5.0)
-                * (Quantity::from_unit(Unit::meter()) / Quantity::from_unit(Unit::second())),
-        );
+            speed(10 * meter, 2 * second)"), @"5 m/s");
     }
 
     #[test]
     fn power_operator() {
-        assert_evaluates_to_scalar("2^3", 2.0f64.powf(3.0));
-        assert_evaluates_to_scalar("-2^4", -(2.0f64.powf(4.0)));
-        assert_evaluates_to_scalar("2^(-3)", 2.0f64.powf(-3.0));
+        assert_snapshot!(evaluates("2^3"), @"8");
+        assert_snapshot!(evaluates("-2^4"), @"-16");
+        assert_snapshot!(evaluates("2^(-3)"), @"0.125");
     }
 
     #[test]
     fn multiline_input_yields_result_of_last_line() {
-        assert_evaluates_to_scalar("2\n3", 3.0);
+        assert_snapshot!(evaluates("2\n3"), @"3");
     }
 
     #[test]
     fn variable_definitions() {
-        assert_evaluates_to_scalar("let x = 2\nlet y = 3\nx + y", 2.0 + 3.0);
+        assert_snapshot!(evaluates("let x = 2\nlet y = 3\nx + y"), @"5");
     }
 
     #[test]
     fn function_definitions() {
-        assert_evaluates_to_scalar("fn f(x: Scalar) = 2 * x + 3\nf(5)", 2.0 * 5.0 + 3.0);
+        assert_snapshot!(evaluates(
+            "fn f(x: Scalar) = 2 * x + 3\nf(5)"),
+            @"13"
+        );
     }
 
     #[test]
     fn foreign_functions() {
-        assert_evaluates_to_scalar("sin(1)", 1.0f64.sin());
-        assert_evaluates_to_scalar("atan2(2 meter, 1 meter)", 2.0f64.atan2(1.0f64));
+        assert_snapshot!(evaluates("sin(1)"), @"0.841471");
+        assert_snapshot!(evaluates("atan2(2 meter, 1 meter)"), @"1.10715");
     }
 
     #[test]
     fn statistics_functions() {
-        assert_evaluates_to_scalar("mean(1, 1, 1, 0)", 0.75);
-        assert_evaluates_to(
-            "mean(1 m, 1 m, 1 m, 0 m)",
-            Quantity::new_f64(0.75, Unit::meter()),
+        assert_snapshot!(evaluates("mean(1, 1, 1, 0)"), @"0.75");
+        assert_snapshot!(evaluates(
+            "mean(1 m, 1 m, 1 m, 0 m)"),
+            @"0.75 m"
         );
-        assert_evaluates_to("mean(2 m, 100 cm)", Quantity::new_f64(1.5, Unit::meter()));
+        assert_snapshot!(evaluates("mean(2 m, 100 cm)"), @"1.5 m");
 
-        assert_evaluates_to_scalar("maximum(1, 2, 0, -3)", 2.0);
-        assert_evaluates_to(
-            "maximum(2 m, 0.1 km)",
-            Quantity::new_f64(100.0, Unit::meter()),
-        );
+        assert_snapshot!(evaluates("maximum(1, 2, 0, -3)"), @"2");
+        assert_snapshot!(evaluates(
+            "maximum(2 m, 0.1 km)"), @"100 m");
 
-        assert_evaluates_to_scalar("minimum(1, 2, 0, -3)", -3.0);
-        assert_evaluates_to(
-            "minimum(2 m, 150 cm)",
-            Quantity::new_f64(1.5, Unit::meter()),
-        );
+        assert_snapshot!(evaluates("minimum(1, 2, 0, -3)"), @"-3");
+        assert_snapshot!(evaluates(
+            "minimum(2 m, 150 cm)"), @"1.5 m");
     }
 
     #[test]
     fn division_by_zero_raises_runtime_error() {
-        assert_runtime_error("1/0", RuntimeError::DivisionByZero);
+        assert_snapshot!(evaluates("1/0"), @"DivisionByZero: `Division by zero`");
     }
 
     #[test]
     fn non_rational_exponent() {
         // Regression test, found using fuzzing
-        assert_runtime_error(
-            "0**0⁻⁸",
-            RuntimeError::QuantityError(QuantityError::NonRationalExponent),
+        assert_snapshot!(evaluates(
+            "0**0⁻⁸"),
+            @"QuantityError(NonRationalExponent): `Non-rational exponent`"
         );
     }
 }
