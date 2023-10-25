@@ -2,6 +2,6 @@
 
 use physics::constants
 
-unit stoney_length: Length = sqrt(G × electron_charge^2 / 4 π ε0 c^4)
-unit stoney_mass: Mass = sqrt(electron_charge^2 / 4 π ε0 G)
-unit stoney_time: Time = sqrt(G × electron_charge^2 / 4 π ε0 c^6)
+#unit stoney_length: Length = sqrt(G × electron_charge^2 / 4 π ε0 c^4)
+#unit stoney_mass: Mass = sqrt(electron_charge^2 / 4 π ε0 G)
+#unit stoney_time: Time = sqrt(G × electron_charge^2 / 4 π ε0 c^6)

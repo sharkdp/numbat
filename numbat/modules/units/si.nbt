@@ -35,7 +35,11 @@ unit candela: LuminousIntensity
 
 @metric_prefixes
 @aliases(radians, rad: short)
-unit radian: Angle = meter / meter
+unit radian: Angle
+
+# The "Cotes angle"
+let theta_C = 1 rad
+let θC = theta_C
 
 @metric_prefixes
 @aliases(steradians, sr: short)

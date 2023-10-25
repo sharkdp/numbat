@@ -1,6 +1,6 @@
 ### Physical dimensions
 
-dimension Angle = 1  # SI: plane angle
+dimension Angle  # SI: plane angle
 dimension SolidAngle = Angle^2
 
 dimension Length
@@ -14,6 +14,8 @@ dimension Velocity = Length / Time
 dimension Acceleration = Length / Time^2
 dimension Jerk = Length / Time^3
 dimension FlowRate = Volume / Time
+dimension AngularFrequency = Angle / Time
+dimension AngularAcceleration = Angle / Time^2
 
 dimension Mass
 dimension Momentum = Mass × Velocity
@@ -24,7 +26,7 @@ dimension Pressure = Force / Area = Energy / Volume  # also: stress
 dimension Action = Energy × Time
 dimension MassDensity = Mass / Length^3
 dimension MomentOfInertia = Mass × Length^2 / Angle^2
-dimension AngularMomentum = MomentOfInertia × Angle / Time = Mass × Length^2 / Time / Angle
+dimension AngularMomentum = MomentOfInertia × AngularFrequency = Mass × Length^2 / Time / Angle
 dimension Torque = Length × Force / Angle  # also: moment of force
 dimension EnergyDensity = Energy / Volume
 dimension MassFlow = Mass / Time
@@ -45,7 +47,7 @@ dimension ElectricChargeDensity = ElectricCharge / Volume
 dimension CurrentDensity = Current / Area
 dimension ElectricDipoleMoment = ElectricCharge × Length
 dimension ElectricQuadrupoleMoment = ElectricCharge × Length^2
-dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
+dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity * Angle
 dimension ElectricFieldStrength = Voltage / Length
 dimension ElectricDisplacementFieldStrength = ElectricCharge / Area
 dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3 × Angle = ElectricDisplacementFieldStrength / ElectricFieldStrength × Angle

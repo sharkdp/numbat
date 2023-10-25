@@ -3,16 +3,16 @@
 use physics::constants
 
 # Planck length
-unit planck_length: Length = sqrt(ℏ G / c^3) -> m
+unit planck_length: Length = sqrt(ȟ G / c^3) -> m
 
 # Planck mass
-unit planck_mass: Mass = sqrt(ℏ c / G) -> kg
+unit planck_mass: Mass = sqrt(ȟ c / G) -> kg
 
 # Planck time
-unit planck_time: Time = sqrt(ℏ G / c^5) -> s
+unit planck_time: Time = sqrt(ȟ G / c^5) -> s
 
 # Planck temperature
-unit planck_temperature: Temperature = sqrt(ℏ c^5 / (G k_B^2)) -> K
+unit planck_temperature: Temperature = sqrt(ȟ c^5 / (G k_B^2)) -> K
 
 # Planck energy
-unit planck_energy: Energy = sqrt(ℏ c^5 / G) -> J
+unit planck_energy: Energy = sqrt(ȟ c^5 / G) -> J
