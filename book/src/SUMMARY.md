@@ -56,3 +56,7 @@
 # Notes for developers
 
 - [Type system](./type-system.md)
+
+# Support
+
+- [Contact us](./contact-us.md)

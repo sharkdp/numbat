@@ -167,3 +167,10 @@ you don't have to recompile Numbat to see your changes.
 Alternatively, you can create a symlink from `~/.config/numbat/modules` to the `numbat/modules/`
 folder in the repository (see [this page](https://numbat.dev/doc/cli-customization.html#module-paths)
 for the standard paths on other operating systems).
+
+## Contact us
+
+To contact us, either [open a GitHub issue](https://github.com/sharkdp/
+numbat/issues/new/ choose) or [discussion](https://github.com/sharkdp/numbat/
+discussions), or pop into `#numbat` on [Libera.Chat](https://libera.chat) ([link
+to webchat](https://web.libera.chat/gamja/#numbat)).
