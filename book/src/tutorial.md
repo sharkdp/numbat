@@ -20,12 +20,12 @@ let molar_mass = 40 g / mol
 
 New constants are [introduced with the `let` keyword](./constant-definitions.md). We
 define these physical quantities with their respective physical units (`years`,
-`percent`, `g / mol`) in order to profit from Numbats unit-safety and unit-conversion
+`percent`, `g / mol`) in order to profit from Numbat's unit-safety and unit-conversion
 features later on.
 
 Our first goal is to compute the radioactivity of natural potassium. Instead of dealing with the
 half-life, we want to know the decay rate. When entering the following computation, you can try
-Numbats auto-completion functionality. Instead of typing out `halflife`, just type `half` and press
+Numbat's auto-completion functionality. Instead of typing out `halflife`, just type `half` and press
 `Tab`.
 
 ``` numbat

@@ -10,6 +10,6 @@
       - Being able to define constants and the whole unit system in the language itself (https://numbat.dev/doc/prelude.html)
       - Much better error messages
       - Support for notepad-style computations (Mathematica/Jupyter style)
-  - The PureScript implementation is *slow*. Numbats Rust-based parser & interpreter is orders of magnitude faster. Not just
+  - The PureScript implementation is *slow*. Numbat's Rust-based parser & interpreter is orders of magnitude faster, not just
     on the command-line (startup speed!) but also on the Web (via WASM)
-  - I always wanted to experiment with WASM and Numbat was a perfect excuse for this.
+  - I've always wanted to experiment with WASM and Numbat was a perfect excuse for this.
