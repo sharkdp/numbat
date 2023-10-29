@@ -143,7 +143,7 @@ mod tests {
     #[track_caller]
     fn evaluates(input: impl AsRef<str>) -> String {
         match get_interpreter_result(input.as_ref()) {
-            Ok(InterpreterResult::Value(value)) => format!("{}", value),
+            Ok(InterpreterResult::Value(value)) => format!("{value} => `{value:?}`"),
             Ok(_) => panic!("Received non value result"),
             Err(e) => format!("{e:?}: `{e}`"),
         }
@@ -151,89 +151,89 @@ mod tests {
 
     #[test]
     fn simple_arithmetic() {
-        assert_snapshot!(evaluates("0"), @"0");
-        assert_snapshot!(evaluates("1"), @"1");
-        assert_snapshot!(evaluates("1+2"), @"3");
-        assert_snapshot!(evaluates("-1"), @"-1");
+        assert_snapshot!(evaluates("0"), @"0 => `Quantity(Quantity { value: Number(0.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("1"), @"1 => `Quantity(Quantity { value: Number(1.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("1+2"), @"3 => `Quantity(Quantity { value: Number(3.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("-1"), @"-1 => `Quantity(Quantity { value: Number(-1.0), unit: Product { factors: [] } })`");
 
-        assert_snapshot!(evaluates("2+3*4"), @"14");
-        assert_snapshot!(evaluates("2*3+4"), @"10");
-        assert_snapshot!(evaluates("(2+3)*4"), @"20");
+        assert_snapshot!(evaluates("2+3*4"), @"14 => `Quantity(Quantity { value: Number(14.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("2*3+4"), @"10 => `Quantity(Quantity { value: Number(10.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("(2+3)*4"), @"20 => `Quantity(Quantity { value: Number(20.0), unit: Product { factors: [] } })`");
 
-        assert_snapshot!(evaluates("(2/3)*4"), @"2.66667");
-        assert_snapshot!(evaluates("-2 * 3"), @"-6");
-        assert_snapshot!(evaluates("2 * -3"), @"-6");
-        assert_snapshot!(evaluates("2 - 3 - 4"), @"-5");
-        assert_snapshot!(evaluates("2 - -3"), @"5");
+        assert_snapshot!(evaluates("(2/3)*4"), @"2.66667 => `Quantity(Quantity { value: Number(2.6666666666666665), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("-2 * 3"), @"-6 => `Quantity(Quantity { value: Number(-6.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("2 * -3"), @"-6 => `Quantity(Quantity { value: Number(-6.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("2 - 3 - 4"), @"-5 => `Quantity(Quantity { value: Number(-5.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("2 - -3"), @"5 => `Quantity(Quantity { value: Number(5.0), unit: Product { factors: [] } })`");
 
-        assert_snapshot!(evaluates("+2 * 3"), @"6");
-        assert_snapshot!(evaluates("2 * +3"), @"6");
-        assert_snapshot!(evaluates("+2 - +3"), @"-1");
+        assert_snapshot!(evaluates("+2 * 3"), @"6 => `Quantity(Quantity { value: Number(6.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("2 * +3"), @"6 => `Quantity(Quantity { value: Number(6.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("+2 - +3"), @"-1 => `Quantity(Quantity { value: Number(-1.0), unit: Product { factors: [] } })`");
     }
 
     #[test]
     fn arithmetic_with_units() {
         assert_snapshot!(evaluates(
-            "2 meter + 3 meter"), @"5 m");
+            "2 meter + 3 meter"), @r###"5 m => `Quantity(Quantity { value: Number(5.0), unit: Product { factors: [UnitFactor { unit_id: UnitIdentifier { name: "meter", canonical_name: "m", kind: Base }, prefix: Metric(0), exponent: Ratio { numer: 1, denom: 1 } }] } })`"###);
 
         assert_snapshot!(evaluates(
             "dimension Pixel
              @aliases(px: short)
              unit pixel : Pixel
-             2 * pixel"), @"2 px");
+             2 * pixel"), @r###"2 px => `Quantity(Quantity { value: Number(2.0), unit: Product { factors: [UnitFactor { unit_id: UnitIdentifier { name: "pixel", canonical_name: "px", kind: Base }, prefix: Metric(0), exponent: Ratio { numer: 1, denom: 1 } }] } })`"###);
 
         assert_snapshot!(evaluates(
             "fn speed(distance: Length, time: Time) -> Velocity = distance / time
-            speed(10 * meter, 2 * second)"), @"5 m/s");
+            speed(10 * meter, 2 * second)"), @r###"5 m/s => `Quantity(Quantity { value: Number(5.0), unit: Product { factors: [UnitFactor { unit_id: UnitIdentifier { name: "meter", canonical_name: "m", kind: Base }, prefix: Metric(0), exponent: Ratio { numer: 1, denom: 1 } }, UnitFactor { unit_id: UnitIdentifier { name: "second", canonical_name: "s", kind: Base }, prefix: Metric(0), exponent: Ratio { numer: -1, denom: 1 } }] } })`"###);
     }
 
     #[test]
     fn power_operator() {
-        assert_snapshot!(evaluates("2^3"), @"8");
-        assert_snapshot!(evaluates("-2^4"), @"-16");
-        assert_snapshot!(evaluates("2^(-3)"), @"0.125");
+        assert_snapshot!(evaluates("2^3"), @"8 => `Quantity(Quantity { value: Number(8.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("-2^4"), @"-16 => `Quantity(Quantity { value: Number(-16.0), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("2^(-3)"), @"0.125 => `Quantity(Quantity { value: Number(0.125), unit: Product { factors: [] } })`");
     }
 
     #[test]
     fn multiline_input_yields_result_of_last_line() {
-        assert_snapshot!(evaluates("2\n3"), @"3");
+        assert_snapshot!(evaluates("2\n3"), @"3 => `Quantity(Quantity { value: Number(3.0), unit: Product { factors: [] } })`");
     }
 
     #[test]
     fn variable_definitions() {
-        assert_snapshot!(evaluates("let x = 2\nlet y = 3\nx + y"), @"5");
+        assert_snapshot!(evaluates("let x = 2\nlet y = 3\nx + y"), @"5 => `Quantity(Quantity { value: Number(5.0), unit: Product { factors: [] } })`");
     }
 
     #[test]
     fn function_definitions() {
         assert_snapshot!(evaluates(
             "fn f(x: Scalar) = 2 * x + 3\nf(5)"),
-            @"13"
+            @"13 => `Quantity(Quantity { value: Number(13.0), unit: Product { factors: [] } })`"
         );
     }
 
     #[test]
     fn foreign_functions() {
-        assert_snapshot!(evaluates("sin(1)"), @"0.841471");
-        assert_snapshot!(evaluates("atan2(2 meter, 1 meter)"), @"1.10715");
+        assert_snapshot!(evaluates("sin(1)"), @"0.841471 => `Quantity(Quantity { value: Number(0.8414709848078965), unit: Product { factors: [] } })`");
+        assert_snapshot!(evaluates("atan2(2 meter, 1 meter)"), @"1.10715 => `Quantity(Quantity { value: Number(1.1071487177940904), unit: Product { factors: [] } })`");
     }
 
     #[test]
     fn statistics_functions() {
-        assert_snapshot!(evaluates("mean(1, 1, 1, 0)"), @"0.75");
+        assert_snapshot!(evaluates("mean(1, 1, 1, 0)"), @"0.75 => `Quantity(Quantity { value: Number(0.75), unit: Product { factors: [] } })`");
         assert_snapshot!(evaluates(
             "mean(1 m, 1 m, 1 m, 0 m)"),
-            @"0.75 m"
+            @r###"0.75 m => `Quantity(Quantity { value: Number(0.75), unit: Product { factors: [UnitFactor { unit_id: UnitIdentifier { name: "meter", canonical_name: "m", kind: Base }, prefix: Metric(0), exponent: Ratio { numer: 1, denom: 1 } }] } })`"###
         );
-        assert_snapshot!(evaluates("mean(2 m, 100 cm)"), @"1.5 m");
+        assert_snapshot!(evaluates("mean(2 m, 100 cm)"), @r###"1.5 m => `Quantity(Quantity { value: Number(1.5), unit: Product { factors: [UnitFactor { unit_id: UnitIdentifier { name: "meter", canonical_name: "m", kind: Base }, prefix: Metric(0), exponent: Ratio { numer: 1, denom: 1 } }] } })`"###);
 
-        assert_snapshot!(evaluates("maximum(1, 2, 0, -3)"), @"2");
+        assert_snapshot!(evaluates("maximum(1, 2, 0, -3)"), @"2 => `Quantity(Quantity { value: Number(2.0), unit: Product { factors: [] } })`");
         assert_snapshot!(evaluates(
-            "maximum(2 m, 0.1 km)"), @"100 m");
+            "maximum(2 m, 0.1 km)"), @r###"100 m => `Quantity(Quantity { value: Number(100.0), unit: Product { factors: [UnitFactor { unit_id: UnitIdentifier { name: "meter", canonical_name: "m", kind: Base }, prefix: Metric(0), exponent: Ratio { numer: 1, denom: 1 } }] } })`"###);
 
-        assert_snapshot!(evaluates("minimum(1, 2, 0, -3)"), @"-3");
+        assert_snapshot!(evaluates("minimum(1, 2, 0, -3)"), @"-3 => `Quantity(Quantity { value: Number(-3.0), unit: Product { factors: [] } })`");
         assert_snapshot!(evaluates(
-            "minimum(2 m, 150 cm)"), @"1.5 m");
+            "minimum(2 m, 150 cm)"), @r###"1.5 m => `Quantity(Quantity { value: Number(1.5), unit: Product { factors: [UnitFactor { unit_id: UnitIdentifier { name: "meter", canonical_name: "m", kind: Base }, prefix: Metric(0), exponent: Ratio { numer: 1, denom: 1 } }] } })`"###);
     }
 
     #[test]
