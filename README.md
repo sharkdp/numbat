@@ -166,4 +166,4 @@ you don't have to recompile Numbat to see your changes.
 
 Alternatively, you can create a symlink from `~/.config/numbat/modules` to the `numbat/modules/`
 folder in the repository (see [this page](https://numbat.dev/doc/cli-customization.html#module-paths)
-for the standard paths on other operating systems.
+for the standard paths on other operating systems).
