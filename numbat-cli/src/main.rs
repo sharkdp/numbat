@@ -68,6 +68,10 @@ struct Args {
     /// Whether or not to pretty-print every input expression.
     #[arg(long, value_name = "WHEN", default_value = "auto")]
     pretty_print: PrettyPrintMode,
+    
+    /// Quiet startup without intro banner.
+    #[arg(short, long)]
+    quiet: bool,
 
     /// Turn on debug mode (e.g. disassembler output).
     #[arg(long, short, hide = true)]
@@ -214,6 +218,7 @@ impl Cli {
     fn repl(&mut self) -> Result<()> {
         let interactive = std::io::stdin().is_terminal();
         let history_path = self.get_history_path()?;
+        let quiet_startup = self.args.quiet;        
 
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
         rl.set_max_history_size(1000)
@@ -232,7 +237,17 @@ impl Cli {
             EventHandler::Simple(rustyline::Cmd::Newline),
         );
         rl.load_history(&history_path).ok();
-
+        
+        if interactive && !quiet_startup {
+            println!();
+            println!(" █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀");
+            println!(" █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░");
+            println!("────────────────────────────");
+            println!("Version: {}", env!("CARGO_PKG_VERSION"));
+            println!("Homepage: {}", env!("CARGO_PKG_HOMEPAGE"));
+            println!();
+        }
+                
         let result = self.repl_loop(&mut rl);
 
         if interactive {
