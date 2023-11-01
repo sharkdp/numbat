@@ -1,6 +1,6 @@
 [package]
 name = "numbat-cli"
-description = " A statically typed programming language for scientific computations with first class support for physical dimensions and units"
+description = "A statically typed programming language for scientific computations with first class support for physical dimensions and units."
 authors = ["David Peter <mail@david-peter.de>"]
 categories = ["command-line-utilities", "science", "mathematics", "compilers"]
 keywords = ["language", "compiler", "physics", "units", "calculation"]
