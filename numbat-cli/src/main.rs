@@ -130,6 +130,45 @@ impl Cli {
         }
     }
 
+    fn help(&mut self) -> Result<()> {
+        let output = m::nl()
+            + m::keyword("numbat")
+            + m::space()
+            + m::text(env!("CARGO_PKG_DESCRIPTION"))
+            + m::nl()
+            + m::text("You can start by trying one of the examples:")
+            + m::nl();
+
+        println!("{}", ansi_format(&output, false));
+
+        let examples = vec![
+            "8 km / (1 h + 25 min)",
+            "atan2(30 cm, 1 m) -> deg",
+            r#"print("Energy of red photons: {ℏ 2 π c / 660 cm -> eV}")"#,
+        ];
+        for example in examples.iter() {
+            println!("{}{}", PROMPT, example);
+            let eg_result = self.parse_and_evaluate(
+                example,
+                CodeSource::Internal,
+                ExecutionMode::Normal,
+                self.args.pretty_print,
+            );
+            if eg_result.is_break() {
+                bail!("Interpreter failed during help examples")
+            }
+        }
+
+        let output = m::nl() // extra whitespace after last example
+            +m::text("Full documentation:")
+            +m::space()
+            +m::keyword("https://numbat.dev/doc/")
+            +m::nl();
+        println!("{}", ansi_format(&output, false));
+
+        Ok(())
+    }
+
     fn run(&mut self) -> Result<()> {
         let load_prelude = !self.args.no_prelude;
         let load_init = !(self.args.no_prelude || self.args.no_init);
@@ -283,6 +322,12 @@ impl Cli {
                             }
                             "quit" | "exit" => {
                                 return Ok(());
+                            }
+                            "help" | "?" => {
+                                // purposefully ignoring result of help
+                                // because if the examples are failing I am assuming
+                                // the user is a developer intentionally changing numbat
+                                let _ = self.help();
                             }
                             _ => {
                                 let result = self.parse_and_evaluate(
