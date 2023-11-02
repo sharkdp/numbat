@@ -13,6 +13,7 @@ use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::{markup as m, NameResolutionError, NumbatError, Type};
 use numbat::{Context, InterpreterResult, InterpreterSettings};
+use numbat::help::help_markup();
 
 use crate::jquery_terminal_formatter::JqueryTerminalWriter;
 
@@ -154,6 +155,12 @@ impl Numbat {
         let markup = self.ctx.print_environment();
         let fmt = JqueryTerminalFormatter {};
         fmt.format(&markup, false).into()
+    }
+
+    pub fn help(&self) -> JsValue {
+        let markup = help_markup();
+        let fmt = JqueryTerminalFormatter {};
+        fmt.format(&markup, true).into()
     }
 
     pub fn get_completions_for(&self, input: &str) -> Vec<JsValue> {

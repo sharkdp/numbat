@@ -53,6 +53,8 @@ function interpret(input) {
     this.clear();
   } else if (input_trimmed == "list" || input_trimmed == "ll" || input_trimmed == "ls") {
     output = numbat.print_environment();
+  } else if (input_trimmed == "help" || input_trimmed == "?") {
+    output = numbat.help();
   } else {
     var result = numbat.interpret(input);
     output = result.output;

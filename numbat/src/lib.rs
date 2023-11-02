@@ -7,6 +7,7 @@ pub mod diagnostic;
 mod dimension;
 mod ffi;
 mod gamma;
+pub mod help;
 mod interpreter;
 pub mod keywords;
 pub mod markup;
