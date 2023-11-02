@@ -240,11 +240,14 @@ impl Cli {
 
         if interactive && !quiet_startup {
             println!();
-            println!(" █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀");
-            println!(" █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░");
-            println!("────────────────────────────");
-            println!("Version: {}", env!("CARGO_PKG_VERSION"));
-            println!("Homepage: {}", env!("CARGO_PKG_HOMEPAGE"));
+            println!(
+                "  █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀    Numbat {}",
+                env!("CARGO_PKG_VERSION")
+            );
+            println!(
+                "  █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░    {}",
+                env!("CARGO_PKG_HOMEPAGE")
+            );
             println!();
         }
 
