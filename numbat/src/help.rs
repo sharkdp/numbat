@@ -3,8 +3,8 @@
 use crate::markup as m;
 use crate::module_importer::BuiltinModuleImporter;
 use crate::resolver::CodeSource;
-use crate::{Context, NumbatError};
-use crate::{InterpreterSettings, NameResolutionError};
+use crate::Context;
+use crate::InterpreterSettings;
 
 use std::sync::{Arc, Mutex};
 
@@ -17,43 +17,21 @@ fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
         }),
     };
 
-    let (result, registry) = {
-        let registry = context.dimension_registry().clone(); // TODO: get rid of this clone
-        (
-            context.interpret_with_settings(&mut settings, input, CodeSource::Internal),
-            registry,
-        )
-    };
+    let (statements, interpreter_result) = context
+        .interpret_with_settings(&mut settings, input, CodeSource::Internal)
+        .expect("No error in 'help' examples");
 
-    match result {
-        Ok((statements, interpreter_result)) => {
-            statement_output.lock().unwrap().iter().fold(
-                m::empty(),
-                |accumulated_mk, single_line| {
-                    accumulated_mk + m::nl() + m::whitespace("  ") + single_line.clone() + m::nl()
-                },
-            ) + interpreter_result.to_markup(statements.last(), &registry)
-        }
-        Err(NumbatError::ResolverError(e)) => {
-            context.print_diagnostic(e.clone());
-            m::empty()
-        }
-        Err(NumbatError::NameResolutionError(
-            e @ (NameResolutionError::IdentifierClash { .. }
-            | NameResolutionError::ReservedIdentifier(_)),
-        )) => {
-            context.print_diagnostic(e);
-            m::empty()
-        }
-        Err(NumbatError::TypeCheckError(e)) => {
-            context.print_diagnostic(e);
-            m::empty()
-        }
-        Err(NumbatError::RuntimeError(e)) => {
-            context.print_diagnostic(e);
-            m::empty()
-        }
-    }
+    let markup =
+        statement_output
+            .lock()
+            .unwrap()
+            .iter()
+            .fold(m::empty(), |accumulated_mk, single_line| {
+                accumulated_mk + m::nl() + m::whitespace("  ") + single_line.clone() + m::nl()
+            })
+            + interpreter_result.to_markup(statements.last(), context.dimension_registry());
+
+    markup
 }
 
 pub fn help_markup() -> m::Markup {
