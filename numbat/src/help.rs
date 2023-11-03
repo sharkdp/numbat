@@ -1,7 +1,5 @@
-/**
- * Print a help, linking the documentation and live-running some examples
- * in an isolated context
- */
+/// Print a help, linking the documentation, and live-running some examples
+/// in an isolated context.
 use crate::markup as m;
 use crate::module_importer::BuiltinModuleImporter;
 use crate::pretty_print::PrettyPrint;
