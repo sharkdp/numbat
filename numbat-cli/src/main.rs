@@ -286,12 +286,7 @@ impl Cli {
                                 return Ok(());
                             }
                             "help" | "?" => {
-                                let pretty_print = match self.args.pretty_print {
-                                    PrettyPrintMode::Always => true,
-                                    PrettyPrintMode::Never => false,
-                                    PrettyPrintMode::Auto => true,
-                                };
-                                let help = help_markup(pretty_print);
+                                let help = help_markup();
                                 print!("{}", ansi_format(&help, true));
                                 // currently, the ansi formatter adds indents
                                 // _after_ each newline and so we need to manually
