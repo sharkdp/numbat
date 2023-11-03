@@ -87,9 +87,8 @@ impl InterpreterResult {
                 };
                 m::whitespace("    ")
                     + m::operator("=")
-                    + m::operator("=")
                     + m::space()
-                    + value.clone().pretty_print()
+                    + value.pretty_print()
                     + type_markup
                     + m::nl()
             }
