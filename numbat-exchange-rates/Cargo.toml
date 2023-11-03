@@ -11,4 +11,4 @@ rust-version = "1.70"
 
 [dependencies]
 attohttpc = { version = "0.26.0", default-features = false, features = ["tls-rustls-webpki-roots"] }
-quick-xml = "0.30.0"
+quick-xml = "0.31.0"
