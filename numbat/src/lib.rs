@@ -43,7 +43,7 @@ use markup as m;
 use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
-use registry::BaseRepresentationFactor;
+
 use resolver::CodeSource;
 use resolver::Resolver;
 use resolver::ResolverError;
@@ -57,8 +57,11 @@ pub use interpreter::InterpreterSettings;
 pub use interpreter::RuntimeError;
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
+pub use registry::BaseRepresentation;
+pub use registry::BaseRepresentationFactor;
 pub use typed_ast::Statement;
 pub use typed_ast::Type;
+use unit_registry::UnitMetadata;
 
 #[derive(Debug, Error)]
 pub enum NumbatError {
@@ -212,17 +215,22 @@ impl Context {
             .iter_base_entries()
     }
 
-    pub fn unit_representations(&self) -> impl Iterator<Item = (String, Vec<(String, i128)>)> + '_ {
+    pub fn unit_representations(
+        &self,
+    ) -> impl Iterator<Item = (String, (BaseRepresentation, UnitMetadata))> + '_ {
         let registry = self.interpreter.get_unit_registry();
-        registry.inner.iter_derived_entries().map(|unit_name| {
-            let derived_from = registry
+
+        let unit_names = registry
+            .inner
+            .iter_base_entries()
+            .chain(registry.inner.iter_derived_entries());
+
+        unit_names.map(|unit_name| {
+            let info = registry
                 .inner
                 .get_base_representation_for_name(&unit_name)
-                .unwrap()
-                .iter()
-                .map(|BaseRepresentationFactor(name, exp)| (name.clone(), exp.to_integer())) // TODO: check if to_integer can fail here
-                .collect();
-            (unit_name, derived_from)
+                .unwrap();
+            (unit_name, info)
         })
     }
 

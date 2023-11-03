@@ -973,6 +973,7 @@ impl TypeChecker {
                         .as_ref()
                         .map(|d| d.pretty_print())
                         .unwrap_or_else(|| type_deduced.to_readable_type(&self.registry)),
+                    Type::Dimension(type_deduced),
                 )
             }
             ast::Statement::DefineFunction {

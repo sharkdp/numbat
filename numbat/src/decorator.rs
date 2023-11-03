@@ -5,6 +5,8 @@ pub enum Decorator {
     MetricPrefixes,
     BinaryPrefixes,
     Aliases(Vec<(String, Option<AcceptsPrefix>)>),
+    Url(String),
+    Name(String),
 }
 
 pub fn name_and_aliases<'a>(
@@ -45,4 +47,22 @@ pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> Str
         }
     }
     unit_name.into()
+}
+
+pub fn name(decorators: &[Decorator]) -> Option<String> {
+    for decorator in decorators {
+        if let Decorator::Name(name) = decorator {
+            return Some(name.clone());
+        }
+    }
+    None
+}
+
+pub fn url(decorators: &[Decorator]) -> Option<String> {
+    for decorator in decorators {
+        if let Decorator::Url(url) = decorator {
+            return Some(url.clone());
+        }
+    }
+    None
 }

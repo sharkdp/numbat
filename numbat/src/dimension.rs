@@ -14,9 +14,10 @@ impl DimensionRegistry {
     ) -> Result<BaseRepresentation> {
         match expression {
             DimensionExpression::Unity(_) => Ok(BaseRepresentation::unity()),
-            DimensionExpression::Dimension(_, name) => {
-                self.registry.get_base_representation_for_name(name)
-            }
+            DimensionExpression::Dimension(_, name) => self
+                .registry
+                .get_base_representation_for_name(name)
+                .map(|r| r.0),
             DimensionExpression::Multiply(_, lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
@@ -36,7 +37,9 @@ impl DimensionRegistry {
     }
 
     pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
-        self.registry.get_base_representation_for_name(name)
+        self.registry
+            .get_base_representation_for_name(name)
+            .map(|t| t.0)
     }
 
     pub fn get_derived_entry_names_for(
@@ -52,6 +55,7 @@ impl DimensionRegistry {
         Ok(self
             .registry
             .get_base_representation_for_name(name)
+            .map(|t| t.0)
             .unwrap())
     }
 
@@ -61,10 +65,12 @@ impl DimensionRegistry {
         expression: &DimensionExpression,
     ) -> Result<BaseRepresentation> {
         let base_representation = self.get_base_representation(expression)?;
-        self.registry.add_derived_entry(name, base_representation)?;
+        self.registry
+            .add_derived_entry(name, base_representation, ())?;
         Ok(self
             .registry
             .get_base_representation_for_name(name)
+            .map(|t| t.0)
             .unwrap())
     }
 

@@ -171,7 +171,7 @@ pub enum Statement {
     ),
     DefineDimension(String, Vec<DimensionExpression>),
     DefineBaseUnit(String, Vec<Decorator>, Markup, Type),
-    DefineDerivedUnit(String, Expression, Vec<Decorator>, Markup),
+    DefineDerivedUnit(String, Expression, Vec<Decorator>, Markup, Type),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
 }
 
@@ -236,6 +236,12 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         )
                         .sum()
                         + m::operator(")")
+                }
+                Decorator::Url(url) => {
+                    m::decorator("@url") + m::operator("(") + m::string(url) + m::operator(")")
+                }
+                Decorator::Name(name) => {
+                    m::decorator("@name") + m::operator("(") + m::string(name) + m::operator(")")
                 }
             }
             + m::nl();
@@ -338,7 +344,7 @@ impl PrettyPrint for Statement {
                     + m::space()
                     + readable_type.clone()
             }
-            Statement::DefineDerivedUnit(identifier, expr, decorators, readable_type) => {
+            Statement::DefineDerivedUnit(identifier, expr, decorators, readable_type, _type) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()

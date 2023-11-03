@@ -9,7 +9,7 @@ use crate::prefix::Prefix;
 use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
 use crate::unit::Unit;
-use crate::unit_registry::UnitRegistry;
+use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
@@ -245,10 +245,24 @@ impl BytecodeInterpreter {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DefineBaseUnit(unit_name, decorators, _type_annotation, type_) => {
+            Statement::DefineBaseUnit(unit_name, decorators, readable_type, type_) => {
+                let aliases = decorator::name_and_aliases(unit_name, decorators)
+                    .map(|(name, _)| name)
+                    .cloned()
+                    .collect();
+
                 self.vm
                     .unit_registry
-                    .add_base_unit(unit_name, type_.clone())
+                    .add_base_unit(
+                        unit_name,
+                        UnitMetadata {
+                            type_: type_.clone(),
+                            readable_type: readable_type.clone(),
+                            aliases,
+                            name: decorator::name(decorators),
+                            url: decorator::url(decorators),
+                        },
+                    )
                     .map_err(RuntimeError::UnitRegistryError)?;
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
@@ -260,21 +274,33 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::DefineDerivedUnit(unit_name, expr, decorators, _type_annotation) => {
+            Statement::DefineDerivedUnit(unit_name, expr, decorators, readable_type, type_) => {
+                let aliases = decorator::name_and_aliases(unit_name, decorators)
+                    .map(|(name, _)| name)
+                    .cloned()
+                    .collect();
+
                 let constant_idx = self
                     .vm
                     .add_constant(Constant::Unit(Unit::new_base("<dummy>", "<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
-                let identifier_idx = self.vm.add_global_identifier(
+                let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
                     Some(&crate::decorator::get_canonical_unit_name(
                         unit_name.as_str(),
                         &decorators[..],
                     )),
+                    UnitMetadata {
+                        type_: type_.clone(),
+                        readable_type: readable_type.clone(),
+                        aliases,
+                        name: decorator::name(decorators),
+                        url: decorator::url(decorators),
+                    },
                 ); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 
                 self.compile_expression_with_simplify(expr)?;
                 self.vm
-                    .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
+                    .add_op2(Op::SetUnitConstant, unit_information_idx, constant_idx);
 
                 // TODO: code duplication with DeclareBaseUnit branch above
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
