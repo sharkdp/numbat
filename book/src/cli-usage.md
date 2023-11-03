@@ -37,6 +37,7 @@ There is a set of special commands that only work in interactive mode:
 |---------|--------|
 | `list`, `ll`, `ls` | List all constants, units, and dimensions |
 | `clear` | Clear screen |
+| `help`, `?` | View short help text |
 | `quit`, `exit` | Quit the session |
 
 ### Key bindings
