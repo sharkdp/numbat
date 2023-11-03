@@ -6,7 +6,7 @@ categories = ["science", "mathematics", "compilers"]
 keywords = ["language", "compiler", "physics", "units", "calculation"]
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
-version = "1.6.3"
+version = "1.7.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -21,7 +21,7 @@ num-traits = "0.2"
 codespan-reporting = "0.11"
 strsim = "0.10.0"
 pretty_dtoa = "0.3"
-numbat-exchange-rates = { version = "0.3.0", path = "../numbat-exchange-rates" }
+numbat-exchange-rates = { version = "0.4.0", path = "../numbat-exchange-rates" }
 heck = { version = "0.4.1", features = ["unicode"] }
 unicode-ident = "1.0.11"
 unicode-width = "0.1.10"
