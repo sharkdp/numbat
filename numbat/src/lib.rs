@@ -432,6 +432,12 @@ impl Context {
                         )
                         .ok();
 
+                        // Make sure we do not run into an infinite loop in case loading that
+                        // module did not bring in the required currency unit identifier. This
+                        // can happen if the list of currency identifiers is not in sync with
+                        // what the module actually defines.
+                        self.load_currency_module_on_demand = false;
+
                         // Now we try to evaluate the user expression again:
                         return self.interpret_with_settings(settings, code, code_source);
                     }
