@@ -3,33 +3,55 @@ use units::misc
 
 ### Imperial unit system
 
+@name("Inch")
+@url("https://en.wikipedia.org/wiki/Inch")
 @aliases(inches, in: short)
 unit inch: Length = 0.0254 meter
 
+@name("Foot")
+@url("https://en.wikipedia.org/wiki/Foot_(unit)")
 @aliases(feet, ft: short)
 unit foot: Length = 12 inch
 
+@name("Yard")
+@url("https://en.wikipedia.org/wiki/Yard")
 @aliases(yards, yd: short)
 unit yard: Length = 3 feet
 
+@name("Mile")
+@url("https://en.wikipedia.org/wiki/Mile")
 @aliases(miles, mi: short)
 unit mile: Length = 1760 yard
 
+@name("Ounce")
+@url("https://en.wikipedia.org/wiki/Ounce")
 @aliases(ounces, oz: short)
 unit ounce: Mass = 28.35 gram
 
+@name("Pound")
+@url("https://en.wikipedia.org/wiki/Pound_(mass)")
 @aliases(pounds, lb: short, lbs)
 unit pound: Mass = 16 ounces
 
+@name("Thousandth of an inch")
+@url("https://en.wikipedia.org/wiki/Thousandth_of_an_inch")
 @aliases(mils, mil: short)
 unit thou: Length = inch / 1000
 
+@name("Fathom")
+@url("https://en.wikipedia.org/wiki/Fathom")
 @aliases(fathoms)
 unit fathom: Length = 2 yard
 
+@name("League")
+@url("https://en.wikipedia.org/wiki/League_(unit)")
 @aliases(leagues)
 unit league: Length = 3 mile
 
+@name("Miles per hour")
+@url("https://en.wikipedia.org/wiki/Miles_per_hour")
 unit mph: Velocity = miles per hour
 
+@name("Inch of mercury")
+@url("https://en.wikipedia.org/wiki/Inch_of_mercury")
 unit inHg: Pressure = in Hg

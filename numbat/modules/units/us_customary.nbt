@@ -1,40 +1,51 @@
 use units::si
 use units::imperial
 
-# US liquid gallon
+@name("US liquid gallon")
+@url("https://en.wikipedia.org/wiki/Gallon")
 @aliases(gallons, gal: short)
 unit gallon: Volume = 231 in^3
 
-# US liquid pint
+@name("US liquid pint")
+@url("https://en.wikipedia.org/wiki/Pint")
 @aliases(pints)
 unit pint: Volume = 1/8 × gallon
 
-# US cup
+@name("US cup")
+@url("https://en.wikipedia.org/wiki/Cup_(unit)")
 @aliases(cups)
 unit cup: Volume = 1/2 × pint
 
-# US tablespoon
+@name("US tablespoon")
+@url("https://en.wikipedia.org/wiki/Tablespoon")
 @aliases(tablespoons, tbsp)
 unit tablespoon: Volume = 1/16 × cup
 
-# US teaspoon
+@name("US teaspoon")
+@url("https://en.wikipedia.org/wiki/Teaspoon")
 @aliases(teaspoons, tsp)
 unit teaspoon: Volume = 1/3 × tablespoon
 
-# US fluid ounce
+@name("US fluid ounce")
+@url("https://en.wikipedia.org/wiki/Fluid_ounce")
 @aliases(fluidounces, floz: short)
 unit fluidounce: Volume = 2 tablespoon
 
-# US hogshead
+@name("US hogshead")
+@url("https://en.wikipedia.org/wiki/Hogshead")
 @aliases(hogsheads)
 unit hogshead: Volume = 63 gallon
 
-# US rod
+@name("US rod")
+@url("https://en.wikipedia.org/wiki/Rod_(unit)")
 @aliases(rods, perch)
 unit rod: Length = 16.5 ft
 
+@name("Acre")
+@url("https://en.wikipedia.org/wiki/Acre")
 @aliases(acres)
 unit acre: Area = 4840 yard^2
 
-# Mileage, miles per gallon
+@name("Miles per gallon")
+@url("https://en.wikipedia.org/wiki/Fuel_economy_in_automobiles")
 unit mpg: Length / Volume = miles per gallon
