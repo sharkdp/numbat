@@ -11,28 +11,19 @@ use crate::{InterpreterSettings, NameResolutionError, Type};
 
 use std::sync::{Arc, Mutex};
 
-/**
- * evaluate an example code in the input context
- *
- * Current limitations
- * - We need the interpreted statement to get the pretty-printed statement,
- *   but that only comes after interpretation. Thus we cannot show an example
- *   where the statement itself prints (i.e. the `print` function) because it
- *   will be printed _before_ the pretty-printed statement.
- */
 fn evaluate_example(
     context: &mut Context,
     input: &str,
-    to_be_printed: Arc<Mutex<Vec<m::Markup>>>,
     pretty_print: bool,
-) -> () {
-    let to_be_printed_c = to_be_printed.clone();
+) -> m::Markup {
+    let statement_output : Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
+    let statement_output_c = statement_output.clone();
     let mut settings = InterpreterSettings {
         print_fn: Box::new(move |s: &m::Markup| {
-            to_be_printed_c
+            statement_output_c
                 .lock()
                 .unwrap()
-                .push(m::nl() + m::whitespace("  ") + s.clone() + m::nl());
+                .push(s.clone());
         }),
     };
 
@@ -44,10 +35,12 @@ fn evaluate_example(
         )
     };
 
+    let mut full_output = m::empty();
+
     match result {
         Ok((statements, interpreter_result)) => {
             if pretty_print {
-                let statements_markup =
+                full_output +=
                     statements
                         .iter()
                         .fold(m::empty(), |accumulated_mk, statement| {
@@ -57,7 +50,6 @@ fn evaluate_example(
                                 + statement.pretty_print()
                                 + m::nl()
                         });
-                to_be_printed.lock().unwrap().push(statements_markup);
             }
 
             match interpreter_result {
@@ -78,16 +70,33 @@ fn evaluate_example(
                         }
                     });
 
-                    let q_markup = m::nl()
+                    full_output += 
+                        statement_output.lock().unwrap().iter().fold(
+                            m::empty(), |accumulated_mk, single_line| {
+                                accumulated_mk
+                                    + m::nl()
+                                    + m::whitespace("  ")
+                                    + single_line.clone()
+                                    + m::nl()
+                            })
+                        + m::nl()
                         + m::whitespace("    ")
                         + m::operator("=")
                         + m::space()
                         + value.pretty_print()
                         + type_
                         + m::nl();
-                    to_be_printed.lock().unwrap().push(q_markup);
                 }
-                InterpreterResult::Continue => (),
+                InterpreterResult::Continue => {
+                    full_output += statement_output.lock().unwrap().iter().fold(
+                            m::empty(), |accumulated_mk, single_line| {
+                                accumulated_mk
+                                    + m::nl()
+                                    + m::whitespace("  ")
+                                    + single_line.clone()
+                                    + m::nl()
+                            });
+                },
                 InterpreterResult::Exit(_exit_status) => {
                     println!("Interpretation Error.");
                 }
@@ -109,43 +118,36 @@ fn evaluate_example(
             context.print_diagnostic(e);
         }
     }
+
+    full_output
 }
 
 pub fn help_markup(pretty_print: bool) -> m::Markup {
-    let output = Arc::new(Mutex::new(vec![
-        m::nl()
+    let mut output = m::nl()
             + m::keyword("numbat")
             + m::space()
             + m::text(env!("CARGO_PKG_DESCRIPTION"))
             + m::nl()
             + m::text("You can start by trying one of the examples:")
-            + m::nl(),
-    ]));
+            + m::nl();
 
     let examples = vec![
         "8 km / (1 h + 25 min)",
         "atan2(30 cm, 1 m) -> deg",
         "let ω = 2 π c / 660 cm",
-        "# Energy of red photons",
-        "ℏ ω -> eV",
+        r#"print("Energy of red photons: {ℏ ω -> eV}")"#,
     ];
     let mut example_context = Context::new(BuiltinModuleImporter::default());
-    evaluate_example(&mut example_context, "use prelude", output.clone(), false);
+    let _use_prelude_output = evaluate_example(&mut example_context, "use prelude", false);
     for example in examples.iter() {
-        output
-            .lock()
-            .unwrap()
-            .push(m::text(">>> ") + m::text(example) + m::nl());
-        evaluate_example(&mut example_context, example, output.clone(), pretty_print);
-        output.lock().unwrap().push(m::nl());
+        output += m::text(">>> ") + m::text(example) + m::nl();
+        output += evaluate_example(&mut example_context, example, pretty_print);
+        output += m::nl();
     }
-    output.lock().unwrap().push(
-        m::text("Full documentation:")
+    output += m::text("Full documentation:")
             + m::space()
             + m::keyword("https://numbat.dev/doc/")
             + m::nl()
-            + m::nl(),
-    );
-    let markup = output.lock().unwrap().to_vec().into_iter().sum();
-    markup
+            + m::nl();
+    output
 }

@@ -292,7 +292,7 @@ impl Cli {
                                     PrettyPrintMode::Auto => true,
                                 };
                                 let help = help_markup(pretty_print);
-                                print!("{}", ansi_format(&help, true));
+                                print!("{}", ansi_format(&help, false));
                             }
                             _ => {
                                 let result = self.parse_and_evaluate(
