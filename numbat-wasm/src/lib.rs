@@ -6,14 +6,14 @@ use numbat::module_importer::BuiltinModuleImporter;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 
-use jquery_terminal_formatter::{jt_format, JqueryTerminalFormatter};
+use jquery_terminal_formatter::JqueryTerminalFormatter;
 
 use numbat::markup::Formatter;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::{markup as m, NameResolutionError, NumbatError, Type};
-use numbat::{Context, InterpreterResult, InterpreterSettings};
-use numbat::help::help_markup();
+use numbat::{markup as m, NameResolutionError, NumbatError};
+use numbat::{Context, InterpreterSettings};
+use numbat::help::help_markup;
 
 use crate::jquery_terminal_formatter::JqueryTerminalWriter;
 
@@ -100,7 +100,7 @@ impl Numbat {
                 }
 
                 let result_markup = result.to_markup(statements.last(), &registry);
-                output.push_str(&fmt.format(&markup, true));
+                output.push_str(&fmt.format(&result_markup, true));
 
                 InterpreterOutput {
                     output,
