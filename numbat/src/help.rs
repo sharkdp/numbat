@@ -58,21 +58,19 @@ fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
 
 pub fn help_markup() -> m::Markup {
     let mut output = m::nl()
-        + m::keyword("numbat")
-        + m::space()
-        + m::text("is a statically typed programming language for scientific computations")
+        + m::text("Numbat is a statically typed programming language for scientific computations")
         + m::nl()
-        + m::text("with first class support for physical dimensions and units.")
+        + m::text("with first class support for physical dimensions and units. Please refer to")
         + m::nl()
-        + m::text("You can read the full documentation online at")
-        + m::space()
-        + m::keyword("https://numbat.dev/doc/")
+        + m::text("the full documentation online at ")
+        + m::string("https://numbat.dev/doc/")
+        + m::text(" or try one of these ")
         + m::nl()
-        + m::text("For now, you can start by trying one of these examples:")
+        + m::text("examples:")
         + m::nl()
         + m::nl();
 
-    let examples = vec![
+    let examples = [
         "8 km / (1 h + 25 min)",
         "atan2(30 cm, 1 m) -> deg",
         "let ω = 2 π c / 660 cm",
@@ -82,7 +80,7 @@ pub fn help_markup() -> m::Markup {
     let _use_prelude_output = evaluate_example(&mut example_context, "use prelude");
     for example in examples.iter() {
         output += m::text(">>> ") + m::text(example) + m::nl();
-        output += evaluate_example(&mut example_context, example);
+        output += evaluate_example(&mut example_context, example) + m::nl();
     }
     output
 }
