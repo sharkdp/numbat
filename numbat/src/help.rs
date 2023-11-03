@@ -73,7 +73,7 @@ pub fn help_markup() -> m::Markup {
     let examples = [
         "8 km / (1 h + 25 min)",
         "atan2(30 cm, 1 m) -> deg",
-        "let ω = 2 π c / 660 cm",
+        "let ω = 2 π c / 660 nm",
         r#"print("Energy of red photons: {ℏ ω -> eV}")"#,
     ];
     let mut example_context = Context::new(BuiltinModuleImporter::default());
