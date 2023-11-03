@@ -11,7 +11,7 @@ use crate::{InterpreterSettings, NameResolutionError, Type};
 
 use std::sync::{Arc, Mutex};
 
-fn evaluate_example(context: &mut Context, input: &str, pretty_print: bool) -> m::Markup {
+fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
     let statement_output: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
     let statement_output_c = statement_output.clone();
     let mut settings = InterpreterSettings {
@@ -31,71 +31,57 @@ fn evaluate_example(context: &mut Context, input: &str, pretty_print: bool) -> m
     let mut full_output = m::empty();
 
     match result {
-        Ok((statements, interpreter_result)) => {
-            if pretty_print {
-                full_output += statements
-                    .iter()
-                    .fold(m::empty(), |accumulated_mk, statement| {
+        Ok((statements, interpreter_result)) => match interpreter_result {
+            InterpreterResult::Value(value) => {
+                let type_ = statements.last().map_or(m::empty(), |s| {
+                    if let crate::Statement::Expression(e) = s {
+                        let type_ = e.get_type();
+
+                        if type_ == Type::scalar() {
+                            m::empty()
+                        } else {
+                            m::dimmed("    [")
+                                + e.get_type().to_readable_type(&registry)
+                                + m::dimmed("]")
+                        }
+                    } else {
+                        m::empty()
+                    }
+                });
+
+                full_output += statement_output.lock().unwrap().iter().fold(
+                    m::empty(),
+                    |accumulated_mk, single_line| {
                         accumulated_mk
                             + m::nl()
                             + m::whitespace("  ")
-                            + statement.pretty_print()
+                            + single_line.clone()
                             + m::nl()
-                    });
+                    },
+                ) + m::nl()
+                    + m::whitespace("    ")
+                    + m::operator("=")
+                    + m::space()
+                    + value.pretty_print()
+                    + type_
+                    + m::nl();
             }
-
-            match interpreter_result {
-                InterpreterResult::Value(value) => {
-                    let type_ = statements.last().map_or(m::empty(), |s| {
-                        if let crate::Statement::Expression(e) = s {
-                            let type_ = e.get_type();
-
-                            if type_ == Type::scalar() {
-                                m::empty()
-                            } else {
-                                m::dimmed("    [")
-                                    + e.get_type().to_readable_type(&registry)
-                                    + m::dimmed("]")
-                            }
-                        } else {
-                            m::empty()
-                        }
-                    });
-
-                    full_output += statement_output.lock().unwrap().iter().fold(
-                        m::empty(),
-                        |accumulated_mk, single_line| {
-                            accumulated_mk
-                                + m::nl()
-                                + m::whitespace("  ")
-                                + single_line.clone()
-                                + m::nl()
-                        },
-                    ) + m::nl()
-                        + m::whitespace("    ")
-                        + m::operator("=")
-                        + m::space()
-                        + value.pretty_print()
-                        + type_
-                        + m::nl();
-                }
-                InterpreterResult::Continue => {
-                    full_output += statement_output.lock().unwrap().iter().fold(
-                        m::empty(),
-                        |accumulated_mk, single_line| {
-                            accumulated_mk
-                                + m::nl()
-                                + m::whitespace("  ")
-                                + single_line.clone()
-                                + m::nl()
-                        },
-                    );
-                }
-                InterpreterResult::Exit(_exit_status) => {
-                    println!("Interpretation Error.");
-                }
+            InterpreterResult::Continue => {
+                full_output += statement_output.lock().unwrap().iter().fold(
+                    m::empty(),
+                    |accumulated_mk, single_line| {
+                        accumulated_mk
+                            + m::nl()
+                            + m::whitespace("  ")
+                            + single_line.clone()
+                            + m::nl()
+                    },
+                );
             }
-        }
+            InterpreterResult::Exit(_exit_status) => {
+                println!("Interpretation Error.");
+            }
+        },
         Err(NumbatError::ResolverError(e)) => {
             context.print_diagnostic(e.clone());
         }
@@ -116,7 +102,7 @@ fn evaluate_example(context: &mut Context, input: &str, pretty_print: bool) -> m
     full_output
 }
 
-pub fn help_markup(pretty_print: bool) -> m::Markup {
+pub fn help_markup() -> m::Markup {
     let mut output = m::nl()
         + m::keyword("numbat")
         + m::space()
@@ -132,10 +118,10 @@ pub fn help_markup(pretty_print: bool) -> m::Markup {
         r#"print("Energy of red photons: {ℏ ω -> eV}")"#,
     ];
     let mut example_context = Context::new(BuiltinModuleImporter::default());
-    let _use_prelude_output = evaluate_example(&mut example_context, "use prelude", false);
+    let _use_prelude_output = evaluate_example(&mut example_context, "use prelude");
     for example in examples.iter() {
         output += m::text(">>> ") + m::text(example) + m::nl();
-        output += evaluate_example(&mut example_context, example, pretty_print);
+        output += evaluate_example(&mut example_context, example);
         output += m::nl();
     }
     output += m::text("Full documentation:")
