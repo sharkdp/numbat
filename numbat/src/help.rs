@@ -60,9 +60,16 @@ pub fn help_markup() -> m::Markup {
     let mut output = m::nl()
         + m::keyword("numbat")
         + m::space()
-        + m::text(env!("CARGO_PKG_DESCRIPTION"))
+        + m::text("is a statically typed programming language for scientific computations")
         + m::nl()
-        + m::text("You can start by trying one of the examples:")
+        + m::text("with first class support for physical dimensions and units.")
+        + m::nl()
+        + m::text("You can read the full documentation online at")
+        + m::space()
+        + m::keyword("https://numbat.dev/doc/")
+        + m::nl()
+        + m::text("For now, you can start by trying one of these examples:")
+        + m::nl()
         + m::nl();
 
     let examples = vec![
@@ -76,11 +83,6 @@ pub fn help_markup() -> m::Markup {
     for example in examples.iter() {
         output += m::text(">>> ") + m::text(example) + m::nl();
         output += evaluate_example(&mut example_context, example);
-        output += m::nl();
     }
-    output += m::text("Full documentation:")
-        + m::space()
-        + m::keyword("https://numbat.dev/doc/")
-        + m::nl();
     output
 }
