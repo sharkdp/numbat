@@ -292,7 +292,11 @@ impl Cli {
                                     PrettyPrintMode::Auto => true,
                                 };
                                 let help = help_markup(pretty_print);
-                                print!("{}", ansi_format(&help, false));
+                                print!("{}", ansi_format(&help, true));
+                                // currently, the ansi formatter adds indents
+                                // _after_ each newline and so we need to manually
+                                // add an extra blank line to absorb this indent
+                                println!();
                             }
                             _ => {
                                 let result = self.parse_and_evaluate(

@@ -11,19 +11,12 @@ use crate::{InterpreterSettings, NameResolutionError, Type};
 
 use std::sync::{Arc, Mutex};
 
-fn evaluate_example(
-    context: &mut Context,
-    input: &str,
-    pretty_print: bool,
-) -> m::Markup {
-    let statement_output : Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
+fn evaluate_example(context: &mut Context, input: &str, pretty_print: bool) -> m::Markup {
+    let statement_output: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
     let statement_output_c = statement_output.clone();
     let mut settings = InterpreterSettings {
         print_fn: Box::new(move |s: &m::Markup| {
-            statement_output_c
-                .lock()
-                .unwrap()
-                .push(s.clone());
+            statement_output_c.lock().unwrap().push(s.clone());
         }),
     };
 
@@ -40,16 +33,15 @@ fn evaluate_example(
     match result {
         Ok((statements, interpreter_result)) => {
             if pretty_print {
-                full_output +=
-                    statements
-                        .iter()
-                        .fold(m::empty(), |accumulated_mk, statement| {
-                            accumulated_mk
-                                + m::nl()
-                                + m::whitespace("  ")
-                                + statement.pretty_print()
-                                + m::nl()
-                        });
+                full_output += statements
+                    .iter()
+                    .fold(m::empty(), |accumulated_mk, statement| {
+                        accumulated_mk
+                            + m::nl()
+                            + m::whitespace("  ")
+                            + statement.pretty_print()
+                            + m::nl()
+                    });
             }
 
             match interpreter_result {
@@ -70,16 +62,16 @@ fn evaluate_example(
                         }
                     });
 
-                    full_output += 
-                        statement_output.lock().unwrap().iter().fold(
-                            m::empty(), |accumulated_mk, single_line| {
-                                accumulated_mk
-                                    + m::nl()
-                                    + m::whitespace("  ")
-                                    + single_line.clone()
-                                    + m::nl()
-                            })
-                        + m::nl()
+                    full_output += statement_output.lock().unwrap().iter().fold(
+                        m::empty(),
+                        |accumulated_mk, single_line| {
+                            accumulated_mk
+                                + m::nl()
+                                + m::whitespace("  ")
+                                + single_line.clone()
+                                + m::nl()
+                        },
+                    ) + m::nl()
                         + m::whitespace("    ")
                         + m::operator("=")
                         + m::space()
@@ -89,14 +81,16 @@ fn evaluate_example(
                 }
                 InterpreterResult::Continue => {
                     full_output += statement_output.lock().unwrap().iter().fold(
-                            m::empty(), |accumulated_mk, single_line| {
-                                accumulated_mk
-                                    + m::nl()
-                                    + m::whitespace("  ")
-                                    + single_line.clone()
-                                    + m::nl()
-                            });
-                },
+                        m::empty(),
+                        |accumulated_mk, single_line| {
+                            accumulated_mk
+                                + m::nl()
+                                + m::whitespace("  ")
+                                + single_line.clone()
+                                + m::nl()
+                        },
+                    );
+                }
                 InterpreterResult::Exit(_exit_status) => {
                     println!("Interpretation Error.");
                 }
@@ -124,12 +118,12 @@ fn evaluate_example(
 
 pub fn help_markup(pretty_print: bool) -> m::Markup {
     let mut output = m::nl()
-            + m::keyword("numbat")
-            + m::space()
-            + m::text(env!("CARGO_PKG_DESCRIPTION"))
-            + m::nl()
-            + m::text("You can start by trying one of the examples:")
-            + m::nl();
+        + m::keyword("numbat")
+        + m::space()
+        + m::text(env!("CARGO_PKG_DESCRIPTION"))
+        + m::nl()
+        + m::text("You can start by trying one of the examples:")
+        + m::nl();
 
     let examples = vec![
         "8 km / (1 h + 25 min)",
@@ -145,9 +139,8 @@ pub fn help_markup(pretty_print: bool) -> m::Markup {
         output += m::nl();
     }
     output += m::text("Full documentation:")
-            + m::space()
-            + m::keyword("https://numbat.dev/doc/")
-            + m::nl()
-            + m::nl();
+        + m::space()
+        + m::keyword("https://numbat.dev/doc/")
+        + m::nl();
     output
 }
