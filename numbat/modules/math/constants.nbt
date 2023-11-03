@@ -13,13 +13,33 @@ let golden_ratio = φ
 
 #### Large numbers
 
-unit hundred =  100
-unit thousand =  1_000
-unit million =  1_000_000
-unit billion =  10^9
-unit trillion =  10^12
-unit quadrillion =  10^15
-unit quintillion =  10^18
+@name("Hundred")
+@url("https://en.wikipedia.org/wiki/100_(number)")
+unit hundred = 100
+
+@name("Thousand")
+@url("https://en.wikipedia.org/wiki/1000_(number)")
+unit thousand = 1_000
+
+@name("Million")
+@url("https://en.wikipedia.org/wiki/Million")
+unit million = 1_000_000
+
+@name("Billion")
+@url("https://en.wikipedia.org/wiki/Billion")
+unit billion = 10^9
+
+@name("Trillion")
+@url("https://en.wikipedia.org/wiki/Trillion")
+unit trillion = 10^12
+
+@name("Quadrillion")
+@url("https://en.wikipedia.org/wiki/Quadrillion")
+unit quadrillion = 10^15
+
+@name("Quintillion")
+@url("https://en.wikipedia.org/wiki/Quintillion")
+unit quintillion = 10^18
 
 let googol =  10^100
 

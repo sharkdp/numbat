@@ -2,17 +2,22 @@
 
 use physics::constants
 
-# Planck length
+@name("Planck length")
+@url("https://en.wikipedia.org/wiki/Planck_length")
 unit planck_length: Length = sqrt(ℏ G / c^3) -> m
 
-# Planck mass
+@name("Planck mass")
+@url("https://en.wikipedia.org/wiki/Planck_mass")
 unit planck_mass: Mass = sqrt(ℏ c / G) -> kg
 
-# Planck time
+@name("Planck time")
+@url("https://en.wikipedia.org/wiki/Planck_time")
 unit planck_time: Time = sqrt(ℏ G / c^5) -> s
 
-# Planck temperature
+@name("Planck temperature")
+@url("https://en.wikipedia.org/wiki/Planck_temperature")
 unit planck_temperature: Temperature = sqrt(ℏ c^5 / (G k_B^2)) -> K
 
-# Planck energy
+@name("Planck energy")
+@url("https://en.wikipedia.org/wiki/Planck_energy")
 unit planck_energy: Energy = sqrt(ℏ c^5 / G) -> J

@@ -2,16 +2,22 @@ use units::si
 
 dimension DigitalInformation
 
+@name("Bit")
+@url("https://en.wikipedia.org/wiki/Bit")
 @metric_prefixes
 @binary_prefixes
 @aliases(bit: both, bits: both)
 unit bit: DigitalInformation
 
+@name("Byte")
+@url("https://en.wikipedia.org/wiki/Byte")
 @metric_prefixes
 @binary_prefixes
 @aliases(B: short, byte: both, bytes: both, Byte: both, Bytes: both, octet, octets, Octet, Octets)
 unit byte: DigitalInformation = 8 bit
 
+@name("Bits per second")
+@url("https://en.wikipedia.org/wiki/Bit_per_second")
 @metric_prefixes
 @aliases(bps: short)
 unit bps: DigitalInformation / Time = bit / second

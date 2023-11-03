@@ -8,23 +8,37 @@ use units::currency
 
 fn exchange_rate(currency: String) -> Scalar
 
+@name("US dollar")
+@url("https://en.wikipedia.org/wiki/United_States_dollar")
 @aliases(dollars, USD, $: short)
 unit dollar: Money = EUR / exchange_rate("USD")
 
+@name("Japanese yen")
+@url("https://en.wikipedia.org/wiki/Japanese_yen")
 @aliases(yens, JPY, ¥: short, 円)
 unit yen: Money = EUR / exchange_rate("JPY")
 
+@name("Pound sterling")
+@url("https://en.wikipedia.org/wiki/Pound_sterling")
 @aliases(pound_sterling, GBP, £: short)
 unit british_pound: Money = EUR / exchange_rate("GBP")
 
+@name("Chinese yuan")
+@url("https://en.wikipedia.org/wiki/Renminbi")
 @aliases(CNY: short, 元)
 unit renminbi: Money = EUR / exchange_rate("CNY")
 
+@name("Australian dollar")
+@url("https://en.wikipedia.org/wiki/Australian_dollar")
 @aliases(australian_dollars, AUD: short, A$)
 unit australian_dollar: Money = EUR / exchange_rate("AUD")
 
+@name("Canadian dollar")
+@url("https://en.wikipedia.org/wiki/Canadian_dollar")
 @aliases(canadian_dollars, CAD: short, C$)
 unit canadian_dollar: Money = EUR / exchange_rate("CAD")
 
+@name("Swiss franc")
+@url("https://en.wikipedia.org/wiki/Swiss_franc")
 @aliases(swiss_francs, CHF: short)
 unit swiss_franc: Money = EUR / exchange_rate("CHF")

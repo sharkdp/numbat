@@ -1,12 +1,18 @@
 use units::si
 
+@name("Parsec")
+@url("https://en.wikipedia.org/wiki/Parsec")
 @metric_prefixes
 @aliases(parsecs, pc: short)
 unit parsec: Length = 648_000 / π × au
 
+@name("Light-year")
+@url("https://en.wikipedia.org/wiki/Light-year")
 @metric_prefixes
 @aliases(lightyears, ly: short)
 unit lightyear: Length = 9_460_730_472_580_800 m
 
+@name("Sidereal day")
+@url("https://en.wikipedia.org/wiki/Sidereal_time#Sidereal_day")
 @aliases(sidereal_days)
 unit sidereal_day: Time = 86164.0905 s
