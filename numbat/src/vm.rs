@@ -8,7 +8,7 @@ use crate::{
     prefix::Prefix,
     quantity::Quantity,
     unit::Unit,
-    unit_registry::UnitRegistry,
+    unit_registry::{UnitMetadata, UnitRegistry},
     value::Value,
 };
 
@@ -236,9 +236,11 @@ pub struct Vm {
     /// Strings/text that is already available at compile time
     strings: Vec<Markup>,
 
-    /// The names of global variables or [Unit]s. The second
-    /// entry is the canonical name for units.
-    global_identifiers: Vec<(String, Option<String>)>,
+    /// Meta information about derived units:
+    /// - Unit name
+    /// - Canonical name
+    /// - Metadata
+    unit_information: Vec<(String, Option<String>, UnitMetadata)>,
 
     /// Result of the last expression
     last_result: Option<Value>,
@@ -266,7 +268,7 @@ impl Vm {
             constants: vec![],
             prefixes: vec![],
             strings: vec![],
-            global_identifiers: vec![],
+            unit_information: vec![],
             last_result: None,
             ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
             frames: vec![CallFrame::root()],
@@ -336,25 +338,23 @@ impl Vm {
         }
     }
 
-    pub fn add_global_identifier(
+    pub fn add_unit_information(
         &mut self,
-        identifier: &str,
+        unit_name: &str,
         canonical_unit_name: Option<&str>,
+        metadata: UnitMetadata,
     ) -> u16 {
-        if let Some(idx) = self
-            .global_identifiers
-            .iter()
-            .position(|i| i.0 == identifier)
-        {
+        if let Some(idx) = self.unit_information.iter().position(|i| i.0 == unit_name) {
             return idx as u16;
         }
 
-        self.global_identifiers.push((
-            identifier.to_owned(),
+        self.unit_information.push((
+            unit_name.to_owned(),
             canonical_unit_name.map(|s| s.to_owned()),
+            metadata,
         ));
-        assert!(self.global_identifiers.len() <= u16::MAX as usize);
-        (self.global_identifiers.len() - 1) as u16 // TODO: this can overflow, see above
+        assert!(self.unit_information.len() <= u16::MAX as usize);
+        (self.unit_information.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
     pub(crate) fn begin_function(&mut self, name: &str) {
@@ -405,7 +405,7 @@ impl Vm {
             eprintln!("  {:04} {}", idx, constant);
         }
         eprintln!(".IDENTIFIERS");
-        for (idx, identifier) in self.global_identifiers.iter().enumerate() {
+        for (idx, identifier) in self.unit_information.iter().enumerate() {
             eprintln!("  {:04} {}", idx, identifier.0);
         }
         for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
@@ -544,23 +544,27 @@ impl Vm {
                     ));
                 }
                 Op::SetUnitConstant => {
-                    let identifier_idx = self.read_u16();
+                    let unit_information_idx = self.read_u16();
                     let constant_idx = self.read_u16();
 
                     let conversion_value = self.pop_quantity();
 
-                    let unit_name = &self.global_identifiers[identifier_idx as usize];
+                    let unit_information = &self.unit_information[unit_information_idx as usize];
                     let defining_unit = conversion_value.unit();
 
                     let (base_unit_representation, _) = defining_unit.to_base_unit_representation();
 
                     self.unit_registry
-                        .add_derived_unit(&unit_name.0, &base_unit_representation)
+                        .add_derived_unit(
+                            &unit_information.0,
+                            &base_unit_representation,
+                            unit_information.2.clone(),
+                        )
                         .map_err(RuntimeError::UnitRegistryError)?;
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
-                        &unit_name.0,
-                        unit_name.1.as_ref().unwrap(),
+                        &unit_information.0,
+                        unit_information.1.as_ref().unwrap(),
                         *conversion_value.unsafe_value(),
                         defining_unit.clone(),
                     ));

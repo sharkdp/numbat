@@ -188,6 +188,9 @@ pub enum ParseErrorKind {
 
     #[error("Unterminated string interpolation")]
     UnterminatedStringInterpolation,
+
+    #[error("Expected a string")]
+    ExpectedString,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -527,6 +530,33 @@ impl<'a> Parser<'a> {
                     if self.match_exact(TokenKind::LeftParen).is_some() {
                         let aliases = self.list_of_aliases()?;
                         Decorator::Aliases(aliases)
+                    } else {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek().span,
+                        });
+                    }
+                } else if decorator.lexeme == "url" || decorator.lexeme == "name" {
+                    if self.match_exact(TokenKind::LeftParen).is_some() {
+                        if let Some(token) = self.match_exact(TokenKind::StringFixed) {
+                            if self.match_exact(TokenKind::RightParen).is_none() {
+                                return Err(ParseError::new(
+                                    ParseErrorKind::MissingClosingParen,
+                                    self.peek().span,
+                                ));
+                            }
+
+                            match decorator.lexeme.as_str() {
+                                "url" => Decorator::Url(token.lexeme.clone()),
+                                "name" => Decorator::Name(token.lexeme.clone()),
+                                _ => unreachable!(),
+                            }
+                        } else {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedString,
+                                span: self.peek().span,
+                            });
+                        }
                     } else {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
