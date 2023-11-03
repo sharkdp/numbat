@@ -3,159 +3,241 @@ use math::constants
 
 ### SI base units
 
+@name("Metre")
+@url("https://en.wikipedia.org/wiki/Metre")
 @metric_prefixes
-@aliases(meters, metre, metres, m: short)
-unit meter: Length
+@aliases(metres, meter, meters, m: short)
+unit metre: Length
 
+@name("Second")
+@url("https://en.wikipedia.org/wiki/Second")
 @metric_prefixes
 @aliases(seconds, s: short, sec: none)
 unit second: Time
 
+@name("Gram")
+@url("https://en.wikipedia.org/wiki/Gram")
 @metric_prefixes
 @aliases(grams, gramme, grammes, g: short)
 unit gram: Mass
 
+@name("Ampere")
+@url("https://en.wikipedia.org/wiki/Ampere")
 @metric_prefixes
 @aliases(amperes, A: short)
 unit ampere: Current
 
+@name("Kelvin")
+@url("https://en.wikipedia.org/wiki/Kelvin")
 @metric_prefixes
 @aliases(kelvins, K: short)
 unit kelvin: Temperature
 
+@name("Mole")
+@url("https://en.wikipedia.org/wiki/Mole_(unit)")
 @metric_prefixes
 @aliases(moles, mol: short)
 unit mole: AmountOfSubstance
 
+@name("Candela")
+@url("https://en.wikipedia.org/wiki/Candela")
 @metric_prefixes
 @aliases(candelas, cd: short)
 unit candela: LuminousIntensity
 
 ### SI derived units
 
+@name("Radian")
+@url("https://en.wikipedia.org/wiki/Radian")
 @metric_prefixes
 @aliases(radians, rad: short)
 unit radian: Angle = meter / meter
 
+@name("Steradian")
+@url("https://en.wikipedia.org/wiki/Steradian")
 @metric_prefixes
 @aliases(steradians, sr: short)
 unit steradian: SolidAngle = radian^2
 
+@name("Hertz")
+@url("https://en.wikipedia.org/wiki/Hertz")
 @metric_prefixes
 @aliases(Hz: short)
 unit hertz: Frequency = 1 / second
 
+@name("Newton")
+@url("https://en.wikipedia.org/wiki/Newton_(unit)")
 @metric_prefixes
 @aliases(newtons, N: short)
 unit newton: Force = kilogram meter / second^2
 
+@name("Pascal")
+@url("https://en.wikipedia.org/wiki/Pascal_(unit)")
 @metric_prefixes
 @aliases(pascals, Pa: short)
 unit pascal: Pressure = newton / meter^2
 
+@name("Joule")
+@url("https://en.wikipedia.org/wiki/Joule")
 @metric_prefixes
 @aliases(joules, J: short)
 unit joule: Energy = newton meter
 
+@name("Watt")
+@url("https://en.wikipedia.org/wiki/Watt")
 @metric_prefixes
 @aliases(watts, W: short)
 unit watt: Power = joule / second
 
+@name("Coulomb")
+@url("https://en.wikipedia.org/wiki/Coulomb")
 @metric_prefixes
 @aliases(coulombs, C: short)
 unit coulomb: ElectricCharge = ampere second
 
+@name("Volt")
+@url("https://en.wikipedia.org/wiki/Volt")
 @metric_prefixes
 @aliases(volts, V: short)
 unit volt: Voltage = kilogram meter^2 / (second^3 ampere)
 
+@name("Farad")
+@url("https://en.wikipedia.org/wiki/Farad")
 @metric_prefixes
 @aliases(farads, F: short)
 unit farad: Capacitance = coulomb / volt
 
+@name("Ohm")
+@url("https://en.wikipedia.org/wiki/Ohm")
 @metric_prefixes
 @aliases(ohms, Ω: short)
 unit ohm: ElectricResistance = volt / ampere
 
+@name("Siemens")
+@url("https://en.wikipedia.org/wiki/Siemens_(unit)")
 @metric_prefixes
 @aliases(S: short)
 unit siemens: ElectricConductance = 1 / ohm
 
+@name("Weber")
+@url("https://en.wikipedia.org/wiki/Weber_(unit)")
 @metric_prefixes
 @aliases(webers, Wb: short)
 unit weber: MagneticFlux = volt second
 
+@name("Tesla")
+@url("https://en.wikipedia.org/wiki/Tesla_(unit)")
 @metric_prefixes
 @aliases(teslas, T: short)
 unit tesla: MagneticFluxDensity = weber / meter^2
 
+@name("Henry")
+@url("https://en.wikipedia.org/wiki/Henry_(unit)")
 @metric_prefixes
 @aliases(henrys, henries, H: short)
 unit henry: Inductance = weber / ampere
 
+@name("Lumen")
+@url("https://en.wikipedia.org/wiki/Lumen_(unit)")
 @metric_prefixes
 @aliases(lumens, lm: short)
 unit lumen: LuminousFlux = candela steradian
 
+@name("Lux")
+@url("https://en.wikipedia.org/wiki/Lux")
 @metric_prefixes
 @aliases(lx: short)
 unit lux: Illuminance = lumen / meter^2
 
+@name("Becquerel")
+@url("https://en.wikipedia.org/wiki/Becquerel")
 @metric_prefixes
 @aliases(becquerels, Bq: short)
 unit becquerel: Activity = 1 / second
 
+@name("Gray")
+@url("https://en.wikipedia.org/wiki/Gray_(unit)")
 @metric_prefixes
 @aliases(grays, Gy: short)
 unit gray: AbsorbedDose = joule / kilogram
 
+@name("Sievert")
+@url("https://en.wikipedia.org/wiki/Sievert")
 @metric_prefixes
 @aliases(sieverts, Sv: short)
 unit sievert: EquivalentDose = joule / kilogram
 
+@name("Katal")
+@url("https://en.wikipedia.org/wiki/Katal")
 @metric_prefixes
 @aliases(katals, kat: short)
 unit katal: CatalyticActivity = mole / second
 
 ### SI accepted units
 
+@name("Minute")
+@url("https://en.wikipedia.org/wiki/Minute")
 @aliases(minutes, min: short)
 unit minute: Time = 60 seconds
 
+@name("Hour")
+@url("https://en.wikipedia.org/wiki/Hour")
 @aliases(hours, hr, h: short)
 unit hour: Time = 60 minutes
 
+@name("Day")
+@url("https://en.wikipedia.org/wiki/Day")
 @aliases(days, day: short, d: short)
 unit day: Time = 24 hours
 
+@name("Astronomical unit")
+@url("https://en.wikipedia.org/wiki/Astronomical_unit")
 @aliases(astronomicalunits, au: short, AU: short)
 unit astronomicalunit: Length = 149_597_870_700 meter
 
+@name("Degree")
+@url("https://en.wikipedia.org/wiki/Degree_(angle)")
 @aliases(degrees, deg, °: short)
 unit degree: Angle = π / 180 × radian
 
+@name("Minute of arc")
+@url("https://en.wikipedia.org/wiki/Minute_and_second_of_arc")
 @aliases(arcminutes, arcmin)
 unit arcminute: Angle = 1 / 60 × degree
 
+@name("Second of arc")
+@url("https://en.wikipedia.org/wiki/Minute_and_second_of_arc")
 @aliases(arcseconds, arcsec)
 unit arcsecond: Angle = 1 / 60 × arcminute
 
+@name("Are")
+@url("https://en.wikipedia.org/wiki/Are_(unit)")
 unit are: Area = (10 m)^2
 
+@name("Hectare")
+@url("https://en.wikipedia.org/wiki/Hectare")
 @aliases(hectares, ha: short)
 unit hectare: Area = 100 are
 
+@name("Litre")
+@url("https://en.wikipedia.org/wiki/Litre")
 @metric_prefixes
 @aliases(litres, liter, liters, l: short, L: short)
 unit litre: Volume = decimeter^3
 
+@name("Tonne")
+@url("https://en.wikipedia.org/wiki/Tonne")
 @metric_prefixes
 @aliases(tonnes, ton: both, tons: both, metricton: none)
 unit tonne: Mass = 10^3 kilogram
 
+@name("Dalton")
+@url("https://en.wikipedia.org/wiki/Dalton")
 @aliases(daltons, Da: short)
 unit dalton: Mass = 1.660539040e-27 kilogram
 
+@name("Electronvolt")
+@url("https://en.wikipedia.org/wiki/Electronvolt")
 @metric_prefixes
 @aliases(electronvolts, eV: short)
 unit electronvolt: Energy = 1.602176634e-19 joule

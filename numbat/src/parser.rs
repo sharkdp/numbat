@@ -546,9 +546,11 @@ impl<'a> Parser<'a> {
                                 ));
                             }
 
+                            let content = token.lexeme.trim_matches('"');
+
                             match decorator.lexeme.as_str() {
-                                "url" => Decorator::Url(token.lexeme.clone()),
-                                "name" => Decorator::Name(token.lexeme.clone()),
+                                "url" => Decorator::Url(content.into()),
+                                "name" => Decorator::Name(content.into()),
                                 _ => unreachable!(),
                             }
                         } else {
