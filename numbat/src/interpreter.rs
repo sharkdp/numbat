@@ -40,28 +40,13 @@ pub enum RuntimeError {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ExitStatus {
-    Success,
-    Error,
-}
-
-#[derive(Debug, PartialEq, Eq)]
 #[must_use]
 pub enum InterpreterResult {
     Value(Value),
     Continue,
-    Exit(ExitStatus),
 }
 
 impl InterpreterResult {
-    pub fn is_success(&self) -> bool {
-        match self {
-            Self::Value(_) => true,
-            Self::Continue => true,
-            Self::Exit(_) => false,
-        }
-    }
-
     pub fn to_markup(
         &self,
         evaluated_statement: Option<&Statement>,
@@ -93,7 +78,6 @@ impl InterpreterResult {
                     + m::nl()
             }
             Self::Continue => m::empty(),
-            Self::Exit(_) => m::text("Interpreter Error") + m::nl(),
         }
     }
 }

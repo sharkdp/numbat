@@ -8,12 +8,12 @@ use wasm_bindgen::prelude::*;
 
 use jquery_terminal_formatter::JqueryTerminalFormatter;
 
+use numbat::help::help_markup;
 use numbat::markup::Formatter;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::{markup as m, NameResolutionError, NumbatError};
 use numbat::{Context, InterpreterSettings};
-use numbat::help::help_markup;
 
 use crate::jquery_terminal_formatter::JqueryTerminalWriter;
 
@@ -104,7 +104,7 @@ impl Numbat {
 
                 InterpreterOutput {
                     output,
-                    is_error: !result.is_success()
+                    is_error: false,
                 }
             }
             Err(NumbatError::ResolverError(e)) => self.print_diagnostic(&e),

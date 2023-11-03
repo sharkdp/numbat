@@ -20,11 +20,9 @@ pub fn get_test_context() -> Context {
     static CONTEXT: Lazy<Context> = Lazy::new(|| {
         let mut context = get_test_context_without_prelude();
 
-        assert!(context
+        let _ = context
             .interpret("use prelude", CodeSource::Internal)
-            .expect("Error while running prelude")
-            .1
-            .is_success());
+            .expect("Error while running prelude");
         context
     });
 
