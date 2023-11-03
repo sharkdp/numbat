@@ -425,12 +425,11 @@ impl Context {
                             }
                         }
 
-                        self.interpret_with_settings(
+                        let _ = self.interpret_with_settings(
                             &mut no_print_settings,
                             "use units::currencies",
                             CodeSource::Internal,
-                        )
-                        .ok();
+                        )?;
 
                         // Make sure we do not run into an infinite loop in case loading that
                         // module did not bring in the required currency unit identifier. This
