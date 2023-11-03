@@ -52,7 +52,6 @@ use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
 pub use diagnostic::Diagnostic;
-pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
 pub use interpreter::InterpreterSettings;
 pub use interpreter::RuntimeError;

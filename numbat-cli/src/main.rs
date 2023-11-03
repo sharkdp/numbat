@@ -13,7 +13,7 @@ use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
+use numbat::{Context, InterpreterResult, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -30,7 +30,13 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
 
-type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
+#[derive(Debug, PartialEq, Eq)]
+pub enum ExitStatus {
+    Success,
+    Error,
+}
+
+type ControlFlow = std::ops::ControlFlow<ExitStatus>;
 
 const PROMPT: &str = ">>> ";
 
@@ -389,7 +395,6 @@ impl Cli {
                         ControlFlow::Continue(())
                     }
                     InterpreterResult::Continue => ControlFlow::Continue(()),
-                    InterpreterResult::Exit(exit_status) => ControlFlow::Break(exit_status),
                 }
             }
             Err(NumbatError::ResolverError(e)) => {

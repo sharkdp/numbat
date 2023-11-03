@@ -13,8 +13,7 @@ fn main() {
     let mut importer = FileSystemImporter::default();
     importer.add_path("numbat/modules");
     let mut ctx = Context::new(importer);
-    let result = ctx.interpret("use all", CodeSource::Internal).unwrap();
-    assert!(result.1.is_success());
+    let _ = ctx.interpret("use all", CodeSource::Internal).unwrap();
 
     println!("digraph G {{");
     println!("  layout=fdp;");
