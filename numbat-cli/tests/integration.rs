@@ -92,3 +92,14 @@ fn without_prelude() {
         .success()
         .stdout(predicates::str::contains("5.2"));
 }
+
+#[test]
+fn help_text() {
+    numbat()
+        .write_stdin("help")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "Energy of red photons: 1.87855 eV",
+        ));
+}
