@@ -1,9 +1,13 @@
 use crate::{
+    dimension::DimensionRegistry,
     markup::Markup,
+    pretty_print::PrettyPrint,
     quantity::{Quantity, QuantityError},
-    typed_ast::Statement,
+    typed_ast::{Statement, Type},
     unit_registry::{UnitRegistry, UnitRegistryError},
 };
+
+use crate::markup as m;
 
 use thiserror::Error;
 
@@ -55,6 +59,42 @@ impl InterpreterResult {
             Self::Value(_) => true,
             Self::Continue => true,
             Self::Exit(_) => false,
+        }
+    }
+
+    pub fn to_markup(
+        &self,
+        evaluated_statement: Option<&Statement>,
+        registry: &DimensionRegistry,
+    ) -> Markup {
+        match self {
+            Self::Value(value) => {
+                let type_markup = if let Some(s) = evaluated_statement {
+                    if let Statement::Expression(e) = s {
+                        let type_ = e.get_type();
+                        if type_ == Type::scalar() {
+                            m::empty()
+                        } else {
+                            m::dimmed("    [")
+                                + e.get_type().to_readable_type(&registry)
+                                + m::dimmed("]")
+                        }
+                    } else {
+                        m::empty()
+                    }
+                } else {
+                    m::empty()
+                };
+                m::whitespace("    ")
+                    + m::operator("=")
+                    + m::operator("=")
+                    + m::space()
+                    + value.clone().pretty_print()
+                    + type_markup
+                    + m::nl()
+            }
+            Self::Continue => m::empty(),
+            Self::Exit(_) => m::text("Interpreter Error") + m::nl(),
         }
     }
 }

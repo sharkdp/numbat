@@ -99,46 +99,12 @@ impl Numbat {
                     output.push_str("\n");
                 }
 
-                match result {
-                    InterpreterResult::Value(value) => {
-                        if !to_be_printed.is_empty() {
-                            output.push_str("\n");
-                        }
-
-                        // TODO: the following statement is copied from numbat-cli. Move this to the numbat crate
-                        // to avoid duplication.
-                        let type_ = statements.last().map_or(m::empty(), |s| {
-                            if let numbat::Statement::Expression(e) = s {
-                                let type_ = e.get_type();
-
-                                if type_ == Type::scalar() {
-                                    m::empty()
-                                } else {
-                                    m::dimmed("    [")
-                                        + e.get_type().to_readable_type(&registry)
-                                        + m::dimmed("]")
-                                }
-                            } else {
-                                m::empty()
-                            }
-                        });
-
-                        let markup = m::whitespace("    ")
-                            + m::operator("=")
-                            + m::space()
-                            + value.pretty_print()
-                            + type_;
-                        output.push_str(&fmt.format(&markup, true));
-                    }
-                    InterpreterResult::Continue => {}
-                    InterpreterResult::Exit(_) => {
-                        output.push_str(&jt_format(Some("error"), "Error!".into()))
-                    }
-                }
+                let result_markup = result.to_markup(statements.last(), &registry);
+                output.push_str(&fmt.format(&markup, true));
 
                 InterpreterOutput {
                     output,
-                    is_error: false,
+                    is_error: !result.is_success()
                 }
             }
             Err(NumbatError::ResolverError(e)) => self.print_diagnostic(&e),

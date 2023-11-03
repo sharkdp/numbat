@@ -14,7 +14,7 @@ use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystem
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
-use numbat::{InterpreterSettings, NameResolutionError, Type};
+use numbat::{InterpreterSettings, NameResolutionError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::{Parser, ValueEnum};
@@ -380,32 +380,12 @@ impl Cli {
                     println!();
                 }
 
+                let result_markup = interpreter_result.to_markup(statements.last(), &registry);
+                print!("{}", ansi_format(&result_markup, false));
+
                 match interpreter_result {
-                    InterpreterResult::Value(value) => {
-                        let type_ = statements.last().map_or(m::empty(), |s| {
-                            if let numbat::Statement::Expression(e) = s {
-                                let type_ = e.get_type();
-
-                                if type_ == Type::scalar() {
-                                    m::empty()
-                                } else {
-                                    m::dimmed("    [")
-                                        + e.get_type().to_readable_type(&registry)
-                                        + m::dimmed("]")
-                                }
-                            } else {
-                                m::empty()
-                            }
-                        });
-
-                        let q_markup = m::whitespace("    ")
-                            + m::operator("=")
-                            + m::space()
-                            + value.pretty_print()
-                            + type_;
-                        println!("{}", ansi_format(&q_markup, false));
+                    InterpreterResult::Value(_) => {
                         println!();
-
                         ControlFlow::Continue(())
                     }
                     InterpreterResult::Continue => ControlFlow::Continue(()),

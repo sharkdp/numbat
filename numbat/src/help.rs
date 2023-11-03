@@ -2,10 +2,9 @@
 /// in an isolated context.
 use crate::markup as m;
 use crate::module_importer::BuiltinModuleImporter;
-use crate::pretty_print::PrettyPrint;
 use crate::resolver::CodeSource;
-use crate::{Context, InterpreterResult, NumbatError};
-use crate::{InterpreterSettings, NameResolutionError, Type};
+use crate::{Context, NumbatError};
+use crate::{InterpreterSettings, NameResolutionError};
 
 use std::sync::{Arc, Mutex};
 
@@ -26,78 +25,35 @@ fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
         )
     };
 
-    let mut full_output = m::empty();
-
     match result {
-        Ok((statements, interpreter_result)) => match interpreter_result {
-            InterpreterResult::Value(value) => {
-                let type_ = statements.last().map_or(m::empty(), |s| {
-                    if let crate::Statement::Expression(e) = s {
-                        let type_ = e.get_type();
-
-                        if type_ == Type::scalar() {
-                            m::empty()
-                        } else {
-                            m::dimmed("    [")
-                                + e.get_type().to_readable_type(&registry)
-                                + m::dimmed("]")
-                        }
-                    } else {
-                        m::empty()
-                    }
-                });
-
-                full_output += statement_output.lock().unwrap().iter().fold(
-                    m::empty(),
-                    |accumulated_mk, single_line| {
-                        accumulated_mk
-                            + m::nl()
-                            + m::whitespace("  ")
-                            + single_line.clone()
-                            + m::nl()
-                    },
-                ) + m::nl()
-                    + m::whitespace("    ")
-                    + m::operator("=")
-                    + m::space()
-                    + value.pretty_print()
-                    + type_
-                    + m::nl();
-            }
-            InterpreterResult::Continue => {
-                full_output += statement_output.lock().unwrap().iter().fold(
-                    m::empty(),
-                    |accumulated_mk, single_line| {
-                        accumulated_mk
-                            + m::nl()
-                            + m::whitespace("  ")
-                            + single_line.clone()
-                            + m::nl()
-                    },
-                );
-            }
-            InterpreterResult::Exit(_exit_status) => {
-                println!("Interpretation Error.");
-            }
-        },
+        Ok((statements, interpreter_result)) => {
+            statement_output.lock().unwrap().iter().fold(
+                m::empty(),
+                |accumulated_mk, single_line| {
+                    accumulated_mk + m::nl() + m::whitespace("  ") + single_line.clone() + m::nl()
+                },
+            ) + interpreter_result.to_markup(statements.last(), &registry)
+        }
         Err(NumbatError::ResolverError(e)) => {
             context.print_diagnostic(e.clone());
+            m::empty()
         }
         Err(NumbatError::NameResolutionError(
             e @ (NameResolutionError::IdentifierClash { .. }
             | NameResolutionError::ReservedIdentifier(_)),
         )) => {
             context.print_diagnostic(e);
+            m::empty()
         }
         Err(NumbatError::TypeCheckError(e)) => {
             context.print_diagnostic(e);
+            m::empty()
         }
         Err(NumbatError::RuntimeError(e)) => {
             context.print_diagnostic(e);
+            m::empty()
         }
     }
-
-    full_output
 }
 
 pub fn help_markup() -> m::Markup {
