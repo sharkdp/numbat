@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introducing Numbat</title>
+    <link rel="stylesheet" href="main.css">
+    <script src="pkg/ace.min.js"></script>
+</head>
+<body>
+
+<article class="blog-post">
+    <h1>Introducing Numbat</h1>
+
+    <p>Numbat is a programming language that aims to provide a convenient way
+    to perform computations with physical units.
+    One of the main goals of the language is to help users write <em>correct</em> programs.
+
+    Numbat therefore has a static type system where <em>physical dimensions</em> act as types.
+    The expression <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span></code>, for example, has a <em>type</em> of <code class="numbat-type-identifier">Time</code>.
+    The expression <code><span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> also has a type of <code class="numbat-type-identifier">Time</code>.
+    The compound expression <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span> + <span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> is therefore well-typed:
+    </p>
+
+    <div id="editor1" class="code-editor">3 months + 2 years</div>
+    <pre id="output1" class="numbat-output"></pre>
+
+    <p>
+    On the other hand, <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span> + <span class="numbat-value">2</span> <span class="numbat-unit">lightyears</span></code> is <em>ill</em>-typed, because the right-hand side is of type <code class="numbat-type-identifier">Length</code>.
+    You can change &lsquo;years&rsquo; to &lsquo;lightyears&rsquo; in the example above to see the resulting compiler error.
+    </p>
+
+    <p>
+    Before we describe the type system in more detail, let's look at two simple examples. The first program
+    computes the oscillation period of a (mathematical) pendulum using the gravitational acceleration
+    <code>g0</code>.
+    Note that you can change the unit of the pendulum length to, say, <code span="numbat-unit">inch</code> without
+    having to change the type annotations. This is in contrast to most physical-computation libraries in other
+    programming languages that typically lift <em>units</em> &mdash; not the physical dimensions &mdash; to the type level.
+
+    Also, note that you can completely remove the explicit <code><span class="ace_operator">:</span> <span class="numbat-type-identifier">Type</span></code> annotations and let the compiler infer the types:
+    </p>
+
+    <div id="editor2" class="code-editor">let pendulum_length: Length = 30 cm
+let t_oscillation: Time = 2 π sqrt(pendulum_length / g0)
+
+t_oscillation</div>
+    <pre id="output2" class="numbat-output"></pre>
+
+    <div class="spacer"></div>
+
+    <p>The second example demonstrates how explicit type annotations
+    can help avoid mistakes. We want to compute the ratio of gravitational forces exerted on Earth by both the Sun and the Moon.
+    However, the computation contains a mistake. Try to annotate the definitions of <code>force_sun</code> and <code>force_moon</code> with the intended dimension of <span class="numbat-type-identifier">Force</span>
+    and see if the compiler error can help you fix the <a href="https://en.wikipedia.org/wiki/Newton%27s_law_of_universal_gravitation">equations</a>.
+    The correct result should be closer to <code class="numbat-value">180</code>.
+    </p>
+
+    <div id="editor3" class="code-editor">let distance_sun: Length = 1 AU  # astronomical unit
+let distance_moon: Length = 384_400 km
+
+let force_sun = G * earth_mass * solar_mass / distance_sun
+let force_moon = G * earth_mass * lunar_mass / distance_moon
+
+force_sun / force_moon</div>
+    <pre id="output3" class="numbat-output"></pre>
+
+    <div class="spacer"></div>
+
+
+    <!-- <p> -->
+    <!-- The second example demonstrates how you can use the <code class="ace_keyword">dimension</code> keyword to -->
+    <!-- introduce new types. And how function parameters and return types are specified. -->
+    <!-- </p> -->
+
+    <!-- <div id="editor4" class="code-editor">dimension BMI = Mass / Length² -->
+
+<!-- fn body_mass_index(mass: Mass, height: Length) -> BMI = -->
+  <!-- round(mass / height² -> kg / m²) -->
+
+<!-- body_mass_index(69 kg, 1.65 m) -->
+<!-- # body_mass_index(170 lbs, 5 ft + 4 in)</div> -->
+    <!-- <pre id="output4" class="numbat-output"></pre> -->
+
+
+
+</article>
+
+
+    <p>
+        If you want to learn more about Numbat, consider reading the language <a href="https://numbat.dev/doc/tutorial.html">tutorial</a>.
+        Numbat is <a href="https://github.com/sharkdp/numbat">open source</a>. It is available both <a href="http://numbat.dev">on the web</a> (running locally in your browser) and as a <a href="https://github.com/sharkdp/numbat">command-line application</a>.
+    </p>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>
+
