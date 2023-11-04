@@ -53,6 +53,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Frame / Time` | [Frames per second](https://en.wikipedia.org/wiki/Frame_rate) | `fps` |
 | `Frequency` | [Hertz](https://en.wikipedia.org/wiki/Hertz) | `Hz`, `hertz` |
 | `Frequency` | [Revolutions per minute](https://en.wikipedia.org/wiki/Revolutions_per_minute) | `RPM`, `rpm` |
+| `Illuminance` | [Foot-candle](https://en.wikipedia.org/wiki/Foot-candle) | `footcandle`, `footcandles`, `fc` |
 | `Illuminance` | [Lux](https://en.wikipedia.org/wiki/Lux) | `lux`, `lx` |
 | `Inductance` | [Henry](https://en.wikipedia.org/wiki/Henry_(unit)) | `H`, `henries`, `henry`, `henrys` |
 | `KinematicViscosity` | [Stokes](https://en.wikipedia.org/wiki/Stokes_(unit)) | `St`, `stokes` |
