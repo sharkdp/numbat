@@ -24,11 +24,35 @@ use rustyline::{
     Validator,
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
+use serde::Deserialize;
+use toml;
 
 use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
+
+#[derive(Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "kebab-case")]
+enum ExchangeRateFetchingPolicy {
+    #[default]
+    Prefetch,
+    FetchOnFirstUse,
+    DontFetch,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "kebab-case")]
+struct Config {
+    exchange_rate_fetching_policy: ExchangeRateFetchingPolicy,
+    quiet: bool,
+    #[serde(default = "default_prompt")]
+    prompt: String,
+}
+
+fn default_prompt() -> String {
+    ">>> ".to_string()
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExitStatus {
@@ -37,8 +61,6 @@ pub enum ExitStatus {
 }
 
 type ControlFlow = std::ops::ControlFlow<ExitStatus>;
-
-const PROMPT: &str = ">>> ";
 
 #[derive(Debug, Clone, Copy, PartialEq, ValueEnum)]
 enum PrettyPrintMode {
@@ -111,6 +133,7 @@ struct NumbatHelper {
 
 struct Cli {
     args: Args,
+    config: Config,
     context: Arc<Mutex<Context>>,
 }
 
@@ -134,12 +157,24 @@ impl Cli {
         Self {
             context: Arc::new(Mutex::new(context)),
             args,
+            config: Config::default(),
         }
     }
 
     fn run(&mut self) -> Result<()> {
         let load_prelude = !self.args.no_prelude;
         let load_init = !(self.args.no_prelude || self.args.no_init);
+
+        let user_config_path = Self::get_config_path().join("config.toml");
+
+        if let Ok(contents) = fs::read_to_string(&user_config_path) {
+            match toml::from_str(&contents) {
+                Ok(config) => self.config = config,
+                Err(_) => {
+                    bail!("Failed to parse config file")
+                }
+            }
+        }
 
         if load_prelude {
             let result = self.parse_and_evaluate(
@@ -169,16 +204,25 @@ impl Cli {
             }
         }
 
-        if load_prelude {
+        if load_prelude
+            && self.config.exchange_rate_fetching_policy != ExchangeRateFetchingPolicy::DontFetch
+        {
             {
                 self.context
                     .lock()
                     .unwrap()
                     .load_currency_module_on_demand(true);
             }
-            thread::spawn(move || {
-                numbat::Context::prefetch_exchange_rates();
-            });
+
+            match self.config.exchange_rate_fetching_policy {
+                ExchangeRateFetchingPolicy::Prefetch => {
+                    thread::spawn(move || {
+                        numbat::Context::prefetch_exchange_rates();
+                    });
+                }
+                ExchangeRateFetchingPolicy::FetchOnFirstUse
+                | ExchangeRateFetchingPolicy::DontFetch => {}
+            }
         }
 
         let pretty_print_mode =
@@ -226,7 +270,7 @@ impl Cli {
     fn repl(&mut self) -> Result<()> {
         let interactive = std::io::stdin().is_terminal();
         let history_path = self.get_history_path()?;
-        let quiet_startup = self.args.quiet;
+        let quiet_startup = self.args.quiet || self.config.quiet;
 
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
         rl.set_max_history_size(1000)
@@ -273,7 +317,7 @@ impl Cli {
 
     fn repl_loop(&mut self, rl: &mut Editor<NumbatHelper, DefaultHistory>) -> Result<()> {
         loop {
-            let readline = rl.readline(PROMPT);
+            let readline = rl.readline(&self.config.prompt);
             match readline {
                 Ok(line) => {
                     if !line.trim().is_empty() {
