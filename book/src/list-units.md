@@ -120,6 +120,12 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Money` | [Thai baht](https://en.wikipedia.org/wiki/Thai_baht) | `THB`, `thai_baht`, `thai_bahts`, `฿` |
 | `Money` | [Turkish lira](https://en.wikipedia.org/wiki/Turkish_lira) | `TRY`, `turkish_lira`, `turkish_liras`, `₺` |
 | `Money` | [Japanese yen](https://en.wikipedia.org/wiki/Japanese_yen) | `JPY`, `yen`, `yens`, `¥`, `円` |
+| `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `DKK`, `danish_krone`, `danish_kroner` |
+| `Money` | [Swedish krona](https://en.wikipedia.org/wiki/Swedish_krona) | `SEK`, `swedish_krona`, `swedish_kronor` |
+| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `ISK`, `icelandic_króna`, `icelandic_krónur` |
+| `Money` | [Norwegian kroneDanish krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `norwegian_krone`, `norwegian_kroner` |
+| `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `₪`, `ILS`, `NIS`, `israeli_new_shekel`, `israeli_new_shekels` |
+| `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `ZAR`, `south_african_rand` |
 | `Person` | Person | `capita`, `people`, `person`, `persons` |
 | `Piece` | Piece | `piece`, `pieces` |
 | `Pixel` | [Pixel](https://en.wikipedia.org/wiki/Pixel) | `pixel`, `pixels`, `px` |

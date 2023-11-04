@@ -122,3 +122,33 @@ unit singapore_dollar: Money = EUR / exchange_rate("SGD")
 @url("https://en.wikipedia.org/wiki/Thai_baht")
 @aliases(thai_bahts, THB: short, ฿)
 unit thai_baht: Money = EUR / exchange_rate("THB")
+
+@name("Danish krone")
+@url("https://en.wikipedia.org/wiki/Danish_krone")
+@aliases(danish_kroner, DKK: short)
+unit danish_krone: Money = EUR / exchange_rate("DKK")
+
+@name("Swedish krona")
+@url("https://en.wikipedia.org/wiki/Swedish_krona")
+@aliases(swedish_kronor, SEK: short)
+unit swedish_krona: Money = EUR / exchange_rate("SEK")
+
+@name("Icelandic króna")
+@url("https://en.wikipedia.org/wiki/Icelandic_króna")
+@aliases(icelandic_krónur, ISK: short)
+unit icelandic_króna: Money = EUR / exchange_rate("ISK")
+
+@name("Norwegian krone")
+@url("https://en.wikipedia.org/wiki/Norwegian_krone")
+@aliases(norwegian_kroner, NOK: short)
+unit norwegian_krone: Money = EUR / exchange_rate("NOK")
+
+@name("Israeli new shekel")
+@url("https://en.wikipedia.org/wiki/Israeli_new_shekel")
+@aliases(israeli_new_shekels, ILS: short, ₪, NIS)
+unit israeli_new_shekel: Money = EUR / exchange_rate("ILS")
+
+@name("South African rand")
+@url("https://en.wikipedia.org/wiki/South_African_rand")
+@aliases(ZAR: short)
+unit south_african_rand: Money = EUR / exchange_rate("ZAR")
