@@ -123,7 +123,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `DKK`, `danish_krone`, `danish_kroner` |
 | `Money` | [Swedish krona](https://en.wikipedia.org/wiki/Swedish_krona) | `SEK`, `swedish_krona`, `swedish_kronor` |
 | `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `ISK`, `icelandic_króna`, `icelandic_krónur` |
-| `Money` | [Norwegian kroneDanish krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `norwegian_krone`, `norwegian_kroner` |
+| `Money` | [Norwegian krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `norwegian_krone`, `norwegian_kroner` |
 | `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `₪`, `ILS`, `NIS`, `israeli_new_shekel`, `israeli_new_shekels` |
 | `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `ZAR`, `south_african_rand` |
 | `Person` | Person | `capita`, `people`, `person`, `persons` |
