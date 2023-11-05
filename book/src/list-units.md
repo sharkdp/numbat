@@ -102,30 +102,30 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Money` | [Bulgarian lev](https://en.wikipedia.org/wiki/Bulgarian_lev) | `BGN`, `bulgarian_lev`, `bulgarian_leva` |
 | `Money` | [Canadian dollar](https://en.wikipedia.org/wiki/Canadian_dollar) | `C$`, `CAD`, `canadian_dollar`, `canadian_dollars` |
 | `Money` | [Czech koruna](https://en.wikipedia.org/wiki/Czech_koruna) | `CZK`, `Kč`, `czech_koruna`, `czech_korunas` |
+| `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `DKK`, `danish_krone`, `danish_kroner` |
 | `Money` | [US dollar](https://en.wikipedia.org/wiki/United_States_dollar) | `$`, `USD`, `dollar`, `dollars` |
 | `Money` | [Euro](https://en.wikipedia.org/wiki/Euro) | `EUR`, `euro`, `euros`, `€` |
 | `Money` | [Hong Kong dollar](https://en.wikipedia.org/wiki/Hong_Kong_dollar) | `HK$`, `HKD`, `hong_kong_dollar`, `hong_kong_dollars` |
 | `Money` | [Hungarian forint](https://en.wikipedia.org/wiki/Hungarian_forint) | `Ft`, `HUF`, `hungarian_forint`, `hungarian_forints` |
+| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `ISK`, `icelandic_króna`, `icelandic_krónur` |
 | `Money` | [Indian rupee](https://en.wikipedia.org/wiki/Indian_rupee) | `INR`, `indian_rupee`, `indian_rupees`, `₹` |
 | `Money` | [Indonesian rupiah](https://en.wikipedia.org/wiki/Indonesian_rupiah) | `IDR`, `Rp`, `indonesian_rupiah`, `indonesian_rupiahs` |
+| `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `ILS`, `NIS`, `israeli_new_shekel`, `israeli_new_shekels`, `₪` |
 | `Money` | [Malaysian ringgit](https://en.wikipedia.org/wiki/Malaysian_ringgit) | `MYR`, `RM`, `malaysian_ringgit`, `malaysian_ringgits` |
 | `Money` | [New Zealand dollar](https://en.wikipedia.org/wiki/New_Zealand_dollar) | `NZ$`, `NZD`, `new_zealand_dollar`, `new_zealand_dollars` |
+| `Money` | [Norwegian krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `norwegian_krone`, `norwegian_kroner` |
 | `Money` | [Philippine peso](https://en.wikipedia.org/wiki/Philippine_peso) | `PHP`, `philippine_peso`, `philippine_pesos`, `₱` |
 | `Money` | [Polish złoty](https://en.wikipedia.org/wiki/Polish_złoty) | `PLN`, `polish_zloty`, `polish_zlotys`, `zł` |
 | `Money` | [Chinese yuan](https://en.wikipedia.org/wiki/Renminbi) | `CNY`, `renminbi`, `元` |
 | `Money` | [Romanian leu](https://en.wikipedia.org/wiki/Romanian_leu) | `RON`, `lei`, `romanian_leu`, `romanian_leus` |
 | `Money` | [Singapore dollar](https://en.wikipedia.org/wiki/Singapore_dollar) | `S$`, `SGD`, `singapore_dollar`, `singapore_dollars` |
+| `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `ZAR`, `south_african_rand` |
 | `Money` | [South Korean won](https://en.wikipedia.org/wiki/South_Korean_won) | `KRW`, `south_korean_won`, `south_korean_wons`, `₩` |
+| `Money` | [Swedish krona](https://en.wikipedia.org/wiki/Swedish_krona) | `SEK`, `swedish_krona`, `swedish_kronor` |
 | `Money` | [Swiss franc](https://en.wikipedia.org/wiki/Swiss_franc) | `CHF`, `swiss_franc`, `swiss_francs` |
 | `Money` | [Thai baht](https://en.wikipedia.org/wiki/Thai_baht) | `THB`, `thai_baht`, `thai_bahts`, `฿` |
 | `Money` | [Turkish lira](https://en.wikipedia.org/wiki/Turkish_lira) | `TRY`, `turkish_lira`, `turkish_liras`, `₺` |
 | `Money` | [Japanese yen](https://en.wikipedia.org/wiki/Japanese_yen) | `JPY`, `yen`, `yens`, `¥`, `円` |
-| `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `DKK`, `danish_krone`, `danish_kroner` |
-| `Money` | [Swedish krona](https://en.wikipedia.org/wiki/Swedish_krona) | `SEK`, `swedish_krona`, `swedish_kronor` |
-| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `ISK`, `icelandic_króna`, `icelandic_krónur` |
-| `Money` | [Norwegian krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `norwegian_krone`, `norwegian_kroner` |
-| `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `₪`, `ILS`, `NIS`, `israeli_new_shekel`, `israeli_new_shekels` |
-| `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `ZAR`, `south_african_rand` |
 | `Person` | Person | `capita`, `people`, `person`, `persons` |
 | `Piece` | Piece | `piece`, `pieces` |
 | `Pixel` | [Pixel](https://en.wikipedia.org/wiki/Pixel) | `pixel`, `pixels`, `px` |
