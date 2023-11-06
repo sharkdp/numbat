@@ -79,7 +79,7 @@ fn suggested_fix(
     };
 
     Some(format!(
-        "{action} the {expression_to_change} by a factor of dimension {delta_type}"
+        "{action} the {expression_to_change} by a `{delta_type}` factor"
     ))
 }
 

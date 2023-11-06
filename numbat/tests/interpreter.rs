@@ -238,7 +238,7 @@ fn test_incompatible_dimension_errors() {
      left hand side: Length  × Mass × Time⁻²    [= Force]
     right hand side: Length² × Mass             [= MomentOfInertia]
 
-    Suggested fix: divide the expression on the right hand side by a factor of dimension Length × Time²
+    Suggested fix: divide the expression on the right hand side by a `Length × Time²` factor
     "###
     );
 
@@ -248,7 +248,7 @@ fn test_incompatible_dimension_errors() {
      left hand side: Scalar    [= Angle, Scalar, SolidAngle]
     right hand side: Length
 
-    Suggested fix: divide the expression on the right hand side by a factor of dimension Length
+    Suggested fix: divide the expression on the right hand side by a `Length` factor
     "###
     );
 
@@ -276,7 +276,7 @@ fn test_incompatible_dimension_errors() {
      left hand side: Length² × Mass × Time⁻³    [= Power]
     right hand side: Length² × Mass × Time⁻²    [= Energy, Torque]
 
-    Suggested fix: divide the expression on the right hand side by a factor of dimension Time
+    Suggested fix: divide the expression on the right hand side by a `Time` factor
     "###
     );
 
@@ -286,7 +286,7 @@ fn test_incompatible_dimension_errors() {
     parameter type: Scalar    [= Angle, Scalar, SolidAngle]
      argument type: Length
 
-    Suggested fix: divide the function argument by a factor of dimension Length
+    Suggested fix: divide the function argument by a `Length` factor
     "###
     );
 
@@ -296,7 +296,7 @@ fn test_incompatible_dimension_errors() {
     specified dimension: Length × Time⁻²    [= Acceleration]
        actual dimension: Length × Time⁻¹    [= Velocity]
 
-    Suggested fix: divide the right hand side expression by a factor of dimension Time
+    Suggested fix: divide the right hand side expression by a `Time` factor
     "###
     );
 
@@ -306,7 +306,7 @@ fn test_incompatible_dimension_errors() {
     specified dimension: Length × Time⁻²    [= Acceleration]
        actual dimension: Length × Time⁻¹    [= Velocity]
 
-    Suggested fix: divide the right hand side expression by a factor of dimension Time
+    Suggested fix: divide the right hand side expression by a `Time` factor
     "###
     );
 
@@ -316,7 +316,7 @@ fn test_incompatible_dimension_errors() {
     specified return type: Length × Time⁻²    [= Acceleration]
        actual return type: Length × Time⁻¹    [= Velocity]
 
-    Suggested fix: divide the expression in the function body by a factor of dimension Time
+    Suggested fix: divide the expression in the function body by a `Time` factor
     "###
     );
 }
