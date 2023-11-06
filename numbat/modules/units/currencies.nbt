@@ -135,7 +135,7 @@ unit swedish_krona: Money = EUR / exchange_rate("SEK")
 
 @name("Icelandic króna")
 @url("https://en.wikipedia.org/wiki/Icelandic_króna")
-@aliases(icelandic_krónur, ISK: short)
+@aliases(icelandic_krónur, icelandic_krona, icelandic_kronur, ISK: short)
 unit icelandic_króna: Money = EUR / exchange_rate("ISK")
 
 @name("Norwegian krone")
