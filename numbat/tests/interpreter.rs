@@ -235,31 +235,31 @@ fn test_incompatible_dimension_errors() {
         "kg m / s^2 + kg m^2",
         " left hand side: Length  × Mass × Time⁻²    [= Force]\n\
          right hand side: Length² × Mass             [= MomentOfInertia]\n\n\
-         Suggested fix: multiply left hand side by Length × Time²",
+         Suggested fix: multiply the left hand side by: Length × Time²",
     );
     expect_exact_failure(
         "1 + m",
         " left hand side: Scalar    [= Angle, Scalar, SolidAngle]\n\
          right hand side: Length\n\n\
-         Suggested fix: multiply left hand side by Length",
+         Suggested fix: multiply the left hand side by: Length",
     );
     expect_exact_failure(
         "m / s + K A",
         " left hand side: Length / Time            [= Velocity]\n\
          right hand side: Current × Temperature\n\n\
-         Suggested fix: multiply left hand side by Current × Temperature × Time / Length",
+         Suggested fix: multiply the left hand side by: Current × Temperature × Time / Length",
     );
     expect_exact_failure(
         "m + 1 / m",
         " left hand side: Length\n\
          right hand side: Length⁻¹    [= Wavenumber]\n\n\
-         Suggested fix: multiply right hand side by Length²",
+         Suggested fix: multiply the right hand side by: Length²",
     );
     expect_exact_failure(
         "kW -> J",
         " left hand side: Length² × Mass × Time⁻³    [= Power]\n\
          right hand side: Length² × Mass × Time⁻²    [= Energy, Torque]\n\n\
-         Suggested fix: multiply left hand side by Time",
+         Suggested fix: multiply the left hand side by: Time",
     );
 }
 

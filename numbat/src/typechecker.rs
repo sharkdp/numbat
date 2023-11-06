@@ -48,6 +48,29 @@ fn pad(a: &str, b: &str) -> (String, String) {
     )
 }
 
+fn suggested_fix(
+    actual_type: &BaseRepresentation,
+    actual_name: &str,
+    expected_type: &BaseRepresentation,
+    expected_name: &str,
+) -> Option<String> {
+    let mut delta_type = actual_type.clone() / expected_type.clone();
+
+    let suggestion_name =
+        if delta_type.iter().fold(Exponent::zero(), |a, b| a + b.1) >= Exponent::zero() {
+            expected_name
+        } else {
+            delta_type = delta_type.invert();
+            actual_name
+        };
+
+    Some(format!(
+        "multiply the {} by: {}",
+        suggestion_name.trim_start(),
+        delta_type,
+    ))
+}
+
 impl fmt::Display for IncompatibleDimensionsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let have_common_factors = self
@@ -151,24 +174,16 @@ impl fmt::Display for IncompatibleDimensionsError {
             actual_result_string.trim_start_matches(" × ").trim_end(),
         )?;
 
-        let mut missing_type = self.actual_type.clone() / self.expected_type.clone();
+        if let Some(fix) = suggested_fix(
+            &self.actual_type,
+            self.actual_name,
+            &self.expected_type,
+            self.expected_name,
+        ) {
+            write!(f, "\n\nSuggested fix: {fix}")?;
+        }
 
-        let suggestion_name =
-            if missing_type.iter().fold(Exponent::zero(), |a, b| a + b.1) >= Exponent::zero() {
-                self.expected_name
-            } else {
-                missing_type = missing_type.invert();
-                self.actual_name
-            };
-
-        write!(
-            f,
-            "\n\nSuggested fix: multiply {} by {}",
-            // Remove leading whitespace padding.
-            // TODO: don't pass in names with whitespace, pad them in programatically in this method instead.
-            suggestion_name.trim_start(),
-            missing_type,
-        )
+        Ok(())
     }
 }
 
