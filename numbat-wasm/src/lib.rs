@@ -144,7 +144,9 @@ impl Numbat {
 
         let resolver = self.ctx.resolver();
 
-        term::emit(&mut writer, &config, &resolver.files, &error.diagnostic()).unwrap();
+        for diagnostic in error.diagnostics() {
+            term::emit(&mut writer, &config, &resolver.files, &diagnostic).unwrap();
+        }
 
         InterpreterOutput {
             output: writer.to_string(),

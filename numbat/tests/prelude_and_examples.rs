@@ -31,7 +31,9 @@ fn assert_runs_without_prelude(code: &str) {
 fn assert_parse_error(code: &str) {
     assert!(matches!(
         get_test_context().interpret(code, CodeSource::Internal),
-        Err(NumbatError::ResolverError(ResolverError::ParseError { .. }))
+        Err(NumbatError::ResolverError(
+            ResolverError::ParseErrors { .. }
+        ))
     ));
 }
 

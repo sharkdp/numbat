@@ -499,12 +499,10 @@ impl Context {
         let writer = StandardStream::stderr(ColorChoice::Auto);
         let config = Config::default();
 
-        term::emit(
-            &mut writer.lock(),
-            &config,
-            &self.resolver.files,
-            &error.diagnostic(),
-        )
-        .unwrap();
+        // we want to be sure no one can write between our diagnostics
+        let mut writer = writer.lock();
+        for diagnostic in error.diagnostics() {
+            term::emit(&mut writer, &config, &self.resolver.files, &diagnostic).unwrap();
+        }
     }
 }

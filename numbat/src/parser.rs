@@ -206,7 +206,8 @@ impl ParseError {
     }
 }
 
-type Result<T> = std::result::Result<T, ParseError>;
+type Result<T, E = ParseError> = std::result::Result<T, E>;
+type ParseResult = Result<Vec<Statement>, (Vec<Statement>, Vec<ParseError>)>;
 
 static PROCEDURES: &[TokenKind] = &[
     TokenKind::ProcedurePrint,
@@ -219,14 +220,16 @@ struct Parser<'a> {
     tokens: &'a [Token],
     current: usize,
     decorator_stack: Vec<Decorator>,
+    stop_on_error: bool,
 }
 
 impl<'a> Parser<'a> {
-    pub(crate) fn new(tokens: &'a [Token]) -> Self {
+    pub(crate) fn new(tokens: &'a [Token], stop_on_error: bool) -> Self {
         Parser {
             tokens,
             current: 0,
             decorator_stack: vec![],
+            stop_on_error,
         }
     }
 
@@ -234,16 +237,29 @@ impl<'a> Parser<'a> {
         while self.match_exact(TokenKind::Newline).is_some() {}
     }
 
-    fn parse(&mut self) -> Result<Vec<Statement>> {
+    /// Parse a token stream.
+    /// If an error is encountered and `stop_on_error` is set to false, the parser
+    /// will try to recover from the error and parse as many statements as possible
+    /// while stacking all the errors in a `Vec`. At the end, it returns the complete
+    /// list of statements parsed + the list of errors accumulated.
+    fn parse(&mut self) -> ParseResult {
         let mut statements = vec![];
+        let mut errors = vec![];
 
         self.skip_empty_lines();
 
         while !self.is_at_end() {
             match self.statement() {
                 Ok(statement) => statements.push(statement),
+                Err(e) if self.stop_on_error => {
+                    return Err((statements, vec![e]));
+                }
                 Err(e) => {
-                    return Err(e);
+                    errors.push(e);
+                    // skip all the tokens until we encounter a newline.
+                    while !matches!(self.peek().kind, TokenKind::Newline | TokenKind::Eof) {
+                        self.advance()
+                    }
                 }
             }
 
@@ -256,23 +272,33 @@ impl<'a> Parser<'a> {
                     break;
                 }
                 TokenKind::Equal => {
-                    return Err(ParseError {
+                    errors.push(ParseError {
                         kind: ParseErrorKind::TrailingEqualSign(
                             self.last().unwrap().lexeme.clone(),
                         ),
                         span: self.peek().span,
                     });
+                    if self.stop_on_error {
+                        return Err((statements, errors));
+                    }
                 }
                 _ => {
-                    return Err(ParseError {
+                    errors.push(ParseError {
                         kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
                         span: self.peek().span,
                     });
+                    if self.stop_on_error {
+                        return Err((statements, errors));
+                    }
                 }
             }
         }
 
-        Ok(statements)
+        if errors.is_empty() {
+            Ok(statements)
+        } else {
+            Err((statements, errors))
+        }
     }
 
     fn accepts_prefix(&mut self) -> Result<Option<AcceptsPrefix>> {
@@ -1387,20 +1413,27 @@ fn strip_first_and_last(s: &str) -> String {
     (&s[1..(s.len() - 1)]).to_string()
 }
 
-pub fn parse(input: &str, code_source_id: usize) -> Result<Vec<Statement>> {
+/// Parse a string.
+/// If an error is encountered and `stop_on_error` is set to false, the parser
+/// will try to recover from the error and parse as many statements as possible
+/// while stacking all the errors in a `Vec`. At the end, it returns the complete
+/// list of statements parsed + the list of errors accumulated.
+pub fn parse(input: &str, code_source_id: usize, stop_on_error: bool) -> ParseResult {
     use crate::tokenizer::tokenize;
 
-    let tokens = tokenize(input, code_source_id).map_err(|TokenizerError { kind, span }| {
-        ParseError::new(ParseErrorKind::TokenizerError(kind), span)
-    })?;
-    let mut parser = Parser::new(&tokens);
+    let tokens = tokenize(input, code_source_id)
+        .map_err(|TokenizerError { kind, span }| {
+            ParseError::new(ParseErrorKind::TokenizerError(kind), span)
+        })
+        .map_err(|e| (Vec::new(), vec![e]))?;
+    let mut parser = Parser::new(&tokens, stop_on_error);
     parser.parse()
 }
 
 #[cfg(test)]
 pub fn parse_dexpr(input: &str) -> DimensionExpression {
     let tokens = crate::tokenizer::tokenize(input, 0).expect("No tokenizer errors in tests");
-    let mut parser = crate::parser::Parser::new(&tokens);
+    let mut parser = crate::parser::Parser::new(&tokens, false);
     let expr = parser
         .dimension_expression()
         .expect("No parser errors in tests");
@@ -1410,13 +1443,16 @@ pub fn parse_dexpr(input: &str) -> DimensionExpression {
 
 #[cfg(test)]
 mod tests {
+    use insta::assert_snapshot;
+    use std::fmt::Write;
+
     use super::*;
     use crate::ast::{binop, conditional, factorial, identifier, negate, scalar, ReplaceSpans};
 
     #[track_caller]
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
-            let statements = parse(input, 0).expect("parse error").replace_spans();
+            let statements = parse(input, 0, true).expect("parse error").replace_spans();
 
             assert!(statements.len() == 1);
             let statement = &statements[0];
@@ -1433,22 +1469,45 @@ mod tests {
     #[track_caller]
     fn should_fail(inputs: &[&str]) {
         for input in inputs {
-            assert!(parse(input, 0).is_err());
+            assert!(parse(input, 0, true).is_err());
         }
     }
 
     #[track_caller]
     fn should_fail_with(inputs: &[&str], error_kind: ParseErrorKind) {
         for input in inputs {
-            match parse(input, 0) {
-                Err(e) => {
-                    assert_eq!(e.kind, error_kind);
+            match parse(input, 0, true) {
+                Err((_, errors)) => {
+                    assert_eq!(errors[0].kind, error_kind);
                 }
                 _ => {
                     panic!();
                 }
             }
         }
+    }
+
+    #[track_caller]
+    fn snap_parse(input: impl AsRef<str>) -> String {
+        let mut ret = String::new();
+        match parse(input.as_ref(), 0, false) {
+            Ok(stmts) => {
+                for stmt in stmts {
+                    writeln!(&mut ret, "{stmt:?}").unwrap();
+                }
+            }
+            Err((stmts, errors)) => {
+                writeln!(&mut ret, "Successfully parsed:").unwrap();
+                for stmt in stmts {
+                    writeln!(&mut ret, "{stmt:?}").unwrap();
+                }
+                writeln!(&mut ret, "Errors encountered:").unwrap();
+                for error in errors {
+                    writeln!(&mut ret, "{error} - {error:?}").unwrap();
+                }
+            }
+        }
+        ret
     }
 
     #[test]
@@ -2322,5 +2381,54 @@ mod tests {
             &["\"test {1"],
             ParseErrorKind::UnterminatedStringInterpolation,
         );
+    }
+    #[test]
+    fn accumulate_errors() {
+        // error on the last \n
+        assert_snapshot!(snap_parse(
+            "1 + 
+            2 + 3"), @r###"
+        Successfully parsed:
+        Expression(BinaryOperator { op: Add, lhs: Scalar(Span { start: SourceCodePositition { byte: 17, line: 2, position: 13 }, end: SourceCodePositition { byte: 18, line: 2, position: 14 }, code_source_id: 0 }, Number(2.0)), rhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 17 }, end: SourceCodePositition { byte: 22, line: 2, position: 18 }, code_source_id: 0 }, Number(3.0)), span_op: Some(Span { start: SourceCodePositition { byte: 19, line: 2, position: 15 }, end: SourceCodePositition { byte: 20, line: 2, position: 16 }, code_source_id: 0 }) })
+        Errors encountered:
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 4, line: 1, position: 5 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 } }
+        "###);
+        // error in the middle of something
+        assert_snapshot!(snap_parse(
+            "
+            let cool = 50
+            let tamo = * 30 
+            assert_eq(tamo + cool == 80)
+            30m"), @r###"
+        Successfully parsed:
+        DefineVariable { identifier_span: Span { start: SourceCodePositition { byte: 17, line: 2, position: 17 }, end: SourceCodePositition { byte: 21, line: 2, position: 21 }, code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: SourceCodePositition { byte: 24, line: 2, position: 24 }, end: SourceCodePositition { byte: 26, line: 2, position: 26 }, code_source_id: 0 }, Number(50.0)), type_annotation: None }
+        ProcedureCall(Span { start: SourceCodePositition { byte: 68, line: 4, position: 13 }, end: SourceCodePositition { byte: 77, line: 4, position: 22 }, code_source_id: 0 }, AssertEq, [BinaryOperator { op: Equal, lhs: BinaryOperator { op: Add, lhs: Identifier(Span { start: SourceCodePositition { byte: 78, line: 4, position: 23 }, end: SourceCodePositition { byte: 82, line: 4, position: 27 }, code_source_id: 0 }, "tamo"), rhs: Identifier(Span { start: SourceCodePositition { byte: 85, line: 4, position: 30 }, end: SourceCodePositition { byte: 89, line: 4, position: 34 }, code_source_id: 0 }, "cool"), span_op: Some(Span { start: SourceCodePositition { byte: 83, line: 4, position: 28 }, end: SourceCodePositition { byte: 84, line: 4, position: 29 }, code_source_id: 0 }) }, rhs: Scalar(Span { start: SourceCodePositition { byte: 93, line: 4, position: 38 }, end: SourceCodePositition { byte: 95, line: 4, position: 40 }, code_source_id: 0 }, Number(80.0)), span_op: Some(Span { start: SourceCodePositition { byte: 90, line: 4, position: 35 }, end: SourceCodePositition { byte: 92, line: 4, position: 37 }, code_source_id: 0 }) }])
+        Expression(BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 109, line: 5, position: 13 }, end: SourceCodePositition { byte: 111, line: 5, position: 15 }, code_source_id: 0 }, Number(30.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 111, line: 5, position: 15 }, end: SourceCodePositition { byte: 112, line: 5, position: 16 }, code_source_id: 0 }, "m"), span_op: None })
+        Errors encountered:
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 50, line: 3, position: 24 }, end: SourceCodePositition { byte: 51, line: 3, position: 25 }, code_source_id: 0 } }
+        "###);
+        // error on a multiline let
+        assert_snapshot!(snap_parse(
+            "
+            let tamo =
+                * cool
+            "), @r###"
+        Successfully parsed:
+        Errors encountered:
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 40, line: 3, position: 17 }, end: SourceCodePositition { byte: 41, line: 3, position: 18 }, code_source_id: 0 } }
+        "###);
+        // error on a multiline if
+        assert_snapshot!(snap_parse(
+            "
+            if a =
+                then false
+                else true
+            "), @r###"
+        Successfully parsed:
+        Errors encountered:
+        Expected 'then' in if-then-else condition - ParseError { kind: ExpectedThen, span: Span { start: SourceCodePositition { byte: 18, line: 2, position: 18 }, end: SourceCodePositition { byte: 19, line: 2, position: 19 }, code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 36, line: 3, position: 17 }, end: SourceCodePositition { byte: 40, line: 3, position: 21 }, code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 63, line: 4, position: 17 }, end: SourceCodePositition { byte: 67, line: 4, position: 21 }, code_source_id: 0 } }
+        "###);
     }
 }
