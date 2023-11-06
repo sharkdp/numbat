@@ -49,25 +49,24 @@ fn pad(a: &str, b: &str) -> (String, String) {
 }
 
 fn suggested_fix(
+    expected_type: &BaseRepresentation,
+    _expected_name: &str,
     actual_type: &BaseRepresentation,
     actual_name: &str,
-    expected_type: &BaseRepresentation,
-    expected_name: &str,
 ) -> Option<String> {
-    let mut delta_type = actual_type.clone() / expected_type.clone();
+    let delta_type = expected_type.clone() / actual_type.clone();
 
-    let suggestion_name =
-        if delta_type.iter().fold(Exponent::zero(), |a, b| a + b.1) >= Exponent::zero() {
-            expected_name
-        } else {
-            delta_type = delta_type.invert();
-            actual_name
-        };
+    let exponent_sum: Rational = delta_type.iter().map(|a| a.1).sum();
+
+    let (action, delta_type) = if exponent_sum >= Rational::zero() {
+        ("multiply", delta_type)
+    } else {
+        ("divide", delta_type.invert())
+    };
 
     Some(format!(
-        "multiply the {} by: {}",
-        suggestion_name.trim_start(),
-        delta_type,
+        "{action} the {name} by a factor of dimension {delta_type}",
+        name = actual_name.trim_start(),
     ))
 }
 
@@ -175,10 +174,10 @@ impl fmt::Display for IncompatibleDimensionsError {
         )?;
 
         if let Some(fix) = suggested_fix(
-            &self.actual_type,
-            self.actual_name,
             &self.expected_type,
             self.expected_name,
+            &self.actual_type,
+            self.actual_name,
         ) {
             write!(f, "\n\nSuggested fix: {fix}")?;
         }
