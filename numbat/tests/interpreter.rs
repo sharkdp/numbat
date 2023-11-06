@@ -2,6 +2,7 @@ mod common;
 
 use common::get_test_context;
 
+use insta::assert_snapshot;
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
 use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
@@ -39,10 +40,10 @@ fn expect_failure(code: &str, msg_part: &str) {
 }
 
 #[track_caller]
-fn expect_exact_failure(code: &str, expected: &str) {
+fn get_error_message(code: &str) -> String {
     let mut ctx = get_test_context();
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
-        assert_eq!(e.to_string(), expected);
+        e.to_string()
     } else {
         panic!();
     }
@@ -231,35 +232,94 @@ fn test_math() {
 
 #[test]
 fn test_incompatible_dimension_errors() {
-    expect_exact_failure(
-        "kg m / s^2 + kg m^2",
-        " left hand side: Length  × Mass × Time⁻²    [= Force]\n\
-         right hand side: Length² × Mass             [= MomentOfInertia]\n\n\
-         Suggested fix: multiply the left hand side by: Length × Time²",
+    assert_snapshot!(
+        get_error_message("kg m / s^2 + kg m^2"),
+        @r###"
+     left hand side: Length  × Mass × Time⁻²    [= Force]
+    right hand side: Length² × Mass             [= MomentOfInertia]
+
+    Suggested fix: divide the right hand side by a factor of dimension Length × Time²
+    "###
     );
-    expect_exact_failure(
-        "1 + m",
-        " left hand side: Scalar    [= Angle, Scalar, SolidAngle]\n\
-         right hand side: Length\n\n\
-         Suggested fix: multiply the left hand side by: Length",
+
+    assert_snapshot!(
+        get_error_message("1 + m"),
+        @r###"
+     left hand side: Scalar    [= Angle, Scalar, SolidAngle]
+    right hand side: Length
+
+    Suggested fix: divide the right hand side by a factor of dimension Length
+    "###
     );
-    expect_exact_failure(
-        "m / s + K A",
-        " left hand side: Length / Time            [= Velocity]\n\
-         right hand side: Current × Temperature\n\n\
-         Suggested fix: multiply the left hand side by: Current × Temperature × Time / Length",
+
+    assert_snapshot!(
+        get_error_message("m / s + K A"),
+        @r###"
+     left hand side: Length / Time            [= Velocity]
+    right hand side: Current × Temperature
+
+    Suggested fix: divide the right hand side by a factor of dimension Current × Temperature × Time / Length
+    "###
     );
-    expect_exact_failure(
-        "m + 1 / m",
-        " left hand side: Length\n\
-         right hand side: Length⁻¹    [= Wavenumber]\n\n\
-         Suggested fix: multiply the right hand side by: Length²",
+
+    assert_snapshot!(
+        get_error_message("m + 1 / m"),
+        @r###"
+     left hand side: Length
+    right hand side: Length⁻¹    [= Wavenumber]
+
+    Suggested fix: multiply the right hand side by a factor of dimension Length²
+    "###
     );
-    expect_exact_failure(
-        "kW -> J",
-        " left hand side: Length² × Mass × Time⁻³    [= Power]\n\
-         right hand side: Length² × Mass × Time⁻²    [= Energy, Torque]\n\n\
-         Suggested fix: multiply the left hand side by: Time",
+
+    assert_snapshot!(
+        get_error_message("kW -> J"),
+        @r###"
+     left hand side: Length² × Mass × Time⁻³    [= Power]
+    right hand side: Length² × Mass × Time⁻²    [= Energy, Torque]
+
+    Suggested fix: divide the right hand side by a factor of dimension Time
+    "###
+    );
+
+    assert_snapshot!(
+        get_error_message("sin(1 meter)"),
+        @r###"
+    parameter type: Scalar    [= Angle, Scalar, SolidAngle]
+     argument type: Length
+
+    Suggested fix: divide the argument type by a factor of dimension Length
+    "###
+    );
+
+    assert_snapshot!(
+        get_error_message("let x: Acceleration = 4 m / s"),
+        @r###"
+    specified dimension: Length × Time⁻²    [= Acceleration]
+       actual dimension: Length × Time⁻¹    [= Velocity]
+
+    Suggested fix: divide the actual dimension by a factor of dimension Time
+    "###
+    );
+
+    assert_snapshot!(
+        get_error_message("unit x: Acceleration = 4 m / s"),
+        @r###"
+    specified dimension: Length × Time⁻²    [= Acceleration]
+       actual dimension: Length × Time⁻¹    [= Velocity]
+
+    Suggested fix: divide the actual dimension by a factor of dimension Time
+    "###
+    );
+
+    assert_snapshot!(
+        get_error_message("fn acceleration(length: Length, time: Time) -> Acceleration = length / time"),
+        @r###"
+    specified return type: Length × Time⁻²    [= Acceleration]
+       actual return type: Length × Time⁻¹    [= Velocity]
+
+    Suggested fix: divide the actual return type by a factor of dimension Time
+    "###
     );
 }
 
