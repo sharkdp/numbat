@@ -268,7 +268,7 @@ fn test_incompatible_dimension_errors() {
      left hand side: Length
     right hand side: Length⁻¹    [= Wavenumber]
 
-    Suggested fix: multiply the right hand side by a factor of dimension Length²
+    Suggested fix: invert the right hand side
     "###
     );
 

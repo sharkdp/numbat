@@ -54,6 +54,17 @@ fn suggested_fix(
     actual_type: &BaseRepresentation,
     actual_name: &str,
 ) -> Option<String> {
+    let actual_name = actual_name.trim();
+
+    // Heuristic 1: if actual_type == 1 / expected_type, suggest
+    // to invert the 'actual' expression:
+    if actual_type == &expected_type.clone().invert() {
+        return Some(format!("invert the {actual_name}"));
+    }
+
+    // Heuristic 2: compute the "missing" factor between the expected
+    // and the actual type. Suggest to multiply / divide with the
+    // appropriate delta.
     let delta_type = expected_type.clone() / actual_type.clone();
 
     let exponent_sum: Rational = delta_type.iter().map(|a| a.1).sum();
@@ -65,8 +76,7 @@ fn suggested_fix(
     };
 
     Some(format!(
-        "{action} the {name} by a factor of dimension {delta_type}",
-        name = actual_name.trim_start(),
+        "{action} the {actual_name} by a factor of dimension {delta_type}"
     ))
 }
 
