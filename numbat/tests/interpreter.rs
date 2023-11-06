@@ -257,8 +257,6 @@ fn test_incompatible_dimension_errors() {
         @r###"
      left hand side: Length / Time            [= Velocity]
     right hand side: Current × Temperature
-
-    Suggested fix: divide the expression on the right hand side by a factor of dimension Current × Temperature × Time / Length
     "###
     );
 

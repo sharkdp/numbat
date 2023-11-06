@@ -65,6 +65,11 @@ fn suggested_fix(
     // appropriate delta.
     let delta_type = expected_type.clone() / actual_type.clone();
 
+    let num_factors = delta_type.iter().count();
+    if num_factors > 2 {
+        return None; // Do not suggest fixes with complicated dimensions
+    }
+
     let exponent_sum: Rational = delta_type.iter().map(|a| a.1).sum();
 
     let (action, delta_type) = if exponent_sum >= Rational::zero() {
