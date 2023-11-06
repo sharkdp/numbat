@@ -34,25 +34,12 @@ yay -S numbat
 
 *... or any distribution where nix is installed.*
 
-### nix-env
-
-> **Warning:** Using nix-env permanently modifies a local profile of installed packages. This must be updated and maintained by the user in the same way as with a traditional package manager, foregoing many of the benefits that make Nix uniquely powerful. Using nix-shell or a NixOS configuration is recommended instead.
+Install [numbat](https://search.nixos.org/packages?channel=unstable&show=numbat&from=0&size=50&sort=relevance&type=packages&query=numbat) to your profile:
 
 ``` bash
 nix-env -iA nixpkgs.numbat
 ```
-
-### nix-shell
-
-A nix-shell will temporarily modify your $PATH environment variable. This can be used to try a piece of software before deciding to permanently install it.
- 
-``` bash
-nix-shell -p numbat
-```
-
-### NixOs Configuration
-
-Add the following Nix code to your NixOS Configuration, usually located in /etc/nixos/configuration.nix
+Or add it to your NixOs Configuration:
 
 ``` nix
 environment.systemPackages = [
