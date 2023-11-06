@@ -63,6 +63,17 @@ You can install Numbat with Homebrew:
 
 ``` bash
 brew install numbat
+
+```
+
+## Windows
+
+### Scoop
+
+You can install the [numbat](https://scoop.sh/#/apps?q=numbat) package using [scoop](https://scoop.sh/):
+
+``` bash
+scoop install main/numbat
 ```
 
 ## From source
