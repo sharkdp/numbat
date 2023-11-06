@@ -11,41 +11,43 @@ use crate::{
 pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
 
 pub trait ErrorDiagnostic {
-    fn diagnostic(&self) -> Diagnostic;
+    fn diagnostics(&self) -> Vec<Diagnostic>;
 }
 
 impl ErrorDiagnostic for ParseError {
-    fn diagnostic(&self) -> Diagnostic {
-        Diagnostic::error()
+    fn diagnostics(&self) -> Vec<Diagnostic> {
+        vec![Diagnostic::error()
             .with_message("while parsing")
             .with_labels(vec![self
                 .span
                 .diagnostic_label(LabelStyle::Primary)
-                .with_message(self.kind.to_string())])
+                .with_message(self.kind.to_string())])]
     }
 }
 
 impl ErrorDiagnostic for ResolverError {
-    fn diagnostic(&self) -> Diagnostic {
+    fn diagnostics(&self) -> Vec<Diagnostic> {
         match self {
-            ResolverError::UnknownModule(span, _) => Diagnostic::error()
+            ResolverError::UnknownModule(span, _) => vec![Diagnostic::error()
                 .with_message("while resolving imports in")
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
-                    .with_message("Unknown module")]),
-            ResolverError::ParseError(inner) => inner.diagnostic(),
+                    .with_message("Unknown module")])],
+            ResolverError::ParseErrors(errors) => {
+                errors.into_iter().flat_map(|e| e.diagnostics()).collect()
+            }
         }
     }
 }
 
 impl ErrorDiagnostic for NameResolutionError {
-    fn diagnostic(&self) -> Diagnostic {
+    fn diagnostics(&self) -> Vec<Diagnostic> {
         match self {
             NameResolutionError::IdentifierClash {
                 conflicting_identifier: _,
                 conflict_span,
                 original_span,
-            } => Diagnostic::error()
+            } => vec![Diagnostic::error()
                 .with_message("identifier clash in definition")
                 .with_labels(vec![
                     original_span
@@ -54,22 +56,22 @@ impl ErrorDiagnostic for NameResolutionError {
                     conflict_span
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message("identifier is already in use"),
-                ]),
-            NameResolutionError::ReservedIdentifier(span) => Diagnostic::error()
+                ])],
+            NameResolutionError::ReservedIdentifier(span) => vec![Diagnostic::error()
                 .with_message("reserved identifier may not be used")
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
-                    .with_message("reserved identifier")]),
+                    .with_message("reserved identifier")])],
         }
     }
 }
 
 impl ErrorDiagnostic for TypeCheckError {
-    fn diagnostic(&self) -> Diagnostic {
+    fn diagnostics(&self) -> Vec<Diagnostic> {
         let d = Diagnostic::error().with_message("while type checking");
         let inner_error = format!("{}", self);
 
-        match self {
+        let d = match self {
             TypeCheckError::UnknownIdentifier(span, _, suggestion) => {
                 let notes = if let Some(suggestion) = suggestion {
                     vec![format!("Did you mean '{suggestion}'?")]
@@ -321,14 +323,15 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::ExpectedBool(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
-        }
+        };
+        vec![d]
     }
 }
 
 impl ErrorDiagnostic for RuntimeError {
-    fn diagnostic(&self) -> Diagnostic {
-        Diagnostic::error()
+    fn diagnostics(&self) -> Vec<Diagnostic> {
+        vec![Diagnostic::error()
             .with_message("runtime error")
-            .with_notes(vec![format!("{self:#}")])
+            .with_notes(vec![format!("{self:#}")])]
     }
 }

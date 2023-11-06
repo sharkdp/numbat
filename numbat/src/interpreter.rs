@@ -147,7 +147,7 @@ mod tests {
 
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
         let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
-        let statements = crate::parser::parse(&full_code, 0)
+        let statements = crate::parser::parse(&full_code, 0, false)
             .expect("No parse errors for inputs in this test suite");
         let statements_transformed = Transformer::new()
             .transform(statements)

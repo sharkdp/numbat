@@ -619,6 +619,7 @@ mod tests {
                  {code}"
             ),
             0,
+            false,
         )
         .unwrap();
 
