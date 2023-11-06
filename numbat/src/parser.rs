@@ -220,16 +220,14 @@ struct Parser<'a> {
     tokens: &'a [Token],
     current: usize,
     decorator_stack: Vec<Decorator>,
-    stop_on_error: bool,
 }
 
 impl<'a> Parser<'a> {
-    pub(crate) fn new(tokens: &'a [Token], stop_on_error: bool) -> Self {
+    pub(crate) fn new(tokens: &'a [Token]) -> Self {
         Parser {
             tokens,
             current: 0,
             decorator_stack: vec![],
-            stop_on_error,
         }
     }
 
@@ -251,9 +249,6 @@ impl<'a> Parser<'a> {
         while !self.is_at_end() {
             match self.statement() {
                 Ok(statement) => statements.push(statement),
-                Err(e) if self.stop_on_error => {
-                    return Err((statements, vec![e]));
-                }
                 Err(e) => {
                     errors.push(e);
                     // skip all the tokens until we encounter a newline.
@@ -278,18 +273,12 @@ impl<'a> Parser<'a> {
                         ),
                         span: self.peek().span,
                     });
-                    if self.stop_on_error {
-                        return Err((statements, errors));
-                    }
                 }
                 _ => {
                     errors.push(ParseError {
                         kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
                         span: self.peek().span,
                     });
-                    if self.stop_on_error {
-                        return Err((statements, errors));
-                    }
                 }
             }
         }
@@ -1418,7 +1407,7 @@ fn strip_first_and_last(s: &str) -> String {
 /// will try to recover from the error and parse as many statements as possible
 /// while stacking all the errors in a `Vec`. At the end, it returns the complete
 /// list of statements parsed + the list of errors accumulated.
-pub fn parse(input: &str, code_source_id: usize, stop_on_error: bool) -> ParseResult {
+pub fn parse(input: &str, code_source_id: usize) -> ParseResult {
     use crate::tokenizer::tokenize;
 
     let tokens = tokenize(input, code_source_id)
@@ -1426,14 +1415,14 @@ pub fn parse(input: &str, code_source_id: usize, stop_on_error: bool) -> ParseRe
             ParseError::new(ParseErrorKind::TokenizerError(kind), span)
         })
         .map_err(|e| (Vec::new(), vec![e]))?;
-    let mut parser = Parser::new(&tokens, stop_on_error);
+    let mut parser = Parser::new(&tokens);
     parser.parse()
 }
 
 #[cfg(test)]
 pub fn parse_dexpr(input: &str) -> DimensionExpression {
     let tokens = crate::tokenizer::tokenize(input, 0).expect("No tokenizer errors in tests");
-    let mut parser = crate::parser::Parser::new(&tokens, false);
+    let mut parser = crate::parser::Parser::new(&tokens);
     let expr = parser
         .dimension_expression()
         .expect("No parser errors in tests");
@@ -1452,7 +1441,7 @@ mod tests {
     #[track_caller]
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
-            let statements = parse(input, 0, true).expect("parse error").replace_spans();
+            let statements = parse(input, 0).expect("parse error").replace_spans();
 
             assert!(statements.len() == 1);
             let statement = &statements[0];
@@ -1469,14 +1458,14 @@ mod tests {
     #[track_caller]
     fn should_fail(inputs: &[&str]) {
         for input in inputs {
-            assert!(parse(input, 0, true).is_err());
+            assert!(parse(input, 0).is_err());
         }
     }
 
     #[track_caller]
     fn should_fail_with(inputs: &[&str], error_kind: ParseErrorKind) {
         for input in inputs {
-            match parse(input, 0, true) {
+            match parse(input, 0) {
                 Err((_, errors)) => {
                     assert_eq!(errors[0].kind, error_kind);
                 }
@@ -1490,7 +1479,7 @@ mod tests {
     #[track_caller]
     fn snap_parse(input: impl AsRef<str>) -> String {
         let mut ret = String::new();
-        match parse(input.as_ref(), 0, false) {
+        match parse(input.as_ref(), 0) {
             Ok(stmts) => {
                 for stmt in stmts {
                     writeln!(&mut ret, "{stmt:?}").unwrap();

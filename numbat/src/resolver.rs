@@ -37,7 +37,7 @@ pub enum ResolverError {
     #[error("Unknown module '{1}'.")]
     UnknownModule(Span, ModulePath),
 
-    #[error("{}", .0.into_iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n"))]
+    #[error("{}", .0.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n"))]
     ParseErrors(Vec<ParseError>),
 }
 
@@ -87,13 +87,8 @@ impl Resolver {
         self.files.add(code_source_name, content.to_string())
     }
 
-    fn parse(
-        &self,
-        code: &str,
-        code_source_id: usize,
-        stop_on_error: bool,
-    ) -> Result<Vec<Statement>> {
-        parse(code, code_source_id, stop_on_error).map_err(|e| ResolverError::ParseErrors(e.1))
+    fn parse(&self, code: &str, code_source_id: usize) -> Result<Vec<Statement>> {
+        parse(code, code_source_id).map_err(|e| ResolverError::ParseErrors(e.1))
     }
 
     fn inlining_pass(&mut self, program: &[Statement]) -> Result<Vec<Statement>> {
@@ -110,7 +105,7 @@ impl Resolver {
                                 &code,
                             );
 
-                            let imported_program = self.parse(&code, code_source_id, true)?;
+                            let imported_program = self.parse(&code, code_source_id)?;
                             let inlined_program = self.inlining_pass(&imported_program)?;
                             for statement in inlined_program {
                                 new_program.push(statement);
@@ -129,7 +124,7 @@ impl Resolver {
 
     pub fn resolve(&mut self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
         let code_source_id = self.add_code_source(code_source, code);
-        let statements = self.parse(code, code_source_id, false)?;
+        let statements = self.parse(code, code_source_id)?;
 
         self.inlining_pass(&statements)
     }
