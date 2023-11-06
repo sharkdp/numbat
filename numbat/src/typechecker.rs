@@ -35,6 +35,7 @@ pub struct IncompatibleDimensionsError {
     pub expected_dimensions: Vec<String>,
     pub span_actual: Span,
     pub actual_name: &'static str,
+    pub actual_name_for_fix: &'static str,
     pub actual_type: BaseRepresentation,
     pub actual_dimensions: Vec<String>,
 }
@@ -50,16 +51,13 @@ fn pad(a: &str, b: &str) -> (String, String) {
 
 fn suggested_fix(
     expected_type: &BaseRepresentation,
-    _expected_name: &str,
     actual_type: &BaseRepresentation,
-    actual_name: &str,
+    expression_to_change: &str,
 ) -> Option<String> {
-    let actual_name = actual_name.trim();
-
     // Heuristic 1: if actual_type == 1 / expected_type, suggest
     // to invert the 'actual' expression:
     if actual_type == &expected_type.clone().invert() {
-        return Some(format!("invert the {actual_name}"));
+        return Some(format!("invert the {expression_to_change}"));
     }
 
     // Heuristic 2: compute the "missing" factor between the expected
@@ -76,7 +74,7 @@ fn suggested_fix(
     };
 
     Some(format!(
-        "{action} the {actual_name} by a factor of dimension {delta_type}"
+        "{action} the {expression_to_change} by a factor of dimension {delta_type}"
     ))
 }
 
@@ -185,9 +183,8 @@ impl fmt::Display for IncompatibleDimensionsError {
 
         if let Some(fix) = suggested_fix(
             &self.expected_type,
-            self.expected_name,
             &self.actual_type,
-            self.actual_name,
+            self.actual_name_for_fix,
         ) {
             write!(f, "\n\nSuggested fix: {fix}")?;
         }
@@ -511,6 +508,7 @@ impl TypeChecker {
                                 expected_type: lhs_type,
                                 span_actual: rhs.full_span(),
                                 actual_name: "right hand side",
+                                actual_name_for_fix: "expression on the right hand side",
                                 actual_dimensions: self
                                     .registry
                                     .get_derived_entry_names_for(&rhs_type),
@@ -727,6 +725,7 @@ impl TypeChecker {
                                         expected_type: parameter_type,
                                         span_actual: args[idx].full_span(),
                                         actual_name: " argument type",
+                                        actual_name_for_fix: "function argument",
                                         actual_dimensions: self
                                             .registry
                                             .get_derived_entry_names_for(&argument_type),
@@ -873,6 +872,7 @@ impl TypeChecker {
                                         expected_type: dexpr_specified,
                                         span_actual: expr.full_span(),
                                         actual_name: "   actual dimension",
+                                        actual_name_for_fix: "right hand side expression",
                                         actual_dimensions: self
                                             .registry
                                             .get_derived_entry_names_for(&dexpr_deduced),
@@ -972,6 +972,7 @@ impl TypeChecker {
                                 expected_type: type_specified,
                                 span_actual: expr.full_span(),
                                 actual_name: "   actual dimension",
+                                actual_name_for_fix: "right hand side expression",
                                 actual_dimensions: self
                                     .registry
                                     .get_derived_entry_names_for(&type_deduced),
@@ -1166,6 +1167,7 @@ impl TypeChecker {
                                                 .map(|b| b.full_span())
                                                 .unwrap(),
                                             actual_name: "   actual return type",
+                                            actual_name_for_fix: "expression in the function body",
                                             actual_dimensions: self
                                                 .registry
                                                 .get_derived_entry_names_for(&dtype_deduced),
