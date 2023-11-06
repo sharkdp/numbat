@@ -2,7 +2,7 @@
 
 ## Linux
 
-### On Ubuntu
+### Ubuntu
 
 *... and other Debian-based Linux distributions.*
 
@@ -14,7 +14,7 @@ curl -LO https://github.com/sharkdp/numbat/releases/download/v1.7.0/numbat_1.7.0
 sudo dpkg -i numbat_1.7.0_amd64.deb
 ```
 
-### On Arch Linux
+### Arch Linux
 
 In Arch Linux and Arch based distributions, you can install the
 [prebuilt package of Numbat](https://aur.archlinux.org/packages/numbat-bin) from the AUR:
@@ -28,6 +28,14 @@ AUR package, which will download the source and compile it.
 
 ``` bash
 yay -S numbat
+```
+
+## Void Linux
+
+You can install the `numbat` package using
+
+``` bash
+sudo xbps-install -S numbat
 ```
 
 ## NixOs
