@@ -107,7 +107,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Money` | [Euro](https://en.wikipedia.org/wiki/Euro) | `EUR`, `euro`, `euros`, `€` |
 | `Money` | [Hong Kong dollar](https://en.wikipedia.org/wiki/Hong_Kong_dollar) | `HK$`, `HKD`, `hong_kong_dollar`, `hong_kong_dollars` |
 | `Money` | [Hungarian forint](https://en.wikipedia.org/wiki/Hungarian_forint) | `Ft`, `HUF`, `hungarian_forint`, `hungarian_forints` |
-| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `ISK`, `icelandic_króna`, `icelandic_krónur` |
+| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `ISK`, `icelandic_krona`, `icelandic_kronur`, `icelandic_króna`, `icelandic_krónur` |
 | `Money` | [Indian rupee](https://en.wikipedia.org/wiki/Indian_rupee) | `INR`, `indian_rupee`, `indian_rupees`, `₹` |
 | `Money` | [Indonesian rupiah](https://en.wikipedia.org/wiki/Indonesian_rupiah) | `IDR`, `Rp`, `indonesian_rupiah`, `indonesian_rupiahs` |
 | `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `ILS`, `NIS`, `israeli_new_shekel`, `israeli_new_shekels`, `₪` |
