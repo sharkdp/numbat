@@ -2384,7 +2384,7 @@ mod tests {
     }
     #[test]
     fn accumulate_errors() {
-        // error on the last \n
+        // error on the last character of a line
         assert_snapshot!(snap_parse(
             "1 + 
             2 + 3"), @r###"
