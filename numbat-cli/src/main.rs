@@ -32,26 +32,39 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
 
-#[derive(Deserialize, PartialEq, Eq, Default)]
+#[derive(Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 enum ExchangeRateFetchingPolicy {
-    #[default]
     Prefetch,
     FetchOnFirstUse,
     DontFetch,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, PartialEq, Eq, Default, Debug, Clone, Copy, ValueEnum)]
 #[serde(rename_all = "kebab-case")]
-struct Config {
-    exchange_rate_fetching_policy: ExchangeRateFetchingPolicy,
-    quiet: bool,
-    #[serde(default = "default_prompt")]
-    prompt: String,
+enum IntroBanner {
+    #[default]
+    Long,
+    Short,
+    Off,
 }
 
-fn default_prompt() -> String {
-    ">>> ".to_string()
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+struct Config {
+    exchange_rate_fetching_policy: ExchangeRateFetchingPolicy,
+    prompt: String,
+    intro_banner: IntroBanner,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            exchange_rate_fetching_policy: ExchangeRateFetchingPolicy::Prefetch,
+            prompt: ">>> ".to_owned(),
+            intro_banner: IntroBanner::default(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -98,9 +111,9 @@ struct Args {
     #[arg(long, value_name = "WHEN", default_value = "auto")]
     pretty_print: PrettyPrintMode,
 
-    /// Quiet startup without intro banner.
-    #[arg(short, long)]
-    quiet: bool,
+    /// What kind of intro banner to show (if any).
+    #[arg(long, value_name = "MODE")]
+    intro_banner: Option<IntroBanner>,
 
     /// Turn on debug mode (e.g. disassembler output).
     #[arg(long, short, hide = true)]
@@ -168,12 +181,10 @@ impl Cli {
         let user_config_path = Self::get_config_path().join("config.toml");
 
         if let Ok(contents) = fs::read_to_string(&user_config_path) {
-            match toml::from_str(&contents) {
-                Ok(config) => self.config = config,
-                Err(_) => {
-                    bail!("Failed to parse config file")
-                }
-            }
+            self.config = toml::from_str(&contents).context(format!(
+                "Error while loading {}",
+                user_config_path.to_string_lossy()
+            ))?;
         }
 
         if load_prelude {
@@ -214,14 +225,10 @@ impl Cli {
                     .load_currency_module_on_demand(true);
             }
 
-            match self.config.exchange_rate_fetching_policy {
-                ExchangeRateFetchingPolicy::Prefetch => {
-                    thread::spawn(move || {
-                        numbat::Context::prefetch_exchange_rates();
-                    });
-                }
-                ExchangeRateFetchingPolicy::FetchOnFirstUse
-                | ExchangeRateFetchingPolicy::DontFetch => {}
+            if self.config.exchange_rate_fetching_policy == ExchangeRateFetchingPolicy::Prefetch {
+                thread::spawn(move || {
+                    numbat::Context::prefetch_exchange_rates();
+                });
             }
         }
 
@@ -270,7 +277,7 @@ impl Cli {
     fn repl(&mut self) -> Result<()> {
         let interactive = std::io::stdin().is_terminal();
         let history_path = self.get_history_path()?;
-        let quiet_startup = self.args.quiet || self.config.quiet;
+        let intro_banner = self.args.intro_banner.unwrap_or(self.config.intro_banner);
 
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
         rl.set_max_history_size(1000)
@@ -290,17 +297,25 @@ impl Cli {
         );
         rl.load_history(&history_path).ok();
 
-        if interactive && !quiet_startup {
-            println!();
-            println!(
-                "  █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀    Numbat {}",
-                env!("CARGO_PKG_VERSION")
-            );
-            println!(
-                "  █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░    {}",
-                env!("CARGO_PKG_HOMEPAGE")
-            );
-            println!();
+        if interactive {
+            match intro_banner {
+                IntroBanner::Long => {
+                    println!();
+                    println!(
+                        "  █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀    Numbat {}",
+                        env!("CARGO_PKG_VERSION")
+                    );
+                    println!(
+                        "  █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░    {}",
+                        env!("CARGO_PKG_HOMEPAGE")
+                    );
+                    println!();
+                }
+                IntroBanner::Short => {
+                    println!("Numbat {}", env!("CARGO_PKG_VERSION"));
+                }
+                IntroBanner::Off => {}
+            }
         }
 
         let result = self.repl_loop(&mut rl);
