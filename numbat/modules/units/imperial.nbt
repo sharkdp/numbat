@@ -23,16 +23,6 @@ unit yard: Length = 3 feet
 @aliases(miles, mi: short)
 unit mile: Length = 1760 yard
 
-@name("Ounce")
-@url("https://en.wikipedia.org/wiki/Ounce")
-@aliases(ounces, oz: short)
-unit ounce: Mass = 28.35 gram
-
-@name("Pound")
-@url("https://en.wikipedia.org/wiki/Pound_(mass)")
-@aliases(pounds, lb: short, lbs)
-unit pound: Mass = 16 ounces
-
 @name("Thousandth of an inch")
 @url("https://en.wikipedia.org/wiki/Thousandth_of_an_inch")
 @aliases(mils, mil: short)
@@ -47,6 +37,35 @@ unit fathom: Length = 2 yard
 @url("https://en.wikipedia.org/wiki/League_(unit)")
 @aliases(leagues)
 unit league: Length = 3 mile
+
+@name("Grain")
+@url("https://en.wikipedia.org/wiki/Grain_(unit)")
+@aliases(grains)
+unit grain: Mass = 64.79891 milligram
+
+@name("Pound")
+@url("https://en.wikipedia.org/wiki/Pound_(mass)")
+@aliases(pounds, lb: short, lbs)
+unit pound: Mass = 7000 grain
+
+@name("Ounce")
+@url("https://en.wikipedia.org/wiki/Ounce")
+@aliases(ounces, oz: short)
+unit ounce: Mass = (1 / 16) × pound
+
+@name("Stone")
+@url("https://en.wikipedia.org/wiki/Stone_(unit)")
+unit stone: Mass = 14 pound
+
+@name("Hundredweight")
+@url("https://en.wikipedia.org/wiki/Hundredweight")
+@aliases(cwt)
+unit long_hundredweight = 8 stone
+
+@name("Long ton")
+@url("https://en.wikipedia.org/wiki/Long_ton")
+@aliases(long_tons)
+unit long_ton: Mass = 2240 lb
 
 @name("Miles per hour")
 @url("https://en.wikipedia.org/wiki/Miles_per_hour")
