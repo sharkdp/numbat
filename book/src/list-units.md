@@ -88,10 +88,14 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `MagneticFluxDensity` | [Tesla](https://en.wikipedia.org/wiki/Tesla_(unit)) | `T`, `tesla`, `teslas` |
 | `Mass` | [Dalton](https://en.wikipedia.org/wiki/Dalton) | `Da`, `dalton`, `daltons` |
 | `Mass` | [Firkin](https://en.wikipedia.org/wiki/Firkin_(unit)) | `firkin`, `firkins` |
+| `Mass` | [Grain](https://en.wikipedia.org/wiki/Grain_(unit)) | `grain`, `grains` |
 | `Mass` | [Gram](https://en.wikipedia.org/wiki/Gram) | `g`, `gram`, `gramme`, `grammes`, `grams` |
+| `Mass` | [Hundredweight](https://en.wikipedia.org/wiki/Hundredweight) | `cwt`, `long_hundredweight` |
+| `Mass` | [Long ton](https://en.wikipedia.org/wiki/Long_ton) | `long_ton`, `long_tons` |
 | `Mass` | [Ounce](https://en.wikipedia.org/wiki/Ounce) | `ounce`, `ounces`, `oz` |
 | `Mass` | [Planck mass](https://en.wikipedia.org/wiki/Planck_mass) | `planck_mass` |
 | `Mass` | [Pound](https://en.wikipedia.org/wiki/Pound_(mass)) | `lb`, `lbs`, `pound`, `pounds` |
+| `Mass` | [Stone](https://en.wikipedia.org/wiki/Stone_(unit)) | `stone` |
 | `Mass` | [Stoney mass](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_mass` |
 | `Mass` | [Tonne](https://en.wikipedia.org/wiki/Tonne) | `metricton`, `ton`, `tonne`, `tonnes`, `tons` |
 | `Molality` | [Molal](https://en.wikipedia.org/wiki/Molality) | `molal` |
