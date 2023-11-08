@@ -412,7 +412,7 @@ impl TypeChecker {
                     self.identifiers
                         .keys()
                         .map(|k| k.as_str())
-                        .chain(["true", "false"].into_iter()), // These are parsed as keywords, but can act like identifiers
+                        .chain(["true", "false"]), // These are parsed as keywords, but can act like identifiers
                     name,
                 );
                 TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
@@ -567,16 +567,14 @@ impl TypeChecker {
                         let rhs_type = rhs_checked.get_type();
                         if lhs_type.is_dtype() || rhs_type.is_dtype() {
                             let _ = get_type_and_assert_equality()?;
-                        } else {
-                            if lhs_type != rhs_type {
-                                return Err(TypeCheckError::IncompatibleTypesInComparison(
-                                    span_op.unwrap(),
-                                    lhs_type,
-                                    lhs.full_span(),
-                                    rhs_type,
-                                    rhs.full_span(),
-                                ));
-                            }
+                        } else if lhs_type != rhs_type {
+                            return Err(TypeCheckError::IncompatibleTypesInComparison(
+                                span_op.unwrap(),
+                                lhs_type,
+                                lhs.full_span(),
+                                rhs_type,
+                                rhs.full_span(),
+                            ));
                         }
 
                         Type::Boolean
@@ -786,7 +784,7 @@ impl TypeChecker {
             ast::Expression::String(span, parts) => typed_ast::Expression::String(
                 *span,
                 parts
-                    .into_iter()
+                    .iter()
                     .map(|p| match p {
                         StringPart::Fixed(s) => Ok(typed_ast::StringPart::Fixed(s.clone())),
                         StringPart::Interpolation(span, expr) => {
@@ -848,7 +846,7 @@ impl TypeChecker {
             } => {
                 // Make sure that identifier does not clash with a function name. We do not
                 // check for clashes with unit names, as this is handled by the prefix parser.
-                if let Some(ref signature) = self.function_signatures.get(identifier) {
+                if let Some(signature) = self.function_signatures.get(identifier) {
                     return Err(TypeCheckError::NameAlreadyUsedBy(
                         "a function",
                         *identifier_span,
@@ -880,7 +878,7 @@ impl TypeChecker {
                                         actual_name_for_fix: "right hand side expression",
                                         actual_dimensions: self
                                             .registry
-                                            .get_derived_entry_names_for(&dexpr_deduced),
+                                            .get_derived_entry_names_for(dexpr_deduced),
                                         actual_type: dexpr_deduced.clone(),
                                     },
                                 ));
@@ -1021,11 +1019,11 @@ impl TypeChecker {
                     return Err(TypeCheckError::NameAlreadyUsedBy(
                         "a constant",
                         *function_name_span,
-                        span.clone(),
+                        *span,
                     ));
                 }
 
-                if let Some(ref signature) = self.function_signatures.get(function_name) {
+                if let Some(signature) = self.function_signatures.get(function_name) {
                     if signature.is_foreign {
                         return Err(TypeCheckError::NameAlreadyUsedBy(
                             "a foreign function",
@@ -1319,7 +1317,7 @@ impl TypeChecker {
                     ProcedureKind::AssertEq => {
                         let type_first = dtype(&checked_args[0])?;
                         for arg in &checked_args[1..] {
-                            let type_arg = dtype(&arg)?;
+                            let type_arg = dtype(arg)?;
                             if type_arg != type_first {
                                 return Err(TypeCheckError::IncompatibleTypesInAssertEq(
                                     *span,
@@ -1364,7 +1362,7 @@ impl TypeChecker {
         match annotation {
             TypeAnnotation::DimensionExpression(dexpr) => self
                 .registry
-                .get_base_representation(&dexpr)
+                .get_base_representation(dexpr)
                 .map(Type::Dimension)
                 .map_err(TypeCheckError::RegistryError),
             TypeAnnotation::Bool(_) => Ok(Type::Boolean),

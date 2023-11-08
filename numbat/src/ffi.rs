@@ -299,7 +299,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         );
 
         m.insert(
-            format!("exchange_rate"),
+            "exchange_rate".to_string(),
             ForeignFunction {
                 name: "exchange_rate".into(),
                 arity: 1..=1,
@@ -331,7 +331,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
 fn print(ctx: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
     assert!(args.len() <= 1);
 
-    if args.len() == 0 {
+    if args.is_empty() {
         (ctx.print_fn)(&crate::markup::text(""))
     } else {
         match &args[0] {

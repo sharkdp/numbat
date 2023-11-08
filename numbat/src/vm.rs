@@ -399,7 +399,7 @@ impl Vm {
             return;
         }
 
-        eprintln!("");
+        eprintln!();
         eprintln!(".CONSTANTS");
         for (idx, constant) in self.constants.iter().enumerate() {
             eprintln!("  {:04} {}", idx, constant);
@@ -593,9 +593,9 @@ impl Vm {
                         Op::Add => &lhs + &rhs,
                         Op::Subtract => &lhs - &rhs,
                         Op::Multiply => Ok(lhs * rhs),
-                        Op::Divide => Ok(lhs
-                            .checked_div(rhs)
-                            .ok_or_else(|| RuntimeError::DivisionByZero)?),
+                        Op::Divide => {
+                            Ok(lhs.checked_div(rhs).ok_or(RuntimeError::DivisionByZero)?)
+                        }
                         Op::Power => lhs.power(rhs),
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         _ => unreachable!(),
@@ -779,7 +779,7 @@ impl Vm {
     }
 
     fn print(&self, ctx: &mut ExecutionContext, m: &Markup) {
-        (ctx.print_fn)(&m);
+        (ctx.print_fn)(m);
     }
 }
 

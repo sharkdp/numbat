@@ -34,7 +34,7 @@ impl ErrorDiagnostic for ResolverError {
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message("Unknown module")])],
             ResolverError::ParseErrors(errors) => {
-                errors.into_iter().flat_map(|e| e.diagnostics()).collect()
+                errors.iter().flat_map(|e| e.diagnostics()).collect()
             }
         }
     }

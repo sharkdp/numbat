@@ -61,7 +61,7 @@ impl InterpreterResult {
                             m::empty()
                         } else {
                             m::dimmed("    [")
-                                + e.get_type().to_readable_type(&registry)
+                                + e.get_type().to_readable_type(registry)
                                 + m::dimmed("]")
                         }
                     } else {
@@ -84,7 +84,7 @@ impl InterpreterResult {
 
 pub type Result<T> = std::result::Result<T, RuntimeError>;
 
-pub type PrintFunction = dyn FnMut(&Markup) -> () + Send;
+pub type PrintFunction = dyn FnMut(&Markup) + Send;
 
 pub struct InterpreterSettings {
     pub print_fn: Box<PrintFunction>,
