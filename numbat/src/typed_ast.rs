@@ -31,11 +31,10 @@ impl DType {
         match &names[..] {
             [] => self.pretty_print(),
             [single] => m::type_identifier(single),
-            ref multiple => Itertools::intersperse(
-                multiple.iter().map(|n| m::type_identifier(n)),
-                m::dimmed(" or "),
-            )
-            .sum(),
+            multiple => {
+                Itertools::intersperse(multiple.iter().map(m::type_identifier), m::dimmed(" or "))
+                    .sum()
+            }
         }
     }
 }
@@ -542,11 +541,11 @@ impl PrettyPrint for Expression {
             Condition(_, condition, then, else_) => {
                 m::keyword("if")
                     + m::space()
-                    + with_parens(&condition)
+                    + with_parens(condition)
                     + m::space()
                     + m::keyword("then")
                     + m::space()
-                    + with_parens(&then)
+                    + with_parens(then)
                     + m::space()
                     + m::keyword("else")
                     + m::space()

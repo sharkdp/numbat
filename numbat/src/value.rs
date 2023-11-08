@@ -10,7 +10,7 @@ pub enum Value {
 impl Value {
     pub fn unsafe_as_quantity(&self) -> &Quantity {
         if let Value::Quantity(q) = self {
-            &q
+            q
         } else {
             panic!("Expected value to be a quantity");
         }

@@ -1156,10 +1156,7 @@ impl<'a> Parser<'a> {
                 ));
             }
 
-            parts = parts
-                .into_iter()
-                .filter(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()))
-                .collect();
+            parts.retain(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()));
 
             Ok(Expression::String(span_full_string, parts))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
@@ -1399,7 +1396,7 @@ impl<'a> Parser<'a> {
 }
 
 fn strip_first_and_last(s: &str) -> String {
-    (&s[1..(s.len() - 1)]).to_string()
+    s[1..(s.len() - 1)].to_string()
 }
 
 /// Parse a string.

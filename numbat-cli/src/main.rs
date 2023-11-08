@@ -125,7 +125,7 @@ impl Cli {
 
         let importer = ChainedImporter::new(
             Box::new(fs_importer),
-            Box::new(BuiltinModuleImporter::default()),
+            Box::<BuiltinModuleImporter>::default(),
         );
 
         let mut context = Context::new(importer);
@@ -196,10 +196,11 @@ impl Cli {
                 ))?,
                 CodeSource::File(path.clone()),
             ))
-        } else if let Some(exprs) = &self.args.expression {
-            Some((exprs.iter().join("\n"), CodeSource::Text))
         } else {
-            None
+            self.args
+                .expression
+                .as_ref()
+                .map(|exprs| (exprs.iter().join("\n"), CodeSource::Text))
         };
 
         if let Some((code, code_source)) = code_and_source {
@@ -446,12 +447,10 @@ impl Cli {
             if !system_module_path.is_empty() {
                 paths.push(system_module_path.into());
             }
+        } else if cfg!(unix) {
+            paths.push("/usr/share/numbat/modules".into());
         } else {
-            if cfg!(unix) {
-                paths.push("/usr/share/numbat/modules".into());
-            } else {
-                paths.push("C:\\Program Files\\numbat\\modules".into());
-            }
+            paths.push("C:\\Program Files\\numbat\\modules".into());
         }
         paths
     }

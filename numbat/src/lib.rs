@@ -161,8 +161,7 @@ impl Context {
         output += m::text("List of units:") + m::nl();
         for unit_names in units {
             output += m::whitespace("  ")
-                + itertools::intersperse(unit_names.iter().map(|n| m::unit(n)), m::text(", "))
-                    .sum()
+                + itertools::intersperse(unit_names.iter().map(m::unit), m::text(", ")).sum()
                 + m::nl();
         }
         output += m::nl();

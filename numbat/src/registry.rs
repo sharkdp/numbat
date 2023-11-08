@@ -136,8 +136,7 @@ impl<Metadata: Clone> Registry<Metadata> {
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.base_entries.iter().find(|(n, _)| n == name).is_some()
-            || self.derived_entries.contains_key(name)
+        self.base_entries.iter().any(|(n, _)| n == name) || self.derived_entries.contains_key(name)
     }
 
     pub fn get_base_representation_for_name(

@@ -8,7 +8,7 @@ pub type ExchangeRates = HashMap<String, f64>;
 pub fn parse_exchange_rates(xml_content: &str) -> Option<ExchangeRates> {
     let mut rates = ExchangeRates::default();
 
-    let mut reader = Reader::from_str(&xml_content);
+    let mut reader = Reader::from_str(xml_content);
     loop {
         match reader.read_event().ok()? {
             Event::Eof => break,
