@@ -35,9 +35,14 @@ use std::{fs, thread};
 #[derive(Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 enum ExchangeRateFetchingPolicy {
-    Prefetch,
-    FetchOnFirstUse,
-    DontFetch,
+    /// Always fetch exchange rates in the background when the application is started
+    OnStartup,
+
+    /// Fetch exchange rates when a currency symbol is used
+    OnFirstUse,
+
+    /// Never fetch exchange rates
+    Never,
 }
 
 #[derive(Deserialize, PartialEq, Eq, Default, Debug, Clone, Copy, ValueEnum)]
@@ -51,26 +56,17 @@ enum IntroBanner {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
-struct Application {
-    exchange_rate_fetching_policy: ExchangeRateFetchingPolicy,
-    prompt: String,
+struct MainConfig {
     intro_banner: IntroBanner,
+    prompt: String,
     pretty_print: PrettyPrintMode,
     load_prelude: bool,
     load_user_init: bool,
 }
 
-#[derive(Default, Deserialize)]
-#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
-struct Config {
-    #[serde(rename = "application")]
-    app: Application,
-}
-
-impl Default for Application {
+impl Default for MainConfig {
     fn default() -> Self {
         Self {
-            exchange_rate_fetching_policy: ExchangeRateFetchingPolicy::Prefetch,
             prompt: ">>> ".to_owned(),
             intro_banner: IntroBanner::default(),
             pretty_print: PrettyPrintMode::Auto,
@@ -78,6 +74,28 @@ impl Default for Application {
             load_user_init: true,
         }
     }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+struct ExchangeRateConfig {
+    fetching_policy: ExchangeRateFetchingPolicy,
+}
+
+impl Default for ExchangeRateConfig {
+    fn default() -> Self {
+        Self {
+            fetching_policy: ExchangeRateFetchingPolicy::OnStartup,
+        }
+    }
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+struct Config {
+    main: MainConfig,
+
+    exchange_rates: ExchangeRateConfig,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -186,25 +204,25 @@ impl Cli {
             Config::default()
         };
 
-        config.app.load_prelude = if args.no_prelude {
+        config.main.load_prelude = if args.no_prelude {
             false
         } else {
-            config.app.load_prelude
+            config.main.load_prelude
         };
-        config.app.load_user_init = if args.no_prelude || args.no_init {
+        config.main.load_user_init = if args.no_prelude || args.no_init {
             false
         } else {
-            config.app.load_user_init
+            config.main.load_user_init
         };
 
-        config.app.intro_banner = args.intro_banner.unwrap_or(config.app.intro_banner);
-        config.app.pretty_print = args.pretty_print.unwrap_or(config.app.pretty_print);
+        config.main.intro_banner = args.intro_banner.unwrap_or(config.main.intro_banner);
+        config.main.pretty_print = args.pretty_print.unwrap_or(config.main.pretty_print);
 
-        config.app.pretty_print =
-            if args.file.is_none() && config.app.pretty_print == PrettyPrintMode::Auto {
+        config.main.pretty_print =
+            if args.file.is_none() && config.main.pretty_print == PrettyPrintMode::Auto {
                 PrettyPrintMode::Always
             } else {
-                config.app.pretty_print
+                config.main.pretty_print
             };
 
         let mut fs_importer = FileSystemImporter::default();
@@ -229,7 +247,7 @@ impl Cli {
     }
 
     fn run(&mut self) -> Result<()> {
-        if self.config.app.load_prelude {
+        if self.config.main.load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
                 CodeSource::Internal,
@@ -241,7 +259,7 @@ impl Cli {
             }
         }
 
-        if self.config.app.load_user_init {
+        if self.config.main.load_user_init {
             let user_init_path = Self::get_config_path().join("init.nbt");
 
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
@@ -257,9 +275,8 @@ impl Cli {
             }
         }
 
-        if self.config.app.load_prelude
-            && self.config.app.exchange_rate_fetching_policy
-                != ExchangeRateFetchingPolicy::DontFetch
+        if self.config.main.load_prelude
+            && self.config.exchange_rates.fetching_policy != ExchangeRateFetchingPolicy::Never
         {
             {
                 self.context
@@ -268,8 +285,7 @@ impl Cli {
                     .load_currency_module_on_demand(true);
             }
 
-            if self.config.app.exchange_rate_fetching_policy == ExchangeRateFetchingPolicy::Prefetch
-            {
+            if self.config.exchange_rates.fetching_policy == ExchangeRateFetchingPolicy::OnStartup {
                 thread::spawn(move || {
                     numbat::Context::prefetch_exchange_rates();
                 });
@@ -295,7 +311,7 @@ impl Cli {
                 &code,
                 code_source,
                 ExecutionMode::Normal,
-                self.config.app.pretty_print,
+                self.config.main.pretty_print,
             );
 
             match result {
@@ -333,7 +349,7 @@ impl Cli {
         rl.load_history(&history_path).ok();
 
         if interactive {
-            match self.config.app.intro_banner {
+            match self.config.main.intro_banner {
                 IntroBanner::Long => {
                     println!();
                     println!(
@@ -367,7 +383,7 @@ impl Cli {
 
     fn repl_loop(&mut self, rl: &mut Editor<NumbatHelper, DefaultHistory>) -> Result<()> {
         loop {
-            let readline = rl.readline(&self.config.app.prompt);
+            let readline = rl.readline(&self.config.main.prompt);
             match readline {
                 Ok(line) => {
                     if !line.trim().is_empty() {
@@ -399,7 +415,7 @@ impl Cli {
                                     &line,
                                     CodeSource::Text,
                                     ExecutionMode::Interactive,
-                                    self.config.app.pretty_print,
+                                    self.config.main.pretty_print,
                                 );
 
                                 match result {
