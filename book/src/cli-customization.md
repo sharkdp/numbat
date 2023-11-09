@@ -35,10 +35,45 @@ Refer to your [package manager for details](./cli-installation.html#guidelines-f
 
 ## Customization
 
+### Configuration
+
+Numbats configuration file is called `config.toml`, and it needs to be placed in
+`<config-path>` described above (`~/.config/numbat/config.toml` on Linux). You
+can generate a default configuration by calling
+
+``` bash
+numbat --generate-config
+```
+
+The most important fields are:
+
+```
+[main]
+# Controls the welcome message. Can be "long", "short", or "off".
+intro-banner = "long"
+
+# Controls the prompt character(s) in the interactive terminal.
+prompt = ">>> "
+
+# Whether or not to pretty-print expressions before showing the result.
+# Can be "always", "never" or "auto". The latter uses pretty-printing
+# only in interactive mode.
+pretty-print = "auto"
+
+[exchange-rates]
+# When and if to load exchange rates from the European Central Bank for
+# currency conversions. Can be "on-startup" to always fetch exchange rates
+# in the background when the application is started. With "on-first-use",
+# Numbat only fetches exchange rates when they are needed. Exchange rate
+# fetching can also be disabled using "never". The latter will lead to
+# "unknown identifier" errors when a currency unit is being used.
+fetching-policy = "on-startup"
+```
+
 ### Custom functions, constants, units
 
 If you want to add custom functions, constants, or units to your default environment,
-create a `init.nbt` file in your config folder (e.g. `~/.config/numbat/init.nbt` on Linux).
+create a `init.nbt` file in your config folder (`~/.config/numbat/init.nbt` on Linux).
 
 ### Custom modules
 
