@@ -1,9 +1,11 @@
 mod ansi_formatter;
 mod completer;
+mod config;
 mod highlighter;
 
 use ansi_formatter::ansi_format;
 use completer::NumbatCompleter;
+use config::{Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode};
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
@@ -17,87 +19,19 @@ use numbat::{Context, InterpreterResult, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use rustyline::config::Configurer;
 use rustyline::{
     self, error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter,
     Validator,
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
-use serde::Deserialize;
 use toml;
 
 use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
-
-#[derive(Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "kebab-case")]
-enum ExchangeRateFetchingPolicy {
-    /// Always fetch exchange rates in the background when the application is started
-    #[default]
-    OnStartup,
-
-    /// Fetch exchange rates when a currency symbol is used
-    OnFirstUse,
-
-    /// Never fetch exchange rates
-    Never,
-}
-
-#[derive(Deserialize, PartialEq, Eq, Default, Debug, Clone, Copy, ValueEnum)]
-#[serde(rename_all = "kebab-case")]
-enum IntroBanner {
-    #[default]
-    Long,
-    Short,
-    Off,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
-struct MainConfig {
-    intro_banner: IntroBanner,
-    prompt: String,
-    pretty_print: PrettyPrintMode,
-    load_prelude: bool,
-    load_user_init: bool,
-}
-
-impl Default for MainConfig {
-    fn default() -> Self {
-        Self {
-            prompt: ">>> ".to_owned(),
-            intro_banner: IntroBanner::default(),
-            pretty_print: PrettyPrintMode::Auto,
-            load_prelude: true,
-            load_user_init: true,
-        }
-    }
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
-struct ExchangeRateConfig {
-    fetching_policy: ExchangeRateFetchingPolicy,
-}
-
-impl Default for ExchangeRateConfig {
-    fn default() -> Self {
-        Self {
-            fetching_policy: ExchangeRateFetchingPolicy::default(),
-        }
-    }
-}
-
-#[derive(Default, Deserialize)]
-#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
-struct Config {
-    main: MainConfig,
-
-    exchange_rates: ExchangeRateConfig,
-}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExitStatus {
@@ -106,14 +40,6 @@ pub enum ExitStatus {
 }
 
 type ControlFlow = std::ops::ControlFlow<ExitStatus>;
-
-#[derive(Debug, Clone, Copy, PartialEq, ValueEnum, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-enum PrettyPrintMode {
-    Always,
-    Never,
-    Auto,
-}
 
 #[derive(Parser, Debug)]
 #[command(version, about, name("numbat"), max_term_width = 90)]
