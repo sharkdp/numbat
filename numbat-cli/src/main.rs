@@ -122,9 +122,13 @@ struct Args {
     #[arg(long, value_name = "MODE")]
     intro_banner: Option<IntroBanner>,
 
-    /// Turn on debug mode (e.g. disassembler output).
+    /// Turn on debug mode and print disassembler output (hidden, mainly for development)
     #[arg(long, short, hide = true)]
     debug: bool,
+
+    /// Do not load the user configuration file (hidden, mainly for testing purposes)
+    #[arg(long, hide = true)]
+    no_config: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -164,7 +168,9 @@ impl Cli {
 
         let user_config_path = Self::get_config_path().join("config.toml");
 
-        let mut config = if let Ok(contents) = fs::read_to_string(&user_config_path) {
+        let mut config = if args.no_config {
+            Config::default()
+        } else if let Ok(contents) = fs::read_to_string(&user_config_path) {
             toml::from_str(&contents).context(format!(
                 "Error while loading {}",
                 user_config_path.to_string_lossy()
@@ -173,8 +179,16 @@ impl Cli {
             Config::default()
         };
 
-        config.load_prelude = !args.no_prelude;
-        config.load_user_init = !(args.no_prelude || args.no_init);
+        config.load_prelude = if args.no_prelude {
+            false
+        } else {
+            config.load_prelude
+        };
+        config.load_user_init = if args.no_prelude || args.no_init {
+            false
+        } else {
+            config.load_user_init
+        };
 
         config.intro_banner = args.intro_banner.unwrap_or(config.intro_banner);
         config.pretty_print = args.pretty_print.unwrap_or(config.pretty_print);
