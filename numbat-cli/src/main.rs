@@ -78,6 +78,10 @@ struct Args {
     #[arg(long, short, hide = true)]
     debug: bool,
 
+    /// Generate a default configuration file
+    #[arg(long)]
+    generate_config: bool,
+
     /// Do not load the user configuration file (hidden, mainly for testing purposes)
     #[arg(long, hide = true)]
     no_config: bool,
@@ -115,9 +119,7 @@ struct Cli {
 }
 
 impl Cli {
-    fn new() -> Result<Self> {
-        let args = Args::parse();
-
+    fn new(args: Args) -> Result<Self> {
         let user_config_path = Self::get_config_path().join("config.toml");
 
         let mut config = if args.no_config {
@@ -501,8 +503,48 @@ impl Cli {
     }
 }
 
+fn generate_config() -> Result<()> {
+    let config_folder_path = Cli::get_config_path();
+    let config_file_path = config_folder_path.join("config.toml");
+
+    if config_file_path.exists() {
+        bail!(
+            "The file '{}' exists already.",
+            config_file_path.to_string_lossy()
+        );
+    }
+
+    std::fs::create_dir_all(&config_folder_path).context(format!(
+        "Error while creating folder '{}'",
+        config_folder_path.to_string_lossy()
+    ))?;
+
+    let config = Config::default();
+    let content = toml::to_string(&config).context("Error while creating TOML from config")?;
+
+    std::fs::write(&config_file_path, content)?;
+
+    println!(
+        "A default configuration has been written to '{}'.",
+        config_file_path.to_string_lossy()
+    );
+    println!("Open the file in a text editor. Modify whatever you want to change and remove the other fields");
+
+    Ok(())
+}
+
 fn main() {
-    if let Err(e) = Cli::new().and_then(|mut cli| cli.run()) {
+    let args = Args::parse();
+
+    if args.generate_config {
+        if let Err(e) = generate_config() {
+            eprintln!("{:#}", e);
+            std::process::exit(1);
+        }
+        std::process::exit(0);
+    }
+
+    if let Err(e) = Cli::new(args).and_then(|mut cli| cli.run()) {
         eprintln!("{:#}", e);
         std::process::exit(1);
     }
