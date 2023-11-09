@@ -8,6 +8,7 @@ fn numbat() -> Command {
 
     let mut cmd = Command::cargo_bin("numbat").unwrap();
     cmd.arg("--no-init");
+    cmd.arg("--no-config");
     cmd
 }
 
@@ -91,6 +92,27 @@ fn without_prelude() {
         .assert()
         .success()
         .stdout(predicates::str::contains("5.2"));
+
+    numbat()
+        .arg("--no-prelude")
+        .arg("--expression")
+        .arg("1 meter")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("unknown identifier"));
+}
+
+#[test]
+fn pretty_printing() {
+    numbat()
+        .arg("--pretty-print=always")
+        .arg("--expression")
+        .arg("let v=30km/h")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "let v: Velocity = 30 kilometre / hour",
+        ));
 }
 
 #[test]
