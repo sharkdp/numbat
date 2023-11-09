@@ -32,10 +32,11 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
 
-#[derive(Deserialize, PartialEq, Eq)]
+#[derive(Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "kebab-case")]
 enum ExchangeRateFetchingPolicy {
     /// Always fetch exchange rates in the background when the application is started
+    #[default]
     OnStartup,
 
     /// Fetch exchange rates when a currency symbol is used
@@ -85,7 +86,7 @@ struct ExchangeRateConfig {
 impl Default for ExchangeRateConfig {
     fn default() -> Self {
         Self {
-            fetching_policy: ExchangeRateFetchingPolicy::OnStartup,
+            fetching_policy: ExchangeRateFetchingPolicy::default(),
         }
     }
 }
