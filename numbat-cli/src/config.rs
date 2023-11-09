@@ -1,7 +1,7 @@
 use clap::ValueEnum;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, PartialEq, Eq, Default, Debug, Clone, Copy, ValueEnum)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Default, Debug, Clone, Copy, ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 pub enum IntroBanner {
     #[default]
@@ -10,7 +10,7 @@ pub enum IntroBanner {
     Off,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, ValueEnum, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, ValueEnum, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum PrettyPrintMode {
     Always,
@@ -18,7 +18,7 @@ pub enum PrettyPrintMode {
     Auto,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct MainConfig {
     pub intro_banner: IntroBanner,
@@ -40,7 +40,7 @@ impl Default for MainConfig {
     }
 }
 
-#[derive(Deserialize, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum ExchangeRateFetchingPolicy {
     /// Always fetch exchange rates in the background when the application is started
@@ -54,7 +54,7 @@ pub enum ExchangeRateFetchingPolicy {
     Never,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct ExchangeRateConfig {
     pub fetching_policy: ExchangeRateFetchingPolicy,
@@ -68,7 +68,7 @@ impl Default for ExchangeRateConfig {
     }
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct Config {
     pub main: MainConfig,
