@@ -55,6 +55,9 @@ struct Config {
     exchange_rate_fetching_policy: ExchangeRateFetchingPolicy,
     prompt: String,
     intro_banner: IntroBanner,
+    pretty_print: PrettyPrintMode,
+    load_prelude: bool,
+    load_user_init: bool,
 }
 
 impl Default for Config {
@@ -63,6 +66,9 @@ impl Default for Config {
             exchange_rate_fetching_policy: ExchangeRateFetchingPolicy::Prefetch,
             prompt: ">>> ".to_owned(),
             intro_banner: IntroBanner::default(),
+            pretty_print: PrettyPrintMode::Auto,
+            load_prelude: true,
+            load_user_init: true,
         }
     }
 }
@@ -75,7 +81,8 @@ pub enum ExitStatus {
 
 type ControlFlow = std::ops::ControlFlow<ExitStatus>;
 
-#[derive(Debug, Clone, Copy, PartialEq, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, ValueEnum, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 enum PrettyPrintMode {
     Always,
     Never,
@@ -108,8 +115,8 @@ struct Args {
     no_init: bool,
 
     /// Whether or not to pretty-print every input expression.
-    #[arg(long, value_name = "WHEN", default_value = "auto")]
-    pretty_print: PrettyPrintMode,
+    #[arg(long, value_name = "WHEN")]
+    pretty_print: Option<PrettyPrintMode>,
 
     /// What kind of intro banner to show (if any).
     #[arg(long, value_name = "MODE")]
@@ -145,14 +152,39 @@ struct NumbatHelper {
 }
 
 struct Cli {
-    args: Args,
     config: Config,
     context: Arc<Mutex<Context>>,
+    file: Option<PathBuf>,
+    expression: Option<Vec<String>>,
 }
 
 impl Cli {
-    fn new() -> Self {
+    fn new() -> Result<Self> {
         let args = Args::parse();
+
+        let user_config_path = Self::get_config_path().join("config.toml");
+
+        let mut config = if let Ok(contents) = fs::read_to_string(&user_config_path) {
+            toml::from_str(&contents).context(format!(
+                "Error while loading {}",
+                user_config_path.to_string_lossy()
+            ))?
+        } else {
+            Config::default()
+        };
+
+        config.load_prelude = !args.no_prelude;
+        config.load_user_init = !(args.no_prelude || args.no_init);
+
+        config.intro_banner = args.intro_banner.unwrap_or(config.intro_banner);
+        config.pretty_print = args.pretty_print.unwrap_or(config.pretty_print);
+
+        config.pretty_print = if args.file.is_none() && config.pretty_print == PrettyPrintMode::Auto
+        {
+            PrettyPrintMode::Always
+        } else {
+            config.pretty_print
+        };
 
         let mut fs_importer = FileSystemImporter::default();
         for path in Self::get_modules_paths() {
@@ -167,27 +199,16 @@ impl Cli {
         let mut context = Context::new(importer);
         context.set_debug(args.debug);
 
-        Self {
+        Ok(Self {
             context: Arc::new(Mutex::new(context)),
-            args,
-            config: Config::default(),
-        }
+            config,
+            file: args.file,
+            expression: args.expression,
+        })
     }
 
     fn run(&mut self) -> Result<()> {
-        let load_prelude = !self.args.no_prelude;
-        let load_init = !(self.args.no_prelude || self.args.no_init);
-
-        let user_config_path = Self::get_config_path().join("config.toml");
-
-        if let Ok(contents) = fs::read_to_string(&user_config_path) {
-            self.config = toml::from_str(&contents).context(format!(
-                "Error while loading {}",
-                user_config_path.to_string_lossy()
-            ))?;
-        }
-
-        if load_prelude {
+        if self.config.load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
                 CodeSource::Internal,
@@ -199,7 +220,7 @@ impl Cli {
             }
         }
 
-        if load_init {
+        if self.config.load_user_init {
             let user_init_path = Self::get_config_path().join("init.nbt");
 
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
@@ -215,7 +236,7 @@ impl Cli {
             }
         }
 
-        if load_prelude
+        if self.config.load_prelude
             && self.config.exchange_rate_fetching_policy != ExchangeRateFetchingPolicy::DontFetch
         {
             {
@@ -232,14 +253,7 @@ impl Cli {
             }
         }
 
-        let pretty_print_mode =
-            if self.args.file.is_none() && self.args.pretty_print == PrettyPrintMode::Auto {
-                PrettyPrintMode::Always
-            } else {
-                self.args.pretty_print
-            };
-
-        let code_and_source: Option<(String, CodeSource)> = if let Some(ref path) = self.args.file {
+        let code_and_source: Option<(String, CodeSource)> = if let Some(ref path) = self.file {
             Some((
                 fs::read_to_string(path).context(format!(
                     "Could not load source file '{}'",
@@ -248,8 +262,7 @@ impl Cli {
                 CodeSource::File(path.clone()),
             ))
         } else {
-            self.args
-                .expression
+            self.expression
                 .as_ref()
                 .map(|exprs| (exprs.iter().join("\n"), CodeSource::Text))
         };
@@ -259,7 +272,7 @@ impl Cli {
                 &code,
                 code_source,
                 ExecutionMode::Normal,
-                pretty_print_mode,
+                self.config.pretty_print,
             );
 
             match result {
@@ -277,7 +290,6 @@ impl Cli {
     fn repl(&mut self) -> Result<()> {
         let interactive = std::io::stdin().is_terminal();
         let history_path = self.get_history_path()?;
-        let intro_banner = self.args.intro_banner.unwrap_or(self.config.intro_banner);
 
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
         rl.set_max_history_size(1000)
@@ -298,7 +310,7 @@ impl Cli {
         rl.load_history(&history_path).ok();
 
         if interactive {
-            match intro_banner {
+            match self.config.intro_banner {
                 IntroBanner::Long => {
                     println!();
                     println!(
@@ -364,7 +376,7 @@ impl Cli {
                                     &line,
                                     CodeSource::Text,
                                     ExecutionMode::Interactive,
-                                    self.args.pretty_print,
+                                    self.config.pretty_print,
                                 );
 
                                 match result {
@@ -524,9 +536,7 @@ impl Cli {
 }
 
 fn main() {
-    let mut cli = Cli::new();
-
-    if let Err(e) = cli.run() {
+    if let Err(e) = Cli::new().and_then(|mut cli| cli.run()) {
         eprintln!("{:#}", e);
         std::process::exit(1);
     }
