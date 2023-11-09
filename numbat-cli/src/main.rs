@@ -51,7 +51,7 @@ enum IntroBanner {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
-struct Config {
+struct Application {
     exchange_rate_fetching_policy: ExchangeRateFetchingPolicy,
     prompt: String,
     intro_banner: IntroBanner,
@@ -60,9 +60,16 @@ struct Config {
     load_user_init: bool,
 }
 
-impl Default for Config {
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+struct Config {
+    #[serde(rename = "application")]
+    app: Application,
+}
+
+impl Default for Application {
     fn default() -> Self {
-        Config {
+        Self {
             exchange_rate_fetching_policy: ExchangeRateFetchingPolicy::Prefetch,
             prompt: ">>> ".to_owned(),
             intro_banner: IntroBanner::default(),
@@ -179,26 +186,26 @@ impl Cli {
             Config::default()
         };
 
-        config.load_prelude = if args.no_prelude {
+        config.app.load_prelude = if args.no_prelude {
             false
         } else {
-            config.load_prelude
+            config.app.load_prelude
         };
-        config.load_user_init = if args.no_prelude || args.no_init {
+        config.app.load_user_init = if args.no_prelude || args.no_init {
             false
         } else {
-            config.load_user_init
+            config.app.load_user_init
         };
 
-        config.intro_banner = args.intro_banner.unwrap_or(config.intro_banner);
-        config.pretty_print = args.pretty_print.unwrap_or(config.pretty_print);
+        config.app.intro_banner = args.intro_banner.unwrap_or(config.app.intro_banner);
+        config.app.pretty_print = args.pretty_print.unwrap_or(config.app.pretty_print);
 
-        config.pretty_print = if args.file.is_none() && config.pretty_print == PrettyPrintMode::Auto
-        {
-            PrettyPrintMode::Always
-        } else {
-            config.pretty_print
-        };
+        config.app.pretty_print =
+            if args.file.is_none() && config.app.pretty_print == PrettyPrintMode::Auto {
+                PrettyPrintMode::Always
+            } else {
+                config.app.pretty_print
+            };
 
         let mut fs_importer = FileSystemImporter::default();
         for path in Self::get_modules_paths() {
@@ -222,7 +229,7 @@ impl Cli {
     }
 
     fn run(&mut self) -> Result<()> {
-        if self.config.load_prelude {
+        if self.config.app.load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
                 CodeSource::Internal,
@@ -234,7 +241,7 @@ impl Cli {
             }
         }
 
-        if self.config.load_user_init {
+        if self.config.app.load_user_init {
             let user_init_path = Self::get_config_path().join("init.nbt");
 
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
@@ -250,8 +257,9 @@ impl Cli {
             }
         }
 
-        if self.config.load_prelude
-            && self.config.exchange_rate_fetching_policy != ExchangeRateFetchingPolicy::DontFetch
+        if self.config.app.load_prelude
+            && self.config.app.exchange_rate_fetching_policy
+                != ExchangeRateFetchingPolicy::DontFetch
         {
             {
                 self.context
@@ -260,7 +268,8 @@ impl Cli {
                     .load_currency_module_on_demand(true);
             }
 
-            if self.config.exchange_rate_fetching_policy == ExchangeRateFetchingPolicy::Prefetch {
+            if self.config.app.exchange_rate_fetching_policy == ExchangeRateFetchingPolicy::Prefetch
+            {
                 thread::spawn(move || {
                     numbat::Context::prefetch_exchange_rates();
                 });
@@ -286,7 +295,7 @@ impl Cli {
                 &code,
                 code_source,
                 ExecutionMode::Normal,
-                self.config.pretty_print,
+                self.config.app.pretty_print,
             );
 
             match result {
@@ -324,7 +333,7 @@ impl Cli {
         rl.load_history(&history_path).ok();
 
         if interactive {
-            match self.config.intro_banner {
+            match self.config.app.intro_banner {
                 IntroBanner::Long => {
                     println!();
                     println!(
@@ -358,7 +367,7 @@ impl Cli {
 
     fn repl_loop(&mut self, rl: &mut Editor<NumbatHelper, DefaultHistory>) -> Result<()> {
         loop {
-            let readline = rl.readline(&self.config.prompt);
+            let readline = rl.readline(&self.config.app.prompt);
             match readline {
                 Ok(line) => {
                     if !line.trim().is_empty() {
@@ -390,7 +399,7 @@ impl Cli {
                                     &line,
                                     CodeSource::Text,
                                     ExecutionMode::Interactive,
-                                    self.config.pretty_print,
+                                    self.config.app.pretty_print,
                                 );
 
                                 match result {
