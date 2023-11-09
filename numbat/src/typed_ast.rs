@@ -174,6 +174,16 @@ pub enum Statement {
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
 }
 
+impl Statement {
+    pub fn as_expression(&self) -> Option<&Expression> {
+        if let Self::Expression(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+
 impl Expression {
     pub fn get_type(&self) -> Type {
         match self {

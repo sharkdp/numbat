@@ -51,34 +51,48 @@ impl InterpreterResult {
         &self,
         evaluated_statement: Option<&Statement>,
         registry: &DimensionRegistry,
+        pretty: bool,
     ) -> Markup {
         match self {
             Self::Value(value) => {
-                let type_markup = if let Some(s) = evaluated_statement {
-                    if let Statement::Expression(e) = s {
-                        let type_ = e.get_type();
-                        if type_ == Type::scalar() {
-                            m::empty()
+                let leader = m::whitespace("    ") + m::operator("=") + m::space();
+
+                let type_markup = evaluated_statement
+                    .and_then(Statement::as_expression)
+                    .and_then(|e| {
+                        if e.get_type() == Type::scalar() {
+                            None
                         } else {
-                            m::dimmed("    [")
-                                + e.get_type().to_readable_type(registry)
-                                + m::dimmed("]")
+                            let ty = e.get_type().to_readable_type(registry);
+                            Some(m::dimmed("    [") + ty + m::dimmed("]"))
                         }
-                    } else {
-                        m::empty()
-                    }
+                    })
+                    .unwrap_or_else(m::empty);
+
+                if pretty {
+                    leader + value.pretty_print() + type_markup + m::nl()
                 } else {
-                    m::empty()
-                };
-                m::whitespace("    ")
-                    + m::operator("=")
-                    + m::space()
-                    + value.pretty_print()
-                    + type_markup
-                    + m::nl()
+                    value.pretty_print() + m::nl()
+                }
             }
             Self::Continue => m::empty(),
         }
+    }
+
+    /// Returns `true` if the interpreter result is [`Value`].
+    ///
+    /// [`Value`]: InterpreterResult::Value
+    #[must_use]
+    pub fn is_value(&self) -> bool {
+        matches!(self, Self::Value(..))
+    }
+
+    /// Returns `true` if the interpreter result is [`Continue`].
+    ///
+    /// [`Continue`]: InterpreterResult::Continue
+    #[must_use]
+    pub fn is_continue(&self) -> bool {
+        matches!(self, Self::Continue)
     }
 }
 

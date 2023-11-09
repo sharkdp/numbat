@@ -15,7 +15,7 @@ use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::{Context, InterpreterResult, NumbatError};
+use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
@@ -133,26 +133,11 @@ impl Cli {
             Config::default()
         };
 
-        config.main.load_prelude = if args.no_prelude {
-            false
-        } else {
-            config.main.load_prelude
-        };
-        config.main.load_user_init = if args.no_prelude || args.no_init {
-            false
-        } else {
-            config.main.load_user_init
-        };
+        config.main.load_prelude &= !args.no_prelude;
+        config.main.load_user_init &= !(args.no_prelude || args.no_init);
 
         config.main.intro_banner = args.intro_banner.unwrap_or(config.main.intro_banner);
         config.main.pretty_print = args.pretty_print.unwrap_or(config.main.pretty_print);
-
-        config.main.pretty_print =
-            if args.file.is_none() && config.main.pretty_print == PrettyPrintMode::Auto {
-                PrettyPrintMode::Always
-            } else {
-                config.main.pretty_print
-            };
 
         let mut fs_importer = FileSystemImporter::default();
         for path in Self::get_modules_paths() {
@@ -298,7 +283,7 @@ impl Cli {
             }
         }
 
-        let result = self.repl_loop(&mut rl);
+        let result = self.repl_loop(&mut rl, interactive);
 
         if interactive {
             rl.save_history(&history_path).context(format!(
@@ -310,7 +295,11 @@ impl Cli {
         result
     }
 
-    fn repl_loop(&mut self, rl: &mut Editor<NumbatHelper, DefaultHistory>) -> Result<()> {
+    fn repl_loop(
+        &mut self,
+        rl: &mut Editor<NumbatHelper, DefaultHistory>,
+        interactive: bool,
+    ) -> Result<()> {
         loop {
             let readline = rl.readline(&self.config.main.prompt);
             match readline {
@@ -343,7 +332,11 @@ impl Cli {
                                 let result = self.parse_and_evaluate(
                                     &line,
                                     CodeSource::Text,
-                                    ExecutionMode::Interactive,
+                                    if interactive {
+                                        ExecutionMode::Interactive
+                                    } else {
+                                        ExecutionMode::Normal
+                                    },
                                     self.config.main.pretty_print,
                                 );
 
@@ -396,46 +389,48 @@ impl Cli {
             )
         };
 
+        let interactive = execution_mode == ExecutionMode::Interactive;
+
         let pretty_print = match pretty_print_mode {
             PrettyPrintMode::Always => true,
             PrettyPrintMode::Never => false,
-            PrettyPrintMode::Auto => execution_mode == ExecutionMode::Interactive,
+            PrettyPrintMode::Auto => interactive,
         };
 
         match result {
             Ok((statements, interpreter_result)) => {
-                if pretty_print {
+                if interactive || pretty_print {
                     println!();
+                }
+
+                if pretty_print {
                     for statement in &statements {
                         let repr = ansi_format(&statement.pretty_print(), true);
                         println!("{}", repr);
                         println!();
                     }
-                } else if execution_mode == ExecutionMode::Interactive {
-                    println!();
                 }
 
                 let to_be_printed = to_be_printed.lock().unwrap();
                 for s in to_be_printed.iter() {
-                    println!(
-                        "{}",
-                        ansi_format(s, execution_mode == ExecutionMode::Interactive)
-                    );
+                    println!("{}", ansi_format(s, interactive));
                 }
-                if !to_be_printed.is_empty() && execution_mode == ExecutionMode::Interactive {
+                if interactive && !to_be_printed.is_empty() {
                     println!();
                 }
 
-                let result_markup = interpreter_result.to_markup(statements.last(), &registry);
+                let result_markup = interpreter_result.to_markup(
+                    statements.last(),
+                    &registry,
+                    interactive || pretty_print,
+                );
                 print!("{}", ansi_format(&result_markup, false));
 
-                match interpreter_result {
-                    InterpreterResult::Value(_) => {
-                        println!();
-                        ControlFlow::Continue(())
-                    }
-                    InterpreterResult::Continue => ControlFlow::Continue(()),
+                if (interactive || pretty_print) && interpreter_result.is_value() {
+                    println!();
                 }
+
+                ControlFlow::Continue(())
             }
             Err(NumbatError::ResolverError(e)) => {
                 self.print_diagnostic(e.clone());
