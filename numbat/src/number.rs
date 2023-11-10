@@ -1,4 +1,4 @@
-use num_traits::Pow;
+use num_traits::{Pow, ToPrimitive};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)] // TODO: we probably want to remove 'Copy' once we move to a more sophisticated numerical type
 pub struct Number(pub f64);
@@ -26,12 +26,29 @@ impl Number {
     pub fn pretty_print(self) -> String {
         let number = self.0;
 
-        // 64-bit floats can accurately represent integers up to 2^52 [1].
+        // 64-bit floats can accurately represent integers up to 2^52 [1],
+        // which is approximately 4.5 × 10^15.
         //
         // [1] https://stackoverflow.com/a/43656339
         //
         if self.is_integer() && self.0.abs() < 1e15 {
-            format!("{number}")
+            use num_format::{CustomFormat, Grouping, ToFormattedString};
+
+            let format = CustomFormat::builder()
+                .grouping(if self.0.abs() >= 100_000.0 {
+                    Grouping::Standard
+                } else {
+                    Grouping::Posix
+                })
+                .minus_sign("-")
+                .separator("_")
+                .build()
+                .unwrap();
+
+            number
+                .to_i64()
+                .expect("small enough integers are representable as i64")
+                .to_formatted_string(&format)
         } else {
             use pretty_dtoa::{dtoa, FmtFloatConfig};
 
@@ -50,6 +67,8 @@ impl Number {
                 } else {
                     formatted_number.to_string()
                 }
+            } else if formatted_number.contains('e') && !formatted_number.contains("e-") {
+                formatted_number.replace("e", "e+")
             } else {
                 formatted_number
             }
@@ -108,21 +127,27 @@ fn test_pretty_print() {
     assert_eq!(Number::from_f64(1.).pretty_print(), "1");
     assert_eq!(Number::from_f64(100.).pretty_print(), "100");
     assert_eq!(Number::from_f64(1.234).pretty_print(), "1.234");
-    assert_eq!(Number::from_f64(1.234e50).pretty_print(), "1.234e50");
-    assert_eq!(Number::from_f64(-1.234e50).pretty_print(), "-1.234e50");
+    assert_eq!(Number::from_f64(1.234e50).pretty_print(), "1.234e+50");
+    assert_eq!(Number::from_f64(-1.234e50).pretty_print(), "-1.234e+50");
     assert_eq!(Number::from_f64(1.234e-50).pretty_print(), "1.234e-50");
     assert_eq!(Number::from_f64(-1.234e-50).pretty_print(), "-1.234e-50");
 
-    assert_eq!(Number::from_f64(1234567890.).pretty_print(), "1234567890");
+    assert_eq!(Number::from_f64(1234.).pretty_print(), "1234");
+    assert_eq!(Number::from_f64(12345.).pretty_print(), "12345");
+    assert_eq!(Number::from_f64(123456.).pretty_print(), "123_456");
+    assert_eq!(
+        Number::from_f64(1234567890.).pretty_print(),
+        "1_234_567_890"
+    );
     assert_eq!(
         Number::from_f64(1234567890000000.).pretty_print(),
-        "1.23457e15"
+        "1.23457e+15"
     );
 
     assert_eq!(Number::from_f64(1.23456789).pretty_print(), "1.23457");
     assert_eq!(
         Number::from_f64(1234567890000.1).pretty_print(),
-        "1.23457e12"
+        "1.23457e+12"
     );
 
     assert_eq!(Number::from_f64(100.00001).pretty_print(), "100.0");

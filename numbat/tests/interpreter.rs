@@ -71,7 +71,7 @@ fn simple_value() {
     expect_failure("0b0.0", "Expected base-2 digit");
 
     expect_output("0o0", "0");
-    expect_output("0o01234567", 0o01234567.to_string());
+    expect_output("0o01234567", "342_391");
     expect_output("0o0_0", "0");
     expect_failure("0o012345678", "Expected base-8 digit");
     expect_failure("0o", "Expected base-8 digit");
@@ -81,7 +81,7 @@ fn simple_value() {
     expect_failure("0o0.0", "Expected base-8 digit");
 
     expect_output("0x0", "0");
-    expect_output("0x0123456789abcdef", "8.19855e16");
+    expect_output("0x0123456789abcdef", "8.19855e+16");
     expect_output("0x0_0", "0");
     expect_failure("0x0123456789abcdefg", "Expected base-16 digit");
     expect_failure("0x", "Expected base-16 digit");
@@ -361,12 +361,12 @@ fn test_last_result_identifier() {
 #[test]
 fn test_misc_examples() {
     expect_output("1920/16*9", "1080");
-    expect_output("2^32", "4294967296");
+    expect_output("2^32", "4_294_967_296");
     expect_output("sqrt(1.4^2 + 1.5^2) * cos(pi/3)^2", "0.512957");
 
     expect_output("2min + 30s", "2.5 min");
     expect_output("2min + 30s -> sec", "150 s");
-    expect_output("4/3 * pi * (6000km)³", "9.04779e11 km³");
+    expect_output("4/3 * pi * (6000km)³", "9.04779e+11 km³");
     expect_output("40kg * 9.8m/s^2 * 150cm", "588 kg·m²/s²");
     expect_output("sin(30°)", "0.5");
 
