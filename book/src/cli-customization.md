@@ -48,7 +48,6 @@ numbat --generate-config
 The most important fields are:
 
 ``` toml
-[main]
 # Controls the welcome message. Can be "long", "short", or "off".
 intro-banner = "long"
 

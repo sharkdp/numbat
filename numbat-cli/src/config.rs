@@ -24,7 +24,11 @@ pub struct MainConfig {
     pub intro_banner: IntroBanner,
     pub prompt: String,
     pub pretty_print: PrettyPrintMode,
+
+    #[serde(skip_serializing)]
     pub load_prelude: bool,
+
+    #[serde(skip_serializing)]
     pub load_user_init: bool,
 }
 
@@ -71,6 +75,7 @@ impl Default for ExchangeRateConfig {
 #[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct Config {
+    #[serde(flatten)]
     pub main: MainConfig,
     pub exchange_rates: ExchangeRateConfig,
 }
