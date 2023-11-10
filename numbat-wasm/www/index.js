@@ -51,7 +51,7 @@ function interpret(input) {
     combined_input = "";
     updateUrlQuery(null);
     this.clear();
-  } else if (input_trimmed == "list" || input_trimmed == "ll" || input_trimmed == "ls") {
+  } else if (input_trimmed == "list" || input_trimmed == "ls") {
     output = numbat.print_environment();
   } else if (input_trimmed == "help" || input_trimmed == "?") {
     output = numbat.help();
