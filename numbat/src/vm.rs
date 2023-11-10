@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{cmp::Ordering, fmt::Display};
 
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
@@ -6,7 +6,7 @@ use crate::{
     markup::Markup,
     math,
     prefix::Prefix,
-    quantity::Quantity,
+    quantity::{Quantity, QuantityError},
     unit::Unit,
     unit_registry::{UnitMetadata, UnitRegistry},
     value::Value,
@@ -606,11 +606,18 @@ impl Vm {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
 
+                    let result = lhs.partial_cmp(&rhs).ok_or_else(|| {
+                        RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
+                            lhs.unit().clone(),
+                            rhs.unit().clone(),
+                        ))
+                    })?;
+
                     let result = match op {
-                        Op::LessThan => lhs < rhs,
-                        Op::GreaterThan => lhs > rhs,
-                        Op::LessOrEqual => lhs <= rhs,
-                        Op::GreatorOrEqual => lhs >= rhs,
+                        Op::LessThan => result == Ordering::Less,
+                        Op::GreaterThan => result == Ordering::Greater,
+                        Op::LessOrEqual => result != Ordering::Greater,
+                        Op::GreatorOrEqual => result != Ordering::Less,
                         _ => unreachable!(),
                     };
 
