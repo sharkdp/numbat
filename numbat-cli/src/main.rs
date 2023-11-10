@@ -309,7 +309,7 @@ impl Cli {
                         rl.add_history_entry(&line)?;
 
                         match line.trim() {
-                            "list" | "ls" | "ll" => {
+                            "list" | "ls" => {
                                 let ctx = self.context.lock().unwrap();
 
                                 let markup = ctx.print_environment();
