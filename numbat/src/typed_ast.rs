@@ -386,8 +386,8 @@ impl PrettyPrint for Statement {
     }
 }
 
-fn pretty_scalar(Number(n): Number) -> Markup {
-    m::value(format!("{n}"))
+fn pretty_scalar(n: Number) -> Markup {
+    m::value(format!("{}", n.pretty_print()))
 }
 
 fn with_parens(expr: &Expression) -> Markup {

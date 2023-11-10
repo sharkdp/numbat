@@ -27,6 +27,7 @@ unicode-ident = "1.0.11"
 unicode-width = "0.1.10"
 libc = "0.2.147"
 rust-embed = { version = "8.0.0", features = ["interpolate-folder-path"] }
+num-format = "0.4.4"
 
 [dev-dependencies]
 approx = "0.5"
