@@ -25,8 +25,11 @@ pub const KEYWORDS: &[&str] = &[
     "metric_prefixes",
     "binary_prefixes",
     "aliases",
+    "name",
+    "url",
     // procedures
     "print(",
     "assert_eq(",
+    "assert(",
     "type(",
 ];

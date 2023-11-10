@@ -251,6 +251,7 @@ impl Cli {
         rl.set_helper(Some(NumbatHelper {
             completer: NumbatCompleter {
                 context: self.context.clone(),
+                modules: self.context.lock().unwrap().list_modules().collect(),
             },
             highlighter: NumbatHighlighter {
                 context: self.context.clone(),

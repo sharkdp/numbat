@@ -1,4 +1,5 @@
 use crate::markup::Markup;
+use crate::prefix_parser::AcceptsPrefix;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, Registry, RegistryError};
 use crate::typed_ast::Type;
 use crate::unit::Unit;
@@ -17,9 +18,11 @@ pub type Result<T> = std::result::Result<T, UnitRegistryError>;
 pub struct UnitMetadata {
     pub type_: Type,
     pub readable_type: Markup,
-    pub aliases: Vec<String>,
+    pub aliases: Vec<(String, AcceptsPrefix)>,
     pub name: Option<String>,
     pub url: Option<String>,
+    pub binary_prefixes: bool,
+    pub metric_prefixes: bool,
 }
 
 #[derive(Clone)]

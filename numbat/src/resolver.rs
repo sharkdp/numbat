@@ -7,7 +7,7 @@ use crate::{
 use codespan_reporting::files::SimpleFiles;
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ModulePath(pub Vec<String>);
 
 impl std::fmt::Display for ModulePath {
@@ -128,6 +128,10 @@ impl Resolver {
 
         self.inlining_pass(&statements)
     }
+
+    pub fn get_importer(&self) -> &dyn ModuleImporter {
+        self.importer.as_ref()
+    }
 }
 
 #[cfg(test)]
@@ -155,6 +159,10 @@ mod tests {
                 ModulePath(p) if p == &["cycle_b"] => Some(("use cycle_a".into(), None)),
                 _ => None,
             }
+        }
+
+        fn list_modules(&self) -> Vec<ModulePath> {
+            unimplemented!()
         }
     }
 

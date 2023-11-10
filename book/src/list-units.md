@@ -7,8 +7,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 
 | Dimension | Unit name | Identifier(s) |
 | --- | --- | --- |
-| `AbsorbedDose` | [Gray](https://en.wikipedia.org/wiki/Gray_(unit)) | `Gy`, `gray`, `grays` |
-| `Activity` | [Becquerel](https://en.wikipedia.org/wiki/Becquerel) | `Bq`, `becquerel`, `becquerels` |
+| `AbsorbedDose` | [Gray](https://en.wikipedia.org/wiki/Gray_(unit)) | `gray`, `grays`, `Gy` |
+| `Activity` | [Becquerel](https://en.wikipedia.org/wiki/Becquerel) | `becquerel`, `becquerels`, `Bq` |
 | `AmountOfSubstance` | [Mole](https://en.wikipedia.org/wiki/Mole_(unit)) | `mol`, `mole`, `moles` |
 | `Angle` | [Minute of arc](https://en.wikipedia.org/wiki/Minute_and_second_of_arc) | `arcmin`, `arcminute`, `arcminutes` |
 | `Angle` | [Second of arc](https://en.wikipedia.org/wiki/Minute_and_second_of_arc) | `arcsec`, `arcsecond`, `arcseconds` |
@@ -26,7 +26,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `CatalyticActivity` | [Katal](https://en.wikipedia.org/wiki/Katal) | `kat`, `katal`, `katals` |
 | `Current` | [Ampere](https://en.wikipedia.org/wiki/Ampere) | `A`, `ampere`, `amperes` |
 | `DigitalInformation` | [Bit](https://en.wikipedia.org/wiki/Bit) | `bit`, `bits` |
-| `DigitalInformation` | [Byte](https://en.wikipedia.org/wiki/Byte) | `B`, `Byte`, `Bytes`, `Octet`, `Octets`, `byte`, `bytes`, `octet`, `octets` |
+| `DigitalInformation` | [Byte](https://en.wikipedia.org/wiki/Byte) | `B`, `byte`, `Byte`, `bytes`, `Bytes`, `octet`, `Octet`, `octets`, `Octets` |
 | `DigitalInformation / Time` | [Bits per second](https://en.wikipedia.org/wiki/Bit_per_second) | `bps` |
 | `Dot` | [Dot](https://en.wikipedia.org/wiki/Dots_per_inch) | `dot`, `dots` |
 | `Dot / Length` | [Dots per inch](https://en.wikipedia.org/wiki/Dots_per_inch) | `dpi` |
@@ -36,13 +36,13 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `ElectricResistance` | [Ohm](https://en.wikipedia.org/wiki/Ohm) | `ohm`, `ohms`, `Ω` |
 | `Energy` | [British thermal unit](https://en.wikipedia.org/wiki/British_thermal_unit) | `BTU`, `Btu` |
 | `Energy` | [Calorie](https://en.wikipedia.org/wiki/Calorie) | `cal`, `calorie`, `calories` |
-| `Energy` | [Electronvolt](https://en.wikipedia.org/wiki/Electronvolt) | `eV`, `electronvolt`, `electronvolts` |
+| `Energy` | [Electronvolt](https://en.wikipedia.org/wiki/Electronvolt) | `electronvolt`, `electronvolts`, `eV` |
 | `Energy` | [Erg](https://en.wikipedia.org/wiki/Erg) | `erg`, `ergs` |
 | `Energy` | [Hartree](https://en.wikipedia.org/wiki/Hartree) | `hartree`, `hartrees` |
 | `Energy` | [Joule](https://en.wikipedia.org/wiki/Joule) | `J`, `joule`, `joules` |
 | `Energy` | [Planck energy](https://en.wikipedia.org/wiki/Planck_energy) | `planck_energy` |
-| `Energy` | [Watt-hour](https://en.wikipedia.org/wiki/Watt_hour) | `Wh`, `watthour` |
-| `EquivalentDose` | [Sievert](https://en.wikipedia.org/wiki/Sievert) | `Sv`, `sievert`, `sieverts` |
+| `Energy` | [Watt-hour](https://en.wikipedia.org/wiki/Watt_hour) | `watthour`, `Wh` |
+| `EquivalentDose` | [Sievert](https://en.wikipedia.org/wiki/Sievert) | `sievert`, `sieverts`, `Sv` |
 | `Force` | [Dyne](https://en.wikipedia.org/wiki/Dyne) | `dyn`, `dyne` |
 | `Force` | [Kilogram-force](https://en.wikipedia.org/wiki/Kilogram-force) | `kgf`, `kilogram_force` |
 | `Force` | [Newton](https://en.wikipedia.org/wiki/Newton_(unit)) | `N`, `newton`, `newtons` |
@@ -51,14 +51,14 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Force / Volume` | [Mercury](https://en.wikipedia.org/wiki/Mercury_(element)) | `Hg` |
 | `Frame` | [Frame](https://en.wikipedia.org/wiki/Frame_rate) | `frame`, `frames` |
 | `Frame / Time` | [Frames per second](https://en.wikipedia.org/wiki/Frame_rate) | `fps` |
-| `Frequency` | [Hertz](https://en.wikipedia.org/wiki/Hertz) | `Hz`, `hertz` |
-| `Frequency` | [Revolutions per minute](https://en.wikipedia.org/wiki/Revolutions_per_minute) | `RPM`, `rpm` |
+| `Frequency` | [Hertz](https://en.wikipedia.org/wiki/Hertz) | `hertz`, `Hz` |
+| `Frequency` | [Revolutions per minute](https://en.wikipedia.org/wiki/Revolutions_per_minute) | `rpm`, `RPM` |
 | `Illuminance` | [Foot-candle](https://en.wikipedia.org/wiki/Foot-candle) | `fc`, `footcandle`, `footcandles` |
 | `Illuminance` | [Lux](https://en.wikipedia.org/wiki/Lux) | `lux`, `lx` |
 | `Inductance` | [Henry](https://en.wikipedia.org/wiki/Henry_(unit)) | `H`, `henries`, `henry`, `henrys` |
 | `KinematicViscosity` | [Stokes](https://en.wikipedia.org/wiki/Stokes_(unit)) | `St`, `stokes` |
 | `Length` | [Ångström](https://en.wikipedia.org/wiki/Angstrom) | `angstrom`, `angstroms`, `Å` |
-| `Length` | [Astronomical unit](https://en.wikipedia.org/wiki/Astronomical_unit) | `AU`, `astronomicalunit`, `astronomicalunits`, `au` |
+| `Length` | [Astronomical unit](https://en.wikipedia.org/wiki/Astronomical_unit) | `astronomicalunit`, `astronomicalunits`, `au`, `AU` |
 | `Length` | [Bohr](https://en.wikipedia.org/wiki/Hartree_atomic_units) | `bohr` |
 | `Length` | [Fathom](https://en.wikipedia.org/wiki/Fathom) | `fathom`, `fathoms` |
 | `Length` | [Fermi](https://en.wikipedia.org/wiki/Femtometre) | `fermi` |
@@ -70,7 +70,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Length` | [Metre](https://en.wikipedia.org/wiki/Metre) | `m`, `meter`, `meters`, `metre`, `metres` |
 | `Length` | [Micron](https://en.wikipedia.org/wiki/Micrometre) | `micron` |
 | `Length` | [Mile](https://en.wikipedia.org/wiki/Mile) | `mi`, `mile`, `miles` |
-| `Length` | [Nautical Mile](https://en.wikipedia.org/wiki/Nautical_mile) | `NM`, `nautical_mile`, `nautical_miles`, `nmi` |
+| `Length` | [Nautical Mile](https://en.wikipedia.org/wiki/Nautical_mile) | `nautical_mile`, `nautical_miles`, `NM`, `nmi` |
 | `Length` | [Parsec](https://en.wikipedia.org/wiki/Parsec) | `parsec`, `parsecs`, `pc` |
 | `Length` | [Planck length](https://en.wikipedia.org/wiki/Planck_length) | `planck_length` |
 | `Length` | [US rod](https://en.wikipedia.org/wiki/Rod_(unit)) | `perch`, `rod`, `rods` |
@@ -82,7 +82,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `LuminousFlux` | [Lumen](https://en.wikipedia.org/wiki/Lumen_(unit)) | `lm`, `lumen`, `lumens` |
 | `LuminousIntensity` | [Candela](https://en.wikipedia.org/wiki/Candela) | `candela`, `candelas`, `cd` |
 | `MagneticFieldStrength` | [Oersted](https://en.wikipedia.org/wiki/Oersted) | `Oe`, `oersted` |
-| `MagneticFlux` | [Maxwell](https://en.wikipedia.org/wiki/Maxwell_(unit)) | `Mx`, `maxwell` |
+| `MagneticFlux` | [Maxwell](https://en.wikipedia.org/wiki/Maxwell_(unit)) | `maxwell`, `Mx` |
 | `MagneticFlux` | [Weber](https://en.wikipedia.org/wiki/Weber_(unit)) | `Wb`, `weber`, `webers` |
 | `MagneticFluxDensity` | [Gauss](https://en.wikipedia.org/wiki/Gauss_(unit)) | `gauss` |
 | `MagneticFluxDensity` | [Tesla](https://en.wikipedia.org/wiki/Tesla_(unit)) | `T`, `tesla`, `teslas` |
@@ -101,33 +101,33 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Molality` | [Molal](https://en.wikipedia.org/wiki/Molality) | `molal` |
 | `Molarity` | [Molar](https://en.wikipedia.org/wiki/Molar_concentration) | `molar` |
 | `Money` | [Australian dollar](https://en.wikipedia.org/wiki/Australian_dollar) | `A$`, `AUD`, `australian_dollar`, `australian_dollars` |
-| `Money` | [Brazilian real](https://en.wikipedia.org/wiki/Brazilian_real) | `BRL`, `R$`, `brazilian_real`, `brazilian_reals` |
-| `Money` | [Pound sterling](https://en.wikipedia.org/wiki/Pound_sterling) | `GBP`, `british_pound`, `pound_sterling`, `£` |
+| `Money` | [Brazilian real](https://en.wikipedia.org/wiki/Brazilian_real) | `brazilian_real`, `brazilian_reals`, `BRL`, `R$` |
+| `Money` | [Pound sterling](https://en.wikipedia.org/wiki/Pound_sterling) | `british_pound`, `GBP`, `pound_sterling`, `£` |
 | `Money` | [Bulgarian lev](https://en.wikipedia.org/wiki/Bulgarian_lev) | `BGN`, `bulgarian_lev`, `bulgarian_leva` |
 | `Money` | [Canadian dollar](https://en.wikipedia.org/wiki/Canadian_dollar) | `C$`, `CAD`, `canadian_dollar`, `canadian_dollars` |
-| `Money` | [Czech koruna](https://en.wikipedia.org/wiki/Czech_koruna) | `CZK`, `Kč`, `czech_koruna`, `czech_korunas` |
-| `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `DKK`, `danish_krone`, `danish_kroner` |
-| `Money` | [US dollar](https://en.wikipedia.org/wiki/United_States_dollar) | `$`, `USD`, `dollar`, `dollars` |
+| `Money` | [Czech koruna](https://en.wikipedia.org/wiki/Czech_koruna) | `czech_koruna`, `czech_korunas`, `CZK`, `Kč` |
+| `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `danish_krone`, `danish_kroner`, `DKK` |
+| `Money` | [US dollar](https://en.wikipedia.org/wiki/United_States_dollar) | `$`, `dollar`, `dollars`, `USD` |
 | `Money` | [Euro](https://en.wikipedia.org/wiki/Euro) | `EUR`, `euro`, `euros`, `€` |
 | `Money` | [Hong Kong dollar](https://en.wikipedia.org/wiki/Hong_Kong_dollar) | `HK$`, `HKD`, `hong_kong_dollar`, `hong_kong_dollars` |
 | `Money` | [Hungarian forint](https://en.wikipedia.org/wiki/Hungarian_forint) | `Ft`, `HUF`, `hungarian_forint`, `hungarian_forints` |
-| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `ISK`, `icelandic_krona`, `icelandic_kronur`, `icelandic_króna`, `icelandic_krónur` |
-| `Money` | [Indian rupee](https://en.wikipedia.org/wiki/Indian_rupee) | `INR`, `indian_rupee`, `indian_rupees`, `₹` |
-| `Money` | [Indonesian rupiah](https://en.wikipedia.org/wiki/Indonesian_rupiah) | `IDR`, `Rp`, `indonesian_rupiah`, `indonesian_rupiahs` |
-| `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `ILS`, `NIS`, `israeli_new_shekel`, `israeli_new_shekels`, `₪` |
-| `Money` | [Malaysian ringgit](https://en.wikipedia.org/wiki/Malaysian_ringgit) | `MYR`, `RM`, `malaysian_ringgit`, `malaysian_ringgits` |
-| `Money` | [New Zealand dollar](https://en.wikipedia.org/wiki/New_Zealand_dollar) | `NZ$`, `NZD`, `new_zealand_dollar`, `new_zealand_dollars` |
+| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `icelandic_krona`, `icelandic_kronur`, `icelandic_króna`, `icelandic_krónur`, `ISK` |
+| `Money` | [Indian rupee](https://en.wikipedia.org/wiki/Indian_rupee) | `indian_rupee`, `indian_rupees`, `INR`, `₹` |
+| `Money` | [Indonesian rupiah](https://en.wikipedia.org/wiki/Indonesian_rupiah) | `IDR`, `indonesian_rupiah`, `indonesian_rupiahs`, `Rp` |
+| `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `ILS`, `israeli_new_shekel`, `israeli_new_shekels`, `NIS`, `₪` |
+| `Money` | [Malaysian ringgit](https://en.wikipedia.org/wiki/Malaysian_ringgit) | `malaysian_ringgit`, `malaysian_ringgits`, `MYR`, `RM` |
+| `Money` | [New Zealand dollar](https://en.wikipedia.org/wiki/New_Zealand_dollar) | `new_zealand_dollar`, `new_zealand_dollars`, `NZ$`, `NZD` |
 | `Money` | [Norwegian krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `norwegian_krone`, `norwegian_kroner` |
-| `Money` | [Philippine peso](https://en.wikipedia.org/wiki/Philippine_peso) | `PHP`, `philippine_peso`, `philippine_pesos`, `₱` |
+| `Money` | [Philippine peso](https://en.wikipedia.org/wiki/Philippine_peso) | `philippine_peso`, `philippine_pesos`, `PHP`, `₱` |
 | `Money` | [Polish złoty](https://en.wikipedia.org/wiki/Polish_złoty) | `PLN`, `polish_zloty`, `polish_zlotys`, `zł` |
 | `Money` | [Chinese yuan](https://en.wikipedia.org/wiki/Renminbi) | `CNY`, `renminbi`, `元` |
-| `Money` | [Romanian leu](https://en.wikipedia.org/wiki/Romanian_leu) | `RON`, `lei`, `romanian_leu`, `romanian_leus` |
+| `Money` | [Romanian leu](https://en.wikipedia.org/wiki/Romanian_leu) | `lei`, `romanian_leu`, `romanian_leus`, `RON` |
 | `Money` | [Singapore dollar](https://en.wikipedia.org/wiki/Singapore_dollar) | `S$`, `SGD`, `singapore_dollar`, `singapore_dollars` |
-| `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `ZAR`, `south_african_rand` |
+| `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `south_african_rand`, `ZAR` |
 | `Money` | [South Korean won](https://en.wikipedia.org/wiki/South_Korean_won) | `KRW`, `south_korean_won`, `south_korean_wons`, `₩` |
 | `Money` | [Swedish krona](https://en.wikipedia.org/wiki/Swedish_krona) | `SEK`, `swedish_krona`, `swedish_kronor` |
 | `Money` | [Swiss franc](https://en.wikipedia.org/wiki/Swiss_franc) | `CHF`, `swiss_franc`, `swiss_francs` |
-| `Money` | [Thai baht](https://en.wikipedia.org/wiki/Thai_baht) | `THB`, `thai_baht`, `thai_bahts`, `฿` |
+| `Money` | [Thai baht](https://en.wikipedia.org/wiki/Thai_baht) | `thai_baht`, `thai_bahts`, `THB`, `฿` |
 | `Money` | [Turkish lira](https://en.wikipedia.org/wiki/Turkish_lira) | `TRY`, `turkish_lira`, `turkish_liras`, `₺` |
 | `Money` | [Japanese yen](https://en.wikipedia.org/wiki/Japanese_yen) | `JPY`, `yen`, `yens`, `¥`, `円` |
 | `Person` | Person | `capita`, `people`, `person`, `persons` |
@@ -141,7 +141,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Pressure` | [Inch of mercury](https://en.wikipedia.org/wiki/Inch_of_mercury) | `inHg` |
 | `Pressure` | [Millimeter of mercury](https://en.wikipedia.org/wiki/Millimeter_of_mercury) | `mmHg` |
 | `Pressure` | [Pascal](https://en.wikipedia.org/wiki/Pascal_(unit)) | `Pa`, `pascal`, `pascals` |
-| `Pressure` | [Pound-force per square inch](https://en.wikipedia.org/wiki/Pounds_per_square_inch) | `PSI`, `psi` |
+| `Pressure` | [Pound-force per square inch](https://en.wikipedia.org/wiki/Pounds_per_square_inch) | `psi`, `PSI` |
 | `Pressure` | [Torr](https://en.wikipedia.org/wiki/Torr) | `torr` |
 | `Scalar` | [Billion](https://en.wikipedia.org/wiki/Billion) | `billion` |
 | `Scalar` | dozen | `dozen` |
@@ -183,7 +183,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Volume` | [US fluid ounce](https://en.wikipedia.org/wiki/Fluid_ounce) | `floz`, `fluidounce`, `fluidounces` |
 | `Volume` | [US liquid gallon](https://en.wikipedia.org/wiki/Gallon) | `gal`, `gallon`, `gallons` |
 | `Volume` | [US hogshead](https://en.wikipedia.org/wiki/Hogshead) | `hogshead`, `hogsheads` |
-| `Volume` | [Litre](https://en.wikipedia.org/wiki/Litre) | `L`, `l`, `liter`, `liters`, `litre`, `litres` |
+| `Volume` | [Litre](https://en.wikipedia.org/wiki/Litre) | `l`, `L`, `liter`, `liters`, `litre`, `litres` |
 | `Volume` | [US liquid pint](https://en.wikipedia.org/wiki/Pint) | `pint`, `pints` |
 | `Volume` | [Swimming pool](https://en.wikipedia.org/wiki/Olympic-size_swimming_pool) | `swimmingpool` |
 | `Volume` | [US tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `tablespoon`, `tablespoons`, `tbsp` |
