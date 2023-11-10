@@ -147,6 +147,8 @@ mod tests {
         @aliases(m: short)
         unit meter : Length
 
+        unit alternative_length_base_unit: Length # maybe this should be disallowed
+
         @aliases(s: short)
         unit second : Time
 
@@ -217,6 +219,22 @@ mod tests {
         assert_evaluates_to_scalar("+2 * 3", 2.0 * 3.0);
         assert_evaluates_to_scalar("2 * +3", 2.0 * 3.0);
         assert_evaluates_to_scalar("+2 - +3", 2.0 - 3.0);
+    }
+
+    #[test]
+    fn comparisons() {
+        assert_evaluates_to_scalar("if 2 meter > 150 cm then 1 else 0", 1.0);
+
+        assert_runtime_error(
+            "1 meter > alternative_length_base_unit",
+            RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
+                Unit::new_base("meter", "m"),
+                Unit::new_base(
+                    "alternative_length_base_unit",
+                    "alternative_length_base_unit",
+                ),
+            )),
+        );
     }
 
     #[test]

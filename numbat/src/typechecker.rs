@@ -1490,6 +1490,17 @@ mod tests {
     }
 
     #[test]
+    fn converisons() {
+        assert_successful_typecheck("2 a > a");
+        assert_successful_typecheck("2 a / (3 a) > 3");
+
+        assert!(matches!(
+            get_typecheck_error("a > b"),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
+    }
+
+    #[test]
     fn variable_definitions() {
         assert_successful_typecheck(
             "let x: A = a
