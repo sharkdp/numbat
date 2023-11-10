@@ -99,7 +99,7 @@ impl Numbat {
                     output.push_str("\n");
                 }
 
-                let result_markup = result.to_markup(statements.last(), &registry);
+                let result_markup = result.to_markup(statements.last(), &registry, true);
                 output.push_str(&fmt.format(&result_markup, true));
 
                 InterpreterOutput {
