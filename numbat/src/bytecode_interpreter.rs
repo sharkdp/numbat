@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::ProcedureKind;
+use crate::decorator::Decorator;
 use crate::interpreter::{
     Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
 };
@@ -247,8 +248,7 @@ impl BytecodeInterpreter {
             }
             Statement::DefineBaseUnit(unit_name, decorators, readable_type, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
-                    .map(|(name, _)| name)
-                    .cloned()
+                    .map(|(name, ap)| (name.clone(), ap))
                     .collect();
 
                 self.vm
@@ -261,6 +261,8 @@ impl BytecodeInterpreter {
                             aliases,
                             name: decorator::name(decorators),
                             url: decorator::url(decorators),
+                            binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
+                            metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
                         },
                     )
                     .map_err(RuntimeError::UnitRegistryError)?;
@@ -276,8 +278,7 @@ impl BytecodeInterpreter {
             }
             Statement::DefineDerivedUnit(unit_name, expr, decorators, readable_type, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
-                    .map(|(name, _)| name)
-                    .cloned()
+                    .map(|(name, ap)| (name.clone(), ap))
                     .collect();
 
                 let constant_idx = self
@@ -295,6 +296,8 @@ impl BytecodeInterpreter {
                         aliases,
                         name: decorator::name(decorators),
                         url: decorator::url(decorators),
+                        binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
+                        metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
                     },
                 ); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 

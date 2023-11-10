@@ -14,9 +14,8 @@ fn main() {
         .sorted_by_key(|(u, (_, m))| (m.readable_type.to_string(), u.to_lowercase()))
     {
         let mut names = unit_metadata.aliases;
-        names.sort_by_key(|n| n.to_lowercase());
-        names.sort();
-        let names = names.join("`, `");
+        names.sort_by_key(|(n, _)| n.to_lowercase());
+        let names = names.iter().map(|(n, _)| n).join("`, `");
 
         let url = unit_metadata.url;
         let name = unit_metadata.name.unwrap_or(unit_name.clone());

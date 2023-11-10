@@ -831,6 +831,7 @@ dependencies = [
  "thiserror",
  "unicode-ident",
  "unicode-width",
+ "walkdir",
 ]
 
 [[package]]

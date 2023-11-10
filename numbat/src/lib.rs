@@ -175,6 +175,18 @@ impl Context {
     }
 
     pub fn get_completions_for<'a>(&self, word_part: &'a str) -> impl Iterator<Item = String> + 'a {
+        const COMMON_METRIC_PREFIXES: &[&str] = &[
+            "pico", "nano", "micro", "milli", "centi", "kilo", "mega", "giga", "tera",
+        ];
+
+        let metric_prefixes: Vec<_> = COMMON_METRIC_PREFIXES
+            .iter()
+            .filter(|prefix| {
+                word_part.starts_with(*prefix)
+                    || (!word_part.is_empty() && prefix.starts_with(word_part))
+            })
+            .collect();
+
         let mut words: Vec<_> = KEYWORDS.iter().map(|k| k.to_string()).collect();
 
         {
@@ -190,9 +202,20 @@ impl Context {
                 words.push(dimension.clone());
             }
 
-            for unit_names in self.unit_names() {
-                for unit in unit_names {
+            for (_, (_, meta)) in self.unit_representations() {
+                for (unit, accepts_prefix) in meta.aliases {
                     words.push(unit.clone());
+
+                    // Add some of the common long prefixes for units that accept them.
+                    // We do not add all possible prefixes here in order to keep the
+                    // number of completions to a reasonable size. Also, we do not add
+                    // short prefixes for units that accept them, as that leads to lots
+                    // and lots of 2-3 character words.
+                    if accepts_prefix.long && meta.metric_prefixes {
+                        for prefix in &metric_prefixes {
+                            words.push(format!("{prefix}{unit}"));
+                        }
+                    }
                 }
             }
         }
@@ -201,6 +224,11 @@ impl Context {
         words.dedup();
 
         words.into_iter().filter(move |w| w.starts_with(word_part))
+    }
+
+    pub fn list_modules(&self) -> impl Iterator<Item = String> {
+        let modules = self.resolver.get_importer().list_modules();
+        modules.into_iter().map(|m| m.0.join("::"))
     }
 
     pub fn dimension_registry(&self) -> &DimensionRegistry {

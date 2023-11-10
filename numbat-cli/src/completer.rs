@@ -8,6 +8,7 @@ use rustyline::{
 
 pub struct NumbatCompleter {
     pub context: Arc<Mutex<Context>>,
+    pub modules: Vec<String>,
 }
 
 impl Completer for NumbatCompleter {
@@ -19,6 +20,23 @@ impl Completer for NumbatCompleter {
         pos: usize,
         _: &rustyline::Context<'_>,
     ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
+        if line.starts_with("use ") {
+            return Ok((
+                0,
+                self.modules
+                    .iter()
+                    .map(|m| {
+                        let line = format!("use {m}");
+                        Pair {
+                            display: m.to_string(),
+                            replacement: line,
+                        }
+                    })
+                    .filter(|p| p.replacement.starts_with(line))
+                    .collect(),
+            ));
+        }
+
         let (pos_word, word_part) = extract_word(line, pos, None, |c| {
             // TODO: we could use is_identifier_char here potentially
             match c {
