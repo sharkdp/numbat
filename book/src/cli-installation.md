@@ -75,6 +75,14 @@ You can install the [numbat](https://scoop.sh/#/apps?q=numbat) package using [sc
 ``` bash
 scoop install main/numbat
 ```
+## From pre-built binaries
+
+Download the latest release for your system from [this page](https://github.com/sharkdp/numbat/releases). Unpack
+the archive and place the `numbat`/`numbat.exe` binary in a folder that is on your `PATH`.
+
+Note that the `modules` folder that is included in the archives is not strictly required to run Numbat. It serves more
+as a reference for interested users. However, if you want to get the best possible experience or if you are
+a package maintainer, please follow [these guidelines](./cli-installation.md#guidelines-for-package-maintainers).
 
 ## From source
 
