@@ -1,6 +1,7 @@
 mod arithmetic;
 mod ast;
 mod bytecode_interpreter;
+mod column_formatter;
 mod currency;
 mod decorator;
 pub mod diagnostic;
@@ -35,12 +36,14 @@ pub mod value;
 mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
+use column_formatter::ColumnFormatter;
 use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
 use interpreter::Interpreter;
 use keywords::KEYWORDS;
 use markup as m;
+use markup::FormatType;
 use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
@@ -84,6 +87,7 @@ pub struct Context {
     interpreter: BytecodeInterpreter,
     resolver: Resolver,
     load_currency_module_on_demand: bool,
+    terminal_width: Option<usize>,
 }
 
 impl Context {
@@ -94,6 +98,7 @@ impl Context {
             interpreter: BytecodeInterpreter::new(),
             resolver: Resolver::new(module_importer),
             load_currency_module_on_demand: false,
+            terminal_width: None,
         }
     }
 
@@ -146,32 +151,43 @@ impl Context {
 
         let mut output = m::empty();
 
-        output += m::text("List of functions:") + m::nl();
-        for function in functions {
-            output += m::whitespace("  ") + m::identifier(function) + m::nl();
-        }
-        output += m::nl();
+        output += m::emphasized("List of functions:") + m::nl();
+        output += self.print_functions() + m::nl();
 
-        output += m::text("List of dimensions:") + m::nl();
-        for dimension in dimensions {
-            output += m::whitespace("  ") + m::type_identifier(dimension) + m::nl();
-        }
-        output += m::nl();
+        output += m::emphasized("List of dimensions:") + m::nl();
+        output += self.print_dimensions() + m::nl();
 
-        output += m::text("List of units:") + m::nl();
-        for unit_names in units {
-            output += m::whitespace("  ")
-                + itertools::intersperse(unit_names.iter().map(m::unit), m::text(", ")).sum()
-                + m::nl();
-        }
-        output += m::nl();
+        output += m::emphasized("List of units:") + m::nl();
+        output += self.print_units() + m::nl();
 
-        output += m::text("List of variables:") + m::nl();
-        for variable in variables {
-            output += m::whitespace("  ") + m::identifier(variable) + m::nl();
-        }
+        output += m::emphasized("List of variables:") + m::nl();
+        output += self.print_variables() + m::nl();
 
         output
+    }
+
+    fn print_sorted(&self, mut entries: Vec<String>, format_type: FormatType) -> Markup {
+        entries.sort_by_key(|e| e.to_lowercase());
+
+        let formatter = ColumnFormatter::new(self.terminal_width.unwrap_or(80));
+        formatter.format(entries, format_type)
+    }
+
+    pub fn print_functions(&self) -> Markup {
+        self.print_sorted(self.function_names().into(), FormatType::Identifier)
+    }
+
+    pub fn print_dimensions(&self) -> Markup {
+        self.print_sorted(self.dimension_names().into(), FormatType::TypeIdentifier)
+    }
+
+    pub fn print_variables(&self) -> Markup {
+        self.print_sorted(self.variable_names().into(), FormatType::Identifier)
+    }
+
+    pub fn print_units(&self) -> Markup {
+        let units = self.unit_names().iter().flatten().cloned().collect();
+        self.print_sorted(units, FormatType::Unit)
     }
 
     pub fn get_completions_for<'a>(&self, word_part: &'a str) -> impl Iterator<Item = String> + 'a {
@@ -531,5 +547,9 @@ impl Context {
         for diagnostic in error.diagnostics() {
             term::emit(&mut writer, &config, &self.resolver.files, &diagnostic).unwrap();
         }
+    }
+
+    pub fn set_terminal_width(&mut self, width: Option<usize>) {
+        self.terminal_width = width;
     }
 }

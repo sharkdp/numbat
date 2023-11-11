@@ -87,6 +87,10 @@ p.links a {
     color: #888 !important;
 }
 
+.hl-emphasized {
+    font-weight: bold;
+}
+
 .hl-string {
     color: #59f78d !important;
 }

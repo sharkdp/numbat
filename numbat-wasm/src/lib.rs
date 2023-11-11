@@ -53,6 +53,7 @@ impl Numbat {
     pub fn new() -> Self {
         let mut ctx = Context::new(BuiltinModuleImporter::default());
         let _ = ctx.interpret("use prelude", CodeSource::Internal).unwrap();
+        ctx.set_terminal_width(Some(84)); // terminal width with current layout
         Numbat { ctx }
     }
 
@@ -64,12 +65,15 @@ impl Numbat {
             .unwrap();
     }
 
+    fn jq_format(&self, markup: &numbat::markup::Markup, indent: bool) -> String {
+        let fmt = JqueryTerminalFormatter {};
+        fmt.format(&markup, indent).into()
+    }
+
     pub fn interpret(&mut self, code: &str) -> InterpreterOutput {
         let mut output = String::new();
 
         let registry = self.ctx.dimension_registry().clone();
-
-        let fmt = JqueryTerminalFormatter {};
 
         let to_be_printed: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
         let to_be_printed_c = to_be_printed.clone();
@@ -87,7 +91,7 @@ impl Numbat {
                 // Pretty print
                 output.push_str("\n");
                 for statement in &statements {
-                    output.push_str(&fmt.format(&statement.pretty_print(), true));
+                    output.push_str(&self.jq_format(&statement.pretty_print(), true));
                     output.push_str("\n");
                 }
                 output.push_str("\n");
@@ -95,12 +99,12 @@ impl Numbat {
                 // print(…) and type(…) results
                 let to_be_printed = to_be_printed.lock().unwrap();
                 for content in to_be_printed.iter() {
-                    output.push_str(&fmt.format(content, true));
+                    output.push_str(&self.jq_format(content, true));
                     output.push_str("\n");
                 }
 
                 let result_markup = result.to_markup(statements.last(), &registry, true);
-                output.push_str(&fmt.format(&result_markup, true));
+                output.push_str(&self.jq_format(&result_markup, true));
 
                 InterpreterOutput {
                     output,
@@ -118,15 +122,27 @@ impl Numbat {
     }
 
     pub fn print_environment(&self) -> JsValue {
-        let markup = self.ctx.print_environment();
-        let fmt = JqueryTerminalFormatter {};
-        fmt.format(&markup, false).into()
+        self.jq_format(&self.ctx.print_environment(), false).into()
+    }
+
+    pub fn print_functions(&self) -> JsValue {
+        self.jq_format(&self.ctx.print_functions(), false).into()
+    }
+
+    pub fn print_dimensions(&self) -> JsValue {
+        self.jq_format(&self.ctx.print_dimensions(), false).into()
+    }
+
+    pub fn print_variables(&self) -> JsValue {
+        self.jq_format(&self.ctx.print_variables(), false).into()
+    }
+
+    pub fn print_units(&self) -> JsValue {
+        self.jq_format(&self.ctx.print_units(), false).into()
     }
 
     pub fn help(&self) -> JsValue {
-        let markup = help_markup();
-        let fmt = JqueryTerminalFormatter {};
-        fmt.format(&markup, true).into()
+        self.jq_format(&help_markup(), true).into()
     }
 
     pub fn get_completions_for(&self, input: &str) -> Vec<JsValue> {

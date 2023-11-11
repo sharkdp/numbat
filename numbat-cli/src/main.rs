@@ -152,6 +152,10 @@ impl Cli {
         let mut context = Context::new(importer);
         context.set_debug(args.debug);
 
+        context.set_terminal_width(
+            terminal_size::terminal_size().map(|(terminal_size::Width(w), _)| w as usize),
+        );
+
         Ok(Self {
             context: Arc::new(Mutex::new(context)),
             config,
@@ -310,10 +314,46 @@ impl Cli {
 
                         match line.trim() {
                             "list" | "ls" => {
-                                let ctx = self.context.lock().unwrap();
-
-                                let markup = ctx.print_environment();
-                                println!("{}", ansi_format(&markup, false));
+                                println!(
+                                    "{}",
+                                    ansi_format(
+                                        &self.context.lock().unwrap().print_environment(),
+                                        false
+                                    )
+                                );
+                            }
+                            "list functions" | "ls functions" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(
+                                        &self.context.lock().unwrap().print_functions(),
+                                        false
+                                    )
+                                );
+                            }
+                            "list dimensions" | "ls dimensions" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(
+                                        &self.context.lock().unwrap().print_dimensions(),
+                                        false
+                                    )
+                                );
+                            }
+                            "list variables" | "ls variables" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(
+                                        &self.context.lock().unwrap().print_variables(),
+                                        false
+                                    )
+                                );
+                            }
+                            "list units" | "ls units" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(&self.context.lock().unwrap().print_units(), false)
+                                );
                             }
                             "clear" => {
                                 rl.clear_screen()?;

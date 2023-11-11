@@ -848,6 +848,7 @@ dependencies = [
  "predicates",
  "rustyline",
  "serde",
+ "terminal_size",
  "toml",
 ]
 
