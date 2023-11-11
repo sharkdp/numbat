@@ -35,6 +35,27 @@ impl Completer for NumbatCompleter {
                     .filter(|p| p.replacement.starts_with(line))
                     .collect(),
             ));
+        } else if line.starts_with("list ") || line.starts_with("ls ") {
+            let command = if line.starts_with("list ") {
+                "list"
+            } else {
+                "ls"
+            };
+
+            return Ok((
+                0,
+                ["functions", "dimensions", "units", "variables"]
+                    .iter()
+                    .map(|category| {
+                        let line = format!("{command} {category}");
+                        Pair {
+                            display: category.to_string(),
+                            replacement: line,
+                        }
+                    })
+                    .filter(|p| p.replacement.starts_with(line))
+                    .collect(),
+            ));
         }
 
         let (pos_word, word_part) = extract_word(line, pos, None, |c| {

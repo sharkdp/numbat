@@ -27,6 +27,7 @@ impl Formatter for JqueryTerminalFormatter {
     ) -> String {
         let css_class = match format_type {
             FormatType::Whitespace => None,
+            FormatType::Emphasized => Some("emphasized"),
             FormatType::Dimmed => Some("dimmed"),
             FormatType::Text => None,
             FormatType::String => Some("string"),

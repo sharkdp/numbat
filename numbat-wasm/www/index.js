@@ -53,6 +53,14 @@ function interpret(input) {
     this.clear();
   } else if (input_trimmed == "list" || input_trimmed == "ls") {
     output = numbat.print_environment();
+  } else if (input_trimmed == "list functions" || input_trimmed == "ls functions") {
+    output = numbat.print_functions();
+  } else if (input_trimmed == "list dimensions" || input_trimmed == "ls dimensions") {
+    output = numbat.print_dimensions();
+} else if (input_trimmed == "list variables" || input_trimmed == "ls variables") {
+    output = numbat.print_variables();
+} else if (input_trimmed == "list units" || input_trimmed == "ls units") {
+    output = numbat.print_units();
   } else if (input_trimmed == "help" || input_trimmed == "?") {
     output = numbat.help();
   } else {

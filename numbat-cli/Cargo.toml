@@ -21,6 +21,7 @@ colored = "2"
 itertools = "0.11"
 toml = { version = "0.8.6", features = ["parse"] }
 serde = { version = "1.0.190", features = ["derive"] }
+terminal_size = "0.3.0"
 
 [dependencies.clap]
 version = "4"
