@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use unicode_width::UnicodeWidthStr;
 
 use crate::markup as m;
@@ -6,48 +5,90 @@ use crate::markup::{FormatType, FormattedString, Markup, OutputType};
 
 pub struct ColumnFormatter {
     terminal_width: usize,
-    min_padding: usize,
+    padding: usize,
 }
 
 impl ColumnFormatter {
     pub fn new(terminal_width: usize) -> Self {
         Self {
             terminal_width,
-            min_padding: 2,
+            padding: 2,
         }
     }
 
     pub fn format<S: AsRef<str>>(
         &self,
-        entries: impl IntoIterator<Item = S> + Clone,
+        entries: impl IntoIterator<Item = S>,
         format: FormatType,
     ) -> Markup {
         let mut result = m::empty();
 
-        if let Some(max_entry_width) = entries
-            .clone()
+        let entries: Vec<_> = entries
             .into_iter()
-            .map(|s| s.as_ref().width())
-            .max()
-        {
-            let column_width = max_entry_width + self.min_padding as usize;
-            let columns_per_row = (self.terminal_width as usize / column_width).max(1);
+            .map(|s| s.as_ref().to_string())
+            .collect();
 
-            for row_entries in &entries.into_iter().chunks(columns_per_row) {
-                for entry in row_entries {
-                    let width = entry.as_ref().width();
-                    let whitespace_length = column_width - width;
+        if let Some(max_entry_width) = entries.iter().map(|s| s.width()).max() {
+            let column_width = max_entry_width + self.padding as usize;
+            let min_num_columns = self.terminal_width as usize / column_width;
 
+            if min_num_columns < 1 {
+                for entry in entries {
                     result += Markup::from(FormattedString(
                         OutputType::Normal,
                         format.clone(),
-                        entry.as_ref().into(),
-                    ));
-                    result += m::whitespace(" ".repeat(whitespace_length));
+                        entry.into(),
+                    )) + m::whitespace(" ".repeat(self.padding));
                 }
-                result += m::nl();
+                return result;
             }
 
+            for num_columns in min_num_columns..=self.terminal_width {
+                let num_rows = entries.len().div_ceil(num_columns);
+
+                let mut table: Vec<Vec<Option<&str>>> = vec![vec![None; num_columns]; num_rows];
+                for (idx, entry) in entries.iter().enumerate() {
+                    let row = idx % num_rows;
+                    let col = idx / num_rows;
+
+                    table[row][col] = Some(entry);
+                }
+
+                let column_widths: Vec<usize> = (0..num_columns)
+                    .map(|c| {
+                        (0..num_rows)
+                            .map(|r| table[r][c].map(|e| e.width()).unwrap_or(0))
+                            .max()
+                            .unwrap_or(0)
+                            + self.padding
+                    })
+                    .collect();
+
+                if column_widths.iter().sum::<usize>() > self.terminal_width {
+                    // Return result from previous iteration
+                    return result;
+                }
+                result = m::empty();
+
+                for row in table {
+                    for (col, entry) in row.iter().enumerate() {
+                        if let Some(entry) = entry {
+                            let width = entry.width();
+                            let whitespace_length = column_widths[col] - width;
+
+                            result += Markup::from(FormattedString(
+                                OutputType::Normal,
+                                format.clone(),
+                                (*entry).into(),
+                            ));
+                            result += m::whitespace(" ".repeat(whitespace_length));
+                        } else {
+                            break;
+                        }
+                    }
+                    result += m::nl();
+                }
+            }
             result
         } else {
             result
@@ -70,24 +111,24 @@ fn test_column_formatter() {
     {
         let elements = &["one", "two", "three", "four", "five", "six", "seven"];
 
-        assert_snapshot!(format(80, elements), @"one    two    three  four   five   six    seven  ");
+        assert_snapshot!(format(80, elements), @r###"
+        one  two  three  four  five  six  seven  
+        "###);
 
         assert_snapshot!(format(42, elements), @r###"
-        one    two    three  four   five   six    
-        seven  
+        one  two  three  four  five  six  seven  
         "###);
 
         assert_snapshot!(format(21, elements), @r###"
-        one    two    three  
-        four   five   six    
-        seven  
+        one    four  seven  
+        two    five  
+        three  six   
         "###);
 
         assert_snapshot!(format(20, elements), @r###"
-        one    two    
-        three  four   
-        five   six    
-        seven  
+        one    four  seven  
+        two    five  
+        three  six   
         "###);
 
         assert_snapshot!(format(10, elements), @r###"
@@ -100,14 +141,15 @@ fn test_column_formatter() {
         seven  
         "###);
 
-        assert_snapshot!(format(4, elements), @r###"
-        one    
-        two    
-        three  
-        four   
-        five   
-        six    
-        seven  
-        "###);
+        assert_snapshot!(format(4, elements), @"one  two  three  four  five  six  seven  ");
     }
+
+    assert_snapshot!(format(80, &["one"]), @"one");
+
+    assert_snapshot!(format(80, &[]), @"");
+
+    assert_snapshot!(format(12, &["aaaa", "bbbb", "cccc", "dddd"]), @r###"
+    aaaa  cccc  
+    bbbb  dddd  
+    "###);
 }
