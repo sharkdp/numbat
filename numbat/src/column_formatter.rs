@@ -3,6 +3,9 @@ use unicode_width::UnicodeWidthStr;
 use crate::markup as m;
 use crate::markup::{FormatType, FormattedString, Markup, OutputType};
 
+/// Do not show tables wider than this for readabilty reasons
+const MAX_WIDTH: usize = 160;
+
 pub struct ColumnFormatter {
     terminal_width: usize,
     padding: usize,
@@ -11,7 +14,7 @@ pub struct ColumnFormatter {
 impl ColumnFormatter {
     pub fn new(terminal_width: usize) -> Self {
         Self {
-            terminal_width,
+            terminal_width: terminal_width.min(MAX_WIDTH),
             padding: 2,
         }
     }
@@ -44,7 +47,9 @@ impl ColumnFormatter {
             }
 
             for num_columns in min_num_columns..=self.terminal_width {
-                let num_rows = entries.len().div_ceil(num_columns);
+                // TODO: once we have Rust 1.73, use the div_ceil implementation:
+                // let num_rows = entries.len().div_ceil(num_columns);
+                let num_rows = (entries.len() + num_columns - 1) / num_columns;
 
                 let mut table: Vec<Vec<Option<&str>>> = vec![vec![None; num_columns]; num_rows];
                 for (idx, entry) in entries.iter().enumerate() {
