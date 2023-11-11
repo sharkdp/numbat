@@ -25,6 +25,7 @@ There is a set of special commands that only work in the web version:
 | Command | Action |
 |---------|--------|
 | `list`, `ls` | List all constants, units, and dimensions |
+| `list <what>` | Where `<what>` can be `functions`, `dimensions`, `variables`, `units` |
 | `help`, `?` | View short help text |
 | `reset` | Reset state (clear constants, functions, units, …) |
 | `clear` | Clear screen |
