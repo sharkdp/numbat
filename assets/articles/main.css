@@ -11,7 +11,9 @@ body {
     color: #111;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
     font-family: 'Lator', sans-serif;
     color: #3e454c;
 }
@@ -97,6 +99,10 @@ code {
     color: #27a85f !important;
 }
 
+.ace_decorator {
+    color: #27a85f !important;
+}
+
 .numbat-string {
     color: #27a85f;
 }
@@ -127,21 +133,23 @@ code {
 
 /* hide cursor when editor is not in focus */
 .ace_hidden-cursors {
-  opacity:0
+    opacity: 0
 }
 
-.ace_mobile-menu { display: none !important }
+.ace_mobile-menu {
+    display: none !important
+}
 
 @media only screen and (max-width: 600px) {
-  body {
-    font-size: 17px;
-  }
+    body {
+        font-size: 17px;
+    }
 
-  p {
-      text-align: left;
-  }
+    p {
+        text-align: left;
+    }
 
-  code {
-    white-space: normal;
-  }
+    code {
+        white-space: normal;
+    }
 }
