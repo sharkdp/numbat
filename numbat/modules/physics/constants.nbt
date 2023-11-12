@@ -73,3 +73,10 @@ let R = gas_constant
 # Bohr radius
 let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
 let a0 = bohr_radius
+
+# Rydberg constant
+let rydberg_constant: Wavenumber = (electron_mass electron_charge^4) / (8 ε0^2 ℎ^3 c)
+
+@name("Rydberg unit of energy")
+@url("https://en.wikipedia.org/wiki/Rydberg_constant")
+unit Ry: Energy = ℎ c × rydberg_constant
