@@ -56,6 +56,7 @@ impl Number {
                 .max_significant_digits(6)
                 .add_point_zero(false)
                 .lower_e_break(-6)
+                .upper_e_break(6)
                 .round();
 
             let formatted_number = dtoa(number, config);
@@ -127,6 +128,7 @@ fn test_pretty_print() {
     assert_eq!(Number::from_f64(1.).pretty_print(), "1");
     assert_eq!(Number::from_f64(100.).pretty_print(), "100");
     assert_eq!(Number::from_f64(1.234).pretty_print(), "1.234");
+    assert_eq!(Number::from_f64(12345.6).pretty_print(), "12345.6");
     assert_eq!(Number::from_f64(1.234e50).pretty_print(), "1.234e+50");
     assert_eq!(Number::from_f64(-1.234e50).pretty_print(), "-1.234e+50");
     assert_eq!(Number::from_f64(1.234e-50).pretty_print(), "1.234e-50");
