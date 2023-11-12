@@ -100,10 +100,23 @@ impl ErrorDiagnostic for TypeCheckError {
                 span_operation,
                 span_actual,
                 actual_type,
+                actual_dimensions,
                 span_expected,
                 expected_type,
+                expected_dimensions,
                 ..
             }) => {
+                let expected_type = if expected_dimensions.is_empty() {
+                    format!("{expected_type}")
+                } else {
+                    expected_dimensions.join(" or ")
+                };
+                let actual_type = if actual_dimensions.is_empty() {
+                    format!("{actual_type}")
+                } else {
+                    actual_dimensions.join(" or ")
+                };
+
                 let labels = vec![
                     span_expected
                         .diagnostic_label(LabelStyle::Primary)
