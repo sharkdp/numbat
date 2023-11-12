@@ -18,7 +18,7 @@
 
     Numbat therefore has a static type system where <em>physical dimensions</em> act as types.
     The expression <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span></code>, for example, has a <em>type</em> of <code class="numbat-type-identifier">Time</code>.
-    The expression <code><span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> also has a type of <code class="numbat-type-identifier">Time</code>.
+    Similarly, the expression <code><span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> also has a type of <code class="numbat-type-identifier">Time</code>.
     The compound expression <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span> + <span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> is therefore well-typed:
     </p>
 
@@ -31,11 +31,11 @@
     </p>
 
     <p>
-    Before we describe the type system in more detail, let's look at two simple examples. The first program
+    Before we describe the type system in more detail, let's look at three simple examples. The first program
     computes the oscillation period of a (mathematical) pendulum using the gravitational acceleration
     <code>g0</code>.
     Note that you can change the unit of the pendulum length to, say, <code span="numbat-unit">inch</code> without
-    having to change the type annotations. This is in contrast to most physical-computation libraries in other
+    having to change the type annotations. This is in contrast to a lot of unit libraries in other
     programming languages that typically lift <em>units</em> &mdash; not the physical dimensions &mdash; to the type level.
 
     Also, note that you can completely remove the explicit <code><span class="ace_operator">:</span> <span class="numbat-type-identifier">Type</span></code> annotations and let the compiler infer the types:
@@ -51,7 +51,7 @@ t_oscillation</div>
 
     <p>The second example demonstrates how explicit type annotations
     can help avoid mistakes. We want to compute the ratio of gravitational forces exerted on Earth by both the Sun and the Moon.
-    However, the computation contains a mistake. Try to annotate the definitions of <code>force_sun</code> and <code>force_moon</code> with the intended dimension of <span class="numbat-type-identifier">Force</span>
+    However, the computation contains a mistake. Try to annotate the definitions of <code>force_sun</code> and <code>force_moon</code> with the intended <span class="numbat-type-identifier">Force</span> dimension
     and see if the compiler error can help you fix the <a href="https://en.wikipedia.org/wiki/Newton%27s_law_of_universal_gravitation">equations</a>.
     The correct result should be closer to <code class="numbat-value">180</code>.
     </p>
@@ -67,21 +67,29 @@ force_sun / force_moon</div>
 
     <div class="spacer"></div>
 
+    <p>
+    The next example demonstrates how you can define custom dimensions and units. This
+    is often useful when you want to count things (people, atoms, pixels, or in this case: drops).
+    We want to compute the required IV drip rate for an infusion of 1200&nbsp;mL of saline solution
+    over 6&nbsp;hours. Even if it might look like overkill in this simple example, note how the
+    introduction of a new unit not just helps with correctness, but also with readability:
+    </p>
 
-    <!-- <p> -->
-    <!-- The second example demonstrates how you can use the <code class="ace_keyword">dimension</code> keyword to -->
-    <!-- introduce new types. And how function parameters and return types are specified. -->
-    <!-- </p> -->
+    <div id="editor4" class="code-editor">dimension DropCount
+dimension DripRate = DropCount / Time
 
-    <!-- <div id="editor4" class="code-editor">dimension BMI = Mass / Length² -->
+unit drops: DropCount
 
-<!-- fn body_mass_index(mass: Mass, height: Length) -> BMI = -->
-  <!-- round(mass / height² -> kg / m²) -->
+let saline_volume = 1200 mL
+let drop_factor = 15 drops / mL
+let total_time = 6 hours
 
-<!-- body_mass_index(69 kg, 1.65 m) -->
-<!-- # body_mass_index(170 lbs, 5 ft + 4 in)</div> -->
-    <!-- <pre id="output4" class="numbat-output"></pre> -->
+let iv_drip_rate = saline_volume * drop_factor / total_time
 
+iv_drip_rate -> drops / min</div>
+    <pre id="output4" class="numbat-output"></pre>
+
+    <div class="spacer"></div>
 
 
 </article>
@@ -95,4 +103,3 @@ force_sun / force_moon</div>
     <script type="module" src="index.js"></script>
 </body>
 </html>
-
