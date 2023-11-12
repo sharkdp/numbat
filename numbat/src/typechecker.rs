@@ -66,7 +66,7 @@ fn suggested_fix(
     let delta_type = expected_type.clone() / actual_type.clone();
 
     let num_factors = delta_type.iter().count();
-    if num_factors > 2 {
+    if num_factors > 1 {
         return None; // Do not suggest fixes with complicated dimensions
     }
 
