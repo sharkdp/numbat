@@ -3,25 +3,23 @@ use numbat::markup::{FormatType, FormattedString, Formatter};
 
 use termcolor::{Color, WriteColor};
 
-pub struct JqueryTerminalFormatter;
+pub struct HtmlFormatter;
 
-pub fn jt_format(class: Option<&str>, content: &str) -> String {
+pub fn html_format(class: Option<&str>, content: &str) -> String {
     if content.is_empty() {
         return "".into();
     }
 
-    let content = html_escape::encode_text(content)
-        .replace("[", "&#91;")
-        .replace("]", "&#93;");
+    let content = html_escape::encode_text(content);
 
     if let Some(class) = class {
-        format!("[[;;;hl-{class}]{content}]")
+        format!("<span class=\"numbat-{class}\">{content}</span>")
     } else {
         content.into()
     }
 }
 
-impl Formatter for JqueryTerminalFormatter {
+impl Formatter for HtmlFormatter {
     fn format_part(
         &self,
         FormattedString(_output_type, format_type, s): &FormattedString,
@@ -40,47 +38,50 @@ impl Formatter for JqueryTerminalFormatter {
             FormatType::Operator => Some("operator"),
             FormatType::Decorator => Some("decorator"),
         };
-        jt_format(css_class, s)
+        html_format(css_class, s)
     }
 }
 
-pub struct JqueryTerminalWriter {
+pub struct HtmlWriter {
     buffer: Vec<u8>,
     color: Option<termcolor::ColorSpec>,
 }
 
-impl JqueryTerminalWriter {
+impl HtmlWriter {
     pub fn new() -> Self {
-        JqueryTerminalWriter {
+        HtmlWriter {
             buffer: vec![],
             color: None,
         }
     }
 }
 
-impl BufferedWriter for JqueryTerminalWriter {
+impl BufferedWriter for HtmlWriter {
     fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.buffer).into()
     }
 }
 
-impl std::io::Write for JqueryTerminalWriter {
+impl std::io::Write for HtmlWriter {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         if let Some(color) = &self.color {
             if color.fg() == Some(&Color::Red) {
-                self.buffer.write("[[;;;hl-diagnostic-red]".as_bytes())?;
+                self.buffer
+                    .write("<span class=\"numbat-diagnostic-red\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("]".as_bytes())?;
+                self.buffer.write("</span>".as_bytes())?;
                 Ok(size)
             } else if color.fg() == Some(&Color::Blue) {
-                self.buffer.write("[[;;;hl-diagnostic-blue]".as_bytes())?;
+                self.buffer
+                    .write("<span class=\"numbat-diagnostic-blue\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("]".as_bytes())?;
+                self.buffer.write("</span>".as_bytes())?;
                 Ok(size)
             } else if color.bold() {
-                self.buffer.write("[[;;;hl-diagnostic-bold]".as_bytes())?;
+                self.buffer
+                    .write("<span class=\"numbat-diagnostic-bold\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("]".as_bytes())?;
+                self.buffer.write("</span>".as_bytes())?;
                 Ok(size)
             } else {
                 self.buffer.write(buf)
@@ -95,7 +96,7 @@ impl std::io::Write for JqueryTerminalWriter {
     }
 }
 
-impl WriteColor for JqueryTerminalWriter {
+impl WriteColor for HtmlWriter {
     fn supports_color(&self) -> bool {
         true
     }

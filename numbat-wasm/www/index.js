@@ -1,4 +1,4 @@
-import { setup_panic_hook, Numbat } from "numbat-wasm";
+import { setup_panic_hook, Numbat, FormatType } from "numbat-wasm";
 
 async function fetch_exchange_rates() {
   try {
@@ -16,9 +16,13 @@ async function fetch_exchange_rates() {
   }
 }
 
+function create_numbat_instance() {
+    return Numbat.new(true, FormatType.JqueryTerminal);
+}
+
 setup_panic_hook();
 
-var numbat = Numbat.new();
+var numbat = create_numbat_instance();
 var combined_input = "";
 
 // Load KeyboardEvent polyfill for old browsers
@@ -46,7 +50,7 @@ function interpret(input) {
     this.clear();
     var output = "";
   } else if (input_trimmed == "reset") {
-    numbat = Numbat.new();
+    numbat = create_numbat_instance();
     numbat.interpret("use units::currencies");
     combined_input = "";
     updateUrlQuery(null);
