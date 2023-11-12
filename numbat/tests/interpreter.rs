@@ -237,8 +237,6 @@ fn test_incompatible_dimension_errors() {
         @r###"
      left hand side: Length  × Mass × Time⁻²    [= Force]
     right hand side: Length² × Mass             [= MomentOfInertia]
-
-    Suggested fix: divide the expression on the right hand side by a `Length × Time²` factor
     "###
     );
 
