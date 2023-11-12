@@ -60,3 +60,4 @@ Colloquial:
 | Planck temperature | `planck_temperature` | `Temperature` |
 | Planck energy | `planck_energy` | `Energy` |
 | Bohr radius | `bohr_radius`, `a0` | `Length` |
+| Rydberg constant | `rydberg_constant` | `Wavenumber` |
