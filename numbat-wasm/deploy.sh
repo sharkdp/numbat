@@ -9,13 +9,7 @@ if [[ "$current_branch" != "master" ]]; then
     exit 1
 fi
 
-wasm-pack build --features=wee_alloc
-
-(
-    cd www/
-    rm -rf dist/
-    npm run build
-)
+bash build.sh
 
 rsync --archive --stats --progress --human-readable -r www/ shark.fish:numbat.dev/
 rsync --archive --stats --progress --human-readable -r www/dist/ shark.fish:numbat.dev/
