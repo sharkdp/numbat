@@ -389,10 +389,33 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct TypeParameter {
+    function_name: String,
+    user_facing_name: String,
+}
+
+impl TypeParameter {
+    fn new(function_name: String, user_facing_name: String) -> Self {
+        Self {
+            function_name,
+            user_facing_name,
+        }
+    }
+
+    fn name_internal(&self) -> String {
+        format!(
+            "{user_facing_name}{{{function_name}}}",
+            user_facing_name = self.user_facing_name,
+            function_name = self.function_name
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
 struct FunctionSignature {
     definition_span: Span,
-    type_parameters: Vec<(Span, String)>,
+    type_parameters: Vec<(Span, TypeParameter)>,
     parameter_types: Vec<(Span, Type)>,
     is_variadic: bool,
     return_type: Type,
@@ -665,19 +688,28 @@ impl TypeChecker {
                     }
                 }
 
+                dbg!("===");
+                dbg!(function_name);
+
                 for (idx, ((parameter_span, parameter_type), argument_type)) in
                     parameter_types.iter().zip(argument_types).enumerate()
                 {
                     match (parameter_type, argument_type) {
                         (Type::Dimension(parameter_type), Type::Dimension(argument_type)) => {
+                            dbg!(&parameter_type);
+                            dbg!(&argument_type);
                             let mut parameter_type = substitute(&substitutions, parameter_type);
+                            dbg!(&parameter_type);
 
                             let remaining_generic_subtypes: Vec<_> = parameter_type
                                 .iter()
                                 .filter(|BaseRepresentationFactor(name, _)| {
-                                    type_parameters.iter().any(|(_, n)| name == n)
+                                    type_parameters.iter().any(|(_, n)| {
+                                        format!("{name}{{{function_name}}}") == n.name_internal()
+                                    })
                                 })
                                 .collect();
+                            dbg!(&remaining_generic_subtypes);
 
                             if remaining_generic_subtypes.len() > 1 {
                                 return Err(TypeCheckError::MultipleUnresolvedTypeParameters(
@@ -753,14 +785,18 @@ impl TypeChecker {
                     }
                 }
 
+                dbg!(&substitutions);
+                dbg!(&type_parameters);
                 if substitutions.len() != type_parameters.len() {
-                    let parameters: HashSet<String> = type_parameters
+                    let parameters: HashSet<TypeParameter> = type_parameters
                         .iter()
                         .map(|(_, name)| name)
                         .cloned()
                         .collect();
-                    let inferred_parameters: HashSet<String> =
-                        substitutions.iter().map(|t| t.0.clone()).collect();
+                    let inferred_parameters: HashSet<TypeParameter> = substitutions
+                        .iter()
+                        .map(|(name, _)| TypeParameter::new(function_name.clone(), name.clone()))
+                        .collect();
 
                     let remaining: Vec<_> = (&parameters - &inferred_parameters)
                         .iter()
@@ -771,12 +807,15 @@ impl TypeChecker {
                         *span,
                         *definition_span,
                         function_name.clone(),
-                        remaining.join(", "),
+                        remaining
+                            .iter()
+                            .map(|tp| tp.user_facing_name.clone())
+                            .join(", "),
                     ));
                 }
 
                 let return_type = match return_type {
-                    Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
+                    Type::Dimension(d) => Type::Dimension(substitute(&substitutions, &d)),
                     type_ => type_.clone(),
                 };
 
@@ -1043,10 +1082,23 @@ impl TypeChecker {
 
                 let mut typechecker_fn = self.clone();
                 let is_ffi_function = body.is_none();
-                let mut type_parameters = type_parameters.clone();
+                let mut type_parameters: Vec<(Span, TypeParameter)> = type_parameters
+                    .iter()
+                    .map(|(span, n)| {
+                        (
+                            span.clone(),
+                            TypeParameter::new(function_name.clone(), n.clone()),
+                        )
+                    })
+                    .collect();
+
+                // dbg!(&type_parameters);
 
                 for (span, type_parameter) in &type_parameters {
-                    match typechecker_fn.registry.add_base_dimension(type_parameter) {
+                    match typechecker_fn
+                        .registry
+                        .add_base_dimension(&type_parameter.user_facing_name)
+                    {
                         Err(RegistryError::EntryExists(name)) => {
                             return Err(TypeCheckError::TypeParameterNameClash(*span, name))
                         }
@@ -1067,13 +1119,7 @@ impl TypeChecker {
                             function_name.clone(),
                         ));
                     } else {
-                        let mut free_type_parameter = "".into();
-                        for i in 0.. {
-                            free_type_parameter = format!("T{i}");
-                            if !typechecker_fn.registry.contains(&free_type_parameter) {
-                                break;
-                            }
-                        }
+                        let free_type_parameter = typechecker_fn.get_free_type_parameter_name();
 
                         free_type_parameters.push((parameter.clone(), free_type_parameter.clone()));
 
@@ -1081,7 +1127,10 @@ impl TypeChecker {
                             .registry
                             .add_base_dimension(&free_type_parameter)
                             .expect("we selected a name that is free");
-                        type_parameters.push((*parameter_span, free_type_parameter.clone()));
+                        type_parameters.push((
+                            *parameter_span,
+                            TypeParameter::new(function_name.clone(), free_type_parameter.clone()),
+                        ));
                         Type::Dimension(
                             typechecker_fn
                                 .registry
@@ -1228,7 +1277,7 @@ impl TypeChecker {
                     function_name.clone(),
                     type_parameters
                         .iter()
-                        .map(|(_, name)| name.clone())
+                        .map(|(_, tp)| tp.name_internal())
                         .collect(),
                     typed_parameters,
                     body_checked,
@@ -1350,6 +1399,17 @@ impl TypeChecker {
         })
     }
 
+    fn get_free_type_parameter_name(&self) -> String {
+        let mut free_type_parameter = "".into();
+        for i in 0.. {
+            free_type_parameter = format!("T{i}");
+            if !self.registry.contains(&free_type_parameter) {
+                break;
+            }
+        }
+        free_type_parameter
+    }
+
     pub fn check_statements(
         &mut self,
         statements: impl IntoIterator<Item = ast::Statement>,
@@ -1393,7 +1453,9 @@ mod tests {
     dimension C = A * B
     unit a: A
     unit b: B
-    unit c: C = a * b";
+    unit c: C = a * b
+    
+    fn atan2<T>(x: T, y: T) -> Scalar";
 
     fn base_type(name: &str) -> BaseRepresentation {
         BaseRepresentation::from_factor(BaseRepresentationFactor(
@@ -1610,6 +1672,11 @@ mod tests {
             fn f<D0, D1>(x: D0, y: D1) -> D0/D1^2 = x/y^2
             f(2, 3)
             f(2 a, 2 b)
+            ",
+        );
+        assert_successful_typecheck(
+            "
+            fn f3<T>(y: T, x: T) = atan2(y, x)
             ",
         );
 
