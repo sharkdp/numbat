@@ -98,8 +98,8 @@ impl Resolver {
             match statement {
                 Statement::ModuleImport(span, module_path) => {
                     if !self.imported_modules.contains(module_path) {
-                        self.imported_modules.push(module_path.clone());
                         if let Some((code, filesystem_path)) = self.importer.import(module_path) {
+                            self.imported_modules.push(module_path.clone());
                             let code_source_id = self.add_code_source(
                                 CodeSource::Module(module_path.clone(), filesystem_path),
                                 &code,
