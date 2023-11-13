@@ -58,6 +58,10 @@ struct Args {
     )]
     expression: Option<Vec<String>>,
 
+    /// Do not load the user configuration file.
+    #[arg(long)]
+    no_config: bool,
+
     /// Do not load the prelude with predefined physical dimensions and units. This implies --no-init.
     #[arg(long)]
     no_prelude: bool,
@@ -81,10 +85,6 @@ struct Args {
     /// Generate a default configuration file
     #[arg(long)]
     generate_config: bool,
-
-    /// Do not load the user configuration file (hidden, mainly for testing purposes)
-    #[arg(long, hide = true)]
-    no_config: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
