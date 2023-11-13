@@ -37,7 +37,7 @@ Refer to your [package manager for details](./cli-installation.html#guidelines-f
 
 ### Configuration
 
-Numbats configuration file is called `config.toml`, and it needs to be placed in
+Numbat's configuration file is called `config.toml`, and it needs to be placed in
 `<config-path>` described above (`~/.config/numbat/config.toml` on Linux). You
 can generate a default configuration by calling
 
