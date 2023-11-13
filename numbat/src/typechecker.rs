@@ -280,6 +280,9 @@ pub enum TypeCheckError {
     #[error("Incompatible types in comparison operator")]
     IncompatibleTypesInComparison(Span, Type, Span, Type, Span),
 
+    #[error("Incompatible types in function call")]
+    IncompatibleTypesInFunctionCall(Span, Type, Span, Type),
+
     #[error("This name is already used by {0}")]
     NameAlreadyUsedBy(&'static str, Span, Option<Span>),
 }
@@ -739,7 +742,12 @@ impl TypeChecker {
                         }
                         (parameter_type, argument_type) => {
                             if parameter_type != &argument_type {
-                                todo!()
+                                return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                                    *parameter_span,
+                                    parameter_type.clone(),
+                                    args[idx].full_span(),
+                                    argument_type.clone(),
+                                ));
                             }
                         }
                     }
