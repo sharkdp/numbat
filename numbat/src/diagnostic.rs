@@ -311,6 +311,21 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message(format!("Incompatible types in {what}")),
             ]),
+            TypeCheckError::IncompatibleTypesInFunctionCall(
+                parameter_span,
+                parameter_type,
+                argument_span,
+                argument_type,
+            ) => d
+                .with_labels(vec![
+                    parameter_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(parameter_type.to_string()),
+                    argument_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(argument_type.to_string()),
+                ])
+                .with_notes(vec![inner_error]),
             TypeCheckError::NameAlreadyUsedBy(_, definition_span, previous_definition_span) => {
                 let mut labels = vec![];
 
