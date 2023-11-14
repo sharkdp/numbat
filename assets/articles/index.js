@@ -9,16 +9,26 @@ async function main() {
 
   setup_panic_hook();
 
-  for (var i = 1; i <= 4; i++) {
+  const num_editors = 7;
+  for (var i = 1; i <= num_editors; i++) {
     setupEditor(i);
+  }
+
+  // Evaluate all editors once. Do this after initialization
+  // such that we can call ace.edit(…) internally without
+  // initializing an empty editor.
+  for (var i = 1; i <= num_editors; i++) {
+    numbatEvaluate(i);
   }
 }
 
 main();
 
-function interpret(input) {
-  var numbat = Numbat.new(false, FormatType.Html);
-  numbat.interpret("use extra::astronomy");
+function interpret(input, with_prelude) {
+  var numbat = Numbat.new(with_prelude, false, FormatType.Html);
+  if (with_prelude) {
+    numbat.interpret("use extra::astronomy");
+  }
 
   var result = numbat.interpret(input);
 
@@ -104,12 +114,26 @@ ace.define("ace/mode/numbat", function (require, exports, module) {
   exports.Mode = Mode;
 });
 
-function numbatEvaluate(editor, outputId) {
-  const code = editor.getValue();
+function getOutputId(id) {
+  return (id == 4 || id == 5) ? "output4and5" : "output" + id.toString();
+}
 
-  const result = interpret(code).replace(/\s*$/, "");
+function getCode(id) {
+  if (id == 4 || id == 5) {
+    return ace.edit("editor4").getValue() + "\n" + ace.edit("editor5").getValue();
+  } else {
+    return ace.edit("editor" + id.toString()).getValue();
+  }
+}
 
-  document.getElementById(outputId).innerHTML = result;
+function numbatEvaluate(id) {
+  const code = getCode(id);
+  const output_id = getOutputId(id);
+  const with_prelude = (id == 4 || id == 5) ? false : true;
+
+  const result = interpret(code, with_prelude).replace(/\s*$/, "");
+
+  document.getElementById(output_id).innerHTML = result;
 }
 
 function debounce(func, wait, immediate) {
@@ -129,7 +153,6 @@ function debounce(func, wait, immediate) {
 }
 
 function setupEditor(id) {
-  const output_id = "output" + id.toString();
   var editor = ace.edit("editor" + id.toString(), {
     mode: "ace/mode/numbat",
     showPrintMargin: false,
@@ -147,7 +170,7 @@ function setupEditor(id) {
   editor.session.selection.moveCursorTo(count - 1, lastLine.length);
 
   function evaluate() {
-    numbatEvaluate(editor, output_id);
+    numbatEvaluate(id);
   }
 
   var debouncedEvaluate = debounce(evaluate, 500);
@@ -158,10 +181,8 @@ function setupEditor(id) {
     name: "evaluateCode",
     bindKey: { win: "Ctrl-Enter", mac: "Command-Enter" },
     exec: function (editor) {
-      numbatEvaluate(editor, output_id);
+      numbatEvaluate(id);
     },
     readOnly: true,
   });
-
-  evaluate();
 }

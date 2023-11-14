@@ -16,7 +16,7 @@
     to perform computations with physical units.
     One of the main goals of the language is to help users write <em>correct</em> programs.
 
-    Numbat therefore has a static type system where <em>physical dimensions</em> act as types.
+    It has a static type system where <em>physical dimensions</em> act as types.
     The expression <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span></code>, for example, has a <em>type</em> of <code class="numbat-type-identifier">Time</code>.
     Similarly, the expression <code><span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> also has a type of <code class="numbat-type-identifier">Time</code>.
     The compound expression <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span> + <span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> is therefore well-typed:
@@ -31,7 +31,7 @@
     </p>
 
     <p>
-    Before we describe the type system in more detail, let's look at three simple examples. The first program
+    Before we describe the type system in more detail, let's look at two simple examples. The first program
     computes the oscillation period of a (mathematical) pendulum using the gravitational acceleration
     <code>g0</code>.
     Note that you can change the unit of the pendulum length to, say, <code span="numbat-unit">inch</code> without
@@ -68,14 +68,112 @@ force_sun / force_moon</div>
     <div class="spacer"></div>
 
     <p>
-    The next example demonstrates how you can define custom dimensions and units. This
+        A type in Numbat can be one of three things. It can be <code class="numbat-value">1</code> &mdash; which is a special type for dimensionless quantities, it can be a base dimension, or it can be an algebraic combination of other types.
+        We use the <code class="numbat-keyword">dimension</code> keyword to introduce new types. For example, this
+        is how basic physical dimensions from classical mechanics are defined in Numbats <a href="https://github.com/sharkdp/numbat/tree/master/numbat/modules">prelude</a>:
+    </p>
+
+    <div id="editor4" class="code-editor">dimension Length
+dimension Area = Length²
+
+dimension Time
+dimension Frequency = 1 / Time
+dimension Velocity = Length / Time
+dimension Acceleration = Length / Time²
+
+dimension Mass
+dimension Force = Mass × Acceleration
+dimension Pressure = Force / Area
+dimension Energy = Force × Length
+dimension Power = Energy / Time</div>
+
+    <p>
+        Note how the three base dimensions <em>length</em>, <em>time</em> and <em>mass</em> can be combined using multiplication, division and exponentiation. Now there is not a lot we can do with those types until we
+        introduce corresponding <em>units</em> to build quantities that inhibit those types:
+    </p>
+
+    <div id="editor5" class="code-editor">unit metre: Length
+unit second: Time
+unit kilogram: Mass  # in the real prelude, we properly handle prefixes
+
+unit hertz: Frequency = 1 / second
+unit newton: Force = kilogram metre / second²
+unit pascal: Pressure = newton / metre²
+unit joule: Energy = newton metre
+unit watt: Power = joule / second
+
+2 * newton + watt * second / metre</div>
+    <pre id="output4and5" class="numbat-output"></pre>
+
+    <p style="margin-bottom: 0">
+    Take a look at the last line. When the type checker encounters an expression like this, it infers
+    the overall type (<code class="numbat-type-identifier">Force</code>) by recursively walking the
+    syntax tree. Multiplication nodes are easy. We simply combine the types
+    in the same way that we combine the expressions:
+    </p>
+
+    <pre class="type-expr"><span class="numbat-keyword">type</span>(a * b) = <span class="numbat-keyword">type</span>(a) * <span class="numbat-keyword">type</span>(b)</pre>
+
+    <p style="margin-top: 0; margin-bottom: 0">
+    Division works analogously. However, addition is different. If the types
+    on both hand sides are the same, we return that type. If they are not, we raise a type check
+    error:
+    </p>
+
+    <pre class="type-expr"><span class="numbat-keyword">type</span>(a + b) =
+  <b>if</b> <span class="numbat-keyword">type</span>(a) == <span class="numbat-keyword">type</span>(b) {
+    <span class="numbat-keyword">type</span>(a)
+  } <b>else</b> {
+    error(<span class="numbat-string">"incompatible dimensions in addition …"</span>)
+  }</pre>
+
+    <p style="margin-top: 0; margin-bottom: 0">
+    Subtraction works the same way. Comparison operators like <code>==</code> or <code>&gt;</code> also work in a
+    similar way &mdash; can't compare apples and oranges &mdash; except that they return a boolean type. Finally, there is
+    exponentiation. And it turns out to be quite a bit more complicated.
+    </p>
+
+    <pre class="type-expr"><span class="numbat-keyword">type</span>(a ^ b) =
+  <b>if</b> <span class="numbat-keyword">type</span>(b) != <span class="numbat-value">1</span> {
+    error(<span class="numbat-string">"exponent needs to be dimensionless"</span>)
+  } <b>else</b> {
+      <b>if</b> <span class="numbat-keyword">type</span>(a) == <span class="numbat-value">1</span> {
+        <span class="numbat-value">1</span>
+      } <b>else</b> {
+        <span class="numbat-keyword">type</span>(a) ^ <span class="numbat-keyword">consteval</span>(b)
+      }
+  }</pre>
+
+    <p style="margin-top: 0">
+    First, the exponent <code>b</code> needs to be dimensionless. An expression like <code>(<span class="numbat-value">2</span> <span class="numbat-unit">m</span>)^(<span class="numbat-value">3</span> <span class="numbat-unit">kg</span>)</code> is not
+    meaningful. However, even then, there is a problem. The <em>type</em> of the compound expression <code>a ^ b</code> depends on the <em>value</em> of <code>b</code>. For example, the type of <code>(<span class="numbat-value">2</span> <span class="numbat-unit">m</span>)^<span class="numbat-value">3</span></code> is <code><span class="numbat-type-identifier">Length</span>^<span class="numbat-value">3</span></code>. So we need to evaluate the expression
+    <code>b</code> at <em>compile time</em> to determine the type of <code>a ^ b</code>. Numbat therefore has a special const-evaluation mode that can compute a subset of expressions as part of the type-checking phase.
+    Note that this is not a limitation in practice. Physical computations often have complicated expressions in the exponent,
+    but in those cases, the left-hand side (<code>a</code>) is always dimensionless and the overall type is simply <code class="numbat-value">1</code>. And when <code>a</code> is not dimensionless, the exponent expression is typically just a (rational) number.<br>
+    One interesting application of the exponentiation operator is the <code>sqrt</code> function that you
+    saw in the very first example. In Numbat, it can take dimensionful quantities. And it can be defined in this way:
+    </p>
+
+    <div id="editor6" class="code-editor">fn my_sqrt&lt;D&gt(x: D^2) -&gt; D = x^(1/2)
+
+my_sqrt(ℏ G / c^5)  # Planck time</div>
+    <pre id="output6" class="numbat-output"></pre>
+
+    <p>
+    Here, <code class="numbat-type-identifier">D</code> is a generic type parameter. It takes an argument of type
+    <code><span class="numbat-type-identifier">D</span>^2</code> and returns a <code class="numbat-type-identifier">D</code>.
+    In general, type inference for functions is <a href="https://github.com/sharkdp/numbat/issues/29">an interesting topic</a> for another day.
+    </p>
+
+    <p>
+    Our final example demonstrates how you can make use of custom dimensions and units. This
     is often useful when you want to count things (people, atoms, pixels, or in this case: drops).
-    We want to compute the required IV drip rate for an infusion of 1200&nbsp;mL of saline solution
+    Here, we want to compute the required IV drip rate for an infusion of 1200&nbsp;mL of saline solution
     over 6&nbsp;hours. Even if it might look like overkill in this simple example, note how the
     introduction of a new unit not just helps with correctness, but also with readability:
     </p>
 
-    <div id="editor4" class="code-editor">dimension DropCount
+    <div id="editor7" class="code-editor">dimension DropCount
 dimension DripRate = DropCount / Time
 
 unit drops: DropCount
@@ -87,15 +185,9 @@ let total_time = 6 hours
 let iv_drip_rate = saline_volume * drop_factor / total_time
 
 iv_drip_rate -> drops / min</div>
-    <pre id="output4" class="numbat-output"></pre>
+    <pre id="output7" class="numbat-output"></pre>
 
     <div class="spacer"></div>
-
-    <p>
-        Types in Numbat can be combined in various ways to produce new types. In its most general form, a type can be thought of as a product of base dimensions with
-        with rational exponents. For example, the type <code class="numbat-type-identifier">Energy</code> can be represented as
-        <code><span class="numbat-type-identifier">Mass</span>¹ × <span class="numbat-type-identifier">Length</span>² × <span class="numbat-type-identifier">Time</span>⁻²</code>.
-    </p>
 
 </article>
 
