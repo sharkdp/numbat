@@ -59,15 +59,15 @@ struct Args {
     expression: Option<Vec<String>>,
 
     /// Do not load the user configuration file.
-    #[arg(long)]
+    #[arg(long, hide_short_help = true)]
     no_config: bool,
 
     /// Do not load the prelude with predefined physical dimensions and units. This implies --no-init.
-    #[arg(long)]
+    #[arg(long, hide_short_help = true)]
     no_prelude: bool,
 
     /// Do not load the user init file.
-    #[arg(long)]
+    #[arg(long, hide_short_help = true)]
     no_init: bool,
 
     /// Whether or not to pretty-print every input expression.
@@ -78,13 +78,13 @@ struct Args {
     #[arg(long, value_name = "MODE")]
     intro_banner: Option<IntroBanner>,
 
+    /// Generate a default configuration file
+    #[arg(long, hide_short_help = true)]
+    generate_config: bool,
+
     /// Turn on debug mode and print disassembler output (hidden, mainly for development)
     #[arg(long, short, hide = true)]
     debug: bool,
-
-    /// Generate a default configuration file
-    #[arg(long)]
-    generate_config: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
