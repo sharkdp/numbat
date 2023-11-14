@@ -56,6 +56,16 @@ code {
     border: 1px solid #ddd;
 }
 
+.type-expr {
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.82em;
+    margin-top: 0em;
+    margin-bottom: 0;
+    padding: 1em;
+    overflow: auto;
+    display: block;
+}
+
 .numbat-output {
     font-family: 'Fira Mono', monospace;
     font-size: 0.82em;
