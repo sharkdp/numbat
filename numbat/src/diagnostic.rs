@@ -223,7 +223,7 @@ impl ErrorDiagnostic for TypeCheckError {
                         "The type parameter(s) {params} in this generic function"
                     )),
                 span.diagnostic_label(LabelStyle::Primary)
-                    .with_message("… could not be infered for this function call"),
+                    .with_message("… could not be inferred for this function call"),
             ]),
             TypeCheckError::MultipleUnresolvedTypeParameters(span, parameter_span) => d
                 .with_labels(vec![
