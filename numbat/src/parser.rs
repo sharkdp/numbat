@@ -251,10 +251,7 @@ impl<'a> Parser<'a> {
                 Ok(statement) => statements.push(statement),
                 Err(e) => {
                     errors.push(e);
-                    // skip all the tokens until we encounter a newline.
-                    while !matches!(self.peek().kind, TokenKind::Newline | TokenKind::Eof) {
-                        self.advance()
-                    }
+                    self.recover_from_error();
                 }
             }
 
@@ -273,12 +270,14 @@ impl<'a> Parser<'a> {
                         ),
                         span: self.peek().span,
                     });
+                    self.recover_from_error();
                 }
                 _ => {
                     errors.push(ParseError {
                         kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
                         span: self.peek().span,
                     });
+                    self.recover_from_error();
                 }
             }
         }
@@ -287,6 +286,14 @@ impl<'a> Parser<'a> {
             Ok(statements)
         } else {
             Err((statements, errors))
+        }
+    }
+
+    /// Must be called after encountering an error.
+    fn recover_from_error(&mut self) {
+        // Skip all the tokens until we encounter a newline or EoF.
+        while !matches!(self.peek().kind, TokenKind::Newline | TokenKind::Eof) {
+            self.advance()
         }
     }
 
@@ -2368,6 +2375,7 @@ mod tests {
             ParseErrorKind::UnterminatedStringInterpolation,
         );
     }
+
     #[test]
     fn accumulate_errors() {
         // error on the last character of a line
@@ -2415,6 +2423,15 @@ mod tests {
         Expected 'then' in if-then-else condition - ParseError { kind: ExpectedThen, span: Span { start: SourceCodePositition { byte: 18, line: 2, position: 18 }, end: SourceCodePositition { byte: 19, line: 2, position: 19 }, code_source_id: 0 } }
         Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 36, line: 3, position: 17 }, end: SourceCodePositition { byte: 40, line: 3, position: 21 }, code_source_id: 0 } }
         Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 63, line: 4, position: 17 }, end: SourceCodePositition { byte: 67, line: 4, position: 21 }, code_source_id: 0 } }
+        "###);
+
+        // #260
+        assert_snapshot!(snap_parse(
+            "x = 3"), @r###"
+        Successfully parsed:
+        Expression(Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 1, line: 1, position: 2 }, code_source_id: 0 }, "x"))
+        Errors encountered:
+        Trailing '=' sign. Use `let x = …` if you intended to define a new constant. - ParseError { kind: TrailingEqualSign("x"), span: Span { start: SourceCodePositition { byte: 2, line: 1, position: 3 }, end: SourceCodePositition { byte: 3, line: 1, position: 4 }, code_source_id: 0 } }
         "###);
     }
 }
