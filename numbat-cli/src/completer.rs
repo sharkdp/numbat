@@ -67,7 +67,14 @@ impl Completer for NumbatCompleter {
             }
         });
 
-        let candidates = self.context.lock().unwrap().get_completions_for(word_part);
+        // don't add an opening paren if we're completing after a reverse function call
+        let add_paren = !line[..pos].find("//").is_some();
+
+        let candidates = self
+            .context
+            .lock()
+            .unwrap()
+            .get_completions_for(word_part, add_paren);
 
         Ok((
             pos_word,
