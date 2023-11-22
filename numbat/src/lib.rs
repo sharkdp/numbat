@@ -190,7 +190,14 @@ impl Context {
         self.print_sorted(units, FormatType::Unit)
     }
 
-    pub fn get_completions_for<'a>(&self, word_part: &'a str) -> impl Iterator<Item = String> + 'a {
+    /// Gets completions for the given word_part
+    ///
+    /// If `add_paren` is true, then an opening paren will be added to the end of function names
+    pub fn get_completions_for<'a>(
+        &self,
+        word_part: &'a str,
+        add_paren: bool,
+    ) -> impl Iterator<Item = String> + 'a {
         const COMMON_METRIC_PREFIXES: &[&str] = &[
             "pico", "nano", "micro", "milli", "centi", "kilo", "mega", "giga", "tera",
         ];
@@ -211,7 +218,11 @@ impl Context {
             }
 
             for function in self.function_names() {
-                words.push(format!("{}(", function));
+                if add_paren {
+                    words.push(format!("{}(", function));
+                } else {
+                    words.push(format!("{}", function));
+                }
             }
 
             for dimension in self.dimension_names() {
