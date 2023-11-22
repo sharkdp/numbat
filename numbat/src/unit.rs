@@ -27,7 +27,7 @@ pub struct UnitIdentifier {
     kind: UnitKind,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BaseUnitAndFactor(pub Unit, pub Number);
 
 impl std::iter::Product for BaseUnitAndFactor {
@@ -40,6 +40,18 @@ impl std::iter::Product for BaseUnitAndFactor {
 impl UnitIdentifier {
     pub fn is_base(&self) -> bool {
         matches!(self.kind, UnitKind::Base)
+    }
+
+    pub fn unit_and_factor(&self) -> BaseUnitAndFactor {
+        match &self.kind {
+            UnitKind::Base => BaseUnitAndFactor(
+                Unit::new_base(&self.name, &self.canonical_name),
+                Number::from_f64(1.0),
+            ),
+            UnitKind::Derived(factor, defining_unit) => {
+                BaseUnitAndFactor(defining_unit.clone(), *factor)
+            }
+        }
     }
 
     pub fn base_unit_and_factor(&self) -> BaseUnitAndFactor {

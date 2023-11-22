@@ -370,6 +370,15 @@ impl Cli {
                                 println!();
                             }
                             _ => {
+                                if let Some(keyword) = line.strip_prefix("help") {
+                                    let help = self
+                                        .context
+                                        .lock()
+                                        .unwrap()
+                                        .print_help_for_keyword(keyword.trim());
+                                    println!("{}", ansi_format(&help, true));
+                                    continue;
+                                }
                                 let result = self.parse_and_evaluate(
                                     &line,
                                     CodeSource::Text,

@@ -10,7 +10,7 @@ type Result<T> = std::result::Result<T, NameResolutionError>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Transformer {
-    prefix_parser: PrefixParser,
+    pub prefix_parser: PrefixParser,
 
     pub variable_names: Vec<String>,
     pub function_names: Vec<String>,

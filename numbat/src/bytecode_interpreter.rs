@@ -359,6 +359,16 @@ impl BytecodeInterpreter {
     fn current_depth(&self) -> usize {
         self.locals.len() - 1
     }
+
+    pub fn get_defining_unit(&self, unit_name: &str) -> Option<&Unit> {
+        self.unit_name_to_constant_index
+            .get(unit_name)
+            .and_then(|idx| self.vm.constants.get(*idx as usize))
+            .and_then(|constant| match constant {
+                Constant::Unit(u) => Some(u),
+                _ => None,
+            })
+    }
 }
 
 impl Interpreter for BytecodeInterpreter {

@@ -64,7 +64,10 @@ pub use registry::BaseRepresentation;
 pub use registry::BaseRepresentationFactor;
 pub use typed_ast::Statement;
 pub use typed_ast::Type;
+use unit::BaseUnitAndFactor;
 use unit_registry::UnitMetadata;
+
+use crate::prefix_parser::PrefixParserResult;
 
 #[derive(Debug, Error)]
 pub enum NumbatError {
@@ -251,6 +254,74 @@ impl Context {
         words.dedup();
 
         words.into_iter().filter(move |w| w.starts_with(word_part))
+    }
+
+    pub fn print_help_for_keyword(&mut self, keyword: &str) -> Markup {
+        let reg = self.interpreter.get_unit_registry();
+
+        if let PrefixParserResult::UnitIdentifier(_span, prefix, _, full_name) =
+            self.prefix_transformer.prefix_parser.parse(keyword)
+        {
+            if let Some(md) = reg
+                .inner
+                .get_base_representation_for_name(&full_name)
+                .ok()
+                .map(|(_, md)| md)
+            {
+                let mut help = m::unit(md.name.as_deref().unwrap_or(keyword)) + m::nl();
+                if let Some(url) = &md.url {
+                    help += m::string(url) + m::nl();
+                }
+                if md.aliases.len() > 1 {
+                    help += m::text("Aliases: ")
+                        + m::text(
+                            md.aliases
+                                .iter()
+                                .map(|(x, _)| x.as_str())
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                        )
+                        + m::nl();
+                }
+
+                help += m::text("A unit of [") + md.readable_type + m::text("]") + m::nl();
+
+                if let Some(defining_info) = self.interpreter.get_defining_unit(&full_name) {
+                    let x = defining_info
+                        .iter()
+                        .filter(|u| !u.unit_id.is_base())
+                        .map(|unit_factor| unit_factor.unit_id.unit_and_factor())
+                        .next();
+
+                    if !prefix.is_none() {
+                        help += m::nl()
+                            + m::value("1 ")
+                            + m::type_identifier(keyword)
+                            + m::text(" = ")
+                            + m::value(prefix.factor().pretty_print())
+                            + m::space()
+                            + m::type_identifier(&full_name);
+                    }
+
+                    if let Some(BaseUnitAndFactor(prod, num)) = x {
+                        help += m::nl()
+                            + m::value("1 ")
+                            + m::type_identifier(&full_name)
+                            + m::text(" = ")
+                            + m::value(num.pretty_print())
+                            + m::space()
+                            + prod.pretty_print_with(|f| f.exponent, 'x', '/', true);
+                    } else {
+                        help +=
+                            m::nl() + m::type_identifier(&full_name) + m::text(" is a base unit");
+                    }
+                };
+
+                return help;
+            }
+        };
+
+        m::text("Not found")
     }
 
     pub fn list_modules(&self) -> impl Iterator<Item = String> {
