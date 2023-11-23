@@ -66,3 +66,15 @@ pub fn url(decorators: &[Decorator]) -> Option<String> {
     }
     None
 }
+
+pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
+    for decorator in decorates {
+        if let Decorator::Aliases(aliases) = decorator {
+            if aliases.iter().any(|(_, prefixes)| prefixes.is_some()) {
+                return true;
+            }
+        }
+    }
+
+    false
+}

@@ -60,7 +60,7 @@ use crate::ast::{
     BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement, StringPart,
     TypeAnnotation, UnaryOperator,
 };
-use crate::decorator::Decorator;
+use crate::decorator::{self, Decorator};
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::resolver::ModulePath;
@@ -170,6 +170,9 @@ pub enum ParseErrorKind {
 
     #[error("Decorators can only be used on unit definitions or let definitions")]
     DecoratorsCanOnlyBeUsedOnUnitOrLetDefinitions,
+
+    #[error("Decorators on let definitions cannot have prefix information")]
+    DecoratorsWithPrefixOnLetDefinition,
 
     #[error("Expected opening parenthesis after decorator")]
     ExpectedLeftParenAfterDecorator,
@@ -370,6 +373,12 @@ impl<'a> Parser<'a> {
                     self.skip_empty_lines();
                     let expr = self.expression()?;
 
+                    if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
+                            span: self.peek().span,
+                        });
+                    }
                     let mut decorators = vec![];
                     std::mem::swap(&mut decorators, &mut self.decorator_stack);
 
@@ -1870,6 +1879,23 @@ mod tests {
             },
         );
 
+        // same as above, but with some decorators
+        parse_as(
+            &["@name(\"myvar\") @aliases(foo, bar) let x: Length = 1 * meter"],
+            Statement::DefineVariable {
+                identifier_span: Span::dummy(),
+                identifier: "x".into(),
+                expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
+                type_annotation: Some(TypeAnnotation::DimensionExpression(
+                    DimensionExpression::Dimension(Span::dummy(), "Length".into()),
+                )),
+                decorators: vec![
+                    decorator::Decorator::Name("myvar".into()),
+                    decorator::Decorator::Aliases(vec![("foo".into(), None), ("bar".into(), None)]),
+                ],
+            },
+        );
+
         should_fail_with(
             &["let (foo)=2", "let 2=3", "let = 2"],
             ParseErrorKind::ExpectedIdentifierAfterLet,
@@ -1885,7 +1911,12 @@ mod tests {
             ParseErrorKind::TrailingEqualSign("foo".into()),
         );
 
-        should_fail(&["let x²=2", "let x+y=2", "let 3=5", "let x=", "let x"])
+        should_fail(&["let x²=2", "let x+y=2", "let 3=5", "let x=", "let x"]);
+
+        should_fail_with(
+            &["@aliases(foo, f: short) let foobar = 1"],
+            ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
+        );
     }
 
     #[test]
