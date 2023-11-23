@@ -156,8 +156,11 @@ impl Transformer {
                 identifier,
                 expr,
                 type_annotation,
+                decorators,
             } => {
-                self.variable_names.push(identifier.clone());
+                for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
+                    self.variable_names.push(name.clone());
+                }
                 self.prefix_parser
                     .add_other_identifier(&identifier, identifier_span)?;
                 Statement::DefineVariable {
@@ -165,6 +168,7 @@ impl Transformer {
                     identifier,
                     expr: self.transform_expression(expr),
                     type_annotation,
+                    decorators,
                 }
             }
             Statement::DefineFunction {

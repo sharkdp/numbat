@@ -14,10 +14,18 @@ use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
+#[derive(Debug, Clone, Default)]
+pub struct LocalMetadata {
+    pub name: Option<String>,
+    pub url: Option<String>,
+    pub aliases: Vec<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Local {
     identifier: String,
     depth: usize,
+    pub metadata: LocalMetadata,
 }
 
 #[derive(Clone)]
@@ -185,13 +193,29 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DefineVariable(identifier, expr, _type_annotation, _type) => {
-                self.compile_expression_with_simplify(expr)?;
+            Statement::DefineVariable(identifier, decorators, expr, _type_annotation, _type) => {
                 let current_depth = self.current_depth();
-                self.locals[current_depth].push(Local {
-                    identifier: identifier.clone(),
-                    depth: 0,
-                });
+
+                // For variables, we ignore the prefix info and only use the names
+                let aliases = crate::decorator::name_and_aliases(&identifier, &decorators)
+                    .map(|(name, _)| name)
+                    .cloned()
+                    .collect::<Vec<_>>();
+                let metadata = LocalMetadata {
+                    name: crate::decorator::name(&decorators),
+                    url: crate::decorator::url(&decorators),
+                    aliases: aliases.clone(),
+                };
+
+                for alias_name in aliases {
+                    self.compile_expression_with_simplify(expr)?;
+
+                    self.locals[current_depth].push(Local {
+                        identifier: alias_name.clone(),
+                        depth: 0,
+                        metadata: metadata.clone(),
+                    });
+                }
             }
             Statement::DefineFunction(
                 name,
@@ -210,6 +234,7 @@ impl BytecodeInterpreter {
                     self.locals[current_depth].push(Local {
                         identifier: parameter.1.clone(),
                         depth: current_depth,
+                        metadata: LocalMetadata::default(),
                     });
                 }
 
@@ -368,6 +393,10 @@ impl BytecodeInterpreter {
                 Constant::Unit(u) => Some(u),
                 _ => None,
             })
+    }
+
+    pub fn lookup_global(&self, name: &str) -> Option<&Local> {
+        self.locals[0].iter().find(|l| l.identifier == name)
     }
 }
 

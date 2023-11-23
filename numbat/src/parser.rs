@@ -168,8 +168,8 @@ pub enum ParseErrorKind {
     #[error("Only integer numbers (< 2^128) are allowed in dimension exponents")]
     NumberInDimensionExponentOutOfRange,
 
-    #[error("Decorators can only be used on unit definitions")]
-    DecoratorsCanOnlyBeUsedOnUnitDefinitions,
+    #[error("Decorators can only be used on unit definitions or let definitions")]
+    DecoratorsCanOnlyBeUsedOnUnitOrLetDefinitions,
 
     #[error("Expected opening parenthesis after decorator")]
     ExpectedLeftParenAfterDecorator,
@@ -342,10 +342,11 @@ impl<'a> Parser<'a> {
     fn statement(&mut self) -> Result<Statement> {
         if !(self.peek().kind == TokenKind::At
             || self.peek().kind == TokenKind::Unit
+            || self.peek().kind == TokenKind::Let
             || self.decorator_stack.is_empty())
         {
             return Err(ParseError {
-                kind: ParseErrorKind::DecoratorsCanOnlyBeUsedOnUnitDefinitions,
+                kind: ParseErrorKind::DecoratorsCanOnlyBeUsedOnUnitOrLetDefinitions,
                 span: self.peek().span,
             });
         }
@@ -369,11 +370,15 @@ impl<'a> Parser<'a> {
                     self.skip_empty_lines();
                     let expr = self.expression()?;
 
+                    let mut decorators = vec![];
+                    std::mem::swap(&mut decorators, &mut self.decorator_stack);
+
                     Ok(Statement::DefineVariable {
                         identifier_span,
                         identifier: identifier.lexeme.clone(),
                         expr,
                         type_annotation,
+                        decorators,
                     })
                 }
             } else {
@@ -1848,6 +1853,7 @@ mod tests {
                 identifier: "foo".into(),
                 expr: scalar!(1.0),
                 type_annotation: None,
+                decorators: Vec::new(),
             },
         );
 
@@ -1860,6 +1866,7 @@ mod tests {
                 type_annotation: Some(TypeAnnotation::DimensionExpression(
                     DimensionExpression::Dimension(Span::dummy(), "Length".into()),
                 )),
+                decorators: Vec::new(),
             },
         );
 
@@ -2395,7 +2402,7 @@ mod tests {
             assert_eq(tamo + cool == 80)
             30m"), @r###"
         Successfully parsed:
-        DefineVariable { identifier_span: Span { start: SourceCodePositition { byte: 17, line: 2, position: 17 }, end: SourceCodePositition { byte: 21, line: 2, position: 21 }, code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: SourceCodePositition { byte: 24, line: 2, position: 24 }, end: SourceCodePositition { byte: 26, line: 2, position: 26 }, code_source_id: 0 }, Number(50.0)), type_annotation: None }
+        DefineVariable { identifier_span: Span { start: SourceCodePositition { byte: 17, line: 2, position: 17 }, end: SourceCodePositition { byte: 21, line: 2, position: 21 }, code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: SourceCodePositition { byte: 24, line: 2, position: 24 }, end: SourceCodePositition { byte: 26, line: 2, position: 26 }, code_source_id: 0 }, Number(50.0)), type_annotation: None, decorators: [] }
         ProcedureCall(Span { start: SourceCodePositition { byte: 68, line: 4, position: 13 }, end: SourceCodePositition { byte: 77, line: 4, position: 22 }, code_source_id: 0 }, AssertEq, [BinaryOperator { op: Equal, lhs: BinaryOperator { op: Add, lhs: Identifier(Span { start: SourceCodePositition { byte: 78, line: 4, position: 23 }, end: SourceCodePositition { byte: 82, line: 4, position: 27 }, code_source_id: 0 }, "tamo"), rhs: Identifier(Span { start: SourceCodePositition { byte: 85, line: 4, position: 30 }, end: SourceCodePositition { byte: 89, line: 4, position: 34 }, code_source_id: 0 }, "cool"), span_op: Some(Span { start: SourceCodePositition { byte: 83, line: 4, position: 28 }, end: SourceCodePositition { byte: 84, line: 4, position: 29 }, code_source_id: 0 }) }, rhs: Scalar(Span { start: SourceCodePositition { byte: 93, line: 4, position: 38 }, end: SourceCodePositition { byte: 95, line: 4, position: 40 }, code_source_id: 0 }, Number(80.0)), span_op: Some(Span { start: SourceCodePositition { byte: 90, line: 4, position: 35 }, end: SourceCodePositition { byte: 92, line: 4, position: 37 }, code_source_id: 0 }) }])
         Expression(BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 109, line: 5, position: 13 }, end: SourceCodePositition { byte: 111, line: 5, position: 15 }, code_source_id: 0 }, Number(30.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 111, line: 5, position: 15 }, end: SourceCodePositition { byte: 112, line: 5, position: 16 }, code_source_id: 0 }, "m"), span_op: None })
         Errors encountered:

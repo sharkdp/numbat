@@ -187,7 +187,8 @@ mod tests {
                     identifier_span: Span::dummy(),
                     identifier: "a".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    type_annotation: None
+                    type_annotation: None,
+                    decorators: Vec::new(),
                 },
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
             ]
@@ -216,7 +217,8 @@ mod tests {
                     identifier_span: Span::dummy(),
                     identifier: "a".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    type_annotation: None
+                    type_annotation: None,
+                    decorators: Vec::new(),
                 },
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
             ]
@@ -244,13 +246,15 @@ mod tests {
                     identifier_span: Span::dummy(),
                     identifier: "y".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    type_annotation: None
+                    type_annotation: None,
+                    decorators: Vec::new(),
                 },
                 Statement::DefineVariable {
                     identifier_span: Span::dummy(),
                     identifier: "x".into(),
                     expr: Expression::Identifier(Span::dummy(), "y".into()),
-                    type_annotation: None
+                    type_annotation: None,
+                    decorators: Vec::new(),
                 },
             ]
         );

@@ -295,6 +295,7 @@ pub enum Statement {
         identifier: String,
         expr: Expression,
         type_annotation: Option<TypeAnnotation>,
+        decorators: Vec<Decorator>,
     },
     DefineFunction {
         function_name_span: Span,
@@ -440,11 +441,13 @@ impl ReplaceSpans for Statement {
                 identifier,
                 expr,
                 type_annotation,
+                decorators,
             } => Statement::DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: identifier.clone(),
                 expr: expr.replace_spans(),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
+                decorators: decorators.clone(),
             },
             Statement::DefineFunction {
                 function_name_span: _,

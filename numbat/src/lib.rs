@@ -268,7 +268,8 @@ impl Context {
                 .ok()
                 .map(|(_, md)| md)
             {
-                let mut help = m::unit(md.name.as_deref().unwrap_or(keyword)) + m::nl();
+                let mut help =
+                    m::text("Unit: ") + m::unit(md.name.as_deref().unwrap_or(keyword)) + m::nl();
                 if let Some(url) = &md.url {
                     help += m::string(url) + m::nl();
                 }
@@ -320,6 +321,34 @@ impl Context {
                 return help;
             }
         };
+
+        if let Some(l) = self.interpreter.lookup_global(keyword) {
+            let mut help = m::text("Variable: ") + m::identifier(keyword) + m::nl();
+            if let Some(name) = &l.metadata.name {
+                help += m::text(name) + m::nl();
+            }
+            if let Some(url) = &l.metadata.url {
+                help += m::string(url) + m::nl();
+            }
+            if l.metadata.aliases.len() > 1 {
+                help += m::text("Aliases: ")
+                    + m::text(
+                        l.metadata
+                            .aliases
+                            .iter()
+                            .map(|x| x.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    )
+                    + m::nl();
+            }
+
+            if let Ok((_, results)) = self.interpret(keyword, CodeSource::Internal) {
+                help += m::nl() + results.to_markup(None, self.dimension_registry(), true);
+            }
+
+            return help;
+        }
 
         m::text("Not found")
     }

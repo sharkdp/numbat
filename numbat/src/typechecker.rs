@@ -851,6 +851,7 @@ impl TypeChecker {
                 identifier,
                 expr,
                 type_annotation,
+                decorators,
             } => {
                 // Make sure that identifier does not clash with a function name. We do not
                 // check for clashes with unit names, as this is handled by the prefix parser.
@@ -907,13 +908,14 @@ impl TypeChecker {
                     }
                 }
 
-                self.identifiers.insert(
-                    identifier.clone(),
-                    (type_deduced.clone(), Some(*identifier_span)),
-                );
+                for (name, _) in decorator::name_and_aliases(identifier, decorators) {
+                    self.identifiers
+                        .insert(name.clone(), (type_deduced.clone(), Some(*identifier_span)));
+                }
 
                 typed_ast::Statement::DefineVariable(
                     identifier.clone(),
+                    decorators.clone(),
                     expr_checked,
                     type_annotation
                         .as_ref()
