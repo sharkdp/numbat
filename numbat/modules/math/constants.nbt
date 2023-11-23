@@ -2,12 +2,19 @@ use core::scalar
 
 ### Mathematical
 
-let pi = 3.14159265358979323846264338327950288
-let π = pi
+@url("https://en.wikipedia.org/wiki/Pi")
+@aliases(pi)
+let π = 3.14159265358979323846264338327950288
+
+@url("https://en.wikipedia.org/wiki/Turn_(angle)#Tau_proposals")
 let τ = 2 π
+
+@url("https://en.wikipedia.org/wiki/E_(mathematical_constant)")
 let e = 2.71828182845904523536028747135266250
+
+@url("https://en.wikipedia.org/wiki/Golden_ratio")
+@aliases(golden_ratio)
 let φ = 1.61803398874989484820458683436563811
-let golden_ratio = φ
 
 ### Named numbers
 
@@ -41,16 +48,23 @@ unit quadrillion = 10^15
 @url("https://en.wikipedia.org/wiki/Quintillion")
 unit quintillion = 10^18
 
+@name("Googol")
+@url("https://en.wikipedia.org/wiki/Googol")
 let googol =  10^100
 
 ### Unicode fractions
 
+@name("One half")
+@url("https://en.wikipedia.org/wiki/One_half")
+@aliases(half, semi)
 let ½ = 1 / 2
 
 let ⅓ = 1 / 3
 let ⅔ = 2 / 3
 
+@aliases(quarter)
 let ¼ = 1 / 4
+
 let ¾ = 3 / 4
 
 let ⅕ = 1 / 5
@@ -74,9 +88,16 @@ let ⅒ = 1 / 10
 
 #### Colloquial
 
-let quarter = 1 / 4
-let half = 1 / 2
-let semi = 1 / 2
-let double = 2
-let triple = 3
+@name("Two")
+@url("https://en.wikipedia.org/wiki/2")
+@aliases(double)
+let two = 2
+
+@name("Three")
+@url("https://en.wikipedia.org/wiki/3")
+@aliases(triple)
+let three = 3
+
+@name("Dozen")
+@url("https://en.wikipedia.org/wiki/Dozen")
 unit dozen = 12
