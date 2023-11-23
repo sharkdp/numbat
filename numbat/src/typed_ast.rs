@@ -15,8 +15,11 @@ use crate::{
 pub type DType = BaseRepresentation;
 
 impl DType {
+    pub fn is_scalar(&self) -> bool {
+        self == &DType::unity()
+    }
     pub fn to_readable_type(&self, registry: &DimensionRegistry) -> m::Markup {
-        if self == &DType::unity() {
+        if self.is_scalar() {
             return m::type_identifier("Scalar");
         }
 

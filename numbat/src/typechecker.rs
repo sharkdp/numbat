@@ -457,7 +457,7 @@ impl TypeChecker {
 
                 match *op {
                     ast::UnaryOperator::Factorial => {
-                        if dtype != DType::unity() {
+                        if !dtype.is_scalar() {
                             return Err(TypeCheckError::NonScalarFactorialArgument(
                                 expr.full_span(),
                                 dtype,
@@ -539,7 +539,7 @@ impl TypeChecker {
                     }
                     typed_ast::BinaryOperator::Power => {
                         let exponent_type = dtype(&rhs_checked)?;
-                        if exponent_type != DType::unity() {
+                        if !exponent_type.is_scalar() {
                             return Err(TypeCheckError::NonScalarExponent(
                                 rhs.full_span(),
                                 exponent_type,
@@ -547,7 +547,7 @@ impl TypeChecker {
                         }
 
                         let base_type = dtype(&lhs_checked)?;
-                        if base_type == DType::unity() {
+                        if base_type.is_scalar() {
                             // Skip evaluating the exponent if the lhs is a scalar. This allows
                             // for arbitrary (decimal) exponents, if the base is a scalar.
 
