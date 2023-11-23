@@ -271,11 +271,11 @@ impl Context {
                 .ok()
                 .map(|(_, md)| md)
             {
-                let mut help =
-                    m::text("Unit: ") + m::unit(md.name.as_deref().unwrap_or(keyword)) + m::nl();
+                let mut help = m::text("Unit: ") + m::unit(md.name.as_deref().unwrap_or(keyword));
                 if let Some(url) = &md.url {
-                    help += m::string(url) + m::nl();
+                    help += m::text(" (") + m::string(url) + m::text(")");
                 }
+                help += m::nl();
                 if md.aliases.len() > 1 {
                     help += m::text("Aliases: ")
                         + m::text(
@@ -300,24 +300,29 @@ impl Context {
                     if !prefix.is_none() {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::type_identifier(keyword)
+                            + m::unit(keyword)
                             + m::text(" = ")
                             + m::value(prefix.factor().pretty_print())
                             + m::space()
-                            + m::type_identifier(&full_name);
+                            + m::unit(&full_name);
                     }
 
                     if let Some(BaseUnitAndFactor(prod, num)) = x {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::type_identifier(&full_name)
+                            + m::unit(&full_name)
                             + m::text(" = ")
                             + m::value(num.pretty_print())
                             + m::space()
-                            + prod.pretty_print_with(|f| f.exponent, 'x', '/', true);
+                            + prod.pretty_print_with(
+                                |f| f.exponent,
+                                'x',
+                                '/',
+                                true,
+                                Some(m::FormatType::Unit),
+                            );
                     } else {
-                        help +=
-                            m::nl() + m::type_identifier(&full_name) + m::text(" is a base unit");
+                        help += m::nl() + m::unit(&full_name) + m::text(" is a base unit");
                     }
                 };
 
@@ -326,12 +331,13 @@ impl Context {
         };
 
         if let Some(l) = self.interpreter.lookup_global(keyword) {
-            let mut help = m::text("Variable: ") + m::identifier(keyword) + m::nl();
+            let mut help = m::text("Variable: ") + m::identifier(keyword);
+            if let Some(url) = &l.metadata.url {
+                help += m::text(" (") + m::string(url) + m::text(")");
+            }
+            help += m::nl();
             if let Some(name) = &l.metadata.name {
                 help += m::text(name) + m::nl();
-            }
-            if let Some(url) = &l.metadata.url {
-                help += m::string(url) + m::nl();
             }
             if l.metadata.aliases.len() > 1 {
                 help += m::text("Aliases: ")
