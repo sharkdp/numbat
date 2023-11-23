@@ -370,12 +370,12 @@ impl Cli {
                                 println!();
                             }
                             _ => {
-                                if let Some(keyword) = line.strip_prefix("help") {
+                                if let Some(keyword) = line.strip_prefix("info") {
                                     let help = self
                                         .context
                                         .lock()
                                         .unwrap()
-                                        .print_help_for_keyword(keyword.trim());
+                                        .print_info_for_keyword(keyword.trim());
                                     println!("{}", ansi_format(&help, true));
                                     continue;
                                 }

@@ -256,7 +256,10 @@ impl Context {
         words.into_iter().filter(move |w| w.starts_with(word_part))
     }
 
-    pub fn print_help_for_keyword(&mut self, keyword: &str) -> Markup {
+    pub fn print_info_for_keyword(&mut self, keyword: &str) -> Markup {
+        if keyword.is_empty() {
+            return m::text("Usage: info <unit or variable>");
+        }
         let reg = self.interpreter.get_unit_registry();
 
         if let PrefixParserResult::UnitIdentifier(_span, prefix, _, full_name) =
