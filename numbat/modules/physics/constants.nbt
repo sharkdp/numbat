@@ -3,78 +3,95 @@ use units::si
 
 ### Physics constants
 
-# The speed of light in vacuum
+@name("Speed of light in vacuum")
+@url("https://en.wikipedia.org/wiki/Speed_of_light")
+@aliases(c)
 let speed_of_light: Velocity = 299_792_458 m / s
-let c = speed_of_light
 
-# The Newtonian constant of gravitation
+@name("Newtonian constant of gravitation")
+@url("https://en.wikipedia.org/wiki/Gravitational_constant")
+@aliases(G)
 let gravitational_constant: Force × Length^2 / Mass^2 =  6.67430e-11 m³ / (kg s²)
-let G = gravitational_constant
 
 # Standard acceleration of gravity on earth
+@url("https://en.wikipedia.org/wiki/Gravity_of_Earth")
+@aliases(g0)
 let gravity: Acceleration = 9.80665 m / s²
-let g0 = gravity
 
 # The Planck constant
+@name("Planck constant")
+@url("https://en.wikipedia.org/wiki/Planck_constant")
+@aliases(ℎ)
 let planck_constant: Action = 6.62607015e-34 J / Hz
-let ℎ = planck_constant
 
 # The reduced Planck constant
+@name("Reduced Planck constant")
+@url("https://en.wikipedia.org/wiki/Planck_constant#Reduced_Planck_constant_%E2%84%8F")
+@aliases(h_bar)
 let ℏ: AngularMomentum = planck_constant / 2π
-let h_bar = ℏ
 
 # Mass of the electron
+@url("https://en.wikipedia.org/wiki/Electron_mass")
 let electron_mass: Mass = 9.1093837015e-31 kg
 
 # Elementary charge (charge of the electron)
+@url("https://en.wikipedia.org/wiki/Elementary_charge")
+@aliases(electron_charge)
 let elementary_charge: ElectricCharge =  1.602176634e-19 C
-let electron_charge: ElectricCharge = elementary_charge
 
 # Magnetic constant (vacuum magnetic permeability)
+@url("https://en.wikipedia.org/wiki/Vacuum_permeability")
+@aliases(µ0,mu0)
 let magnetic_constant: MagneticPermeability =  1.25663706212e-6 N / A²
-let µ0 = magnetic_constant
-let mu0 = magnetic_constant
 
 # Electric constant ( vacuum electric permittivity)
+@url("https://en.wikiversity.org/wiki/Electric_constant")
+@aliases(ε0,eps0)
 let electric_constant: ElectricPermittivity = 8.8541878128e-12 F / m
-let ε0 = electric_constant
-let eps0 = electric_constant
 
 # Bohr magneton
+@aliases(µ_B)
+@url("https://en.wikipedia.org/wiki/Bohr_magneton")
 let bohr_magneton: Energy / MagneticFluxDensity = 9.2740100783e-24 J / T
-let µ_B = bohr_magneton
 
 # Fine structure constant
+@aliases(α, alpha)
+@url("https://en.wikipedia.org/wiki/Fine-structure_constant")
 let fine_structure_constant: Scalar = 7.2973525693e-3
-let α = fine_structure_constant
-let alpha = fine_structure_constant
 
 # Proton mass
+@url("https://en.wikipedia.org/wiki/Proton")
 let proton_mass: Mass =  1.67262192369e-27 kg
 
 # Neutron mass
+@url("https://en.wikipedia.org/wiki/Neutron")
 let neutron_mass: Mass = 1.67492749804e-27 kg
 
 # Avogadro constant
+@url("https://en.wikipedia.org/wiki/Avogadro_constant")
+@aliases(N_A)
 let avogadro_constant: 1 / AmountOfSubstance = 6.02214076e23 / mol
-let N_A = avogadro_constant
 
 # Boltzmann constant
+@aliases(k_B)
 let boltzmann_constant: Energy / Temperature = 1.380649e-23 J / K
-let k_B = boltzmann_constant
 
 # Stefan-Boltzmann constant
+@url("https://en.wikipedia.org/wiki/Boltzmann_constant")
 let stefan_boltzmann_constant: Power / (Area × Temperature^4) = 2 π^5 k_B^4 / (15 planck_constant^3 c^2)
 
 # Ideal gas constant
+@aliases(R)
+@url("https://en.wikipedia.org/wiki/Gas_constant")
 let gas_constant: Energy / (AmountOfSubstance × Temperature) = 8.31446261815324 J / (K mol)
-let R = gas_constant
 
 # Bohr radius
+@url("https://en.wikipedia.org/wiki/Bohr_radius")
+@aliases(a0)
 let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
-let a0 = bohr_radius
 
 # Rydberg constant
+@url("https://en.wikipedia.org/wiki/Rydberg_constant")
 let rydberg_constant: Wavenumber = (electron_mass electron_charge^4) / (8 ε0^2 ℎ^3 c)
 
 @name("Rydberg unit of energy")
