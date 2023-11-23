@@ -288,7 +288,14 @@ impl Context {
                         + m::nl();
                 }
 
-                help += m::text("A unit of [") + md.readable_type + m::text("]") + m::nl();
+                if matches!(md.type_, Type::Dimension(d) if d.is_scalar()) {
+                    help += m::text("A dimensionless unit ([")
+                        + md.readable_type
+                        + m::text("])")
+                        + m::nl();
+                } else {
+                    help += m::text("A unit of [") + md.readable_type + m::text("]") + m::nl();
+                }
 
                 if let Some(defining_info) = self.interpreter.get_defining_unit(&full_name) {
                     let x = defining_info
