@@ -2,16 +2,20 @@ use core::scalar
 
 ### Mathematical
 
+@name("Pi")
 @url("https://en.wikipedia.org/wiki/Pi")
 @aliases(pi)
 let π = 3.14159265358979323846264338327950288
 
+@name("Tau")
 @url("https://en.wikipedia.org/wiki/Turn_(angle)#Tau_proposals")
 let τ = 2 π
 
+@name("Euler's number")
 @url("https://en.wikipedia.org/wiki/E_(mathematical_constant)")
 let e = 2.71828182845904523536028747135266250
 
+@name("Golden ratio")
 @url("https://en.wikipedia.org/wiki/Golden_ratio")
 @aliases(golden_ratio)
 let φ = 1.61803398874989484820458683436563811
@@ -86,7 +90,11 @@ let ⅑ = 1 / 9
 
 let ⅒ = 1 / 10
 
-#### Colloquial
+#### Integers and colloquial names
+
+@name("One")
+@url("https://en.wikipedia.org/wiki/1")
+let one = 1
 
 @name("Two")
 @url("https://en.wikipedia.org/wiki/2")
@@ -97,6 +105,43 @@ let two = 2
 @url("https://en.wikipedia.org/wiki/3")
 @aliases(triple)
 let three = 3
+
+@name("Four")
+@url("https://en.wikipedia.org/wiki/4")
+@aliases(quadruple)
+let four = 4
+
+@name("Five")
+@url("https://en.wikipedia.org/wiki/5")
+let five = 5
+
+@name("Six")
+@url("https://en.wikipedia.org/wiki/6")
+let six = 6
+
+@name("Seven")
+@url("https://en.wikipedia.org/wiki/7")
+let seven = 7
+
+@name("Eight")
+@url("https://en.wikipedia.org/wiki/8")
+let eight = 8
+
+@name("Nine")
+@url("https://en.wikipedia.org/wiki/9")
+let nine = 9
+
+@name("Ten")
+@url("https://en.wikipedia.org/wiki/10")
+let ten = 10
+
+@name("Eleven")
+@url("https://en.wikipedia.org/wiki/11")
+let eleven = 11
+
+@name("Twelve")
+@url("https://en.wikipedia.org/wiki/12")
+let twelve = 12
 
 @name("Dozen")
 @url("https://en.wikipedia.org/wiki/Dozen")
