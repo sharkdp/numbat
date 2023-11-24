@@ -234,10 +234,10 @@ unit tonne: Mass = 10^3 kilogram
 @name("Dalton")
 @url("https://en.wikipedia.org/wiki/Dalton")
 @aliases(daltons, Da: short)
-unit dalton: Mass = 1.660539040e-27 kilogram
+unit dalton: Mass = 1.660_539_066_60e-27 kilogram
 
-@name("Electronvolt")
+@name("Electron volt")
 @url("https://en.wikipedia.org/wiki/Electronvolt")
 @metric_prefixes
 @aliases(electronvolts, eV: short)
-unit electronvolt: Energy = 1.602176634e-19 joule
+unit electronvolt: Energy = 1.602_176_634e-19 joule
