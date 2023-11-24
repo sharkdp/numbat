@@ -333,6 +333,8 @@ impl Context {
                     }
                 };
 
+                help += m::nl();
+
                 return help;
             }
         };
