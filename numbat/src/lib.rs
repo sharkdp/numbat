@@ -257,9 +257,7 @@ impl Context {
     }
 
     pub fn print_info_for_keyword(&mut self, keyword: &str) -> Markup {
-        let url_encode = |s: &str| {
-            s.replace('(', "%28").replace(')', "%29")
-        };
+        let url_encode = |s: &str| s.replace('(', "%28").replace(')', "%29");
 
         if keyword.is_empty() {
             return m::text("Usage: info <unit or variable>");

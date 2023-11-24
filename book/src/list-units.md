@@ -145,7 +145,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Pressure` | [Pound-force per square inch](https://en.wikipedia.org/wiki/Pounds_per_square_inch) | `psi`, `PSI` |
 | `Pressure` | [Torr](https://en.wikipedia.org/wiki/Torr) | `torr` |
 | `Scalar` | [Billion](https://en.wikipedia.org/wiki/Billion) | `billion` |
-| `Scalar` | dozen | `dozen` |
+| `Scalar` | [Dozen](https://en.wikipedia.org/wiki/Dozen) | `dozen` |
 | `Scalar` | [Hundred](https://en.wikipedia.org/wiki/100_(number)) | `hundred` |
 | `Scalar` | [Million](https://en.wikipedia.org/wiki/Million) | `million` |
 | `Scalar` | [Parts per billion](https://en.wikipedia.org/wiki/Parts-per_notation) | `partsperbillion`, `ppb` |
