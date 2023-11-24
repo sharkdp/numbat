@@ -175,6 +175,11 @@ impl Numbat {
         self.format(&help_markup(), true).into()
     }
 
+    pub fn print_info(&mut self, keyword: &str) -> JsValue {
+        let output = self.ctx.print_info_for_keyword(keyword);
+        self.format(&output, false).into()
+    }
+
     pub fn get_completions_for(&self, input: &str) -> Vec<JsValue> {
         self.ctx
             .get_completions_for(input, false)

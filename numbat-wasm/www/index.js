@@ -68,8 +68,14 @@ function interpret(input) {
   } else if (input_trimmed == "help" || input_trimmed == "?") {
     output = numbat.help();
   } else {
-    var result = numbat.interpret(input);
-    output = result.output;
+    var result = {is_error: false};
+    if (input_trimmed.startsWith("info")) {
+      var keyword = input_trimmed.substring(4).trim();
+      output = numbat.print_info(keyword);
+    } else {
+      result = numbat.interpret(input);
+      output = result.output;
+    }
 
     if (!result.is_error) {
         combined_input += input.trim() + "⏎";
