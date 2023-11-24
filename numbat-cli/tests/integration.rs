@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use assert_cmd::Command;
+use predicates::boolean::PredicateBooleanExt;
 
 fn numbat() -> Command {
     let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
@@ -124,4 +125,16 @@ fn help_text() {
         .stdout(predicates::str::contains(
             "Energy of red photons: 1.87855 eV",
         ));
+}
+
+#[test]
+fn info_text() {
+    numbat().write_stdin("info g0").assert().success().stdout(
+        predicates::str::contains("Standard acceleration of gravity on earth")
+            .and(predicates::str::contains("9.80665 m/s²")),
+    );
+
+    numbat().write_stdin("info C").assert().success().stdout(
+        predicates::str::contains("Coulomb").and(predicates::str::contains("1 coulomb = ")),
+    );
 }
