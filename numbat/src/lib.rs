@@ -257,6 +257,10 @@ impl Context {
     }
 
     pub fn print_info_for_keyword(&mut self, keyword: &str) -> Markup {
+        let url_encode = |s: &str| {
+            s.replace('(', "%28").replace(')', "%29")
+        };
+
         if keyword.is_empty() {
             return m::text("Usage: info <unit or variable>");
         }
@@ -273,7 +277,7 @@ impl Context {
             {
                 let mut help = m::text("Unit: ") + m::unit(md.name.as_deref().unwrap_or(keyword));
                 if let Some(url) = &md.url {
-                    help += m::text(" (") + m::string(url) + m::text(")");
+                    help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
                 }
                 help += m::nl();
                 if md.aliases.len() > 1 {
@@ -347,7 +351,7 @@ impl Context {
                 help += m::identifier(keyword);
             }
             if let Some(url) = &l.metadata.url {
-                help += m::text(" (") + m::string(url) + m::text(")");
+                help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
             }
             help += m::nl();
 
