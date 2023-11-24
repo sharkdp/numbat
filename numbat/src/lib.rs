@@ -338,14 +338,17 @@ impl Context {
         };
 
         if let Some(l) = self.interpreter.lookup_global(keyword) {
-            let mut help = m::text("Variable: ") + m::identifier(keyword);
+            let mut help = m::text("Variable: ");
+            if let Some(name) = &l.metadata.name {
+                help += m::text(name);
+            } else {
+                help += m::identifier(keyword);
+            }
             if let Some(url) = &l.metadata.url {
                 help += m::text(" (") + m::string(url) + m::text(")");
             }
             help += m::nl();
-            if let Some(name) = &l.metadata.name {
-                help += m::text(name) + m::nl();
-            }
+
             if l.metadata.aliases.len() > 1 {
                 help += m::text("Aliases: ")
                     + m::text(
