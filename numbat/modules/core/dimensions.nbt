@@ -58,6 +58,7 @@ dimension Entropy = Energy / Temperature
 dimension HeatCapacity = Energy / Temperature
 dimension SpecificHeatCapacity = HeatCapacity / Mass
 dimension ThermalConductivity = Power / (Length × Temperature)
+dimension ThermalTransmittance = Power / (Length^2 × Temperature)
 
 dimension AmountOfSubstance
 dimension MolarMass = Mass / AmountOfSubstance
