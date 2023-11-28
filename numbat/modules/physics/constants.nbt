@@ -37,7 +37,7 @@ let elementary_charge: ElectricCharge =  1.602_176_634e-19 C
 
 @name("Vacuum permeability / magnetic constant")
 @url("https://en.wikipedia.org/wiki/Vacuum_permeability")
-@aliases(µ0,mu0)
+@aliases(µ0,μ0,mu0)
 let magnetic_constant: MagneticPermeability =  1.256_637_062_12e-6 N / A²
 
 @name("Vacuum electric permittivity / electric constant")
@@ -46,7 +46,7 @@ let magnetic_constant: MagneticPermeability =  1.256_637_062_12e-6 N / A²
 let electric_constant: ElectricPermittivity = 1 / (µ0 c²) -> F/m
 
 @name("Bohr magneton")
-@aliases(µ_B)
+@aliases(µ_B,μ_B)
 @url("https://en.wikipedia.org/wiki/Bohr_magneton")
 let bohr_magneton: Energy / MagneticFluxDensity = electron_charge ℏ / 2 electron_mass -> J/T
 
