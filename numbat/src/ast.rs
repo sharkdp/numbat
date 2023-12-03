@@ -130,6 +130,24 @@ macro_rules! identifier {
 }
 
 #[cfg(test)]
+macro_rules! boolean {
+    ( $name:expr ) => {{
+        crate::ast::Expression::Boolean(Span::dummy(), $name.into())
+    }};
+}
+
+#[cfg(test)]
+macro_rules! logical_neg {
+    ( $rhs:expr ) => {{
+        crate::ast::Expression::UnaryOperator {
+            op: UnaryOperator::LogicalNeg,
+            expr: Box::new($rhs),
+            span_op: Span::dummy(),
+        }
+    }};
+}
+
+#[cfg(test)]
 macro_rules! negate {
     ( $rhs:expr ) => {{
         crate::ast::Expression::UnaryOperator {
@@ -178,11 +196,15 @@ macro_rules! conditional {
 #[cfg(test)]
 pub(crate) use binop;
 #[cfg(test)]
+pub(crate) use boolean;
+#[cfg(test)]
 pub(crate) use conditional;
 #[cfg(test)]
 pub(crate) use factorial;
 #[cfg(test)]
 pub(crate) use identifier;
+#[cfg(test)]
+pub(crate) use logical_neg;
 #[cfg(test)]
 pub(crate) use negate;
 #[cfg(test)]

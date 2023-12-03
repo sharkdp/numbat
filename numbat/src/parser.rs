@@ -1504,7 +1504,10 @@ mod tests {
     use std::fmt::Write;
 
     use super::*;
-    use crate::ast::{binop, conditional, factorial, identifier, negate, scalar, ReplaceSpans};
+    use crate::ast::{
+        binop, boolean, conditional, factorial, identifier, logical_neg, negate, scalar,
+        ReplaceSpans,
+    };
 
     #[track_caller]
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
@@ -2331,6 +2334,44 @@ mod tests {
             &["fn print() = 1"],
             ParseErrorKind::ExpectedIdentifierAfterFn,
         );
+    }
+
+    #[test]
+    fn logical_operation() {
+        // basic
+        assert_snapshot!(snap_parse(
+            "true || false"), @r###"
+        Expression(BinaryOperator { op: LogicalOr, lhs: Boolean(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, true), rhs: Boolean(Span { start: SourceCodePositition { byte: 8, line: 1, position: 9 }, end: SourceCodePositition { byte: 13, line: 1, position: 14 }, code_source_id: 0 }, false), span_op: Some(Span { start: SourceCodePositition { byte: 5, line: 1, position: 6 }, end: SourceCodePositition { byte: 7, line: 1, position: 8 }, code_source_id: 0 }) })
+        "###);
+        assert_snapshot!(snap_parse(
+            "true && false"), @r###"
+        Expression(BinaryOperator { op: LogicalAnd, lhs: Boolean(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, true), rhs: Boolean(Span { start: SourceCodePositition { byte: 8, line: 1, position: 9 }, end: SourceCodePositition { byte: 13, line: 1, position: 14 }, code_source_id: 0 }, false), span_op: Some(Span { start: SourceCodePositition { byte: 5, line: 1, position: 6 }, end: SourceCodePositition { byte: 7, line: 1, position: 8 }, code_source_id: 0 }) })
+        "###);
+        assert_snapshot!(snap_parse(
+            "!true"), @r###"
+        Expression(UnaryOperator { op: LogicalNeg, expr: Boolean(Span { start: SourceCodePositition { byte: 1, line: 1, position: 2 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, true), span_op: Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 1, line: 1, position: 2 }, code_source_id: 0 } })
+        "###);
+
+        // priority
+        #[rustfmt::skip]
+        parse_as_expression(
+            &["true || false && true || false"],
+            binop!( // the and binop has the maximum priority
+                binop!(boolean!(true), LogicalOr, binop!(boolean!(false), LogicalAnd, boolean!(true))),
+                LogicalOr,
+                boolean!(false)
+                )
+            );
+
+        #[rustfmt::skip]
+        parse_as_expression(
+            &["!true && false"],
+            binop!( // The negation has precedence over the and
+                logical_neg!(boolean!(true)),
+                LogicalAnd,
+                boolean!(false)
+                )
+            );
     }
 
     #[test]
