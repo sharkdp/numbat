@@ -75,6 +75,8 @@ pub enum TokenKind {
     GreaterThan,
     LessOrEqual,
     GreaterOrEqual,
+    LogicalAnd,
+    LogicalOr,
 
     // Keywords
     Let,
@@ -456,6 +458,8 @@ impl Tokenizer {
                 return Ok(None);
             }
             '\n' => TokenKind::Newline,
+            '&' if self.match_char('&') => TokenKind::LogicalAnd,
+            '|' if self.match_char('|') => TokenKind::LogicalOr,
             '*' if self.match_char('*') => TokenKind::Power,
             '+' => TokenKind::Plus,
             '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
@@ -998,6 +1002,39 @@ fn test_tokenize_string() {
     assert_eq!(
         tokenize("\"foo = {foo, bar = {bar}\"", 0).unwrap_err().kind,
         TokenizerErrorKind::UnexpectedCurlyInInterpolation
+    );
+}
+
+#[test]
+fn test_logical_operators() {
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("true || false").unwrap(),
+        @r###"
+    "true", True, (1, 1)
+    "||", LogicalOr, (1, 6)
+    "false", False, (1, 9)
+    "", Eof, (1, 14)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("true && false").unwrap(),
+        @r###"
+    "true", True, (1, 1)
+    "&&", LogicalAnd, (1, 6)
+    "false", False, (1, 9)
+    "", Eof, (1, 14)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("true | false").unwrap_err(),
+        @"Error at (1, 6): `Unexpected character: '|'`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("true & false").unwrap_err(),
+        @"Error at (1, 6): `Unexpected character: '&'`"
     );
 }
 
