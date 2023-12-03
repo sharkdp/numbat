@@ -5,6 +5,7 @@ use common::get_test_context;
 use insta::assert_snapshot;
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
+use numbat::NumbatError;
 use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
 
 #[track_caller]
@@ -18,6 +19,24 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: im
         assert_eq!(actual_output.trim(), expected_output);
     } else {
         panic!();
+    }
+}
+
+#[track_caller]
+fn fail(code: &str) -> NumbatError {
+    let mut ctx = get_test_context();
+    let ret = ctx.interpret(code, CodeSource::Internal);
+    match ret {
+        Err(e) => e,
+        Ok((_stmts, ret)) => {
+            if let InterpreterResult::Value(val) = ret {
+                let fmt = PlainTextFormatter {};
+                let output = fmt.format(&val.pretty_print(), false);
+                panic!("was supposed to fail but instead got:\n{}", output.trim())
+            } else {
+                panic!("was supposed to fail but instead got:\n{:?}", ret)
+            }
+        }
     }
 }
 
@@ -499,6 +518,16 @@ fn test_logical() {
     // priority
     expect_output("false || true && false", "false");
     expect_output("false || true && !false", "true");
+
+    // Errors
+    insta::assert_display_snapshot!(fail("1 || 2"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("true || 2"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("1 || true"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("1 && 2"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("true && 2"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("1 && true"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("!1"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("!1 || true"), @"Expected boolean value");
 }
 
 #[test]
