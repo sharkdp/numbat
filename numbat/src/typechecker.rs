@@ -315,6 +315,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "factorial"),
         ),
+        e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::LogicalNeg, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "logical"),
+        ),
         e @ typed_ast::Expression::BinaryOperator(_span_op, op, lhs_expr, rhs_expr, _) => {
             let lhs = evaluate_const_expr(lhs_expr)?;
             let rhs = evaluate_const_expr(rhs_expr)?;
@@ -366,6 +369,12 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 | typed_ast::BinaryOperator::NotEqual => Err(
                     TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "comparison"),
                 ),
+                typed_ast::BinaryOperator::LogicalAnd | typed_ast::BinaryOperator::LogicalOr => {
+                    Err(TypeCheckError::UnsupportedConstEvalExpression(
+                        e.full_span(),
+                        "logical",
+                    ))
+                }
             }
         }
         e @ typed_ast::Expression::Identifier(..) => Err(
@@ -465,6 +474,15 @@ impl TypeChecker {
                         }
                     }
                     ast::UnaryOperator::Negate => {}
+                    ast::UnaryOperator::LogicalNeg => {
+                        // TODO(tamo): should only works with booleans
+                        if dtype.is_scalar() {
+                            return Err(TypeCheckError::NonScalarFactorialArgument(
+                                expr.full_span(),
+                                dtype,
+                            ));
+                        }
+                    }
                 }
 
                 typed_ast::Expression::UnaryOperator(*span_op, *op, Box::new(checked_expr), type_)
@@ -507,6 +525,8 @@ impl TypeChecker {
                                     | typed_ast::BinaryOperator::GreaterOrEqual
                                     | typed_ast::BinaryOperator::Equal
                                     | typed_ast::BinaryOperator::NotEqual => "comparison".into(),
+                                    typed_ast::BinaryOperator::LogicalAnd => "and".into(),
+                                    typed_ast::BinaryOperator::LogicalOr => "or".into(),
                                 },
                                 span_expected: lhs.full_span(),
                                 expected_name: " left hand side",
@@ -578,6 +598,19 @@ impl TypeChecker {
                                 rhs_type,
                                 rhs.full_span(),
                             ));
+                        }
+
+                        Type::Boolean
+                    }
+                    typed_ast::BinaryOperator::LogicalAnd
+                    | typed_ast::BinaryOperator::LogicalOr => {
+                        let lhs_type = lhs_checked.get_type();
+                        let rhs_type = rhs_checked.get_type();
+
+                        if lhs_type != Type::Boolean {
+                            return Err(TypeCheckError::ExpectedBool(lhs.full_span()));
+                        } else if rhs_type != Type::Boolean {
+                            return Err(TypeCheckError::ExpectedBool(rhs.full_span()));
                         }
 
                         Type::Boolean
