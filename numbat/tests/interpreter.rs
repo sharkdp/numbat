@@ -483,6 +483,25 @@ fn test_comparisons() {
 }
 
 #[test]
+fn test_logical() {
+    // negation
+    expect_output("!true", "false");
+    expect_output("!false", "true");
+
+    // or
+    expect_output("true || false", "true");
+    expect_output("false || false", "false");
+
+    // and
+    expect_output("true && false", "false");
+    expect_output("true && true", "true");
+
+    // priority
+    expect_output("false || true && false", "false");
+    expect_output("false || true && !false", "true");
+}
+
+#[test]
 fn test_conditionals() {
     expect_output("if 1 < 2 then 3 else 4", "3");
     expect_output("if 4 < 3 then 2 else 1", "1");
