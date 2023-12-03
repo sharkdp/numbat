@@ -65,6 +65,9 @@ pub enum Op {
     GreatorOrEqual,
     Equal,
     NotEqual,
+    LogicalAnd,
+    LogicalOr,
+    LogicalNeg,
 
     /// Move IP forward by the given offset argument if the popped-of value on
     /// top of the stack is false.
@@ -118,6 +121,9 @@ impl Op {
             | Op::GreatorOrEqual
             | Op::Equal
             | Op::NotEqual
+            | Op::LogicalAnd
+            | Op::LogicalOr
+            | Op::LogicalNeg
             | Op::FullSimplify
             | Op::Return
             | Op::GetLastResult => 0,
@@ -146,6 +152,9 @@ impl Op {
             Op::GreatorOrEqual => "GreatorOrEqual",
             Op::Equal => "Equal",
             Op::NotEqual => "NotEqual",
+            Op::LogicalAnd => "LogicalAnd",
+            Op::LogicalOr => "LogicalOr",
+            Op::LogicalNeg => "LogicalNeg",
             Op::JumpIfFalse => "JumpIfFalse",
             Op::Jump => "Jump",
             Op::Call => "Call",
@@ -478,6 +487,10 @@ impl Vm {
         self.stack.push(Value::Quantity(quantity));
     }
 
+    fn push_bool(&mut self, boolean: bool) {
+        self.stack.push(Value::Boolean(boolean));
+    }
+
     fn push(&mut self, value: Value) {
         self.stack.push(value);
     }
@@ -633,6 +646,21 @@ impl Vm {
                         _ => unreachable!(),
                     };
                     self.push(Value::Boolean(result));
+                }
+                op @ (Op::LogicalAnd | Op::LogicalOr) => {
+                    let rhs = self.pop_bool();
+                    let lhs = self.pop_bool();
+
+                    let result = match op {
+                        Op::LogicalAnd => lhs && rhs,
+                        Op::LogicalOr => lhs || rhs,
+                        _ => unreachable!(),
+                    };
+                    self.push_bool(result);
+                }
+                Op::LogicalNeg => {
+                    let rhs = self.pop_bool();
+                    self.push_bool(!rhs);
                 }
                 Op::Negate => {
                     let rhs = self.pop_quantity();

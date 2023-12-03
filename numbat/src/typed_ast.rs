@@ -538,6 +538,9 @@ impl PrettyPrint for Expression {
             UnaryOperator(_, self::UnaryOperator::Factorial, expr, _type) => {
                 with_parens(expr) + m::operator("!")
             }
+            UnaryOperator(_, self::UnaryOperator::LogicalNeg, expr, _type) => {
+                m::operator("!") + with_parens(expr)
+            }
             BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(_, _, name, args, _type) => {
                 m::identifier(name)

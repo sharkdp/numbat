@@ -10,6 +10,7 @@ use num_traits::Signed;
 pub enum UnaryOperator {
     Factorial,
     Negate,
+    LogicalNeg,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,6 +27,8 @@ pub enum BinaryOperator {
     GreaterOrEqual,
     Equal,
     NotEqual,
+    LogicalAnd,
+    LogicalOr,
 }
 
 impl PrettyPrint for BinaryOperator {
@@ -45,6 +48,8 @@ impl PrettyPrint for BinaryOperator {
             GreaterOrEqual => m::space() + m::operator("≥") + m::space(),
             Equal => m::space() + m::operator("==") + m::space(),
             NotEqual => m::space() + m::operator("≠") + m::space(),
+            LogicalAnd => m::space() + m::operator("&&") + m::space(),
+            LogicalOr => m::space() + m::operator("||") + m::space(),
         }
     }
 }

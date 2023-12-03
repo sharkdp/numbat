@@ -25,7 +25,10 @@
 //! expression      ::=   postfix_apply
 //! postfix_apply   ::=   condition ( "//" identifier ) *
 //! condition       ::=   ( "if" conversion "then" condition "else" condition ) | conversion
-//! conversion      ::=   comparison ( ( "→" | "->" | "to" ) comparison ) *
+//! conversion      ::=   logical_or ( ( "→" | "->" | "to" ) logical_or ) *
+//! logical_or      ::=   logical_and ( "||" logical_and ) *
+//! logical_and     ::=   logical_neg ( "&&" logical_neg ) *
+//! logical_neg     ::=   ( "!" logical_neg) | comparison
 //! comparison      ::=   term ( (">" | ">="| "≥" | "<" | "<=" | "≤" | "==" | "!=" | "≠" ) term ) *
 //! term            ::=   factor ( ( "+" | "-") factor ) *
 //! factor          ::=   unary ( ( "*" | "/") per_factor ) *
@@ -802,10 +805,10 @@ impl<'a> Parser<'a> {
     }
 
     fn conversion(&mut self) -> Result<Expression> {
-        let mut expr = self.comparison()?;
+        let mut expr = self.logical_or()?;
         while self.match_any(&[TokenKind::Arrow, TokenKind::To]).is_some() {
             let span_op = Some(self.last().unwrap().span);
-            let rhs = self.comparison()?;
+            let rhs = self.logical_or()?;
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::ConvertTo,
@@ -815,6 +818,53 @@ impl<'a> Parser<'a> {
             };
         }
         Ok(expr)
+    }
+
+    fn logical_or(&mut self) -> Result<Expression> {
+        let mut expr = self.logical_and()?;
+        while self.match_exact(TokenKind::LogicalOr).is_some() {
+            let span_op = Some(self.last().unwrap().span);
+            let rhs = self.logical_and()?;
+
+            expr = Expression::BinaryOperator {
+                op: BinaryOperator::LogicalOr,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+                span_op,
+            };
+        }
+        Ok(expr)
+    }
+
+    fn logical_and(&mut self) -> Result<Expression> {
+        let mut expr = self.logical_neg()?;
+        while self.match_exact(TokenKind::LogicalAnd).is_some() {
+            let span_op = Some(self.last().unwrap().span);
+            let rhs = self.logical_neg()?;
+
+            expr = Expression::BinaryOperator {
+                op: BinaryOperator::LogicalAnd,
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+                span_op,
+            };
+        }
+        Ok(expr)
+    }
+
+    fn logical_neg(&mut self) -> Result<Expression> {
+        if self.match_exact(TokenKind::ExclamationMark).is_some() {
+            let span = self.last().unwrap().span;
+            let rhs = self.logical_neg()?;
+
+            Ok(Expression::UnaryOperator {
+                op: UnaryOperator::LogicalNeg,
+                expr: Box::new(rhs),
+                span_op: span,
+            })
+        } else {
+            self.comparison()
+        }
     }
 
     fn comparison(&mut self) -> Result<Expression> {
