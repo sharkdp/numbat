@@ -727,6 +727,31 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Helper function to parse binary operations
+    /// - arg `op_symbol` specifiy the separator / symbol of your operation
+    /// - arg `op` specifiy the operation you're currently parsing
+    /// - arg `next` specifiy the next parser to call between each symbols
+    fn parse_binop(
+        &mut self,
+        op_symbol: &[TokenKind],
+        op: impl Fn(TokenKind) -> BinaryOperator,
+        next_parser: impl Fn(&mut Self) -> Result<Expression>,
+    ) -> Result<Expression> {
+        let mut expr = next_parser(self)?;
+        while let Some(matched) = self.match_any(op_symbol) {
+            let span_op = Some(self.last().unwrap().span);
+            let rhs = next_parser(self)?;
+
+            expr = Expression::BinaryOperator {
+                op: op(matched.kind),
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+                span_op,
+            };
+        }
+        Ok(expr)
+    }
+
     pub fn expression(&mut self) -> Result<Expression> {
         self.postfix_apply()
     }
@@ -805,51 +830,27 @@ impl<'a> Parser<'a> {
     }
 
     fn conversion(&mut self) -> Result<Expression> {
-        let mut expr = self.logical_or()?;
-        while self.match_any(&[TokenKind::Arrow, TokenKind::To]).is_some() {
-            let span_op = Some(self.last().unwrap().span);
-            let rhs = self.logical_or()?;
-
-            expr = Expression::BinaryOperator {
-                op: BinaryOperator::ConvertTo,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+        self.parse_binop(
+            &[TokenKind::Arrow, TokenKind::To],
+            |_| BinaryOperator::ConvertTo,
+            Self::logical_or,
+        )
     }
 
     fn logical_or(&mut self) -> Result<Expression> {
-        let mut expr = self.logical_and()?;
-        while self.match_exact(TokenKind::LogicalOr).is_some() {
-            let span_op = Some(self.last().unwrap().span);
-            let rhs = self.logical_and()?;
-
-            expr = Expression::BinaryOperator {
-                op: BinaryOperator::LogicalOr,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+        self.parse_binop(
+            &[TokenKind::LogicalOr],
+            |_| BinaryOperator::LogicalOr,
+            Self::logical_and,
+        )
     }
 
     fn logical_and(&mut self) -> Result<Expression> {
-        let mut expr = self.logical_neg()?;
-        while self.match_exact(TokenKind::LogicalAnd).is_some() {
-            let span_op = Some(self.last().unwrap().span);
-            let rhs = self.logical_neg()?;
-
-            expr = Expression::BinaryOperator {
-                op: BinaryOperator::LogicalAnd,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+        self.parse_binop(
+            &[TokenKind::LogicalAnd],
+            |_| BinaryOperator::LogicalAnd,
+            Self::logical_neg,
+        )
     }
 
     fn logical_neg(&mut self) -> Result<Expression> {
@@ -868,19 +869,16 @@ impl<'a> Parser<'a> {
     }
 
     fn comparison(&mut self) -> Result<Expression> {
-        let mut expr = self.term()?;
-        while let Some(token) = self.match_any(&[
-            TokenKind::LessThan,
-            TokenKind::GreaterThan,
-            TokenKind::LessOrEqual,
-            TokenKind::GreaterOrEqual,
-            TokenKind::EqualEqual,
-            TokenKind::NotEqual,
-        ]) {
-            let span_op = Some(self.last().unwrap().span);
-            let rhs = self.term()?;
-
-            let op = match token.kind {
+        self.parse_binop(
+            &[
+                TokenKind::LessThan,
+                TokenKind::GreaterThan,
+                TokenKind::LessOrEqual,
+                TokenKind::GreaterOrEqual,
+                TokenKind::EqualEqual,
+                TokenKind::NotEqual,
+            ],
+            |matched| match matched {
                 TokenKind::LessThan => BinaryOperator::LessThan,
                 TokenKind::GreaterThan => BinaryOperator::GreaterThan,
                 TokenKind::LessOrEqual => BinaryOperator::LessOrEqual,
@@ -888,78 +886,37 @@ impl<'a> Parser<'a> {
                 TokenKind::EqualEqual => BinaryOperator::Equal,
                 TokenKind::NotEqual => BinaryOperator::NotEqual,
                 _ => unreachable!(),
-            };
-
-            expr = Expression::BinaryOperator {
-                op,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+            },
+            Self::term,
+        )
     }
 
     fn term(&mut self) -> Result<Expression> {
-        let mut expr = self.factor()?;
-        while let Some(operator_token) = self.match_any(&[TokenKind::Plus, TokenKind::Minus]) {
-            let span_op = Some(self.last().unwrap().span);
-            let operator = if operator_token.kind == TokenKind::Plus {
-                BinaryOperator::Add
-            } else {
-                BinaryOperator::Sub
-            };
-
-            let rhs = self.factor()?;
-
-            expr = Expression::BinaryOperator {
-                op: operator,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+        self.parse_binop(
+            &[TokenKind::Plus, TokenKind::Minus],
+            |matched| match matched {
+                TokenKind::Plus => BinaryOperator::Add,
+                TokenKind::Minus => BinaryOperator::Sub,
+                _ => unreachable!(),
+            },
+            Self::factor,
+        )
     }
 
     fn factor(&mut self) -> Result<Expression> {
-        let mut expr = self.per_factor()?;
-        while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
-            let span_op = Some(self.last().unwrap().span);
-            let op = if operator_token.kind == TokenKind::Multiply {
-                BinaryOperator::Mul
-            } else {
-                BinaryOperator::Div
-            };
-
-            let rhs = self.per_factor()?;
-
-            expr = Expression::BinaryOperator {
-                op,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+        self.parse_binop(
+            &[TokenKind::Multiply, TokenKind::Divide],
+            |matched| match matched {
+                TokenKind::Multiply => BinaryOperator::Mul,
+                TokenKind::Divide => BinaryOperator::Div,
+                _ => unreachable!(),
+            },
+            Self::per_factor,
+        )
     }
 
     fn per_factor(&mut self) -> Result<Expression> {
-        let mut expr = self.unary()?;
-
-        while self.match_exact(TokenKind::Per).is_some() {
-            let span_op = Some(self.last().unwrap().span);
-            let rhs = self.unary()?;
-
-            expr = Expression::BinaryOperator {
-                op: BinaryOperator::Div,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-
-        Ok(expr)
+        self.parse_binop(&[TokenKind::Per], |_| BinaryOperator::Div, Self::unary)
     }
 
     fn unary(&mut self) -> Result<Expression> {
