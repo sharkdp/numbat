@@ -87,10 +87,10 @@ unit thing                       # New base unit with automatically generated
 
 # 8. Conditionals
 
-fn step(x: Scalar) -> Scalar =   # The construct 'if <cond> then <expr> else <expr>'
-  if x < 0                       # is an expression, not a statement. It can span
-    then 0                       # multiple lines.
-    else 1
+fn bump(x: Scalar) -> Scalar =   # The construct 'if <cond> then <expr> else <expr>'
+  if x >= 0 && x <= 1            # is an expression, not a statement. It can span
+    then 1                       # multiple lines.
+    else 0
 
 # 9. Procedures
 
