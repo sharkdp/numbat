@@ -2356,7 +2356,7 @@ mod tests {
         #[rustfmt::skip]
         parse_as_expression(
             &["true || false && true || false"],
-            binop!( // the and binop has the maximum priority
+            binop!( // the 'and' operator has the highest priority
                 binop!(boolean!(true), LogicalOr, binop!(boolean!(false), LogicalAnd, boolean!(true))),
                 LogicalOr,
                 boolean!(false)
@@ -2366,7 +2366,7 @@ mod tests {
         #[rustfmt::skip]
         parse_as_expression(
             &["!true && false"],
-            binop!( // The negation has precedence over the and
+            binop!( // The negation has precedence over the 'and'
                 logical_neg!(boolean!(true)),
                 LogicalAnd,
                 boolean!(false)
