@@ -15,6 +15,9 @@ Numbat operators and other language constructs, ordered by precedence form *high
 | subtraction               | `x - y`                              |
 | addition                  | `x + y`                              |
 | comparisons               | `x < y`, `x <= y`, `x ≤ y`, … `x == y`, `x != y` |
+| logical negation          | `!x`                                 |
+| logical 'and'             | `x && y`                             |
+| logical 'or'              | `x || y`                             |
 | unit conversion           | `x -> y`, `x → y`, `x ➞ y`, `x to y` |
 | conditionals              | `if x then y else z`                 |
 | reverse function call     | `x // f`                             |
