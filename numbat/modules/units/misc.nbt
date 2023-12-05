@@ -10,7 +10,7 @@ unit bar: Pressure = 100 kPa
 
 @name("Ångström")
 @url("https://en.wikipedia.org/wiki/Angstrom")
-@aliases(angstroms, Å: short)
+@aliases(angstroms, Å: short, Å: short)
 unit angstrom: Length = 1e-10 meter
 
 @name("Barn")

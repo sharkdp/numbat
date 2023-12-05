@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use numbat::Context;
+use numbat::{unicode_input::UNICODE_INPUT, Context};
 use rustyline::{
     self,
     completion::{extract_word, Completer, Pair},
@@ -20,6 +20,21 @@ impl Completer for NumbatCompleter {
         pos: usize,
         _: &rustyline::Context<'_>,
     ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
+        for (patterns, replacement) in UNICODE_INPUT {
+            for pattern in *patterns {
+                let backslash_pattern = format!("\\{}", pattern);
+                if line[..pos].ends_with(&backslash_pattern) {
+                    return Ok((
+                        pos - (1 + pattern.len()),
+                        vec![Pair {
+                            display: backslash_pattern.to_string(),
+                            replacement: replacement.to_string(),
+                        }],
+                    ));
+                }
+            }
+        }
+
         if line.starts_with("use ") {
             return Ok((
                 0,
