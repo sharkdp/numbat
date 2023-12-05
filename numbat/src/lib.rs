@@ -30,6 +30,7 @@ mod suggestion;
 mod tokenizer;
 mod typechecker;
 mod typed_ast;
+pub mod unicode_input;
 mod unit;
 mod unit_registry;
 pub mod value;
@@ -68,6 +69,7 @@ use unit::BaseUnitAndFactor;
 use unit_registry::UnitMetadata;
 
 use crate::prefix_parser::PrefixParserResult;
+use crate::unicode_input::UNICODE_INPUT;
 
 #[derive(Debug, Error)]
 pub enum NumbatError {
@@ -214,6 +216,12 @@ impl Context {
             .collect();
 
         let mut words: Vec<_> = KEYWORDS.iter().map(|k| k.to_string()).collect();
+
+        for (patterns, _) in UNICODE_INPUT {
+            for pattern in *patterns {
+                words.push(pattern.to_string());
+            }
+        }
 
         {
             for variable in self.variable_names() {
