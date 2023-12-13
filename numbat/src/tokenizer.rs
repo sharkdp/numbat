@@ -171,6 +171,13 @@ fn is_other_allowed_identifier_char(c: char) -> bool {
     c == '%'
 }
 
+fn is_subscript_char(c: char) -> bool {
+    let c_u32 = c as u32;
+
+    // See https://en.wikipedia.org/wiki/Unicode_subscripts_and_superscripts#Superscripts_and_subscripts_block
+    (0x2080..=0x209CF).contains(&c_u32)
+}
+
 fn is_identifier_start(c: char) -> bool {
     unicode_ident::is_xid_start(c)
         || is_numerical_fraction_char(c)
@@ -182,6 +189,7 @@ fn is_identifier_start(c: char) -> bool {
 
 fn is_identifier_continue(c: char) -> bool {
     (unicode_ident::is_xid_continue(c)
+        || is_subscript_char(c)
         || is_currency_char(c)
         || is_other_allowed_identifier_char(c))
         && !is_exponent_char(c)
@@ -1048,4 +1056,13 @@ fn test_is_currency_char() {
     assert!(is_currency_char('₿'));
 
     assert!(!is_currency_char('E'));
+}
+
+#[test]
+fn test_is_subscript_char() {
+    assert!(is_subscript_char('₅'));
+    assert!(is_subscript_char('₁'));
+    assert!(is_subscript_char('ₓ'));
+    assert!(is_subscript_char('ₘ'));
+    assert!(is_subscript_char('₎'));
 }
