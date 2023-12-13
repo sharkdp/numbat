@@ -1687,6 +1687,7 @@ mod tests {
         parse_as_expression(&["foo_bar"], identifier!("foo_bar"));
         parse_as_expression(&["MeineSchöneVariable"], identifier!("MeineSchöneVariable"));
         parse_as_expression(&["°"], identifier!("°"));
+        parse_as_expression(&["Mass_H₂O"], identifier!("Mass_H₂O"));
     }
 
     #[test]
