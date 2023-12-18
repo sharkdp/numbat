@@ -32,6 +32,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Dot / Length` | [Dots per inch](https://en.wikipedia.org/wiki/Dots_per_inch) | `dpi` |
 | `DynamicViscosity` | [Poise](https://en.wikipedia.org/wiki/Poise_(unit)) | `poise` |
 | `ElectricCharge` | [Coulomb](https://en.wikipedia.org/wiki/Coulomb) | `C`, `coulomb`, `coulombs` |
+| `ElectricCharge` | [Ampere-Hour](https://en.wikipedia.org/wiki/Ampere_hour) | `Ah`, `amperehour`, `amperehours` |
 | `ElectricConductance` | [Siemens](https://en.wikipedia.org/wiki/Siemens_(unit)) | `S`, `siemens` |
 | `ElectricResistance` | [Ohm](https://en.wikipedia.org/wiki/Ohm) | `ohm`, `ohms`, `Ω` |
 | `Energy` | [British thermal unit](https://en.wikipedia.org/wiki/British_thermal_unit) | `BTU`, `Btu` |
