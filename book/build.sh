@@ -42,4 +42,7 @@ generate_example xkcd_2812 "XKCD 2812" true
 
 generate_example numbat_syntax "Syntax overview" false
 
+
+cargo run --example=inspect > "${SCRIPT_DIR}/src/list-units.md"
+
 mdbook build
