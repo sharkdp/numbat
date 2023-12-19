@@ -25,7 +25,7 @@ use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, 
 use thiserror::Error;
 use unicode_width::UnicodeWidthStr;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IncompatibleDimensionsError {
     pub span_operation: Span,
     pub operation: String,
@@ -200,7 +200,7 @@ impl fmt::Display for IncompatibleDimensionsError {
 
 impl Error for IncompatibleDimensionsError {}
 
-#[derive(Debug, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
     UnknownIdentifier(Span, String, Option<String>),

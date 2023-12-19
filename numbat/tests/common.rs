@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context};
+use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context, NumbatError};
 use once_cell::sync::Lazy;
 
 pub fn get_test_context_without_prelude() -> Context {
@@ -17,14 +17,12 @@ pub fn get_test_context_without_prelude() -> Context {
 }
 
 pub fn get_test_context() -> Context {
-    static CONTEXT: Lazy<Context> = Lazy::new(|| {
+    static CONTEXT: Lazy<Result<Context, NumbatError>> = Lazy::new(|| {
         let mut context = get_test_context_without_prelude();
 
-        let _ = context
-            .interpret("use prelude", CodeSource::Internal)
-            .expect("Error while running prelude");
-        context
+        let _ = context.interpret("use prelude", CodeSource::Internal)?;
+        Ok(context)
     });
 
-    CONTEXT.clone()
+    CONTEXT.clone().unwrap()
 }

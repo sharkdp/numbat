@@ -71,7 +71,7 @@ use unit_registry::UnitMetadata;
 use crate::prefix_parser::PrefixParserResult;
 use crate::unicode_input::UNICODE_INPUT;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, Error)]
 pub enum NumbatError {
     #[error("{0}")]
     ResolverError(ResolverError),

@@ -13,7 +13,7 @@ use thiserror::Error;
 
 pub use crate::value::Value;
 
-#[derive(Debug, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
