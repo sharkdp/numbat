@@ -323,6 +323,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 callable: Callable::Function(Box::new(str_slice)),
             },
         );
+        m.insert(
+            "chr".to_string(),
+            ForeignFunction {
+                name: "chr".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(chr)),
+            },
+        );
 
         m
     })
@@ -721,4 +729,14 @@ fn str_slice(args: &[Value]) -> Result<Value> {
     let output = input.get(start..end).unwrap_or_default();
 
     Ok(Value::String(output.into()))
+}
+
+fn chr(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let idx = args[0].unsafe_as_quantity().unsafe_value().to_f64() as u32;
+
+    let output = char::from_u32(idx).unwrap_or('�');
+
+    Ok(Value::String(output.to_string()))
 }

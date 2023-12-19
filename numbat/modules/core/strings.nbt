@@ -1,8 +1,11 @@
 use core::scalar
+use core::functions
 
 fn str_length(s: String) -> Scalar
 
 fn str_slice(s: String, start: Scalar, end: Scalar) -> String
+
+fn chr(n: Scalar) -> String
 
 fn str_append(a: String, b: String) -> String = "{a}{b}"
 
@@ -26,3 +29,13 @@ fn str_repeat(a: String, n: Scalar) -> String =
   if n > 0
     then str_append(a, str_repeat(a, n - 1))
     else ""
+
+fn hex_digit(x: Scalar) -> String =
+    if mod(x, 16) < 10 then chr(48 + mod(x, 16)) else chr(97 + mod(x, 16) - 10)
+
+fn hex(x: Scalar) -> String =
+    if x < 0
+      then "-{hex(-x)}"
+      else if floor(x / 16) == 0
+        then str_append("0x", hex_digit(x))
+        else str_append(hex(floor(x / 16)), hex_digit(x))
