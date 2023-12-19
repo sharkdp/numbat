@@ -4,7 +4,11 @@ use assert_cmd::Command;
 use predicates::boolean::PredicateBooleanExt;
 
 fn numbat() -> Command {
-    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
+    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap())
+        .parent()
+        .unwrap()
+        .join("numbat")
+        .join("modules");
     std::env::set_var("NUMBAT_MODULES_PATH", module_path);
 
     let mut cmd = Command::cargo_bin("numbat").unwrap();
