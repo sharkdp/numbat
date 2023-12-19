@@ -64,6 +64,20 @@ jobs:
           exit 1
         fi
 
+  wasm:
+    name: WASM version
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: actions/checkout@v3
+    - name: Install wasm-pack
+      run: |
+        curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - name: Build WASM version
+      run: |
+        cd numbat-wasm
+        bash build.sh
+
   min_version:
     name: Minimum supported rust version
     runs-on: ubuntu-20.04
