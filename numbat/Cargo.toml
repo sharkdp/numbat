@@ -30,6 +30,10 @@ rust-embed = { version = "8.0.0", features = ["interpolate-folder-path"] }
 num-format = "0.4.4"
 walkdir = "2"
 
+[features]
+default = ["fetch-exchangerates"]
+fetch-exchangerates = ["numbat-exchange-rates/fetch-exchangerates"]
+
 [dev-dependencies]
 approx = "0.5"
 glob = "0.3"

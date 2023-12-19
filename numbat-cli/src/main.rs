@@ -370,7 +370,7 @@ impl Cli {
                                 println!();
                             }
                             _ => {
-                                if let Some(keyword) = line.strip_prefix("info") {
+                                if let Some(keyword) = line.strip_prefix("info ") {
                                     let help = self
                                         .context
                                         .lock()
