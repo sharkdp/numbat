@@ -1,4 +1,4 @@
-import { setup_panic_hook, Numbat, FormatType } from "numbat-wasm";
+import init, { setup_panic_hook, Numbat, FormatType } from "./pkg/numbat_wasm.js";
 
 async function fetch_exchange_rates() {
   try {
@@ -19,14 +19,6 @@ async function fetch_exchange_rates() {
 function create_numbat_instance() {
     return Numbat.new(true, FormatType.JqueryTerminal);
 }
-
-setup_panic_hook();
-
-var numbat = create_numbat_instance();
-var combined_input = "";
-
-// Load KeyboardEvent polyfill for old browsers
-keyboardeventKeyPolyfill.polyfill();
 
 function updateUrlQuery(query) {
   let url = new URL(window.location);
@@ -69,7 +61,7 @@ function interpret(input) {
     output = numbat.help();
   } else {
     var result = {is_error: false};
-    if (input_trimmed.startsWith("info")) {
+    if (input_trimmed.startsWith("info ")) {
       var keyword = input_trimmed.substring(4).trim();
       output = numbat.print_info(keyword);
     } else {
@@ -86,7 +78,7 @@ function interpret(input) {
   return output;
 }
 
-function main() {
+function setup() {
   $(document).ready(function() {
     var term = $('#terminal').terminal(interpret, {
         greetings: false,
@@ -118,4 +110,21 @@ function main() {
   });
 }
 
-fetch_exchange_rates().then(main);
+var numbat;
+var combined_input = "";
+
+async function main() {
+  await init();
+
+  setup_panic_hook();
+
+  numbat = create_numbat_instance();
+  combined_input = "";
+
+  // Load KeyboardEvent polyfill for old browsers
+  keyboardeventKeyPolyfill.polyfill();
+
+  fetch_exchange_rates().then(setup);
+}
+
+main();
