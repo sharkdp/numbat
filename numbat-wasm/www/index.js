@@ -17,7 +17,7 @@ async function fetch_exchange_rates() {
 }
 
 function create_numbat_instance() {
-    return Numbat.new(true, FormatType.JqueryTerminal);
+    return Numbat.new(true, true, FormatType.JqueryTerminal);
 }
 
 function updateUrlQuery(query) {
