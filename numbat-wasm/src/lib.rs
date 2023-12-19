@@ -61,9 +61,11 @@ impl InterpreterOutput {
 
 #[wasm_bindgen]
 impl Numbat {
-    pub fn new(enable_pretty_printing: bool, format_type: FormatType) -> Self {
+    pub fn new(load_prelude: bool, enable_pretty_printing: bool, format_type: FormatType) -> Self {
         let mut ctx = Context::new(BuiltinModuleImporter::default());
-        let _ = ctx.interpret("use prelude", CodeSource::Internal).unwrap();
+        if load_prelude {
+            let _ = ctx.interpret("use prelude", CodeSource::Internal).unwrap();
+        }
         ctx.set_terminal_width(Some(84)); // terminal width with current layout
         Numbat {
             ctx,

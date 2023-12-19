@@ -12,5 +12,5 @@ Then open http://0.0.0.0:8000/ in a browser.
 
 Run tests:
 ``` bash
-wasm-pack test --headless --firefox
+bash test.sh
 ```
