@@ -1,21 +1,16 @@
 Build:
 ``` bash
-wasm-pack build
+bash build.sh
 ```
 
-Test:
+Serve (use any suitable webserver to serve the `www` folder):
+```bash
+cd www
+python -m http.server
+```
+Then open http://0.0.0.0:8000/ in a browser.
+
+Run tests:
 ``` bash
 wasm-pack test --headless --firefox
-```
-
-Serve:
-```bash
-export NODE_OPTIONS=--openssl-legacy-provider # workaround for https://github.com/webpack/webpack/issues/14532
-cd www
-npm run start
-```
-
-Deploy:
-```bash
-bash deploy.sh
 ```
