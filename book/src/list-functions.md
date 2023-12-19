@@ -119,4 +119,6 @@ fn str_append(a: String, b: String) -> String
 fn str_contains(haystack: String, needle: String) -> Bool
 fn str_replace(s: String, pattern: String, replacement: String) -> String
 fn str_repeat(a: String, n: Scalar) -> String
+fn chr(n: Scalar) -> String
+fn hex(n: Scalar) -> String
 ```

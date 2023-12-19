@@ -72,3 +72,11 @@ assert(str_replace("hello world", "hello", "HEY") == "HEY world")
 assert(str_replace("xxx", "x", "yY") == "yYyYyY")
 
 assert(str_repeat("xy", 3) == "xyxyxy")
+
+assert(hex(0x0) == "0x0")
+assert(hex(0x1) == "0x1")
+assert(hex(0x9) == "0x9")
+assert(hex(0xa) == "0xa")
+assert(hex(0xf) == "0xf")
+assert(hex(0xabc1234567890) == "0xabc1234567890")
+assert(hex(-0xc0ffee) == "-0xc0ffee")
