@@ -58,7 +58,7 @@ jobs:
       run: |
         cd book
         bash build.sh
-        if [ -n "$(git status --porcelain)" ]; then 
+        if [ -n "$(git status --porcelain)" ]; then
           echo "Documentation not up to date."
           echo "Make sure to run 'build.sh' in the documentation/ folder"
           exit 1

@@ -1,3 +1,4 @@
+<!-- NOTE! This file is auto-generated -->
 # List of supported units
 
 See also: [Unit notation](./unit-notation.md).
@@ -31,13 +32,13 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Dot` | [Dot](https://en.wikipedia.org/wiki/Dots_per_inch) | `dot`, `dots` |
 | `Dot / Length` | [Dots per inch](https://en.wikipedia.org/wiki/Dots_per_inch) | `dpi` |
 | `DynamicViscosity` | [Poise](https://en.wikipedia.org/wiki/Poise_(unit)) | `poise` |
+| `ElectricCharge` | [Ampere-hour](https://en.wikipedia.org/wiki/Ampere_hour) | `Ah`, `amperehour` |
 | `ElectricCharge` | [Coulomb](https://en.wikipedia.org/wiki/Coulomb) | `C`, `coulomb`, `coulombs` |
-| `ElectricCharge` | [Ampere-Hour](https://en.wikipedia.org/wiki/Ampere_hour) | `Ah`, `amperehour`, `amperehours` |
 | `ElectricConductance` | [Siemens](https://en.wikipedia.org/wiki/Siemens_(unit)) | `S`, `siemens` |
 | `ElectricResistance` | [Ohm](https://en.wikipedia.org/wiki/Ohm) | `ohm`, `ohms`, `Ω` |
 | `Energy` | [British thermal unit](https://en.wikipedia.org/wiki/British_thermal_unit) | `BTU`, `Btu` |
 | `Energy` | [Calorie](https://en.wikipedia.org/wiki/Calorie) | `cal`, `calorie`, `calories` |
-| `Energy` | [Electronvolt](https://en.wikipedia.org/wiki/Electronvolt) | `electronvolt`, `electronvolts`, `eV` |
+| `Energy` | [Electron volt](https://en.wikipedia.org/wiki/Electronvolt) | `electronvolt`, `electronvolts`, `eV` |
 | `Energy` | [Erg](https://en.wikipedia.org/wiki/Erg) | `erg`, `ergs` |
 | `Energy` | [Hartree](https://en.wikipedia.org/wiki/Hartree) | `hartree`, `hartrees` |
 | `Energy` | [Joule](https://en.wikipedia.org/wiki/Joule) | `J`, `joule`, `joules` |
@@ -59,7 +60,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Illuminance` | [Lux](https://en.wikipedia.org/wiki/Lux) | `lux`, `lx` |
 | `Inductance` | [Henry](https://en.wikipedia.org/wiki/Henry_(unit)) | `H`, `henries`, `henry`, `henrys` |
 | `KinematicViscosity` | [Stokes](https://en.wikipedia.org/wiki/Stokes_(unit)) | `St`, `stokes` |
-| `Length` | [Ångström](https://en.wikipedia.org/wiki/Angstrom) | `angstrom`, `angstroms`, `Å` |
+| `Length` | [Ångström](https://en.wikipedia.org/wiki/Angstrom) | `angstrom`, `angstroms`, `Å`, `Å` |
 | `Length` | [Astronomical unit](https://en.wikipedia.org/wiki/Astronomical_unit) | `astronomicalunit`, `astronomicalunits`, `au`, `AU` |
 | `Length` | [Bohr](https://en.wikipedia.org/wiki/Hartree_atomic_units) | `bohr` |
 | `Length` | [Fathom](https://en.wikipedia.org/wiki/Fathom) | `fathom`, `fathoms` |
