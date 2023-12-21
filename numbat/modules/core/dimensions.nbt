@@ -25,7 +25,7 @@ dimension Action = Energy × Time
 dimension MassDensity = Mass / Length^3
 dimension MomentOfInertia = Mass × Length^2 / Angle^2
 dimension AngularMomentum = MomentOfInertia × Angle / Time = Mass × Length^2 / Time / Angle
-#dimension Torque = Length × Force / Angle  # also: moment of force
+dimension Torque = Length × Force / Angle  # also: moment of force
 dimension EnergyDensity = Energy / Volume
 dimension MassFlow = Mass / Time
 
@@ -45,7 +45,7 @@ dimension ElectricChargeDensity = ElectricCharge / Volume
 dimension CurrentDensity = Current / Area
 dimension ElectricDipoleMoment = ElectricCharge × Length
 dimension ElectricQuadrupoleMoment = ElectricCharge × Length^2
-dimension MagneticDipoleMoment = Current × Area #= Torque / MagneticFluxDensity
+dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
 dimension ElectricFieldStrength = Voltage / Length
 dimension ElectricDisplacementFieldStrength = ElectricCharge / Area
 dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3 × Angle = ElectricDisplacementFieldStrength / ElectricFieldStrength × Angle
