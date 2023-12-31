@@ -5,6 +5,7 @@ use crate::{
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
     markup::Markup,
     math,
+    number::Number,
     prefix::Prefix,
     quantity::{Quantity, QuantityError},
     unit::Unit,
@@ -69,6 +70,13 @@ pub enum Op {
     LogicalOr,
     LogicalNeg,
 
+    /// Similar to Add, but has DateTime on the LHS and a quantity on the RHS
+    AddDateTime,
+    /// Similar to Sub, but has DateTime on the LHS and a quantity on the RHS
+    SubDateTime,
+    /// Computes the difference between two DateTimes
+    DiffDateTime,
+
     /// Move IP forward by the given offset argument if the popped-of value on
     /// top of the stack is false.
     JumpIfFalse,
@@ -110,7 +118,10 @@ impl Op {
             Op::Negate
             | Op::Factorial
             | Op::Add
+            | Op::AddDateTime
             | Op::Subtract
+            | Op::SubDateTime
+            | Op::DiffDateTime
             | Op::Multiply
             | Op::Divide
             | Op::Power
@@ -141,7 +152,10 @@ impl Op {
             Op::Negate => "Negate",
             Op::Factorial => "Factorial",
             Op::Add => "Add",
+            Op::AddDateTime => "AddDateTime",
             Op::Subtract => "Subtract",
+            Op::SubDateTime => "SubDateTime",
+            Op::DiffDateTime => "DiffDateTime",
             Op::Multiply => "Multiply",
             Op::Divide => "Divide",
             Op::Power => "Power",
@@ -168,12 +182,13 @@ impl Op {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Constant {
     Scalar(f64),
     Unit(Unit),
     Boolean(bool),
     String(String),
+    DateTime(chrono::DateTime<chrono::Utc>),
 }
 
 impl Constant {
@@ -183,6 +198,7 @@ impl Constant {
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
+            Constant::DateTime(d) => Value::DateTime(*d),
         }
     }
 }
@@ -194,6 +210,7 @@ impl Display for Constant {
             Constant::Unit(unit) => write!(f, "{}", unit),
             Constant::Boolean(val) => write!(f, "{}", val),
             Constant::String(val) => write!(f, "\"{}\"", val),
+            Constant::DateTime(..) => write!(f, "DateTimeTODO_vm.rs"),
         }
     }
 }
@@ -506,6 +523,13 @@ impl Vm {
         self.pop().unsafe_as_bool()
     }
 
+    fn pop_datetime(&mut self) -> chrono::DateTime<chrono::Utc> {
+        match self.pop() {
+            Value::DateTime(q) => q,
+            _ => panic!("Expected datetime to be on the top of the stack"),
+        }
+    }
+
     fn pop(&mut self) -> Value {
         self.stack.pop().expect("stack should not be empty")
     }
@@ -614,6 +638,42 @@ impl Vm {
                         _ => unreachable!(),
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
+                }
+                op @ (Op::AddDateTime | Op::SubDateTime) => {
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_datetime();
+
+                    // for time, the base unit is in seconds
+                    let base = rhs.to_base_unit_representation();
+                    let seconds_f = base.unsafe_value().to_f64();
+
+                    // TODO check that this handles negative durations correctly
+                    let duration = chrono::Duration::seconds(seconds_f.trunc() as i64)
+                        + chrono::Duration::nanoseconds(
+                            (seconds_f.fract() * 1_000_000_000f64).round() as i64,
+                        );
+
+                    self.push(Value::DateTime(match op {
+                        Op::AddDateTime => lhs + duration,
+                        Op::SubDateTime => lhs - duration,
+                        _ => unreachable!(),
+                    }));
+                }
+                Op::DiffDateTime => {
+                    let unit = self.pop_quantity();
+                    let rhs = self.pop_datetime();
+                    let lhs = self.pop_datetime();
+
+                    let duration = lhs - rhs;
+                    // TODO error handling
+                    let duration = duration.num_nanoseconds().unwrap() as f64 / 1_000_000_000f64;
+
+                    let ret = Value::Quantity(Quantity::new(
+                        Number::from_f64(duration),
+                        unit.unit().clone(),
+                    ));
+
+                    self.push(ret);
                 }
                 op @ (Op::LessThan | Op::GreaterThan | Op::LessOrEqual | Op::GreatorOrEqual) => {
                     let rhs = self.pop_quantity();
@@ -743,6 +803,7 @@ impl Vm {
                             Value::Quantity(q) => q.to_string(),
                             Value::Boolean(b) => b.to_string(),
                             Value::String(s) => s,
+                            Value::DateTime(..) => "DateTimeTodo_1".to_string(),
                         };
                         joined = part + &joined; // reverse order
                     }

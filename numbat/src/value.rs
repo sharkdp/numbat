@@ -5,6 +5,7 @@ pub enum Value {
     Quantity(Quantity),
     Boolean(bool),
     String(String),
+    DateTime(chrono::DateTime<chrono::Utc>),
 }
 
 impl Value {
@@ -39,6 +40,7 @@ impl std::fmt::Display for Value {
             Value::Quantity(q) => write!(f, "{}", q),
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(s) => write!(f, "\"{}\"", s),
+            Value::DateTime(dt) => write!(f, "{:?}", dt),
         }
     }
 }
@@ -49,6 +51,7 @@ impl PrettyPrint for Value {
             Value::Quantity(q) => q.pretty_print(),
             Value::Boolean(b) => b.pretty_print(),
             Value::String(s) => s.pretty_print(),
+            Value::DateTime(dt) => dt.pretty_print(),
         }
     }
 }

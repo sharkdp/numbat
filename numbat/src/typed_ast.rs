@@ -40,6 +40,25 @@ impl DType {
             }
         }
     }
+    /// Is the current dimension type the Time dimension?
+    ///
+    /// This ia special helper that's useful when dealing with DateTimes
+    pub fn is_time_dimension(&self, registry: &DimensionRegistry) -> bool {
+        let mut names = vec![];
+
+        let factors: Vec<_> = self.iter().collect();
+        if factors.len() == 1 && factors[0].1 == Exponent::from_integer(1) {
+            names.push(factors[0].0.clone());
+        }
+
+        names.extend(registry.get_derived_entry_names_for(self));
+
+        match &names[..] {
+            [] => false,
+            [single] if single == "Time" => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,6 +66,7 @@ pub enum Type {
     Dimension(DType),
     Boolean,
     String,
+    DateTime,
 }
 
 impl std::fmt::Display for Type {
@@ -55,6 +75,7 @@ impl std::fmt::Display for Type {
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
+            Type::DateTime => write!(f, "DateTime"),
         }
     }
 }
@@ -65,6 +86,7 @@ impl PrettyPrint for Type {
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::keyword("Bool"),
             Type::String => m::keyword("String"),
+            Type::DateTime => m::keyword("DateTime"),
         }
     }
 }
@@ -122,10 +144,22 @@ pub enum Expression {
         Box<Expression>,
         Type,
     ),
+    /// A special binary operator that has a DateTime as one (or both) of the operands
+    BinaryOperatorForDate(
+        Option<Span>,
+        BinaryOperator,
+        /// Must be a DateTime
+        Box<Expression>,
+        Box<Expression>,
+        Type,
+        /// If true, then this is a date subtration operation
+        bool,
+    ),
     FunctionCall(Span, Span, String, Vec<Expression>, Type),
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
+    DateTime(Span, chrono::DateTime<chrono::Utc>),
 }
 
 impl Expression {
@@ -142,12 +176,20 @@ impl Expression {
                 }
                 span
             }
+            Expression::BinaryOperatorForDate(span_op, _op, lhs, rhs, ..) => {
+                let mut span = lhs.full_span().extend(&rhs.full_span());
+                if let Some(span_op) = span_op {
+                    span = span.extend(span_op);
+                }
+                span
+            }
             Expression::FunctionCall(_identifier_span, full_span, _, _, _) => *full_span,
             Expression::Boolean(span, _) => *span,
             Expression::Condition(span_if, _, _, then_expr) => {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
+            Expression::DateTime(span, ..) => *span,
         }
     }
 }
@@ -195,10 +237,12 @@ impl Expression {
             Expression::UnitIdentifier(_, _, _, _, _type) => _type.clone(),
             Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
             Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
+            Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.clone(),
             Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
             Expression::Boolean(_, _) => Type::Boolean,
             Expression::Condition(_, _, then, _) => then.get_type(),
             Expression::String(_, _) => Type::String,
+            Expression::DateTime(..) => Type::DateTime,
         }
     }
 }
@@ -400,9 +444,11 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::UnitIdentifier(..)
         | Expression::FunctionCall(..)
         | Expression::Boolean(..)
-        | Expression::String(..) => expr.pretty_print(),
+        | Expression::String(..)
+        | Expression::DateTime(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
+        | Expression::BinaryOperatorForDate { .. }
         | Expression::Condition(..) => m::operator("(") + expr.pretty_print() + m::operator(")"),
     }
 }
@@ -542,6 +588,7 @@ impl PrettyPrint for Expression {
                 m::operator("!") + with_parens(expr)
             }
             BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
+            BinaryOperatorForDate(_, op, lhs, rhs, _type, _) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(_, _, name, args, _type) => {
                 m::identifier(name)
                     + m::operator("(")
@@ -567,6 +614,7 @@ impl PrettyPrint for Expression {
                     + m::space()
                     + with_parens(else_)
             }
+            DateTime(_, _) => m::text("datePlaceHolder"),
         }
     }
 }

@@ -21,6 +21,7 @@ pub const KEYWORDS: &[&str] = &[
     "true",
     "false",
     "String",
+    "DateTime",
     // decorators
     "metric_prefixes",
     "binary_prefixes",

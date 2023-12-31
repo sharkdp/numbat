@@ -95,6 +95,7 @@ pub enum TokenKind {
     Else,
 
     String,
+    DateTime,
 
     Long,
     Short,
@@ -353,6 +354,7 @@ impl Tokenizer {
             m.insert("then", TokenKind::Then);
             m.insert("else", TokenKind::Else);
             m.insert("String", TokenKind::String);
+            m.insert("DateTime", TokenKind::DateTime);
             // Keep this list in sync with keywords::KEYWORDS!
             m
         });

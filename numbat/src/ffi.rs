@@ -331,6 +331,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 callable: Callable::Function(Box::new(chr)),
             },
         );
+        m.insert(
+            "now".to_string(),
+            ForeignFunction {
+                name: "now".into(),
+                arity: 0..=0,
+                callable: Callable::Function(Box::new(now)),
+            },
+        );
 
         m
     })
@@ -739,4 +747,11 @@ fn chr(args: &[Value]) -> Result<Value> {
     let output = char::from_u32(idx).unwrap_or('�');
 
     Ok(Value::String(output.to_string()))
+}
+
+fn now(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 0);
+    let now = chrono::Utc::now();
+
+    Ok(Value::DateTime(now))
 }

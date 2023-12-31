@@ -1230,6 +1230,8 @@ impl<'a> Parser<'a> {
             Ok(TypeAnnotation::Bool(token.span))
         } else if let Some(token) = self.match_exact(TokenKind::String) {
             Ok(TypeAnnotation::String(token.span))
+        } else if let Some(token) = self.match_exact(TokenKind::DateTime) {
+            Ok(TypeAnnotation::DateTime(token.span))
         } else {
             Ok(TypeAnnotation::DimensionExpression(
                 self.dimension_expression()?,

@@ -4,7 +4,7 @@ use crate::{
     interpreter::RuntimeError,
     parser::ParseError,
     resolver::ResolverError,
-    typechecker::{IncompatibleDimensionsError, TypeCheckError},
+    typechecker::{IncompatibleDimensionsError, IncompatibleTypeError, TypeCheckError},
     NameResolutionError,
 };
 
@@ -128,6 +128,17 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Secondary)
                         .with_message(format!("incompatible dimensions in {}", operation)),
                 ];
+                d.with_labels(labels).with_notes(vec![inner_error])
+            }
+            TypeCheckError::IncompatibleType(IncompatibleTypeError {
+                span_actual,
+                actual_type,
+                ..
+            }) => {
+                let labels = vec![span_actual
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(format!("{actual_type}"))];
+
                 d.with_labels(labels).with_notes(vec![inner_error])
             }
             TypeCheckError::NonScalarExponent(span, type_)

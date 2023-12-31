@@ -80,6 +80,7 @@ pub enum Expression {
     Boolean(Span, bool),
     String(Span, Vec<StringPart>),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
+    DateTime(Span, chrono::DateTime<chrono::Utc>),
 }
 
 impl Expression {
@@ -111,6 +112,7 @@ impl Expression {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
+            Expression::DateTime(span, ..) => *span,
         }
     }
 }
@@ -215,6 +217,7 @@ pub enum TypeAnnotation {
     DimensionExpression(DimensionExpression),
     Bool(Span),
     String(Span),
+    DateTime(Span),
 }
 
 impl TypeAnnotation {
@@ -223,6 +226,7 @@ impl TypeAnnotation {
             TypeAnnotation::DimensionExpression(d) => d.full_span(),
             TypeAnnotation::Bool(span) => *span,
             TypeAnnotation::String(span) => *span,
+            TypeAnnotation::DateTime(span) => *span,
         }
     }
 }
@@ -233,6 +237,7 @@ impl PrettyPrint for TypeAnnotation {
             TypeAnnotation::DimensionExpression(d) => d.pretty_print(),
             TypeAnnotation::Bool(_) => m::type_identifier("Bool"),
             TypeAnnotation::String(_) => m::type_identifier("String"),
+            TypeAnnotation::DateTime(_) => m::type_identifier("DateTime"),
         }
     }
 }
@@ -364,6 +369,7 @@ impl ReplaceSpans for TypeAnnotation {
             }
             TypeAnnotation::Bool(_) => TypeAnnotation::Bool(Span::dummy()),
             TypeAnnotation::String(_) => TypeAnnotation::String(Span::dummy()),
+            TypeAnnotation::DateTime(_) => TypeAnnotation::DateTime(Span::dummy()),
         }
     }
 }
@@ -454,6 +460,7 @@ impl ReplaceSpans for Expression {
                 Span::dummy(),
                 parts.iter().map(|p| p.replace_spans()).collect(),
             ),
+            Expression::DateTime(_, dt) => Expression::DateTime(Span::dummy(), *dt),
         }
     }
 }
