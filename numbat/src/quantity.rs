@@ -53,7 +53,7 @@ impl Quantity {
         self.value.to_f64() == 0.0
     }
 
-    fn to_base_unit_representation(&self) -> Quantity {
+    pub fn to_base_unit_representation(&self) -> Quantity {
         let (unit, factor) = self.unit.to_base_unit_representation();
         Quantity::new(self.value * factor, unit)
     }

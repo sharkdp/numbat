@@ -45,8 +45,12 @@ impl BytecodeInterpreter {
                 let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
+            Expression::DateTime(_span, dt) => {
+                let index = self.vm.add_constant(Constant::DateTime(*dt));
+                self.vm.add_op1(Op::LoadConstant, index);
+            }
             Expression::Identifier(_span, identifier, _type) => {
-                // Searching in reverse order ensures that we find the innermost identifer of that name first (shadowing)
+                // Searching in reverse order ensures that we find the innermost identifier of that name first (shadowing)
 
                 let current_depth = self.locals.len() - 1;
 
@@ -111,6 +115,27 @@ impl BytecodeInterpreter {
                     BinaryOperator::LogicalAnd => Op::LogicalAnd,
                     BinaryOperator::LogicalOr => Op::LogicalOr,
                 };
+                self.vm.add_op(op);
+            }
+            Expression::BinaryOperatorForDate(_span, operator, lhs, rhs, _type, is_date_diff) => {
+                self.compile_expression(lhs)?;
+                self.compile_expression(rhs)?;
+
+                let op = if *is_date_diff {
+                    // the VM will need to return a value with the units of Seconds.  so look up that unit here, and push it
+                    // onto the stack, so the VM can easily reference it.
+                    // TODO error handling
+                    let second_idx = self.unit_name_to_constant_index.get("second");
+                    self.vm.add_op1(Op::LoadConstant, *second_idx.unwrap());
+                    Op::DiffDateTime
+                } else {
+                    match operator {
+                        BinaryOperator::Add => Op::AddDateTime,
+                        BinaryOperator::Sub => Op::SubDateTime,
+                        _ => panic!("{operator:?} is not valid with a DateTime"), // should be unreachable, because the typechecker will error first
+                    }
+                };
+
                 self.vm.add_op(op);
             }
             Expression::FunctionCall(_span, _full_span, name, args, _type) => {
@@ -185,8 +210,9 @@ impl BytecodeInterpreter {
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
             | Expression::Boolean(..)
             | Expression::String(..)
-            | Expression::Condition(..) => {}
-            Expression::BinaryOperator(..) => {
+            | Expression::Condition(..)
+            | Expression::DateTime(..) => {}
+            Expression::BinaryOperator(..) | Expression::BinaryOperatorForDate(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }
         }

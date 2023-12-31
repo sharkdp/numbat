@@ -19,7 +19,7 @@ use crate::{dimension::DimensionRegistry, typed_ast::DType};
 use crate::{ffi::ArityRange, typed_ast::Expression};
 use crate::{name_resolution::LAST_RESULT_IDENTIFIERS, pretty_print::PrettyPrint};
 
-use ast::DimensionExpression;
+use ast::{BinaryOperator, DimensionExpression};
 use itertools::Itertools;
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
 use thiserror::Error;
@@ -38,6 +38,15 @@ pub struct IncompatibleDimensionsError {
     pub actual_name_for_fix: &'static str,
     pub actual_type: BaseRepresentation,
     pub actual_dimensions: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IncompatibleTypeError {
+    pub expected_name: &'static str,
+    pub expected_type: Type,
+    pub span_actual: Span,
+    pub actual_name: &'static str,
+    pub actual_type: Type,
 }
 
 fn pad(a: &str, b: &str) -> (String, String) {
@@ -200,6 +209,17 @@ impl fmt::Display for IncompatibleDimensionsError {
 
 impl Error for IncompatibleDimensionsError {}
 
+impl fmt::Display for IncompatibleTypeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Found {} but expected {}",
+            self.actual_type, self.expected_name
+        )
+    }
+}
+impl Error for IncompatibleTypeError {}
+
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
@@ -210,6 +230,9 @@ pub enum TypeCheckError {
 
     #[error(transparent)]
     IncompatibleDimensions(IncompatibleDimensionsError),
+
+    #[error(transparent)]
+    IncompatibleType(IncompatibleTypeError),
 
     #[error("Exponents need to be dimensionless (got {1}).")]
     NonScalarExponent(Span, DType),
@@ -395,6 +418,13 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::Condition(..) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Conditional"),
         ),
+        e @ typed_ast::Expression::DateTime(..) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "DateTime"),
+        ),
+        e @ Expression::BinaryOperatorForDate(..) => Err(
+            // TODO i think maybe this could be const evaluated?
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "BinaryOperatorForDate"),
+        ),
     }
 }
 
@@ -487,134 +517,182 @@ impl TypeChecker {
                 let lhs_checked = self.check_expression(lhs)?;
                 let rhs_checked = self.check_expression(rhs)?;
 
-                let get_type_and_assert_equality = || {
-                    let lhs_type = dtype(&lhs_checked)?;
-                    let rhs_type = dtype(&rhs_checked)?;
-                    if lhs_type != rhs_type {
-                        let full_span = ast::Expression::BinaryOperator {
-                            op: *op,
-                            lhs: lhs.clone(),
-                            rhs: rhs.clone(),
-                            span_op: *span_op,
-                        }
-                        .full_span();
-                        Err(TypeCheckError::IncompatibleDimensions(
-                            IncompatibleDimensionsError {
-                                span_operation: span_op.unwrap_or(full_span),
-                                operation: match op {
-                                    typed_ast::BinaryOperator::Add => "addition".into(),
-                                    typed_ast::BinaryOperator::Sub => "subtraction".into(),
-                                    typed_ast::BinaryOperator::Mul => "multiplication".into(),
-                                    typed_ast::BinaryOperator::Div => "division".into(),
-                                    typed_ast::BinaryOperator::Power => "exponentiation".into(),
-                                    typed_ast::BinaryOperator::ConvertTo => {
-                                        "unit conversion".into()
-                                    }
-                                    typed_ast::BinaryOperator::LessThan
-                                    | typed_ast::BinaryOperator::GreaterThan
-                                    | typed_ast::BinaryOperator::LessOrEqual
-                                    | typed_ast::BinaryOperator::GreaterOrEqual
-                                    | typed_ast::BinaryOperator::Equal
-                                    | typed_ast::BinaryOperator::NotEqual => "comparison".into(),
-                                    typed_ast::BinaryOperator::LogicalAnd => "and".into(),
-                                    typed_ast::BinaryOperator::LogicalOr => "or".into(),
-                                },
-                                span_expected: lhs.full_span(),
-                                expected_name: " left hand side",
-                                expected_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&lhs_type),
-                                expected_type: lhs_type,
-                                span_actual: rhs.full_span(),
-                                actual_name: "right hand side",
-                                actual_name_for_fix: "expression on the right hand side",
-                                actual_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&rhs_type),
-                                actual_type: rhs_type,
-                            },
-                        ))
+                // DateTime types need special handling here, since they're not scalars with dimensions, yet some select binary operators can be applied to them
+                // TODO how to better handle all the operations we want to support with date
+                if lhs_checked.get_type() == Type::DateTime {
+                    let rhs_is_time = dtype(&rhs_checked)
+                        .ok()
+                        .map(|t| t.is_time_dimension(&self.registry))
+                        .unwrap_or(false);
+                    let rhs_is_datetime = rhs_checked.get_type() == Type::DateTime;
+
+                    if *op == BinaryOperator::Sub && rhs_is_datetime {
+                        // TODO error handling
+                        let time = self
+                            .registry
+                            .get_base_representation_for_name("Time")
+                            .unwrap();
+
+                        typed_ast::Expression::BinaryOperatorForDate(
+                            *span_op,
+                            *op,
+                            Box::new(lhs_checked),
+                            Box::new(rhs_checked),
+                            Type::Dimension(time),
+                            true,
+                        )
+                    } else if *op == BinaryOperator::Add
+                        || *op == BinaryOperator::Sub && rhs_is_time
+                    {
+                        typed_ast::Expression::BinaryOperatorForDate(
+                            *span_op,
+                            *op,
+                            Box::new(lhs_checked),
+                            Box::new(rhs_checked),
+                            Type::DateTime,
+                            false,
+                        )
                     } else {
-                        Ok(Type::Dimension(lhs_type))
+                        return Err(TypeCheckError::IncompatibleType(IncompatibleTypeError {
+                            expected_name: "a unit of Time",
+                            expected_type: lhs_checked.get_type(),
+                            span_actual: rhs.full_span(),
+                            actual_name: "TODO",
+                            actual_type: rhs_checked.get_type(),
+                        }));
                     }
-                };
-
-                let type_ = match op {
-                    typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::Mul => {
-                        Type::Dimension(dtype(&lhs_checked)? * dtype(&rhs_checked)?)
-                    }
-                    typed_ast::BinaryOperator::Div => {
-                        Type::Dimension(dtype(&lhs_checked)? / dtype(&rhs_checked)?)
-                    }
-                    typed_ast::BinaryOperator::Power => {
-                        let exponent_type = dtype(&rhs_checked)?;
-                        if !exponent_type.is_scalar() {
-                            return Err(TypeCheckError::NonScalarExponent(
-                                rhs.full_span(),
-                                exponent_type,
-                            ));
-                        }
-
-                        let base_type = dtype(&lhs_checked)?;
-                        if base_type.is_scalar() {
-                            // Skip evaluating the exponent if the lhs is a scalar. This allows
-                            // for arbitrary (decimal) exponents, if the base is a scalar.
-
-                            Type::Dimension(base_type)
+                } else {
+                    let get_type_and_assert_equality = || {
+                        let lhs_type = dtype(&lhs_checked)?;
+                        let rhs_type = dtype(&rhs_checked)?;
+                        if lhs_type != rhs_type {
+                            let full_span = ast::Expression::BinaryOperator {
+                                op: *op,
+                                lhs: lhs.clone(),
+                                rhs: rhs.clone(),
+                                span_op: *span_op,
+                            }
+                            .full_span();
+                            Err(TypeCheckError::IncompatibleDimensions(
+                                IncompatibleDimensionsError {
+                                    span_operation: span_op.unwrap_or(full_span),
+                                    operation: match op {
+                                        typed_ast::BinaryOperator::Add => "addition".into(),
+                                        typed_ast::BinaryOperator::Sub => "subtraction".into(),
+                                        typed_ast::BinaryOperator::Mul => "multiplication".into(),
+                                        typed_ast::BinaryOperator::Div => "division".into(),
+                                        typed_ast::BinaryOperator::Power => "exponentiation".into(),
+                                        typed_ast::BinaryOperator::ConvertTo => {
+                                            "unit conversion".into()
+                                        }
+                                        typed_ast::BinaryOperator::LessThan
+                                        | typed_ast::BinaryOperator::GreaterThan
+                                        | typed_ast::BinaryOperator::LessOrEqual
+                                        | typed_ast::BinaryOperator::GreaterOrEqual
+                                        | typed_ast::BinaryOperator::Equal
+                                        | typed_ast::BinaryOperator::NotEqual => {
+                                            "comparison".into()
+                                        }
+                                        typed_ast::BinaryOperator::LogicalAnd => "and".into(),
+                                        typed_ast::BinaryOperator::LogicalOr => "or".into(),
+                                    },
+                                    span_expected: lhs.full_span(),
+                                    expected_name: " left hand side",
+                                    expected_dimensions: self
+                                        .registry
+                                        .get_derived_entry_names_for(&lhs_type),
+                                    expected_type: lhs_type,
+                                    span_actual: rhs.full_span(),
+                                    actual_name: "right hand side",
+                                    actual_name_for_fix: "expression on the right hand side",
+                                    actual_dimensions: self
+                                        .registry
+                                        .get_derived_entry_names_for(&rhs_type),
+                                    actual_type: rhs_type,
+                                },
+                            ))
                         } else {
-                            let exponent = evaluate_const_expr(&rhs_checked)?;
-                            Type::Dimension(base_type.power(exponent))
+                            Ok(Type::Dimension(lhs_type))
                         }
-                    }
-                    typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::LessThan
-                    | typed_ast::BinaryOperator::GreaterThan
-                    | typed_ast::BinaryOperator::LessOrEqual
-                    | typed_ast::BinaryOperator::GreaterOrEqual => {
-                        let _ = get_type_and_assert_equality()?;
-                        Type::Boolean
-                    }
-                    typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
-                        let lhs_type = lhs_checked.get_type();
-                        let rhs_type = rhs_checked.get_type();
-                        if lhs_type.is_dtype() || rhs_type.is_dtype() {
+                    };
+
+                    let type_ = match op {
+                        typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
+                        typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
+                        typed_ast::BinaryOperator::Mul => {
+                            Type::Dimension(dtype(&lhs_checked)? * dtype(&rhs_checked)?)
+                        }
+                        typed_ast::BinaryOperator::Div => {
+                            Type::Dimension(dtype(&lhs_checked)? / dtype(&rhs_checked)?)
+                        }
+                        typed_ast::BinaryOperator::Power => {
+                            let exponent_type = dtype(&rhs_checked)?;
+                            if !exponent_type.is_scalar() {
+                                return Err(TypeCheckError::NonScalarExponent(
+                                    rhs.full_span(),
+                                    exponent_type,
+                                ));
+                            }
+
+                            let base_type = dtype(&lhs_checked)?;
+                            if base_type.is_scalar() {
+                                // Skip evaluating the exponent if the lhs is a scalar. This allows
+                                // for arbitrary (decimal) exponents, if the base is a scalar.
+
+                                Type::Dimension(base_type)
+                            } else {
+                                let exponent = evaluate_const_expr(&rhs_checked)?;
+                                Type::Dimension(base_type.power(exponent))
+                            }
+                        }
+                        typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
+                        typed_ast::BinaryOperator::LessThan
+                        | typed_ast::BinaryOperator::GreaterThan
+                        | typed_ast::BinaryOperator::LessOrEqual
+                        | typed_ast::BinaryOperator::GreaterOrEqual => {
                             let _ = get_type_and_assert_equality()?;
-                        } else if lhs_type != rhs_type {
-                            return Err(TypeCheckError::IncompatibleTypesInComparison(
-                                span_op.unwrap(),
-                                lhs_type,
-                                lhs.full_span(),
-                                rhs_type,
-                                rhs.full_span(),
-                            ));
+                            Type::Boolean
                         }
+                        typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
+                            let lhs_type = lhs_checked.get_type();
+                            let rhs_type = rhs_checked.get_type();
+                            if lhs_type.is_dtype() || rhs_type.is_dtype() {
+                                let _ = get_type_and_assert_equality()?;
+                            } else if lhs_type != rhs_type {
+                                return Err(TypeCheckError::IncompatibleTypesInComparison(
+                                    span_op.unwrap(),
+                                    lhs_type,
+                                    lhs.full_span(),
+                                    rhs_type,
+                                    rhs.full_span(),
+                                ));
+                            }
 
-                        Type::Boolean
-                    }
-                    typed_ast::BinaryOperator::LogicalAnd
-                    | typed_ast::BinaryOperator::LogicalOr => {
-                        let lhs_type = lhs_checked.get_type();
-                        let rhs_type = rhs_checked.get_type();
-
-                        if lhs_type != Type::Boolean {
-                            return Err(TypeCheckError::ExpectedBool(lhs.full_span()));
-                        } else if rhs_type != Type::Boolean {
-                            return Err(TypeCheckError::ExpectedBool(rhs.full_span()));
+                            Type::Boolean
                         }
+                        typed_ast::BinaryOperator::LogicalAnd
+                        | typed_ast::BinaryOperator::LogicalOr => {
+                            let lhs_type = lhs_checked.get_type();
+                            let rhs_type = rhs_checked.get_type();
 
-                        Type::Boolean
-                    }
-                };
+                            if lhs_type != Type::Boolean {
+                                return Err(TypeCheckError::ExpectedBool(lhs.full_span()));
+                            } else if rhs_type != Type::Boolean {
+                                return Err(TypeCheckError::ExpectedBool(rhs.full_span()));
+                            }
 
-                typed_ast::Expression::BinaryOperator(
-                    *span_op,
-                    *op,
-                    Box::new(lhs_checked),
-                    Box::new(rhs_checked),
-                    type_,
-                )
+                            Type::Boolean
+                        }
+                    };
+
+                    typed_ast::Expression::BinaryOperator(
+                        *span_op,
+                        *op,
+                        Box::new(lhs_checked),
+                        Box::new(rhs_checked),
+                        type_,
+                    )
+                }
             }
             ast::Expression::FunctionCall(span, full_span, function_name, args) => {
                 let FunctionSignature {
@@ -857,6 +935,7 @@ impl TypeChecker {
                     Box::new(else_),
                 )
             }
+            ast::Expression::DateTime(span, dt) => typed_ast::Expression::DateTime(*span, *dt),
         })
     }
 
@@ -1401,6 +1480,7 @@ impl TypeChecker {
                 .map_err(TypeCheckError::RegistryError),
             TypeAnnotation::Bool(_) => Ok(Type::Boolean),
             TypeAnnotation::String(_) => Ok(Type::String),
+            TypeAnnotation::DateTime(_) => Ok(Type::DateTime),
         }
     }
 }
