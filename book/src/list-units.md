@@ -14,7 +14,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Angle` | [Minute of arc](https://en.wikipedia.org/wiki/Minute_and_second_of_arc) | `arcmin`, `arcminute`, `arcminutes` |
 | `Angle` | [Second of arc](https://en.wikipedia.org/wiki/Minute_and_second_of_arc) | `arcsec`, `arcsecond`, `arcseconds` |
 | `Angle` | [Degree](https://en.wikipedia.org/wiki/Degree_(angle)) | `deg`, `degree`, `degrees`, `°` |
-| `Angle` | [Gradian](https://en.wikipedia.org/wiki/Gradian) | `gon` |
+| `Angle` | [Gradian](https://en.wikipedia.org/wiki/Gradian) | `gon`, `gons`, `grad`, `grade`, `grades`, `gradian`, `gradians`, `grads` |
 | `Angle` | [Radian](https://en.wikipedia.org/wiki/Radian) | `rad`, `radian`, `radians` |
 | `Angle` | [Revolution](https://en.wikipedia.org/wiki/Revolution_(unit)) | `rev`, `revolution`, `revolutions` |
 | `Angle` | [Turn](https://en.wikipedia.org/wiki/Turn_(geometry)) | `turn`, `turns` |
@@ -23,6 +23,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Area` | [Barn](https://en.wikipedia.org/wiki/Barn_(unit)) | `barn`, `barns` |
 | `Area` | [Football field](https://en.wikipedia.org/wiki/Football_pitch) | `footballfield` |
 | `Area` | [Hectare](https://en.wikipedia.org/wiki/Hectare) | `ha`, `hectare`, `hectares` |
+| `Beat` | [Beat](https://en.wikipedia.org/wiki/Beat_(music)) | `beat`, `beats` |
+| `Beat / Time` | [Beats per minute](https://en.wikipedia.org/wiki/Tempo) | `bpm`, `BPM` |
 | `Capacitance` | [Farad](https://en.wikipedia.org/wiki/Farad) | `F`, `farad`, `farads` |
 | `CatalyticActivity` | [Katal](https://en.wikipedia.org/wiki/Katal) | `kat`, `katal`, `katals` |
 | `Current` | [Ampere](https://en.wikipedia.org/wiki/Ampere) | `A`, `ampere`, `amperes` |
@@ -76,6 +78,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Length` | [Nautical Mile](https://en.wikipedia.org/wiki/Nautical_mile) | `nautical_mile`, `nautical_miles`, `NM`, `nmi` |
 | `Length` | [Parsec](https://en.wikipedia.org/wiki/Parsec) | `parsec`, `parsecs`, `pc` |
 | `Length` | [Planck length](https://en.wikipedia.org/wiki/Planck_length) | `planck_length` |
+| `Length` | [Rack unit](https://en.wikipedia.org/wiki/Rack_unit) | `rackunit`, `rackunits`, `RU`, `U` |
 | `Length` | [US rod](https://en.wikipedia.org/wiki/Rod_(unit)) | `perch`, `rod`, `rods` |
 | `Length` | [Smoot](https://en.wikipedia.org/wiki/Smoot) | `smoot` |
 | `Length` | [Stoney length](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_length` |
@@ -142,7 +145,9 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Pressure` | [Standard atmosphere](https://en.wikipedia.org/wiki/Standard_atmosphere_(unit)) | `atm`, `atmosphere`, `atmospheres` |
 | `Pressure` | [Bar](https://en.wikipedia.org/wiki/Bar_(unit)) | `bar`, `bars` |
 | `Pressure` | [Inch of mercury](https://en.wikipedia.org/wiki/Inch_of_mercury) | `inHg` |
+| `Pressure` | [Kilopound-force per square inch](https://en.wikipedia.org/wiki/Ksi_(unit)) | `ksi`, `KSI` |
 | `Pressure` | [Millimeter of mercury](https://en.wikipedia.org/wiki/Millimeter_of_mercury) | `mmHg` |
+| `Pressure` | [Megapound-force per square inch](https://en.wikipedia.org/wiki/Ksi_(unit)) | `mpsi`, `MPSI` |
 | `Pressure` | [Pascal](https://en.wikipedia.org/wiki/Pascal_(unit)) | `Pa`, `pascal`, `pascals` |
 | `Pressure` | [Pound-force per square inch](https://en.wikipedia.org/wiki/Pounds_per_square_inch) | `psi`, `PSI` |
 | `Pressure` | [Torr](https://en.wikipedia.org/wiki/Torr) | `torr` |

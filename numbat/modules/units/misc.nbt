@@ -77,6 +77,16 @@ unit torr: Pressure = 101325 / 760 × pascal
 @aliases(PSI: short)
 unit psi: Pressure = 6.894757 kPa
 
+@name("Kilopound-force per square inch")
+@url("https://en.wikipedia.org/wiki/Ksi_(unit)")
+@aliases(KSI: short)
+unit ksi: Pressure = 1000 psi
+
+@name("Megapound-force per square inch")
+@url("https://en.wikipedia.org/wiki/Ksi_(unit)")
+@aliases(MPSI: short)
+unit mpsi: Pressure = 1000000 psi
+
 @name("Standard atmosphere")
 @url("https://en.wikipedia.org/wiki/Standard_atmosphere_(unit)")
 @aliases(atmospheres, atm: short)
@@ -100,6 +110,11 @@ unit footballfield: Area = 105 m × 68 m # Standard FIFA football pitch
 @url("https://en.wikipedia.org/wiki/Olympic-size_swimming_pool")
 unit swimmingpool: Volume = 50 m × 25 m × 2 m # Olympic-size swimming pool (FR3)
 
+@name("Rack unit")
+@url("https://en.wikipedia.org/wiki/Rack_unit")
+@aliases(rackunits, RU: short, U: short)
+unit rackunit: Length = 0.04445 meter
+
 # Angles
 
 @name("Turn")
@@ -109,7 +124,8 @@ unit turn: Angle = 2 π rad
 
 @name("Gradian")
 @url("https://en.wikipedia.org/wiki/Gradian")
-unit gon: Angle = 90° / 100
+@aliases(gradians, grad, grads, grade, grades, gon, gons)
+unit gradian: Angle = 90° / 100
 
 ### Abbreviations
 
