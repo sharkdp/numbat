@@ -39,6 +39,18 @@ unit frame: Frame
 @url("https://en.wikipedia.org/wiki/Frame_rate")
 unit fps: Frame / Time = frame / second
 
+# Basic unit of time in music
+dimension Beat
+
+@name("Beat")
+@url("https://en.wikipedia.org/wiki/Beat_(music)")
+@aliases(beats)
+unit beat: Beat
+
+@name("Beats per minute")
+@url("https://en.wikipedia.org/wiki/Tempo")
+@aliases(BPM: short)
+unit bpm: Beat / Time = beat / minute
 
 # A separate or limited portion or quantity of something
 dimension Piece
