@@ -1,15 +1,15 @@
 use itertools::Itertools;
 
-use crate::arithmetic::Exponent;
+use crate::arithmetic::{Exponent, Rational};
 use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, DimensionExpression, UnaryOperator};
 use crate::dimension::DimensionRegistry;
-use crate::markup as m;
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, registry::BaseRepresentation,
     span::Span,
 };
+use crate::{markup as m, BaseRepresentationFactor};
 
 /// Dimension type
 pub type DType = BaseRepresentation;
@@ -42,22 +42,13 @@ impl DType {
     }
     /// Is the current dimension type the Time dimension?
     ///
-    /// This ia special helper that's useful when dealing with DateTimes
-    pub fn is_time_dimension(&self, registry: &DimensionRegistry) -> bool {
-        let mut names = vec![];
-
-        let factors: Vec<_> = self.iter().collect();
-        if factors.len() == 1 && factors[0].1 == Exponent::from_integer(1) {
-            names.push(factors[0].0.clone());
-        }
-
-        names.extend(registry.get_derived_entry_names_for(self));
-
-        match &names[..] {
-            [] => false,
-            [single] if single == "Time" => true,
-            _ => false,
-        }
+    /// This is special helper that's useful when dealing with DateTimes
+    pub fn is_time_dimension(&self) -> bool {
+        *self
+            == BaseRepresentation::from_factor(BaseRepresentationFactor(
+                "Time".into(),
+                Rational::from_integer(1),
+            ))
     }
 }
 
