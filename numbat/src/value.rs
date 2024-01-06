@@ -32,6 +32,14 @@ impl Value {
             panic!("Expected value to be a string");
         }
     }
+
+    pub fn unsafe_as_datetime(&self) -> &chrono::DateTime<chrono::Utc> {
+        if let Value::DateTime(dt) = self {
+            dt
+        } else {
+            panic!("Expected value to be a string");
+        }
+    }
 }
 
 impl std::fmt::Display for Value {

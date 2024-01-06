@@ -339,6 +339,41 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 callable: Callable::Function(Box::new(now)),
             },
         );
+        m.insert(
+            "parse_datetime".to_string(),
+            ForeignFunction {
+                name: "parse_datetime".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(parse_datetime)),
+            },
+        );
+
+        m.insert(
+            "format_datetime".to_string(),
+            ForeignFunction {
+                name: "format_datetime".into(),
+                arity: 2..=2,
+                callable: Callable::Function(Box::new(format_datetime)),
+            },
+        );
+
+        m.insert(
+            "to_unixtime".to_string(),
+            ForeignFunction {
+                name: "to_unixtime".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(to_unixtime)),
+            },
+        );
+
+        m.insert(
+            "from_unixtime".to_string(),
+            ForeignFunction {
+                name: "from_unixtime".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(from_unixtime)),
+            },
+        );
 
         m
     })
@@ -754,4 +789,49 @@ fn now(args: &[Value]) -> Result<Value> {
     let now = chrono::Utc::now();
 
     Ok(Value::DateTime(now))
+}
+
+fn parse_datetime(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let input = args[0].unsafe_as_string();
+
+    // Try to parse as rfc3339 and if that fails then as rfc2822
+    let output = chrono::DateTime::parse_from_rfc3339(input)
+        .or_else(|_| chrono::DateTime::parse_from_rfc2822(input))
+        .map_err(|e| RuntimeError::DateParsingError(e))?;
+
+    Ok(Value::DateTime(output.into()))
+}
+
+fn format_datetime(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 2);
+
+    // TODO should we support taking the format/datetime args in either order?
+    let format = args[0].unsafe_as_string();
+    let dt = args[1].unsafe_as_datetime();
+
+    let output = dt.format(format).to_string();
+
+    Ok(Value::String(output))
+}
+
+fn to_unixtime(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let input = args[0].unsafe_as_datetime();
+
+    let output = input.timestamp();
+
+    Ok(Value::Quantity(Quantity::from_scalar(output as f64)))
+}
+
+fn from_unixtime(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let timestamp = args[0].unsafe_as_quantity().unsafe_value().to_f64() as i64;
+
+    let dt = chrono::DateTime::from_timestamp(timestamp, 0).unwrap();
+
+    Ok(Value::DateTime(dt))
 }

@@ -1,1 +1,7 @@
+use units::si
+
 fn now() -> DateTime
+fn parse_datetime(input: String) -> DateTime
+fn format_datetime(format: String, input: DateTime) -> String
+fn to_unixtime(input: DateTime) -> Scalar
+fn from_unixtime(input: Scalar) -> DateTime

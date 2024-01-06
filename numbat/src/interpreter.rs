@@ -37,6 +37,8 @@ pub enum RuntimeError {
     CouldNotLoadExchangeRates,
     #[error("User error: {0}")]
     UserError(String),
+    #[error("Could not parse date: {0}")]
+    DateParsingError(chrono::ParseError),
 }
 
 #[derive(Debug, PartialEq, Eq)]
