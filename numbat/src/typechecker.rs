@@ -522,7 +522,7 @@ impl TypeChecker {
                 if lhs_checked.get_type() == Type::DateTime {
                     let rhs_is_time = dtype(&rhs_checked)
                         .ok()
-                        .map(|t| t.is_time_dimension(&self.registry))
+                        .map(|t| t.is_time_dimension())
                         .unwrap_or(false);
                     let rhs_is_datetime = rhs_checked.get_type() == Type::DateTime;
 
@@ -541,8 +541,8 @@ impl TypeChecker {
                             Type::Dimension(time),
                             true,
                         )
-                    } else if *op == BinaryOperator::Add
-                        || *op == BinaryOperator::Sub && rhs_is_time
+                    } else if (*op == BinaryOperator::Add || *op == BinaryOperator::Sub)
+                        && rhs_is_time
                     {
                         typed_ast::Expression::BinaryOperatorForDate(
                             *span_op,
