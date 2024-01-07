@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use std::sync::OnceLock;
 
+use chrono::Offset;
+
 use crate::currency::ExchangeRatesCache;
 use crate::interpreter::RuntimeError;
 use crate::pretty_print::PrettyPrint;
@@ -788,7 +790,9 @@ fn now(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 0);
     let now = chrono::Utc::now();
 
-    Ok(Value::DateTime(now))
+    let offset = now.with_timezone(&chrono::Local).offset().fix();
+
+    Ok(Value::DateTime(now, offset))
 }
 
 fn parse_datetime(args: &[Value]) -> Result<Value> {
@@ -801,7 +805,9 @@ fn parse_datetime(args: &[Value]) -> Result<Value> {
         .or_else(|_| chrono::DateTime::parse_from_rfc2822(input))
         .map_err(|e| RuntimeError::DateParsingError(e))?;
 
-    Ok(Value::DateTime(output.into()))
+    let offset = output.offset();
+
+    Ok(Value::DateTime(output.into(), *offset))
 }
 
 fn format_datetime(args: &[Value]) -> Result<Value> {
@@ -832,6 +838,7 @@ fn from_unixtime(args: &[Value]) -> Result<Value> {
     let timestamp = args[0].unsafe_as_quantity().unsafe_value().to_f64() as i64;
 
     let dt = chrono::DateTime::from_timestamp(timestamp, 0).unwrap();
+    let offset = dt.offset().fix();
 
-    Ok(Value::DateTime(dt))
+    Ok(Value::DateTime(dt, offset))
 }

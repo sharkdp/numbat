@@ -526,7 +526,19 @@ impl TypeChecker {
                         .unwrap_or(false);
                     let rhs_is_datetime = rhs_checked.get_type() == Type::DateTime;
 
-                    if *op == BinaryOperator::Sub && rhs_is_datetime {
+                    if *op == BinaryOperator::ConvertTo
+                        && matches!(rhs_checked, typed_ast::Expression::String(..))
+                    {
+                        // Supports timezone conversion
+                        typed_ast::Expression::BinaryOperatorForDate(
+                            *span_op,
+                            *op,
+                            Box::new(lhs_checked),
+                            Box::new(rhs_checked),
+                            Type::DateTime,
+                            false,
+                        )
+                    } else if *op == BinaryOperator::Sub && rhs_is_datetime {
                         // TODO error handling
                         let time = self
                             .registry
