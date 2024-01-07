@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, fmt::Display};
 
+use chrono::Offset;
+
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
@@ -76,6 +78,8 @@ pub enum Op {
     SubDateTime,
     /// Computes the difference between two DateTimes
     DiffDateTime,
+    /// Converts a DateTime value to another timezone
+    ConvertDateTime,
 
     /// Move IP forward by the given offset argument if the popped-of value on
     /// top of the stack is false.
@@ -122,6 +126,7 @@ impl Op {
             | Op::Subtract
             | Op::SubDateTime
             | Op::DiffDateTime
+            | Op::ConvertDateTime
             | Op::Multiply
             | Op::Divide
             | Op::Power
@@ -156,6 +161,7 @@ impl Op {
             Op::Subtract => "Subtract",
             Op::SubDateTime => "SubDateTime",
             Op::DiffDateTime => "DiffDateTime",
+            Op::ConvertDateTime => "ConvertDateTime",
             Op::Multiply => "Multiply",
             Op::Divide => "Divide",
             Op::Power => "Power",
@@ -198,7 +204,7 @@ impl Constant {
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
-            Constant::DateTime(d) => Value::DateTime(*d),
+            Constant::DateTime(d) => Value::DateTime(*d, d.offset().fix()),
         }
     }
 }
@@ -525,8 +531,15 @@ impl Vm {
 
     fn pop_datetime(&mut self) -> chrono::DateTime<chrono::Utc> {
         match self.pop() {
-            Value::DateTime(q) => q,
+            Value::DateTime(q, _) => q,
             _ => panic!("Expected datetime to be on the top of the stack"),
+        }
+    }
+
+    fn pop_string(&mut self) -> String {
+        match self.pop() {
+            Value::String(s) => s,
+            _ => panic!("Expected string to be on the top of the stack"),
         }
     }
 
@@ -653,11 +666,14 @@ impl Vm {
                             (seconds_f.fract() * 1_000_000_000f64).round() as i64,
                         );
 
-                    self.push(Value::DateTime(match op {
-                        Op::AddDateTime => lhs + duration,
-                        Op::SubDateTime => lhs - duration,
-                        _ => unreachable!(),
-                    }));
+                    self.push(Value::DateTime(
+                        match op {
+                            Op::AddDateTime => lhs + duration,
+                            Op::SubDateTime => lhs - duration,
+                            _ => unreachable!(),
+                        },
+                        chrono::Local::now().offset().fix(),
+                    ));
                 }
                 Op::DiffDateTime => {
                     let unit = self.pop_quantity();
@@ -674,6 +690,20 @@ impl Vm {
                     ));
 
                     self.push(ret);
+                }
+                Op::ConvertDateTime => {
+                    let rhs = self.pop_string();
+                    let lhs = self.pop_datetime();
+
+                    // TODO how to handle errors, and is this `chrono_tz` crate the best choice?
+                    let offset = if rhs == "local" {
+                        chrono::Local::now().offset().fix()
+                    } else {
+                        let tz: chrono_tz::Tz = rhs.parse().unwrap_or(chrono_tz::UTC);
+                        lhs.with_timezone(&tz).offset().fix()
+                    };
+
+                    self.push(Value::DateTime(lhs, offset));
                 }
                 op @ (Op::LessThan | Op::GreaterThan | Op::LessOrEqual | Op::GreatorOrEqual) => {
                     let rhs = self.pop_quantity();

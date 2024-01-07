@@ -30,6 +30,7 @@ rust-embed = { version = "8.2.0", features = ["interpolate-folder-path"] }
 num-format = "0.4.4"
 walkdir = "2"
 chrono = "0.4.31"
+chrono-tz = "0.8.5"
 
 [features]
 default = ["fetch-exchangerates"]

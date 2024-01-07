@@ -139,8 +139,9 @@ pub enum Expression {
     BinaryOperatorForDate(
         Option<Span>,
         BinaryOperator,
-        /// Must be a DateTime
+        /// LHS must be a DateTime
         Box<Expression>,
+        /// RHS may be a DateTime, a Time unit, or a String
         Box<Expression>,
         Type,
         /// If true, then this is a date subtration operation
