@@ -7,6 +7,7 @@ use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
     number::Number,
     prefix::Prefix,
+    prefix_parser::AcceptsPrefix,
     product::{Canonicalize, Product},
 };
 
@@ -18,6 +19,12 @@ pub type ConversionFactor = Number;
 pub enum UnitKind {
     Base,
     Derived(ConversionFactor, Unit),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CanonicalName {
+    name: String,
+    accepts_prefix: AcceptsPrefix,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
