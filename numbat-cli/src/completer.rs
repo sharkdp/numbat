@@ -9,6 +9,7 @@ use rustyline::{
 pub struct NumbatCompleter {
     pub context: Arc<Mutex<Context>>,
     pub modules: Vec<String>,
+    pub all_timezones: Vec<&'static str>,
 }
 
 impl Completer for NumbatCompleter {
@@ -69,6 +70,40 @@ impl Completer for NumbatCompleter {
                         }
                     })
                     .filter(|p| p.replacement.starts_with(line))
+                    .collect(),
+            ));
+        }
+
+        // does it look like we're tab-completing a timezone (via the conversion operator)?
+        let complete_tz = line.find("->").map_or(None, |convert_pos| {
+            if let Some(quote_pos) = line.rfind('"') {
+                if quote_pos > convert_pos && pos > quote_pos {
+                    return Some(quote_pos + 1);
+                }
+            }
+            None
+        });
+        if let Some(pos_word) = complete_tz {
+            let word_part = &line[pos_word..];
+            let matches = self
+                .all_timezones
+                .iter()
+                .filter(|tz| tz.starts_with(word_part))
+                .collect::<Vec<_>>();
+            let append_closing_quote = matches.len() <= 1;
+
+            return Ok((
+                pos_word,
+                matches
+                    .into_iter()
+                    .map(|tz| Pair {
+                        display: tz.to_string(),
+                        replacement: if append_closing_quote {
+                            format!("{tz}\"")
+                        } else {
+                            tz.to_string()
+                        },
+                    })
                     .collect(),
             ));
         }
