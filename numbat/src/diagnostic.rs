@@ -3,8 +3,9 @@ use codespan_reporting::diagnostic::LabelStyle;
 use crate::{
     interpreter::RuntimeError,
     parser::ParseError,
+    pretty_print::PrettyPrint,
     resolver::ResolverError,
-    typechecker::{IncompatibleDimensionsError, IncompatibleTypeError, TypeCheckError},
+    typechecker::{IncompatibleDimensionsError, TypeCheckError},
     NameResolutionError,
 };
 
@@ -128,17 +129,6 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Secondary)
                         .with_message(format!("incompatible dimensions in {}", operation)),
                 ];
-                d.with_labels(labels).with_notes(vec![inner_error])
-            }
-            TypeCheckError::IncompatibleType(IncompatibleTypeError {
-                span_actual,
-                actual_type,
-                ..
-            }) => {
-                let labels = vec![span_actual
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(format!("{actual_type}"))];
-
                 d.with_labels(labels).with_notes(vec![inner_error])
             }
             TypeCheckError::NonScalarExponent(span, type_)
@@ -362,6 +352,33 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::ExpectedBool(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
+            TypeCheckError::MissingDimension(span, dim) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(format!("Missing dimension '{dim}'"))])
+                .with_notes(vec![format!(
+                    "This operation requires the '{dim}' dimension to be defined"
+                )]),
+            TypeCheckError::IncompatibleTypesInOperator(
+                span,
+                op,
+                lhs_type,
+                lhs_span,
+                rhs_type,
+                rhs_span,
+            ) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(format!(
+                        "Operator {} can not be applied to these types",
+                        op.pretty_print()
+                    )),
+                lhs_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(lhs_type.to_string()),
+                rhs_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message(rhs_type.to_string()),
+            ]),
         };
         vec![d]
     }

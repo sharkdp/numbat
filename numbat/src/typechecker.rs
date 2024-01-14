@@ -40,15 +40,6 @@ pub struct IncompatibleDimensionsError {
     pub actual_dimensions: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IncompatibleTypeError {
-    pub expected_name: &'static str,
-    pub expected_type: Type,
-    pub span_actual: Span,
-    pub actual_name: &'static str,
-    pub actual_type: Type,
-}
-
 fn pad(a: &str, b: &str) -> (String, String) {
     let max_length = a.width().max(b.width());
 
@@ -209,17 +200,6 @@ impl fmt::Display for IncompatibleDimensionsError {
 
 impl Error for IncompatibleDimensionsError {}
 
-impl fmt::Display for IncompatibleTypeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Found {} but expected {}",
-            self.actual_type, self.expected_name
-        )
-    }
-}
-impl Error for IncompatibleTypeError {}
-
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
@@ -230,9 +210,6 @@ pub enum TypeCheckError {
 
     #[error(transparent)]
     IncompatibleDimensions(IncompatibleDimensionsError),
-
-    #[error(transparent)]
-    IncompatibleType(IncompatibleTypeError),
 
     #[error("Exponents need to be dimensionless (got {1}).")]
     NonScalarExponent(Span, DType),
@@ -303,11 +280,17 @@ pub enum TypeCheckError {
     #[error("Incompatible types in comparison operator")]
     IncompatibleTypesInComparison(Span, Type, Span, Type, Span),
 
+    #[error("Incompatible types in operator")]
+    IncompatibleTypesInOperator(Span, BinaryOperator, Type, Span, Type, Span),
+
     #[error("Incompatible types in function call")]
     IncompatibleTypesInFunctionCall(Span, Type, Span, Type),
 
     #[error("This name is already used by {0}")]
     NameAlreadyUsedBy(&'static str, Span, Option<Span>),
+
+    #[error("Missing a definition for dimension {1}")]
+    MissingDimension(Span, String),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -539,11 +522,14 @@ impl TypeChecker {
                             false,
                         )
                     } else if *op == BinaryOperator::Sub && rhs_is_datetime {
-                        // TODO error handling
                         let time = self
                             .registry
                             .get_base_representation_for_name("Time")
-                            .unwrap();
+                            .map_err(|_| {
+                                TypeCheckError::MissingDimension(ast.full_span(), "Time".into())
+                            })?;
+
+                        // TODO make sure the "second" unit exists
 
                         typed_ast::Expression::BinaryOperatorForDate(
                             *span_op,
@@ -565,13 +551,22 @@ impl TypeChecker {
                             false,
                         )
                     } else {
-                        return Err(TypeCheckError::IncompatibleType(IncompatibleTypeError {
-                            expected_name: "a unit of Time",
-                            expected_type: lhs_checked.get_type(),
-                            span_actual: rhs.full_span(),
-                            actual_name: "TODO",
-                            actual_type: rhs_checked.get_type(),
-                        }));
+                        return Err(TypeCheckError::IncompatibleTypesInOperator(
+                            span_op.unwrap_or_else(|| {
+                                ast::Expression::BinaryOperator {
+                                    op: *op,
+                                    lhs: lhs.clone(),
+                                    rhs: rhs.clone(),
+                                    span_op: *span_op,
+                                }
+                                .full_span()
+                            }),
+                            *op,
+                            lhs_checked.get_type(),
+                            lhs.full_span(),
+                            rhs_checked.get_type(),
+                            rhs.full_span(),
+                        ));
                     }
                 } else {
                     let get_type_and_assert_equality = || {
