@@ -263,6 +263,7 @@ impl Cli {
             completer: NumbatCompleter {
                 context: self.context.clone(),
                 modules: self.context.lock().unwrap().list_modules().collect(),
+                all_timezones: chrono_tz::TZ_VARIANTS.map(|v| v.name()).into(),
             },
             highlighter: NumbatHighlighter {
                 context: self.context.clone(),
