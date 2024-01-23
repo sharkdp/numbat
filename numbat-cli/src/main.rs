@@ -165,6 +165,7 @@ impl Cli {
     }
 
     fn run(&mut self) -> Result<()> {
+        let mut currency_fetch_thread = None;
         if self.config.main.load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
@@ -204,9 +205,9 @@ impl Cli {
             }
 
             if self.config.exchange_rates.fetching_policy == ExchangeRateFetchingPolicy::OnStartup {
-                thread::spawn(move || {
+                currency_fetch_thread = Some(thread::spawn(move || {
                     numbat::Context::prefetch_exchange_rates();
-                });
+                }));
             }
         }
 
@@ -224,7 +225,7 @@ impl Cli {
                 .map(|exprs| (exprs.iter().join("\n"), CodeSource::Text))
         };
 
-        if let Some((code, code_source)) = code_and_source {
+        let ret_val = if let Some((code, code_source)) = code_and_source {
             let result = self.parse_and_evaluate(
                 &code,
                 code_source,
@@ -241,7 +242,11 @@ impl Cli {
             }
         } else {
             self.repl()
+        };
+        if let Some(thread) = currency_fetch_thread.take() {
+            let _ = thread.join();
         }
+        ret_val
     }
 
     fn repl(&mut self) -> Result<()> {
