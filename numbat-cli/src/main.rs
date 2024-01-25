@@ -165,7 +165,6 @@ impl Cli {
     }
 
     fn run(&mut self) -> Result<()> {
-        let mut currency_fetch_thread = None;
         if self.config.main.load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
@@ -197,18 +196,10 @@ impl Cli {
         if self.config.main.load_prelude
             && self.config.exchange_rates.fetching_policy != ExchangeRateFetchingPolicy::Never
         {
-            {
-                self.context
-                    .lock()
-                    .unwrap()
-                    .load_currency_module_on_demand(true);
-            }
-
-            if self.config.exchange_rates.fetching_policy == ExchangeRateFetchingPolicy::OnStartup {
-                currency_fetch_thread = Some(thread::spawn(move || {
-                    numbat::Context::prefetch_exchange_rates();
-                }));
-            }
+            self.context
+                .lock()
+                .unwrap()
+                .load_currency_module_on_demand(true);
         }
 
         let code_and_source: Option<(String, CodeSource)> = if let Some(ref path) = self.file {
@@ -225,7 +216,7 @@ impl Cli {
                 .map(|exprs| (exprs.iter().join("\n"), CodeSource::Text))
         };
 
-        let ret_val = if let Some((code, code_source)) = code_and_source {
+        if let Some((code, code_source)) = code_and_source {
             let result = self.parse_and_evaluate(
                 &code,
                 code_source,
@@ -241,12 +232,23 @@ impl Cli {
                 }
             }
         } else {
-            self.repl()
-        };
-        if let Some(thread) = currency_fetch_thread.take() {
-            let _ = thread.join();
+            let mut currency_fetch_thread = if self.config.main.load_prelude
+                && self.config.exchange_rates.fetching_policy
+                    == ExchangeRateFetchingPolicy::OnStartup
+            {
+                Some(thread::spawn(move || {
+                    numbat::Context::prefetch_exchange_rates();
+                }))
+            } else {
+                None
+            };
+
+            let repl_result = self.repl();
+            if let Some(thread) = currency_fetch_thread.take() {
+                let _ = thread.join();
+            }
+            repl_result
         }
-        ret_val
     }
 
     fn repl(&mut self) -> Result<()> {
