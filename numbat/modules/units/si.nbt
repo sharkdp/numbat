@@ -110,7 +110,7 @@ unit farad: Capacitance = coulomb / volt
 @name("Ohm")
 @url("https://en.wikipedia.org/wiki/Ohm")
 @metric_prefixes
-@aliases(ohms, Ω: short)
+@aliases(ohms, Ω: short, Ω: short)
 unit ohm: ElectricResistance = volt / ampere
 
 @name("Siemens")
