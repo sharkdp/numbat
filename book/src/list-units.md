@@ -37,7 +37,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `ElectricCharge` | [Ampere-hour](https://en.wikipedia.org/wiki/Ampere_hour) | `Ah`, `amperehour` |
 | `ElectricCharge` | [Coulomb](https://en.wikipedia.org/wiki/Coulomb) | `C`, `coulomb`, `coulombs` |
 | `ElectricConductance` | [Siemens](https://en.wikipedia.org/wiki/Siemens_(unit)) | `S`, `siemens` |
-| `ElectricResistance` | [Ohm](https://en.wikipedia.org/wiki/Ohm) | `ohm`, `ohms`, `Ω` |
+| `ElectricResistance` | [Ohm](https://en.wikipedia.org/wiki/Ohm) | `ohm`, `ohms`, `Ω`, `Ω` |
 | `Energy` | [British thermal unit](https://en.wikipedia.org/wiki/British_thermal_unit) | `BTU`, `Btu` |
 | `Energy` | [Calorie](https://en.wikipedia.org/wiki/Calorie) | `cal`, `calorie`, `calories` |
 | `Energy` | [Electron volt](https://en.wikipedia.org/wiki/Electronvolt) | `electronvolt`, `electronvolts`, `eV` |
