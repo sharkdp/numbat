@@ -18,32 +18,6 @@ pub enum PrettyPrintMode {
     Auto,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
-pub struct MainConfig {
-    pub intro_banner: IntroBanner,
-    pub prompt: String,
-    pub pretty_print: PrettyPrintMode,
-
-    #[serde(skip_serializing)]
-    pub load_prelude: bool,
-
-    #[serde(skip_serializing)]
-    pub load_user_init: bool,
-}
-
-impl Default for MainConfig {
-    fn default() -> Self {
-        Self {
-            prompt: ">>> ".to_owned(),
-            intro_banner: IntroBanner::default(),
-            pretty_print: PrettyPrintMode::Auto,
-            load_prelude: true,
-            load_user_init: true,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum ExchangeRateFetchingPolicy {
@@ -72,10 +46,30 @@ impl Default for ExchangeRateConfig {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct Config {
-    #[serde(flatten)]
-    pub main: MainConfig,
+    pub intro_banner: IntroBanner,
+    pub prompt: String,
+    pub pretty_print: PrettyPrintMode,
+
+    #[serde(skip_serializing)]
+    pub load_prelude: bool,
+
+    #[serde(skip_serializing)]
+    pub load_user_init: bool,
     pub exchange_rates: ExchangeRateConfig,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            prompt: ">>> ".to_owned(),
+            intro_banner: IntroBanner::default(),
+            pretty_print: PrettyPrintMode::Auto,
+            load_prelude: true,
+            load_user_init: true,
+            exchange_rates: Default::default(),
+        }
+    }
 }
