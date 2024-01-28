@@ -133,11 +133,11 @@ impl Cli {
             Config::default()
         };
 
-        config.main.load_prelude &= !args.no_prelude;
-        config.main.load_user_init &= !(args.no_prelude || args.no_init);
+        config.load_prelude &= !args.no_prelude;
+        config.load_user_init &= !(args.no_prelude || args.no_init);
 
-        config.main.intro_banner = args.intro_banner.unwrap_or(config.main.intro_banner);
-        config.main.pretty_print = args.pretty_print.unwrap_or(config.main.pretty_print);
+        config.intro_banner = args.intro_banner.unwrap_or(config.intro_banner);
+        config.pretty_print = args.pretty_print.unwrap_or(config.pretty_print);
 
         let mut fs_importer = FileSystemImporter::default();
         for path in Self::get_modules_paths() {
@@ -165,7 +165,7 @@ impl Cli {
     }
 
     fn run(&mut self) -> Result<()> {
-        if self.config.main.load_prelude {
+        if self.config.load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
                 CodeSource::Internal,
@@ -177,7 +177,7 @@ impl Cli {
             }
         }
 
-        if self.config.main.load_user_init {
+        if self.config.load_user_init {
             let user_init_path = Self::get_config_path().join("init.nbt");
 
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
@@ -193,7 +193,7 @@ impl Cli {
             }
         }
 
-        if self.config.main.load_prelude
+        if self.config.load_prelude
             && self.config.exchange_rates.fetching_policy != ExchangeRateFetchingPolicy::Never
         {
             self.context
@@ -221,7 +221,7 @@ impl Cli {
                 &code,
                 code_source,
                 ExecutionMode::Normal,
-                self.config.main.pretty_print,
+                self.config.pretty_print,
             );
 
             match result {
@@ -232,7 +232,7 @@ impl Cli {
                 }
             }
         } else {
-            let mut currency_fetch_thread = if self.config.main.load_prelude
+            let mut currency_fetch_thread = if self.config.load_prelude
                 && self.config.exchange_rates.fetching_policy
                     == ExchangeRateFetchingPolicy::OnStartup
             {
@@ -275,7 +275,7 @@ impl Cli {
         rl.load_history(&history_path).ok();
 
         if interactive {
-            match self.config.main.intro_banner {
+            match self.config.intro_banner {
                 IntroBanner::Long => {
                     println!();
                     println!(
@@ -313,7 +313,7 @@ impl Cli {
         interactive: bool,
     ) -> Result<()> {
         loop {
-            let readline = rl.readline(&self.config.main.prompt);
+            let readline = rl.readline(&self.config.prompt);
             match readline {
                 Ok(line) => {
                     if !line.trim().is_empty() {
@@ -394,7 +394,7 @@ impl Cli {
                                     } else {
                                         ExecutionMode::Normal
                                     },
-                                    self.config.main.pretty_print,
+                                    self.config.pretty_print,
                                 );
 
                                 match result {
