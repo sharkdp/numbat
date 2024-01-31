@@ -7,7 +7,7 @@ A new **base unit** can be defined by specifying the *physical dimension* it rep
 ``` numbat
 unit second: Time
 ```
-Here, `Time` denotes the physical dimension. To learn more, you can read the [corresponding chapter](dimension-definitions.md). But for now, we can just assume that they are already given.
+Here, `Time` denotes the physical dimension. To define new dimensions (e.g., "Pixel", "Page", etc.), refer to the [Dimension Definitions chapter](dimension-definitions.md).
 
 **Derived units** are also introduced with the `unit` keyword. But unlike base units, they are defined through their relation to
 other units. For example, a *minute* can be defined as
