@@ -616,6 +616,9 @@ mod tests {
                  @aliases(in: short)
                  unit inch = 0.0254 m
 
+                 @metric_prefixes
+                 unit points
+
                  let a = 1
                  let b = 1
                  let c = 1
@@ -731,6 +734,7 @@ mod tests {
         roundtrip_check("2^3!");
         roundtrip_check("-3!");
         roundtrip_check("(-3)!");
+        roundtrip_check("megapoints");
     }
 
     #[test]

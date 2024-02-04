@@ -201,13 +201,18 @@ impl Power for UnitFactor {
     }
 }
 
-// TODO: Use the AcceptsPrefix here to format the string correctly
 impl Display for UnitFactor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let prefix = if self.unit_id.canonical_name.accepts_prefix.short {
+            self.prefix.as_string_short()
+        } else {
+            self.prefix.as_string_long()
+        };
+
         write!(
             f,
             "{}{}{}",
-            self.prefix.as_string_short(),
+            prefix,
             self.unit_id.canonical_name.name,
             pretty_exponent(&self.exponent)
         )
