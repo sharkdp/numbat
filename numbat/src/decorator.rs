@@ -49,6 +49,19 @@ pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> Str
     unit_name.into()
 }
 
+pub fn get_canonical_accepts_prefix(decorators: &[Decorator]) -> AcceptsPrefix {
+    for decorator in decorators {
+        if let Decorator::Aliases(aliases) = decorator {
+            for (_alias, accepts_prefix) in aliases {
+                if accepts_prefix.map(|ap| ap.short).unwrap_or(false) {
+                    return accepts_prefix.unwrap();
+                }
+            }
+        }
+    }
+    AcceptsPrefix::only_long()
+}
+
 pub fn name(decorators: &[Decorator]) -> Option<String> {
     for decorator in decorators {
         if let Decorator::Name(name) = decorator {

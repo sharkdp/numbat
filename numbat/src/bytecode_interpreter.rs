@@ -302,7 +302,7 @@ impl BytecodeInterpreter {
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
                     unit_name,
                     &crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
-                    AcceptsPrefix::both(),
+                    crate::decorator::get_canonical_accepts_prefix(&decorators[..]),
                 )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
