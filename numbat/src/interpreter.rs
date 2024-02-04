@@ -229,11 +229,11 @@ mod tests {
         assert_runtime_error(
             "1 meter > alternative_length_base_unit",
             RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
-                Unit::new_base("meter", "m", AcceptsPrefix::both()),
+                Unit::new_base("meter", "m", AcceptsPrefix::only_short()),
                 Unit::new_base(
                     "alternative_length_base_unit",
                     "alternative_length_base_unit",
-                    AcceptsPrefix::both()
+                    AcceptsPrefix::only_long(),
                 ),
             )),
         );
@@ -253,7 +253,8 @@ mod tests {
              @aliases(px: short)
              unit pixel : Pixel
              2 * pixel",
-            Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_base("pixel", "px", AcceptsPrefix::both())),
+            Quantity::from_scalar(2.0)
+                * Quantity::from_unit(Unit::new_base("pixel", "px", AcceptsPrefix::only_short())),
         );
 
         assert_evaluates_to(

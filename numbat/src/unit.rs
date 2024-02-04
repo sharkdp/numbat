@@ -52,7 +52,11 @@ impl UnitIdentifier {
     pub fn unit_and_factor(&self) -> BaseUnitAndFactor {
         match &self.kind {
             UnitKind::Base => BaseUnitAndFactor(
-                Unit::new_base(&self.name, &self.canonical_name.name, self.canonical_name.accepts_prefix),
+                Unit::new_base(
+                    &self.name,
+                    &self.canonical_name.name,
+                    self.canonical_name.accepts_prefix,
+                ),
                 Number::from_f64(1.0),
             ),
             UnitKind::Derived(factor, defining_unit) => {
@@ -64,7 +68,11 @@ impl UnitIdentifier {
     pub fn base_unit_and_factor(&self) -> BaseUnitAndFactor {
         match &self.kind {
             UnitKind::Base => BaseUnitAndFactor(
-                Unit::new_base(&self.name, &self.canonical_name.name, self.canonical_name.accepts_prefix),
+                Unit::new_base(
+                    &self.name,
+                    &self.canonical_name.name,
+                    self.canonical_name.accepts_prefix,
+                ),
                 Number::from_f64(1.0),
             ),
             UnitKind::Derived(factor, defining_unit) => {
@@ -295,27 +303,27 @@ impl Unit {
 
     #[cfg(test)]
     pub fn meter() -> Self {
-        Self::new_base("meter", "m", AcceptsPrefix::both())
+        Self::new_base("meter", "m", AcceptsPrefix::only_short())
     }
 
     #[cfg(test)]
     pub fn centimeter() -> Self {
-        Self::new_base("meter", "m", AcceptsPrefix::both()).with_prefix(Prefix::centi())
+        Self::new_base("meter", "m", AcceptsPrefix::only_short()).with_prefix(Prefix::centi())
     }
 
     #[cfg(test)]
     pub fn millimeter() -> Self {
-        Self::new_base("meter", "m", AcceptsPrefix::both()).with_prefix(Prefix::milli())
+        Self::new_base("meter", "m", AcceptsPrefix::only_short()).with_prefix(Prefix::milli())
     }
 
     #[cfg(test)]
     pub fn kilometer() -> Self {
-        Self::new_base("meter", "m", AcceptsPrefix::both()).with_prefix(Prefix::kilo())
+        Self::new_base("meter", "m", AcceptsPrefix::only_short()).with_prefix(Prefix::kilo())
     }
 
     #[cfg(test)]
     pub fn second() -> Self {
-        Self::new_base("second", "s", AcceptsPrefix::both())
+        Self::new_base("second", "s", AcceptsPrefix::only_short())
     }
 
     #[cfg(test)]
@@ -510,7 +518,10 @@ mod tests {
                 prefix: Prefix::none(),
                 unit_id: UnitIdentifier {
                     name: "meter".into(),
-                    canonical_name: CanonicalName { name: "m".into(), accepts_prefix: AcceptsPrefix::both() },
+                    canonical_name: CanonicalName {
+                        name: "m".into(),
+                        accepts_prefix: AcceptsPrefix::only_short(),
+                    },
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(1),
@@ -519,7 +530,10 @@ mod tests {
                 prefix: Prefix::none(),
                 unit_id: UnitIdentifier {
                     name: "second".into(),
-                    canonical_name: CanonicalName { name: "s".into(), accepts_prefix: AcceptsPrefix::both() },
+                    canonical_name: CanonicalName {
+                        name: "s".into(),
+                        accepts_prefix: AcceptsPrefix::only_short(),
+                    },
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(-1),
@@ -582,7 +596,10 @@ mod tests {
                 prefix: Prefix::Metric(-3),
                 unit_id: UnitIdentifier {
                     name: "meter".into(),
-                    canonical_name: CanonicalName { name: "m".into(), accepts_prefix: AcceptsPrefix::both() },
+                    canonical_name: CanonicalName {
+                        name: "m".into(),
+                        accepts_prefix: AcceptsPrefix::only_short()
+                    },
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(1),
