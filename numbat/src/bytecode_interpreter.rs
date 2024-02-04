@@ -7,6 +7,7 @@ use crate::interpreter::{
 };
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
+use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
 use crate::unit::Unit;
@@ -301,6 +302,7 @@ impl BytecodeInterpreter {
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
                     unit_name,
                     &crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
+                    AcceptsPrefix::both(),
                 )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
@@ -312,9 +314,11 @@ impl BytecodeInterpreter {
                     .map(|(name, ap)| (name.clone(), ap))
                     .collect();
 
-                let constant_idx = self
-                    .vm
-                    .add_constant(Constant::Unit(Unit::new_base("<dummy>", "<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
+                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
+                    "<dummy>",
+                    "<dummy>",
+                    AcceptsPrefix::both(),
+                ))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
                     Some(&crate::decorator::get_canonical_unit_name(
