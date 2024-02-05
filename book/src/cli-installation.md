@@ -126,3 +126,7 @@ If this variable is set during compilation, the specified path will be compiled 
 
 In order to test that everything is working as intended, you can open `numbat` and type `let meter = 2`. The
 path in the error message should point to the specified location (and *not* to `<builtin>/…`).
+
+If your OS uses `.desktop` files, you should probably also install `assets/numbat.desktop` and `assets/numbat-*x*.png` to their
+appropriate locations (typically `/usr/share/applications` and `/usr/share/icons` respectively) so that users can e.g. pin
+Numbat to GNOME's Dash.
