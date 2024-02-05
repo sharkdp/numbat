@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Numbat
+GenericName=Calculator
+TryExec=numbat
+Exec=numbat
+Icon=numbat
+Terminal=true
+Categories=Education;Science;Math;
+Keywords=maths;numerical computations;physics;quantities;units;dimensions
