@@ -30,7 +30,7 @@ pub enum TokenizerErrorKind {
     #[error("Unterminated string")]
     UnterminatedString,
 
-    #[error("Unterminated {{...}} interpolation in this string")]
+    #[error("Unterminated string interpolation")]
     UnterminatedStringInterpolation,
 
     #[error("Unexpected '{{' inside string interpolation")]
@@ -532,8 +532,8 @@ impl Tokenizer {
                     return Err(TokenizerError {
                         kind: TokenizerErrorKind::UnterminatedStringInterpolation,
                         span: Span {
-                            start: self.string_start,
-                            end: self.current,
+                            start: self.interpolation_start,
+                            end: self.last,
                             code_source_id: self.code_source_id,
                         },
                     });
