@@ -204,13 +204,13 @@ impl BytecodeInterpreter {
                 let current_depth = self.current_depth();
 
                 // For variables, we ignore the prefix info and only use the names
-                let aliases = crate::decorator::name_and_aliases(&identifier, &decorators)
+                let aliases = crate::decorator::name_and_aliases(identifier, decorators)
                     .map(|(name, _)| name)
                     .cloned()
                     .collect::<Vec<_>>();
                 let metadata = LocalMetadata {
-                    name: crate::decorator::name(&decorators),
-                    url: crate::decorator::url(&decorators),
+                    name: crate::decorator::name(decorators),
+                    url: crate::decorator::url(decorators),
                     aliases: aliases.clone(),
                 };
 
