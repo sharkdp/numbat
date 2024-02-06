@@ -10,7 +10,7 @@ unit week: Time = 7 days
 @name("Gregorian year")
 @url("https://en.wikipedia.org/wiki/Gregorian_year")
 @metric_prefixes
-@aliases(year: both, years, yr: short)
+@aliases(years, yr: short)
 unit year: Time = 365.2425 days
 
 @name("Month")
