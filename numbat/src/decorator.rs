@@ -1,4 +1,4 @@
-use crate::prefix_parser::AcceptsPrefix;
+use crate::{prefix_parser::AcceptsPrefix, unit::CanonicalName};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Decorator {
@@ -36,30 +36,28 @@ pub fn name_and_aliases<'a>(
     }
 }
 
-pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> String {
+pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> CanonicalName {
     for decorator in decorators {
         if let Decorator::Aliases(aliases) = decorator {
             for (alias, accepts_prefix) in aliases {
                 if accepts_prefix.map(|ap| ap.short).unwrap_or(false) {
-                    return alias.into();
+                    let name = alias.into();
+                    let apr = match accepts_prefix {
+                        &Some(ap) if ap.short => ap,
+                        _ => AcceptsPrefix::only_long(),
+                    };
+                    return CanonicalName {
+                        name,
+                        accepts_prefix: apr,
+                    };
                 }
             }
         }
     }
-    unit_name.into()
-}
-
-pub fn get_canonical_accepts_prefix(decorators: &[Decorator]) -> AcceptsPrefix {
-    for decorator in decorators {
-        if let Decorator::Aliases(aliases) = decorator {
-            for (_alias, accepts_prefix) in aliases {
-                if accepts_prefix.map(|ap| ap.short).unwrap_or(false) {
-                    return accepts_prefix.unwrap();
-                }
-            }
-        }
+    CanonicalName {
+        name: unit_name.into(),
+        accepts_prefix: AcceptsPrefix::only_long(),
     }
-    AcceptsPrefix::only_long()
 }
 
 pub fn name(decorators: &[Decorator]) -> Option<String> {

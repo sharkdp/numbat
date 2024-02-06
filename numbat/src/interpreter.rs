@@ -128,7 +128,7 @@ pub trait Interpreter {
 #[cfg(test)]
 mod tests {
     use crate::prefix_parser::AcceptsPrefix;
-    use crate::unit::Unit;
+    use crate::unit::{CanonicalName, Unit};
     use crate::{bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer};
 
     use super::*;
@@ -229,11 +229,19 @@ mod tests {
         assert_runtime_error(
             "1 meter > alternative_length_base_unit",
             RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
-                Unit::new_base("meter", "m", AcceptsPrefix::only_short()),
+                Unit::new_base(
+                    "meter",
+                    CanonicalName {
+                        name: "m".to_string(),
+                        accepts_prefix: AcceptsPrefix::only_short(),
+                    },
+                ),
                 Unit::new_base(
                     "alternative_length_base_unit",
-                    "alternative_length_base_unit",
-                    AcceptsPrefix::only_long(),
+                    CanonicalName {
+                        name: "alternative_length_base_unit".to_string(),
+                        accepts_prefix: AcceptsPrefix::only_long(),
+                    },
                 ),
             )),
         );
@@ -254,7 +262,13 @@ mod tests {
              unit pixel : Pixel
              2 * pixel",
             Quantity::from_scalar(2.0)
-                * Quantity::from_unit(Unit::new_base("pixel", "px", AcceptsPrefix::only_short())),
+                * Quantity::from_unit(Unit::new_base(
+                    "pixel",
+                    CanonicalName {
+                        name: "px".to_string(),
+                        accepts_prefix: AcceptsPrefix::only_short(),
+                    },
+                )),
         );
 
         assert_evaluates_to(

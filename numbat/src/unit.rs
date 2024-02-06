@@ -23,8 +23,8 @@ pub enum UnitKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CanonicalName {
-    name: String,
-    accepts_prefix: AcceptsPrefix,
+    pub name: String,
+    pub accepts_prefix: AcceptsPrefix,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,11 +52,7 @@ impl UnitIdentifier {
     pub fn unit_and_factor(&self) -> BaseUnitAndFactor {
         match &self.kind {
             UnitKind::Base => BaseUnitAndFactor(
-                Unit::new_base(
-                    &self.name,
-                    &self.canonical_name.name,
-                    self.canonical_name.accepts_prefix,
-                ),
+                Unit::new_base(&self.name, self.canonical_name.clone()),
                 Number::from_f64(1.0),
             ),
             UnitKind::Derived(factor, defining_unit) => {
@@ -68,11 +64,7 @@ impl UnitIdentifier {
     pub fn base_unit_and_factor(&self) -> BaseUnitAndFactor {
         match &self.kind {
             UnitKind::Base => BaseUnitAndFactor(
-                Unit::new_base(
-                    &self.name,
-                    &self.canonical_name.name,
-                    self.canonical_name.accepts_prefix,
-                ),
+                Unit::new_base(&self.name, self.canonical_name.clone()),
                 Number::from_f64(1.0),
             ),
             UnitKind::Derived(factor, defining_unit) => {
@@ -230,15 +222,12 @@ impl Unit {
         self == &Self::scalar()
     }
 
-    pub fn new_base(name: &str, canonical_name: &str, accepts_prefix: AcceptsPrefix) -> Self {
+    pub fn new_base(name: &str, canonical_name: CanonicalName) -> Self {
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
                 name: name.into(),
-                canonical_name: CanonicalName {
-                    name: canonical_name.into(),
-                    accepts_prefix,
-                },
+                canonical_name,
                 kind: UnitKind::Base,
             },
             exponent: Rational::from_integer(1),
@@ -308,32 +297,71 @@ impl Unit {
 
     #[cfg(test)]
     pub fn meter() -> Self {
-        Self::new_base("meter", "m", AcceptsPrefix::only_short())
+        Self::new_base(
+            "meter",
+            CanonicalName {
+                name: "m".to_string(),
+                accepts_prefix: AcceptsPrefix::only_short(),
+            },
+        )
     }
 
     #[cfg(test)]
     pub fn centimeter() -> Self {
-        Self::new_base("meter", "m", AcceptsPrefix::only_short()).with_prefix(Prefix::centi())
+        Self::new_base(
+            "meter",
+            CanonicalName {
+                name: "m".to_string(),
+                accepts_prefix: AcceptsPrefix::only_short(),
+            },
+        )
+        .with_prefix(Prefix::centi())
     }
 
     #[cfg(test)]
     pub fn millimeter() -> Self {
-        Self::new_base("meter", "m", AcceptsPrefix::only_short()).with_prefix(Prefix::milli())
+        Self::new_base(
+            "meter",
+            CanonicalName {
+                name: "m".to_string(),
+                accepts_prefix: AcceptsPrefix::only_short(),
+            },
+        )
+        .with_prefix(Prefix::milli())
     }
 
     #[cfg(test)]
     pub fn kilometer() -> Self {
-        Self::new_base("meter", "m", AcceptsPrefix::only_short()).with_prefix(Prefix::kilo())
+        Self::new_base(
+            "meter",
+            CanonicalName {
+                name: "m".to_string(),
+                accepts_prefix: AcceptsPrefix::only_short(),
+            },
+        )
+        .with_prefix(Prefix::kilo())
     }
 
     #[cfg(test)]
     pub fn second() -> Self {
-        Self::new_base("second", "s", AcceptsPrefix::only_short())
+        Self::new_base(
+            "second",
+            CanonicalName {
+                name: "s".to_string(),
+                accepts_prefix: AcceptsPrefix::only_short(),
+            },
+        )
     }
 
     #[cfg(test)]
     pub fn gram() -> Self {
-        Self::new_base("gram", "g", AcceptsPrefix::both())
+        Self::new_base(
+            "gram",
+            CanonicalName {
+                name: "g".to_string(),
+                accepts_prefix: AcceptsPrefix::only_short(),
+            },
+        )
     }
 
     #[cfg(test)]
@@ -343,7 +371,13 @@ impl Unit {
 
     #[cfg(test)]
     pub fn kelvin() -> Self {
-        Self::new_base("kelvin", "K", AcceptsPrefix::none())
+        Self::new_base(
+            "kelvin",
+            CanonicalName {
+                name: "K".to_string(),
+                accepts_prefix: AcceptsPrefix::only_short(),
+            },
+        )
     }
 
     #[cfg(test)]
@@ -443,7 +477,13 @@ impl Unit {
 
     #[cfg(test)]
     pub fn bit() -> Self {
-        Self::new_base("bit", "B", AcceptsPrefix::none())
+        Self::new_base(
+            "bit",
+            CanonicalName {
+                name: "bit".to_string(),
+                accepts_prefix: AcceptsPrefix::only_long(),
+            },
+        )
     }
 
     #[cfg(test)]

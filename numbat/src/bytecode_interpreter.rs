@@ -10,7 +10,7 @@ use crate::prefix::Prefix;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
-use crate::unit::Unit;
+use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
@@ -301,8 +301,7 @@ impl BytecodeInterpreter {
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
                     unit_name,
-                    &crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
-                    crate::decorator::get_canonical_accepts_prefix(&decorators[..]),
+                    crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
                 )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
@@ -316,15 +315,20 @@ impl BytecodeInterpreter {
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
                     "<dummy>",
-                    "<dummy>",
-                    AcceptsPrefix::both(),
+                    CanonicalName {
+                        name: "<dummy>".to_string(),
+                        accepts_prefix: AcceptsPrefix::both(),
+                    },
                 ))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
-                    Some(&crate::decorator::get_canonical_unit_name(
-                        unit_name.as_str(),
-                        &decorators[..],
-                    )),
+                    Some(
+                        &crate::decorator::get_canonical_unit_name(
+                            unit_name.as_str(),
+                            &decorators[..],
+                        )
+                        .name,
+                    ),
                     UnitMetadata {
                         type_: type_.clone(),
                         readable_type: readable_type.clone(),
