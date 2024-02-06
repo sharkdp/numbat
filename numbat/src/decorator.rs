@@ -40,16 +40,14 @@ pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> Can
     for decorator in decorators {
         if let Decorator::Aliases(aliases) = decorator {
             for (alias, accepts_prefix) in aliases {
-                if accepts_prefix.map(|ap| ap.short).unwrap_or(false) {
-                    let name = alias.into();
-                    let apr = match accepts_prefix {
-                        &Some(ap) if ap.short => ap,
-                        _ => AcceptsPrefix::only_long(),
-                    };
-                    return CanonicalName {
-                        name,
-                        accepts_prefix: apr,
-                    };
+                match accepts_prefix {
+                    &Some(ap) if ap.short => {
+                        return CanonicalName {
+                            name: alias.into(),
+                            accepts_prefix: ap,
+                        };
+                    }
+                    _ => {}
                 }
             }
         }
