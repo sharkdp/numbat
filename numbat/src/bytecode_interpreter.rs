@@ -292,6 +292,9 @@ impl BytecodeInterpreter {
                             readable_type: readable_type.clone(),
                             aliases,
                             name: decorator::name(decorators),
+                            canonical_name: decorator::get_canonical_unit_name(
+                                unit_name, decorators,
+                            ),
                             url: decorator::url(decorators),
                             binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                             metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
@@ -334,6 +337,7 @@ impl BytecodeInterpreter {
                         readable_type: readable_type.clone(),
                         aliases,
                         name: decorator::name(decorators),
+                        canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
                         url: decorator::url(decorators),
                         binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                         metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),

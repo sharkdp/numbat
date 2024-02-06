@@ -2,7 +2,7 @@ use crate::markup::Markup;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor, Registry, RegistryError};
 use crate::typed_ast::Type;
-use crate::unit::Unit;
+use crate::unit::{CanonicalName, Unit};
 
 use thiserror::Error;
 
@@ -20,6 +20,7 @@ pub struct UnitMetadata {
     pub readable_type: Markup,
     pub aliases: Vec<(String, AcceptsPrefix)>,
     pub name: Option<String>,
+    pub canonical_name: CanonicalName,
     pub url: Option<String>,
     pub binary_prefixes: bool,
     pub metric_prefixes: bool,

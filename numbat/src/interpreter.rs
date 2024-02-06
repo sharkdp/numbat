@@ -231,17 +231,11 @@ mod tests {
             RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
                 Unit::new_base(
                     "meter",
-                    CanonicalName {
-                        name: "m".to_string(),
-                        accepts_prefix: AcceptsPrefix::only_short(),
-                    },
+                    CanonicalName::new("m", AcceptsPrefix::only_short()),
                 ),
                 Unit::new_base(
                     "alternative_length_base_unit",
-                    CanonicalName {
-                        name: "alternative_length_base_unit".to_string(),
-                        accepts_prefix: AcceptsPrefix::only_long(),
-                    },
+                    CanonicalName::new("alternative_length_base_unit", AcceptsPrefix::only_long()),
                 ),
             )),
         );
@@ -264,10 +258,7 @@ mod tests {
             Quantity::from_scalar(2.0)
                 * Quantity::from_unit(Unit::new_base(
                     "pixel",
-                    CanonicalName {
-                        name: "px".to_string(),
-                        accepts_prefix: AcceptsPrefix::only_short(),
-                    },
+                    CanonicalName::new("px", AcceptsPrefix::only_short()),
                 )),
         );
 
