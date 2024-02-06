@@ -42,10 +42,7 @@ pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> Can
             for (alias, accepts_prefix) in aliases {
                 match accepts_prefix {
                     &Some(ap) if ap.short => {
-                        return CanonicalName {
-                            name: alias.into(),
-                            accepts_prefix: ap,
-                        };
+                        return CanonicalName::new(alias, ap);
                     }
                     _ => {}
                 }

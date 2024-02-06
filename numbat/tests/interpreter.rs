@@ -590,3 +590,8 @@ fn test_overwrite_captured_constant() {
         "0.841471",
     );
 }
+
+#[test]
+fn test_pretty_print_prefixes() {
+    expect_output("1 megabarn", "1 megabarn");
+}
