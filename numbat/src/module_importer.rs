@@ -70,7 +70,6 @@ impl ModuleImporter for FileSystemImporter {
                         if let Ok(relative_path) = path.strip_prefix(root_path) {
                             let components: Vec<String> = relative_path
                                 .components()
-                                .into_iter()
                                 .map(|c| {
                                     c.as_os_str()
                                         .to_string_lossy()

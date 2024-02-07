@@ -32,16 +32,14 @@ impl ColumnFormatter {
             .collect();
 
         if let Some(max_entry_width) = entries.iter().map(|s| s.width()).max() {
-            let column_width = max_entry_width + self.padding as usize;
-            let min_num_columns = self.terminal_width as usize / column_width;
+            let column_width = max_entry_width + self.padding;
+            let min_num_columns = self.terminal_width / column_width;
 
             if min_num_columns < 1 {
                 for entry in entries {
-                    result += Markup::from(FormattedString(
-                        OutputType::Normal,
-                        format.clone(),
-                        entry.into(),
-                    )) + m::whitespace(" ".repeat(self.padding));
+                    result +=
+                        Markup::from(FormattedString(OutputType::Normal, format.clone(), entry))
+                            + m::whitespace(" ".repeat(self.padding));
                 }
                 return result;
             }
