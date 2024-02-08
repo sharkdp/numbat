@@ -813,7 +813,6 @@ fn parse_datetime(args: &[Value]) -> Result<Value> {
 fn format_datetime(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 2);
 
-    // TODO should we support taking the format/datetime args in either order?
     let format = args[0].unsafe_as_string();
     let dt = args[1].unsafe_as_datetime();
 
