@@ -135,7 +135,7 @@ impl BytecodeInterpreter {
                         BinaryOperator::Add => Op::AddDateTime,
                         BinaryOperator::Sub => Op::SubDateTime,
                         BinaryOperator::ConvertTo => Op::ConvertDateTime,
-                        _ => panic!("{operator:?} is not valid with a DateTime"), // should be unreachable, because the typechecker will error first
+                        _ => unreachable!("{operator:?} is not valid with a DateTime"), // should be unreachable, because the typechecker will error first
                     }
                 };
 
