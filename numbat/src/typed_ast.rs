@@ -613,7 +613,7 @@ impl PrettyPrint for Expression {
                     + m::space()
                     + with_parens(else_)
             }
-            DateTime(_, _) => m::text("datePlaceHolder"),
+            DateTime(_, dt) => m::text(format!("{:?}", dt)),
         }
     }
 }
