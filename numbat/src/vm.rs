@@ -695,11 +695,12 @@ impl Vm {
                     let rhs = self.pop_string();
                     let lhs = self.pop_datetime();
 
-                    // TODO how to handle errors, and is this `chrono_tz` crate the best choice?
                     let offset = if rhs == "local" {
                         chrono::Local::now().offset().fix()
                     } else {
-                        let tz: chrono_tz::Tz = rhs.parse().unwrap_or(chrono_tz::UTC);
+                        let tz: chrono_tz::Tz = rhs
+                            .parse()
+                            .map_err(|_| RuntimeError::UnknownTimezone(rhs))?;
                         lhs.with_timezone(&tz).offset().fix()
                     };
 
