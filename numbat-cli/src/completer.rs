@@ -75,14 +75,19 @@ impl Completer for NumbatCompleter {
         }
 
         // does it look like we're tab-completing a timezone (via the conversion operator)?
-        let complete_tz = line.find("->").map_or(None, |convert_pos| {
-            if let Some(quote_pos) = line.rfind('"') {
-                if quote_pos > convert_pos && pos > quote_pos {
-                    return Some(quote_pos + 1);
+        let complete_tz = line
+            .find("->")
+            .or_else(|| line.find("→"))
+            .or_else(|| line.find("➞"))
+            .or_else(|| line.find(" to "))
+            .map_or(None, |convert_pos| {
+                if let Some(quote_pos) = line.rfind('"') {
+                    if quote_pos > convert_pos && pos > quote_pos {
+                        return Some(quote_pos + 1);
+                    }
                 }
-            }
-            None
-        });
+                None
+            });
         if let Some(pos_word) = complete_tz {
             let word_part = &line[pos_word..];
             let matches = self
