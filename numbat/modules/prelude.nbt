@@ -4,7 +4,6 @@ use core::dimensions
 use core::functions
 use core::strings
 use core::error
-use core::datetime
 
 use math::constants
 use math::functions
@@ -29,3 +28,5 @@ use units::placeholder
 
 use physics::constants
 use physics::temperature_conversion
+
+use datetime::functions
