@@ -9,7 +9,9 @@ use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
-use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
+use crate::typed_ast::{
+    BinaryOperator, DateOperationResult, Expression, Statement, StringPart, UnaryOperator,
+};
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
@@ -117,11 +119,11 @@ impl BytecodeInterpreter {
                 };
                 self.vm.add_op(op);
             }
-            Expression::BinaryOperatorForDate(_span, operator, lhs, rhs, _type, is_date_diff) => {
+            Expression::BinaryOperatorForDate(_span, operator, lhs, rhs, _type, result_type) => {
                 self.compile_expression(lhs)?;
                 self.compile_expression(rhs)?;
 
-                let op = if *is_date_diff {
+                let op = if *result_type == DateOperationResult::Seconds {
                     // the VM will need to return a value with the units of Seconds.  so look up that unit here, and push it
                     // onto the stack, so the VM can easily reference it.
                     // TODO error handling
