@@ -39,6 +39,8 @@ pub enum RuntimeError {
     UserError(String),
     #[error("Could not parse date: {0}")]
     DateParsingError(chrono::ParseError),
+    #[error("Unknown timezone: {0}")]
+    UnknownTimezone(String),
 }
 
 #[derive(Debug, PartialEq, Eq)]
