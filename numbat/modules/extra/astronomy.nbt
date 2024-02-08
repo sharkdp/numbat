@@ -4,7 +4,9 @@ use physics::constants
 
 unit lyr: Length = lightyear
 
-@aliases(lsec)
+@name("Light-second")
+@url("https://en.wikipedia.org/wiki/Light-second")
+@aliases(lightseconds, lsec)
 unit lightsecond: Length = speed_of_light × 1 s
 
 unit lunar_mass: Mass = 7.342e22 kg
