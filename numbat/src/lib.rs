@@ -232,7 +232,7 @@ impl Context {
                 if add_paren {
                     words.push(format!("{}(", function));
                 } else {
-                    words.push(format!("{}", function));
+                    words.push(function.to_string());
                 }
             }
 

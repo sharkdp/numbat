@@ -120,10 +120,10 @@ impl ErrorDiagnostic for TypeCheckError {
                 let labels = vec![
                     span_expected
                         .diagnostic_label(LabelStyle::Primary)
-                        .with_message(format!("{expected_type}")),
+                        .with_message(expected_type),
                     span_actual
                         .diagnostic_label(LabelStyle::Primary)
-                        .with_message(format!("{actual_type}")),
+                        .with_message(actual_type),
                     span_operation
                         .diagnostic_label(LabelStyle::Secondary)
                         .with_message(format!("incompatible dimensions in {}", operation)),
