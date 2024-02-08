@@ -158,7 +158,6 @@ pub enum Expression {
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
-    DateTime(Span, chrono::DateTime<chrono::Utc>),
 }
 
 impl Expression {
@@ -188,7 +187,6 @@ impl Expression {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
-            Expression::DateTime(span, ..) => *span,
         }
     }
 }
@@ -241,7 +239,6 @@ impl Expression {
             Expression::Boolean(_, _) => Type::Boolean,
             Expression::Condition(_, _, then, _) => then.get_type(),
             Expression::String(_, _) => Type::String,
-            Expression::DateTime(..) => Type::DateTime,
         }
     }
 }
@@ -443,8 +440,7 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::UnitIdentifier(..)
         | Expression::FunctionCall(..)
         | Expression::Boolean(..)
-        | Expression::String(..)
-        | Expression::DateTime(..) => expr.pretty_print(),
+        | Expression::String(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::BinaryOperatorForDate { .. }
@@ -613,7 +609,6 @@ impl PrettyPrint for Expression {
                     + m::space()
                     + with_parens(else_)
             }
-            DateTime(_, dt) => m::text(format!("{:?}", dt)),
         }
     }
 }

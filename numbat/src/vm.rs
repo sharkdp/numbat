@@ -194,7 +194,6 @@ pub enum Constant {
     Unit(Unit),
     Boolean(bool),
     String(String),
-    DateTime(chrono::DateTime<chrono::Utc>),
 }
 
 impl Constant {
@@ -204,7 +203,6 @@ impl Constant {
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
-            Constant::DateTime(d) => Value::DateTime(*d, d.offset().fix()),
         }
     }
 }
@@ -216,7 +214,6 @@ impl Display for Constant {
             Constant::Unit(unit) => write!(f, "{}", unit),
             Constant::Boolean(val) => write!(f, "{}", val),
             Constant::String(val) => write!(f, "\"{}\"", val),
-            Constant::DateTime(..) => write!(f, "DateTimeTODO_vm.rs"),
         }
     }
 }

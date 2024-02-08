@@ -80,7 +80,6 @@ pub enum Expression {
     Boolean(Span, bool),
     String(Span, Vec<StringPart>),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
-    DateTime(Span, chrono::DateTime<chrono::Utc>),
 }
 
 impl Expression {
@@ -112,7 +111,6 @@ impl Expression {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
-            Expression::DateTime(span, ..) => *span,
         }
     }
 }
@@ -460,7 +458,6 @@ impl ReplaceSpans for Expression {
                 Span::dummy(),
                 parts.iter().map(|p| p.replace_spans()).collect(),
             ),
-            Expression::DateTime(_, dt) => Expression::DateTime(Span::dummy(), *dt),
         }
     }
 }
