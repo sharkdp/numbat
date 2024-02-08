@@ -122,6 +122,13 @@ impl PrettyPrint for &Vec<StringPart> {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum DateOperationResult {
+    /// An operation with datetimes that produces something a value in Seconds
+    Seconds,
+    Other,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Scalar(Span, Number),
@@ -144,8 +151,8 @@ pub enum Expression {
         /// RHS may be a DateTime, a Time unit, or a String
         Box<Expression>,
         Type,
-        /// If true, then this is a date subtration operation
-        bool,
+        /// The type of the result of the operation
+        DateOperationResult,
     ),
     FunctionCall(Span, Span, String, Vec<Expression>, Type),
     Boolean(Span, bool),

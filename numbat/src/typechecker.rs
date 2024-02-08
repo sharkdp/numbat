@@ -4,7 +4,7 @@ use std::{
     fmt,
 };
 
-use crate::typed_ast::{self, Type};
+use crate::typed_ast::{self, DateOperationResult, Type};
 use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
     ast::ProcedureKind,
@@ -519,7 +519,7 @@ impl TypeChecker {
                             Box::new(lhs_checked),
                             Box::new(rhs_checked),
                             Type::DateTime,
-                            false,
+                            DateOperationResult::Other,
                         )
                     } else if *op == BinaryOperator::Sub && rhs_is_datetime {
                         let time = self
@@ -537,7 +537,7 @@ impl TypeChecker {
                             Box::new(lhs_checked),
                             Box::new(rhs_checked),
                             Type::Dimension(time),
-                            true,
+                            DateOperationResult::Seconds,
                         )
                     } else if (*op == BinaryOperator::Add || *op == BinaryOperator::Sub)
                         && rhs_is_time
@@ -548,7 +548,7 @@ impl TypeChecker {
                             Box::new(lhs_checked),
                             Box::new(rhs_checked),
                             Type::DateTime,
-                            false,
+                            DateOperationResult::Other,
                         )
                     } else {
                         return Err(TypeCheckError::IncompatibleTypesInOperator(
