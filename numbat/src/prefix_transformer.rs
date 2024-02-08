@@ -92,7 +92,6 @@ impl Transformer {
                     })
                     .collect(),
             ),
-            dt @ Expression::DateTime(_, _) => dt,
         }
     }
 

@@ -401,9 +401,6 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::Condition(..) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Conditional"),
         ),
-        e @ typed_ast::Expression::DateTime(..) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "DateTime"),
-        ),
         e @ Expression::BinaryOperatorForDate(..) => Err(
             // TODO i think maybe this could be const evaluated?
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "BinaryOperatorForDate"),
@@ -942,7 +939,6 @@ impl TypeChecker {
                     Box::new(else_),
                 )
             }
-            ast::Expression::DateTime(span, dt) => typed_ast::Expression::DateTime(*span, *dt),
         })
     }
 

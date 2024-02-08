@@ -47,10 +47,6 @@ impl BytecodeInterpreter {
                 let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
-            Expression::DateTime(_span, dt) => {
-                let index = self.vm.add_constant(Constant::DateTime(*dt));
-                self.vm.add_op1(Op::LoadConstant, index);
-            }
             Expression::Identifier(_span, identifier, _type) => {
                 // Searching in reverse order ensures that we find the innermost identifier of that name first (shadowing)
 
@@ -213,8 +209,7 @@ impl BytecodeInterpreter {
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
             | Expression::Boolean(..)
             | Expression::String(..)
-            | Expression::Condition(..)
-            | Expression::DateTime(..) => {}
+            | Expression::Condition(..) => {}
             Expression::BinaryOperator(..) | Expression::BinaryOperatorForDate(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }
