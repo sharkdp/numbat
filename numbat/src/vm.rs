@@ -831,7 +831,14 @@ impl Vm {
                             Value::Quantity(q) => q.to_string(),
                             Value::Boolean(b) => b.to_string(),
                             Value::String(s) => s,
-                            Value::DateTime(..) => "DateTimeTodo_1".to_string(),
+                            Value::DateTime(dt, offset) => {
+                                let l: chrono::DateTime<chrono::FixedOffset> =
+                                    chrono::DateTime::from_naive_utc_and_offset(
+                                        dt.naive_utc(),
+                                        offset,
+                                    );
+                                format!("{}", l.to_rfc2822())
+                            }
                         };
                         joined = part + &joined; // reverse order
                     }
