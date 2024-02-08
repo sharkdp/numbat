@@ -124,7 +124,7 @@ impl PrettyPrint for &Vec<StringPart> {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum DateOperationResult {
-    /// An operation with datetimes that produces something a value in Seconds
+    /// An operation with datetimes that produces a value in seconds
     Seconds,
     Other,
 }
@@ -146,9 +146,9 @@ pub enum Expression {
     BinaryOperatorForDate(
         Option<Span>,
         BinaryOperator,
-        /// LHS must be a DateTime
+        /// LHS must evaluate to a DateTime
         Box<Expression>,
-        /// RHS may be a DateTime, a Time unit, or a String
+        /// RHS can evaluate to a DateTime, a quantity of type Time, or a String (for timezone conversions)
         Box<Expression>,
         Type,
         /// The type of the result of the operation

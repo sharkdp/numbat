@@ -122,7 +122,10 @@ impl BytecodeInterpreter {
                 let op = if *result_type == DateOperationResult::Seconds {
                     // the VM will need to return a value with the units of Seconds.  so look up that unit here, and push it
                     // onto the stack, so the VM can easily reference it.
-                    // TODO error handling
+                    // TODO: We do not want to hard-code 'second' here. Instead, we might
+                    // introduce a decorator to register the 'second' unit in the prelude for
+                    // this specific purpose. We also need to handle errors in case no such unit
+                    // was registered.
                     let second_idx = self.unit_name_to_constant_index.get("second");
                     self.vm.add_op1(Op::LoadConstant, *second_idx.unwrap());
                     Op::DiffDateTime
