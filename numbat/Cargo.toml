@@ -31,6 +31,7 @@ num-format = "0.4.4"
 walkdir = "2"
 chrono = "0.4.31"
 chrono-tz = "0.8.5"
+iana-time-zone = "0.1"
 
 [features]
 default = ["fetch-exchangerates"]
