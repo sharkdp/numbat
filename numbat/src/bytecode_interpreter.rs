@@ -142,7 +142,7 @@ impl BytecodeInterpreter {
             Expression::FunctionCall(_span, _full_span, name, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression(arg)?;
+                    self.compile_expression_with_simplify(arg)?;
                 }
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
