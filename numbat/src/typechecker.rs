@@ -507,7 +507,7 @@ impl TypeChecker {
                     let rhs_is_datetime = rhs_checked.get_type() == Type::DateTime;
 
                     if *op == BinaryOperator::ConvertTo
-                        && matches!(rhs_checked, typed_ast::Expression::String(..))
+                        && rhs_checked.get_type() == Type::String
                     {
                         // Supports timezone conversion
                         typed_ast::Expression::BinaryOperatorForDate(
