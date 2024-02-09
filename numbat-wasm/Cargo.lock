@@ -373,6 +373,7 @@ dependencies = [
  "chrono-tz",
  "codespan-reporting",
  "heck",
+ "iana-time-zone",
  "itertools",
  "libc",
  "num-format",
