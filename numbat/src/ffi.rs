@@ -800,10 +800,9 @@ fn parse_datetime(args: &[Value]) -> Result<Value> {
 
     let input = args[0].unsafe_as_string();
 
-    // Try to parse as rfc3339 and if that fails then as rfc2822
-    let output = chrono::DateTime::parse_from_rfc3339(input)
-        .or_else(|_| chrono::DateTime::parse_from_rfc2822(input))
-        .map_err(RuntimeError::DateParsingError)?;
+    let output = crate::datetime::parse_datetime(input)
+        .map_err(RuntimeError::DateParsingError)?
+        .ok_or(RuntimeError::DateParsingErrorUnknown)?;
 
     let offset = crate::datetime::local_offset_for_datetime(&output);
 
