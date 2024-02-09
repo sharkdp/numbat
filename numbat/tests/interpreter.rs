@@ -595,3 +595,8 @@ fn test_overwrite_captured_constant() {
 fn test_pretty_print_prefixes() {
     expect_output("1 megabarn", "1 megabarn");
 }
+
+#[test]
+fn test_full_simplify_for_function_calls() {
+    expect_output("floor(1.2 hours / hour)", "1");
+}

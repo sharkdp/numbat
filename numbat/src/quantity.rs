@@ -59,7 +59,7 @@ impl Quantity {
     }
 
     pub fn convert_to(&self, target_unit: &Unit) -> Result<Quantity> {
-        if &self.unit == target_unit || self.is_zero() {
+        if &self.unit == target_unit {
             Ok(Quantity::new(self.value, target_unit.clone()))
         } else {
             // Remove common unit factors to reduce unnecessary conversion procedures
