@@ -697,7 +697,7 @@ impl Vm {
                     let lhs = self.pop_datetime();
 
                     let offset = if rhs == "local" {
-                        chrono::Local::now().offset().fix()
+                        crate::datetime::local_offset_for_datetime(&lhs)
                     } else {
                         let tz: chrono_tz::Tz = rhs
                             .parse()

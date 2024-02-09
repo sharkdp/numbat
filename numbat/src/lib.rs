@@ -3,6 +3,7 @@ mod ast;
 mod bytecode_interpreter;
 mod column_formatter;
 mod currency;
+mod datetime;
 mod decorator;
 pub mod diagnostic;
 mod dimension;

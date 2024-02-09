@@ -805,9 +805,9 @@ fn parse_datetime(args: &[Value]) -> Result<Value> {
         .or_else(|_| chrono::DateTime::parse_from_rfc2822(input))
         .map_err(RuntimeError::DateParsingError)?;
 
-    let offset = output.offset();
+    let offset = crate::datetime::local_offset_for_datetime(&output);
 
-    Ok(Value::DateTime(output.into(), *offset))
+    Ok(Value::DateTime(output.into(), offset))
 }
 
 fn format_datetime(args: &[Value]) -> Result<Value> {
