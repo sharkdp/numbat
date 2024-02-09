@@ -73,9 +73,9 @@ pub enum Op {
     LogicalNeg,
 
     /// Similar to Add, but has DateTime on the LHS and a quantity on the RHS
-    AddDateTime,
+    AddToDateTime,
     /// Similar to Sub, but has DateTime on the LHS and a quantity on the RHS
-    SubDateTime,
+    SubFromDateTime,
     /// Computes the difference between two DateTimes
     DiffDateTime,
     /// Converts a DateTime value to another timezone
@@ -122,9 +122,9 @@ impl Op {
             Op::Negate
             | Op::Factorial
             | Op::Add
-            | Op::AddDateTime
+            | Op::AddToDateTime
             | Op::Subtract
-            | Op::SubDateTime
+            | Op::SubFromDateTime
             | Op::DiffDateTime
             | Op::ConvertDateTime
             | Op::Multiply
@@ -157,9 +157,9 @@ impl Op {
             Op::Negate => "Negate",
             Op::Factorial => "Factorial",
             Op::Add => "Add",
-            Op::AddDateTime => "AddDateTime",
+            Op::AddToDateTime => "AddDateTime",
             Op::Subtract => "Subtract",
-            Op::SubDateTime => "SubDateTime",
+            Op::SubFromDateTime => "SubDateTime",
             Op::DiffDateTime => "DiffDateTime",
             Op::ConvertDateTime => "ConvertDateTime",
             Op::Multiply => "Multiply",
@@ -649,7 +649,7 @@ impl Vm {
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
                 }
-                op @ (Op::AddDateTime | Op::SubDateTime) => {
+                op @ (Op::AddToDateTime | Op::SubFromDateTime) => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_datetime();
 
@@ -657,15 +657,20 @@ impl Vm {
                     let base = rhs.to_base_unit_representation();
                     let seconds_f = base.unsafe_value().to_f64();
 
-                    let duration = chrono::Duration::seconds(seconds_f.trunc() as i64)
+                    let duration = chrono::Duration::try_seconds(seconds_f.trunc() as i64)
+                        .ok_or(RuntimeError::DurationOutOfRange)?
                         + chrono::Duration::nanoseconds(
                             (seconds_f.fract() * 1_000_000_000f64).round() as i64,
                         );
 
                     self.push(Value::DateTime(
                         match op {
-                            Op::AddDateTime => lhs + duration,
-                            Op::SubDateTime => lhs - duration,
+                            Op::AddToDateTime => lhs
+                                .checked_add_signed(duration)
+                                .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                            Op::SubFromDateTime => lhs
+                                .checked_sub_signed(duration)
+                                .ok_or(RuntimeError::DateTimeOutOfRange)?,
                             _ => unreachable!(),
                         },
                         chrono::Local::now().offset().fix(),

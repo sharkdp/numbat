@@ -41,6 +41,10 @@ pub enum RuntimeError {
     DateParsingError(chrono::ParseError),
     #[error("Unknown timezone: {0}")]
     UnknownTimezone(String),
+    #[error("Exceeded maximum size for time durations")]
+    DurationOutOfRange,
+    #[error("DateTime out of range")]
+    DateTimeOutOfRange,
 }
 
 #[derive(Debug, PartialEq, Eq)]
