@@ -787,7 +787,7 @@ fn chr(args: &[Value]) -> Result<Value> {
 }
 
 fn now(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 0);
+    assert!(args.is_empty());
     let now = chrono::Utc::now();
 
     let offset = now.with_timezone(&chrono::Local).offset().fix();
@@ -803,7 +803,7 @@ fn parse_datetime(args: &[Value]) -> Result<Value> {
     // Try to parse as rfc3339 and if that fails then as rfc2822
     let output = chrono::DateTime::parse_from_rfc3339(input)
         .or_else(|_| chrono::DateTime::parse_from_rfc2822(input))
-        .map_err(|e| RuntimeError::DateParsingError(e))?;
+        .map_err(RuntimeError::DateParsingError)?;
 
     let offset = output.offset();
 
