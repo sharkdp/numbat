@@ -4,7 +4,7 @@ use std::{
     fmt,
 };
 
-use crate::typed_ast::{self, DateOperationResult, Type};
+use crate::typed_ast::{self, Type};
 use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
     ast::ProcedureKind,
@@ -506,9 +506,7 @@ impl TypeChecker {
                         .unwrap_or(false);
                     let rhs_is_datetime = rhs_checked.get_type() == Type::DateTime;
 
-                    if *op == BinaryOperator::ConvertTo
-                        && rhs_checked.get_type() == Type::String
-                    {
+                    if *op == BinaryOperator::ConvertTo && rhs_checked.get_type() == Type::String {
                         // Supports timezone conversion
                         typed_ast::Expression::BinaryOperatorForDate(
                             *span_op,
@@ -516,7 +514,6 @@ impl TypeChecker {
                             Box::new(lhs_checked),
                             Box::new(rhs_checked),
                             Type::DateTime,
-                            DateOperationResult::Other,
                         )
                     } else if *op == BinaryOperator::Sub && rhs_is_datetime {
                         let time = self
@@ -534,7 +531,6 @@ impl TypeChecker {
                             Box::new(lhs_checked),
                             Box::new(rhs_checked),
                             Type::Dimension(time),
-                            DateOperationResult::Seconds,
                         )
                     } else if (*op == BinaryOperator::Add || *op == BinaryOperator::Sub)
                         && rhs_is_time
@@ -545,7 +541,6 @@ impl TypeChecker {
                             Box::new(lhs_checked),
                             Box::new(rhs_checked),
                             Type::DateTime,
-                            DateOperationResult::Other,
                         )
                     } else {
                         return Err(TypeCheckError::IncompatibleTypesInOperator(
