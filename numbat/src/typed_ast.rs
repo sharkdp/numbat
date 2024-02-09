@@ -122,13 +122,6 @@ impl PrettyPrint for &Vec<StringPart> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum DateOperationResult {
-    /// An operation with datetimes that produces a value in seconds
-    Seconds,
-    Other,
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Scalar(Span, Number),
@@ -151,8 +144,6 @@ pub enum Expression {
         /// RHS can evaluate to a DateTime, a quantity of type Time, or a String (for timezone conversions)
         Box<Expression>,
         Type,
-        /// The type of the result of the operation
-        DateOperationResult,
     ),
     FunctionCall(Span, Span, String, Vec<Expression>, Type),
     Boolean(Span, bool),
@@ -583,7 +574,7 @@ impl PrettyPrint for Expression {
                 m::operator("!") + with_parens(expr)
             }
             BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
-            BinaryOperatorForDate(_, op, lhs, rhs, _type, _) => pretty_print_binop(op, lhs, rhs),
+            BinaryOperatorForDate(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(_, _, name, args, _type) => {
                 m::identifier(name)
                     + m::operator("(")
