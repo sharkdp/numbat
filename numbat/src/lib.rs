@@ -128,12 +128,20 @@ impl Context {
         ExchangeRatesCache::set_from_xml(xml_content);
     }
 
-    pub fn variable_names(&self) -> &[String] {
-        &self.prefix_transformer.variable_names
+    pub fn variable_names(&self) -> impl Iterator<Item = String> + '_ {
+        self.prefix_transformer
+            .variable_names
+            .iter()
+            .filter(|name| !name.starts_with('_'))
+            .cloned()
     }
 
-    pub fn function_names(&self) -> &[String] {
-        &self.prefix_transformer.function_names
+    pub fn function_names(&self) -> impl Iterator<Item = String> + '_ {
+        self.prefix_transformer
+            .function_names
+            .iter()
+            .filter(|name| !name.starts_with('_'))
+            .cloned()
     }
 
     pub fn unit_names(&self) -> &[Vec<String>] {
@@ -145,13 +153,13 @@ impl Context {
     }
 
     pub fn print_environment(&self) -> Markup {
-        let mut functions = Vec::from(self.function_names());
+        let mut functions: Vec<_> = self.function_names().collect();
         functions.sort();
         let mut dimensions = Vec::from(self.dimension_names());
         dimensions.sort();
         let mut units = Vec::from(self.unit_names());
         units.sort();
-        let mut variables = Vec::from(self.variable_names());
+        let mut variables: Vec<_> = self.variable_names().collect();
         variables.sort();
 
         let mut output = m::empty();
@@ -179,7 +187,7 @@ impl Context {
     }
 
     pub fn print_functions(&self) -> Markup {
-        self.print_sorted(self.function_names().into(), FormatType::Identifier)
+        self.print_sorted(self.function_names().collect(), FormatType::Identifier)
     }
 
     pub fn print_dimensions(&self) -> Markup {
@@ -187,7 +195,7 @@ impl Context {
     }
 
     pub fn print_variables(&self) -> Markup {
-        self.print_sorted(self.variable_names().into(), FormatType::Identifier)
+        self.print_sorted(self.variable_names().collect(), FormatType::Identifier)
     }
 
     pub fn print_units(&self) -> Markup {
