@@ -1,0 +1,38 @@
+assert((0 second         // human) == "0 seconds")
+assert((1 second         // human) == "1 second")
+assert((5 second         // human) == "5 seconds")
+assert((1.5 second       // human) == "1.500 seconds")
+
+assert((60 seconds       // human) == "1 minute")
+assert((73 seconds       // human) == "1 minute + 13 seconds")
+assert((120 seconds      // human) == "2 minutes")
+assert((60.1 seconds     // human) == "1 minute + 0.100 seconds")
+assert((1 minute         // human) == "1 minute")
+assert((1.25 minute      // human) == "1 minute + 15 seconds")
+assert((2.5 minute       // human) == "2 minutes + 30 seconds")
+
+assert((1 hour           // human) == "1 hour")
+assert((1.5 hour         // human) == "1 hour + 30 minutes")
+assert((2 hour           // human) == "2 hours")
+assert((1 hour + 1 sec   // human) == "1 hour + 1 second")
+
+assert((1 day            // human) == "1 day")
+assert((1.37 day         // human) == "1 day + 8 hours + 52 minutes + 48 seconds")
+
+assert((1 week           // human) == "7 days")
+assert((1.5 weeks        // human) == "10 days + 12 hours")
+assert((2 weeks          // human) == "14 days")
+
+assert((1 sidereal_day   // human) == "23 hours + 56 minutes + 4.090500 seconds")
+
+assert((10000 days       // human) == "10000 days")
+assert((50 million days  // human) == "50_000_000 days")
+
+assert((1e12 days        // human) == "1_000_000_000_000 days")
+assert((1e15 days        // human) == "1.0e+15 days")
+
+assert((1 ms             // human) == "0.001 seconds")
+assert((1 µs             // human) == "0.000001 seconds")
+assert((1 ns             // human) == "0.000000001 seconds")
+assert((1234 ns          // human) == "0.000001234 seconds")
+assert((1s + 1234 ns     // human) == "1.000001234 seconds")

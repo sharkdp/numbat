@@ -1,0 +1,36 @@
+use core::functions
+use core::strings
+use units::si
+use datetime::functions
+
+fn _human_num_days(time: Time) -> Scalar = floor(time / day)
+
+fn _human_join(a: String, b: String) -> String =
+  if str_slice(a, 0, 2) == "0 " then b else if str_slice(b, 0, 2) == "0 " then a else "{a} + {b}"
+
+fn _remove_plural_suffix(str: String) -> String =
+  if str_slice(str, 0, 2) == "1 " then str_slice(str, 0, str_length(str) - 1) else str
+
+fn _human_seconds(dt: DateTime) -> String =
+  _remove_plural_suffix(format_datetime("%-S%.f seconds", dt))
+
+fn _human_minutes(dt: DateTime) -> String =
+  _remove_plural_suffix(format_datetime("%-M minutes", dt))
+
+fn _human_hours(dt: DateTime) -> String =
+  _remove_plural_suffix(format_datetime("%-H hours", dt))
+
+fn _human_days(num_days: Scalar) -> String =
+  _remove_plural_suffix("{num_days} days")
+
+fn _human_readable_duration(time: Time, dt: DateTime, num_days: Scalar) -> String =
+    _human_join(_human_join(_human_join(_human_days(_human_num_days(time)), _human_hours(dt)), _human_minutes(dt)), _human_seconds(dt))
+
+# Implementation details:
+# we skip hours/minutes/seconds for durations larger than 1000 days because:
+#   (a) we run into floating point precision problems at the nanosecond level at this point
+#   (b) for much larger numbers, we can't convert to DateTimes anymore
+fn human(time: Time) =
+  if _human_num_days(time) > 1000
+    then "{_human_num_days(time)} days" 
+    else _human_readable_duration(time, parse_datetime("0001-01-01T00:00:00Z") + time, _human_num_days(time))
