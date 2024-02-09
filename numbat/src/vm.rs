@@ -657,7 +657,6 @@ impl Vm {
                     let base = rhs.to_base_unit_representation();
                     let seconds_f = base.unsafe_value().to_f64();
 
-                    // TODO check that this handles negative durations correctly
                     let duration = chrono::Duration::seconds(seconds_f.trunc() as i64)
                         + chrono::Duration::nanoseconds(
                             (seconds_f.fract() * 1_000_000_000f64).round() as i64,
