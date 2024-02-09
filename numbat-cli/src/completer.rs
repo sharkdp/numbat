@@ -80,7 +80,7 @@ impl Completer for NumbatCompleter {
             .or_else(|| line.find("→"))
             .or_else(|| line.find("➞"))
             .or_else(|| line.find(" to "))
-            .map_or(None, |convert_pos| {
+            .and_then(|convert_pos| {
                 if let Some(quote_pos) = line.rfind('"') {
                     if quote_pos > convert_pos && pos > quote_pos {
                         return Some(quote_pos + 1);

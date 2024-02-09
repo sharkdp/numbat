@@ -837,7 +837,7 @@ impl Vm {
                                         dt.naive_utc(),
                                         offset,
                                     );
-                                format!("{}", l.to_rfc2822())
+                                l.to_rfc2822()
                             }
                         };
                         joined = part + &joined; // reverse order
