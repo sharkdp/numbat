@@ -678,8 +678,8 @@ impl Vm {
                     let lhs = self.pop_datetime();
 
                     let duration = lhs - rhs;
-                    // TODO error handling
-                    let duration = duration.num_nanoseconds().unwrap() as f64 / 1_000_000_000f64;
+                    let duration = duration.subsec_nanos() as f64 / 1_000_000_000f64
+                        + duration.num_seconds() as f64;
 
                     let ret = Value::Quantity(Quantity::new(
                         Number::from_f64(duration),
