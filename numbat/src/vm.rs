@@ -515,6 +515,7 @@ impl Vm {
         self.stack.push(value);
     }
 
+    #[track_caller]
     fn pop_quantity(&mut self) -> Quantity {
         match self.pop() {
             Value::Quantity(q) => q,
@@ -522,10 +523,12 @@ impl Vm {
         }
     }
 
+    #[track_caller]
     fn pop_bool(&mut self) -> bool {
         self.pop().unsafe_as_bool()
     }
 
+    #[track_caller]
     fn pop_datetime(&mut self) -> chrono::DateTime<chrono::Utc> {
         match self.pop() {
             Value::DateTime(q, _) => q,
@@ -533,6 +536,7 @@ impl Vm {
         }
     }
 
+    #[track_caller]
     fn pop_string(&mut self) -> String {
         match self.pop() {
             Value::String(s) => s,
@@ -540,6 +544,7 @@ impl Vm {
         }
     }
 
+    #[track_caller]
     fn pop(&mut self) -> Value {
         self.stack.pop().expect("stack should not be empty")
     }
