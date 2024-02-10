@@ -73,6 +73,21 @@ assert(str_replace("xxx", "x", "yY") == "yYyYyY")
 
 assert(str_repeat("xy", 3) == "xyxyxy")
 
+assert(bin(0b0) == "0b0")
+assert(bin(0b1) == "0b1")
+assert(bin(0b10) == "0b10")
+assert(bin(0b11) == "0b11")
+assert(bin(0b10101010101010101010101010101010) == "0b10101010101010101010101010101010")
+assert(bin(-0b11110000) == "-0b11110000")
+
+assert(oct(0o0) == "0o0")
+assert(oct(0o1) == "0o1")
+assert(oct(0o7) == "0o7")
+assert(oct(0o10) == "0o10")
+assert(oct(0o77) == "0o77")
+assert(oct(0o12345670) == "0o12345670")
+assert(oct(-0o12345670) == "-0o12345670")
+
 assert(hex(0x0) == "0x0")
 assert(hex(0x1) == "0x1")
 assert(hex(0x9) == "0x9")
