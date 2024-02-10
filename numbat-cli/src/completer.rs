@@ -77,8 +77,8 @@ impl Completer for NumbatCompleter {
         // does it look like we're tab-completing a timezone (via the conversion operator)?
         let complete_tz = line
             .find("->")
-            .or_else(|| line.find("→"))
-            .or_else(|| line.find("➞"))
+            .or_else(|| line.find('→'))
+            .or_else(|| line.find('➞'))
             .or_else(|| line.find(" to "))
             .and_then(|convert_pos| {
                 if let Some(quote_pos) = line.rfind('"') {

@@ -69,7 +69,7 @@ impl Number {
                     formatted_number.to_string()
                 }
             } else if formatted_number.contains('e') && !formatted_number.contains("e-") {
-                formatted_number.replace("e", "e+")
+                formatted_number.replace('e', "e+")
             } else {
                 formatted_number
             }
