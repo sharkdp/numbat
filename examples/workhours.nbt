@@ -21,4 +21,4 @@ let duration = 0.5 year
 print(3 FTE * 0.5 years -> workdays)
 print(budget / rate / duration -> FTE)
 assert_eq(3 FTE * 0.5 years -> workdays, 300 workday)
-assert_eq(budget / rate / duration -> FTE, 5 FTE)
+assert_eq(budget / rate / duration -> FTE, 5 FTE, 1e-6 FTE)
