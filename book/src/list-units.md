@@ -171,6 +171,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Time` | [Day](https://en.wikipedia.org/wiki/Day) | `d`, `day`, `days` |
 | `Time` | [Decade](https://en.wikipedia.org/wiki/Decade) | `decade`, `decades` |
 | `Time` | [Fortnight](https://en.wikipedia.org/wiki/Fortnight) | `fortnight`, `fortnights` |
+| `Time` | [Gregorian year](https://en.wikipedia.org/wiki/Gregorian_year) | `gregorian_year`, `gregorian_years` |
 | `Time` | [Hour](https://en.wikipedia.org/wiki/Hour) | `h`, `hour`, `hours`, `hr` |
 | `Time` | [Julian year](https://en.wikipedia.org/wiki/Julian_year_(astronomy)) | `julian_year`, `julian_years` |
 | `Time` | [Millennium](https://en.wikipedia.org/wiki/Millennium) | `millennia`, `millennium` |
@@ -181,7 +182,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Time` | [Sidereal day](https://en.wikipedia.org/wiki/Sidereal_time#Sidereal_day) | `sidereal_day`, `sidereal_days` |
 | `Time` | [Stoney time](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_time` |
 | `Time` | [Week](https://en.wikipedia.org/wiki/Week) | `week`, `weeks` |
-| `Time` | [Gregorian year](https://en.wikipedia.org/wiki/Gregorian_year) | `year`, `years`, `yr` |
+| `Time` | [Tropical year](https://en.wikipedia.org/wiki/Tropical_year) | `tropical_year`, `tropical_years`, `year`, `years`, `yr` |
 | `Velocity` | [Knot](https://en.wikipedia.org/wiki/Knot_(unit)) | `kn`, `knot`, `knots`, `kt` |
 | `Velocity` | [Kilometres per hour](https://en.wikipedia.org/wiki/Kilometres_per_hour) | `kph` |
 | `Velocity` | [Miles per hour](https://en.wikipedia.org/wiki/Miles_per_hour) | `mph` |
