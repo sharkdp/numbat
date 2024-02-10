@@ -16,7 +16,7 @@ now() - 1 million seconds
 parse_datetime("2024-11-01 12:30:00") - now() -> days
 
 # What time is it in Nepal right now?
-now() -> "Asia/Kathmandu"
+now() -> "Asia/Kathmandu"  # use tab completion to find time zone names
 
 # What is the local time when it is 2024-11-01 12:30:00 in Australia?
 parse_datetime("2024-11-01 12:30:00 Australia/Sydney") -> "local"
@@ -26,12 +26,49 @@ now() // to_unixtime
 
 # What is the date corresponding to the UNIX timestamp 1707568901?
 from_unixtime(1707568901)
+
+# How long are one million seconds in days, hours, minutes, seconds
+1 million seconds // human
 ```
 
-As you can see from the examples, datetimes are either created using the `now()` function or by
-parsing a string using the `parse_datetime` function. The following formats are supported.
-UTC offsets are mandatory for the RFC 3339 and RFC 2822 formats. The other formats can optionally
-include a time zone name or UTC offset. If no time zone is specified, the local time zone is used.
+## Date and time arithmetic
+
+The following operations are supported for `DateTime` objects:
+
+| Left | Operator | Right | Result |
+| ---- | -------- | ----- | ------ |
+| `DateTime` | `-` | `DateTime` | Duration between the two dates as a `Time`. In `seconds`, by default. Use normal conversion for other time units. |
+| `DateTime` | `+` | `Time` | New `DateTime` by adding the duration to the date |
+| `DateTime` | `-` | `Time` | New `DateTime` by subtracting the duration from the date |
+| `DateTime` | `->` | `String` | Converts the datetime to the specified time zone. Note that you can use tab-completion for time zone names. |
+
+<div class="warning">
+
+**Warning**: You can add `years` or `months` to a given date (`now() + 3 months`), but note that the result might not be what you expect.
+The unit `year` is defined as the *average* length of a year (a [tropical year](https://en.wikipedia.org/wiki/Tropical_year), to be precise), and
+`month` is defined as the *average* length of a month (1/12 of a `year`). So this does not take into account the actual length of the months or the leap years.
+However, note that adding or subtracting "one year" or "one month" is not a well-defined operation anyway. For example, what should "one month after March 31st"
+be? April 30th or May 1st? If your answer is April 30th, then what is "one month after March 30th"? If your answer is May 1st, then what is "one month after
+April 1st"?
+
+</div>
+
+## Date, time, and duration functions
+
+The following functions are available for date and time handling:
+
+- `now() -> DateTime`: Returns the current date and time.
+- `parse_datetime(input: String) -> DateTime`: Parses a string into a `DateTime` object.
+- `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/chrono/latest/chrono/format/strftime/index.html#specifiers) for possible format specifiers.
+- `to_unixtime(dt: DateTime) -> Scalar`: Converts a `DateTime` to a UNIX timestamp.
+- `from_unixtime(ut: Scalar) -> DateTime`: Converts a UNIX timestamp to a `DateTime` object.
+- `human(duration: Time) -> String`: Converts a `Time` to a human-readable string in days, hours, minutes and seconds
+
+## Date time formats
+
+The following formats are supported by `parse_datetime`. UTC offsets are mandatory for the RFC 3339 and
+RFC 2822 formats. The other formats can optionally include a time zone name or UTC offset. If no time
+zone is specified, the local time zone is used.
 
 | Format | Examples |
 | ------ | ------- |
@@ -45,25 +82,3 @@ include a time zone name or UTC offset. If no time zone is specified, the local 
 | `%Y/%m/%d %I:%M:%S%.f %p` | same, but with `/` separator |
 | `%Y-%m-%d %I:%M %p` | `2024-02-10 12:30 PM`<br>`2024-02-10 06:30 AM -0600`<br>`2024-02-10 07:30 AM US/Eastern` |
 | `%Y/%m/%d %I:%M %p` | same, but with `/` separator |
-
-
-## Date and time arithmetic
-
-The following operations are supported for `DateTime` objects:
-
-| Left | Operator | Right | Result |
-| ---- | -------- | ----- | ------ |
-| `DateTime` | `-` | `DateTime` | Duration between the two dates as a `Time` |
-| `DateTime` | `+` | `Time` | New `DateTime` by adding the duration to the date |
-| `DateTime` | `-` | `Time` | New `DateTime` by subtracting the duration from the date |
-| `DateTime` | `->` | `String` | Converts the datetime to the specified time zone |
-
-## Date and time functions
-
-The following functions are available for date and time handling:
-
-- `now() -> DateTime`: Returns the current date and time.
-- `parse_datetime(input: String) -> DateTime`: Parses a string into a `DateTime` object.
-- `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string.
-- `to_unixtime(dt: DateTime) -> Scalar`: Converts a `DateTime` to a UNIX timestamp.
-- `from_unixtime(ut: Scalar) -> DateTime`: Converts a UNIX timestamp to a `DateTime` object.

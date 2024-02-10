@@ -99,6 +99,17 @@ fn sphere_area<L>(radius: L) -> L^2
 fn sphere_volume<L>(radius: L) -> L^3
 ```
 
+## Date and time
+
+```nbt
+fn now() -> DateTime
+fn parse_datetime(input: String) -> DateTime
+fn format_datetime(format: String, dt: DateTime) -> String
+fn from_unixtime(t: Scalar) -> DateTime
+fn to_unixtime(dt: DateTime) -> Scalar
+fn human(t: Time) -> String
+```
+
 ## Physics
 
 ### Temperature conversion
