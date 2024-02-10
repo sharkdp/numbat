@@ -121,7 +121,7 @@ impl ModuleImporter for BuiltinModuleImporter {
             .map(|path| {
                 ModulePath(
                     path.trim_end_matches(".nbt")
-                        .split("/")
+                        .split('/')
                         .map(|s| s.to_string())
                         .collect(),
                 )
