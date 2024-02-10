@@ -30,6 +30,7 @@
   - [Unit conversions](./unit-conversions.md)
   - [Function definitions](./function-definitions.md)
   - [Conditionals](./conditionals.md)
+  - [Date and time](./date-and-time.md)
   - [Printing, testing, debugging](./procedures.md)
 - [Advanced](./advanced.md)
   - [Unit definitions](./unit-definitions.md)
