@@ -1,12 +1,12 @@
 let epoch = parse_datetime("1970-01-01T00:00:00Z")
-assert_eq(to_unixtime(epoch), 0)
+assert_eq(epoch -> unixtime, 0)
 
-assert_eq(to_unixtime(epoch + 1000 milliseconds + 2 seconds), 3)
+assert_eq(epoch + 1000 milliseconds + 2 seconds -> unixtime, 3)
 
 let x = parse_datetime("Wed, 20 Jul 2022 21:52:05 +0200")
-assert_eq(to_unixtime(x), 1658346725)
+assert_eq(x -> unixtime, 1658346725)
 
-assert_eq(to_unixtime(from_unixtime(1658346725)), 1658346725)
+assert_eq(from_unixtime(1658346725) -> unixtime, 1658346725)
 
 # 2020 was a leap year
 let y = parse_datetime("2020-02-28T20:00:00Z")

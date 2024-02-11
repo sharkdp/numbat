@@ -22,13 +22,13 @@ now() -> "Asia/Kathmandu"  # use tab completion to find time zone names
 parse_datetime("2024-11-01 12:30:00 Australia/Sydney") -> "local"
 
 # What is the current UNIX timestamp?
-now() // to_unixtime
+now() -> unixtime
 
 # What is the date corresponding to the UNIX timestamp 1707568901?
 from_unixtime(1707568901)
 
 # How long are one million seconds in days, hours, minutes, seconds
-1 million seconds // human
+1 million seconds -> human
 ```
 
 ## Date and time arithmetic
@@ -60,7 +60,7 @@ The following functions are available for date and time handling:
 - `now() -> DateTime`: Returns the current date and time.
 - `parse_datetime(input: String) -> DateTime`: Parses a string into a `DateTime` object.
 - `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/chrono/latest/chrono/format/strftime/index.html#specifiers) for possible format specifiers.
-- `to_unixtime(dt: DateTime) -> Scalar`: Converts a `DateTime` to a UNIX timestamp.
+- `unixtime(dt: DateTime) -> Scalar`: Converts a `DateTime` to a UNIX timestamp.
 - `from_unixtime(ut: Scalar) -> DateTime`: Converts a UNIX timestamp to a `DateTime` object.
 - `human(duration: Time) -> String`: Converts a `Time` to a human-readable string in days, hours, minutes and seconds
 

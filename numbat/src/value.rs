@@ -1,13 +1,28 @@
 use crate::{pretty_print::PrettyPrint, quantity::Quantity};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FunctionReference {
+    Foreign(String),
+    Normal(String),
+}
+
+impl std::fmt::Display for FunctionReference {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FunctionReference::Foreign(name) => write!(f, "<builtin function: {}>", name),
+            FunctionReference::Normal(name) => write!(f, "<function: {}>", name),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Quantity(Quantity),
     Boolean(bool),
     String(String),
     /// A DateTime with an associated offset used when pretty printing
     DateTime(chrono::DateTime<chrono::Utc>, chrono::FixedOffset),
-    FunctionReference(String),
+    FunctionReference(FunctionReference),
 }
 
 impl Value {
@@ -43,9 +58,9 @@ impl Value {
         }
     }
 
-    pub fn unsafe_as_function_reference(&self) -> &str {
-        if let Value::FunctionReference(name) = self {
-            &name
+    pub fn unsafe_as_function_reference(&self) -> &FunctionReference {
+        if let Value::FunctionReference(inner) = self {
+            &inner
         } else {
             panic!("Expected value to be a string");
         }
@@ -59,7 +74,7 @@ impl std::fmt::Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(s) => write!(f, "\"{}\"", s),
             Value::DateTime(dt, _) => write!(f, "{:?}", dt),
-            Value::FunctionReference(s) => write!(f, "<function: {}>", s), // TODO: we could also pretty print the function signature here
+            Value::FunctionReference(r) => write!(f, "{}", r.to_string()),
         }
     }
 }
@@ -75,9 +90,7 @@ impl PrettyPrint for Value {
                     chrono::DateTime::from_naive_utc_and_offset(dt.naive_utc(), *offset);
                 crate::markup::string(l.to_rfc2822())
             }
-            Value::FunctionReference(name) => {
-                crate::markup::string(format!("<function: {}>", name)) // TODO: see above
-            }
+            Value::FunctionReference(r) => crate::markup::string(r.to_string()),
         }
     }
 }

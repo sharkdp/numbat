@@ -360,11 +360,11 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         );
 
         m.insert(
-            "to_unixtime".to_string(),
+            "unixtime".to_string(),
             ForeignFunction {
-                name: "to_unixtime".into(),
+                name: "unixtime".into(),
                 arity: 1..=1,
-                callable: Callable::Function(Box::new(to_unixtime)),
+                callable: Callable::Function(Box::new(unixtime)),
             },
         );
 
@@ -820,7 +820,7 @@ fn format_datetime(args: &[Value]) -> Result<Value> {
     Ok(Value::String(output))
 }
 
-fn to_unixtime(args: &[Value]) -> Result<Value> {
+fn unixtime(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let input = args[0].unsafe_as_datetime();
