@@ -7,6 +7,9 @@ fn str_slice(s: String, start: Scalar, end: Scalar) -> String
 
 fn chr(n: Scalar) -> String
 
+fn lowercase(s: String) -> String
+fn uppercase(s: String) -> String
+
 fn str_append(a: String, b: String) -> String = "{a}{b}"
 
 fn str_contains(haystack: String, needle: String) -> Bool =
