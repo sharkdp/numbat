@@ -619,7 +619,14 @@ impl PrettyPrint for Expression {
                     + m::operator(")")
             }
             CallableCall(_, expr, args, _type) => {
-                todo!()
+                expr.pretty_print()
+                    + m::operator("(")
+                    + itertools::Itertools::intersperse(
+                        args.iter().map(|e| e.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
             }
             Boolean(_, val) => val.pretty_print(),
             String(_, parts) => parts.pretty_print(),

@@ -205,9 +205,8 @@ pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
     UnknownIdentifier(Span, String, Option<String>),
 
-    #[error("Unknown callable '{1}'.")]
-    UnknownCallable(Span, String, Option<String>),
-
+    // #[error("Unknown callable '{1}'.")]
+    // UnknownCallable(Span, String, Option<String>),
     #[error(transparent)]
     IncompatibleDimensions(IncompatibleDimensionsError),
 
@@ -956,6 +955,7 @@ impl TypeChecker {
                     }
                 }
 
+                // TODO
                 // (
                 //     name,
                 //     self.function_signatures
@@ -1883,7 +1883,7 @@ mod tests {
     fn unknown_function() {
         assert!(matches!(
             get_typecheck_error("foo(2)"),
-            TypeCheckError::UnknownCallable(_, name, _) if name == "foo"
+            TypeCheckError::UnknownIdentifier(_, name, _) if name == "foo"
         ));
     }
 
