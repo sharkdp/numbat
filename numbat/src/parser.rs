@@ -1137,11 +1137,7 @@ impl<'a> Parser<'a> {
         } else if let Some(inner) = self.match_any(&[TokenKind::True, TokenKind::False]) {
             Ok(Expression::Boolean(
                 inner.span,
-                if matches!(inner.kind, TokenKind::True) {
-                    true
-                } else {
-                    false
-                },
+                matches!(inner.kind, TokenKind::True),
             ))
         } else if let Some(token) = self.match_exact(TokenKind::StringFixed) {
             Ok(Expression::String(

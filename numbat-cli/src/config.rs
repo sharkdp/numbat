@@ -34,17 +34,12 @@ pub enum ExchangeRateFetchingPolicy {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+#[derive(Default)]
 pub struct ExchangeRateConfig {
     pub fetching_policy: ExchangeRateFetchingPolicy,
 }
 
-impl Default for ExchangeRateConfig {
-    fn default() -> Self {
-        Self {
-            fetching_policy: ExchangeRateFetchingPolicy::default(),
-        }
-    }
-}
+
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]

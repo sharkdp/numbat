@@ -26,7 +26,7 @@ use rustyline::{
     Validator,
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
-use toml;
+
 
 use std::io::IsTerminal;
 use std::path::PathBuf;

@@ -63,7 +63,7 @@ impl PrettyPrint for Value {
             Value::DateTime(dt, offset) => {
                 let l: chrono::DateTime<chrono::FixedOffset> =
                     chrono::DateTime::from_naive_utc_and_offset(dt.naive_utc(), *offset);
-                crate::markup::string(format!("{}", l.to_rfc2822()))
+                crate::markup::string(l.to_rfc2822())
             }
         }
     }
