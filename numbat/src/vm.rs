@@ -893,7 +893,7 @@ impl Vm {
                                     );
                                 l.to_rfc2822()
                             }
-                            Value::FunctionReference(s) => format!("<function: {}>", s), // TODO
+                            Value::FunctionReference(r) => r.to_string(),
                         };
                         joined = part + &joined; // reverse order
                     }

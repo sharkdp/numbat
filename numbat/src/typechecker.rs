@@ -1638,7 +1638,13 @@ mod tests {
     dimension C = A * B
     unit a: A
     unit b: B
-    unit c: C = a * b";
+    unit c: C = a * b
+
+    fn returns_a() -> A = a
+    fn takes_a_returns_a(x: A) -> A = x
+    fn takes_a_returns_b(x: A) -> B = b
+    fn takes_a_and_b_returns_c(x: A, y: B) -> C = x * y
+    ";
 
     fn base_type(name: &str) -> BaseRepresentation {
         BaseRepresentation::from_factor(BaseRepresentationFactor(
@@ -2078,6 +2084,112 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("fn f() -> Bool = \"test\""),
             TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+    }
+
+    #[test]
+    fn function_types_basic() {
+        assert_successful_typecheck(
+            "
+            let returns_a_ref1 = returns_a
+            let returns_a_ref2: Fn[() -> A] = returns_a
+
+            let takes_a_returns_a_ref1 = takes_a_returns_a
+            let takes_a_returns_a_ref2: Fn[(A) -> A] = takes_a_returns_a
+
+            let takes_a_returns_b_ref1 = takes_a_returns_b
+            let takes_a_returns_b_ref2: Fn[(A) -> B] = takes_a_returns_b
+
+            let takes_a_and_b_returns_C_ref1 = takes_a_and_b_returns_c
+            let takes_a_and_b_returns_C_ref2: Fn[(A, B) -> C] = takes_a_and_b_returns_c
+            let takes_a_and_b_returns_C_ref3: Fn[(A, B) -> A × B] = takes_a_and_b_returns_c
+            ",
+        );
+
+        assert!(matches!(
+            get_typecheck_error("let wrong_return_type: Fn[() -> B] = returns_a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("let wrong_argument_type: Fn[(B) -> A] = takes_a_returns_a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("let wrong_argument_count: Fn[(A, B) -> C] = takes_a_returns_a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+    }
+
+    #[test]
+    fn function_types_in_return_position() {
+        assert_successful_typecheck(
+            "
+            fn returns_fn1() -> Fn[() -> A] = returns_a
+            fn returns_fn2() -> Fn[(A) -> A] = takes_a_returns_a
+            fn returns_fn3() -> Fn[(A) -> B] = takes_a_returns_b
+            fn returns_fn4() -> Fn[(A, B) -> C] = takes_a_and_b_returns_c
+            ",
+        );
+
+        assert!(matches!(
+            get_typecheck_error("fn returns_fn5() -> Fn[() -> B] = returns_a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+    }
+
+    #[test]
+    fn function_types_in_argument_position() {
+        assert_successful_typecheck(
+            "
+            fn takes_fn1(f: Fn[() -> A]) -> A = f()
+            fn takes_fn2(f: Fn[(A) -> A]) -> A = f(a)
+            fn takes_fn3(f: Fn[(A) -> B]) -> B = f(a)
+            fn takes_fn4(f: Fn[(A, B) -> C]) -> C = f(a, b)
+
+            takes_fn1(returns_a)
+            takes_fn2(takes_a_returns_a)
+            takes_fn3(takes_a_returns_b)
+            takes_fn4(takes_a_and_b_returns_c)
+            ",
+        );
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn wrong_arity(f: Fn[(A) -> B]) -> B = f()
+                "
+            ),
+            TypeCheckError::WrongArity { .. }
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn wrong_argument_type(f: Fn[(A) -> B]) -> B = f(b)
+                "
+            ),
+            TypeCheckError::IncompatibleTypesInFunctionCall(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn wrong_return_type(f: Fn[() -> A]) -> B = f()
+                "
+            ),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn argument_mismatch(f: Fn[() -> A]) -> A = f()
+                argument_mismatch(takes_a_returns_a)
+                "
+            ),
+            TypeCheckError::IncompatibleTypesInFunctionCall(..)
         ));
     }
 }
