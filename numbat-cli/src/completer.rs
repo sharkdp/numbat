@@ -123,7 +123,7 @@ impl Completer for NumbatCompleter {
         });
 
         // don't add an opening paren if we're completing after a reverse function call
-        let add_paren = !line[..pos].find("//").is_some();
+        let add_paren = !line[..pos].contains("//");
 
         let candidates = self
             .context
