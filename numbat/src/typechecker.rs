@@ -280,8 +280,8 @@ pub enum TypeCheckError {
     #[error("Incompatible types in operator")]
     IncompatibleTypesInOperator(Span, BinaryOperator, Type, Span, Type, Span),
 
-    #[error("Incompatible types in function call")]
-    IncompatibleTypesInFunctionCall(Span, Type, Span, Type),
+    #[error("Incompatible types in function call: expected '{1}', got '{3}' instead")]
+    IncompatibleTypesInFunctionCall(Option<Span>, Type, Span, Type),
 
     #[error("This name is already used by {0}")]
     NameAlreadyUsedBy(&'static str, Span, Option<Span>),
@@ -407,10 +407,12 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::Condition(..) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Conditional"),
         ),
-        e @ Expression::BinaryOperatorForDate(..) => Err(
-            // TODO i think maybe this could be const evaluated?
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "BinaryOperatorForDate"),
-        ),
+        e @ Expression::BinaryOperatorForDate(..) => {
+            Err(TypeCheckError::UnsupportedConstEvalExpression(
+                e.full_span(),
+                "binary operator for datetimes",
+            ))
+        }
     }
 }
 
@@ -625,7 +627,7 @@ impl TypeChecker {
                 (parameter_type, argument_type) => {
                     if parameter_type != &argument_type {
                         return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
-                            *parameter_span,
+                            Some(*parameter_span),
                             parameter_type.clone(),
                             arguments[idx].full_span(),
                             argument_type.clone(),
@@ -727,7 +729,25 @@ impl TypeChecker {
                 let rhs_checked = self.check_expression(rhs)?;
 
                 if let Type::Fn(parameter_types, return_type) = rhs_checked.get_type() {
-                    // TODO: type checks
+                    // make sure that there is just one paramter (return arity error otherwise)
+                    if parameter_types.len() != 1 {
+                        return Err(TypeCheckError::WrongArity {
+                            callable_span: rhs.full_span(),
+                            callable_name: "function".into(),
+                            callable_definition_span: None,
+                            arity: 1..=1,
+                            num_args: parameter_types.len(),
+                        });
+                    }
+
+                    if parameter_types[0] != lhs_checked.get_type() {
+                        return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                            None,
+                            parameter_types[0].clone(),
+                            lhs.full_span(),
+                            lhs_checked.get_type(),
+                        ));
+                    }
 
                     typed_ast::Expression::CallableCall(
                         lhs.full_span(),
@@ -980,7 +1000,7 @@ impl TypeChecker {
                             {
                                 if param_type != &arg_checked.get_type() {
                                     return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
-                                        *span, // TODO: this span is not correct, we need to store that in `Type::Fn`
+                                        None,
                                         param_type.clone(),
                                         arg_checked.full_span(),
                                         arg_checked.get_type(),

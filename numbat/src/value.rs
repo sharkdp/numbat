@@ -26,6 +26,7 @@ pub enum Value {
 }
 
 impl Value {
+    #[track_caller]
     pub fn unsafe_as_quantity(&self) -> &Quantity {
         if let Value::Quantity(q) = self {
             q
@@ -34,6 +35,7 @@ impl Value {
         }
     }
 
+    #[track_caller]
     pub fn unsafe_as_bool(&self) -> bool {
         if let Value::Boolean(b) = self {
             *b
@@ -42,6 +44,7 @@ impl Value {
         }
     }
 
+    #[track_caller]
     pub fn unsafe_as_string(&self) -> &str {
         if let Value::String(s) = self {
             s
@@ -50,6 +53,7 @@ impl Value {
         }
     }
 
+    #[track_caller]
     pub fn unsafe_as_datetime(&self) -> &chrono::DateTime<chrono::Utc> {
         if let Value::DateTime(dt, _) = self {
             dt
@@ -58,6 +62,7 @@ impl Value {
         }
     }
 
+    #[track_caller]
     pub fn unsafe_as_function_reference(&self) -> &FunctionReference {
         if let Value::FunctionReference(inner) = self {
             &inner
