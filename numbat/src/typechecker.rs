@@ -442,8 +442,10 @@ impl TypeChecker {
                 let suggestion = suggestion::did_you_mean(
                     self.identifiers
                         .keys()
-                        .map(|k| k.as_str())
-                        .chain(["true", "false"]), // These are parsed as keywords, but can act like identifiers
+                        .map(|k| k.to_string())
+                        .chain(["true".into(), "false".into()]) // These are parsed as keywords, but can act like identifiers
+                        .chain(self.function_signatures.keys().cloned())
+                        .chain(ffi::procedures().values().map(|p| p.name.clone())),
                     name,
                 );
                 TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
