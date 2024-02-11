@@ -106,7 +106,7 @@ fn now() -> DateTime
 fn parse_datetime(input: String) -> DateTime
 fn format_datetime(format: String, dt: DateTime) -> String
 fn from_unixtime(t: Scalar) -> DateTime
-fn to_unixtime(dt: DateTime) -> Scalar
+fn unixtime(dt: DateTime) -> Scalar
 fn human(t: Time) -> String
 ```
 

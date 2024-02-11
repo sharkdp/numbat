@@ -12,6 +12,7 @@ use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
+use crate::value::FunctionReference;
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
@@ -36,8 +37,8 @@ pub struct BytecodeInterpreter {
     locals: Vec<Vec<Local>>,
     // Maps names of units to indices of the respective constants in the VM
     unit_name_to_constant_index: HashMap<String, u16>,
-    /// List of function names
-    function_names: Vec<String>,
+    /// List of functions
+    functions: HashMap<String, bool>,
 }
 
 impl BytecodeInterpreter {
@@ -64,10 +65,14 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
                 } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
                     self.vm.add_op(Op::GetLastResult);
-                } else if self.function_names.contains(identifier) {
+                } else if let Some(is_foreign) = self.functions.get(identifier) {
                     let index = self
                         .vm
-                        .add_constant(Constant::FunctionReference(identifier.clone()));
+                        .add_constant(Constant::FunctionReference(if *is_foreign {
+                            FunctionReference::Foreign(identifier.clone())
+                        } else {
+                            FunctionReference::Normal(identifier.clone())
+                        }));
                     self.vm.add_op1(Op::LoadConstant, index);
                 } else {
                     unreachable!("Unknown identifier '{identifier}'")
@@ -297,7 +302,7 @@ impl BytecodeInterpreter {
 
                 self.vm.end_function();
 
-                self.function_names.push(name.clone());
+                self.functions.insert(name.clone(), false);
             }
             Statement::DefineFunction(
                 name,
@@ -321,7 +326,7 @@ impl BytecodeInterpreter {
                     },
                 );
 
-                self.function_names.push(name.clone());
+                self.functions.insert(name.clone(), true);
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
@@ -473,7 +478,7 @@ impl Interpreter for BytecodeInterpreter {
             vm: Vm::new(),
             locals: vec![vec![]],
             unit_name_to_constant_index: HashMap::new(),
-            function_names: vec![],
+            functions: HashMap::new(),
         }
     }
 

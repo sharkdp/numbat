@@ -726,9 +726,20 @@ impl TypeChecker {
                 let lhs_checked = self.check_expression(lhs)?;
                 let rhs_checked = self.check_expression(rhs)?;
 
-                // DateTime types need special handling here, since they're not scalars with dimensions, yet some select binary operators can be applied to them
-                // TODO how to better handle all the operations we want to support with date
-                if lhs_checked.get_type() == Type::DateTime {
+                if let Type::Fn(parameter_types, return_type) = rhs_checked.get_type() {
+                    // TODO: type checks
+
+                    typed_ast::Expression::CallableCall(
+                        lhs.full_span(),
+                        Box::new(rhs_checked),
+                        vec![lhs_checked],
+                        *return_type,
+                    )
+                } else if lhs_checked.get_type() == Type::DateTime {
+                    // DateTime types need special handling here, since they're not scalars with dimensions,
+                    // yet some select binary operators can be applied to them
+                    // TODO how to better handle all the operations we want to support with date
+
                     let rhs_is_time = dtype(&rhs_checked)
                         .ok()
                         .map(|t| t.is_time_dimension())

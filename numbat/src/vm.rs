@@ -12,7 +12,7 @@ use crate::{
     quantity::{Quantity, QuantityError},
     unit::Unit,
     unit_registry::{UnitMetadata, UnitRegistry},
-    value::Value,
+    value::{FunctionReference, Value},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -199,7 +199,7 @@ pub enum Constant {
     Unit(Unit),
     Boolean(bool),
     String(String),
-    FunctionReference(String),
+    FunctionReference(FunctionReference),
 }
 
 impl Constant {
@@ -209,7 +209,7 @@ impl Constant {
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
-            Constant::FunctionReference(name) => Value::FunctionReference(name.clone()),
+            Constant::FunctionReference(inner) => Value::FunctionReference(inner.clone()),
         }
     }
 }
@@ -221,7 +221,7 @@ impl Display for Constant {
             Constant::Unit(unit) => write!(f, "{}", unit),
             Constant::Boolean(val) => write!(f, "{}", val),
             Constant::String(val) => write!(f, "\"{}\"", val),
-            Constant::FunctionReference(name) => write!(f, "<function: {}>", name),
+            Constant::FunctionReference(inner) => write!(f, "{}", inner.to_string()),
         }
     }
 }
@@ -839,15 +839,38 @@ impl Vm {
                     let num_args = self.read_u16() as usize;
 
                     let callable = self.pop();
-                    let function_name = callable.unsafe_as_function_reference();
-                    let function_idx = self.get_function_idx(function_name) as usize;
+                    match callable.unsafe_as_function_reference() {
+                        FunctionReference::Normal(name) => {
+                            let function_idx = self.get_function_idx(name) as usize;
 
-                    // TODO: unify code with 'Op::Call'?
-                    self.frames.push(CallFrame {
-                        function_idx,
-                        ip: 0,
-                        fp: self.stack.len() - num_args,
-                    })
+                            // TODO: unify code with 'Op::Call'?
+                            self.frames.push(CallFrame {
+                                function_idx,
+                                ip: 0,
+                                fp: self.stack.len() - num_args,
+                            })
+                        }
+                        FunctionReference::Foreign(name) => {
+                            let function_idx = self
+                                .get_ffi_callable_idx(name)
+                                .expect("Foreign function exists")
+                                as usize;
+
+                            let mut args = vec![];
+                            for _ in 0..num_args {
+                                args.push(self.pop());
+                            }
+                            args.reverse();
+
+                            match &self.ffi_callables[function_idx].callable {
+                                Callable::Function(function) => {
+                                    let result = (function)(&args[..]);
+                                    self.push(result?);
+                                }
+                                Callable::Procedure(..) => unreachable!("Foreign procedures can not be targeted by a function reference"),
+                            }
+                        }
+                    }
                 }
                 Op::PrintString => {
                     let s_idx = self.read_u16() as usize;

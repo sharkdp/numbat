@@ -5,12 +5,38 @@ let eps = 1e-10
 # fn diff<X, Y>(f: Fn[(X) -> Y], x: X) -> Y / X =
 #   (f(x + eps · unit_of(x)) - f(x)) / (eps · unit_of(x))
 
-fn diff(f: Fn[(Scalar) -> Scalar], x: Scalar) -> Scalar = (f(x + eps) - f(x)) / eps
 
-print("log'(2.0) = {diff(log, 2.0)} (exact: 1/2)")
-print("log'(4.0) = {diff(log, 4.0)} (exact: 1/4)")
 
-fn f(x: Scalar) -> Scalar = x * x + 4 * x + 1
 
-print("f'(0.0) = {diff(f, 0.0)} (exact: 4)")
-print("f'(1.0) = {diff(f, 1.0)} (exact: 6)")
+##### EXAMPLES
+
+#fn diff(f: Fn[(Scalar) -> Scalar], x: Scalar) -> Scalar = (f(x + eps) - f(x)) / eps
+#
+#print("log'(2.0) = {diff(log, 2.0)} (exact: 1/2)")
+#print("log'(4.0) = {diff(log, 4.0)} (exact: 1/4)")
+#
+#fn f(x: Scalar) -> Scalar = x * x + 4 * x + 1
+#
+#print("f'(0.0) = {diff(f, 0.0)} (exact: 4)")
+#print("f'(1.0) = {diff(f, 1.0)} (exact: 6)")
+
+
+# fn return_fn(x) -> Fn[(Scalar) -> Scalar] =
+#   log
+
+# print(return_fn(2)(e))
+
+
+#### ERRORS
+
+# fn test<E>(f: Fn[(E^2) -> E], x: E^2) -> E =
+#   f(x)
+
+# test(sqrt, 2)
+
+# fn id<T>(x: T) -> T = x
+# let my_id = id
+
+# let f: Fn[(Scalar, Scalar) -> Scalar] = log
+
+# (2+3)(2)
