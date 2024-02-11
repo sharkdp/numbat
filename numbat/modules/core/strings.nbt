@@ -39,23 +39,34 @@ fn _oct_digit(x: Scalar) -> String =
 fn _hex_digit(x: Scalar) -> String =
     if mod(x, 16) < 10 then chr(48 + mod(x, 16)) else chr(97 + mod(x, 16) - 10)
 
-fn bin(x: Scalar) -> String =
-  if x < 0
-    then "-{bin(-x)}"
-    else if x < 2
-      then "0b{chr(48 + x)}"
-      else str_append(bin(floor(x / 2)), _bin_digit(mod(x, 2)))
+fn _digit_in_base(x: Scalar, base: Scalar) -> String =
+  if base < 2 || base > 16
+    then "?" # TODO: better error handling once we can specify the return type of 'error(msg)' as '!' (see error.nbt).
+    else if mod(x, 16) < 10 then chr(48 + mod(x, 16)) else chr(97 + mod(x, 16) - 10)
 
-fn oct(x: Scalar) -> String =
+fn _number_in_base(x: Scalar, b: Scalar) -> String =
   if x < 0
-    then "-{oct(-x)}"
-    else if x < 8
-      then "0o{chr(48 + x)}"
-      else str_append(oct(floor(x / 8)), _oct_digit(x))
+    then "-{_number_in_base(-x, b)}"
+    else if x < b
+      then _digit_in_base(x, b)
+      else str_append(_number_in_base(floor(x / b), b), _digit_in_base(mod(x, b), b))
 
-fn hex(x: Scalar) -> String =
-  if x < 0
-    then "-{hex(-x)}"
-    else if floor(x / 16) == 0
-      then str_append("0x", _hex_digit(x))
-      else str_append(hex(floor(x / 16)), _hex_digit(x))
+fn bin(x: Scalar) -> String = if x < 0 then "-{bin(-x)}" else "0b{_number_in_base(x, 2)}"
+fn oct(x: Scalar) -> String = if x < 0 then "-{oct(-x)}" else "0o{_number_in_base(x, 8)}"
+fn dec(x: Scalar) -> String = _number_in_base(x, 10)
+fn hex(x: Scalar) -> String = if x < 0 then "-{hex(-x)}" else "0x{_number_in_base(x, 16)}"
+
+# TODO: once we have anonymous functions / closures, we can implement base in a way
+# that it returns a partially-applied version of '_number_in_base'. This would allow
+# arbitrary 'x -> base(b)' conversions.
+fn _not_implemented(unused: Scalar) -> String = "<bases other than 2, 8, 10, and 16 are currently not implemented>"
+fn base(b: Scalar) -> Fn[(Scalar) -> String] =
+  if b == 2
+    then bin
+    else if b == 8
+      then oct
+      else if b == 10
+        then dec
+        else if b == 16
+          then hex
+          else _not_implemented
