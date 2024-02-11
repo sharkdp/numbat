@@ -1,6 +1,16 @@
 let eps = 1e-10
 
-# It would be so cool if we could write it in a generic way:
+fn diff(f: Fn[(Scalar) -> Scalar], x: Scalar) -> Scalar =
+    (f(x + eps) - f(x)) / eps
+
+assert_eq(diff(log, 2.0), 1 / 2, 1e-5)
+assert_eq(diff(sin, 0.0), 1.0, 1e-5)
+
+fn f(x: Scalar) -> Scalar = x * x + 4 * x + 1
+
+assert_eq(diff(f, 2.0), 8.0, 1e-5)
+
+# TODO: It would be so cool if we could write it in a generic way:
 #
 # fn diff<X, Y>(f: Fn[(X) -> Y], x: X) -> Y / X =
 #   (f(x + eps · unit_of(x)) - f(x)) / (eps · unit_of(x))
@@ -9,16 +19,6 @@ let eps = 1e-10
 
 
 ##### EXAMPLES
-
-#fn diff(f: Fn[(Scalar) -> Scalar], x: Scalar) -> Scalar = (f(x + eps) - f(x)) / eps
-#
-#print("log'(2.0) = {diff(log, 2.0)} (exact: 1/2)")
-#print("log'(4.0) = {diff(log, 4.0)} (exact: 1/4)")
-#
-#fn f(x: Scalar) -> Scalar = x * x + 4 * x + 1
-#
-#print("f'(0.0) = {diff(f, 0.0)} (exact: 4)")
-#print("f'(1.0) = {diff(f, 1.0)} (exact: 6)")
 
 
 # fn return_fn(x) -> Fn[(Scalar) -> Scalar] =

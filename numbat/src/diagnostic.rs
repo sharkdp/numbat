@@ -174,7 +174,7 @@ impl ErrorDiagnostic for TypeCheckError {
                         what = if callable_definition_span.is_some() {
                             ""
                         } else {
-                            "procedure "
+                            "procedure or function object "
                         },
                         num = if *num_args == 1 {
                             "one argument".into()
@@ -305,16 +305,24 @@ impl ErrorDiagnostic for TypeCheckError {
                 parameter_type,
                 argument_span,
                 argument_type,
-            ) => d
-                .with_labels(vec![
-                    parameter_span
-                        .diagnostic_label(LabelStyle::Secondary)
-                        .with_message(parameter_type.to_string()),
-                    argument_span
+            ) => {
+                if let Some(parameter_span) = parameter_span {
+                    d.with_labels(vec![
+                        parameter_span
+                            .diagnostic_label(LabelStyle::Secondary)
+                            .with_message(parameter_type.to_string()),
+                        argument_span
+                            .diagnostic_label(LabelStyle::Primary)
+                            .with_message(argument_type.to_string()),
+                    ])
+                    .with_notes(vec![inner_error])
+                } else {
+                    d.with_labels(vec![argument_span
                         .diagnostic_label(LabelStyle::Primary)
-                        .with_message(argument_type.to_string()),
-                ])
-                .with_notes(vec![inner_error]),
+                        .with_message(argument_type.to_string())])
+                        .with_notes(vec![inner_error])
+                }
+            }
             TypeCheckError::NameAlreadyUsedBy(_, definition_span, previous_definition_span) => {
                 let mut labels = vec![];
 
