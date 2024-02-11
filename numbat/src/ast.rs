@@ -77,7 +77,7 @@ pub enum Expression {
         rhs: Box<Expression>,
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
-    FunctionCall(Span, Span, String, Vec<Expression>),
+    FunctionCall(Span, Span, Box<Expression>, Vec<Expression>),
     Boolean(Span, bool),
     String(Span, Vec<StringPart>),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
@@ -462,10 +462,10 @@ impl ReplaceSpans for Expression {
                 rhs: Box::new(rhs.replace_spans()),
                 span_op: Some(Span::dummy()),
             },
-            Expression::FunctionCall(_, _, name, args) => Expression::FunctionCall(
+            Expression::FunctionCall(_, _, callable, args) => Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
-                name.clone(),
+                Box::new(callable.replace_spans()),
                 args.iter().map(|a| a.replace_spans()).collect(),
             ),
             Expression::Boolean(_, val) => Expression::Boolean(Span::dummy(), *val),

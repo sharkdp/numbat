@@ -7,6 +7,7 @@ pub enum Value {
     String(String),
     /// A DateTime with an associated offset used when pretty printing
     DateTime(chrono::DateTime<chrono::Utc>, chrono::FixedOffset),
+    FunctionReference(String),
 }
 
 impl Value {
@@ -41,6 +42,14 @@ impl Value {
             panic!("Expected value to be a string");
         }
     }
+
+    pub fn unsafe_as_function_reference(&self) -> &str {
+        if let Value::FunctionReference(name) = self {
+            &name
+        } else {
+            panic!("Expected value to be a string");
+        }
+    }
 }
 
 impl std::fmt::Display for Value {
@@ -50,6 +59,7 @@ impl std::fmt::Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(s) => write!(f, "\"{}\"", s),
             Value::DateTime(dt, _) => write!(f, "{:?}", dt),
+            Value::FunctionReference(s) => write!(f, "<function: {}>", s), // TODO: we could also pretty print the function signature here
         }
     }
 }
@@ -64,6 +74,9 @@ impl PrettyPrint for Value {
                 let l: chrono::DateTime<chrono::FixedOffset> =
                     chrono::DateTime::from_naive_utc_and_offset(dt.naive_utc(), *offset);
                 crate::markup::string(l.to_rfc2822())
+            }
+            Value::FunctionReference(name) => {
+                crate::markup::string(format!("<function: {}>", name)) // TODO: see above
             }
         }
     }
