@@ -197,6 +197,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected a string")]
     ExpectedString,
+
+    #[error("Expected {0} in function type")]
+    ExpectedTokenInFunctionType(&'static str),
 }
 
 #[derive(Debug, Clone, Error)]
@@ -1223,10 +1226,16 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(TokenKind::CapitalFn).is_some() {
             let span = self.last().unwrap().span;
             if self.match_exact(TokenKind::LeftBracket).is_none() {
-                todo!()
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInFunctionType("left bracket"),
+                    self.peek().span,
+                ));
             }
             if self.match_exact(TokenKind::LeftParen).is_none() {
-                todo!()
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInFunctionType("left parenthesis"),
+                    self.peek().span,
+                ));
             }
 
             let mut params = vec![];
@@ -1238,17 +1247,26 @@ impl<'a> Parser<'a> {
             }
 
             if self.match_exact(TokenKind::RightParen).is_none() {
-                todo!()
+                return Err(ParseError::new(
+                    ParseErrorKind::MissingClosingParen,
+                    self.peek().span,
+                ));
             }
 
             if self.match_exact(TokenKind::Arrow).is_none() {
-                todo!()
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInFunctionType("arrow (->)"),
+                    self.peek().span,
+                ));
             }
 
             let return_type = self.type_annotation()?;
 
             if self.match_exact(TokenKind::RightBracket).is_none() {
-                todo!()
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInFunctionType("right bracket"),
+                    self.peek().span,
+                ));
             }
 
             let span = span.extend(&self.last().unwrap().span);
