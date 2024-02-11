@@ -205,8 +205,6 @@ pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
     UnknownIdentifier(Span, String, Option<String>),
 
-    // #[error("Unknown callable '{1}'.")]
-    // UnknownCallable(Span, String, Option<String>),
     #[error(transparent)]
     IncompatibleDimensions(IncompatibleDimensionsError),
 
@@ -290,6 +288,12 @@ pub enum TypeCheckError {
 
     #[error("Missing a definition for dimension {1}")]
     MissingDimension(Span, String),
+
+    #[error("Function references can not point to generic functions")]
+    NoFunctionReferenceToGenericFunction(Span),
+
+    #[error("Only functions and function references can be called")]
+    OnlyFunctionsAndReferencesCanBeCalled(Span),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -447,6 +451,10 @@ impl TypeChecker {
 
         if id.is_err() {
             if let Some(signature) = self.function_signatures.get(name) {
+                if !signature.type_parameters.is_empty() {
+                    return Err(TypeCheckError::NoFunctionReferenceToGenericFunction(span));
+                }
+
                 Ok(Type::Fn(
                     signature
                         .parameter_types
@@ -924,10 +932,9 @@ impl TypeChecker {
                     .map(|e| e.get_type())
                     .collect::<Vec<Type>>();
 
-                // There are two options here. The 'callable' can either be a
-                // direct reference to a (proper) function, or it can be an
-                // arbitrary complicated expression that evaluates to a function
-                // "pointer".
+                // There are two options here. The 'callable' can either be a direct reference
+                // to a (proper) function, or it can be an arbitrary complicated expression
+                // that evaluates to a function "pointer".
 
                 if let Some((name, signature)) = self.get_proper_function_reference(callable) {
                     self.proper_function_call(
@@ -941,9 +948,35 @@ impl TypeChecker {
                 } else {
                     let callable_checked = self.check_expression(callable)?;
                     let callable_type = callable_checked.get_type();
+
                     match callable_type {
                         Type::Fn(parameters_types, return_type) => {
-                            // todo: verify!
+                            let num_parameters = parameters_types.len();
+                            let num_arguments = arguments_checked.len();
+
+                            if num_parameters != num_arguments {
+                                return Err(TypeCheckError::WrongArity {
+                                    callable_span: *span, // TODO: check
+                                    callable_name: "function".into(),
+                                    callable_definition_span: None, // TODO: this leads to a wrong error message
+                                    arity: num_parameters..=num_parameters,
+                                    num_args: num_arguments,
+                                });
+                            }
+
+                            for (param_type, arg_checked) in
+                                parameters_types.iter().zip(&arguments_checked)
+                            {
+                                if param_type != &arg_checked.get_type() {
+                                    return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                                        *span, // TODO: this span is not correct, we need to store that in `Type::Fn`
+                                        param_type.clone(),
+                                        arg_checked.full_span(),
+                                        arg_checked.get_type(),
+                                    ));
+                                }
+                            }
+
                             typed_ast::Expression::CallableCall(
                                 *full_span,
                                 Box::new(callable_checked),
@@ -951,31 +984,13 @@ impl TypeChecker {
                                 *return_type,
                             )
                         }
-                        _ => todo!("Only functions can be called"),
+                        _ => {
+                            return Err(TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
+                                callable.full_span(),
+                            ));
+                        }
                     }
                 }
-
-                // TODO
-                // (
-                //     name,
-                //     self.function_signatures
-                //         .get(name)
-                //         .ok_or_else(|| {
-                //             let suggestion = suggestion::did_you_mean(
-                //                 self.function_signatures
-                //                     .keys()
-                //                     .chain(ffi::procedures().values().map(|p| &p.name)),
-                //                 name,
-                //             );
-
-                //             TypeCheckError::UnknownCallable(
-                //                 *span,
-                //                 name.clone(),
-                //                 suggestion,
-                //             )
-                //         })?
-                //         .clone(),
-                // )
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
             ast::Expression::String(span, parts) => typed_ast::Expression::String(

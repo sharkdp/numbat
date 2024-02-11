@@ -84,18 +84,6 @@ impl ErrorDiagnostic for TypeCheckError {
                     .with_message("unknown identifier")])
                     .with_notes(notes)
             }
-            // TypeCheckError::UnknownCallable(span, _, suggestion) => {
-            //     let notes = if let Some(suggestion) = suggestion {
-            //         vec![format!("Did you mean '{suggestion}'?")]
-            //     } else {
-            //         vec![]
-            //     };
-
-            //     d.with_labels(vec![span
-            //         .diagnostic_label(LabelStyle::Primary)
-            //         .with_message("unknown callable")])
-            //         .with_notes(notes)
-            // }
             TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {
                 operation,
                 span_operation,
@@ -349,9 +337,12 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::NonRationalExponent(span)
             | TypeCheckError::OverflowInConstExpr(span)
             | TypeCheckError::ExpectedDimensionType(span, _)
-            | TypeCheckError::ExpectedBool(span) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
+            | TypeCheckError::ExpectedBool(span)
+            | TypeCheckError::NoFunctionReferenceToGenericFunction(span)
+            | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error)]),
             TypeCheckError::MissingDimension(span, dim) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
