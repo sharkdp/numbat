@@ -756,17 +756,6 @@ impl<'a> Parser<'a> {
         self.postfix_apply()
     }
 
-    fn function_name_from_primary(&self, primary: &Expression) -> Result<String> {
-        if let Expression::Identifier(_, name) = primary {
-            Ok(name.clone())
-        } else {
-            Err(ParseError::new(
-                ParseErrorKind::CanOnlyCallIdentifier,
-                primary.full_span(),
-            ))
-        }
-    }
-
     fn identifier(&mut self) -> Result<String> {
         if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             Ok(identifier.lexeme.clone())
@@ -786,7 +775,12 @@ impl<'a> Parser<'a> {
             let identifier_span = self.last().unwrap().span;
             full_span = full_span.extend(&identifier_span);
 
-            expr = Expression::FunctionCall(identifier_span, full_span, identifier, vec![expr]);
+            expr = Expression::FunctionCall(
+                identifier_span,
+                full_span,
+                Box::new(Expression::Identifier(identifier_span, identifier)),
+                vec![expr],
+            );
         }
         Ok(expr)
     }
@@ -1055,13 +1049,11 @@ impl<'a> Parser<'a> {
         let primary = self.primary()?;
 
         if self.match_exact(TokenKind::LeftParen).is_some() {
-            let function_name = self.function_name_from_primary(&primary)?;
-
             let args = self.arguments()?;
             return Ok(Expression::FunctionCall(
                 primary.full_span(),
                 primary.full_span().extend(&self.last().unwrap().span),
-                function_name,
+                Box::new(primary),
                 args,
             ));
         }
@@ -2258,7 +2250,12 @@ mod tests {
     fn function_call() {
         parse_as_expression(
             &["foo()"],
-            Expression::FunctionCall(Span::dummy(), Span::dummy(), "foo".into(), vec![]),
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(identifier!("foo")),
+                vec![],
+            ),
         );
 
         parse_as_expression(
@@ -2266,7 +2263,7 @@ mod tests {
             Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
-                "foo".into(),
+                Box::new(identifier!("foo")),
                 vec![scalar!(1.0)],
             ),
         );
@@ -2276,7 +2273,7 @@ mod tests {
             Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
-                "foo".into(),
+                Box::new(identifier!("foo")),
                 vec![scalar!(1.0), scalar!(2.0), scalar!(3.0)],
             ),
         );
@@ -2291,7 +2288,7 @@ mod tests {
             Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
-                "foo".into(),
+                Box::new(identifier!("foo")),
                 vec![binop!(scalar!(1.0), Add, scalar!(1.0))],
             ),
         );

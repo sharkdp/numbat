@@ -172,7 +172,10 @@ pub enum Expression {
         Box<Expression>,
         Type,
     ),
+    // A 'proper' function call
     FunctionCall(Span, Span, String, Vec<Expression>, Type),
+    // A call via a function object
+    CallableCall(Span, Box<Expression>, Vec<Expression>, Type),
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
@@ -200,6 +203,7 @@ impl Expression {
                 span
             }
             Expression::FunctionCall(_identifier_span, full_span, _, _, _) => *full_span,
+            Expression::CallableCall(full_span, _, _, _) => *full_span,
             Expression::Boolean(span, _) => *span,
             Expression::Condition(span_if, _, _, then_expr) => {
                 span_if.extend(&then_expr.full_span())
@@ -254,6 +258,7 @@ impl Expression {
             Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
             Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.clone(),
             Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
+            Expression::CallableCall(_, _, _, type_) => type_.clone(),
             Expression::Boolean(_, _) => Type::Boolean,
             Expression::Condition(_, _, then, _) => then.get_type(),
             Expression::String(_, _) => Type::String,
@@ -457,6 +462,7 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::Identifier(..)
         | Expression::UnitIdentifier(..)
         | Expression::FunctionCall(..)
+        | Expression::CallableCall(..)
         | Expression::Boolean(..)
         | Expression::String(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
@@ -611,6 +617,9 @@ impl PrettyPrint for Expression {
                     )
                     .sum()
                     + m::operator(")")
+            }
+            CallableCall(_, expr, args, _type) => {
+                todo!()
             }
             Boolean(_, val) => val.pretty_print(),
             String(_, parts) => parts.pretty_print(),

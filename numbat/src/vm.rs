@@ -94,6 +94,9 @@ pub enum Op {
     /// Same as above, but call a procedure which does not return anything (does not push a value onto the stack)
     FFICallProcedure,
 
+    /// Call a callable object
+    CallCallable,
+
     /// Print a compile-time string
     PrintString,
 
@@ -118,7 +121,8 @@ impl Op {
             | Op::PrintString
             | Op::JoinString
             | Op::JumpIfFalse
-            | Op::Jump => 1,
+            | Op::Jump
+            | Op::CallCallable => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
@@ -180,6 +184,7 @@ impl Op {
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
             Op::FFICallProcedure => "FFICallProcedure",
+            Op::CallCallable => "CallCallable",
             Op::PrintString => "PrintString",
             Op::JoinString => "JoinString",
             Op::FullSimplify => "FullSimplify",
@@ -194,6 +199,7 @@ pub enum Constant {
     Unit(Unit),
     Boolean(bool),
     String(String),
+    FunctionReference(String),
 }
 
 impl Constant {
@@ -203,6 +209,7 @@ impl Constant {
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
+            Constant::FunctionReference(name) => Value::FunctionReference(name.clone()),
         }
     }
 }
@@ -214,6 +221,7 @@ impl Display for Constant {
             Constant::Unit(unit) => write!(f, "{}", unit),
             Constant::Boolean(val) => write!(f, "{}", val),
             Constant::String(val) => write!(f, "\"{}\"", val),
+            Constant::FunctionReference(name) => write!(f, "<function: {}>", name),
         }
     }
 }
@@ -827,6 +835,20 @@ impl Vm {
                         }
                     }
                 }
+                Op::CallCallable => {
+                    let num_args = self.read_u16() as usize;
+
+                    let callable = self.pop();
+                    let function_name = callable.unsafe_as_function_reference();
+                    let function_idx = self.get_function_idx(function_name) as usize;
+
+                    // TODO: unify code with 'Op::Call'?
+                    self.frames.push(CallFrame {
+                        function_idx,
+                        ip: 0,
+                        fp: self.stack.len() - num_args,
+                    })
+                }
                 Op::PrintString => {
                     let s_idx = self.read_u16() as usize;
                     let s = &self.strings[s_idx];
@@ -848,6 +870,7 @@ impl Vm {
                                     );
                                 l.to_rfc2822()
                             }
+                            Value::FunctionReference(s) => format!("<function: {}>", s), // TODO
                         };
                         joined = part + &joined; // reverse order
                     }

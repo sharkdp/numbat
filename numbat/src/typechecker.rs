@@ -392,6 +392,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::FunctionCall(_, _, _, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
         ),
+        e @ &typed_ast::Expression::CallableCall(_, _, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
+        ),
         e @ typed_ast::Expression::Boolean(_, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Boolean value"),
         ),
@@ -459,6 +462,206 @@ impl TypeChecker {
         } else {
             id
         }
+    }
+
+    fn get_proper_function_reference(
+        &self,
+        expr: &ast::Expression,
+    ) -> Option<(String, &FunctionSignature)> {
+        match expr {
+            ast::Expression::Identifier(_, name) => {
+                if let Some(signature) = self.function_signatures.get(name) {
+                    Some((name.clone(), signature))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    fn proper_function_call(
+        &self,
+        span: &Span,
+        full_span: &Span,
+        function_name: &str,
+        signature: &FunctionSignature,
+        arguments: Vec<typed_ast::Expression>,
+        argument_types: Vec<Type>,
+    ) -> Result<typed_ast::Expression> {
+        let FunctionSignature {
+            definition_span,
+            type_parameters,
+            parameter_types,
+            is_variadic,
+            return_type,
+            is_foreign: _,
+        } = signature;
+
+        let arity_range = if *is_variadic {
+            1..=usize::MAX
+        } else {
+            parameter_types.len()..=parameter_types.len()
+        };
+
+        if !arity_range.contains(&arguments.len()) {
+            return Err(TypeCheckError::WrongArity {
+                callable_span: *span,
+                callable_name: function_name.into(),
+                callable_definition_span: Some(*definition_span),
+                arity: arity_range,
+                num_args: arguments.len(),
+            });
+        }
+
+        let mut substitutions: Vec<(String, DType)> = vec![];
+
+        let substitute = |substitutions: &[(String, DType)], type_: &DType| -> DType {
+            let mut result_type = type_.clone();
+            for (name, substituted_type) in substitutions {
+                if let Some(factor @ BaseRepresentationFactor(_, exp)) = type_
+                    .clone() // TODO: remove this .clone() somehow?
+                    .iter()
+                    .find(|BaseRepresentationFactor(n, _)| n == name)
+                {
+                    result_type = result_type / DType::from_factor((*factor).clone())
+                        * substituted_type.clone().power(*exp);
+                }
+            }
+            result_type
+        };
+
+        let mut parameter_types = parameter_types.clone();
+
+        if *is_variadic {
+            // For a variadic function, we simply duplicate the parameter type
+            // N times, where N is the number of arguments given.
+            debug_assert!(parameter_types.len() == 1);
+
+            for _ in 1..argument_types.len() {
+                parameter_types.push(parameter_types[0].clone());
+            }
+        }
+
+        for (idx, ((parameter_span, parameter_type), argument_type)) in
+            parameter_types.iter().zip(argument_types).enumerate()
+        {
+            match (parameter_type, argument_type) {
+                (Type::Dimension(parameter_type), Type::Dimension(argument_type)) => {
+                    let mut parameter_type = substitute(&substitutions, parameter_type);
+
+                    let remaining_generic_subtypes: Vec<_> = parameter_type
+                        .iter()
+                        .filter(|BaseRepresentationFactor(name, _)| {
+                            type_parameters.iter().any(|(_, n)| name == n)
+                        })
+                        .collect();
+
+                    if remaining_generic_subtypes.len() > 1 {
+                        return Err(TypeCheckError::MultipleUnresolvedTypeParameters(
+                            *span,
+                            *parameter_span,
+                        ));
+                    }
+
+                    if let Some(&generic_subtype_factor) = remaining_generic_subtypes.first() {
+                        let generic_subtype = DType::from_factor(generic_subtype_factor.clone());
+
+                        // The type of the idx-th parameter of the called function has a generic type
+                        // parameter inside. We can now instantiate that generic parameter by solving
+                        // the equation "parameter_type == argument_type" for the generic parameter.
+                        // In order to do this, let's assume `generic_subtype = D^alpha`, then we have
+                        //
+                        //                                parameter_type == argument_type
+                        //    parameter_type / generic_subtype * D^alpha == argument_type
+                        //                                       D^alpha == argument_type / (parameter_type / generic_subtype)
+                        //                                             D == [argument_type / (parameter_type / generic_subtype)]^(1/alpha)
+                        //
+
+                        let alpha = Rational::from_integer(1) / generic_subtype_factor.1;
+                        let d = (argument_type.clone()
+                            / (parameter_type.clone() / generic_subtype))
+                            .power(alpha);
+
+                        // We can now substitute that generic parameter in all subsequent expressions
+                        substitutions.push((generic_subtype_factor.0.clone(), d));
+
+                        parameter_type = substitute(&substitutions, &parameter_type);
+                    }
+
+                    if parameter_type != argument_type {
+                        return Err(TypeCheckError::IncompatibleDimensions(
+                            IncompatibleDimensionsError {
+                                span_operation: *span,
+                                operation: format!(
+                                    "argument {num} of function call to '{name}'",
+                                    num = idx + 1,
+                                    name = function_name
+                                ),
+                                span_expected: parameter_types[idx].0,
+                                expected_name: "parameter type",
+                                expected_dimensions: self
+                                    .registry
+                                    .get_derived_entry_names_for(&parameter_type),
+                                expected_type: parameter_type,
+                                span_actual: arguments[idx].full_span(),
+                                actual_name: " argument type",
+                                actual_name_for_fix: "function argument",
+                                actual_dimensions: self
+                                    .registry
+                                    .get_derived_entry_names_for(&argument_type),
+                                actual_type: argument_type,
+                            },
+                        ));
+                    }
+                }
+                (parameter_type, argument_type) => {
+                    if parameter_type != &argument_type {
+                        return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                            *parameter_span,
+                            parameter_type.clone(),
+                            arguments[idx].full_span(),
+                            argument_type.clone(),
+                        ));
+                    }
+                }
+            }
+        }
+
+        if substitutions.len() != type_parameters.len() {
+            let parameters: HashSet<String> = type_parameters
+                .iter()
+                .map(|(_, name)| name)
+                .cloned()
+                .collect();
+            let inferred_parameters: HashSet<String> =
+                substitutions.iter().map(|t| t.0.clone()).collect();
+
+            let remaining: Vec<_> = (&parameters - &inferred_parameters)
+                .iter()
+                .cloned()
+                .collect();
+
+            return Err(TypeCheckError::CanNotInferTypeParameters(
+                *span,
+                *definition_span,
+                function_name.into(),
+                remaining.join(", "),
+            ));
+        }
+
+        let return_type = match return_type {
+            Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
+            type_ => type_.clone(),
+        };
+
+        Ok(typed_ast::Expression::FunctionCall(
+            *span,
+            *full_span,
+            function_name.into(),
+            arguments,
+            return_type,
+        ))
     }
 
     pub(crate) fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
@@ -712,41 +915,7 @@ impl TypeChecker {
                     )
                 }
             }
-            ast::Expression::FunctionCall(span, full_span, function_name, args) => {
-                let FunctionSignature {
-                    definition_span,
-                    type_parameters,
-                    parameter_types,
-                    is_variadic,
-                    return_type,
-                    is_foreign: _,
-                } = self.function_signatures.get(function_name).ok_or_else(|| {
-                    let suggestion = suggestion::did_you_mean(
-                        self.function_signatures
-                            .keys()
-                            .chain(ffi::procedures().values().map(|p| &p.name)),
-                        function_name,
-                    );
-
-                    TypeCheckError::UnknownCallable(*span, function_name.clone(), suggestion)
-                })?;
-
-                let arity_range = if *is_variadic {
-                    1..=usize::MAX
-                } else {
-                    parameter_types.len()..=parameter_types.len()
-                };
-
-                if !arity_range.contains(&args.len()) {
-                    return Err(TypeCheckError::WrongArity {
-                        callable_span: *span,
-                        callable_name: function_name.clone(),
-                        callable_definition_span: Some(*definition_span),
-                        arity: arity_range,
-                        num_args: args.len(),
-                    });
-                }
-
+            ast::Expression::FunctionCall(span, full_span, callable, args) => {
                 let arguments_checked = args
                     .iter()
                     .map(|a| self.check_expression(a))
@@ -756,157 +925,57 @@ impl TypeChecker {
                     .map(|e| e.get_type())
                     .collect::<Vec<Type>>();
 
-                let mut substitutions: Vec<(String, DType)> = vec![];
+                // There are two options here. The 'callable' can either be a
+                // direct reference to a (proper) function, or it can be an
+                // arbitrary complicated expression that evaluates to a function
+                // "pointer".
 
-                let substitute = |substitutions: &[(String, DType)], type_: &DType| -> DType {
-                    let mut result_type = type_.clone();
-                    for (name, substituted_type) in substitutions {
-                        if let Some(factor @ BaseRepresentationFactor(_, exp)) = type_
-                            .clone() // TODO: remove this .clone() somehow?
-                            .iter()
-                            .find(|BaseRepresentationFactor(n, _)| n == name)
-                        {
-                            result_type = result_type / DType::from_factor((*factor).clone())
-                                * substituted_type.clone().power(*exp);
+                if let Some((name, signature)) = self.get_proper_function_reference(callable) {
+                    self.proper_function_call(
+                        span,
+                        full_span,
+                        &name,
+                        signature,
+                        arguments_checked,
+                        argument_types,
+                    )?
+                } else {
+                    let callable_checked = self.check_expression(callable)?;
+                    let callable_type = callable_checked.get_type();
+                    match callable_type {
+                        Type::Fn(parameters_types, return_type) => {
+                            // todo: verify!
+                            typed_ast::Expression::CallableCall(
+                                *full_span,
+                                Box::new(callable_checked),
+                                arguments_checked,
+                                *return_type,
+                            )
                         }
-                    }
-                    result_type
-                };
-
-                let mut parameter_types = parameter_types.clone();
-
-                if *is_variadic {
-                    // For a variadic function, we simply duplicate the parameter type
-                    // N times, where N is the number of arguments given.
-                    debug_assert!(parameter_types.len() == 1);
-
-                    for _ in 1..argument_types.len() {
-                        parameter_types.push(parameter_types[0].clone());
-                    }
-                }
-
-                for (idx, ((parameter_span, parameter_type), argument_type)) in
-                    parameter_types.iter().zip(argument_types).enumerate()
-                {
-                    match (parameter_type, argument_type) {
-                        (Type::Dimension(parameter_type), Type::Dimension(argument_type)) => {
-                            let mut parameter_type = substitute(&substitutions, parameter_type);
-
-                            let remaining_generic_subtypes: Vec<_> = parameter_type
-                                .iter()
-                                .filter(|BaseRepresentationFactor(name, _)| {
-                                    type_parameters.iter().any(|(_, n)| name == n)
-                                })
-                                .collect();
-
-                            if remaining_generic_subtypes.len() > 1 {
-                                return Err(TypeCheckError::MultipleUnresolvedTypeParameters(
-                                    *span,
-                                    *parameter_span,
-                                ));
-                            }
-
-                            if let Some(&generic_subtype_factor) =
-                                remaining_generic_subtypes.first()
-                            {
-                                let generic_subtype =
-                                    DType::from_factor(generic_subtype_factor.clone());
-
-                                // The type of the idx-th parameter of the called function has a generic type
-                                // parameter inside. We can now instantiate that generic parameter by solving
-                                // the equation "parameter_type == argument_type" for the generic parameter.
-                                // In order to do this, let's assume `generic_subtype = D^alpha`, then we have
-                                //
-                                //                                parameter_type == argument_type
-                                //    parameter_type / generic_subtype * D^alpha == argument_type
-                                //                                       D^alpha == argument_type / (parameter_type / generic_subtype)
-                                //                                             D == [argument_type / (parameter_type / generic_subtype)]^(1/alpha)
-                                //
-
-                                let alpha = Rational::from_integer(1) / generic_subtype_factor.1;
-                                let d = (argument_type.clone()
-                                    / (parameter_type.clone() / generic_subtype))
-                                    .power(alpha);
-
-                                // We can now substitute that generic parameter in all subsequent expressions
-                                substitutions.push((generic_subtype_factor.0.clone(), d));
-
-                                parameter_type = substitute(&substitutions, &parameter_type);
-                            }
-
-                            if parameter_type != argument_type {
-                                return Err(TypeCheckError::IncompatibleDimensions(
-                                    IncompatibleDimensionsError {
-                                        span_operation: *span,
-                                        operation: format!(
-                                            "argument {num} of function call to '{name}'",
-                                            num = idx + 1,
-                                            name = function_name
-                                        ),
-                                        span_expected: parameter_types[idx].0,
-                                        expected_name: "parameter type",
-                                        expected_dimensions: self
-                                            .registry
-                                            .get_derived_entry_names_for(&parameter_type),
-                                        expected_type: parameter_type,
-                                        span_actual: args[idx].full_span(),
-                                        actual_name: " argument type",
-                                        actual_name_for_fix: "function argument",
-                                        actual_dimensions: self
-                                            .registry
-                                            .get_derived_entry_names_for(&argument_type),
-                                        actual_type: argument_type,
-                                    },
-                                ));
-                            }
-                        }
-                        (parameter_type, argument_type) => {
-                            if parameter_type != &argument_type {
-                                return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
-                                    *parameter_span,
-                                    parameter_type.clone(),
-                                    args[idx].full_span(),
-                                    argument_type.clone(),
-                                ));
-                            }
-                        }
+                        _ => todo!("Only functions can be called"),
                     }
                 }
 
-                if substitutions.len() != type_parameters.len() {
-                    let parameters: HashSet<String> = type_parameters
-                        .iter()
-                        .map(|(_, name)| name)
-                        .cloned()
-                        .collect();
-                    let inferred_parameters: HashSet<String> =
-                        substitutions.iter().map(|t| t.0.clone()).collect();
+                // (
+                //     name,
+                //     self.function_signatures
+                //         .get(name)
+                //         .ok_or_else(|| {
+                //             let suggestion = suggestion::did_you_mean(
+                //                 self.function_signatures
+                //                     .keys()
+                //                     .chain(ffi::procedures().values().map(|p| &p.name)),
+                //                 name,
+                //             );
 
-                    let remaining: Vec<_> = (&parameters - &inferred_parameters)
-                        .iter()
-                        .cloned()
-                        .collect();
-
-                    return Err(TypeCheckError::CanNotInferTypeParameters(
-                        *span,
-                        *definition_span,
-                        function_name.clone(),
-                        remaining.join(", "),
-                    ));
-                }
-
-                let return_type = match return_type {
-                    Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
-                    type_ => type_.clone(),
-                };
-
-                typed_ast::Expression::FunctionCall(
-                    *span,
-                    *full_span,
-                    function_name.clone(),
-                    arguments_checked,
-                    return_type,
-                )
+                //             TypeCheckError::UnknownCallable(
+                //                 *span,
+                //                 name.clone(),
+                //                 suggestion,
+                //             )
+                //         })?
+                //         .clone(),
+                // )
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
             ast::Expression::String(span, parts) => typed_ast::Expression::String(

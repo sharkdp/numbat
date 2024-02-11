@@ -36,6 +36,8 @@ pub struct BytecodeInterpreter {
     locals: Vec<Vec<Local>>,
     // Maps names of units to indices of the respective constants in the VM
     unit_name_to_constant_index: HashMap<String, u16>,
+    /// List of function names
+    function_names: Vec<String>,
 }
 
 impl BytecodeInterpreter {
@@ -62,6 +64,11 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
                 } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
                     self.vm.add_op(Op::GetLastResult);
+                } else if self.function_names.contains(identifier) {
+                    let index = self
+                        .vm
+                        .add_constant(Constant::FunctionReference(identifier.clone()));
+                    self.vm.add_op1(Op::LoadConstant, index);
                 } else {
                     unreachable!("Unknown identifier '{identifier}'")
                 }
@@ -154,6 +161,17 @@ impl BytecodeInterpreter {
                     self.vm.add_op2(Op::Call, idx, args.len() as u16); // TODO: check overflow
                 }
             }
+            Expression::CallableCall(_span, callable, args, _type) => {
+                // Put all arguments on top of the stack
+                for arg in args {
+                    self.compile_expression_with_simplify(arg)?;
+                }
+
+                // Put the callable on top of the stack
+                self.compile_expression(callable)?;
+
+                self.vm.add_op1(Op::CallCallable, args.len() as u16);
+            }
             Expression::Boolean(_, val) => {
                 let index = self.vm.add_constant(Constant::Boolean(*val));
                 self.vm.add_op1(Op::LoadConstant, index);
@@ -207,6 +225,7 @@ impl BytecodeInterpreter {
             | Expression::Identifier(..)
             | Expression::UnitIdentifier(..)
             | Expression::FunctionCall(..)
+            | Expression::CallableCall(..)
             | Expression::UnaryOperator(..)
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
             | Expression::Boolean(..)
@@ -277,6 +296,8 @@ impl BytecodeInterpreter {
                 self.locals.pop();
 
                 self.vm.end_function();
+
+                self.function_names.push(name.clone());
             }
             Statement::DefineFunction(
                 name,
@@ -450,6 +471,7 @@ impl Interpreter for BytecodeInterpreter {
             vm: Vm::new(),
             locals: vec![vec![]],
             unit_name_to_constant_index: HashMap::new(),
+            function_names: vec![],
         }
     }
 
