@@ -987,9 +987,9 @@ impl TypeChecker {
 
                             if num_parameters != num_arguments {
                                 return Err(TypeCheckError::WrongArity {
-                                    callable_span: *span, // TODO: check
+                                    callable_span: *span,
                                     callable_name: "function".into(),
-                                    callable_definition_span: None, // TODO: this leads to a wrong error message
+                                    callable_definition_span: None,
                                     arity: num_parameters..=num_parameters,
                                     num_args: num_arguments,
                                 });
