@@ -38,7 +38,7 @@
 //! power           ::=   factorial ( "^" "-" ? power ) ?
 //! factorial       ::=   unicode_power "!" *
 //! unicode_power   ::=   call ( "⁻" ? ( "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ) ) ?
-//! call            ::=   primary ( "(" arguments? ")" ) ?
+//! call            ::=   primary ( "(" arguments? ")" ) *
 //! arguments       ::=   expression ( "," expression ) *
 //! primary         ::=   boolean | string | hex_number | oct_number | bin_number | number | identifier | "(" expression ")"
 //!
@@ -1049,18 +1049,18 @@ impl<'a> Parser<'a> {
     }
 
     fn call(&mut self) -> Result<Expression> {
-        let primary = self.primary()?;
+        let mut expr = self.primary()?;
 
-        if self.match_exact(TokenKind::LeftParen).is_some() {
+        while self.match_exact(TokenKind::LeftParen).is_some() {
             let args = self.arguments()?;
-            return Ok(Expression::FunctionCall(
-                primary.full_span(),
-                primary.full_span().extend(&self.last().unwrap().span),
-                Box::new(primary),
+            expr = Expression::FunctionCall(
+                expr.full_span(),
+                expr.full_span().extend(&self.last().unwrap().span),
+                Box::new(expr),
                 args,
-            ));
+            );
         }
-        Ok(primary)
+        Ok(expr)
     }
 
     fn arguments(&mut self) -> Result<Vec<Expression>> {
@@ -2297,6 +2297,39 @@ mod tests {
         );
 
         should_fail(&["exp(,)", "exp(1,)"])
+    }
+
+    #[test]
+    fn callable_calls() {
+        parse_as_expression(
+            &["(returns_fn())()"],
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(Expression::FunctionCall(
+                    Span::dummy(),
+                    Span::dummy(),
+                    Box::new(identifier!("returns_fn")),
+                    vec![],
+                )),
+                vec![],
+            ),
+        );
+
+        parse_as_expression(
+            &["returns_fn()()"],
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(Expression::FunctionCall(
+                    Span::dummy(),
+                    Span::dummy(),
+                    Box::new(identifier!("returns_fn")),
+                    vec![],
+                )),
+                vec![],
+            ),
+        );
     }
 
     #[test]

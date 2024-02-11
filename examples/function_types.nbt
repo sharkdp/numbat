@@ -14,29 +14,3 @@ assert_eq(diff(f, 2.0), 8.0, 1e-5)
 #
 # fn diff<X, Y>(f: Fn[(X) -> Y], x: X) -> Y / X =
 #   (f(x + eps · unit_of(x)) - f(x)) / (eps · unit_of(x))
-
-
-
-
-##### EXAMPLES
-
-
-# fn return_fn(x) -> Fn[(Scalar) -> Scalar] =
-#   log
-
-# print(return_fn(2)(e))
-
-
-#### ERRORS
-
-# fn test<E>(f: Fn[(E^2) -> E], x: E^2) -> E =
-#   f(x)
-
-# test(sqrt, 2)
-
-# fn id<T>(x: T) -> T = x
-# let my_id = id
-
-# let f: Fn[(Scalar, Scalar) -> Scalar] = log
-
-# (2+3)(2)
