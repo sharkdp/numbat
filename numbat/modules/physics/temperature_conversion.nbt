@@ -5,10 +5,10 @@ use units::si
 let _offset_celsius = 273.15
 
 fn from_celsius(t_celsius: Scalar) -> Temperature = (t_celsius + _offset_celsius) kelvin
-fn to_celsius(t_kelvin: Temperature) -> Scalar = t_kelvin / kelvin - _offset_celsius
+fn celsius(t_kelvin: Temperature) -> Scalar = t_kelvin / kelvin - _offset_celsius
 
 let _offset_fahrenheit = 459.67
 let _scale_fahrenheit = 5 / 9
 
 fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature = ((t_fahrenheit + _offset_fahrenheit) × _scale_fahrenheit) kelvin
-fn to_fahrenheit(t_kelvin: Temperature) -> Scalar = (t_kelvin / kelvin) / _scale_fahrenheit - _offset_fahrenheit
+fn fahrenheit(t_kelvin: Temperature) -> Scalar = (t_kelvin / kelvin) / _scale_fahrenheit - _offset_fahrenheit

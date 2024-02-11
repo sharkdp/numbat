@@ -116,9 +116,9 @@ fn human(t: Time) -> String
 
 ```nbt
 fn from_celsius(t_celsius: Scalar) -> Temperature
-fn to_celsius(t_kelvin: Temperature) -> Scalar
+fn celsius(t_kelvin: Temperature) -> Scalar
 fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature
-fn to_fahrenheit(t_kelvin: Temperature) -> Scalar
+fn fahrenheit(t_kelvin: Temperature) -> Scalar
 ```
 
 ## Strings

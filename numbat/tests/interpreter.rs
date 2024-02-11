@@ -342,14 +342,14 @@ fn test_incompatible_dimension_errors() {
 fn test_temperature_conversions() {
     expect_output("from_celsius(11.5)", "284.65 K");
     expect_output("from_fahrenheit(89.3)", "304.983 K");
-    expect_output("to_celsius(0 K)", "-273.15");
-    expect_output("to_fahrenheit(30 K)", "-405.67");
-    expect_output("to_celsius(from_celsius(100))", "100");
-    expect_output("to_fahrenheit(from_fahrenheit(100))", "100.0");
-    expect_output("from_celsius(to_celsius(123 K))", "123 K");
-    expect_output("from_fahrenheit(to_fahrenheit(123 K))", "123 K");
+    expect_output("celsius(0 K)", "-273.15");
+    expect_output("fahrenheit(30 K)", "-405.67");
+    expect_output("celsius(from_celsius(100))", "100");
+    expect_output("fahrenheit(from_fahrenheit(100))", "100.0");
+    expect_output("from_celsius(celsius(123 K))", "123 K");
+    expect_output("from_fahrenheit(fahrenheit(123 K))", "123 K");
 
-    expect_output("-40 // from_fahrenheit // to_celsius", "-40");
+    expect_output("-40 // from_fahrenheit // celsius", "-40");
 }
 
 #[test]
