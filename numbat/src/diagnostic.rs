@@ -84,18 +84,18 @@ impl ErrorDiagnostic for TypeCheckError {
                     .with_message("unknown identifier")])
                     .with_notes(notes)
             }
-            TypeCheckError::UnknownCallable(span, _, suggestion) => {
-                let notes = if let Some(suggestion) = suggestion {
-                    vec![format!("Did you mean '{suggestion}'?")]
-                } else {
-                    vec![]
-                };
+            // TypeCheckError::UnknownCallable(span, _, suggestion) => {
+            //     let notes = if let Some(suggestion) = suggestion {
+            //         vec![format!("Did you mean '{suggestion}'?")]
+            //     } else {
+            //         vec![]
+            //     };
 
-                d.with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message("unknown callable")])
-                    .with_notes(notes)
-            }
+            //     d.with_labels(vec![span
+            //         .diagnostic_label(LabelStyle::Primary)
+            //         .with_message("unknown callable")])
+            //         .with_notes(notes)
+            // }
             TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {
                 operation,
                 span_operation,

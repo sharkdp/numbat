@@ -320,6 +320,8 @@ impl BytecodeInterpreter {
                         parameters.len()..=parameters.len()
                     },
                 );
+
+                self.function_names.push(name.clone());
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
