@@ -20,13 +20,18 @@ Numbers in Numbat can be written in the following forms:
 
 ## Convert numbers to other bases
 
-You can use the `bin`, `oct`, and `hex` functions to convert numbers to binary, octal, and hexadecimal bases, respectively.
-As with any other function, you can call those using `hex(2^16 - 1)`, but it's often more convenient to use the `… // hex`
-convention to convert a number.
+You can use the `bin`, `oct`, `dec` and `hex` functions to convert numbers to binary, octal, decimal and hexadecimal bases,
+respectively. You can call those using `hex(2^16 - 1)`, or `2^16 - 1 // hex`, but they are also available as targets of the
+conversion operator `->`/`to`, so you can write expressions like:
 
 Examples:
 ```nbt
-0xffee // bin
-42 // oct
-2^16 - 1 // hex
+0xffee to bin
+42 ot oct
+2^16 - 1 to hex
+```
+
+You can also use `base(b)` to convert a number to base `b`:
+```nbt
+0xffee to base(2)
 ```
