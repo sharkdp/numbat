@@ -318,6 +318,22 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
             },
         );
         m.insert(
+            "lowercase".to_string(),
+            ForeignFunction {
+                name: "lowercase".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(lowercase)),
+            },
+        );
+        m.insert(
+            "uppercase".to_string(),
+            ForeignFunction {
+                name: "uppercase".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(uppercase)),
+            },
+        );
+        m.insert(
             "str_slice".to_string(),
             ForeignFunction {
                 name: "str_slice".into(),
@@ -762,6 +778,18 @@ fn str_length(args: &[Value]) -> Result<Value> {
 
     let len = args[0].unsafe_as_string().len();
     Ok(Value::Quantity(Quantity::from_scalar(len as f64)))
+}
+
+fn lowercase(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    Ok(Value::String(args[0].unsafe_as_string().to_lowercase()))
+}
+
+fn uppercase(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    Ok(Value::String(args[0].unsafe_as_string().to_uppercase()))
 }
 
 fn str_slice(args: &[Value]) -> Result<Value> {
