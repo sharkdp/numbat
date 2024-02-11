@@ -39,8 +39,6 @@ pub struct ExchangeRateConfig {
     pub fetching_policy: ExchangeRateFetchingPolicy,
 }
 
-
-
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct Config {
