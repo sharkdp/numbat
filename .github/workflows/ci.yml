@@ -36,7 +36,7 @@ jobs:
 
   ensure_cargo_fmt:
     name: Ensure 'cargo fmt' has been run
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - uses: dtolnay/rust-toolchain@stable
       with:
@@ -46,10 +46,10 @@ jobs:
 
   documentation_checks:
     name: Documentation checks
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - uses: dtolnay/rust-toolchain@stable
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install mdbook
       run: |
         cargo install mdbook
@@ -66,10 +66,10 @@ jobs:
 
   wasm:
     name: WASM version
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - uses: dtolnay/rust-toolchain@stable
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install wasm-pack
       run: |
         curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -84,7 +84,7 @@ jobs:
 
   min_version:
     name: Minimum supported rust version
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: crate_metadata
     steps:
     - name: Checkout source code

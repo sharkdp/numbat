@@ -19,10 +19,10 @@ dirs = "5"
 numbat = { version = "1.10.0", path = "../numbat" }
 colored = "2"
 itertools = "0.12"
-toml = { version = "0.8.8", features = ["parse"] }
-serde = { version = "1.0.195", features = ["derive"] }
+toml = { version = "0.8.10", features = ["parse"] }
+serde = { version = "1.0.196", features = ["derive"] }
 terminal_size = "0.3.0"
-chrono-tz = "0.8.5"
+chrono-tz = "0.8.6"
 
 [dependencies.clap]
 version = "4"
