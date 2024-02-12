@@ -38,6 +38,16 @@ You can install the `numbat` package using
 sudo xbps-install -S numbat
 ```
 
+## Chimera Linux
+
+Chimera Linux has a `numbat` package in its `contrib` repo. [Enable it if you
+haven't already](https://chimera-linux.org/docs/apk#repositories), then install
+`numbat`:
+
+``` bash
+doas apk add numbat
+```
+
 ## NixOS
 
 *... or any distribution where Nix is installed.*
