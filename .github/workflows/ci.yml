@@ -213,6 +213,10 @@ jobs:
         # README and LICENSE files
         cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "$ARCHIVE_DIR"
 
+        # Desktop file and icons
+        mkdir "$ARCHIVE_DIR/assets"
+        cp "assets/numbat.desktop" assets/numbat-*x*.png "assets/numbat.svg" "$ARCHIVE_DIR/assets"
+
         # Numbat prelude
         cp -r numbat/modules "$ARCHIVE_DIR"
 
@@ -261,6 +265,14 @@ jobs:
         install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/README.md"
         install -Dm644 "LICENSE-MIT" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-MIT"
         install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-APACHE"
+
+        # Desktop file and icons
+        install -Dm644 "assets/numbat.desktop" "${DPKG_DIR}/usr/share/applications/numbat.desktop"
+        install -Dm644 "assets/numbat.svg" "${DPKG_DIR}/usr/share/icons/hicolor/scalable/apps/numbat.svg"
+
+        for s in 16 22 24 32 48 64 128 256 512; do
+          install -Dm644 "assets/numbat-${s}x${s}.png" "${DPKG_DIR}/usr/share/icons/hicolor/${s}x${s}/apps/numbat.png"
+        done
 
         # Numbat prelude
         mkdir -p "${DPKG_DIR}/usr/share/${DPKG_BASENAME}"
