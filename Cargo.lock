@@ -905,7 +905,7 @@ dependencies = [
 
 [[package]]
 name = "numbat-exchange-rates"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "attohttpc",
  "quick-xml",
