@@ -856,7 +856,7 @@ dependencies = [
 
 [[package]]
 name = "numbat"
-version = "1.10.0"
+version = "1.10.1"
 dependencies = [
  "approx",
  "chrono",
@@ -886,7 +886,7 @@ dependencies = [
 
 [[package]]
 name = "numbat-cli"
-version = "1.10.0"
+version = "1.10.1"
 dependencies = [
  "anyhow",
  "assert_cmd",

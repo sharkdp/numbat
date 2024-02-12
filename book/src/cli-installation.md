@@ -10,8 +10,8 @@ Download the latest `.deb` package from [the release page](https://github.com/sh
 and install it via `dpkg`. For example:
 
 ``` bash
-curl -LO https://github.com/sharkdp/numbat/releases/download/v1.10.0/numbat_1.10.0_amd64.deb
-sudo dpkg -i numbat_1.10.0_amd64.deb
+curl -LO https://github.com/sharkdp/numbat/releases/download/v1.10.1/numbat_1.10.1_amd64.deb
+sudo dpkg -i numbat_1.10.1_amd64.deb
 ```
 
 ### Arch Linux
