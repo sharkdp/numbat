@@ -1,11 +1,23 @@
+use core::strings
 use units::si
 
 fn now() -> DateTime
+
 fn datetime(input: String) -> DateTime
 fn format_datetime(format: String, input: DateTime) -> String
+
 fn get_local_timezone() -> String
 fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
 let local: Fn[(DateTime) -> DateTime] = tz(get_local_timezone())
 let UTC: Fn[(DateTime) -> DateTime] = tz("UTC")
+
 fn unixtime(input: DateTime) -> Scalar
 fn from_unixtime(input: Scalar) -> DateTime
+
+fn _today_str() = format_datetime("%Y-%m-%d", now())
+fn today() -> DateTime = datetime("{_today_str()} 00:00:00")
+
+fn date(input: String) -> DateTime =
+  if str_contains(input, " ")
+    then datetime(str_replace(input, " ", " 00:00:00 "))
+    else datetime("{input} 00:00:00")
