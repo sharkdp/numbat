@@ -38,16 +38,16 @@ You can install the `numbat` package using
 sudo xbps-install -S numbat
 ```
 
-## NixOs
+## NixOS
 
-*... or any distribution where nix is installed.*
+*... or any distribution where Nix is installed.*
 
 Install [numbat](https://search.nixos.org/packages?channel=unstable&show=numbat&from=0&size=50&sort=relevance&type=packages&query=numbat) to your profile:
 
 ``` bash
 nix-env -iA nixpkgs.numbat
 ```
-Or add it to your NixOs Configuration:
+Or add it to your NixOS Configuration:
 
 ``` nix
 environment.systemPackages = [
