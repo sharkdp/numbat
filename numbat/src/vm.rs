@@ -221,7 +221,7 @@ impl Display for Constant {
             Constant::Unit(unit) => write!(f, "{}", unit),
             Constant::Boolean(val) => write!(f, "{}", val),
             Constant::String(val) => write!(f, "\"{}\"", val),
-            Constant::FunctionReference(inner) => write!(f, "{}", inner.to_string()),
+            Constant::FunctionReference(inner) => write!(f, "{}", inner),
         }
     }
 }
