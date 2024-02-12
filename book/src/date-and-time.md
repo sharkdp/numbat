@@ -13,13 +13,13 @@ now() + 40 days
 now() - 1 million seconds
 
 # How many days are left until September 1st?
-parse_datetime("2024-11-01 12:30:00") - now() -> days
+datetime("2024-11-01 12:30:00") - now() -> days
 
 # What time is it in Nepal right now?
 now() -> tz("Asia/Kathmandu")  # use tab completion to find time zone names
 
 # What is the local time when it is 2024-11-01 12:30:00 in Australia?
-parse_datetime("2024-11-01 12:30:00 Australia/Sydney") -> local
+datetime("2024-11-01 12:30:00 Australia/Sydney") -> local
 
 # What is the current UNIX timestamp?
 now() -> unixtime
@@ -58,7 +58,7 @@ April 1st"?
 The following functions are available for date and time handling:
 
 - `now() -> DateTime`: Returns the current date and time.
-- `parse_datetime(input: String) -> DateTime`: Parses a string into a `DateTime` object.
+- `datetime(input: String) -> DateTime`: Parses a string into a `DateTime` object.
 - `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/chrono/latest/chrono/format/strftime/index.html#specifiers) for possible format specifiers.
 - `tz(tz: String) -> Fn[(DateTime) -> DateTime]`: Returns a timezone conversion function, typically used with the conversion operator (`datetime -> tz("Europe/Berlin")`)
 - `local(dt: DateTime) -> DateTime`: Timezone conversion function targeting the users local timezone (`datetime -> local`)
@@ -69,7 +69,7 @@ The following functions are available for date and time handling:
 
 ## Date time formats
 
-The following formats are supported by `parse_datetime`. UTC offsets are mandatory for the RFC 3339 and
+The following formats are supported by `datetime`. UTC offsets are mandatory for the RFC 3339 and
 RFC 2822 formats. The other formats can optionally include a time zone name or UTC offset. If no time
 zone is specified, the local time zone is used.
 

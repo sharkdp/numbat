@@ -1,15 +1,15 @@
-let epoch = parse_datetime("1970-01-01T00:00:00Z")
+let epoch = datetime("1970-01-01T00:00:00Z")
 assert_eq(epoch -> unixtime, 0)
 
 assert_eq(epoch + 1000 milliseconds + 2 seconds -> unixtime, 3)
 
-let x = parse_datetime("Wed, 20 Jul 2022 21:52:05 +0200")
+let x = datetime("Wed, 20 Jul 2022 21:52:05 +0200")
 assert_eq(x -> unixtime, 1658346725)
 
 assert_eq(from_unixtime(1658346725) -> unixtime, 1658346725)
 
 # 2020 was a leap year
-let y = parse_datetime("2020-02-28T20:00:00Z")
+let y = datetime("2020-02-28 20:00 UTC")
 assert(format_datetime("%Y/%m/%d", y + 12 hours) == "2020/02/29")
-let z = parse_datetime("2021-02-28T20:00:00Z")
+let z = datetime("2021-02-28 20:00 UTC")
 assert(format_datetime("%Y/%m/%d", z + 12 hours) == "2021/03/01")

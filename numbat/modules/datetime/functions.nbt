@@ -1,7 +1,7 @@
 use units::si
 
 fn now() -> DateTime
-fn parse_datetime(input: String) -> DateTime
+fn datetime(input: String) -> DateTime
 fn format_datetime(format: String, input: DateTime) -> String
 fn get_local_timezone() -> String
 fn tz(tz: String) -> Fn[(DateTime) -> DateTime]

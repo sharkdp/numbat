@@ -33,4 +33,4 @@ fn _human_readable_duration(time: Time, dt: DateTime, num_days: Scalar) -> Strin
 fn human(time: Time) =
   if _human_num_days(time) > 1000
     then "{_human_num_days(time)} days" 
-    else _human_readable_duration(time, parse_datetime("0001-01-01T00:00:00Z") + time, _human_num_days(time))
+    else _human_readable_duration(time, datetime("0001-01-01T00:00:00Z") + time, _human_num_days(time))

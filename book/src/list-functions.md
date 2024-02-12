@@ -103,7 +103,7 @@ fn sphere_volume<L>(radius: L) -> L^3
 
 ```nbt
 fn now() -> DateTime
-fn parse_datetime(input: String) -> DateTime
+fn datetime(input: String) -> DateTime
 fn format_datetime(format: String, dt: DateTime) -> String
 fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
 fn local(dt: DateTime) -> DateTime

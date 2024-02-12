@@ -358,11 +358,11 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
             },
         );
         m.insert(
-            "parse_datetime".to_string(),
+            "datetime".to_string(),
             ForeignFunction {
-                name: "parse_datetime".into(),
+                name: "datetime".into(),
                 arity: 1..=1,
-                callable: Callable::Function(Box::new(parse_datetime)),
+                callable: Callable::Function(Box::new(datetime)),
             },
         );
 
@@ -841,7 +841,7 @@ fn now(args: &[Value]) -> Result<Value> {
     Ok(Value::DateTime(now, offset))
 }
 
-fn parse_datetime(args: &[Value]) -> Result<Value> {
+fn datetime(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let input = args[0].unsafe_as_string();
