@@ -6,5 +6,6 @@ fn format_datetime(format: String, input: DateTime) -> String
 fn get_local_timezone() -> String
 fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
 let local: Fn[(DateTime) -> DateTime] = tz(get_local_timezone())
+let UTC: Fn[(DateTime) -> DateTime] = tz("UTC")
 fn unixtime(input: DateTime) -> Scalar
 fn from_unixtime(input: Scalar) -> DateTime
