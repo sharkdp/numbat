@@ -101,17 +101,7 @@ fn sphere_volume<L>(radius: L) -> L^3
 
 ## Date and time
 
-```nbt
-fn now() -> DateTime
-fn datetime(input: String) -> DateTime
-fn format_datetime(format: String, dt: DateTime) -> String
-fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
-fn local(dt: DateTime) -> DateTime
-fn get_local_timezone() -> String
-fn from_unixtime(t: Scalar) -> DateTime
-fn unixtime(dt: DateTime) -> Scalar
-fn human(t: Time) -> String
-```
+See [this page](date-and-time.md) for details.
 
 ## Physics
 

@@ -21,3 +21,6 @@ fn date(input: String) -> DateTime =
   if str_contains(input, " ")
     then datetime(str_replace(input, " ", " 00:00:00 "))
     else datetime("{input} 00:00:00")
+
+fn time(input: String) -> DateTime =
+  datetime("{_today_str()} {input}")

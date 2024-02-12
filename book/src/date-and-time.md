@@ -61,6 +61,7 @@ The following functions are available for date and time handling:
 - `today() -> DateTime`: Returns the current date at midnight (in the local time).
 - `datetime(input: String) -> DateTime`: Parses a string (date and time) into a `DateTime` object.
 - `date(input: String) -> DateTime`: Parses a string (only date) into a `DateTime` object.
+- `time(input: String) -> DateTime`: Parses a string (only time) into a `DateTime` object.
 - `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/chrono/latest/chrono/format/strftime/index.html#specifiers) for possible format specifiers.
 - `tz(tz: String) -> Fn[(DateTime) -> DateTime]`: Returns a timezone conversion function, typically used with the conversion operator (`datetime -> tz("Europe/Berlin")`)
 - `local(dt: DateTime) -> DateTime`: Timezone conversion function targeting the users local timezone (`datetime -> local`)
@@ -95,3 +96,13 @@ specified timezone (or the local timezone if no timezone is specified).
 | ------ | ------- |
 | `%Y-%m-%d` | `2024-02-10`<br>`2024-02-10 +0100`<br>`2024-02-10 Europe/Berlin` |
 | `%Y/%m/%d` | `2024/02/10`<br>`2024/02/10 +0100`<br>`2024/02/10 Europe/Berlin` |
+
+The `time` function supports the following formats. It returns a `DateTime` object with the date set to the current date.
+If no timezone is specified, the local timezone is used.
+
+| Format | Examples |
+| ------ | ------- |
+| `%H:%M:%S%.f` | `12:30:00`<br>`06:30:00 -0600`<br>`07:30:00 US/Eastern`<br>`12:30:00.123456` |
+| `%H:%M` | `12:30`<br>`06:30 -0600`<br>`07:30 US/Eastern` |
+| `%I:%M:%S%.f %p` | `12:30:00 PM`<br>`06:30:00 AM -0600`<br>`07:30:00 AM US/Eastern`<br>`12:30:00.123456 PM` |
+| `%I:%M %p` | `12:30 PM`<br>`06:30 AM -0600`<br>`07:30 AM US/Eastern` |
