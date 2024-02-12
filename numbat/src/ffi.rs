@@ -7,7 +7,7 @@ use chrono::Offset;
 use crate::currency::ExchangeRatesCache;
 use crate::interpreter::RuntimeError;
 use crate::pretty_print::PrettyPrint;
-use crate::value::Value;
+use crate::value::{FunctionReference, Value};
 use crate::vm::ExecutionContext;
 use crate::{ast::ProcedureKind, quantity::Quantity};
 
@@ -372,6 +372,24 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 name: "format_datetime".into(),
                 arity: 2..=2,
                 callable: Callable::Function(Box::new(format_datetime)),
+            },
+        );
+
+        m.insert(
+            "get_local_timezone".to_string(),
+            ForeignFunction {
+                name: "get_local_timezone".into(),
+                arity: 0..=0,
+                callable: Callable::Function(Box::new(get_local_timezone)),
+            },
+        );
+
+        m.insert(
+            "tz".to_string(),
+            ForeignFunction {
+                name: "tz".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(tz)),
             },
         );
 
@@ -846,6 +864,26 @@ fn format_datetime(args: &[Value]) -> Result<Value> {
     let output = dt.format(format).to_string();
 
     Ok(Value::String(output))
+}
+
+fn get_local_timezone(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 0);
+
+    let local_tz = crate::datetime::get_local_timezone()
+        .unwrap_or(chrono_tz::Tz::UTC)
+        .to_string();
+
+    Ok(Value::String(local_tz))
+}
+
+fn tz(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let tz = args[0].unsafe_as_string();
+
+    Ok(Value::FunctionReference(FunctionReference::TzConversion(
+        tz.into(),
+    )))
 }
 
 fn unixtime(args: &[Value]) -> Result<Value> {

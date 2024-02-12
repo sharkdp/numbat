@@ -760,7 +760,6 @@ impl TypeChecker {
                 } else if lhs_checked.get_type() == Type::DateTime {
                     // DateTime types need special handling here, since they're not scalars with dimensions,
                     // yet some select binary operators can be applied to them
-                    // TODO how to better handle all the operations we want to support with date
 
                     let rhs_is_time = dtype(&rhs_checked)
                         .ok()
@@ -768,16 +767,7 @@ impl TypeChecker {
                         .unwrap_or(false);
                     let rhs_is_datetime = rhs_checked.get_type() == Type::DateTime;
 
-                    if *op == BinaryOperator::ConvertTo && rhs_checked.get_type() == Type::String {
-                        // Supports timezone conversion
-                        typed_ast::Expression::BinaryOperatorForDate(
-                            *span_op,
-                            *op,
-                            Box::new(lhs_checked),
-                            Box::new(rhs_checked),
-                            Type::DateTime,
-                        )
-                    } else if *op == BinaryOperator::Sub && rhs_is_datetime {
+                    if *op == BinaryOperator::Sub && rhs_is_datetime {
                         let time = self
                             .registry
                             .get_base_representation_for_name("Time")

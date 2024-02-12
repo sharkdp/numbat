@@ -105,6 +105,9 @@ fn sphere_volume<L>(radius: L) -> L^3
 fn now() -> DateTime
 fn parse_datetime(input: String) -> DateTime
 fn format_datetime(format: String, dt: DateTime) -> String
+fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
+fn local(dt: DateTime) -> DateTime
+fn get_local_timezone() -> String
 fn from_unixtime(t: Scalar) -> DateTime
 fn unixtime(dt: DateTime) -> Scalar
 fn human(t: Time) -> String

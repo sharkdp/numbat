@@ -16,10 +16,10 @@ now() - 1 million seconds
 parse_datetime("2024-11-01 12:30:00") - now() -> days
 
 # What time is it in Nepal right now?
-now() -> "Asia/Kathmandu"  # use tab completion to find time zone names
+now() -> tz("Asia/Kathmandu")  # use tab completion to find time zone names
 
 # What is the local time when it is 2024-11-01 12:30:00 in Australia?
-parse_datetime("2024-11-01 12:30:00 Australia/Sydney") -> "local"
+parse_datetime("2024-11-01 12:30:00 Australia/Sydney") -> local
 
 # What is the current UNIX timestamp?
 now() -> unixtime
@@ -40,7 +40,7 @@ The following operations are supported for `DateTime` objects:
 | `DateTime` | `-` | `DateTime` | Duration between the two dates as a `Time`. In `seconds`, by default. Use normal conversion for other time units. |
 | `DateTime` | `+` | `Time` | New `DateTime` by adding the duration to the date |
 | `DateTime` | `-` | `Time` | New `DateTime` by subtracting the duration from the date |
-| `DateTime` | `->` | `String` | Converts the datetime to the specified time zone. Note that you can use tab-completion for time zone names. |
+| `DateTime` | `->` | `tz("…")` | Converts the datetime to the specified time zone. Note that you can use tab-completion for time zone names. |
 
 <div class="warning">
 
@@ -60,6 +60,9 @@ The following functions are available for date and time handling:
 - `now() -> DateTime`: Returns the current date and time.
 - `parse_datetime(input: String) -> DateTime`: Parses a string into a `DateTime` object.
 - `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/chrono/latest/chrono/format/strftime/index.html#specifiers) for possible format specifiers.
+- `tz(tz: String) -> Fn[(DateTime) -> DateTime]`: Returns a timezone conversion function, typically used with the conversion operator (`datetime -> tz("Europe/Berlin")`)
+- `local(dt: DateTime) -> DateTime`: Timezone conversion function targeting the users local timezone (`datetime -> local`)
+- `get_local_timezone() -> String`: Returns the users local timezone
 - `unixtime(dt: DateTime) -> Scalar`: Converts a `DateTime` to a UNIX timestamp.
 - `from_unixtime(ut: Scalar) -> DateTime`: Converts a UNIX timestamp to a `DateTime` object.
 - `human(duration: Time) -> String`: Converts a `Time` to a human-readable string in days, hours, minutes and seconds

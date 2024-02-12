@@ -4,13 +4,18 @@ use crate::{pretty_print::PrettyPrint, quantity::Quantity};
 pub enum FunctionReference {
     Foreign(String),
     Normal(String),
+    // TODO: We can get rid of this variant once we implement closures:
+    TzConversion(String),
 }
 
 impl std::fmt::Display for FunctionReference {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FunctionReference::Foreign(name) => write!(f, "<builtin function: {}>", name),
-            FunctionReference::Normal(name) => write!(f, "<function: {}>", name),
+            FunctionReference::Foreign(name) => write!(f, "<builtin function: {name}>"),
+            FunctionReference::Normal(name) => write!(f, "<function: {name}>"),
+            FunctionReference::TzConversion(tz) => {
+                write!(f, "<builtin timezone conversion function: {tz}>")
+            }
         }
     }
 }

@@ -144,7 +144,6 @@ impl BytecodeInterpreter {
                     match operator {
                         BinaryOperator::Add => Op::AddToDateTime,
                         BinaryOperator::Sub => Op::SubFromDateTime,
-                        BinaryOperator::ConvertTo => Op::ConvertDateTime,
                         _ => unreachable!("{operator:?} is not valid with a DateTime"), // should be unreachable, because the typechecker will error first
                     }
                 };

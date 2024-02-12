@@ -28,7 +28,7 @@
   - [Operations and precedence](./operations.md)
   - [Constants](./constant-definitions.md)
   - [Unit conversions](./unit-conversions.md)
-  - [Other conversions](./conversion-functions.md)
+  - [Conversions functions](./conversion-functions.md)
   - [Function definitions](./function-definitions.md)
   - [Conditionals](./conditionals.md)
   - [Date and time](./date-and-time.md)
