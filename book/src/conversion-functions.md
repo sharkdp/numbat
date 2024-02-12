@@ -1,4 +1,4 @@
-# Other conversions
+# Conversion functions
 
 The conversion operator `->` (or `to`) can not just be used for [unit conversions](./unit-conversions.md), but also for other types of conversions.
 The way this is set up in Numbat is that you can call `x -> f` for any function `f` that takes a single argument of the same type as `x`.

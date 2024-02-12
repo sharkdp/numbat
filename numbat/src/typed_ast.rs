@@ -168,7 +168,7 @@ pub enum Expression {
         BinaryOperator,
         /// LHS must evaluate to a DateTime
         Box<Expression>,
-        /// RHS can evaluate to a DateTime, a quantity of type Time, or a String (for timezone conversions)
+        /// RHS can evaluate to a DateTime or a quantity of type Time
         Box<Expression>,
         Type,
     ),

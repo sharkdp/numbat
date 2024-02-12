@@ -78,8 +78,6 @@ pub enum Op {
     SubFromDateTime,
     /// Computes the difference between two DateTimes
     DiffDateTime,
-    /// Converts a DateTime value to another timezone
-    ConvertDateTime,
 
     /// Move IP forward by the given offset argument if the popped-of value on
     /// top of the stack is false.
@@ -130,7 +128,6 @@ impl Op {
             | Op::Subtract
             | Op::SubFromDateTime
             | Op::DiffDateTime
-            | Op::ConvertDateTime
             | Op::Multiply
             | Op::Divide
             | Op::Power
@@ -165,7 +162,6 @@ impl Op {
             Op::Subtract => "Subtract",
             Op::SubFromDateTime => "SubDateTime",
             Op::DiffDateTime => "DiffDateTime",
-            Op::ConvertDateTime => "ConvertDateTime",
             Op::Multiply => "Multiply",
             Op::Divide => "Divide",
             Op::Power => "Power",
@@ -545,14 +541,6 @@ impl Vm {
     }
 
     #[track_caller]
-    fn pop_string(&mut self) -> String {
-        match self.pop() {
-            Value::String(s) => s,
-            _ => panic!("Expected string to be on the top of the stack"),
-        }
-    }
-
-    #[track_caller]
     fn pop(&mut self) -> Value {
         self.stack.pop().expect("stack should not be empty")
     }
@@ -705,21 +693,6 @@ impl Vm {
 
                     self.push(ret);
                 }
-                Op::ConvertDateTime => {
-                    let rhs = self.pop_string();
-                    let lhs = self.pop_datetime();
-
-                    let offset = if rhs == "local" {
-                        crate::datetime::local_offset_for_datetime(&lhs)
-                    } else {
-                        let tz: chrono_tz::Tz = rhs
-                            .parse()
-                            .map_err(|_| RuntimeError::UnknownTimezone(rhs))?;
-                        lhs.with_timezone(&tz).offset().fix()
-                    };
-
-                    self.push(Value::DateTime(lhs, offset));
-                }
                 op @ (Op::LessThan | Op::GreaterThan | Op::LessOrEqual | Op::GreatorOrEqual) => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
@@ -869,6 +842,19 @@ impl Vm {
                                 }
                                 Callable::Procedure(..) => unreachable!("Foreign procedures can not be targeted by a function reference"),
                             }
+                        }
+                        FunctionReference::TzConversion(tz_name) => {
+                            // TODO: implement this using a closure, once we have that in the language
+
+                            let dt = self.pop_datetime();
+
+                            let tz: chrono_tz::Tz = tz_name
+                                .parse()
+                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name.into()))?;
+
+                            let offset = dt.with_timezone(&tz).offset().fix();
+
+                            self.push(Value::DateTime(dt, offset));
                         }
                     }
                 }
