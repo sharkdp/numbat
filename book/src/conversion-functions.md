@@ -9,6 +9,9 @@ The following functions are available for this purpose:
 # Convert a date and time to a Unix timestamp
 now() -> unixtime
 
+# Convert a date and time to a different timezone
+now() -> tz("Asia/Kathmandu")
+
 # Convert a duration to days, hours, minutes, seconds
 10 million seconds -> human
 
@@ -31,3 +34,6 @@ now() -> unixtime
 "numbat is awesome" -> uppercase
 "vier bis elf weiße Querbänder" -> lowercase
 ```
+
+Note that the `tz(…)` and `base(…)` calls above return *functions*, i.e. the right hand side of
+the conversion operator is still a function.
