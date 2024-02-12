@@ -24,7 +24,7 @@ fn str_replace(s: String, pattern: String, replacement: String) -> String =
     then s
     else if str_contains(s, pattern)
            then if str_slice(s, 0, str_length(pattern)) == pattern
-               then str_replace(str_append(replacement, str_slice(s, str_length(pattern), str_length(s))), pattern, replacement)
+               then str_append(replacement, str_replace(str_slice(s, str_length(pattern), str_length(s)), pattern, replacement))
                else str_append(str_slice(s, 0, 1), str_replace(str_slice(s, 1, str_length(s)), pattern, replacement))
            else s
 

@@ -70,6 +70,7 @@ assert(str_contains("hello world", "HELLO") == false)
 
 assert(str_replace("hello world", "hello", "HEY") == "HEY world")
 assert(str_replace("xxx", "x", "yY") == "yYyYyY")
+assert(str_replace("a b", " ", "   ") == "a   b")
 
 assert(str_repeat("xy", 3) == "xyxyxy")
 
