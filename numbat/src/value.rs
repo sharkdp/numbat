@@ -70,7 +70,7 @@ impl Value {
     #[track_caller]
     pub fn unsafe_as_function_reference(&self) -> &FunctionReference {
         if let Value::FunctionReference(inner) = self {
-            &inner
+            inner
         } else {
             panic!("Expected value to be a string");
         }
