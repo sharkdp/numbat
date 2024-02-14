@@ -155,7 +155,7 @@ impl UnitIdentifier {
 
 impl PartialOrd for UnitIdentifier {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.sort_key().partial_cmp(&other.sort_key())
+        Some(self.cmp(other))
     }
 }
 
