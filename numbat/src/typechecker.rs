@@ -480,13 +480,10 @@ impl TypeChecker {
         expr: &ast::Expression,
     ) -> Option<(String, &FunctionSignature)> {
         match expr {
-            ast::Expression::Identifier(_, name) => {
-                if let Some(signature) = self.function_signatures.get(name) {
-                    Some((name.clone(), signature))
-                } else {
-                    None
-                }
-            }
+            ast::Expression::Identifier(_, name) => self
+                .function_signatures
+                .get(name)
+                .map(|signature| (name.clone(), signature)),
             _ => None,
         }
     }
