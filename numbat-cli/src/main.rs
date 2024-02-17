@@ -52,7 +52,6 @@ struct Args {
         short,
         long,
         value_name = "CODE",
-        conflicts_with = "file",
         action = clap::ArgAction::Append
     )]
     expression: Option<Vec<String>>,
@@ -201,35 +200,45 @@ impl Cli {
                 .load_currency_module_on_demand(true);
         }
 
-        let code_and_source: Option<(String, CodeSource)> = if let Some(ref path) = self.file {
-            Some((
-                fs::read_to_string(path).context(format!(
+        let mut code_and_source = Vec::new();
+
+        if let Some(ref path) = self.file {
+            code_and_source.push((
+                (fs::read_to_string(path).context(format!(
                     "Could not load source file '{}'",
                     path.to_string_lossy()
-                ))?,
+                ))?),
                 CodeSource::File(path.clone()),
-            ))
-        } else {
-            self.expression
-                .as_ref()
-                .map(|exprs| (exprs.iter().join("\n"), CodeSource::Text))
+            ));
         };
 
-        if let Some((code, code_source)) = code_and_source {
-            let result = self.parse_and_evaluate(
-                &code,
-                code_source,
-                ExecutionMode::Normal,
-                self.config.pretty_print,
-            );
+        if let Some(expressions) = &self.expression {
+            code_and_source.push((expressions.iter().join("\n"), CodeSource::Text));
+        }
 
-            match result {
-                std::ops::ControlFlow::Continue(()) => Ok(()),
-                std::ops::ControlFlow::Break(ExitStatus::Success) => Ok(()),
-                std::ops::ControlFlow::Break(ExitStatus::Error) => {
-                    bail!("Interpreter stopped due to error")
-                }
+        if !code_and_source.is_empty() {
+            let mut code_result = Ok(());
+
+            for (code, code_source) in code_and_source {
+                let result = self.parse_and_evaluate(
+                    &code,
+                    code_source,
+                    ExecutionMode::Normal,
+                    self.config.pretty_print,
+                );
+
+                let result_status = match result {
+                    std::ops::ControlFlow::Continue(()) => Ok(()),
+                    std::ops::ControlFlow::Break(ExitStatus::Success) => Ok(()),
+                    std::ops::ControlFlow::Break(ExitStatus::Error) => {
+                        bail!("Interpreter stopped due to error")
+                    }
+                };
+
+                code_result = code_result.and(result_status);
             }
+
+            code_result
         } else {
             let mut currency_fetch_thread = if self.config.load_prelude
                 && self.config.exchange_rates.fetching_policy
