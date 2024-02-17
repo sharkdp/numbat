@@ -78,6 +78,24 @@ fn read_code_from_file() {
 }
 
 #[test]
+fn process_code_from_file_and_cli_expression() {
+    numbat()
+        .arg("tests/examples/pendulum.nbt")
+        .arg("--expression")
+        .arg("oscillation_time(20cm)")
+        .assert()
+        .success();
+
+    numbat()
+        .arg("tests/examples/pendulum.nbt")
+        .arg("--expression")
+        .arg("oscillation_time(20kg)")
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("while type checking"));
+}
+
+#[test]
 fn print_calls() {
     numbat()
         .arg("tests/examples/print.nbt")
