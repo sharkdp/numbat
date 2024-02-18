@@ -480,6 +480,7 @@ impl Cli {
                     statements.last(),
                     &registry,
                     interactive || pretty_print,
+                    interactive || pretty_print,
                 );
                 print!("{}", ansi_format(&result_markup, false));
 

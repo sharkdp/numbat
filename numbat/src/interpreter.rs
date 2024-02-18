@@ -61,29 +61,34 @@ impl InterpreterResult {
         &self,
         evaluated_statement: Option<&Statement>,
         registry: &DimensionRegistry,
-        pretty: bool,
+        with_type_info: bool,
+        with_equal_sign: bool,
     ) -> Markup {
         match self {
             Self::Value(value) => {
-                let leader = m::whitespace("    ") + m::operator("=") + m::space();
-
-                let type_markup = evaluated_statement
-                    .and_then(Statement::as_expression)
-                    .and_then(|e| {
-                        if e.get_type() == Type::scalar() {
-                            None
-                        } else {
-                            let ty = e.get_type().to_readable_type(registry);
-                            Some(m::dimmed("    [") + ty + m::dimmed("]"))
-                        }
-                    })
-                    .unwrap_or_else(m::empty);
-
-                if pretty {
-                    leader + value.pretty_print() + type_markup + m::nl()
+                let leader = if with_equal_sign {
+                    m::whitespace("    ") + m::operator("=") + m::space()
                 } else {
-                    value.pretty_print() + m::nl()
-                }
+                    m::empty()
+                };
+
+                let type_markup = if with_type_info {
+                    evaluated_statement
+                        .and_then(Statement::as_expression)
+                        .and_then(|e| {
+                            if e.get_type() == Type::scalar() {
+                                None
+                            } else {
+                                let ty = e.get_type().to_readable_type(registry);
+                                Some(m::dimmed("    [") + ty + m::dimmed("]"))
+                            }
+                        })
+                        .unwrap_or_else(m::empty)
+                } else {
+                    m::empty()
+                };
+
+                leader + value.pretty_print() + type_markup + m::nl()
             }
             Self::Continue => m::empty(),
         }
@@ -103,6 +108,13 @@ impl InterpreterResult {
     #[must_use]
     pub fn is_continue(&self) -> bool {
         matches!(self, Self::Continue)
+    }
+
+    pub fn value_as_string(&self) -> Option<String> {
+        match self {
+            Self::Continue => None,
+            Self::Value(value) => Some(value.to_string()),
+        }
     }
 }
 
