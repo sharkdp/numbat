@@ -388,7 +388,7 @@ impl Context {
             }
 
             if let Ok((_, results)) = self.interpret(keyword, CodeSource::Internal) {
-                help += m::nl() + results.to_markup(None, self.dimension_registry(), true);
+                help += m::nl() + results.to_markup(None, self.dimension_registry(), true, true);
             }
 
             return help;

@@ -29,7 +29,12 @@ fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
             .fold(m::empty(), |accumulated_mk, single_line| {
                 accumulated_mk + m::nl() + m::whitespace("  ") + single_line.clone() + m::nl()
             })
-            + interpreter_result.to_markup(statements.last(), context.dimension_registry(), true);
+            + interpreter_result.to_markup(
+                statements.last(),
+                context.dimension_registry(),
+                true,
+                true,
+            );
 
     markup
 }

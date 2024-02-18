@@ -127,6 +127,7 @@ impl Numbat {
                     statements.last(),
                     &self.ctx.dimension_registry().clone(),
                     true,
+                    true,
                 );
                 output.push_str(&self.format(&result_markup, enable_indentation));
 
