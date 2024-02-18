@@ -83,7 +83,7 @@ impl std::fmt::Display for Value {
             Value::Quantity(q) => write!(f, "{}", q),
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(s) => write!(f, "\"{}\"", s),
-            Value::DateTime(dt, _) => write!(f, "{:?}", dt),
+            Value::DateTime(dt, _) => write!(f, "datetime(\"{}\")", dt),
             Value::FunctionReference(r) => write!(f, "{}", r),
         }
     }
