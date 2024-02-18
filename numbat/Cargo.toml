@@ -26,7 +26,7 @@ heck = { version = "0.4.1", features = ["unicode"] }
 unicode-ident = "1.0.12"
 unicode-width = "0.1.11"
 libc = "0.2.152"
-rust-embed = { version = "8.2.0", features = ["interpolate-folder-path"] }
+rust-embed = { version = "8.2.0", features = ["interpolate-folder-path", "debug-embed"] }
 num-format = "0.4.4"
 walkdir = "2"
 chrono = "0.4.31"
