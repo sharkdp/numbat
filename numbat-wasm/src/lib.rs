@@ -1,23 +1,21 @@
-mod buffered_writer;
-mod html_formatter;
 mod jquery_terminal_formatter;
 mod utils;
 
-use numbat::diagnostic::ErrorDiagnostic;
-use numbat::module_importer::BuiltinModuleImporter;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 
-use crate::buffered_writer::BufferedWriter;
-use html_formatter::{HtmlFormatter, HtmlWriter};
-use jquery_terminal_formatter::{JqueryTerminalFormatter, JqueryTerminalWriter};
-
+use numbat::buffered_writer::BufferedWriter;
+use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
+use numbat::html_formatter::{HtmlFormatter, HtmlWriter};
 use numbat::markup::Formatter;
+use numbat::module_importer::BuiltinModuleImporter;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::{markup as m, NameResolutionError, NumbatError};
 use numbat::{Context, InterpreterSettings};
+
+use jquery_terminal_formatter::{JqueryTerminalFormatter, JqueryTerminalWriter};
 
 #[wasm_bindgen]
 pub fn setup_panic_hook() {

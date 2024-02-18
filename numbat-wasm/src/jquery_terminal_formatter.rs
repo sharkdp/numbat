@@ -1,4 +1,4 @@
-use crate::buffered_writer::BufferedWriter;
+use numbat::buffered_writer::BufferedWriter;
 use numbat::markup::{FormatType, FormattedString, Formatter};
 
 use termcolor::{Color, WriteColor};

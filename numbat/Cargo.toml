@@ -32,10 +32,13 @@ walkdir = "2"
 chrono = "0.4.31"
 chrono-tz = "0.8.5"
 iana-time-zone = "0.1"
+termcolor = { version = "1.4.1", optional = true }
+html-escape = { version = "0.2.13", optional = true }
 
 [features]
 default = ["fetch-exchangerates"]
 fetch-exchangerates = ["numbat-exchange-rates/fetch-exchangerates"]
+html-formatter = ["termcolor", "html-escape"]
 
 [dev-dependencies]
 approx = "0.5"

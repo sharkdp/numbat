@@ -1,5 +1,7 @@
 mod arithmetic;
 mod ast;
+#[cfg(feature = "html-formatter")]
+pub mod buffered_writer;
 mod bytecode_interpreter;
 mod column_formatter;
 mod currency;
@@ -10,6 +12,8 @@ mod dimension;
 mod ffi;
 mod gamma;
 pub mod help;
+#[cfg(feature = "html-formatter")]
+pub mod html_formatter;
 mod interpreter;
 pub mod keywords;
 pub mod markup;

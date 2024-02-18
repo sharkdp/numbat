@@ -1,5 +1,5 @@
 use crate::buffered_writer::BufferedWriter;
-use numbat::markup::{FormatType, FormattedString, Formatter};
+use crate::markup::{FormatType, FormattedString, Formatter};
 
 use termcolor::{Color, WriteColor};
 

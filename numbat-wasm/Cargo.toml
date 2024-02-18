@@ -18,8 +18,7 @@ wasm-bindgen = "0.2.90"
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.6", optional = true }
-
-numbat = { path = "../numbat", default-features = false }
+numbat = { path = "../numbat", default-features = false, features = ["html-formatter"] }
 html-escape = "0.2.13"
 termcolor = "1.4.1"
 codespan-reporting = "0.11.1"
