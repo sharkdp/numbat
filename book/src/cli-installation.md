@@ -14,7 +14,7 @@ curl -LO https://github.com/sharkdp/numbat/releases/download/v1.10.1/numbat_1.10
 sudo dpkg -i numbat_1.10.1_amd64.deb
 ```
 
-Alternatively, if you want automatic updates, use the [Numbat PPA](https://launchpad.net/~apandada1/+archive/ubuntu/numbat).
+Alternatively, if you want automatic updates, use the [Numbat PPA](https://launchpad.net/~apandada1/+archive/ubuntu/numbat). The PPA only hosts packages for the `amd64` (also known as `x86_64`) architecture.
 
 ```
 sudo add-apt-repository ppa:apandada1/numbat
@@ -25,14 +25,14 @@ sudo apt install numbat
 ### Arch Linux
 
 In Arch Linux and Arch based distributions, you can install the
-[prebuilt package of Numbat](https://aur.archlinux.org/packages/numbat-bin) from the AUR:
+[prebuilt package of Numbat](https://aur.archlinux.org/packages/numbat-bin) from the AUR for the `x86_64` architecture:
 
 ``` bash
 yay -S numbat-bin
 ```
 
 You can also install the [numbat](https://aur.archlinux.org/packages/numbat)
-AUR package, which will download the source and compile it.
+AUR package, which will download the source and compile it. It works on all architectures.
 
 ``` bash
 yay -S numbat
