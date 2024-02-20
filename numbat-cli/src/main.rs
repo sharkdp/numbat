@@ -229,9 +229,8 @@ impl Cli {
 
                 let result_status = match result {
                     std::ops::ControlFlow::Continue(()) => Ok(()),
-                    std::ops::ControlFlow::Break(ExitStatus::Success) => Ok(()),
-                    std::ops::ControlFlow::Break(ExitStatus::Error) => {
-                        bail!("Interpreter stopped due to error")
+                    std::ops::ControlFlow::Break(_) => {
+                        bail!("Interpreter stopped")
                     }
                 };
 
