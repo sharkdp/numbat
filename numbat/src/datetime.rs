@@ -1,9 +1,9 @@
 use chrono::{DateTime, FixedOffset, LocalResult, Offset, ParseError, TimeZone};
-use chrono_tz::Tz;
+use tzfile::Tz;
 
 pub fn get_local_timezone() -> Option<Tz> {
     let tz_str = iana_time_zone::get_timezone().ok()?;
-    tz_str.parse().ok()
+    Tz::named(&tz_str).ok()
 }
 
 /// We use this function to get the UTC offset corresponding to
@@ -17,7 +17,7 @@ pub fn get_local_timezone() -> Option<Tz> {
 /// we run the program.
 pub fn local_offset_for_datetime<O: TimeZone>(dt: &DateTime<O>) -> FixedOffset {
     get_local_timezone()
-        .map(|tz| dt.with_timezone(&tz).offset().fix())
+        .map(|tz| dt.with_timezone(&&tz).offset().fix())
         .unwrap_or_else(|| dt.offset().fix())
 }
 
@@ -55,9 +55,9 @@ pub fn parse_datetime(input: &str) -> Result<Option<DateTime<FixedOffset>>, Pars
             // as a timezone specifier, then try to match the rest of the string with the
             // given format.
             if let Some((rest, potential_timezone_name)) = input.rsplit_once(' ') {
-                if let Ok(tz) = potential_timezone_name.parse::<Tz>() {
+                if let Ok(tz) = tzfile::Tz::named(potential_timezone_name) {
                     if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(rest, format) {
-                        if let LocalResult::Single(dt) = ndt.and_local_timezone(tz) {
+                        if let LocalResult::Single(dt) = ndt.and_local_timezone(&tz) {
                             return Ok(Some(dt.with_timezone(&local_offset_for_datetime(&dt))));
                         }
                     }
@@ -66,9 +66,9 @@ pub fn parse_datetime(input: &str) -> Result<Option<DateTime<FixedOffset>>, Pars
 
             // Without timezone/offset
             if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(input, format) {
-                if let LocalResult::Single(dt) =
-                    ndt.and_local_timezone(get_local_timezone().unwrap_or(chrono_tz::UTC))
-                {
+                if let LocalResult::Single(dt) = ndt.and_local_timezone(
+                    &get_local_timezone().unwrap_or(tzfile::Tz::named("UTC").unwrap()),
+                ) {
                     return Ok(Some(dt.with_timezone(&local_offset_for_datetime(&dt))));
                 }
             }

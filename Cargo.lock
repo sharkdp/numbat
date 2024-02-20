@@ -174,6 +174,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f30e7476521f6f8af1a1c4c0b8cc94f0bee37d91763d0ca2665f299b6cd8aec"
 
 [[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "bytes"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -890,6 +896,7 @@ dependencies = [
  "strsim 0.11.0",
  "termcolor",
  "thiserror",
+ "tzfile",
  "unicode-ident",
  "unicode-width",
  "walkdir",
@@ -912,6 +919,7 @@ dependencies = [
  "serde",
  "terminal_size",
  "toml",
+ "tzfile",
 ]
 
 [[package]]
@@ -1551,6 +1559,16 @@ name = "typenum"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
+
+[[package]]
+name = "tzfile"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f59c22c42a2537e4c7ad21a4007273bbc5bebed7f36bc93730a5780e22a4592e"
+dependencies = [
+ "byteorder",
+ "chrono",
+]
 
 [[package]]
 name = "unicode-bidi"

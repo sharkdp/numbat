@@ -258,11 +258,19 @@ impl Cli {
         rl.set_max_history_size(1000)
             .context("Error while configuring history size")?;
         rl.set_completion_type(rustyline::CompletionType::List);
+
+        #[cfg(target_os = "linux")]
+        let all_timezones = vec![];
+        #[cfg(not(target_os = "linux"))]
+        let all_timezones = chrono_tz::TZ_VARIANTS
+            .map(|v| v.name())
+            .into::<Vec<&'static str>>();
+
         rl.set_helper(Some(NumbatHelper {
             completer: NumbatCompleter {
                 context: self.context.clone(),
                 modules: self.context.lock().unwrap().list_modules().collect(),
-                all_timezones: chrono_tz::TZ_VARIANTS.map(|v| v.name()).into(),
+                all_timezones,
             },
             highlighter: NumbatHighlighter {
                 context: self.context.clone(),
