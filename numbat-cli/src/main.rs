@@ -56,6 +56,10 @@ struct Args {
     )]
     expression: Option<Vec<String>>,
 
+    /// Enter interactive session after running a numbat script or expression
+    #[arg(short, long)]
+    inspect_interactively: bool,
+
     /// Do not load the user configuration file.
     #[arg(long, hide_short_help = true)]
     no_config: bool,
@@ -137,6 +141,9 @@ impl Cli {
         config.intro_banner = args.intro_banner.unwrap_or(config.intro_banner);
         config.pretty_print = args.pretty_print.unwrap_or(config.pretty_print);
 
+        config.enter_repl =
+            (args.file.is_none() && args.expression.is_none()) || args.inspect_interactively;
+
         let mut fs_importer = FileSystemImporter::default();
         for path in Self::get_modules_paths() {
             fs_importer.add_path(path);
@@ -216,9 +223,9 @@ impl Cli {
             code_and_source.push((expressions.iter().join("\n"), CodeSource::Text));
         }
 
-        if !code_and_source.is_empty() {
-            let mut code_result = Ok(());
+        let mut run_result = Ok(());
 
+        if !code_and_source.is_empty() {
             for (code, code_source) in code_and_source {
                 let result = self.parse_and_evaluate(
                     &code,
@@ -234,11 +241,11 @@ impl Cli {
                     }
                 };
 
-                code_result = code_result.and(result_status);
+                run_result = run_result.and(result_status);
             }
+        }
 
-            code_result
-        } else {
+        if self.config.enter_repl {
             let mut currency_fetch_thread = if self.config.load_prelude
                 && self.config.exchange_rates.fetching_policy
                     == ExchangeRateFetchingPolicy::OnStartup
@@ -254,8 +261,10 @@ impl Cli {
             if let Some(thread) = currency_fetch_thread.take() {
                 let _ = thread.join();
             }
-            repl_result
+            run_result = run_result.and(repl_result);
         }
+
+        run_result
     }
 
     fn repl(&mut self) -> Result<()> {
