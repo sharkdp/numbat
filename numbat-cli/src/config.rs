@@ -45,6 +45,7 @@ pub struct Config {
     pub intro_banner: IntroBanner,
     pub prompt: String,
     pub pretty_print: PrettyPrintMode,
+    pub enter_repl: bool,
 
     #[serde(skip_serializing)]
     pub load_prelude: bool,
@@ -63,6 +64,7 @@ impl Default for Config {
             load_prelude: true,
             load_user_init: true,
             exchange_rates: Default::default(),
+            enter_repl: true,
         }
     }
 }
