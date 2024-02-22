@@ -848,11 +848,10 @@ impl Vm {
 
                             let dt = self.pop_datetime();
 
-                            let tz: chrono_tz::Tz = tz_name
-                                .parse()
+                            let tz = tzfile::Tz::named(tz_name)
                                 .map_err(|_| RuntimeError::UnknownTimezone(tz_name.into()))?;
 
-                            let offset = dt.with_timezone(&tz).offset().fix();
+                            let offset = dt.with_timezone(&&tz).offset().fix();
 
                             self.push(Value::DateTime(dt, offset));
                         }

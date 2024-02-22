@@ -869,9 +869,7 @@ fn format_datetime(args: &[Value]) -> Result<Value> {
 fn get_local_timezone(args: &[Value]) -> Result<Value> {
     assert!(args.is_empty());
 
-    let local_tz = crate::datetime::get_local_timezone()
-        .unwrap_or(chrono_tz::Tz::UTC)
-        .to_string();
+    let local_tz = iana_time_zone::get_timezone().unwrap_or("UTC".to_string());
 
     Ok(Value::String(local_tz))
 }

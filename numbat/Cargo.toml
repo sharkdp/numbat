@@ -34,6 +34,7 @@ chrono-tz = "0.8.5"
 iana-time-zone = "0.1"
 termcolor = { version = "1.4.1", optional = true }
 html-escape = { version = "0.2.13", optional = true }
+tzfile = "0.1.3"
 
 [features]
 default = ["fetch-exchangerates"]
