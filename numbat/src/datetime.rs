@@ -6,6 +6,10 @@ pub fn get_local_timezone() -> Option<Tz> {
     tz_str.parse().ok()
 }
 
+pub fn get_local_timezone_or_utc() -> Tz {
+    get_local_timezone().unwrap_or(chrono_tz::UTC)
+}
+
 /// We use this function to get the UTC offset corresponding to
 /// the local timezone *at the specific instant in time* specified
 /// by 'dt', which might be different from the *current* UTC offset.

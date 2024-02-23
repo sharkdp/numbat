@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use std::sync::OnceLock;
 
-use chrono::Offset;
-
 use crate::currency::ExchangeRatesCache;
+use crate::datetime;
 use crate::interpreter::RuntimeError;
 use crate::pretty_print::PrettyPrint;
 use crate::value::{FunctionReference, Value};
@@ -834,11 +833,9 @@ fn chr(args: &[Value]) -> Result<Value> {
 
 fn now(args: &[Value]) -> Result<Value> {
     assert!(args.is_empty());
-    let now = chrono::Utc::now();
+    let now = chrono::Local::now().fixed_offset();
 
-    let offset = now.with_timezone(&chrono::Local).offset().fix();
-
-    Ok(Value::DateTime(now, offset))
+    Ok(Value::DateTime(now))
 }
 
 fn datetime(args: &[Value]) -> Result<Value> {
@@ -846,13 +843,12 @@ fn datetime(args: &[Value]) -> Result<Value> {
 
     let input = args[0].unsafe_as_string();
 
-    let output = crate::datetime::parse_datetime(input)
+    let output = datetime::parse_datetime(input)
         .map_err(RuntimeError::DateParsingError)?
-        .ok_or(RuntimeError::DateParsingErrorUnknown)?;
+        .ok_or(RuntimeError::DateParsingErrorUnknown)?
+        .fixed_offset();
 
-    let offset = crate::datetime::local_offset_for_datetime(&output);
-
-    Ok(Value::DateTime(output.into(), offset))
+    Ok(Value::DateTime(output))
 }
 
 fn format_datetime(args: &[Value]) -> Result<Value> {
@@ -869,9 +865,7 @@ fn format_datetime(args: &[Value]) -> Result<Value> {
 fn get_local_timezone(args: &[Value]) -> Result<Value> {
     assert!(args.is_empty());
 
-    let local_tz = crate::datetime::get_local_timezone()
-        .unwrap_or(chrono_tz::Tz::UTC)
-        .to_string();
+    let local_tz = datetime::get_local_timezone_or_utc().to_string();
 
     Ok(Value::String(local_tz))
 }
@@ -901,8 +895,10 @@ fn from_unixtime(args: &[Value]) -> Result<Value> {
 
     let timestamp = args[0].unsafe_as_quantity().unsafe_value().to_f64() as i64;
 
-    let dt = chrono::DateTime::from_timestamp(timestamp, 0).unwrap();
-    let offset = dt.offset().fix();
+    let dt = chrono::DateTime::from_timestamp(timestamp, 0)
+        .ok_or(RuntimeError::DateTimeOutOfRange)?
+        .with_timezone(&datetime::get_local_timezone_or_utc())
+        .fixed_offset();
 
-    Ok(Value::DateTime(dt, offset))
+    Ok(Value::DateTime(dt))
 }
