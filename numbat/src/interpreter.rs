@@ -47,6 +47,8 @@ pub enum RuntimeError {
     DurationOutOfRange,
     #[error("DateTime out of range")]
     DateTimeOutOfRange,
+    #[error("Error in datetime format. See https://docs.rs/chrono/latest/chrono/format/strftime/index.html for possible format specifiers.")]
+    DateFormattingError,
 }
 
 #[derive(Debug, PartialEq, Eq)]

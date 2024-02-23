@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Write;
 
 use std::sync::OnceLock;
 
@@ -857,7 +858,8 @@ fn format_datetime(args: &[Value]) -> Result<Value> {
     let format = args[0].unsafe_as_string();
     let dt = args[1].unsafe_as_datetime();
 
-    let output = dt.format(format).to_string();
+    let mut output = String::new();
+    write!(output, "{}", dt.format(format)).map_err(|_| RuntimeError::DateFormattingError)?;
 
     Ok(Value::String(output))
 }
