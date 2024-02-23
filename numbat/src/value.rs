@@ -26,7 +26,7 @@ pub enum Value {
     Boolean(bool),
     String(String),
     /// A DateTime with an associated offset used when pretty printing
-    DateTime(chrono::DateTime<chrono::Utc>, chrono::FixedOffset),
+    DateTime(chrono::DateTime<chrono::FixedOffset>),
     FunctionReference(FunctionReference),
 }
 
@@ -59,8 +59,8 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_datetime(&self) -> &chrono::DateTime<chrono::Utc> {
-        if let Value::DateTime(dt, _) = self {
+    pub fn unsafe_as_datetime(&self) -> &chrono::DateTime<chrono::FixedOffset> {
+        if let Value::DateTime(dt) = self {
             dt
         } else {
             panic!("Expected value to be a string");
@@ -83,7 +83,7 @@ impl std::fmt::Display for Value {
             Value::Quantity(q) => write!(f, "{}", q),
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(s) => write!(f, "\"{}\"", s),
-            Value::DateTime(dt, _) => write!(f, "datetime(\"{}\")", dt),
+            Value::DateTime(dt) => write!(f, "datetime(\"{}\")", dt),
             Value::FunctionReference(r) => write!(f, "{}", r),
         }
     }
@@ -95,11 +95,7 @@ impl PrettyPrint for Value {
             Value::Quantity(q) => q.pretty_print(),
             Value::Boolean(b) => b.pretty_print(),
             Value::String(s) => s.pretty_print(),
-            Value::DateTime(dt, offset) => {
-                let l: chrono::DateTime<chrono::FixedOffset> =
-                    chrono::DateTime::from_naive_utc_and_offset(dt.naive_utc(), *offset);
-                crate::markup::string(l.to_rfc2822())
-            }
+            Value::DateTime(dt) => crate::markup::string(dt.to_rfc2822()),
             Value::FunctionReference(r) => crate::markup::string(r.to_string()),
         }
     }

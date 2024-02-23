@@ -1,7 +1,5 @@
 use std::{cmp::Ordering, fmt::Display};
 
-use chrono::Offset;
-
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
@@ -533,9 +531,9 @@ impl Vm {
     }
 
     #[track_caller]
-    fn pop_datetime(&mut self) -> chrono::DateTime<chrono::Utc> {
+    fn pop_datetime(&mut self) -> chrono::DateTime<chrono::FixedOffset> {
         match self.pop() {
-            Value::DateTime(q, _) => q,
+            Value::DateTime(q) => q,
             _ => panic!("Expected datetime to be on the top of the stack"),
         }
     }
@@ -664,18 +662,15 @@ impl Vm {
                             (seconds_f.fract() * 1_000_000_000f64).round() as i64,
                         );
 
-                    self.push(Value::DateTime(
-                        match op {
-                            Op::AddToDateTime => lhs
-                                .checked_add_signed(duration)
-                                .ok_or(RuntimeError::DateTimeOutOfRange)?,
-                            Op::SubFromDateTime => lhs
-                                .checked_sub_signed(duration)
-                                .ok_or(RuntimeError::DateTimeOutOfRange)?,
-                            _ => unreachable!(),
-                        },
-                        chrono::Local::now().offset().fix(),
-                    ));
+                    self.push(Value::DateTime(match op {
+                        Op::AddToDateTime => lhs
+                            .checked_add_signed(duration)
+                            .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                        Op::SubFromDateTime => lhs
+                            .checked_sub_signed(duration)
+                            .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                        _ => unreachable!(),
+                    }));
                 }
                 Op::DiffDateTime => {
                     let unit = self.pop_quantity();
@@ -852,9 +847,9 @@ impl Vm {
                                 .parse()
                                 .map_err(|_| RuntimeError::UnknownTimezone(tz_name.into()))?;
 
-                            let offset = dt.with_timezone(&tz).offset().fix();
+                            let dt = dt.with_timezone(&tz).fixed_offset();
 
-                            self.push(Value::DateTime(dt, offset));
+                            self.push(Value::DateTime(dt));
                         }
                     }
                 }
@@ -871,14 +866,7 @@ impl Vm {
                             Value::Quantity(q) => q.to_string(),
                             Value::Boolean(b) => b.to_string(),
                             Value::String(s) => s,
-                            Value::DateTime(dt, offset) => {
-                                let l: chrono::DateTime<chrono::FixedOffset> =
-                                    chrono::DateTime::from_naive_utc_and_offset(
-                                        dt.naive_utc(),
-                                        offset,
-                                    );
-                                l.to_rfc2822()
-                            }
+                            Value::DateTime(dt) => dt.to_rfc2822(),
                             Value::FunctionReference(r) => r.to_string(),
                         };
                         joined = part + &joined; // reverse order
