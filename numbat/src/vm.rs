@@ -866,7 +866,7 @@ impl Vm {
                             Value::Quantity(q) => q.to_string(),
                             Value::Boolean(b) => b.to_string(),
                             Value::String(s) => s,
-                            Value::DateTime(dt) => dt.to_rfc2822(),
+                            Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
                             Value::FunctionReference(r) => r.to_string(),
                         };
                         joined = part + &joined; // reverse order

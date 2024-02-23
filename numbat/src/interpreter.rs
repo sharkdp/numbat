@@ -37,8 +37,6 @@ pub enum RuntimeError {
     CouldNotLoadExchangeRates,
     #[error("User error: {0}")]
     UserError(String),
-    #[error("Could not parse date: {0}")]
-    DateParsingError(chrono::ParseError),
     #[error("Unrecognized datetime format")]
     DateParsingErrorUnknown,
     #[error("Unknown timezone: {0}")]

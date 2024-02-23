@@ -845,7 +845,6 @@ fn datetime(args: &[Value]) -> Result<Value> {
     let input = args[0].unsafe_as_string();
 
     let output = datetime::parse_datetime(input)
-        .map_err(RuntimeError::DateParsingError)?
         .ok_or(RuntimeError::DateParsingErrorUnknown)?
         .fixed_offset();
 

@@ -95,7 +95,7 @@ impl PrettyPrint for Value {
             Value::Quantity(q) => q.pretty_print(),
             Value::Boolean(b) => b.pretty_print(),
             Value::String(s) => s.pretty_print(),
-            Value::DateTime(dt) => crate::markup::string(dt.to_rfc2822()),
+            Value::DateTime(dt) => crate::markup::string(crate::datetime::to_rfc2822_save(dt)),
             Value::FunctionReference(r) => crate::markup::string(r.to_string()),
         }
     }
