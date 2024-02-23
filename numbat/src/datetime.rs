@@ -1,4 +1,4 @@
-use chrono::{DateTime, FixedOffset, LocalResult, Offset, ParseError, TimeZone};
+use chrono::{DateTime, Datelike, FixedOffset, LocalResult, Offset, TimeZone};
 use chrono_tz::Tz;
 
 pub fn get_local_timezone() -> Option<Tz> {
@@ -25,11 +25,11 @@ pub fn local_offset_for_datetime<O: TimeZone>(dt: &DateTime<O>) -> FixedOffset {
         .unwrap_or_else(|| dt.offset().fix())
 }
 
-pub fn parse_datetime(input: &str) -> Result<Option<DateTime<FixedOffset>>, ParseError> {
+pub fn parse_datetime(input: &str) -> Option<DateTime<FixedOffset>> {
     if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(input) {
-        Ok(Some(dt))
+        Some(dt)
     } else if let Ok(dt) = chrono::DateTime::parse_from_rfc2822(input) {
-        Ok(Some(dt))
+        Some(dt)
     } else {
         const FORMATS: [&str; 8] = [
             // 24 hour formats:
@@ -47,7 +47,7 @@ pub fn parse_datetime(input: &str) -> Result<Option<DateTime<FixedOffset>>, Pars
         for format in FORMATS {
             // Try to match the given format plus an additional UTC offset (%z)
             if let Ok(dt) = chrono::DateTime::parse_from_str(input, &format!("{format} %z")) {
-                return Ok(Some(dt));
+                return Some(dt);
             }
 
             // Try to match the given format plus an additional timezone name (%Z).
@@ -62,7 +62,7 @@ pub fn parse_datetime(input: &str) -> Result<Option<DateTime<FixedOffset>>, Pars
                 if let Ok(tz) = potential_timezone_name.parse::<Tz>() {
                     if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(rest, format) {
                         if let LocalResult::Single(dt) = ndt.and_local_timezone(tz) {
-                            return Ok(Some(dt.with_timezone(&local_offset_for_datetime(&dt))));
+                            return Some(dt.with_timezone(&local_offset_for_datetime(&dt)));
                         }
                     }
                 }
@@ -73,11 +73,19 @@ pub fn parse_datetime(input: &str) -> Result<Option<DateTime<FixedOffset>>, Pars
                 if let LocalResult::Single(dt) =
                     ndt.and_local_timezone(get_local_timezone().unwrap_or(chrono_tz::UTC))
                 {
-                    return Ok(Some(dt.with_timezone(&local_offset_for_datetime(&dt))));
+                    return Some(dt.with_timezone(&local_offset_for_datetime(&dt)));
                 }
             }
         }
 
-        Ok(None)
+        None
+    }
+}
+
+pub fn to_rfc2822_save(dt: &DateTime<FixedOffset>) -> String {
+    if dt.year() < 0 || dt.year() > 9999 {
+        "<year out of range for displaying in RFC2822>".to_string()
+    } else {
+        dt.to_rfc2822()
     }
 }

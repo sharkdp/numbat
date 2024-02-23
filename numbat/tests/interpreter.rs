@@ -600,3 +600,21 @@ fn test_pretty_print_prefixes() {
 fn test_full_simplify_for_function_calls() {
     expect_output("floor(1.2 hours / hour)", "1");
 }
+
+#[test]
+fn test_datetime_runtime_errors() {
+    expect_failure("datetime(\"2000-01-99\")", "Unrecognized datetime format");
+    expect_failure("now() -> tz(\"Europe/NonExisting\")", "Unknown timezone");
+    expect_failure(
+        "date(\"2000-01-01\") + 1e100 years",
+        "Exceeded maximum size for time durations",
+    );
+    expect_failure(
+        "date(\"2000-01-01\") + 100000000 years",
+        "DateTime out of range",
+    );
+    expect_failure(
+        "format_datetime(\"%Y-%m-%dT%H%:M\", now())",
+        "Error in datetime format",
+    )
+}
