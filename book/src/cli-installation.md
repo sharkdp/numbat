@@ -38,7 +38,7 @@ AUR package, which will download the source and compile it. It works on all arch
 yay -S numbat
 ```
 
-## Void Linux
+### Void Linux
 
 You can install the `numbat` package using
 
@@ -46,7 +46,7 @@ You can install the `numbat` package using
 sudo xbps-install -S numbat
 ```
 
-## Chimera Linux
+### Chimera Linux
 
 Chimera Linux has a `numbat` package in its `contrib` repo. [Enable it if you
 haven't already](https://chimera-linux.org/docs/apk#repositories), then install
@@ -54,23 +54,6 @@ haven't already](https://chimera-linux.org/docs/apk#repositories), then install
 
 ``` bash
 doas apk add numbat
-```
-
-## NixOS
-
-*... or any distribution where Nix is installed.*
-
-Install [numbat](https://search.nixos.org/packages?channel=unstable&show=numbat&from=0&size=50&sort=relevance&type=packages&query=numbat) to your profile:
-
-``` bash
-nix-env -iA nixpkgs.numbat
-```
-Or add it to your NixOS Configuration:
-
-``` nix
-environment.systemPackages = [
-  pkgs.numbat
-];
 ```
 
 ## macOS
@@ -93,6 +76,24 @@ You can install the [numbat](https://scoop.sh/#/apps?q=numbat) package using [sc
 ``` bash
 scoop install main/numbat
 ```
+
+## NixOS
+
+*... or any distribution where Nix is installed.*
+
+Install [numbat](https://search.nixos.org/packages?channel=unstable&show=numbat&from=0&size=50&sort=relevance&type=packages&query=numbat) to your profile:
+
+``` bash
+nix-env -iA nixpkgs.numbat
+```
+Or add it to your NixOS Configuration:
+
+``` nix
+environment.systemPackages = [
+  pkgs.numbat
+];
+```
+
 ## From pre-built binaries
 
 Download the latest release for your system from [this page](https://github.com/sharkdp/numbat/releases). Unpack
