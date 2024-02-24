@@ -14,7 +14,7 @@ curl -LO https://github.com/sharkdp/numbat/releases/download/v1.10.1/numbat_1.10
 sudo dpkg -i numbat_1.10.1_amd64.deb
 ```
 
-Alternatively, if you want automatic updates, use the [Numbat PPA](https://launchpad.net/~apandada1/+archive/ubuntu/numbat). The PPA only hosts packages for the `amd64` (also known as `x86_64`) architecture.
+Alternatively, if you want automatic updates, you can use a community-maintained [Numbat PPA](https://launchpad.net/~apandada1/+archive/ubuntu/numbat). The PPA only hosts packages for the `amd64`/`x86_64` architecture.
 
 ```
 sudo add-apt-repository ppa:apandada1/numbat
