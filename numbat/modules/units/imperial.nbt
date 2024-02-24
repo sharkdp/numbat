@@ -74,3 +74,38 @@ unit mph: Velocity = miles per hour
 @name("Inch of mercury")
 @url("https://en.wikipedia.org/wiki/Inch_of_mercury")
 unit inHg: Pressure = in Hg
+
+@name("Imperial Fluid Ounce")
+@url("https://en.wikipedia.org/wiki/Fluid_ounce")
+@aliases(imperial_fluidounces, UK_floz: short)
+unit imperial_fluidounce: Volume = 28.4130625 mL
+
+@name("Imperial Pint")
+@url("https://en.wikipedia.org/wiki/Pint#Imperial_pint")
+@aliases(imperial_pints, UK_pt: short)
+unit imperial_pint: Volume = 20 imperial_fluidounces
+
+@name("Imperial Quart")
+@url("https://en.wikipedia.org/wiki/Quart#Imperial_quart")
+@aliases(imperial_quarts, UK_qt: short)
+unit imperial_quart: Volume = 2 imperial_pints
+
+@name("Imperial Gallon")
+@url("https://en.wikipedia.org/wiki/Gallon#Imperial_gallon")
+@aliases(imperial_gallons, UK_gal: short)
+unit imperial_gallon: Volume = 4 imperial_quart
+
+@name("Imperial Bushel")
+@url("https://en.wikipedia.org/wiki/Bushel#Imperial_bushel")
+@aliases(imperial_bushels, UK_bu: short)
+unit imperial_bushel: Volume = 8 imperial_gallons
+
+@name("Imperial Fluid Drachm")
+@url("https://en.wikipedia.org/wiki/Fluid_drachm#Imperial_fluid_drachm")
+@aliases(imperial_fluid_drachms, UK_fldr: short)
+unit imperial_fluid_drachm: Volume = 1/8 × imperial_fluidounce
+
+@name("Imperial Gill")
+@url("https://en.wikipedia.org/wiki/Gill_(unit)")
+@aliases(imperial_gills, UK_gi: short)
+unit imperial_gill: Volume = 5 imperial_fluidounces

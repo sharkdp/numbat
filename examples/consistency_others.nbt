@@ -36,6 +36,15 @@ assert_eq(1 long_ton, 1016.0469088 kg, 1e-6 kg)
 assert_eq(1 pound, 453.59237 gram, 1e-5 g)
 assert_eq(1 gallon, 3.785_411_784 L, 1e-6 L)
 
+assert_eq(1 imperial_fluidounce, 28.413_062_5 mL)
+assert_eq(1 imperial_pint, 568.261_25 mL)
+assert_eq(1 imperial_quart, 1.136_522_5 L, 1e-5 L)
+assert_eq(1 imperial_gallon, 4.546_09 L, 1e-5 L)
+assert_eq(1 imperial_bushel, 36.368_72 L, 1e-5 L)
+assert_eq(1 imperial_fluid_drachm, 3.551_632_812_5 mL)
+assert_eq(1 imperial_gill, 142.065_312_5 mL)
+
+
 assert_eq(1 gauss, 100 µT)
 assert_eq(1 furlong, 220 yard)
 

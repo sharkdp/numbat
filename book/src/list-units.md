@@ -192,6 +192,13 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Volume` | [US fluid ounce](https://en.wikipedia.org/wiki/Fluid_ounce) | `floz`, `fluidounce`, `fluidounces` |
 | `Volume` | [US liquid gallon](https://en.wikipedia.org/wiki/Gallon) | `gal`, `gallon`, `gallons` |
 | `Volume` | [US hogshead](https://en.wikipedia.org/wiki/Hogshead) | `hogshead`, `hogsheads` |
+| `Volume` | [Imperial Bushel](https://en.wikipedia.org/wiki/Bushel#Imperial_bushel) | `imperial_bushel`, `imperial_bushels`, `UK_bu` |
+| `Volume` | [Imperial Fluid Drachm](https://en.wikipedia.org/wiki/Fluid_drachm#Imperial_fluid_drachm) | `imperial_fluid_drachm`, `imperial_fluid_drachms`, `UK_fldr` |
+| `Volume` | [Imperial Fluid Ounce](https://en.wikipedia.org/wiki/Fluid_ounce) | `imperial_fluidounce`, `imperial_fluidounces`, `UK_floz` |
+| `Volume` | [Imperial Gallon](https://en.wikipedia.org/wiki/Gallon#Imperial_gallon) | `imperial_gallon`, `imperial_gallons`, `UK_gal` |
+| `Volume` | [Imperial Gill](https://en.wikipedia.org/wiki/Gill_(unit)) | `imperial_gill`, `imperial_gills`, `UK_gi` |
+| `Volume` | [Imperial Pint](https://en.wikipedia.org/wiki/Pint#Imperial_pint) | `imperial_pint`, `imperial_pints`, `UK_pt` |
+| `Volume` | [Imperial Quart](https://en.wikipedia.org/wiki/Quart#Imperial_quart) | `imperial_quart`, `imperial_quarts`, `UK_qt` |
 | `Volume` | [Litre](https://en.wikipedia.org/wiki/Litre) | `l`, `L`, `liter`, `liters`, `litre`, `litres` |
 | `Volume` | [US liquid pint](https://en.wikipedia.org/wiki/Pint) | `pint`, `pints` |
 | `Volume` | [Swimming pool](https://en.wikipedia.org/wiki/Olympic-size_swimming_pool) | `swimmingpool` |
