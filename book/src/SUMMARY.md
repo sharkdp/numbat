@@ -34,8 +34,8 @@
   - [Date and time](./date-and-time.md)
   - [Printing, testing, debugging](./procedures.md)
 - [Advanced](./advanced.md)
-  - [Unit definitions](./unit-definitions.md)
   - [Dimension definitions](./dimension-definitions.md)
+  - [Unit definitions](./unit-definitions.md)
   - [Syntax overview](./example-numbat_syntax.md)
 
 # Standard library reference
