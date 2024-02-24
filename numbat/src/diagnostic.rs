@@ -340,6 +340,14 @@ impl ErrorDiagnostic for TypeCheckError {
                 );
                 d.with_labels(labels)
             }
+            TypeCheckError::NoDimensionlessBaseUnit(span, unit_name) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error)])
+                .with_notes(vec![
+                    format!("Use 'unit {unit_name}' for ad-hoc units."),
+                    format!("Use 'unit {unit_name}: Scalar = …' for derived units."),
+                ]),
             TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
             | TypeCheckError::UnknownForeignFunction(span, _)
             | TypeCheckError::NonRationalExponent(span)

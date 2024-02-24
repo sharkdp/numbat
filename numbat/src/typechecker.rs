@@ -294,6 +294,9 @@ pub enum TypeCheckError {
 
     #[error("Only functions and function references can be called")]
     OnlyFunctionsAndReferencesCanBeCalled(Span),
+
+    #[error("Base units can not be dimensionless.")]
+    NoDimensionlessBaseUnit(Span, String),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -1150,9 +1153,19 @@ impl TypeChecker {
             }
             ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
                 let type_specified = if let Some(dexpr) = type_annotation {
-                    self.registry
+                    let base_representation = self
+                        .registry
                         .get_base_representation(dexpr)
-                        .map_err(TypeCheckError::RegistryError)?
+                        .map_err(TypeCheckError::RegistryError)?;
+
+                    if base_representation.is_scalar() {
+                        return Err(TypeCheckError::NoDimensionlessBaseUnit(
+                            *span,
+                            unit_name.into(),
+                        ));
+                    }
+
+                    base_representation
                 } else {
                     use heck::ToUpperCamelCase;
                     // In a unit definition like 'unit pixel' without a specified type,
@@ -2179,6 +2192,18 @@ mod tests {
                 "
             ),
             TypeCheckError::IncompatibleTypesInFunctionCall(..)
+        ));
+    }
+
+    #[test]
+    fn no_dimensionless_base_units() {
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                unit page: Scalar
+                "
+            ),
+            TypeCheckError::NoDimensionlessBaseUnit { .. }
         ));
     }
 }
