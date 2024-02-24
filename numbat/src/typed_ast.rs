@@ -684,7 +684,7 @@ mod tests {
 
                  @aliases(rad: short)
                  @metric_prefixes
-                 unit radian: Scalar
+                 unit radian: Scalar = meter / meter
 
                  @aliases(°: none)
                  unit degree = 180/pi × radian
