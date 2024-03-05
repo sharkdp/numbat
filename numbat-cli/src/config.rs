@@ -45,6 +45,8 @@ pub struct Config {
     pub intro_banner: IntroBanner,
     pub prompt: String,
     pub pretty_print: PrettyPrintMode,
+
+    #[serde(skip)]
     pub enter_repl: bool,
 
     #[serde(skip_serializing)]
