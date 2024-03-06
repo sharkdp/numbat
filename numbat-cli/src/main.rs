@@ -315,6 +315,8 @@ impl Cli {
         let result = self.repl_loop(&mut rl, interactive);
 
         if interactive {
+            // Create the prerequisite directories required to save history, if they don't exist already.
+            fs::create_dir_all(history_path.parent().unwrap())?;
             rl.save_history(&history_path).context(format!(
                 "Error while saving history to '{}'",
                 history_path.to_string_lossy()
