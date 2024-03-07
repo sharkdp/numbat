@@ -192,8 +192,8 @@ pub enum ParseErrorKind {
     #[error("Expected 'else' in if-then-else condition")]
     ExpectedElse,
 
-    #[error("Unterminated string interpolation")]
-    UnterminatedStringInterpolation,
+    #[error("Unterminated string")]
+    UnterminatedString,
 
     #[error("Expected a string")]
     ExpectedString,
@@ -1169,8 +1169,9 @@ impl<'a> Parser<'a> {
             }
 
             if !has_end {
+                span_full_string = span_full_string.extend(&self.last().unwrap().span);
                 return Err(ParseError::new(
-                    ParseErrorKind::UnterminatedStringInterpolation,
+                    ParseErrorKind::UnterminatedString,
                     span_full_string,
                 ));
             }
@@ -2537,10 +2538,7 @@ mod tests {
             ),
         );
 
-        should_fail_with(
-            &["\"test {1"],
-            ParseErrorKind::UnterminatedStringInterpolation,
-        );
+        should_fail_with(&["\"test {1"], ParseErrorKind::UnterminatedString);
     }
 
     #[test]
