@@ -315,8 +315,6 @@ impl Cli {
         let result = self.repl_loop(&mut rl, interactive);
 
         if interactive {
-            // Create the prerequisite directories required to save history, if they don't exist already.
-            fs::create_dir_all(history_path.parent().unwrap())?;
             rl.save_history(&history_path).context(format!(
                 "Error while saving history to '{}'",
                 history_path.to_string_lossy()
@@ -570,7 +568,7 @@ impl Cli {
         let data_dir = dirs::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join("numbat");
-        fs::create_dir(&data_dir).ok();
+        fs::create_dir_all(&data_dir).ok();
         Ok(data_dir.join("history"))
     }
 }
