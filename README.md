@@ -143,6 +143,8 @@ See [this page](https://numbat.dev/doc/cli-installation.html) for details on how
 
 ## Development
 
+[![CICD](https://github.com/sharkdp/numbat/actions/workflows/ci.yml/badge.svg)](https://github.com/sharkdp/numbat/actions/workflows/ci.yml)
+
 Run Numbat CLI
 ```
 cargo run -- <numbat args>
