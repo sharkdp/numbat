@@ -544,6 +544,51 @@ fn test_conditionals() {
 fn test_string_interpolation() {
     expect_output("\"pi = {pi}!\"", "pi = 3.14159!");
     expect_output("\"1 + 2 = {1 + 2}\"", "1 + 2 = 3");
+
+    expect_output("\"{0.2:0.5}\"", "0.20000");
+    expect_output("\"pi ~= {pi:.3}\"", "pi ~= 3.142");
+    expect_output(
+        "\"both {pi:.3} and {e} are irrational and transcendental numbers\"",
+        "both 3.142 and 2.71828 are irrational and transcendental numbers",
+    );
+    expect_output(
+        "
+        let str = \"1234\"
+        \"{str:0.2}\"
+        ",
+        "12",
+    );
+
+    expect_output("\"{1_000_300:+.3}\"", "+1000300.000");
+
+    expect_output(
+        "
+        let str = \"1234\"
+        \"a {str:^10} b\"
+        ",
+        "a    1234    b",
+    );
+
+    // Doesn't work at the moment, as `strfmt` expects `i64`'s for `#x`, but Numbat deals with `f64`'s
+    // internally
+    //expect_output("\"{31:#x}\"", "0x1f")
+
+    expect_failure(
+        "\"{200:x}\"",
+        "Incorrect type for format specifiers: Unknown format code 'x' for type",
+    );
+    expect_failure(
+        "\"{200:.}\"",
+        "Invalid format specifiers: Format specifier missing precision",
+    );
+
+    expect_failure(
+        "
+        let str = \"1234\"
+        \"{str:.3f}\"
+        ",
+        "Incorrect type for format specifiers: Unknown format code Some('f') for object of type 'str'",
+    );
 }
 
 #[test]

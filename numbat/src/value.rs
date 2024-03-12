@@ -28,6 +28,7 @@ pub enum Value {
     /// A DateTime with an associated offset used when pretty printing
     DateTime(chrono::DateTime<chrono::FixedOffset>),
     FunctionReference(FunctionReference),
+    FormatSpecifiers(Option<String>),
 }
 
 impl Value {
@@ -85,6 +86,7 @@ impl std::fmt::Display for Value {
             Value::String(s) => write!(f, "\"{}\"", s),
             Value::DateTime(dt) => write!(f, "datetime(\"{}\")", dt),
             Value::FunctionReference(r) => write!(f, "{}", r),
+            Value::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
         }
     }
 }
@@ -97,6 +99,8 @@ impl PrettyPrint for Value {
             Value::String(s) => s.pretty_print(),
             Value::DateTime(dt) => crate::markup::string(crate::datetime::to_rfc2822_save(dt)),
             Value::FunctionReference(r) => crate::markup::string(r.to_string()),
+            Value::FormatSpecifiers(Some(s)) => crate::markup::string(s.to_string()),
+            Value::FormatSpecifiers(None) => crate::markup::empty(),
         }
     }
 }

@@ -187,8 +187,16 @@ impl BytecodeInterpreter {
                             let index = self.vm.add_constant(Constant::String(s.clone()));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
-                        StringPart::Interpolation(_, expr) => {
+                        StringPart::Interpolation {
+                            expr,
+                            span: _,
+                            format_specifiers,
+                        } => {
                             self.compile_expression_with_simplify(expr)?;
+                            let index = self.vm.add_constant(Constant::FormatSpecifiers(
+                                format_specifiers.clone(),
+                            ));
+                            self.vm.add_op1(Op::LoadConstant, index)
                         }
                     }
                 }

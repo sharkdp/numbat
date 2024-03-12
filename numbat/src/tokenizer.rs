@@ -123,6 +123,8 @@ pub enum TokenKind {
     StringInterpolationStart,
     // A part of a string between two interpolations: `}, and bar = {`
     StringInterpolationMiddle,
+    // Format specifiers for an interpolation, e.g. `:.03f`
+    StringInterpolationSpecifiers,
     // A part of a string which ends an interpolation: `}."`
     StringInterpolationEnd,
 
@@ -488,8 +490,6 @@ impl Tokenizer {
             '⩵' => TokenKind::EqualEqual,
             '=' if self.match_char('=') => TokenKind::EqualEqual,
             '=' => TokenKind::Equal,
-            ':' if self.match_char(':') => TokenKind::DoubleColon,
-            ':' => TokenKind::Colon,
             '@' => TokenKind::At,
             '→' | '➞' => TokenKind::Arrow,
             '-' if self.match_char('>') => TokenKind::Arrow,
@@ -548,6 +548,34 @@ impl Tokenizer {
                     });
                 }
             },
+            ':' if self.interpolation_state.is_inside() => {
+                while self.peek().map(|c| c != '"' && c != '}').unwrap_or(false) {
+                    self.advance();
+                }
+
+                if self.peek() == Some('"') {
+                    return Err(TokenizerError {
+                        kind: TokenizerErrorKind::UnterminatedStringInterpolation,
+                        span: Span {
+                            start: self.token_start,
+                            end: self.current,
+                            code_source_id: self.code_source_id,
+                        },
+                    });
+                }
+                if self.peek() == Some('}') {
+                    TokenKind::StringInterpolationSpecifiers
+                } else {
+                    return Err(TokenizerError {
+                        kind: TokenizerErrorKind::UnterminatedString,
+                        span: Span {
+                            start: self.token_start,
+                            end: self.current,
+                            code_source_id: self.code_source_id,
+                        },
+                    });
+                }
+            }
             '}' if self.interpolation_state.is_inside() => {
                 while self.peek().map(|c| c != '"' && c != '{').unwrap_or(false) {
                     self.advance();
@@ -595,6 +623,8 @@ impl Tokenizer {
                     TokenKind::Identifier
                 }
             }
+            ':' if self.match_char(':') => TokenKind::DoubleColon,
+            ':' => TokenKind::Colon,
             c => {
                 return tokenizer_error(
                     &self.token_start,

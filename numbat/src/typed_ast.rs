@@ -129,15 +129,31 @@ impl Type {
 #[derive(Debug, Clone, PartialEq)]
 pub enum StringPart {
     Fixed(String),
-    Interpolation(Span, Box<Expression>),
+    Interpolation {
+        span: Span,
+        expr: Box<Expression>,
+        format_specifiers: Option<String>,
+    },
 }
 
 impl PrettyPrint for StringPart {
     fn pretty_print(&self) -> Markup {
         match self {
             StringPart::Fixed(s) => s.pretty_print(),
-            StringPart::Interpolation(_, expr) => {
-                m::operator("{") + expr.pretty_print() + m::operator("}")
+            StringPart::Interpolation {
+                span: _,
+                expr,
+                format_specifiers,
+            } => {
+                let mut markup = m::operator("{") + expr.pretty_print();
+
+                if let Some(format_specifiers) = format_specifiers {
+                    markup += m::text(format_specifiers);
+                }
+
+                markup += m::operator("}");
+
+                markup
             }
         }
     }

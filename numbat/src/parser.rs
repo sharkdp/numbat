@@ -1140,10 +1140,9 @@ impl<'a> Parser<'a> {
                 vec![StringPart::Fixed(strip_first_and_last(&token.lexeme))],
             ))
         } else if let Some(token) = self.match_exact(TokenKind::StringInterpolationStart) {
-            let mut parts = vec![StringPart::Fixed(strip_first_and_last(&token.lexeme))];
+            let mut parts = Vec::new();
 
-            let expr = self.expression()?;
-            parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
+            self.interpolation(&mut parts, &token)?;
 
             let mut span_full_string = token.span;
             let mut has_end = false;
@@ -1154,10 +1153,7 @@ impl<'a> Parser<'a> {
                 span_full_string = span_full_string.extend(&inner_token.span);
                 match inner_token.kind {
                     TokenKind::StringInterpolationMiddle => {
-                        parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
-
-                        let expr = self.expression()?;
-                        parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
+                        self.interpolation(&mut parts, &inner_token)?;
                     }
                     TokenKind::StringInterpolationEnd => {
                         parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
@@ -1204,6 +1200,24 @@ impl<'a> Parser<'a> {
                 self.peek().span,
             ))
         }
+    }
+
+    fn interpolation(&mut self, parts: &mut Vec<StringPart>, token: &Token) -> Result<()> {
+        parts.push(StringPart::Fixed(strip_first_and_last(&token.lexeme)));
+
+        let expr = self.expression()?;
+
+        let format_specifiers = self
+            .match_exact(TokenKind::StringInterpolationSpecifiers)
+            .map(|token| token.lexeme.clone());
+
+        parts.push(StringPart::Interpolation {
+            span: expr.full_span(),
+            expr: Box::new(expr),
+            format_specifiers,
+        });
+
+        Ok(())
     }
 
     /// Returns true iff the upcoming token indicates the beginning of a 'power'
@@ -2485,7 +2499,11 @@ mod tests {
                 Span::dummy(),
                 vec![
                     StringPart::Fixed("pi = ".into()),
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("pi")),
+                        format_specifiers: None,
+                    },
                 ],
             ),
         );
@@ -2494,10 +2512,11 @@ mod tests {
             &["\"{pi}\""],
             Expression::String(
                 Span::dummy(),
-                vec![StringPart::Interpolation(
-                    Span::dummy(),
-                    Box::new(identifier!("pi")),
-                )],
+                vec![StringPart::Interpolation {
+                    span: Span::dummy(),
+                    expr: Box::new(identifier!("pi")),
+                    format_specifiers: None,
+                }],
             ),
         );
 
@@ -2506,8 +2525,16 @@ mod tests {
             Expression::String(
                 Span::dummy(),
                 vec![
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("e"))),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("pi")),
+                        format_specifiers: None,
+                    },
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("e")),
+                        format_specifiers: None,
+                    },
                 ],
             ),
         );
@@ -2517,23 +2544,32 @@ mod tests {
             Expression::String(
                 Span::dummy(),
                 vec![
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("pi")),
+                        format_specifiers: None,
+                    },
                     StringPart::Fixed(" + ".into()),
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("e"))),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("e")),
+                        format_specifiers: None,
+                    },
                 ],
             ),
         );
 
         parse_as_expression(
-            &["\"1 + 2 = {1 + 2}\""],
+            &["\"1 + 2 = {1 + 2:0.2}\""],
             Expression::String(
                 Span::dummy(),
                 vec![
                     StringPart::Fixed("1 + 2 = ".into()),
-                    StringPart::Interpolation(
-                        Span::dummy(),
-                        Box::new(binop!(scalar!(1.0), Add, scalar!(2.0))),
-                    ),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(binop!(scalar!(1.0), Add, scalar!(2.0))),
+                        format_specifiers: Some(":0.2".to_string()),
+                    },
                 ],
             ),
         );
