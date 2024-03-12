@@ -1022,12 +1022,15 @@ impl TypeChecker {
                     .iter()
                     .map(|p| match p {
                         StringPart::Fixed(s) => Ok(typed_ast::StringPart::Fixed(s.clone())),
-                        StringPart::Interpolation(span, expr) => {
-                            Ok(typed_ast::StringPart::Interpolation(
-                                *span,
-                                Box::new(self.check_expression(expr)?),
-                            ))
-                        }
+                        StringPart::Interpolation {
+                            span,
+                            expr,
+                            format_specifiers,
+                        } => Ok(typed_ast::StringPart::Interpolation {
+                            span: *span,
+                            format_specifiers: format_specifiers.clone(),
+                            expr: Box::new(self.check_expression(expr)?),
+                        }),
                     })
                     .collect::<Result<_>>()?,
             ),

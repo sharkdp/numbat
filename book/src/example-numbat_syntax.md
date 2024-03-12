@@ -103,6 +103,7 @@ print(2 kilowarhol)              # Print the value of an expression
 print("hello world")             # Print a message
 print("value of pi = {pi}")      # String interpolation
 print("sqrt(10) = {sqrt(10)}")   # Expressions in string interpolation
+print("value of π ≈ {π:.3}")     # Format specifiers
 
 assert(1 yard < 1 meter)         # Assertion
 

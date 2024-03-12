@@ -47,6 +47,12 @@ pub enum RuntimeError {
     DateTimeOutOfRange,
     #[error("Error in datetime format. See https://docs.rs/chrono/latest/chrono/format/strftime/index.html for possible format specifiers.")]
     DateFormattingError,
+
+    #[error("Invalid format specifiers: {0}")]
+    InvalidFormatSpecifiers(String),
+
+    #[error("Incorrect type for format specifiers: {0}")]
+    InvalidTypeForFormatSpecifiers(String),
 }
 
 #[derive(Debug, PartialEq, Eq)]

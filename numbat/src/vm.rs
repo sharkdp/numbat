@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::{cmp::Ordering, fmt::Display};
 
 use crate::{
@@ -194,6 +195,7 @@ pub enum Constant {
     Boolean(bool),
     String(String),
     FunctionReference(FunctionReference),
+    FormatSpecifiers(Option<String>),
 }
 
 impl Constant {
@@ -204,6 +206,7 @@ impl Constant {
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
             Constant::FunctionReference(inner) => Value::FunctionReference(inner.clone()),
+            Constant::FormatSpecifiers(s) => Value::FormatSpecifiers(s.clone()),
         }
     }
 }
@@ -216,6 +219,7 @@ impl Display for Constant {
             Constant::Boolean(val) => write!(f, "{}", val),
             Constant::String(val) => write!(f, "\"{}\"", val),
             Constant::FunctionReference(inner) => write!(f, "{}", inner),
+            Constant::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
         }
     }
 }
@@ -861,13 +865,53 @@ impl Vm {
                 Op::JoinString => {
                     let num_parts = self.read_u16() as usize;
                     let mut joined = String::new();
+                    let to_str = |value| match value {
+                        Value::Quantity(q) => q.to_string(),
+                        Value::Boolean(b) => b.to_string(),
+                        Value::String(s) => s,
+                        Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
+                        Value::FunctionReference(r) => r.to_string(),
+                        Value::FormatSpecifiers(_) => unreachable!(),
+                    };
+
+                    let map_strfmt_error_to_runtime_error = |err| match err {
+                        strfmt::FmtError::Invalid(s) => RuntimeError::InvalidFormatSpecifiers(s),
+                        strfmt::FmtError::TypeError(s) => {
+                            RuntimeError::InvalidTypeForFormatSpecifiers(s)
+                        }
+                        strfmt::FmtError::KeyError(_) => unreachable!(),
+                    };
+
                     for _ in 0..num_parts {
                         let part = match self.pop() {
-                            Value::Quantity(q) => q.to_string(),
-                            Value::Boolean(b) => b.to_string(),
-                            Value::String(s) => s,
-                            Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
-                            Value::FunctionReference(r) => r.to_string(),
+                            Value::FormatSpecifiers(Some(specifiers)) => match self.pop() {
+                                Value::Quantity(q) => {
+                                    let mut vars = HashMap::new();
+                                    vars.insert("value".to_string(), q.unsafe_value().to_f64());
+
+                                    let mut str =
+                                        strfmt::strfmt(&format!("{{value{}}}", specifiers), &vars)
+                                            .map_err(map_strfmt_error_to_runtime_error)?;
+
+                                    let unit_str = q.unit().to_string();
+
+                                    if !unit_str.is_empty() {
+                                        str += " ";
+                                        str += &unit_str;
+                                    }
+
+                                    str
+                                }
+                                value => {
+                                    let mut vars = HashMap::new();
+                                    vars.insert("value".to_string(), to_str(value));
+
+                                    strfmt::strfmt(&format!("{{value{}}}", specifiers), &vars)
+                                        .map_err(map_strfmt_error_to_runtime_error)?
+                                }
+                            },
+                            Value::FormatSpecifiers(None) => to_str(self.pop()),
+                            v => to_str(v),
                         };
                         joined = part + &joined; // reverse order
                     }

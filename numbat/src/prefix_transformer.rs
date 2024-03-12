@@ -85,10 +85,15 @@ impl Transformer {
                     .into_iter()
                     .map(|p| match p {
                         f @ StringPart::Fixed(_) => f,
-                        StringPart::Interpolation(span, expr) => StringPart::Interpolation(
+                        StringPart::Interpolation {
                             span,
-                            Box::new(self.transform_expression(*expr)),
-                        ),
+                            expr,
+                            format_specifiers,
+                        } => StringPart::Interpolation {
+                            span,
+                            expr: Box::new(self.transform_expression(*expr)),
+                            format_specifiers,
+                        },
                     })
                     .collect(),
             ),

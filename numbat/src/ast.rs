@@ -58,7 +58,11 @@ impl PrettyPrint for BinaryOperator {
 #[derive(Debug, Clone, PartialEq)]
 pub enum StringPart {
     Fixed(String),
-    Interpolation(Span, Box<Expression>),
+    Interpolation {
+        span: Span,
+        expr: Box<Expression>,
+        format_specifiers: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -426,9 +430,15 @@ impl ReplaceSpans for StringPart {
     fn replace_spans(&self) -> Self {
         match self {
             f @ StringPart::Fixed(_) => f.clone(),
-            StringPart::Interpolation(_, expr) => {
-                StringPart::Interpolation(Span::dummy(), Box::new(expr.replace_spans()))
-            }
+            StringPart::Interpolation {
+                expr,
+                format_specifiers,
+                span: _,
+            } => StringPart::Interpolation {
+                span: Span::dummy(),
+                expr: Box::new(expr.replace_spans()),
+                format_specifiers: format_specifiers.clone(),
+            },
         }
     }
 }
