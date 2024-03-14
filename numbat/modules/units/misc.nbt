@@ -115,6 +115,11 @@ unit swimmingpool: Volume = 50 m × 25 m × 2 m # Olympic-size swimming pool (FR
 @aliases(rackunits, RU: short, U: short)
 unit rackunit: Length = 0.04445 meter
 
+@metric_prefixes
+@aliases(darcys, darcies)
+@url("https://en.wikipedia.org/wiki/Darcy_(unit)")
+unit darcy: Length^2 = (1 bar / 1 atmosphere) × micrometer²
+
 # Angles
 
 @name("Turn")
