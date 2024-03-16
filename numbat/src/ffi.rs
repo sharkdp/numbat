@@ -411,6 +411,15 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
             },
         );
 
+        m.insert(
+            "random".to_string(),
+            ForeignFunction {
+                name: "random".into(),
+                arity: 0..=0,
+                callable: Callable::Function(Box::new(random)),
+            },
+        );
+
         m
     })
 }
@@ -902,4 +911,12 @@ fn from_unixtime(args: &[Value]) -> Result<Value> {
         .fixed_offset();
 
     Ok(Value::DateTime(dt))
+}
+
+fn random(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 0);
+
+    let output = fastrand::f64();
+
+    Ok(Value::Quantity(Quantity::from_scalar(output)))
 }
