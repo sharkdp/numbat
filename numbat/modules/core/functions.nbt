@@ -3,3 +3,5 @@ fn round<T>(x: T) -> T
 fn floor<T>(x: T) -> T
 fn ceil<T>(x: T) -> T
 fn mod<T>(a: T, b: T) -> T
+
+fn random() -> Scalar
