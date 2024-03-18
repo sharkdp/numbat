@@ -127,7 +127,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Money` | [Norwegian krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `norwegian_krone`, `norwegian_kroner` |
 | `Money` | [Philippine peso](https://en.wikipedia.org/wiki/Philippine_peso) | `philippine_peso`, `philippine_pesos`, `PHP`, `₱` |
 | `Money` | [Polish złoty](https://en.wikipedia.org/wiki/Polish_złoty) | `PLN`, `polish_zloty`, `polish_zlotys`, `zł` |
-| `Money` | [Chinese yuan](https://en.wikipedia.org/wiki/Renminbi) | `CNY`, `renminbi`, `元` |
+| `Money` | [Chinese yuan](https://en.wikipedia.org/wiki/Renminbi) | `CNY`, `renminbi`, `yuan`, `元` |
 | `Money` | [Romanian leu](https://en.wikipedia.org/wiki/Romanian_leu) | `lei`, `romanian_leu`, `romanian_leus`, `RON` |
 | `Money` | [Singapore dollar](https://en.wikipedia.org/wiki/Singapore_dollar) | `S$`, `SGD`, `singapore_dollar`, `singapore_dollars` |
 | `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `south_african_rand`, `ZAR` |
