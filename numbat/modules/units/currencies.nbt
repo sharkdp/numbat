@@ -25,7 +25,7 @@ unit british_pound: Money = EUR / exchange_rate("GBP")
 
 @name("Chinese yuan")
 @url("https://en.wikipedia.org/wiki/Renminbi")
-@aliases(CNY: short, 元)
+@aliases(yuan, CNY: short, 元)
 unit renminbi: Money = EUR / exchange_rate("CNY")
 
 @name("Australian dollar")

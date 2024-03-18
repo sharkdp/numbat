@@ -523,6 +523,7 @@ impl Context {
                         "swiss_franc",
                         "swiss_francs",
                         "CNY",
+                        "yuan",
                         "renminbi",
                         "元",
                         "EUR",
