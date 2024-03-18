@@ -1,10 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use numbat::{unicode_input::UNICODE_INPUT, Context};
-use rustyline::{
-    self,
-    completion::{extract_word, Completer, Pair},
-};
+use rustyline::completion::{extract_word, Completer, Pair};
 
 pub struct NumbatCompleter {
     pub context: Arc<Mutex<Context>>,

@@ -22,8 +22,7 @@ use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
 use rustyline::config::Configurer;
 use rustyline::{
-    self, error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter,
-    Validator,
+    error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter, Validator,
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 

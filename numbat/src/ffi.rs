@@ -914,7 +914,7 @@ fn from_unixtime(args: &[Value]) -> Result<Value> {
 }
 
 fn random(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 0);
+    assert!(args.is_empty());
 
     let output = rand::random::<f64>();
 
