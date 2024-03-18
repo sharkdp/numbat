@@ -1,7 +1,13 @@
 assert((0 second         -> human) == "0 seconds")
+assert((0.1 second       -> human) == "0.100 seconds")
+assert((0.01 second      -> human) == "0.010 seconds")
+assert((0.001 second     -> human) == "0.001 seconds")
+
 assert((1 second         -> human) == "1 second")
 assert((5 second         -> human) == "5 seconds")
 assert((1.5 second       -> human) == "1.500 seconds")
+assert((2.55 second      -> human) == "2.550 seconds")
+assert((5.99999 second   -> human) == "5.999990 seconds")
 
 assert((60 seconds       -> human) == "1 minute")
 assert((73 seconds       -> human) == "1 minute + 13 seconds")
@@ -22,7 +28,20 @@ assert((1.37 day         -> human) == "1 day + 8 hours + 52 minutes + 48 seconds
 assert((1 week           -> human) == "7 days")
 assert((1.5 weeks        -> human) == "10 days + 12 hours")
 assert((2 weeks          -> human) == "14 days")
+assert((4.566 weeks      -> human) == "31 days + 23 hours + 5 minutes + 16.800 seconds")
 
+assert((1 year           -> human) == "365 days + 5 hours + 48 minutes + 45.051840004 seconds")
+assert((3.45 years       -> human) == "1260 days")
+
+assert((1 month          -> human) == "30 days + 10 hours + 29 minutes + 3.754320 seconds")
+assert((3.78 months      -> human) == "115 days + 1 hour + 13 minutes + 51.391329601 seconds")
+assert((1 gregorian_year -> human) == "365 days + 5 hours + 49 minutes + 12 seconds")
+assert((2.34 gregorian_year -> human) == "854 days + 16 hours + 1 minute + 7.679999992 seconds")
+assert((1 julian_year    -> human) == "365 days + 6 hours")
+assert((1.06 julian_year -> human) == "387 days + 3 hours + 57 minutes + 36 seconds")
+assert((1 decade         -> human) == "3652 days")
+assert((1 century        -> human) == "36524 days")
+assert((1 millennium     -> human) == "365_242 days")
 assert((1 sidereal_day   -> human) == "23 hours + 56 minutes + 4.090500 seconds")
 
 assert((10000 days       -> human) == "10000 days")
@@ -32,11 +51,46 @@ assert((1e12 days        -> human) == "1_000_000_000_000 days")
 assert((1e15 days        -> human) == "1.0e+15 days")
 
 assert((1 ms             -> human) == "0.001 seconds")
+assert((12 ms            -> human) == "0.012 seconds")
+assert((342 ms           -> human) == "0.342 seconds")
+
 assert((1 µs             -> human) == "0.000001 seconds")
+assert((1245 µs          -> human) == "0.001245 seconds")
+assert((1236876 µs       -> human) == "1.236876 seconds")
+
 assert((1 ns             -> human) == "0.000000001 seconds")
 assert((1234 ns          -> human) == "0.000001234 seconds")
 assert((1s + 1234 ns     -> human) == "1.000001234 seconds")
 
+assert((-1 second        -> human) == "1 second ago")
+assert((-25 seconds      -> human) == "25 seconds ago")
+assert((-49.010 seconds  -> human) == "49.010 seconds ago")
+
 assert((-2.5 minute      -> human) == "2 minutes + 30 seconds ago")
+assert((-1 hour          -> human) == "1 hour ago")
+assert((-3 hour          -> human) == "3 hours ago")
+assert((-5.34 hour       -> human) == "5 hours + 20 minutes + 24 seconds ago")
+assert((-7.89 hour       -> human) == "7 hours + 53 minutes + 24 seconds ago")
+assert((-7.89 hour - 4 minutes -> human) == "7 hours + 57 minutes + 24 seconds ago")
+
+assert((-1 day           -> human) == "1 day ago")
+assert((-4.6 days        -> human) == "4 days + 14 hours + 23 minutes ago")
+assert((-9.2345 days     -> human) == "9 days + 5 hours + 37 minutes + 40.800 seconds ago")
+assert((-9.2345 days + 52 hours      -> human) == "7 days + 1 hour + 37 minutes + 40.800 seconds ago")
+
 assert((-2 weeks         -> human) == "14 days ago")
-assert((-1234 ns         -> human) == "0.000001234 seconds ago")
+assert((-4.5 weeks       -> human) == "31 days + 12 hours ago")
+assert((-20.5 weeks      -> human) == "143 days + 12 hours ago")
+
+assert((-2.5 months      -> human) == "76 days + 2 hours + 12 minutes + 39.385800 seconds ago")
+assert((-2.5 years       -> human) == "913 days + 2 hours + 31 minutes + 52.629600003 seconds ago")
+assert((-10.5 decades    -> human) == "38350 days ago")
+
+assert((-25 ms           -> human) == "0.025 seconds ago")
+assert((-6400 ms         -> human) == "6.400 seconds ago")
+
+assert((-2500 µs         -> human) == "0.002500 seconds ago")
+assert((-40525 µs        -> human) == "0.040525 seconds ago")
+
+assert((-5147 ns         -> human) == "0.000005147 seconds ago")
+assert((-23s + 1234 ns   -> human) == "22.999998766 seconds ago")
