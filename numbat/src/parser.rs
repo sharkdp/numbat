@@ -1147,7 +1147,7 @@ impl<'a> Parser<'a> {
         } else if let Some(token) = self.match_exact(TokenKind::StringInterpolationStart) {
             let mut parts = Vec::new();
 
-            self.interpolation(&mut parts, &token)?;
+            self.interpolation(&mut parts, token)?;
 
             let mut span_full_string = token.span;
             let mut has_end = false;
@@ -1158,7 +1158,7 @@ impl<'a> Parser<'a> {
                 span_full_string = span_full_string.extend(&inner_token.span);
                 match inner_token.kind {
                     TokenKind::StringInterpolationMiddle => {
-                        self.interpolation(&mut parts, &inner_token)?;
+                        self.interpolation(&mut parts, inner_token)?;
                     }
                     TokenKind::StringInterpolationEnd => {
                         parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
