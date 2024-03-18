@@ -921,6 +921,7 @@ name = "numbat-exchange-rates"
 version = "0.5.0"
 dependencies = [
  "attohttpc",
+ "dirs",
  "quick-xml",
 ]
 

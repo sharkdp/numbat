@@ -11,7 +11,8 @@ rust-version = "1.70"
 
 [dependencies]
 attohttpc = { version = "0.27.0", default-features = false, features = ["tls-rustls-webpki-roots"], optional = true }
+dirs = { version = "5", optional = true }
 quick-xml = "0.31.0"
 
 [features]
-fetch-exchangerates = ["dep:attohttpc"]
+fetch-exchangerates = ["dep:attohttpc", "dep:dirs"]
