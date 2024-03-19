@@ -916,7 +916,7 @@ fn from_unixtime(args: &[Value]) -> Result<Value> {
 fn random(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 0);
 
-    let output = fastrand::f64();
+    let output = rand::random::<f64>();
 
     Ok(Value::Quantity(Quantity::from_scalar(output)))
 }
