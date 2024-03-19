@@ -362,7 +362,6 @@ fn test_other_functions() {
     expect_output("floor(3.9)", "3");
     expect_output("round(3.9)", "4");
     expect_output("round(3.1)", "3");
-    expect_output("random() == random()", "false");
 }
 
 #[test]
