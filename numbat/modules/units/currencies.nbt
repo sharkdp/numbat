@@ -15,7 +15,7 @@ unit dollar: Money = EUR / exchange_rate("USD")
 
 @name("Japanese yen")
 @url("https://en.wikipedia.org/wiki/Japanese_yen")
-@aliases(yens, JPY, ¥: short, 円)
+@aliases(JPY, ¥: short, 円)
 unit yen: Money = EUR / exchange_rate("JPY")
 
 @name("Pound sterling")
