@@ -136,7 +136,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Money` | [Swiss franc](https://en.wikipedia.org/wiki/Swiss_franc) | `CHF`, `swiss_franc`, `swiss_francs` |
 | `Money` | [Thai baht](https://en.wikipedia.org/wiki/Thai_baht) | `thai_baht`, `thai_bahts`, `THB`, `฿` |
 | `Money` | [Turkish lira](https://en.wikipedia.org/wiki/Turkish_lira) | `TRY`, `turkish_lira`, `turkish_liras`, `₺` |
-| `Money` | [Japanese yen](https://en.wikipedia.org/wiki/Japanese_yen) | `JPY`, `yen`, `yens`, `¥`, `円` |
+| `Money` | [Japanese yen](https://en.wikipedia.org/wiki/Japanese_yen) | `JPY`, `yen`, `¥`, `円` |
 | `Person` | Person | `capita`, `people`, `person`, `persons` |
 | `Piece` | Piece | `piece`, `pieces` |
 | `Pixel` | [Pixel](https://en.wikipedia.org/wiki/Pixel) | `pixel`, `pixels`, `px` |
