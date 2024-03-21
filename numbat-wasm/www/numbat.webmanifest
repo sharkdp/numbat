@@ -1,0 +1,24 @@
+{
+  "name": "Numbat",
+  "short_name": "Numbat",
+  "description": "high precision scientific calculator with full support for physical units.",
+  "icons": [
+    {
+      "src": "numbat-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "numbat-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "numbat-196x196.png",
+      "sizes": "196x196",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone"
+}

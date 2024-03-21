@@ -110,11 +110,31 @@ function setup() {
   });
 }
 
+// TODO: I would prefer to use const lambdas rather than `function` in order to
+// avoid unexpected `this` resolution. Not sure if there's a reason this is
+// currently being used along with `var`. Those "old school" techniques do
+// hoist, but this can easily be worked around by reordering declarations.
+async function registerSw() {
+  if ("serviceWorker" in navigator) {
+    try {
+      // NOTE: The service worker URL should be stable between releases or this
+      // could lead to unexpected behavior.
+      await navigator.serviceWorker.register("./service-worker.js");
+    } catch (error) {
+      // NOTE: We don't allow the error to propagate because the app should
+      // still work without offline capabilities.
+      console.error("Failed to register Service Worker:", error);
+    }
+  } else {
+    console.warn("Service Workers not available in this browser");
+  }
+}
+
 var numbat;
 var combined_input = "";
 
 async function main() {
-  await init();
+  await Promise.all([init(), registerSw()]);
 
   setup_panic_hook();
 
