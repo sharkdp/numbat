@@ -460,13 +460,10 @@ impl<'a> Parser<'a> {
 
                         parameter_span = parameter_span.extend(&self.last().unwrap().span);
 
-                        let mut has_comma = || -> bool {
-                            let yes = self.match_exact(TokenKind::Comma).is_some();
-                            self.match_exact(TokenKind::Newline);
-                            yes
-                        };
+                        let has_comma = self.match_exact(TokenKind::Comma).is_some();
+                        self.match_exact(TokenKind::Newline);
 
-                        if !has_comma() && self.peek().kind != TokenKind::RightParen {
+                        if !has_comma && self.peek().kind != TokenKind::RightParen {
                             return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
                                 span: self.peek().span,
@@ -564,54 +561,56 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::At).is_some() {
             if let Some(decorator) = self.match_exact(TokenKind::Identifier) {
-                let decorator = if decorator.lexeme == "metric_prefixes" {
-                    Decorator::MetricPrefixes
-                } else if decorator.lexeme == "binary_prefixes" {
-                    Decorator::BinaryPrefixes
-                } else if decorator.lexeme == "aliases" {
-                    if self.match_exact(TokenKind::LeftParen).is_some() {
-                        let aliases = self.list_of_aliases()?;
-                        Decorator::Aliases(aliases)
-                    } else {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
-                            span: self.peek().span,
-                        });
-                    }
-                } else if decorator.lexeme == "url" || decorator.lexeme == "name" {
-                    if self.match_exact(TokenKind::LeftParen).is_some() {
-                        if let Some(token) = self.match_exact(TokenKind::StringFixed) {
-                            if self.match_exact(TokenKind::RightParen).is_none() {
-                                return Err(ParseError::new(
-                                    ParseErrorKind::MissingClosingParen,
-                                    self.peek().span,
-                                ));
-                            }
-
-                            let content = token.lexeme.trim_matches('"');
-
-                            match decorator.lexeme.as_str() {
-                                "url" => Decorator::Url(content.into()),
-                                "name" => Decorator::Name(content.into()),
-                                _ => unreachable!(),
-                            }
+                let decorator = match decorator.lexeme.as_str() {
+                    "metric_prefixes" => Decorator::MetricPrefixes,
+                    "binary_prefixes" => Decorator::BinaryPrefixes,
+                    "aliases" => {
+                        if self.match_exact(TokenKind::LeftParen).is_some() {
+                            let aliases = self.list_of_aliases()?;
+                            Decorator::Aliases(aliases)
                         } else {
                             return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedString,
+                                kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
                                 span: self.peek().span,
                             });
                         }
-                    } else {
+                    }
+                    "url" | "name" => {
+                        if self.match_exact(TokenKind::LeftParen).is_some() {
+                            if let Some(token) = self.match_exact(TokenKind::StringFixed) {
+                                if self.match_exact(TokenKind::RightParen).is_none() {
+                                    return Err(ParseError::new(
+                                        ParseErrorKind::MissingClosingParen,
+                                        self.peek().span,
+                                    ));
+                                }
+
+                                let content = token.lexeme.trim_matches('"');
+
+                                match decorator.lexeme.as_str() {
+                                    "url" => Decorator::Url(content.into()),
+                                    "name" => Decorator::Name(content.into()),
+                                    _ => unreachable!(),
+                                }
+                            } else {
+                                return Err(ParseError {
+                                    kind: ParseErrorKind::ExpectedString,
+                                    span: self.peek().span,
+                                });
+                            }
+                        } else {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                                span: self.peek().span,
+                            });
+                        }
+                    }
+                    _ => {
                         return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
-                            span: self.peek().span,
+                            kind: ParseErrorKind::UnknownDecorator,
+                            span: decorator.span,
                         });
                     }
-                } else {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::UnknownDecorator,
-                        span: decorator.span,
-                    });
                 };
 
                 self.decorator_stack.push(decorator); // TODO: make sure that there are no duplicate decorators
@@ -652,11 +651,11 @@ impl<'a> Parser<'a> {
                         type_annotation: dexpr,
                         decorators,
                     })
-                } else if let Some(dexpr) = dexpr {
+                } else if dexpr.is_some() {
                     Ok(Statement::DefineBaseUnit(
                         identifier_span,
                         unit_name,
-                        Some(dexpr),
+                        dexpr,
                         decorators,
                     ))
                 } else if self.is_end_of_statement() {
@@ -713,17 +712,17 @@ impl<'a> Parser<'a> {
                 _ => unreachable!(),
             };
 
-            if self.match_exact(TokenKind::LeftParen).is_none() {
-                Err(ParseError {
-                    kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
-                    span: self.peek().span,
-                })
-            } else {
+            if self.match_exact(TokenKind::LeftParen).is_some() {
                 Ok(Statement::ProcedureCall(
                     span,
                     procedure_kind,
                     self.arguments()?,
                 ))
+            } else {
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
+                    span: self.peek().span,
+                })
             }
         } else {
             Ok(Statement::Expression(self.expression()?))
