@@ -467,6 +467,12 @@ impl Tokenizer {
 
                 TokenKind::Number
             }
+            '.' if self.peek() == Some('.') && self.peek2() == Some('.') => {
+                self.advance();
+                self.advance();
+
+                TokenKind::Ellipsis
+            }
             '.' => {
                 self.consume_stream_of_digits(true, true, true)?;
                 self.scientific_notation()?;
@@ -798,6 +804,22 @@ fn test_tokenize_basic() {
             ("\n".to_string(), Newline, (1, 4)),
             ("42".to_string(), Number, (2, 1)),
             ("".to_string(), Eof, (2, 3))
+        ]
+    );
+
+    assert_eq!(
+        tokenize_reduced("…").unwrap(),
+        [
+            ("…".to_string(), Ellipsis, (1, 1)),
+            ("".to_string(), Eof, (1, 2))
+        ]
+    );
+
+    assert_eq!(
+        tokenize_reduced("...").unwrap(),
+        [
+            ("...".to_string(), Ellipsis, (1, 1)),
+            ("".to_string(), Eof, (1, 4))
         ]
     );
 
