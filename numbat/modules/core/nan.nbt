@@ -1,0 +1,4 @@
+use math::functions
+
+@name("NaN")
+let NaN = ln(-1)
