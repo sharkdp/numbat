@@ -19,6 +19,7 @@ fn ceil<T>(x: T) -> T
 fn mod<T>(a: T, b: T) -> T
 fn sqrt<D>(x: D^2) -> D
 fn sqr<D>(x: D) -> D^2
+fn is_nan<T>(n: T) -> Bool
 ```
 
 ### Exponential and logarithm

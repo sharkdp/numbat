@@ -119,6 +119,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 callable: Callable::Function(Box::new(ceil)),
             },
         );
+        m.insert(
+            "is_nan".to_string(),
+            ForeignFunction {
+                name: "is_nan".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(is_nan)),
+            },
+        );
 
         m.insert(
             "sin".to_string(),
@@ -551,6 +559,13 @@ fn ceil(args: &[Value]) -> Result<Value> {
         value.ceil(),
         arg.unit().clone(),
     )))
+}
+
+fn is_nan(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+    let arg = args[0].unsafe_as_quantity();
+    let isnan = arg.unsafe_value().to_f64().is_nan();
+    Ok(Value::Boolean(isnan))
 }
 
 fn sin(args: &[Value]) -> Result<Value> {
