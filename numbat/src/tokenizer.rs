@@ -99,6 +99,9 @@ pub enum TokenKind {
     String,
     DateTime,
 
+    NaN,
+    Inf,
+
     CapitalFn, // 'Fn'
 
     Long,
@@ -360,6 +363,8 @@ impl Tokenizer {
             m.insert("String", TokenKind::String);
             m.insert("DateTime", TokenKind::DateTime);
             m.insert("Fn", TokenKind::CapitalFn);
+            m.insert("NaN", TokenKind::NaN);
+            m.insert("inf", TokenKind::Inf);
             // Keep this list in sync with keywords::KEYWORDS!
             m
         });

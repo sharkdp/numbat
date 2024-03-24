@@ -1126,6 +1126,12 @@ impl<'a> Parser<'a> {
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
+        } else if let Some(_) = self.match_exact(TokenKind::NaN) {
+            let span = self.last().unwrap().span;
+            Ok(Expression::Scalar(span, Number::from_f64(f64::NAN)))
+        } else if let Some(_) = self.match_exact(TokenKind::Inf) {
+            let span = self.last().unwrap().span;
+            Ok(Expression::Scalar(span, Number::from_f64(f64::INFINITY)))
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             let span = self.last().unwrap().span;
             Ok(Expression::Identifier(span, identifier.lexeme.clone()))
@@ -1722,6 +1728,12 @@ mod tests {
 
         // Until we support hexadecimal float notation
         should_fail(&["0x1.2", "0b1.0", "0o1.0", "0x.1", "0b.0", "0o.1"]);
+    }
+
+    #[test]
+    fn nonfinite() {
+        parse_as_expression(&["inf"], scalar!(f64::INFINITY));
+        parse_as_expression(&["-inf"], negate!(scalar!(f64::INFINITY)));
     }
 
     #[test]

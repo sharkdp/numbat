@@ -17,6 +17,9 @@ Numbers in Numbat can be written in the following forms:
     * `0x2A` — Hexadecimal
     * `0o52` — Octal
     * `0b101010` — Binary
+* Non-finite numbers
+    * `NaN` — Not a number
+    * `inf` — Infinity
 
 ## Convert numbers to other bases
 
