@@ -33,11 +33,6 @@ Colloquial:
 * `triple`
 * `dozen`
 
-Non-finite:
-
-* `NaN`
-* `inf`
-
 ## Physics
 
 | Description | Identifier | Dimension |

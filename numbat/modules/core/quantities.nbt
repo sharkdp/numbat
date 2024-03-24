@@ -2,3 +2,6 @@ use core::scalar
 
 fn unit_of<T>(x: T) -> T
 fn value_of<T>(x: T) -> Scalar = x / unit_of(x)
+
+fn is_nan<T>(n: T) -> Bool
+fn is_infinite<T>(n: T) -> Bool

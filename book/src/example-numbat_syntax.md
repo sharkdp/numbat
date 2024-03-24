@@ -30,6 +30,9 @@ use units::stoney  # Load a specific module
 0o52        # octal
 0b101010    # binary
 
+NaN         # Not a number
+inf         # Infinity
+
 # 3. Simple expressions
 
 3 + (4 - 3)       # Addition and subtraction
