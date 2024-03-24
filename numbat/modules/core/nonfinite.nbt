@@ -1,0 +1,10 @@
+use math::functions
+
+@name("NaN")
+let NaN = ln(-1)
+
+@name("inf")
+let inf = -ln(0)
+
+fn is_nan<T>(n: T) -> Bool
+fn is_infinite<T>(n: T) -> Bool
