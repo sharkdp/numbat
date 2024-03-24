@@ -127,6 +127,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 callable: Callable::Function(Box::new(is_nan)),
             },
         );
+        m.insert(
+            "is_infinite".to_string(),
+            ForeignFunction {
+                name: "is_infinite".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(is_infinite)),
+            },
+        );
 
         m.insert(
             "sin".to_string(),
@@ -565,6 +573,13 @@ fn is_nan(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
     let arg = args[0].unsafe_as_quantity();
     let isnan = arg.unsafe_value().to_f64().is_nan();
+    Ok(Value::Boolean(isnan))
+}
+
+fn is_infinite(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+    let arg = args[0].unsafe_as_quantity();
+    let isnan = arg.unsafe_value().to_f64().is_infinite();
     Ok(Value::Boolean(isnan))
 }
 

@@ -2,3 +2,6 @@ use math::functions
 
 @name("NaN")
 let NaN = ln(-1)
+
+@name("inf")
+let inf = -ln(0)    
