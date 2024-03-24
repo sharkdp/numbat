@@ -4,7 +4,7 @@ use core::dimensions
 use core::functions
 use core::strings
 use core::error
-use core::nan
+use core::nonfinite
 use core::random
 
 use math::constants
