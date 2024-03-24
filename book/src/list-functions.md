@@ -5,6 +5,8 @@
 ```nbt
 fn unit_of<T>(x: T) -> T
 fn value_of<T>(x: T) -> Scalar
+fn is_nan<T>(x: T) -> Bool
+fn is_infinite<T>(x: T) -> Bool
 ```
 
 ## Math
@@ -19,8 +21,6 @@ fn ceil<T>(x: T) -> T
 fn mod<T>(a: T, b: T) -> T
 fn sqrt<D>(x: D^2) -> D
 fn sqr<D>(x: D) -> D^2
-fn is_nan<T>(n: T) -> Bool
-fn is_infinite<T>(n: T) -> Bool
 ```
 
 ### Exponential and logarithm
