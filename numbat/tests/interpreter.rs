@@ -110,6 +110,7 @@ fn simple_value() {
     expect_failure("0x0.0", "Expected base-16 digit");
 
     expect_output("NaN", "NaN");
+    expect_output("inf", "inf");
 }
 
 #[test]
@@ -368,6 +369,9 @@ fn test_other_functions() {
     expect_output("is_nan(NaN cm)", "true");
     expect_output("is_nan(ln(-1))", "true");
     expect_output("is_nan(1)", "false");
+    expect_output("is_infinite(inf)", "true");
+    expect_output("is_infinite(-inf)", "true");
+    expect_output("is_infinite(1)", "false");
 }
 
 #[test]
