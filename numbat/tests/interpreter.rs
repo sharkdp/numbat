@@ -229,6 +229,31 @@ fn test_function_inverses() {
 }
 
 #[test]
+fn test_algebra() {
+    let mut ctx = get_test_context();
+    let _ = ctx
+        .interpret("use extra::algebra", CodeSource::Internal)
+        .unwrap();
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, -1)", "x₁ = 1; x₂ = -1");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "x = -0.333333");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 0, 1)", "no solution");
+    expect_output_with_context(&mut ctx, "quadratic_equation(9, -126, 441)", "x = 7");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, -2, 1)", "x = 1");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 1, 1)", "x = -1");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, 0)", "x = 0");
+    expect_output_with_context(
+        &mut ctx,
+        "quadratic_equation(0, 0, 0)",
+        "infinitely many solutions",
+    );
+    expect_output_with_context(
+        &mut ctx,
+        "quadratic_equation(1, 1, 1)",
+        "no real-valued solution",
+    );
+}
+
+#[test]
 fn test_math() {
     expect_output("sin(90°)", "1");
     expect_output("sin(30°)", "0.5");

@@ -74,6 +74,7 @@ fn sech(x: Scalar) -> Scalar
 fn asech(x: Scalar) -> Scalar
 fn csch(x: Scalar) -> Scalar
 fn acsch(x: Scalar) -> Scalar
+fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
 ```
 
 ### Others
