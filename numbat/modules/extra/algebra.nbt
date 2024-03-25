@@ -1,3 +1,5 @@
+use math::functions
+
 fn _qe_solution<A, B>(a: A, b: B, c: B²/A, sign: Scalar) -> B/A =
   (-b + sign × sqrt(b² - 4 a c)) / 2 a
 
