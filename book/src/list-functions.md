@@ -74,7 +74,6 @@ fn sech(x: Scalar) -> Scalar
 fn asech(x: Scalar) -> Scalar
 fn csch(x: Scalar) -> Scalar
 fn acsch(x: Scalar) -> Scalar
-fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
 ```
 
 ### Others
@@ -128,4 +127,10 @@ fn str_replace(s: String, pattern: String, replacement: String) -> String
 fn str_repeat(a: String, n: Scalar) -> String
 fn chr(n: Scalar) -> String
 fn hex(n: Scalar) -> String
+```
+
+# Algebra
+
+```nbt
+fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
 ```
