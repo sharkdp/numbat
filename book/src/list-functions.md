@@ -128,3 +128,9 @@ fn str_repeat(a: String, n: Scalar) -> String
 fn chr(n: Scalar) -> String
 fn hex(n: Scalar) -> String
 ```
+
+# Algebra
+
+```nbt
+fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
+```
