@@ -43,8 +43,37 @@ fn fetch_ecb_xml() -> Option<String> {
 
 #[cfg(feature = "fetch-exchangerates")]
 pub fn fetch_exchange_rates() -> Option<ExchangeRates> {
+    use std::{
+        fs,
+        path::PathBuf,
+        time::{Duration, SystemTime},
+    };
+
+    let cache_dir = dirs::cache_dir()
+        .unwrap_or_else(|| PathBuf::from("cache"))
+        .join("numbat/");
+    if !cache_dir.exists() {
+        let _ = fs::create_dir(&cache_dir);
+    }
+    let cache_path = cache_dir.join("eurofxref-daily.xml");
+
+    if let Ok(mtime) = fs::metadata(&cache_path).and_then(|m| m.modified()) {
+        if let Ok(dur) = SystemTime::now().duration_since(mtime) {
+            // try to load cached rates if fetched less than 1 day ago
+            if dur < Duration::from_secs(60 * 60 * 24) {
+                let xml_content = fs::read_to_string(&cache_path);
+                if let Ok(Some(rates)) = xml_content.as_deref().map(parse_exchange_rates) {
+                    return Some(rates);
+                }
+            }
+        }
+    }
+
     let xml_content = fetch_ecb_xml()?;
-    parse_exchange_rates(&xml_content)
+    parse_exchange_rates(&xml_content).map(|rates| {
+        let _ = fs::write(cache_path, &xml_content);
+        rates
+    })
 }
 
 #[cfg(test)]
