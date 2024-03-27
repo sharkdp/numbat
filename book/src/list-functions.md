@@ -101,6 +101,12 @@ fn sphere_area<L>(radius: L) -> L^2
 fn sphere_volume<L>(radius: L) -> L^3
 ```
 
+### Algebra
+
+```nbt
+fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
+```
+
 ## Date and time
 
 See [this page](date-and-time.md) for details.
@@ -127,10 +133,4 @@ fn str_replace(s: String, pattern: String, replacement: String) -> String
 fn str_repeat(a: String, n: Scalar) -> String
 fn chr(n: Scalar) -> String
 fn hex(n: Scalar) -> String
-```
-
-# Algebra
-
-```nbt
-fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
 ```
