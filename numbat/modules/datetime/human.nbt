@@ -3,7 +3,19 @@ use core::strings
 use units::si
 use datetime::functions
 
-fn _human_num_days(time: Time) -> Scalar = floor(time / day)
+fn _human_num_days(time: Time) -> Time = floor(time / day)*day
+
+fn _human_num_hours(time: Time) -> Time = floor(time / hours)*hour
+
+fn _human_num_minutes(time: Time) -> Time = floor(time / minutes)*minute
+
+fn _human_num_seconds(time: Time) -> Time = (time / seconds)second
+
+fn _seconds_on_stopwatch(time: Time) -> Time = _human_num_seconds(time)-_human_num_seconds(_human_num_minutes(time))
+
+fn _minutes_on_clock(time: Time) -> Time = _human_num_minutes(time)-_human_num_minutes(_human_num_hours(time))
+
+fn _hours_of_a_day(time: Time) -> Time = _human_num_hours(time)-_human_num_hours(_human_num_days(time))
 
 fn _human_join(a: String, b: String) -> String =
   if str_slice(a, 0, 2) == "0 " then b else if str_slice(b, 0, 2) == "0 " then a else "{a} + {b}"
@@ -11,26 +23,31 @@ fn _human_join(a: String, b: String) -> String =
 fn _remove_plural_suffix(str: String) -> String =
   if str_slice(str, 0, 2) == "1 " then str_slice(str, 0, str_length(str) - 1) else str
 
-fn _human_seconds(dt: DateTime) -> String =
-  _remove_plural_suffix(format_datetime("%-S%.f seconds", dt))
+fn _human_formatted_seconds(time: Time) -> String =
+  _remove_plural_suffix(format_datetime("%-S%.f seconds", datetime("0001-01-01T00:00:00Z") + _seconds_on_stopwatch(time)))
 
-fn _human_minutes(dt: DateTime) -> String =
-  _remove_plural_suffix(format_datetime("%-M minutes", dt))
+fn _human_formatted_minutes(time: Time) -> String =
+  _remove_plural_suffix("{_minutes_on_clock(time)/minute} minutes")
 
-fn _human_hours(dt: DateTime) -> String =
-  _remove_plural_suffix(format_datetime("%-H hours", dt))
+fn _human_formatted_hours(time: Time) -> String =
+  _remove_plural_suffix("{_hours_of_a_day(time)/hour} hours")
 
-fn _human_days(num_days: Scalar) -> String =
-  _remove_plural_suffix("{num_days} days")
+fn _human_formatted_days(num_days: Time) -> String =
+  _remove_plural_suffix("{_human_num_days(num_days)/day} days")
 
-fn _human_readable_duration(time: Time, dt: DateTime, num_days: Scalar) -> String =
-    _human_join(_human_join(_human_join(_human_days(_human_num_days(time)), _human_hours(dt)), _human_minutes(dt)), _human_seconds(dt))
+fn _human_readable_duration(time: Time) -> String =
+    _human_join(_human_join(_human_join(_human_formatted_days(time), _human_formatted_hours(time)), _human_formatted_minutes(time)), _human_formatted_seconds(time))
 
 # Implementation details:
 # we skip hours/minutes/seconds for durations larger than 1000 days because:
 #   (a) we run into floating point precision problems at the nanosecond level at this point
 #   (b) for much larger numbers, we can't convert to DateTimes anymore
+fn human_time_check_overflow(time: Time) =
+  if _human_num_days(time) > 1000 days
+    then _human_formatted_days(time)
+    else _human_readable_duration(time)
+
 fn human(time: Time) =
-  if _human_num_days(time) > 1000
-    then "{_human_num_days(time)} days" 
-    else _human_readable_duration(time, datetime("0001-01-01T00:00:00Z") + time, _human_num_days(time))
+  if _human_num_seconds(time) < 0 seconds
+    then "{human_time_check_overflow(time*-1)} ago"
+  else human_time_check_overflow(time)
