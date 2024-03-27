@@ -11,13 +11,13 @@ pub fn jt_format(class: Option<&str>, content: &str) -> String {
     }
 
     let content = html_escape::encode_text(content)
-        .replace("[", "&#91;")
-        .replace("]", "&#93;");
+        .replace('[', "&#91;")
+        .replace(']', "&#93;");
 
     if let Some(class) = class {
         format!("[[;;;hl-{class}]{content}]")
     } else {
-        content.into()
+        content
     }
 }
 
@@ -68,19 +68,19 @@ impl std::io::Write for JqueryTerminalWriter {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         if let Some(color) = &self.color {
             if color.fg() == Some(&Color::Red) {
-                self.buffer.write("[[;;;hl-diagnostic-red]".as_bytes())?;
+                self.buffer.write_all("[[;;;hl-diagnostic-red]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("]".as_bytes())?;
+                self.buffer.write_all("]".as_bytes())?;
                 Ok(size)
             } else if color.fg() == Some(&Color::Blue) {
-                self.buffer.write("[[;;;hl-diagnostic-blue]".as_bytes())?;
+                self.buffer.write_all("[[;;;hl-diagnostic-blue]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("]".as_bytes())?;
+                self.buffer.write_all("]".as_bytes())?;
                 Ok(size)
             } else if color.bold() {
-                self.buffer.write("[[;;;hl-diagnostic-bold]".as_bytes())?;
+                self.buffer.write_all("[[;;;hl-diagnostic-bold]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("]".as_bytes())?;
+                self.buffer.write_all("]".as_bytes())?;
                 Ok(size)
             } else {
                 self.buffer.write(buf)

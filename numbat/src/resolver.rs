@@ -53,7 +53,7 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub(crate) fn new(importer: impl ModuleImporter + Send + 'static) -> Self {
+    pub(crate) fn new(importer: impl ModuleImporter + 'static) -> Self {
         Self {
             importer: Arc::new(importer),
             files: SimpleFiles::new(),
@@ -136,10 +136,7 @@ impl Resolver {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        ast::{Expression, Statement},
-        number::Number,
-    };
+    use crate::{ast::Expression, number::Number};
 
     use super::*;
 
