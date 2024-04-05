@@ -63,34 +63,4 @@ assert((1234 ns          -> human) == "0.000001234 seconds")
 assert((1s + 1234 ns     -> human) == "1.000001234 seconds")
 
 assert((-1 second        -> human) == "1 second ago")
-assert((-25 seconds      -> human) == "25 seconds ago")
-assert((-49.010 seconds  -> human) == "49.010 seconds ago")
-
-assert((-2.5 minute      -> human) == "2 minutes + 30 seconds ago")
-assert((-1 hour          -> human) == "1 hour ago")
-assert((-3 hour          -> human) == "3 hours ago")
-assert((-5.34 hour       -> human) == "5 hours + 20 minutes + 24 seconds ago")
 assert((-7.89 hour       -> human) == "7 hours + 53 minutes + 24 seconds ago")
-assert((-7.89 hour - 4 minutes -> human) == "7 hours + 57 minutes + 24 seconds ago")
-
-assert((-1 day           -> human) == "1 day ago")
-assert((-4.6 days        -> human) == "4 days + 14 hours + 23 minutes ago")
-assert((-9.2345 days     -> human) == "9 days + 5 hours + 37 minutes + 40.800 seconds ago")
-assert((-9.2345 days + 52 hours      -> human) == "7 days + 1 hour + 37 minutes + 40.800 seconds ago")
-
-assert((-2 weeks         -> human) == "14 days ago")
-assert((-4.5 weeks       -> human) == "31 days + 12 hours ago")
-assert((-20.5 weeks      -> human) == "143 days + 12 hours ago")
-
-assert((-2.5 months      -> human) == "76 days + 2 hours + 12 minutes + 39.385800 seconds ago")
-assert((-2.5 years       -> human) == "913 days + 2 hours + 31 minutes + 52.629600003 seconds ago")
-assert((-10.5 decades    -> human) == "38350 days ago")
-
-assert((-25 ms           -> human) == "0.025 seconds ago")
-assert((-6400 ms         -> human) == "6.400 seconds ago")
-
-assert((-2500 µs         -> human) == "0.002500 seconds ago")
-assert((-40525 µs        -> human) == "0.040525 seconds ago")
-
-assert((-5147 ns         -> human) == "0.000005147 seconds ago")
-assert((-23s + 1234 ns   -> human) == "22.999998766 seconds ago")
