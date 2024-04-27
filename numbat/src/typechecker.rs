@@ -2015,6 +2015,25 @@ mod tests {
     }
 
     #[test]
+    fn generics_with_records() {
+        assert_successful_typecheck(
+            "
+            fn f<D>(x: D) = ${foo: x}
+            f(2)
+            f(2 a).foo == 2 a
+            ",
+        );
+
+        assert_successful_typecheck(
+            "
+            fn f<D>(x: D) -> ${foo: D} = ${foo: x}
+            f(2)
+            f(2 a).foo == 2 a
+            ",
+        );
+    }
+
+    #[test]
     fn generics_multiple_unresolved_type_parameters() {
         assert!(matches!(
             get_typecheck_error(
@@ -2433,6 +2452,23 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("callable == callable"),
             TypeCheckError::IncompatibleTypesInComparison { .. }
+        ));
+    }
+
+    fn struct_errors() {
+        assert!(matches!(
+            get_typecheck_error("${foo: 1, foo: 2}"),
+            TypeCheckError::DuplicateFieldInStructConstruction(_, _, field) if field == "foo"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("${}.foo"),
+            TypeCheckError::AccessingUnknownFieldOfStruct(_, _, field, _) if field == "foo"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("(1).foo"),
+            TypeCheckError::AccessingFieldOfNonStruct(_, _, field, _) if field == "foo"
         ));
     }
 }

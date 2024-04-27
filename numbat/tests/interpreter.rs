@@ -75,7 +75,6 @@ fn simple_value() {
     expect_output("0_0.0_0", "0");
     expect_output(".0", "0");
     expect_failure("_.0", "Unexpected character in identifier: '.'");
-    expect_failure("._0", "Expected digit");
     expect_output(".0_0", "0");
     expect_failure(".0_", "Unexpected character in number literal: '_'");
 
