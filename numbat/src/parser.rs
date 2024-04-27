@@ -1624,7 +1624,7 @@ mod tests {
 
     use super::*;
     use crate::ast::{
-        binop, boolean, conditional, factorial, identifier, logical_neg, negate, scalar,
+        binop, boolean, conditional, factorial, identifier, logical_neg, negate, scalar, struct_,
         ReplaceSpans,
     };
 
@@ -1648,7 +1648,9 @@ mod tests {
     #[track_caller]
     fn should_fail(inputs: &[&str]) {
         for input in inputs {
-            assert!(parse(input, 0).is_err());
+            if let Ok(v) = parse(input, 0) {
+                panic!("Expected parse failure on {input:?} but got: {v:#?}")
+            }
         }
     }
 
@@ -2686,6 +2688,30 @@ mod tests {
         );
 
         should_fail_with(&["\"test {1"], ParseErrorKind::UnterminatedString);
+    }
+
+    #[test]
+    fn structs() {
+        parse_as_expression(
+            &["${foo: 1, bar: 2}"],
+            struct_! {
+                foo: scalar!(1.0),
+                bar: scalar!(2.0)
+            },
+        );
+
+        parse_as_expression(
+            &["${foo: 1, bar: 2}.foo"],
+            Expression::AccessStruct(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(struct_! {
+                    foo: scalar!(1.0),
+                    bar: scalar!(2.0)
+                }),
+                "foo".to_owned(),
+            ),
+        );
     }
 
     #[test]

@@ -903,6 +903,7 @@ mod tests {
         roundtrip_check("-3!");
         roundtrip_check("(-3)!");
         roundtrip_check("megapoints");
+        roundtrip_check("${foo: 1 meter, bar: 1 second}");
     }
 
     #[test]

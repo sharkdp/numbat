@@ -203,6 +203,18 @@ macro_rules! conditional {
 }
 
 #[cfg(test)]
+macro_rules! struct_ {
+    ( $( $field:ident : $val:expr ),* ) => {{
+        crate::ast::Expression::MakeStruct(
+            Span::dummy(),
+            vec![
+                $((Span::dummy(), stringify!($field).to_owned(), $val)),*
+            ]
+        )
+    }};
+}
+
+#[cfg(test)]
 pub(crate) use binop;
 #[cfg(test)]
 pub(crate) use boolean;
@@ -218,6 +230,8 @@ pub(crate) use logical_neg;
 pub(crate) use negate;
 #[cfg(test)]
 pub(crate) use scalar;
+#[cfg(test)]
+pub(crate) use struct_;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeAnnotation {
