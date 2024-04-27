@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::{cmp::Ordering, fmt::Display};
 
 use indexmap::IndexSet;
@@ -279,7 +280,7 @@ pub struct Vm {
     pub constants: Vec<Constant>,
 
     /// struct field metadata, used so we can recover struct field layout at runtime
-    struct_fields: IndexSet<Vec<(String, usize)>>,
+    struct_fields: IndexSet<Arc<[(String, usize)]>>,
 
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
@@ -380,7 +381,7 @@ impl Vm {
     }
 
     pub fn add_struct_fields(&mut self, fields: Vec<(String, usize)>) -> u16 {
-        let (idx, _) = self.struct_fields.insert_full(fields);
+        let (idx, _) = self.struct_fields.insert_full(fields.into());
 
         idx as u16
     }
