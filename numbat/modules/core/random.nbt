@@ -1,3 +1,8 @@
 use core::scalar
 
 fn random() -> Scalar
+
+fn rand_uniform<T>(a: T, b: T) -> T =
+    if a <= b
+    then random() * (b - a) + a
+    else random() * (a - b) + b
