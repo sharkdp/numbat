@@ -478,7 +478,7 @@ fn test_prefixes() {
 fn test_parse_errors() {
     expect_failure(
         "3kg+",
-        "Expected one of: number, identifier, parenthesized expression",
+        "Expected one of: number, identifier, parenthesized expression, struct construction",
     );
     expect_failure("let print=2", "Expected identifier after 'let' keyword");
     expect_failure(

@@ -60,6 +60,7 @@ pub enum Type {
     String,
     DateTime,
     Fn(Vec<Type>, Box<Type>),
+    Struct(indexmap::IndexMap<String, Type>),
 }
 
 impl std::fmt::Display for Type {
@@ -75,6 +76,16 @@ impl std::fmt::Display for Type {
                     f,
                     "Fn[({ps}) -> {return_type}]",
                     ps = param_types.iter().map(|p| p.to_string()).join(", ")
+                )
+            }
+            Type::Struct(members) => {
+                write!(
+                    f,
+                    "${{{}}}",
+                    members
+                        .iter()
+                        .map(|(n, t)| n.to_string() + ": " + &t.to_string())
+                        .join(", ")
                 )
             }
         }
@@ -103,6 +114,17 @@ impl PrettyPrint for Type {
                     + m::space()
                     + return_type.pretty_print()
                     + m::operator("]")
+            }
+            Type::Struct(fields) => {
+                m::operator("${")
+                    + Itertools::intersperse(
+                        fields.iter().map(|(n, t)| {
+                            m::type_identifier(n) + m::operator(":") + m::space() + t.pretty_print()
+                        }),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator("}")
             }
         }
     }
@@ -210,6 +232,19 @@ pub enum Expression {
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
+    MakeStruct(
+        Span,
+        Vec<(String, Expression)>,
+        indexmap::IndexMap<String, Type>,
+    ),
+    AccessStruct(
+        Span,
+        Span,
+        Box<Expression>,
+        String,
+        indexmap::IndexMap<String, Type>,
+        Type,
+    ),
 }
 
 impl Expression {
@@ -240,6 +275,8 @@ impl Expression {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
+            Expression::MakeStruct(span, _, _) => *span,
+            Expression::AccessStruct(_span, full_span, _, _, _, _) => *full_span,
         }
     }
 }
@@ -299,6 +336,8 @@ impl Expression {
                 }
             }
             Expression::String(_, _) => Type::String,
+            Expression::MakeStruct(_, _, type_) => Type::Struct(type_.clone()),
+            Expression::AccessStruct(_, _, _, _, _, type_) => type_.clone(),
         }
     }
 }
@@ -501,7 +540,9 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::FunctionCall(..)
         | Expression::CallableCall(..)
         | Expression::Boolean(..)
-        | Expression::String(..) => expr.pretty_print(),
+        | Expression::String(..)
+        | Expression::MakeStruct(..)
+        | Expression::AccessStruct(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::BinaryOperatorForDate { .. }
@@ -679,6 +720,20 @@ impl PrettyPrint for Expression {
                     + m::keyword("else")
                     + m::space()
                     + with_parens(else_)
+            }
+            MakeStruct(_, exprs, _type) => {
+                m::operator("${")
+                    + itertools::Itertools::intersperse(
+                        exprs.iter().map(|(n, e)| {
+                            m::identifier(n) + m::operator(":") + m::space() + e.pretty_print()
+                        }),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator("}")
+            }
+            AccessStruct(_, _, expr, attr, _, _) => {
+                expr.pretty_print() + m::operator(".") + m::identifier(attr)
             }
         }
     }

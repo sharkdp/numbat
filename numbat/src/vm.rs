@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::{cmp::Ordering, fmt::Display};
 
+use indexmap::IndexSet;
+
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
@@ -103,6 +105,10 @@ pub enum Op {
     /// Perform a simplification operation to the current value on the stack
     FullSimplify,
 
+    BuildStruct,
+
+    DestructureStruct,
+
     /// Return from the current function
     Return,
 }
@@ -110,7 +116,11 @@ pub enum Op {
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::SetUnitConstant | Op::Call | Op::FFICallFunction | Op::FFICallProcedure => 2,
+            Op::SetUnitConstant
+            | Op::Call
+            | Op::FFICallFunction
+            | Op::FFICallProcedure
+            | Op::BuildStruct => 2,
             Op::LoadConstant
             | Op::ApplyPrefix
             | Op::GetLocal
@@ -119,7 +129,8 @@ impl Op {
             | Op::JoinString
             | Op::JumpIfFalse
             | Op::Jump
-            | Op::CallCallable => 1,
+            | Op::CallCallable
+            | Op::DestructureStruct => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
@@ -184,6 +195,8 @@ impl Op {
             Op::JoinString => "JoinString",
             Op::FullSimplify => "FullSimplify",
             Op::Return => "Return",
+            Op::BuildStruct => "BuildStruct",
+            Op::DestructureStruct => "DestructureStruct",
         }
     }
 }
@@ -265,6 +278,9 @@ pub struct Vm {
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
     pub constants: Vec<Constant>,
 
+    /// struct field metadata, used so we can recover struct field layout at runtime
+    struct_fields: IndexSet<Vec<(String, usize)>>,
+
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
 
@@ -301,6 +317,7 @@ impl Vm {
             bytecode: vec![("<main>".into(), vec![])],
             current_chunk_index: 0,
             constants: vec![],
+            struct_fields: IndexSet::new(),
             prefixes: vec![],
             strings: vec![],
             unit_information: vec![],
@@ -312,7 +329,6 @@ impl Vm {
             unit_registry: UnitRegistry::new(),
         }
     }
-
     pub fn set_debug(&mut self, activate: bool) {
         self.debug = activate;
     }
@@ -361,6 +377,12 @@ impl Vm {
         self.constants.push(constant);
         assert!(self.constants.len() <= u16::MAX as usize);
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
+    }
+
+    pub fn add_struct_fields(&mut self, fields: Vec<(String, usize)>) -> u16 {
+        let (idx, _) = self.struct_fields.insert_full(fields);
+
+        idx as u16
     }
 
     pub fn add_prefix(&mut self, prefix: Prefix) -> u16 {
@@ -871,6 +893,8 @@ impl Vm {
                         Value::String(s) => s,
                         Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
                         Value::FunctionReference(r) => r.to_string(),
+                        // TODO: better
+                        s @ Value::Struct(..) => s.to_string(),
                         Value::FormatSpecifiers(_) => unreachable!(),
                     };
 
@@ -945,6 +969,34 @@ impl Vm {
                         // Push the return value back on top of the stack
                         self.stack.push(return_value);
                     }
+                }
+                Op::BuildStruct => {
+                    let meta_idx = self.read_u16();
+                    let fields_meta = self
+                        .struct_fields
+                        .get_index(meta_idx as usize)
+                        .expect("Missing struct metadata {meta_idx}")
+                        .clone();
+                    let num_args = self.read_u16();
+
+                    let mut content = Vec::with_capacity(num_args as usize);
+
+                    for _ in 0..num_args {
+                        content.push(self.pop());
+                    }
+
+                    self.stack.push(Value::Struct(fields_meta, content));
+                }
+                Op::DestructureStruct => {
+                    let field_idx = self.read_u16();
+                    let content = self.pop();
+
+                    let Value::Struct(_meta, mut content) = content else {
+                        panic!("tried to destructure something which was not a struct (the typechecker should prevent this)");
+                    };
+
+                    let value = content.remove(field_idx as usize);
+                    self.stack.push(value);
                 }
             }
         }

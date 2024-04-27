@@ -97,6 +97,18 @@ impl Transformer {
                     })
                     .collect(),
             ),
+            Expression::MakeStruct(span, args) => Expression::MakeStruct(
+                span,
+                args.into_iter()
+                    .map(|(span, attr, arg)| (span, attr, self.transform_expression(arg)))
+                    .collect(),
+            ),
+            Expression::AccessStruct(full_span, ident_span, expr, attr) => Expression::AccessStruct(
+                full_span,
+                ident_span,
+                Box::new(self.transform_expression(*expr)),
+                attr,
+            ),
         }
     }
 

@@ -85,6 +85,8 @@ pub enum Expression {
     Boolean(Span, bool),
     String(Span, Vec<StringPart>),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
+    MakeStruct(Span, Vec<(Span, String, Expression)>),
+    AccessStruct(Span, Span, Box<Expression>, String),
 }
 
 impl Expression {
@@ -116,6 +118,8 @@ impl Expression {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
+            Expression::MakeStruct(full_span, _) => *full_span,
+            Expression::AccessStruct(full_span, _ident_span, _, _) => *full_span,
         }
     }
 }
@@ -223,6 +227,7 @@ pub enum TypeAnnotation {
     String(Span),
     DateTime(Span),
     Fn(Span, Vec<TypeAnnotation>, Box<TypeAnnotation>),
+    Struct(Span, Vec<(Span, String, TypeAnnotation)>),
 }
 
 impl TypeAnnotation {
@@ -234,6 +239,7 @@ impl TypeAnnotation {
             TypeAnnotation::String(span) => *span,
             TypeAnnotation::DateTime(span) => *span,
             TypeAnnotation::Fn(span, _, _) => *span,
+            TypeAnnotation::Struct(span, _) => *span,
         }
     }
 }
@@ -260,6 +266,17 @@ impl PrettyPrint for TypeAnnotation {
                     + m::space()
                     + return_type.pretty_print()
                     + m::operator("]")
+            }
+            TypeAnnotation::Struct(_, fields) => {
+                m::operator("${")
+                    + Itertools::intersperse(
+                        fields.iter().map(|(_, n, t)| {
+                            m::identifier(n) + m::operator(":") + m::space() + t.pretty_print()
+                        }),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator("}")
             }
         }
     }
@@ -397,6 +414,13 @@ impl ReplaceSpans for TypeAnnotation {
             TypeAnnotation::Fn(_, pt, rt) => {
                 TypeAnnotation::Fn(Span::dummy(), pt.clone(), rt.clone())
             }
+            TypeAnnotation::Struct(_, fields) => TypeAnnotation::Struct(
+                Span::dummy(),
+                fields
+                    .iter()
+                    .map(|(_, n, v)| (Span::dummy(), n.clone(), v.replace_spans()))
+                    .collect(),
+            ),
         }
     }
 }
@@ -492,6 +516,19 @@ impl ReplaceSpans for Expression {
             Expression::String(_, parts) => Expression::String(
                 Span::dummy(),
                 parts.iter().map(|p| p.replace_spans()).collect(),
+            ),
+            Expression::MakeStruct(_, fields) => Expression::MakeStruct(
+                Span::dummy(),
+                fields
+                    .iter()
+                    .map(|(_, n, v)| (Span::dummy(), n.clone(), v.replace_spans()))
+                    .collect(),
+            ),
+            Expression::AccessStruct(_, _, expr, attr) => Expression::AccessStruct(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(expr.replace_spans()),
+                attr.clone(),
             ),
         }
     }
