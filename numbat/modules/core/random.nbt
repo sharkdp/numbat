@@ -1,3 +1,8 @@
 use core::scalar
+use math::functions
 
 fn random() -> Scalar
+
+fn rand_normal<T>(μ: T, σ: T) -> T =
+    # Sampling using the Box-Muller transform
+    μ + sqrt(-2 σ² × ln(random())) × sin(2π × random())
