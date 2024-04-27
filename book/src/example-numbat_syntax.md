@@ -114,4 +114,14 @@ assert_eq(1 ft, 12 in)           # Assert that two quantities are equal
 assert_eq(1 yd, 1 m, 10 cm)      # Assert that two quantities are equal, up to
                                  # the given precision
 type(2 m/s)                      # Print the type of an expression
+
+
+# 9. Structs
+
+${foo: 1A, bar: pi}  # Constructing a record
+
+# Records are structurally typed and field order is not fixed
+let r: ${bar: Scalar, foo: Current} = ${foo: 1A, bar: pi}
+
+r.foo  # Field access is performed with `.field` notation
 ```
