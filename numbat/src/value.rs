@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use itertools::Itertools;
 
 use crate::{pretty_print::PrettyPrint, quantity::Quantity};
@@ -31,7 +33,7 @@ pub enum Value {
     DateTime(chrono::DateTime<chrono::FixedOffset>),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<String>),
-    Struct(Vec<(String, usize)>, Vec<Value>),
+    Struct(Arc<[(String, usize)]>, Vec<Value>),
 }
 
 impl Value {
