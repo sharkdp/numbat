@@ -33,6 +33,7 @@
   - [Conditionals](./conditionals.md)
   - [Date and time](./date-and-time.md)
   - [Printing, testing, debugging](./procedures.md)
+  - [Structs](./structs.md)
 - [Advanced](./advanced.md)
   - [Dimension definitions](./dimension-definitions.md)
   - [Unit definitions](./unit-definitions.md)
