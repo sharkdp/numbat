@@ -54,6 +54,9 @@ pub enum TokenKind {
     LeftBracket,
     RightBracket,
 
+    DollarLeftCurly, // ${
+    RightCurly,
+
     // Operators and special signs
     Plus,
     Minus,
@@ -79,6 +82,7 @@ pub enum TokenKind {
     GreaterOrEqual,
     LogicalAnd,
     LogicalOr,
+    Period,
 
     // Keywords
     Let,
@@ -399,6 +403,8 @@ impl Tokenizer {
             ')' => TokenKind::RightParen,
             '[' => TokenKind::LeftBracket,
             ']' => TokenKind::RightBracket,
+            '$' if self.match_char('{') => TokenKind::DollarLeftCurly,
+            '}' if !self.interpolation_state.is_inside() => TokenKind::RightCurly,
             '≤' => TokenKind::LessOrEqual,
             '<' if self.match_char('=') => TokenKind::LessOrEqual,
             '<' => TokenKind::LessThan,
@@ -478,6 +484,7 @@ impl Tokenizer {
 
                 TokenKind::Ellipsis
             }
+            '.' if self.peek().map_or(false, is_identifier_start) => TokenKind::Period,
             '.' => {
                 self.consume_stream_of_digits(true, true, true)?;
                 self.scientific_notation()?;
@@ -492,7 +499,7 @@ impl Tokenizer {
             '|' if self.match_char('|') => TokenKind::LogicalOr,
             '*' if self.match_char('*') => TokenKind::Power,
             '+' => TokenKind::Plus,
-            '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
+            '*' | '·' | '×' => TokenKind::Multiply,
             '/' if self.match_char('/') => TokenKind::PostfixApply,
             '/' => TokenKind::Divide,
             '÷' => TokenKind::Divide,
@@ -621,7 +628,12 @@ impl Tokenizer {
                     self.advance();
                 }
 
-                if self.peek().map(|c| c == '.').unwrap_or(false) {
+                if self.peek().map(|c| c == '.').unwrap_or(false)
+                    && self
+                        .peek2()
+                        .map(|c| !is_identifier_start(c))
+                        .unwrap_or(true)
+                {
                     return tokenizer_error(
                         &self.current,
                         TokenizerErrorKind::UnexpectedCharacterInIdentifier(self.peek().unwrap()),

@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+use indexmap::IndexMap;
+use itertools::Itertools;
+
 use crate::ast::ProcedureKind;
 use crate::decorator::Decorator;
 use crate::interpreter::{
@@ -165,6 +168,42 @@ impl BytecodeInterpreter {
                     self.vm.add_op2(Op::Call, idx, args.len() as u16); // TODO: check overflow
                 }
             }
+            Expression::MakeStruct(_span, exprs, type_) => {
+                // here we discard any type information about the struct, so we must have a consistent ordering of fields
+                //
+                // to do that, sort the fields lexographically
+                let sorted_exprs = exprs
+                    .iter()
+                    .sorted_by_key(|(n, _)| n)
+                    .cloned()
+                    .collect::<IndexMap<_, _>>();
+
+                for (_, expr) in sorted_exprs.iter().rev() {
+                    self.compile_expression_with_simplify(expr)?;
+                }
+
+                let field_meta = type_
+                    .iter()
+                    .map(|(n, _)| (n.clone(), sorted_exprs.get_index_of(n).unwrap()))
+                    .collect();
+
+                let field_meta_idx = self.vm.add_struct_fields(field_meta);
+
+                self.vm
+                    .add_op2(Op::BuildStruct, field_meta_idx, exprs.len() as u16);
+            }
+            Expression::AccessStruct(_span, _full_span, expr, attr, struct_type, _result_type) => {
+                self.compile_expression_with_simplify(expr)?;
+
+                let (idx, _) = struct_type
+                    .iter()
+                    .map(|(n, _)| n)
+                    .sorted()
+                    .find_position(|n| *n == attr)
+                    .unwrap();
+
+                self.vm.add_op1(Op::DestructureStruct, idx as u16);
+            }
             Expression::CallableCall(_span, callable, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
@@ -242,7 +281,9 @@ impl BytecodeInterpreter {
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
             | Expression::Boolean(..)
             | Expression::String(..)
-            | Expression::Condition(..) => {}
+            | Expression::Condition(..)
+            | Expression::MakeStruct(..)
+            | Expression::AccessStruct(..) => {}
             Expression::BinaryOperator(..) | Expression::BinaryOperatorForDate(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }

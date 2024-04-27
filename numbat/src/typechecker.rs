@@ -297,6 +297,15 @@ pub enum TypeCheckError {
 
     #[error("Base units can not be dimensionless.")]
     NoDimensionlessBaseUnit(Span, String),
+
+    #[error("Duplicate field {2} in struct construction")]
+    DuplicateFieldInStructConstruction(Span, Span, String),
+
+    #[error("Accessing field {2} of non struct type {3}")]
+    AccessingFieldOfNonStruct(Span, Span, String, Type),
+
+    #[error("Accessing unknown field {2} of struct {3}")]
+    AccessingUnknownFieldOfStruct(Span, Span, String, Type),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -416,6 +425,12 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 "binary operator for datetimes",
             ))
         }
+        e @ typed_ast::Expression::MakeStruct(_, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "make struct"),
+        ),
+        e @ typed_ast::Expression::AccessStruct(_, _, _, _, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "access struct"),
+        ),
     }
 }
 
@@ -661,10 +676,29 @@ impl TypeChecker {
             ));
         }
 
-        let return_type = match return_type {
-            Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
-            type_ => type_.clone(),
-        };
+        fn apply_substitutions(
+            t: &Type,
+            substitute: impl Fn(&[(String, DType)], &DType) -> DType + Copy,
+            substitutions: &[(String, DType)],
+        ) -> Type {
+            match t {
+                Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
+                Type::Struct(fields) => Type::Struct(
+                    fields
+                        .into_iter()
+                        .map(|(n, t)| {
+                            (
+                                n.to_owned(),
+                                apply_substitutions(t, substitute, substitutions),
+                            )
+                        })
+                        .collect(),
+                ),
+                type_ => type_.clone(),
+            }
+        }
+
+        let return_type = apply_substitutions(return_type, substitute, &substitutions);
 
         Ok(typed_ast::Expression::FunctionCall(
             *span,
@@ -1092,6 +1126,65 @@ impl TypeChecker {
                     Box::new(condition),
                     Box::new(then),
                     Box::new(else_),
+                )
+            }
+            ast::Expression::MakeStruct(span, fields) => {
+                let fields_checked = fields
+                    .iter()
+                    .map(|(_, n, v)| Ok((n.to_string(), self.check_expression(v)?)))
+                    .collect::<Result<Vec<_>>>()?;
+
+                let mut field_types = indexmap::IndexMap::new();
+                let mut seen_fields = HashMap::new();
+
+                for ((field, expr), span) in
+                    fields_checked.iter().zip(fields.iter().map(|(s, _, _)| s))
+                {
+                    if let Some(other_span) = seen_fields.get(field) {
+                        return Err(TypeCheckError::DuplicateFieldInStructConstruction(
+                            *span,
+                            *other_span,
+                            field.to_string(),
+                        ));
+                    }
+                    field_types.insert(field.to_string(), expr.get_type());
+                    seen_fields.insert(field, *span);
+                }
+
+                typed_ast::Expression::MakeStruct(*span, fields_checked, field_types)
+            }
+            ast::Expression::AccessStruct(full_span, ident_span, expr, attr) => {
+                let expr_checked = self.check_expression(expr)?;
+
+                let type_ = expr_checked.get_type();
+
+                let Type::Struct(fields) = type_.clone() else {
+                    return Err(TypeCheckError::AccessingFieldOfNonStruct(
+                        *ident_span,
+                        expr.full_span(),
+                        attr.to_string(),
+                        type_.clone(),
+                    ));
+                };
+
+                let Some((_, ret_ty)) = fields.iter().find(|(n, _)| *n == attr) else {
+                    return Err(TypeCheckError::AccessingUnknownFieldOfStruct(
+                        *ident_span,
+                        expr.full_span(),
+                        attr.to_string(),
+                        type_.clone(),
+                    ));
+                };
+
+                let ret_ty = ret_ty.to_owned();
+
+                Expression::AccessStruct(
+                    *ident_span,
+                    *full_span,
+                    Box::new(expr_checked),
+                    attr.to_owned(),
+                    fields,
+                    ret_ty,
                 )
             }
         })
@@ -1656,6 +1749,12 @@ impl TypeChecker {
                     .map(|p| self.type_from_annotation(p))
                     .collect::<Result<Vec<_>>>()?,
                 Box::new(self.type_from_annotation(return_type)?),
+            )),
+            TypeAnnotation::Struct(_, fields) => Ok(Type::Struct(
+                fields
+                    .iter()
+                    .map(|(_, n, t)| Ok((n.clone(), self.type_from_annotation(t)?)))
+                    .collect::<Result<indexmap::IndexMap<_, _>>>()?,
             )),
         }
     }

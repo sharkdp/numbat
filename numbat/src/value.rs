@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{pretty_print::PrettyPrint, quantity::Quantity};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +31,7 @@ pub enum Value {
     DateTime(chrono::DateTime<chrono::FixedOffset>),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<String>),
+    Struct(Vec<(String, usize)>, Vec<Value>),
 }
 
 impl Value {
@@ -87,6 +90,14 @@ impl std::fmt::Display for Value {
             Value::DateTime(dt) => write!(f, "datetime(\"{}\")", dt),
             Value::FunctionReference(r) => write!(f, "{}", r),
             Value::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
+            Value::Struct(field_meta, values) => write!(
+                f,
+                "${{ {} }}",
+                field_meta
+                    .iter()
+                    .map(|(name, idx)| name.to_owned() + ": " + &values[*idx].to_string())
+                    .join(", ")
+            ),
         }
     }
 }
@@ -101,6 +112,22 @@ impl PrettyPrint for Value {
             Value::FunctionReference(r) => crate::markup::string(r.to_string()),
             Value::FormatSpecifiers(Some(s)) => crate::markup::string(s),
             Value::FormatSpecifiers(None) => crate::markup::empty(),
+            Value::Struct(field_meta, values) => {
+                crate::markup::operator("${")
+                    + itertools::Itertools::intersperse(
+                        field_meta.iter().map(|(name, idx)| {
+                            let val = &values[*idx];
+
+                            crate::markup::identifier(name)
+                                + crate::markup::operator(":")
+                                + crate::markup::space()
+                                + val.pretty_print()
+                        }),
+                        crate::markup::operator(",") + crate::markup::space(),
+                    )
+                    .sum()
+                    + crate::markup::operator("}")
+            }
         }
     }
 }

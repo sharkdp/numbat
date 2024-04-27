@@ -386,6 +386,36 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message(rhs_type.to_string()),
             ]),
+            TypeCheckError::DuplicateFieldInStructConstruction(
+                this_field_span,
+                that_field_span,
+                _attr_name,
+            ) => d.with_labels(vec![
+                this_field_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                that_field_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("Already defined here"),
+            ]),
+            TypeCheckError::AccessingFieldOfNonStruct(ident_span, expr_span, _attr, type_) => d
+                .with_labels(vec![
+                    ident_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    expr_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(type_.to_string()),
+                ]),
+            TypeCheckError::AccessingUnknownFieldOfStruct(ident_span, expr_span, _attr, type_) => d
+                .with_labels(vec![
+                    ident_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    expr_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(type_.to_string()),
+                ]),
         };
         vec![d]
     }
