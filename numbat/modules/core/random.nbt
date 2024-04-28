@@ -22,6 +22,17 @@ fn rand_int<T>(a: T, b: T) -> T =
     then floor( random() * (floor(b) - ceil(a) + 1 unit_of(a)) ) + ceil(a)
     else floor( random() * (floor(a) - ceil(b) + 1 unit_of(b)) ) + ceil(b)
 
+# name: Bernoulli distribution sampling
+# url: https://en.wikipedia.org/wiki/Bernoulli_distribution
+# description: Samples a Bernoulli random variable, that is, 1 with probability p, 0 with probability 1-p.
+#              Parameter p must be a probability (0 <= p <= 1).
+fn rand_bernoulli(p: Scalar) -> Scalar =
+    if p>=0 && p<=1
+    then (if random() < p
+        then 1
+        else 0)
+    else error("p must be a probability (0 <= p <= 1).")
+
 # name: Normal distribution sampling
 # url: https://en.wikipedia.org/wiki/Normal_distribution
 # description: Samples a normal distribution with mean μ and standard deviation σ using the Box-Muller transform.
