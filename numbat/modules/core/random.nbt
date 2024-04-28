@@ -27,3 +27,12 @@ fn rand_int<T>(a: T, b: T) -> T =
 # description: Samples a normal distribution with mean μ and standard deviation σ using the Box-Muller transform.
 fn rand_norm<T>(μ: T, σ: T) -> T =
     μ + sqrt(-2 σ² × ln(random())) × sin(2π × random())
+
+# name: Geometric distribution sampling
+# url: https://en.wikipedia.org/wiki/Geometric_distribution
+# description: Samples a gemoetric distribution(the distribution of the number of Bernoulli trials with probability p needed to get one success) by inversion sampling.
+#              Parameter p must be a probability (0 <= p <= 1).
+fn rand_geom(p: Scalar) -> Scalar =
+    if p>=0 && p<=1
+    then ceil( ln(1-random()) / ln(1-p) )
+    else error("p must be a probability (0 <= p <= 1).")
