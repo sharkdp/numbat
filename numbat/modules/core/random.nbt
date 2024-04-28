@@ -51,3 +51,12 @@ fn rand_expon<T>(λ: T) -> 1/T =
 # description: Sampling a log-normal distribution, that is, a distribution whose log is a normal distribution with mean μ and standard deviation σ.
 fn rand_lognorm(μ: Scalar, σ: Scalar) -> Scalar =
     exp( μ + σ × rand_norm(0, 1) )
+
+# name: Pareto distribution sampling
+# url: https://en.wikipedia.org/wiki/Pareto_distribution
+# description: Sampling a pareto distrobution with minimum value min and shape parameter α using inversion sampling.
+#              Both parameters α and min must be posive.
+fn rand_pareto<T>(α: Scalar, min: T) -> T =
+    if value_of(min) > 0 && α > 0
+    then min / ((1-random())^(1/α))
+    else NaN * unit_of(min)
