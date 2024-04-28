@@ -45,3 +45,9 @@ fn rand_expon<T>(λ: T) -> 1/T =
     if value_of(λ) > 0
     then - ln(1-random()) / λ
     else NaN * unit_of(1/λ)
+
+# name: Log-normal distribution sampling
+# url: https://en.wikipedia.org/wiki/Log-normal_distribution
+# description: Sampling a log-normal distribution, that is, a distribution whose log is a normal distribution with mean μ and standard deviation σ.
+fn rand_lognorm(μ: Scalar, σ: Scalar) -> Scalar =
+    exp( μ + σ × rand_norm(0, 1) )
