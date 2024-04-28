@@ -36,3 +36,12 @@ fn rand_geom(p: Scalar) -> Scalar =
     if p>=0 && p<=1
     then ceil( ln(1-random()) / ln(1-p) )
     else error("p must be a probability (0 <= p <= 1).")
+
+# name: Exponential distribution sampling
+# url: https://en.wikipedia.org/wiki/Exponential_distribution
+# description: Sampling an exponential distribution(the distribution of the distance between events in a Poisson process with rate λ) using inversion sampling.
+#              The rate parameter λ must be positive.
+fn rand_expon<T>(λ: T) -> 1/T =
+    if value_of(λ) > 0
+    then - ln(1-random()) / λ
+    else NaN * unit_of(1/λ)
