@@ -33,6 +33,17 @@ fn rand_bernoulli(p: Scalar) -> Scalar =
         else 0)
     else error("p must be a probability (0 <= p <= 1).")
 
+# name: Binomial distribution sampling
+# url: https://en.wikipedia.org/wiki/Binomial_distribution
+# description: Samples a binomial distribution by doing n Bernoulli tirals with probability p.
+#              Parameter n must be a positive integer, parameter p must be a probability (0 <= p <= 1).
+fn rand_binom(n: Scalar, p: Scalar) -> Scalar =
+    if n >= 1
+    then rand_binom(n-1, p) + rand_bernoulli(p)
+    else if n == 0
+    then 0
+    else error("n must be a positive integer.")
+
 # name: Normal distribution sampling
 # url: https://en.wikipedia.org/wiki/Normal_distribution
 # description: Samples a normal distribution with mean μ and standard deviation σ using the Box-Muller transform.
