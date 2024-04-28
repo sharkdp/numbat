@@ -101,6 +101,22 @@ fn sphere_area<L>(radius: L) -> L^2
 fn sphere_volume<L>(radius: L) -> L^3
 ```
 
+### Random sampling 
+
+```nbt
+fn random() -> Scalar
+fn rand_uniform<T>(a: T, b: T) -> T
+fn rand_int<T>(a: T, b: T) -> T
+fn rand_normal<T>(μ: T, σ: T) -> T
+fn rand_bernoulli(p: Scalar) -> Scalar
+fn rand_binomial(n: Scalar, p: Scalar) -> Scalar
+fn rand_geometric(p: Scalar) -> Scalar
+fn rand_poisson<T>(λ: T) -> T
+fn rand_exponential<T>(λ: T) -> 1/T
+fn rand_lognormal(μ: Scalar, σ: Scalar) -> Scalar
+fn rand_pareto<T>(α: Scalar, min: T) -> T
+```
+
 ## Date and time
 
 See [this page](date-and-time.md) for details.
