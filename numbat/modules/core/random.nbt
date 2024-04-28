@@ -1,5 +1,7 @@
 use core::scalar
 
+# name: Standard uniform distribution sampling
+# description: Uniformly samples the interval [0,1).
 fn random() -> Scalar
 
 fn rand_uniform<T>(a: T, b: T) -> T =
