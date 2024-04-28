@@ -4,6 +4,9 @@ use core::scalar
 # description: Uniformly samples the interval [0,1).
 fn random() -> Scalar
 
+# name: Continuous uniform distribution sampling
+# url: https://en.wikipedia.org/wiki/Continuous_uniform_distribution
+# description: Uniformly samples the interval [a,b) if a<=b or [b,a) if b<a using inversion sampling.
 fn rand_uniform<T>(a: T, b: T) -> T =
     if a <= b
     then random() * (b - a) + a
