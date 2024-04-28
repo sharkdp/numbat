@@ -1,4 +1,6 @@
 use core::scalar
+use core::quantities
+use math::functions
 
 # name: Standard uniform distribution sampling
 # description: Uniformly samples the interval [0,1).
@@ -11,3 +13,11 @@ fn rand_uniform<T>(a: T, b: T) -> T =
     if a <= b
     then random() * (b - a) + a
     else random() * (a - b) + b
+
+# name: Discrete uniform distribution sampling
+# url: https://en.wikipedia.org/wiki/Discrete_uniform_distribution
+# description: Uniformly samples the integers in the interval [a, b].
+fn rand_int<T>(a: T, b: T) -> T =
+    if a <= b
+    then floor( random() * (floor(b) - ceil(a) + 1 unit_of(a)) ) + ceil(a)
+    else floor( random() * (floor(a) - ceil(b) + 1 unit_of(b)) ) + ceil(b)
