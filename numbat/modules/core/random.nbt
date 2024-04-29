@@ -1,5 +1,7 @@
 use core::scalar
 use core::quantities
+use core::error
+use core::functions
 use math::functions
 
 # name: Standard uniform distribution sampling
@@ -31,7 +33,7 @@ fn rand_bernoulli(p: Scalar) -> Scalar =
     then (if random() < p
         then 1
         else 0)
-    else error("p must be a probability (0 <= p <= 1).")
+    else error("Argument p must be a probability (0 <= p <= 1).")
 
 # name: Binomial distribution sampling
 # url: https://en.wikipedia.org/wiki/Binomial_distribution
@@ -42,7 +44,7 @@ fn rand_binom(n: Scalar, p: Scalar) -> Scalar =
     then rand_binom(n-1, p) + rand_bernoulli(p)
     else if n == 0
     then 0
-    else error("n must be a positive integer.")
+    else error("Argument n must be a positive integer.")
 
 # name: Normal distribution sampling
 # url: https://en.wikipedia.org/wiki/Normal_distribution
@@ -57,7 +59,7 @@ fn rand_norm<T>(μ: T, σ: T) -> T =
 fn rand_geom(p: Scalar) -> Scalar =
     if p>=0 && p<=1
     then ceil( ln(1-random()) / ln(1-p) )
-    else error("p must be a probability (0 <= p <= 1).")
+    else error("Argument p must be a probability (0 <= p <= 1).")
 
 # A helper function for rand_poisson, counts how many samples of the standard uniform distribution need to be multiplied to fall below lim.
 fn _poisson(lim: Scalar, prod: Scalar) -> Scalar =
@@ -73,7 +75,7 @@ fn _poisson(lim: Scalar, prod: Scalar) -> Scalar =
 fn rand_poisson(λ: Scalar) -> Scalar =
     if λ >= 0
     then _poisson(exp(-λ), 1)
-    else error("λ must not be negative.")
+    else error("Argument λ must not be negative.")
 
 # name: Exponential distribution sampling
 # url: https://en.wikipedia.org/wiki/Exponential_distribution
@@ -82,7 +84,7 @@ fn rand_poisson(λ: Scalar) -> Scalar =
 fn rand_expon<T>(λ: T) -> 1/T =
     if value_of(λ) > 0
     then - ln(1-random()) / λ
-    else NaN * unit_of(1/λ)
+    else error("Argument λ must be positive.")
 
 # name: Log-normal distribution sampling
 # url: https://en.wikipedia.org/wiki/Log-normal_distribution
@@ -97,4 +99,4 @@ fn rand_lognorm(μ: Scalar, σ: Scalar) -> Scalar =
 fn rand_pareto<T>(α: Scalar, min: T) -> T =
     if value_of(min) > 0 && α > 0
     then min / ((1-random())^(1/α))
-    else NaN * unit_of(min)
+    else error("Both arguments α and min must be positive.")
