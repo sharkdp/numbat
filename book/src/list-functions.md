@@ -101,7 +101,7 @@ fn sphere_area<L>(radius: L) -> L^2
 fn sphere_volume<L>(radius: L) -> L^3
 ```
 
-### Algebra
+### Algebra (experimental)
 
 ```nbt
 fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
