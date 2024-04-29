@@ -1,5 +1,6 @@
 use core::scalar
 use core::functions
+use core::error
 
 fn str_length(s: String) -> Scalar
 
@@ -44,7 +45,7 @@ fn _hex_digit(x: Scalar) -> String =
 
 fn _digit_in_base(x: Scalar, base: Scalar) -> String =
   if base < 2 || base > 16
-    then "?" # TODO: better error handling once we can specify the return type of 'error(msg)' as '!' (see error.nbt).
+    then error("base must be between 2 and 16")
     else if mod(x, 16) < 10 then chr(48 + mod(x, 16)) else chr(97 + mod(x, 16) - 10)
 
 fn _number_in_base(x: Scalar, b: Scalar) -> String =

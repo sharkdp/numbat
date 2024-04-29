@@ -24,5 +24,8 @@ pub fn get_test_context() -> Context {
         Ok(context)
     });
 
-    CONTEXT.clone().unwrap()
+    match CONTEXT.clone() {
+        Ok(context) => context,
+        Err(err) => panic!("\n{}\nError\n{}\n{}\n", "-".repeat(80), err, "-".repeat(80)),
+    }
 }

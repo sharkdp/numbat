@@ -387,6 +387,7 @@ dependencies = [
  "pretty_dtoa",
  "rand",
  "rust-embed",
+ "strfmt",
  "strsim",
  "termcolor",
  "thiserror",
@@ -677,6 +678,12 @@ name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d"
+
+[[package]]
+name = "strfmt"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a8348af2d9fc3258c8733b8d9d8db2e56f54b2363a4b5b81585c7875ed65e65"
 
 [[package]]
 name = "strsim"

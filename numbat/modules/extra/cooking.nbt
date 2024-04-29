@@ -2,7 +2,7 @@
 #
 # Example usage:
 #
-#   use cooking
+#   use extra::cooking
 #
 #   200g butter to tablespoons
 #   500g rice to cups

@@ -1,3 +1,2 @@
-# TODO: Ideally, this function should have a '-> !' return type such that
-# it can be used everywhere. Not just instead of a Scalar.
-fn error(message: String) -> 1
+# Throw a user-defined error
+fn error(message: String) -> !
