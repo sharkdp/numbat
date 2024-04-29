@@ -217,6 +217,7 @@ pub(crate) use scalar;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeAnnotation {
+    Never(Span),
     DimensionExpression(DimensionExpression),
     Bool(Span),
     String(Span),
@@ -227,6 +228,7 @@ pub enum TypeAnnotation {
 impl TypeAnnotation {
     pub fn full_span(&self) -> Span {
         match self {
+            TypeAnnotation::Never(span) => *span,
             TypeAnnotation::DimensionExpression(d) => d.full_span(),
             TypeAnnotation::Bool(span) => *span,
             TypeAnnotation::String(span) => *span,
@@ -239,6 +241,7 @@ impl TypeAnnotation {
 impl PrettyPrint for TypeAnnotation {
     fn pretty_print(&self) -> Markup {
         match self {
+            TypeAnnotation::Never(_) => m::type_identifier("!"),
             TypeAnnotation::DimensionExpression(d) => d.pretty_print(),
             TypeAnnotation::Bool(_) => m::type_identifier("Bool"),
             TypeAnnotation::String(_) => m::type_identifier("String"),
@@ -384,6 +387,7 @@ pub trait ReplaceSpans {
 impl ReplaceSpans for TypeAnnotation {
     fn replace_spans(&self) -> Self {
         match self {
+            TypeAnnotation::Never(_) => TypeAnnotation::Never(Span::dummy()),
             TypeAnnotation::DimensionExpression(d) => {
                 TypeAnnotation::DimensionExpression(d.replace_spans())
             }

@@ -698,6 +698,7 @@ impl TypeChecker {
                 let checked_expr = self.check_expression(expr)?;
                 let type_ = checked_expr.get_type();
                 match (&type_, op) {
+                    (Type::Never, _) => {}
                     (Type::Dimension(dtype), ast::UnaryOperator::Factorial) => {
                         if !dtype.is_scalar() {
                             return Err(TypeCheckError::NonScalarFactorialArgument(
@@ -730,7 +731,15 @@ impl TypeChecker {
                 let lhs_checked = self.check_expression(lhs)?;
                 let rhs_checked = self.check_expression(rhs)?;
 
-                if let Type::Fn(parameter_types, return_type) = rhs_checked.get_type() {
+                if lhs_checked.get_type().is_never() || rhs_checked.get_type().is_never() {
+                    return Ok(typed_ast::Expression::BinaryOperator(
+                        *span_op,
+                        *op,
+                        Box::new(lhs_checked),
+                        Box::new(rhs_checked),
+                        Type::Never,
+                    ));
+                } else if let Type::Fn(parameter_types, return_type) = rhs_checked.get_type() {
                     // make sure that there is just one paramter (return arity error otherwise)
                     if parameter_types.len() != 1 {
                         return Err(TypeCheckError::WrongArity {
@@ -1046,7 +1055,16 @@ impl TypeChecker {
                 let then_type = then.get_type();
                 let else_type = else_.get_type();
 
-                if then_type != else_type {
+                if then_type.is_never() || else_type.is_never() {
+                    // This case is fine. We use the type of the *other* branch in those cases.
+                    // For example:
+                    //
+                    //   if <some precondition>
+                    //     then X
+                    //     else error("please make sure <some precondition> is met")
+                    //
+                    // Here, we simply use the type of `X` as the type of the whole expression.
+                } else if then_type != else_type {
                     return Err(TypeCheckError::IncompatibleTypesInCondition(
                         *span,
                         then_type,
@@ -1610,6 +1628,7 @@ impl TypeChecker {
 
     fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
         match annotation {
+            TypeAnnotation::Never(_) => Ok(Type::Never),
             TypeAnnotation::DimensionExpression(dexpr) => self
                 .registry
                 .get_base_representation(dexpr)

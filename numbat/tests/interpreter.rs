@@ -698,3 +698,14 @@ fn test_datetime_runtime_errors() {
         "Error in datetime format",
     )
 }
+
+#[test]
+fn test_user_errors() {
+    expect_failure("error(\"test\")", "User error: test");
+
+    // Make sure that the never type (!) can be used in all contexts
+    expect_failure("- error(\"test\")", "User error: test");
+    expect_failure("1 + error(\"test\")", "User error: test");
+    expect_failure("1 m + error(\"test\")", "User error: test");
+    expect_failure("if 3 < 2 then 2 m else error(\"test\")", "User error: test");
+}
