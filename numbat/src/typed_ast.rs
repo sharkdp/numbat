@@ -54,6 +54,7 @@ impl DType {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
+    Never,
     Dimension(DType),
     Boolean,
     String,
@@ -64,6 +65,7 @@ pub enum Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Type::Never => write!(f, "!"),
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
@@ -82,6 +84,7 @@ impl std::fmt::Display for Type {
 impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
+            Type::Never => m::keyword("!"),
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::keyword("Bool"),
             Type::String => m::keyword("String"),
@@ -115,6 +118,10 @@ impl Type {
 
     pub fn scalar() -> Type {
         Type::Dimension(DType::unity())
+    }
+
+    pub fn is_never(&self) -> bool {
+        matches!(self, Type::Never)
     }
 
     pub fn is_dtype(&self) -> bool {
@@ -276,7 +283,13 @@ impl Expression {
             Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
             Expression::CallableCall(_, _, _, type_) => type_.clone(),
             Expression::Boolean(_, _) => Type::Boolean,
-            Expression::Condition(_, _, then, _) => then.get_type(),
+            Expression::Condition(_, _, then_, else_) => {
+                if then_.get_type().is_never() {
+                    else_.get_type()
+                } else {
+                    then_.get_type()
+                }
+            }
             Expression::String(_, _) => Type::String,
         }
     }
