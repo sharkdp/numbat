@@ -17,10 +17,10 @@ fn rand_uniform<T>(a: T, b: T) -> T =
 # name: Discrete uniform distribution sampling
 # url: https://en.wikipedia.org/wiki/Discrete_uniform_distribution
 # description: Uniformly samples the integers in the interval [a, b].
-fn rand_int<T>(a: T, b: T) -> T =
+fn rand_int(a: Scalar, b: Scalar) -> Scalar =
     if a <= b
-    then floor( random() * (floor(b) - ceil(a) + 1 unit_of(a)) ) + ceil(a)
-    else floor( random() * (floor(a) - ceil(b) + 1 unit_of(b)) ) + ceil(b)
+    then floor( random() * (floor(b) - ceil(a) + 1) ) + ceil(a)
+    else floor( random() * (floor(a) - ceil(b) + 1) ) + ceil(b)
 
 # name: Bernoulli distribution sampling
 # url: https://en.wikipedia.org/wiki/Bernoulli_distribution
@@ -59,7 +59,7 @@ fn rand_geom(p: Scalar) -> Scalar =
     then ceil( ln(1-random()) / ln(1-p) )
     else error("p must be a probability (0 <= p <= 1).")
 
-# A helper function for rand_poisson, counts how many samples of the standard uniform distribution need to be multiplied to deceed lim.
+# A helper function for rand_poisson, counts how many samples of the standard uniform distribution need to be multiplied to fall below lim.
 fn _poisson(lim: Scalar, prod: Scalar) -> Scalar =
     if prod > lim
     then _poisson(lim,  prod × random()) + 1
@@ -70,10 +70,10 @@ fn _poisson(lim: Scalar, prod: Scalar) -> Scalar =
 # description: Sampling a poisson distribution with rate λ, that is, the distribution of the number of events occurring in a fixed interval if these events occur with mean rate λ.
 #              The rate parameter λ must not be negative.
 # This implementation is based on the exponential distribution of inter-arrival times. For details see L. Devroye, Non-Uniform Random Variate Generation, p. 504, Lemma 3.3.
-fn rand_poisson<T>(λ: T) -> T =
-    if value_of(λ) >= 0
-    then _poisson(exp(-value_of(λ)), 1) * unit_of(λ)
-    else NaN * unit_of(λ)
+fn rand_poisson(λ: Scalar) -> Scalar =
+    if λ >= 0
+    then _poisson(exp(-λ), 1)
+    else error("λ must not be negative.")
 
 # name: Exponential distribution sampling
 # url: https://en.wikipedia.org/wiki/Exponential_distribution
