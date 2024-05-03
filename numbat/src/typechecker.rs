@@ -750,7 +750,11 @@ impl TypeChecker {
                         Box::new(rhs_checked),
                         lhs_type,
                     ));
-                } else if let Type::Fn(parameter_types, return_type) = rhs_type {
+                } else if rhs_type.is_fn_type() && op == &BinaryOperator::ConvertTo {
+                    let (parameter_types, return_type) = match rhs_type {
+                        Type::Fn(p, r) => (p, r),
+                        _ => unreachable!(),
+                    };
                     // make sure that there is just one paramter (return arity error otherwise)
                     if parameter_types.len() != 1 {
                         return Err(TypeCheckError::WrongArity {
@@ -927,7 +931,10 @@ impl TypeChecker {
                         typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
                             if lhs_type.is_dtype() || rhs_type.is_dtype() {
                                 let _ = get_type_and_assert_equality()?;
-                            } else if lhs_type != rhs_type {
+                            } else if lhs_type != rhs_type
+                                || lhs_type.is_fn_type()
+                                || rhs_type.is_fn_type()
+                            {
                                 return Err(TypeCheckError::IncompatibleTypesInComparison(
                                     span_op.unwrap(),
                                     lhs_type,
@@ -1678,6 +1685,8 @@ mod tests {
     fn error(m: String) -> !
     fn returns_never() -> ! = error(\"…\")
     fn takes_never_returns_a(x: !) -> A = a
+
+    let callable = takes_a_returns_b
     ";
 
     fn base_type(name: &str) -> BaseRepresentation {
@@ -1783,7 +1792,7 @@ mod tests {
     }
 
     #[test]
-    fn converisons() {
+    fn comparisons() {
         assert_successful_typecheck("2 a > a");
         assert_successful_typecheck("2 a / (3 a) > 3");
 
@@ -2299,5 +2308,32 @@ mod tests {
               if precondition then t else error(\"precondition failed\")
             ",
         );
+    }
+
+    #[test]
+    fn callables() {
+        assert_successful_typecheck("callable(a)");
+        assert_successful_typecheck("a -> callable");
+        assert!(matches!(
+            get_typecheck_error("callable(b)"),
+            TypeCheckError::IncompatibleTypesInFunctionCall(..)
+        ));
+        assert!(matches!(
+            get_typecheck_error("callable()"),
+            TypeCheckError::WrongArity { .. }
+        ));
+        assert!(matches!(
+            get_typecheck_error("callable(a, a)"),
+            TypeCheckError::WrongArity { .. }
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("a + callable"),
+            TypeCheckError::ExpectedDimensionType { .. }
+        ));
+        assert!(matches!(
+            get_typecheck_error("callable == callable"),
+            TypeCheckError::IncompatibleTypesInComparison { .. }
+        ));
     }
 }
