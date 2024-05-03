@@ -627,7 +627,7 @@ impl TypeChecker {
                     }
                 }
                 (parameter_type, argument_type) => {
-                    if parameter_type != &argument_type {
+                    if !argument_type.is_subtype_of(parameter_type) {
                         return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
                             Some(*parameter_span),
                             parameter_type.clone(),
@@ -751,7 +751,7 @@ impl TypeChecker {
                         });
                     }
 
-                    if parameter_types[0] != lhs_checked.get_type() {
+                    if !parameter_types[0].is_subtype_of(&lhs_checked.get_type()) {
                         return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
                             None,
                             parameter_types[0].clone(),
@@ -999,7 +999,7 @@ impl TypeChecker {
                             for (param_type, arg_checked) in
                                 parameters_types.iter().zip(&arguments_checked)
                             {
-                                if param_type != &arg_checked.get_type() {
+                                if !arg_checked.get_type().is_subtype_of(param_type) {
                                     return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
                                         None,
                                         param_type.clone(),
@@ -1142,7 +1142,7 @@ impl TypeChecker {
                             }
                         }
                         (deduced, annotated) => {
-                            if deduced != &annotated {
+                            if !deduced.is_subtype_of(&annotated) {
                                 return Err(TypeCheckError::IncompatibleTypesInAnnotation(
                                     "definition".into(),
                                     *identifier_span,
@@ -1450,7 +1450,7 @@ impl TypeChecker {
                                 Type::Dimension(dtype_deduced)
                             }
                             (type_deduced, type_specified) => {
-                                if type_deduced != type_specified {
+                                if !type_deduced.is_subtype_of(&type_specified) {
                                     return Err(TypeCheckError::IncompatibleTypesInAnnotation(
                                         "function definition".into(),
                                         *function_name_span,
@@ -1668,6 +1668,10 @@ mod tests {
     fn takes_a_returns_a(x: A) -> A = x
     fn takes_a_returns_b(x: A) -> B = b
     fn takes_a_and_b_returns_c(x: A, y: B) -> C = x * y
+
+    fn error(m: String) -> !
+    fn returns_never() -> ! = error(\"…\")
+    fn takes_never_returns_a(x: !) -> A = a
     ";
 
     fn base_type(name: &str) -> BaseRepresentation {
@@ -2227,5 +2231,53 @@ mod tests {
             ),
             TypeCheckError::NoDimensionlessBaseUnit { .. }
         ));
+    }
+
+    #[test]
+    fn never_type() {
+        // Variable assignments
+        assert_successful_typecheck("let x: ! = returns_never()");
+        assert_successful_typecheck("let x: A = returns_never()");
+
+        // Conditionals
+        assert_successful_typecheck("let x: A = if true then a else returns_never()");
+        assert_successful_typecheck("let x: A = if true then returns_never() else a");
+        assert!(matches!(
+            get_typecheck_error("let x: A = if true then returns_never() else b"),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
+        assert_successful_typecheck("let x: ! = if true then returns_never() else returns_never()");
+
+        // Function calls
+        assert_successful_typecheck("let x: A = takes_a_returns_a(returns_never())");
+        assert_successful_typecheck(
+            "let x: C = takes_a_and_b_returns_c(returns_never(), returns_never())",
+        );
+        assert_successful_typecheck("let x: A = takes_never_returns_a(returns_never())");
+        assert!(matches!(
+            get_typecheck_error("takes_never_returns_a(a)"),
+            TypeCheckError::IncompatibleTypesInFunctionCall(..)
+        ));
+
+        // Function definitions
+        assert_successful_typecheck("fn my_returns_never() -> ! = returns_never()");
+        assert_successful_typecheck("fn my_takes_never_returns_a(x: !) -> A = a");
+        assert!(matches!(
+            get_typecheck_error("fn attempts_to_return_never() -> ! = a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+
+        // Generic functions:
+        assert_successful_typecheck(
+            "
+            fn absurd<T>(x: !) -> A = returns_never()
+            ",
+        );
+        assert_successful_typecheck(
+            "
+            fn check_and_return<T>(precondition: Bool, t: T) -> T =
+              if precondition then t else error(\"precondition failed\")
+            ",
+        );
     }
 }

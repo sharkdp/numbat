@@ -131,6 +131,14 @@ impl Type {
     pub fn is_fn_type(&self) -> bool {
         matches!(self, Type::Fn(..))
     }
+
+    pub fn is_subtype_of(&self, other: &Type) -> bool {
+        match (self, other) {
+            (Type::Never, _) => true,
+            (_, Type::Never) => false,
+            (t1, t2) => t1 == t2,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
