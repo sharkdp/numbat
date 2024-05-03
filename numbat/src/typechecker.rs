@@ -731,15 +731,26 @@ impl TypeChecker {
                 let lhs_checked = self.check_expression(lhs)?;
                 let rhs_checked = self.check_expression(rhs)?;
 
-                if lhs_checked.get_type().is_never() || rhs_checked.get_type().is_never() {
+                let lhs_type = lhs_checked.get_type();
+                let rhs_type = rhs_checked.get_type();
+
+                if lhs_type.is_never() {
                     return Ok(typed_ast::Expression::BinaryOperator(
                         *span_op,
                         *op,
                         Box::new(lhs_checked),
                         Box::new(rhs_checked),
-                        Type::Never,
+                        rhs_type,
                     ));
-                } else if let Type::Fn(parameter_types, return_type) = rhs_checked.get_type() {
+                } else if rhs_type.is_never() {
+                    return Ok(typed_ast::Expression::BinaryOperator(
+                        *span_op,
+                        *op,
+                        Box::new(lhs_checked),
+                        Box::new(rhs_checked),
+                        lhs_type,
+                    ));
+                } else if let Type::Fn(parameter_types, return_type) = rhs_type {
                     // make sure that there is just one paramter (return arity error otherwise)
                     if parameter_types.len() != 1 {
                         return Err(TypeCheckError::WrongArity {
@@ -751,12 +762,12 @@ impl TypeChecker {
                         });
                     }
 
-                    if !parameter_types[0].is_subtype_of(&lhs_checked.get_type()) {
+                    if !parameter_types[0].is_subtype_of(&lhs_type) {
                         return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
                             None,
                             parameter_types[0].clone(),
                             lhs.full_span(),
-                            lhs_checked.get_type(),
+                            lhs_type,
                         ));
                     }
 
@@ -766,7 +777,7 @@ impl TypeChecker {
                         vec![lhs_checked],
                         *return_type,
                     )
-                } else if lhs_checked.get_type() == Type::DateTime {
+                } else if lhs_type == Type::DateTime {
                     // DateTime types need special handling here, since they're not scalars with dimensions,
                     // yet some select binary operators can be applied to them
 
@@ -774,7 +785,7 @@ impl TypeChecker {
                         .ok()
                         .map(|t| t.is_time_dimension())
                         .unwrap_or(false);
-                    let rhs_is_datetime = rhs_checked.get_type() == Type::DateTime;
+                    let rhs_is_datetime = rhs_type == Type::DateTime;
 
                     if *op == BinaryOperator::Sub && rhs_is_datetime {
                         let time = self
@@ -815,9 +826,9 @@ impl TypeChecker {
                                 .full_span()
                             }),
                             *op,
-                            lhs_checked.get_type(),
+                            lhs_type,
                             lhs.full_span(),
-                            rhs_checked.get_type(),
+                            rhs_type,
                             rhs.full_span(),
                         ));
                     }
@@ -914,8 +925,6 @@ impl TypeChecker {
                             Type::Boolean
                         }
                         typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
-                            let lhs_type = lhs_checked.get_type();
-                            let rhs_type = rhs_checked.get_type();
                             if lhs_type.is_dtype() || rhs_type.is_dtype() {
                                 let _ = get_type_and_assert_equality()?;
                             } else if lhs_type != rhs_type {
@@ -932,9 +941,6 @@ impl TypeChecker {
                         }
                         typed_ast::BinaryOperator::LogicalAnd
                         | typed_ast::BinaryOperator::LogicalOr => {
-                            let lhs_type = lhs_checked.get_type();
-                            let rhs_type = rhs_checked.get_type();
-
                             if lhs_type != Type::Boolean {
                                 return Err(TypeCheckError::ExpectedBool(lhs.full_span()));
                             } else if rhs_type != Type::Boolean {
@@ -2235,13 +2241,27 @@ mod tests {
 
     #[test]
     fn never_type() {
+        // Expressions
+        assert_successful_typecheck("2 + returns_never()");
+        assert_successful_typecheck("a + returns_never()");
+        assert_successful_typecheck("(a + returns_never()) + a");
+        assert_successful_typecheck("returns_never() + returns_never()");
+        assert!(matches!(
+            get_typecheck_error("(a + returns_never()) + b"),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
+
         // Variable assignments
         assert_successful_typecheck("let x: ! = returns_never()");
         assert_successful_typecheck("let x: A = returns_never()");
 
         // Conditionals
-        assert_successful_typecheck("let x: A = if true then a else returns_never()");
-        assert_successful_typecheck("let x: A = if true then returns_never() else a");
+        assert_successful_typecheck("(if true then a else returns_never()) -> a");
+        assert_successful_typecheck("(if true then returns_never() else a) -> a");
+        assert!(matches!(
+            get_typecheck_error("(if true then returns_never() else a) -> b"),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
         assert!(matches!(
             get_typecheck_error("let x: A = if true then returns_never() else b"),
             TypeCheckError::IncompatibleDimensions(..)
