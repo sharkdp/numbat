@@ -2,8 +2,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::{cmp::Ordering, fmt::Display};
 
-use indexmap::IndexSet;
+use indexmap::IndexMap;
 
+use crate::typed_ast::StructInfo;
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
@@ -279,8 +280,8 @@ pub struct Vm {
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
     pub constants: Vec<Constant>,
 
-    /// struct field metadata, used so we can recover struct field layout at runtime
-    struct_fields: IndexSet<Arc<[(String, usize)]>>,
+    /// struct metadata, used so we can display struct fields at runtime
+    struct_infos: IndexMap<String, Arc<StructInfo>>,
 
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
@@ -318,7 +319,7 @@ impl Vm {
             bytecode: vec![("<main>".into(), vec![])],
             current_chunk_index: 0,
             constants: vec![],
-            struct_fields: IndexSet::new(),
+            struct_infos: IndexMap::new(),
             prefixes: vec![],
             strings: vec![],
             unit_information: vec![],
@@ -380,10 +381,16 @@ impl Vm {
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
-    pub fn add_struct_fields(&mut self, fields: Vec<(String, usize)>) -> u16 {
-        let (idx, _) = self.struct_fields.insert_full(fields.into());
+    pub fn add_struct_info(&mut self, struct_info: &StructInfo) -> usize {
+        let e = self.struct_infos.entry(struct_info.name.clone());
+        let idx = e.index();
+        e.or_insert_with(|| Arc::new(struct_info.clone()));
 
-        idx as u16
+        idx
+    }
+
+    pub fn get_structinfo_idx(&self, name: &str) -> Option<usize> {
+        self.struct_infos.get_index_of(name)
     }
 
     pub fn add_prefix(&mut self, prefix: Prefix) -> u16 {
@@ -972,12 +979,12 @@ impl Vm {
                     }
                 }
                 Op::BuildStruct => {
-                    let meta_idx = self.read_u16();
-                    let fields_meta = self
-                        .struct_fields
-                        .get_index(meta_idx as usize)
-                        .expect("Missing struct metadata {meta_idx}")
-                        .clone();
+                    let info_idx = self.read_u16();
+                    let (_, struct_info) = self
+                        .struct_infos
+                        .get_index(info_idx as usize)
+                        .expect("Missing struct metadata");
+                    let struct_info = Arc::clone(struct_info);
                     let num_args = self.read_u16();
 
                     let mut content = Vec::with_capacity(num_args as usize);
@@ -986,7 +993,7 @@ impl Vm {
                         content.push(self.pop());
                     }
 
-                    self.stack.push(Value::Struct(fields_meta, content));
+                    self.stack.push(Value::Struct(struct_info, content));
                 }
                 Op::DestructureStruct => {
                     let field_idx = self.read_u16();

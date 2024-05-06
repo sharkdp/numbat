@@ -4,7 +4,6 @@ use std::{
     fmt,
 };
 
-use crate::typed_ast::{self, Type};
 use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
     ast::ProcedureKind,
@@ -17,9 +16,14 @@ use crate::{
 };
 use crate::{dimension::DimensionRegistry, typed_ast::DType};
 use crate::{ffi::ArityRange, typed_ast::Expression};
+use crate::{
+    name_resolution::Namespace,
+    typed_ast::{self, StructInfo, Type},
+    NameResolutionError,
+};
 use crate::{name_resolution::LAST_RESULT_IDENTIFIERS, pretty_print::PrettyPrint};
 
-use ast::{BinaryOperator, DimensionExpression};
+use ast::{BinaryOperator, TypeExpression};
 use itertools::Itertools;
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
 use thiserror::Error;
@@ -283,8 +287,8 @@ pub enum TypeCheckError {
     #[error("Incompatible types in function call: expected '{1}', got '{3}' instead")]
     IncompatibleTypesInFunctionCall(Option<Span>, Type, Span, Type),
 
-    #[error("This name is already used by {0}")]
-    NameAlreadyUsedBy(&'static str, Span, Option<Span>),
+    #[error("Incompatible types for struct field: expected '{1}', got '{3}' instead")]
+    IncompatibleTypesForStructField(Span, Type, Span, Type),
 
     #[error("Missing a definition for dimension {1}")]
     MissingDimension(Span, String),
@@ -298,6 +302,15 @@ pub enum TypeCheckError {
     #[error("Base units can not be dimensionless.")]
     NoDimensionlessBaseUnit(Span, String),
 
+    #[error("Unknown struct '{1}")]
+    UnknownStruct(Span, String),
+
+    #[error("Unknown field {2} of struct {3}")]
+    UnknownFieldOfStruct(Span, Span, String, String),
+
+    #[error("Duplicate field {2} in struct definition")]
+    DuplicateFieldInStructDefinition(Span, Span, String),
+
     #[error("Duplicate field {2} in struct construction")]
     DuplicateFieldInStructConstruction(Span, Span, String),
 
@@ -306,6 +319,12 @@ pub enum TypeCheckError {
 
     #[error("Accessing unknown field {2} of struct {3}")]
     AccessingUnknownFieldOfStruct(Span, Span, String, Type),
+
+    #[error("Missing fields from struct construction")]
+    MissingFieldsFromStructConstruction(Span, Span, Vec<(String, Type)>),
+
+    #[error(transparent)]
+    NameResolutionError(#[from] NameResolutionError),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -441,14 +460,17 @@ struct FunctionSignature {
     parameter_types: Vec<(Span, Type)>,
     is_variadic: bool,
     return_type: Type,
-    is_foreign: bool,
 }
 
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     identifiers: HashMap<String, (Type, Option<Span>)>,
     function_signatures: HashMap<String, FunctionSignature>,
+    structs: HashMap<String, StructInfo>,
     registry: DimensionRegistry,
+
+    type_namespace: Namespace,
+    value_namespace: Namespace,
 }
 
 impl TypeChecker {
@@ -521,7 +543,6 @@ impl TypeChecker {
             parameter_types,
             is_variadic,
             return_type,
-            is_foreign: _,
         } = signature;
 
         let arity_range = if *is_variadic {
@@ -683,17 +704,23 @@ impl TypeChecker {
         ) -> Type {
             match t {
                 Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
-                Type::Struct(fields) => Type::Struct(
-                    fields
+                Type::Struct(StructInfo {
+                    definition_span,
+                    name,
+                    fields,
+                }) => Type::Struct(StructInfo {
+                    definition_span: *definition_span,
+                    name: name.clone(),
+                    fields: fields
                         .into_iter()
-                        .map(|(n, t)| {
+                        .map(|(n, (s, t))| {
                             (
                                 n.to_owned(),
-                                apply_substitutions(t, substitute, substitutions),
+                                (s.clone(), apply_substitutions(t, substitute, substitutions)),
                             )
                         })
                         .collect(),
-                ),
+                }),
                 type_ => type_.clone(),
             }
         }
@@ -1128,13 +1155,21 @@ impl TypeChecker {
                     Box::new(else_),
                 )
             }
-            ast::Expression::MakeStruct(span, fields) => {
+            ast::Expression::MakeStruct {
+                full_span,
+                ident_span,
+                name,
+                fields,
+            } => {
                 let fields_checked = fields
                     .iter()
                     .map(|(_, n, v)| Ok((n.to_string(), self.check_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
-                let mut field_types = indexmap::IndexMap::new();
+                let Some(struct_info) = self.structs.get(name) else {
+                    return Err(TypeCheckError::UnknownStruct(*ident_span, name.clone()));
+                };
+
                 let mut seen_fields = HashMap::new();
 
                 for ((field, expr), span) in
@@ -1147,18 +1182,52 @@ impl TypeChecker {
                             field.to_string(),
                         ));
                     }
-                    field_types.insert(field.to_string(), expr.get_type());
+
+                    let Some((expected_field_span, expected_type)) = struct_info.fields.get(field)
+                    else {
+                        return Err(TypeCheckError::UnknownFieldOfStruct(
+                            *span,
+                            struct_info.definition_span,
+                            field.clone(),
+                            struct_info.name.clone(),
+                        ));
+                    };
+
+                    let found_type = &expr.get_type();
+                    if !found_type.is_subtype_of(expected_type) {
+                        return Err(TypeCheckError::IncompatibleTypesForStructField(
+                            *expected_field_span,
+                            expected_type.clone(),
+                            expr.full_span(),
+                            found_type.clone(),
+                        ));
+                    }
+
                     seen_fields.insert(field, *span);
                 }
 
-                typed_ast::Expression::MakeStruct(*span, fields_checked, field_types)
+                let missing_fields = {
+                    let mut fields = struct_info.fields.clone();
+                    fields.retain(|f, _| !seen_fields.contains_key(f));
+                    fields.into_iter().map(|(n, (_, t))| (n, t)).collect_vec()
+                };
+
+                if !missing_fields.is_empty() {
+                    return Err(TypeCheckError::MissingFieldsFromStructConstruction(
+                        *full_span,
+                        struct_info.definition_span,
+                        missing_fields,
+                    ));
+                }
+
+                typed_ast::Expression::MakeStruct(*full_span, fields_checked, struct_info.clone())
             }
             ast::Expression::AccessStruct(full_span, ident_span, expr, attr) => {
                 let expr_checked = self.check_expression(expr)?;
 
                 let type_ = expr_checked.get_type();
 
-                let Type::Struct(fields) = type_.clone() else {
+                let Type::Struct(struct_info) = type_.clone() else {
                     return Err(TypeCheckError::AccessingFieldOfNonStruct(
                         *ident_span,
                         expr.full_span(),
@@ -1167,7 +1236,7 @@ impl TypeChecker {
                     ));
                 };
 
-                let Some((_, ret_ty)) = fields.iter().find(|(n, _)| *n == attr) else {
+                let Some((_, ret_ty)) = struct_info.fields.get(attr) else {
                     return Err(TypeCheckError::AccessingUnknownFieldOfStruct(
                         *ident_span,
                         expr.full_span(),
@@ -1183,7 +1252,7 @@ impl TypeChecker {
                     *full_span,
                     Box::new(expr_checked),
                     attr.to_owned(),
-                    fields,
+                    struct_info,
                     ret_ty,
                 )
             }
@@ -1207,16 +1276,6 @@ impl TypeChecker {
                 type_annotation,
                 decorators,
             } => {
-                // Make sure that identifier does not clash with a function name. We do not
-                // check for clashes with unit names, as this is handled by the prefix parser.
-                if let Some(signature) = self.function_signatures.get(identifier) {
-                    return Err(TypeCheckError::NameAlreadyUsedBy(
-                        "a function",
-                        *identifier_span,
-                        Some(signature.definition_span),
-                    ));
-                }
-
                 let expr_checked = self.check_expression(expr)?;
                 let type_deduced = expr_checked.get_type();
 
@@ -1265,6 +1324,12 @@ impl TypeChecker {
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
                     self.identifiers
                         .insert(name.clone(), (type_deduced.clone(), Some(*identifier_span)));
+
+                    self.value_namespace.add_allow_override(
+                        name.clone(),
+                        *identifier_span,
+                        "constant".to_owned(),
+                    )?;
                 }
 
                 typed_ast::Statement::DefineVariable(
@@ -1387,24 +1452,18 @@ impl TypeChecker {
                 return_type_annotation_span,
                 return_type_annotation,
             } => {
-                // Make sure that function name does not clash with an identifier. We do not
-                // check for clashes with unit names, as this is handled by the prefix parser.
-                if let Some((_, span)) = self.identifiers.get(function_name) {
-                    return Err(TypeCheckError::NameAlreadyUsedBy(
-                        "a constant",
+                if body.is_none() {
+                    self.value_namespace.add(
+                        function_name.clone(),
                         *function_name_span,
-                        *span,
-                    ));
-                }
-
-                if let Some(signature) = self.function_signatures.get(function_name) {
-                    if signature.is_foreign {
-                        return Err(TypeCheckError::NameAlreadyUsedBy(
-                            "a foreign function",
-                            *function_name_span,
-                            Some(signature.definition_span),
-                        ));
-                    }
+                        "foreign function".to_owned(),
+                    )?;
+                } else {
+                    self.value_namespace.add_allow_override(
+                        function_name.clone(),
+                        *function_name_span,
+                        "function".to_owned(),
+                    )?;
                 }
 
                 let mut typechecker_fn = self.clone();
@@ -1451,7 +1510,7 @@ impl TypeChecker {
                         Type::Dimension(
                             typechecker_fn
                                 .registry
-                                .get_base_representation(&DimensionExpression::Dimension(
+                                .get_base_representation(&TypeExpression::TypeIdentifier(
                                     *parameter_span,
                                     free_type_parameter,
                                 ))
@@ -1486,35 +1545,29 @@ impl TypeChecker {
                     .map(|annotation| typechecker_fn.type_from_annotation(annotation))
                     .transpose()?;
 
-                let add_function_signature =
-                    |tc: &mut TypeChecker, return_type: Type, is_foreign: bool| {
-                        let parameter_types = typed_parameters
-                            .iter()
-                            .map(|(span, _, _, _, t)| (*span, t.clone()))
-                            .collect();
-                        tc.function_signatures.insert(
-                            function_name.clone(),
-                            FunctionSignature {
-                                definition_span: *function_name_span,
-                                type_parameters: type_parameters.clone(),
-                                parameter_types,
-                                is_variadic,
-                                return_type,
-                                is_foreign,
-                            },
-                        );
-                    };
+                let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
+                    let parameter_types = typed_parameters
+                        .iter()
+                        .map(|(span, _, _, _, t)| (*span, t.clone()))
+                        .collect();
+                    tc.function_signatures.insert(
+                        function_name.clone(),
+                        FunctionSignature {
+                            definition_span: *function_name_span,
+                            type_parameters: type_parameters.clone(),
+                            parameter_types,
+                            is_variadic,
+                            return_type,
+                        },
+                    );
+                };
 
                 if let Some(ref return_type_specified) = return_type_specified {
                     // This is needed for recursive functions. If the return type
                     // has been specified, we can already provide a function
                     // signature before we check the body of the function. This
                     // way, the 'typechecker_fn' can resolve the recursive call.
-                    add_function_signature(
-                        &mut typechecker_fn,
-                        return_type_specified.clone(),
-                        body.is_none(),
-                    );
+                    add_function_signature(&mut typechecker_fn, return_type_specified.clone());
                 }
 
                 let body_checked = body
@@ -1588,7 +1641,7 @@ impl TypeChecker {
                     })?
                 };
 
-                add_function_signature(self, return_type.clone(), body.is_none());
+                add_function_signature(self, return_type.clone());
 
                 typed_ast::Statement::DefineFunction(
                     function_name.clone(),
@@ -1605,7 +1658,10 @@ impl TypeChecker {
                     return_type,
                 )
             }
-            ast::Statement::DefineDimension(name, dexprs) => {
+            ast::Statement::DefineDimension(name_span, name, dexprs) => {
+                self.type_namespace
+                    .add(name.clone(), *name_span, "dimension".to_owned())?;
+
                 if let Some(dexpr) = dexprs.first() {
                     self.registry
                         .add_derived_dimension(name, dexpr)
@@ -1713,6 +1769,46 @@ impl TypeChecker {
             ast::Statement::ModuleImport(_, _) => {
                 unreachable!("Modules should have been inlined by now")
             }
+            ast::Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                fields,
+            } => {
+                self.type_namespace.add(
+                    struct_name.clone(),
+                    *struct_name_span,
+                    "struct".to_owned(),
+                )?;
+
+                let mut seen_fields = HashMap::new();
+
+                for (span, field, _) in fields {
+                    if let Some(other_span) = seen_fields.get(field) {
+                        return Err(TypeCheckError::DuplicateFieldInStructDefinition(
+                            *span,
+                            *other_span,
+                            field.to_string(),
+                        ));
+                    }
+
+                    seen_fields.insert(field, *span);
+                }
+
+                let struct_info = StructInfo {
+                    definition_span: *struct_name_span,
+                    name: struct_name.clone(),
+                    fields: fields
+                        .iter()
+                        .map(|(span, name, type_)| {
+                            Ok((name.clone(), (*span, self.type_from_annotation(type_)?)))
+                        })
+                        .collect::<Result<_>>()?,
+                };
+                self.structs
+                    .insert(struct_name.clone(), struct_info.clone());
+
+                typed_ast::Statement::DefineStruct(struct_info)
+            }
         })
     }
 
@@ -1735,11 +1831,21 @@ impl TypeChecker {
     fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
         match annotation {
             TypeAnnotation::Never(_) => Ok(Type::Never),
-            TypeAnnotation::DimensionExpression(dexpr) => self
-                .registry
-                .get_base_representation(dexpr)
-                .map(Type::Dimension)
-                .map_err(TypeCheckError::RegistryError),
+            TypeAnnotation::TypeExpression(dexpr) => {
+                if let TypeExpression::TypeIdentifier(_, name) = dexpr {
+                    if let Some(info) = self.structs.get(name) {
+                        // if we see a struct name here, it's safe to assume it
+                        // isn't accidentally clashing with a dimension, we
+                        // check that earlier.
+                        return Ok(Type::Struct(info.clone()));
+                    }
+                }
+
+                self.registry
+                    .get_base_representation(dexpr)
+                    .map(Type::Dimension)
+                    .map_err(TypeCheckError::RegistryError)
+            }
             TypeAnnotation::Bool(_) => Ok(Type::Boolean),
             TypeAnnotation::String(_) => Ok(Type::String),
             TypeAnnotation::DateTime(_) => Ok(Type::DateTime),
@@ -1749,12 +1855,6 @@ impl TypeChecker {
                     .map(|p| self.type_from_annotation(p))
                     .collect::<Result<Vec<_>>>()?,
                 Box::new(self.type_from_annotation(return_type)?),
-            )),
-            TypeAnnotation::Struct(_, fields) => Ok(Type::Struct(
-                fields
-                    .iter()
-                    .map(|(_, n, t)| Ok((n.clone(), self.type_from_annotation(t)?)))
-                    .collect::<Result<indexmap::IndexMap<_, _>>>()?,
             )),
         }
     }
@@ -1784,6 +1884,8 @@ mod tests {
     fn error(m: String) -> !
     fn returns_never() -> ! = error(\"…\")
     fn takes_never_returns_a(x: !) -> A = a
+
+    struct SomeStruct { a: A, b: B }
 
     let callable = takes_a_returns_b
     ";
@@ -2014,24 +2116,24 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn generics_with_records() {
-        assert_successful_typecheck(
-            "
-            fn f<D>(x: D) = ${foo: x}
-            f(2)
-            f(2 a).foo == 2 a
-            ",
-        );
+    // #[test]
+    // fn generics_with_records() {
+    //     assert_successful_typecheck(
+    //         "
+    //         fn f<D>(x: D) = ${foo: x}
+    //         f(2)
+    //         f(2 a).foo == 2 a
+    //         ",
+    //     );
 
-        assert_successful_typecheck(
-            "
-            fn f<D>(x: D) -> ${foo: D} = ${foo: x}
-            f(2)
-            f(2 a).foo == 2 a
-            ",
-        );
-    }
+    //     assert_successful_typecheck(
+    //         "
+    //         fn f<D>(x: D) -> ${foo: D} = ${foo: x}
+    //         f(2)
+    //         f(2 a).foo == 2 a
+    //         ",
+    //     );
+    // }
 
     #[test]
     fn generics_multiple_unresolved_type_parameters() {
@@ -2455,20 +2557,46 @@ mod tests {
         ));
     }
 
+    #[test]
     fn struct_errors() {
         assert!(matches!(
-            get_typecheck_error("${foo: 1, foo: 2}"),
-            TypeCheckError::DuplicateFieldInStructConstruction(_, _, field) if field == "foo"
+            get_typecheck_error("SomeStruct {a: 1, b: 1b}"),
+            TypeCheckError::IncompatibleTypesForStructField(..)
         ));
 
         assert!(matches!(
-            get_typecheck_error("${}.foo"),
+            get_typecheck_error("NotAStruct {}"),
+            TypeCheckError::UnknownStruct(_, name) if name == "NotAStruct"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("SomeStruct {not_a_field: 1}"),
+            TypeCheckError::UnknownFieldOfStruct(_, _, field, _) if field == "not_a_field"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("struct Foo { foo: A, foo: A }"),
+            TypeCheckError::DuplicateFieldInStructDefinition(_, _, field) if field == "foo"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("SomeStruct {a: 1a, a: 1a, b: 2b}"),
+            TypeCheckError::DuplicateFieldInStructConstruction(_, _, field) if field == "a"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("SomeStruct {a: 1a, b: 1b}.foo"),
             TypeCheckError::AccessingUnknownFieldOfStruct(_, _, field, _) if field == "foo"
         ));
 
         assert!(matches!(
             get_typecheck_error("(1).foo"),
             TypeCheckError::AccessingFieldOfNonStruct(_, _, field, _) if field == "foo"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("SomeStruct {}"),
+            TypeCheckError::MissingFieldsFromStructConstruction(..)
         ));
     }
 }

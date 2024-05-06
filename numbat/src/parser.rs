@@ -2,9 +2,10 @@
 //!
 //! Grammar:
 //! ```txt
-//! statement       ::=   variable_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
+//! statement       ::=   variable_decl | struct_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
 //!
 //! variable_decl   ::=   "let" identifier ( ":" type_annotation ) ? "=" expression
+//! struct_decl     ::=   "struct" identifier "{" ( identifier ":" type_annotation "," )* ( identifier ":" type_annotation "," ? ) ? "}"
 //! function_decl   ::=   "fn" identifier ( fn_decl_generic ) ? fn_decl_param ( "->" type_annotation ) ? ( "=" expression ) ?
 //! fn_decl_generic ::=   "<" ( identifier "," ) * identifier ">"
 //! fn_decl_param   ::=   "(" ( identifier ( ":" type_annotation ) ? "," )* ( identifier ( ":" type_annotation ) ) ? ")"
@@ -15,8 +16,7 @@
 //!
 //! decorator       ::=   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
 //!
-//! type_annotation ::=   "Bool" | "String" | dimension_expr | struct_type
-//! struct_type     ::=   "${" ( identifier ":" type_annotation "," )* ( identifier ":" type_annotation "," ? ) ? "}"
+//! type_annotation ::=   "Bool" | "String" | dimension_expr
 //! dimension_expr  ::=   dim_factor
 //! dim_factor      ::=   dim_power ( (multiply | divide) dim_power ) *
 //! dim_power       ::=   dim_primary ( power dim_exponent | unicode_exponent ) ?
@@ -41,8 +41,8 @@
 //! unicode_power   ::=   call ( "⁻" ? ( "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ) ) ?
 //! call            ::=   primary ( ( "(" arguments? ")" ) | "." identifier ) *
 //! arguments       ::=   expression ( "," expression ) *
-//! primary         ::=   boolean | string | hex_number | oct_number | bin_number | number | identifier | "(" expression ")" | struct_expr
-//! struct_expr     ::=   "${" ( identifier ":" type_annotation "," )* ( identifier ":" expression "," ? ) ? "}"
+//! primary         ::=   boolean | string | hex_number | oct_number | bin_number | number | identifier ( struct_expr ? ) | "(" expression ")" | struct_expr
+//! struct_expr     ::=   "{" ( identifier ":" type_annotation "," )* ( identifier ":" expression "," ? ) ? "}"
 //!
 //! number          ::=   [0-9][0-9_]*("." ([0-9][0-9_]*)?)?([eE][+-]?[0-9][0-9_]*)?
 //! hex_number      ::=   "0x" [0-9a-fA-F]*
@@ -62,8 +62,8 @@
 
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{
-    BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement, StringPart,
-    TypeAnnotation, UnaryOperator,
+    BinaryOperator, Expression, ProcedureKind, Statement, StringPart, TypeAnnotation,
+    TypeExpression, UnaryOperator,
 };
 use crate::decorator::{self, Decorator};
 use crate::number::Number;
@@ -211,6 +211,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected {0} in function type")]
     ExpectedTokenInFunctionType(&'static str),
+
+    #[error("Expected '{{' after struct name")]
+    ExpectedLeftCurlyAfterStructName,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -556,11 +559,13 @@ impl<'a> Parser<'a> {
                     }
 
                     Ok(Statement::DefineDimension(
+                        identifier.span,
                         identifier.lexeme.clone(),
                         dexprs,
                     ))
                 } else {
                     Ok(Statement::DefineDimension(
+                        identifier.span,
                         identifier.lexeme.clone(),
                         vec![],
                     ))
@@ -714,6 +719,52 @@ impl<'a> Parser<'a> {
                     span: self.peek().span,
                 })
             }
+        } else if self.match_exact(TokenKind::Struct).is_some() {
+            let name = self.identifier()?;
+            let name_span = self.last().unwrap().span;
+
+            if self.match_exact(TokenKind::LeftCurly).is_none() {
+                return Err(ParseError {
+                    kind: ParseErrorKind::ExpectedLeftCurlyAfterStructName,
+                    span: self.peek().span,
+                });
+            }
+
+            let mut fields = vec![];
+            while self.match_exact(TokenKind::RightCurly).is_none() {
+                let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedFieldNameInStruct,
+                        span: self.peek().span,
+                    });
+                };
+
+                if self.match_exact(TokenKind::Colon).is_none() {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedColonAfterFieldName,
+                        span: self.peek().span,
+                    });
+                }
+
+                let attr_type = self.type_annotation()?;
+
+                let has_comma = self.match_exact(TokenKind::Comma).is_some();
+                self.match_exact(TokenKind::Newline);
+                if !has_comma && self.peek().kind != TokenKind::RightCurly {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
+                        span: self.peek().span,
+                    });
+                }
+
+                fields.push((field_name.span, field_name.lexeme.to_owned(), attr_type));
+            }
+
+            Ok(Statement::DefineStruct {
+                struct_name_span: name_span,
+                struct_name: name,
+                fields,
+            })
         } else if self.match_any(PROCEDURES).is_some() {
             let span = self.last().unwrap().span;
             let procedure_kind = match self.last().unwrap().kind {
@@ -1154,45 +1205,51 @@ impl<'a> Parser<'a> {
         } else if let Some(_) = self.match_exact(TokenKind::Inf) {
             let span = self.last().unwrap().span;
             Ok(Expression::Scalar(span, Number::from_f64(f64::INFINITY)))
-        } else if self.match_exact(TokenKind::DollarLeftCurly).is_some() {
-            self.match_exact(TokenKind::Newline);
-            let span = self.last().unwrap().span;
-
-            let mut fields = vec![];
-            while self.match_exact(TokenKind::RightCurly).is_none() {
-                let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedFieldNameInStruct,
-                        span: self.peek().span,
-                    });
-                };
-
-                if self.match_exact(TokenKind::Colon).is_none() {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedColonAfterFieldName,
-                        span: self.peek().span,
-                    });
-                }
-
-                let expr = self.expression()?;
-
-                let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                self.match_exact(TokenKind::Newline);
-                if !has_comma && self.peek().kind != TokenKind::RightCurly {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
-                        span: self.peek().span,
-                    });
-                }
-
-                fields.push((field_name.span, field_name.lexeme.to_owned(), expr));
-            }
-
-            let span = span.extend(&self.last().unwrap().span);
-
-            Ok(Expression::MakeStruct(span, fields))
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             let span = self.last().unwrap().span;
+
+            if self.match_exact(TokenKind::LeftCurly).is_some() {
+                self.match_exact(TokenKind::Newline);
+                let mut fields = vec![];
+                while self.match_exact(TokenKind::RightCurly).is_none() {
+                    let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedFieldNameInStruct,
+                            span: self.peek().span,
+                        });
+                    };
+
+                    if self.match_exact(TokenKind::Colon).is_none() {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedColonAfterFieldName,
+                            span: self.peek().span,
+                        });
+                    }
+
+                    let expr = self.expression()?;
+
+                    let has_comma = self.match_exact(TokenKind::Comma).is_some();
+                    self.match_exact(TokenKind::Newline);
+                    if !has_comma && self.peek().kind != TokenKind::RightCurly {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
+                            span: self.peek().span,
+                        });
+                    }
+
+                    fields.push((field_name.span, field_name.lexeme.to_owned(), expr));
+                }
+
+                let full_span = span.extend(&self.last().unwrap().span);
+
+                return Ok(Expression::MakeStruct {
+                    full_span,
+                    ident_span: span,
+                    name: identifier.lexeme.clone(),
+                    fields,
+                });
+            }
+
             Ok(Expression::Identifier(span, identifier.lexeme.clone()))
         } else if let Some(inner) = self.match_any(&[TokenKind::True, TokenKind::False]) {
             Ok(Expression::Boolean(
@@ -1305,44 +1362,6 @@ impl<'a> Parser<'a> {
             Ok(TypeAnnotation::String(token.span))
         } else if let Some(token) = self.match_exact(TokenKind::DateTime) {
             Ok(TypeAnnotation::DateTime(token.span))
-        } else if self.match_exact(TokenKind::DollarLeftCurly).is_some() {
-            let span = self.last().unwrap().span;
-
-            self.match_exact(TokenKind::Newline);
-
-            let mut fields = vec![];
-            while self.match_exact(TokenKind::RightCurly).is_none() {
-                let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedFieldNameInStruct,
-                        span: self.peek().span,
-                    });
-                };
-
-                if self.match_exact(TokenKind::Colon).is_none() {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedColonAfterFieldName,
-                        span: self.peek().span,
-                    });
-                }
-
-                let attr_type = self.type_annotation()?;
-
-                let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                self.match_exact(TokenKind::Newline);
-                if !has_comma && self.peek().kind != TokenKind::RightCurly {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
-                        span: self.peek().span,
-                    });
-                }
-
-                fields.push((field_name.span, field_name.lexeme.to_owned(), attr_type));
-            }
-
-            let span = span.extend(&self.last().unwrap().span);
-
-            Ok(TypeAnnotation::Struct(span, fields))
         } else if self.match_exact(TokenKind::CapitalFn).is_some() {
             let span = self.last().unwrap().span;
             if self.match_exact(TokenKind::LeftBracket).is_none() {
@@ -1393,39 +1412,37 @@ impl<'a> Parser<'a> {
 
             Ok(TypeAnnotation::Fn(span, params, Box::new(return_type)))
         } else {
-            Ok(TypeAnnotation::DimensionExpression(
-                self.dimension_expression()?,
-            ))
+            Ok(TypeAnnotation::TypeExpression(self.dimension_expression()?))
         }
     }
 
-    fn dimension_expression(&mut self) -> Result<DimensionExpression> {
+    fn dimension_expression(&mut self) -> Result<TypeExpression> {
         self.dimension_factor()
     }
 
-    fn dimension_factor(&mut self) -> Result<DimensionExpression> {
+    fn dimension_factor(&mut self) -> Result<TypeExpression> {
         let mut expr = self.dimension_power()?;
         while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
             let span = self.last().unwrap().span;
             let rhs = self.dimension_power()?;
 
             expr = if operator_token.kind == TokenKind::Multiply {
-                DimensionExpression::Multiply(span, Box::new(expr), Box::new(rhs))
+                TypeExpression::Multiply(span, Box::new(expr), Box::new(rhs))
             } else {
-                DimensionExpression::Divide(span, Box::new(expr), Box::new(rhs))
+                TypeExpression::Divide(span, Box::new(expr), Box::new(rhs))
             };
         }
         Ok(expr)
     }
 
-    fn dimension_power(&mut self) -> Result<DimensionExpression> {
+    fn dimension_power(&mut self) -> Result<TypeExpression> {
         let expr = self.dimension_primary()?;
 
         if self.match_exact(TokenKind::Power).is_some() {
             let span = self.last().unwrap().span;
             let (span_exponent, exponent) = self.dimension_exponent()?;
 
-            Ok(DimensionExpression::Power(
+            Ok(TypeExpression::Power(
                 Some(span),
                 Box::new(expr),
                 span_exponent,
@@ -1435,7 +1452,7 @@ impl<'a> Parser<'a> {
             let span_exponent = self.last().unwrap().span;
             let exp = Self::unicode_exponent_to_int(exponent.lexeme.as_str());
 
-            Ok(DimensionExpression::Power(
+            Ok(TypeExpression::Power(
                 None,
                 Box::new(expr),
                 span_exponent,
@@ -1508,7 +1525,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn dimension_primary(&mut self) -> Result<DimensionExpression> {
+    fn dimension_primary(&mut self) -> Result<TypeExpression> {
         let e = Err(ParseError::new(
             ParseErrorKind::ExpectedDimensionPrimary,
             self.peek().span,
@@ -1521,13 +1538,13 @@ impl<'a> Parser<'a> {
                 ));
             }
             let span = self.last().unwrap().span;
-            Ok(DimensionExpression::Dimension(span, token.lexeme.clone()))
+            Ok(TypeExpression::TypeIdentifier(span, token.lexeme.clone()))
         } else if let Some(number) = self.match_exact(TokenKind::Number) {
             let span = self.last().unwrap().span;
             if number.lexeme != "1" {
                 e
             } else {
-                Ok(DimensionExpression::Unity(span))
+                Ok(TypeExpression::Unity(span))
             }
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
             let dexpr = self.dimension_expression()?;
@@ -1607,7 +1624,7 @@ pub fn parse(input: &str, code_source_id: usize) -> ParseResult {
 }
 
 #[cfg(test)]
-pub fn parse_dexpr(input: &str) -> DimensionExpression {
+pub fn parse_dexpr(input: &str) -> TypeExpression {
     let tokens = crate::tokenizer::tokenize(input, 0).expect("No tokenizer errors in tests");
     let mut parser = crate::parser::Parser::new(&tokens);
     let expr = parser
@@ -2053,8 +2070,8 @@ mod tests {
                 identifier_span: Span::dummy(),
                 identifier: "x".into(),
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
-                type_annotation: Some(TypeAnnotation::DimensionExpression(
-                    DimensionExpression::Dimension(Span::dummy(), "Length".into()),
+                type_annotation: Some(TypeAnnotation::TypeExpression(
+                    TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
                 )),
                 decorators: Vec::new(),
             },
@@ -2067,8 +2084,8 @@ mod tests {
                 identifier_span: Span::dummy(),
                 identifier: "x".into(),
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
-                type_annotation: Some(TypeAnnotation::DimensionExpression(
-                    DimensionExpression::Dimension(Span::dummy(), "Length".into()),
+                type_annotation: Some(TypeAnnotation::TypeExpression(
+                    TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
                 )),
                 decorators: vec![
                     decorator::Decorator::Name("myvar".into()),
@@ -2104,7 +2121,7 @@ mod tests {
     fn dimension_definition() {
         parse_as(
             &["dimension px"],
-            Statement::DefineDimension("px".into(), vec![]),
+            Statement::DefineDimension(Span::dummy(), "px".into(), vec![]),
         );
 
         parse_as(
@@ -2114,14 +2131,15 @@ mod tests {
                 "dimension Area =\n  Length × Length",
             ],
             Statement::DefineDimension(
+                Span::dummy(),
                 "Area".into(),
-                vec![DimensionExpression::Multiply(
+                vec![TypeExpression::Multiply(
                     Span::dummy(),
-                    Box::new(DimensionExpression::Dimension(
+                    Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
                     )),
-                    Box::new(DimensionExpression::Dimension(
+                    Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
                     )),
@@ -2132,14 +2150,15 @@ mod tests {
         parse_as(
             &["dimension Velocity = Length / Time"],
             Statement::DefineDimension(
+                Span::dummy(),
                 "Velocity".into(),
-                vec![DimensionExpression::Divide(
+                vec![TypeExpression::Divide(
                     Span::dummy(),
-                    Box::new(DimensionExpression::Dimension(
+                    Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
                     )),
-                    Box::new(DimensionExpression::Dimension(Span::dummy(), "Time".into())),
+                    Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Time".into())),
                 )],
             ),
         );
@@ -2147,10 +2166,11 @@ mod tests {
         parse_as(
             &["dimension Area = Length^2"],
             Statement::DefineDimension(
+                Span::dummy(),
                 "Area".into(),
-                vec![DimensionExpression::Power(
+                vec![TypeExpression::Power(
                     Some(Span::dummy()),
-                    Box::new(DimensionExpression::Dimension(
+                    Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
                     )),
@@ -2163,15 +2183,16 @@ mod tests {
         parse_as(
             &["dimension Energy = Mass * Length^2 / Time^2"],
             Statement::DefineDimension(
+                Span::dummy(),
                 "Energy".into(),
-                vec![DimensionExpression::Divide(
+                vec![TypeExpression::Divide(
                     Span::dummy(),
-                    Box::new(DimensionExpression::Multiply(
+                    Box::new(TypeExpression::Multiply(
                         Span::dummy(),
-                        Box::new(DimensionExpression::Dimension(Span::dummy(), "Mass".into())),
-                        Box::new(DimensionExpression::Power(
+                        Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Mass".into())),
+                        Box::new(TypeExpression::Power(
                             Some(Span::dummy()),
-                            Box::new(DimensionExpression::Dimension(
+                            Box::new(TypeExpression::TypeIdentifier(
                                 Span::dummy(),
                                 "Length".into(),
                             )),
@@ -2179,9 +2200,9 @@ mod tests {
                             Rational::from_integer(2),
                         )),
                     )),
-                    Box::new(DimensionExpression::Power(
+                    Box::new(TypeExpression::Power(
                         Some(Span::dummy()),
-                        Box::new(DimensionExpression::Dimension(Span::dummy(), "Time".into())),
+                        Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Time".into())),
                         Span::dummy(),
                         Rational::from_integer(2),
                     )),
@@ -2192,10 +2213,11 @@ mod tests {
         parse_as(
             &["dimension X = Length^(12345/67890)"],
             Statement::DefineDimension(
+                Span::dummy(),
                 "X".into(),
-                vec![DimensionExpression::Power(
+                vec![TypeExpression::Power(
                     Some(Span::dummy()),
-                    Box::new(DimensionExpression::Dimension(
+                    Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
                     )),
@@ -2236,8 +2258,8 @@ mod tests {
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: Some(Span::dummy()),
-                return_type_annotation: Some(TypeAnnotation::DimensionExpression(
-                    DimensionExpression::Dimension(Span::dummy(), "Scalar".into()),
+                return_type_annotation: Some(TypeAnnotation::TypeExpression(
+                    TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
             },
         );
@@ -2282,52 +2304,50 @@ mod tests {
                     (
                         Span::dummy(),
                         "x".into(),
-                        Some(TypeAnnotation::DimensionExpression(
-                            DimensionExpression::Dimension(Span::dummy(), "Length".into()),
+                        Some(TypeAnnotation::TypeExpression(
+                            TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
                         )),
                         false,
                     ),
                     (
                         Span::dummy(),
                         "y".into(),
-                        Some(TypeAnnotation::DimensionExpression(
-                            DimensionExpression::Dimension(Span::dummy(), "Time".into()),
+                        Some(TypeAnnotation::TypeExpression(
+                            TypeExpression::TypeIdentifier(Span::dummy(), "Time".into()),
                         )),
                         false,
                     ),
                     (
                         Span::dummy(),
                         "z".into(),
-                        Some(TypeAnnotation::DimensionExpression(
-                            DimensionExpression::Multiply(
+                        Some(TypeAnnotation::TypeExpression(TypeExpression::Multiply(
+                            Span::dummy(),
+                            Box::new(TypeExpression::Power(
+                                Some(Span::dummy()),
+                                Box::new(TypeExpression::TypeIdentifier(
+                                    Span::dummy(),
+                                    "Length".into(),
+                                )),
                                 Span::dummy(),
-                                Box::new(DimensionExpression::Power(
-                                    Some(Span::dummy()),
-                                    Box::new(DimensionExpression::Dimension(
-                                        Span::dummy(),
-                                        "Length".into(),
-                                    )),
+                                Rational::new(3, 1),
+                            )),
+                            Box::new(TypeExpression::Power(
+                                Some(Span::dummy()),
+                                Box::new(TypeExpression::TypeIdentifier(
                                     Span::dummy(),
-                                    Rational::new(3, 1),
+                                    "Time".into(),
                                 )),
-                                Box::new(DimensionExpression::Power(
-                                    Some(Span::dummy()),
-                                    Box::new(DimensionExpression::Dimension(
-                                        Span::dummy(),
-                                        "Time".into(),
-                                    )),
-                                    Span::dummy(),
-                                    Rational::new(2, 1),
-                                )),
-                            ),
-                        )),
+                                Span::dummy(),
+                                Rational::new(2, 1),
+                            )),
+                        ))),
                         false,
                     ),
                 ],
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: Some(Span::dummy()),
-                return_type_annotation: Some(TypeAnnotation::DimensionExpression(
-                    DimensionExpression::Dimension(Span::dummy(), "Scalar".into()),
+                return_type_annotation: Some(TypeAnnotation::TypeExpression(
+                    TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
             },
         );
@@ -2341,8 +2361,8 @@ mod tests {
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),
-                    Some(TypeAnnotation::DimensionExpression(
-                        DimensionExpression::Dimension(Span::dummy(), "X".into()),
+                    Some(TypeAnnotation::TypeExpression(
+                        TypeExpression::TypeIdentifier(Span::dummy(), "X".into()),
                     )),
                     false,
                 )],
@@ -2361,15 +2381,15 @@ mod tests {
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),
-                    Some(TypeAnnotation::DimensionExpression(
-                        DimensionExpression::Dimension(Span::dummy(), "D".into()),
+                    Some(TypeAnnotation::TypeExpression(
+                        TypeExpression::TypeIdentifier(Span::dummy(), "D".into()),
                     )),
                     true,
                 )],
                 body: None,
                 return_type_annotation_span: Some(Span::dummy()),
-                return_type_annotation: Some(TypeAnnotation::DimensionExpression(
-                    DimensionExpression::Dimension(Span::dummy(), "D".into()),
+                return_type_annotation: Some(TypeAnnotation::TypeExpression(
+                    TypeExpression::TypeIdentifier(Span::dummy(), "D".into()),
                 )),
             },
         );
@@ -2693,19 +2713,21 @@ mod tests {
     #[test]
     fn structs() {
         parse_as_expression(
-            &["${foo: 1, bar: 2}"],
+            &["Foo {foo: 1, bar: 2}"],
             struct_! {
+                Foo,
                 foo: scalar!(1.0),
                 bar: scalar!(2.0)
             },
         );
 
         parse_as_expression(
-            &["${foo: 1, bar: 2}.foo"],
+            &["Foo {foo: 1, bar: 2}.foo"],
             Expression::AccessStruct(
                 Span::dummy(),
                 Span::dummy(),
                 Box::new(struct_! {
+                    Foo,
                     foo: scalar!(1.0),
                     bar: scalar!(2.0)
                 }),

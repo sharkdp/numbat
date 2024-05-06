@@ -97,12 +97,20 @@ impl Transformer {
                     })
                     .collect(),
             ),
-            Expression::MakeStruct(span, args) => Expression::MakeStruct(
-                span,
-                args.into_iter()
+            Expression::MakeStruct {
+                full_span,
+                ident_span,
+                name,
+                fields,
+            } => Expression::MakeStruct {
+                full_span,
+                ident_span,
+                name,
+                fields: fields
+                    .into_iter()
                     .map(|(span, attr, arg)| (span, attr, self.transform_expression(arg)))
                     .collect(),
-            ),
+            },
             Expression::AccessStruct(full_span, ident_span, expr, attr) => {
                 Expression::AccessStruct(
                     full_span,
@@ -228,9 +236,18 @@ impl Transformer {
                     return_type_annotation,
                 }
             }
-            Statement::DefineDimension(name, dexprs) => {
+            Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                fields,
+            } => Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                fields,
+            },
+            Statement::DefineDimension(name_span, name, dexprs) => {
                 self.dimension_names.push(name.clone());
-                Statement::DefineDimension(name, dexprs)
+                Statement::DefineDimension(name_span, name, dexprs)
             }
             Statement::ProcedureCall(span, procedure, args) => Statement::ProcedureCall(
                 span,
