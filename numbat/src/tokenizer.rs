@@ -54,7 +54,7 @@ pub enum TokenKind {
     LeftBracket,
     RightBracket,
 
-    DollarLeftCurly, // ${
+    LeftCurly,
     RightCurly,
 
     // Operators and special signs
@@ -90,6 +90,7 @@ pub enum TokenKind {
     Dimension,
     Unit,
     Use,
+    Struct,
 
     To,
 
@@ -349,6 +350,7 @@ impl Tokenizer {
             m.insert("to", TokenKind::To);
             m.insert("let", TokenKind::Let);
             m.insert("fn", TokenKind::Fn);
+            m.insert("struct", TokenKind::Struct);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
             m.insert("use", TokenKind::Use);
@@ -403,7 +405,7 @@ impl Tokenizer {
             ')' => TokenKind::RightParen,
             '[' => TokenKind::LeftBracket,
             ']' => TokenKind::RightBracket,
-            '$' if self.match_char('{') => TokenKind::DollarLeftCurly,
+            '{' if !self.interpolation_state.is_inside() => TokenKind::LeftCurly,
             '}' if !self.interpolation_state.is_inside() => TokenKind::RightCurly,
             '≤' => TokenKind::LessOrEqual,
             '<' if self.match_char('=') => TokenKind::LessOrEqual,

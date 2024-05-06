@@ -143,6 +143,7 @@ impl PrefixParser {
     ) -> NameResolutionError {
         NameResolutionError::IdentifierClash {
             conflicting_identifier: name.to_string(),
+            original_item_type: None,
             conflict_span,
             original_span,
         }

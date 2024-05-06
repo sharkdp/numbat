@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 
-use crate::{pretty_print::PrettyPrint, quantity::Quantity};
+use crate::{pretty_print::PrettyPrint, quantity::Quantity, typed_ast::StructInfo};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FunctionReference {
@@ -33,7 +33,7 @@ pub enum Value {
     DateTime(chrono::DateTime<chrono::FixedOffset>),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<String>),
-    Struct(Arc<[(String, usize)]>, Vec<Value>),
+    Struct(Arc<StructInfo>, Vec<Value>),
 }
 
 impl Value {
@@ -92,12 +92,15 @@ impl std::fmt::Display for Value {
             Value::DateTime(dt) => write!(f, "datetime(\"{}\")", dt),
             Value::FunctionReference(r) => write!(f, "{}", r),
             Value::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
-            Value::Struct(field_meta, values) => write!(
+            Value::Struct(struct_info, values) => write!(
                 f,
-                "${{ {} }}",
-                field_meta
-                    .iter()
-                    .map(|(name, idx)| name.to_owned() + ": " + &values[*idx].to_string())
+                "{} {{ {} }}",
+                struct_info.name,
+                struct_info
+                    .fields
+                    .keys()
+                    .zip(values)
+                    .map(|(name, value)| name.to_owned() + ": " + &value.to_string())
                     .join(", ")
             ),
         }
@@ -114,12 +117,12 @@ impl PrettyPrint for Value {
             Value::FunctionReference(r) => crate::markup::string(r.to_string()),
             Value::FormatSpecifiers(Some(s)) => crate::markup::string(s),
             Value::FormatSpecifiers(None) => crate::markup::empty(),
-            Value::Struct(field_meta, values) => {
-                crate::markup::operator("${")
+            Value::Struct(struct_info, values) => {
+                crate::markup::type_identifier(struct_info.name.clone())
+                    + crate::markup::space()
+                    + crate::markup::operator("{")
                     + itertools::Itertools::intersperse(
-                        field_meta.iter().map(|(name, idx)| {
-                            let val = &values[*idx];
-
+                        struct_info.fields.keys().zip(values).map(|(name, val)| {
                             crate::markup::identifier(name)
                                 + crate::markup::operator(":")
                                 + crate::markup::space()

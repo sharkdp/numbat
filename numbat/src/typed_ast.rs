@@ -1,8 +1,9 @@
+use indexmap::IndexMap;
 use itertools::Itertools;
 
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::ProcedureKind;
-pub use crate::ast::{BinaryOperator, DimensionExpression, UnaryOperator};
+pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
 use crate::dimension::DimensionRegistry;
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
@@ -53,6 +54,13 @@ impl DType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructInfo {
+    pub definition_span: Span,
+    pub name: String,
+    pub fields: IndexMap<String, (Span, Type)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Never,
     Dimension(DType),
@@ -60,7 +68,7 @@ pub enum Type {
     String,
     DateTime,
     Fn(Vec<Type>, Box<Type>),
-    Struct(indexmap::IndexMap<String, Type>),
+    Struct(StructInfo),
 }
 
 impl std::fmt::Display for Type {
@@ -78,13 +86,13 @@ impl std::fmt::Display for Type {
                     ps = param_types.iter().map(|p| p.to_string()).join(", ")
                 )
             }
-            Type::Struct(members) => {
+            Type::Struct(StructInfo { name, fields, .. }) => {
                 write!(
                     f,
-                    "${{{}}}",
-                    members
+                    "{name} {{{}}}",
+                    fields
                         .iter()
-                        .map(|(n, t)| n.to_string() + ": " + &t.to_string())
+                        .map(|(n, (_, t))| n.to_string() + ": " + &t.to_string())
                         .join(", ")
                 )
             }
@@ -115,10 +123,12 @@ impl PrettyPrint for Type {
                     + return_type.pretty_print()
                     + m::operator("]")
             }
-            Type::Struct(fields) => {
-                m::operator("${")
+            Type::Struct(StructInfo { name, fields, .. }) => {
+                m::type_identifier(name)
+                    + m::space()
+                    + m::operator("{")
                     + Itertools::intersperse(
-                        fields.iter().map(|(n, t)| {
+                        fields.iter().map(|(n, (_, t))| {
                             m::type_identifier(n) + m::operator(":") + m::space() + t.pretty_print()
                         }),
                         m::operator(",") + m::space(),
@@ -232,19 +242,8 @@ pub enum Expression {
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
-    MakeStruct(
-        Span,
-        Vec<(String, Expression)>,
-        indexmap::IndexMap<String, Type>,
-    ),
-    AccessStruct(
-        Span,
-        Span,
-        Box<Expression>,
-        String,
-        indexmap::IndexMap<String, Type>,
-        Type,
-    ),
+    MakeStruct(Span, Vec<(String, Expression)>, StructInfo),
+    AccessStruct(Span, Span, Box<Expression>, String, StructInfo, Type),
 }
 
 impl Expression {
@@ -300,10 +299,11 @@ pub enum Statement {
         Markup,             // readable return type
         Type,               // return type
     ),
-    DefineDimension(String, Vec<DimensionExpression>),
+    DefineDimension(String, Vec<TypeExpression>),
     DefineBaseUnit(String, Vec<Decorator>, Markup, Type),
     DefineDerivedUnit(String, Expression, Vec<Decorator>, Markup, Type),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
+    DefineStruct(StructInfo),
 }
 
 impl Statement {
@@ -524,6 +524,21 @@ impl PrettyPrint for Statement {
                     .sum()
                     + m::operator(")")
             }
+            Statement::DefineStruct(StructInfo { name, fields, .. }) => {
+                m::keyword("struct")
+                    + m::space()
+                    + m::type_identifier(name.clone())
+                    + m::space()
+                    + m::operator("{")
+                    + Itertools::intersperse(
+                        fields.iter().map(|(n, (_, t))| {
+                            m::identifier(n) + m::operator(":") + m::space() + t.pretty_print()
+                        }),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator("}")
+            }
         }
     }
 }
@@ -721,8 +736,10 @@ impl PrettyPrint for Expression {
                     + m::space()
                     + with_parens(else_)
             }
-            MakeStruct(_, exprs, _type) => {
-                m::operator("${")
+            MakeStruct(_, exprs, struct_info) => {
+                m::type_identifier(struct_info.name.clone())
+                    + m::space()
+                    + m::operator("{")
                     + itertools::Itertools::intersperse(
                         exprs.iter().map(|(n, e)| {
                             m::identifier(n) + m::operator(":") + m::space() + e.pretty_print()
@@ -786,6 +803,8 @@ mod tests {
 
                  @metric_prefixes
                  unit points
+
+                 struct Foo {{foo: Length, bar: Time}}
 
                  let a = 1
                  let b = 1
@@ -903,7 +922,7 @@ mod tests {
         roundtrip_check("-3!");
         roundtrip_check("(-3)!");
         roundtrip_check("megapoints");
-        roundtrip_check("${foo: 1 meter, bar: 1 second}");
+        roundtrip_check("Foo {foo: 1 meter, bar: 1 second}");
     }
 
     #[test]

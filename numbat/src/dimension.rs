@@ -1,5 +1,5 @@
 use crate::arithmetic::Power;
-use crate::ast::DimensionExpression;
+use crate::ast::TypeExpression;
 use crate::registry::{BaseRepresentation, Registry, Result};
 
 #[derive(Default, Clone)]
@@ -10,27 +10,27 @@ pub struct DimensionRegistry {
 impl DimensionRegistry {
     pub fn get_base_representation(
         &self,
-        expression: &DimensionExpression,
+        expression: &TypeExpression,
     ) -> Result<BaseRepresentation> {
         match expression {
-            DimensionExpression::Unity(_) => Ok(BaseRepresentation::unity()),
-            DimensionExpression::Dimension(_, name) => self
+            TypeExpression::Unity(_) => Ok(BaseRepresentation::unity()),
+            TypeExpression::TypeIdentifier(_, name) => self
                 .registry
                 .get_base_representation_for_name(name)
                 .map(|r| r.0),
-            DimensionExpression::Multiply(_, lhs, rhs) => {
+            TypeExpression::Multiply(_, lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
                 Ok(lhs * rhs)
             }
-            DimensionExpression::Divide(_, lhs, rhs) => {
+            TypeExpression::Divide(_, lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
                 Ok(lhs / rhs)
             }
-            DimensionExpression::Power(_, expr, _, outer_exponent) => {
+            TypeExpression::Power(_, expr, _, outer_exponent) => {
                 Ok(self.get_base_representation(expr)?.power(*outer_exponent))
             }
         }
@@ -62,7 +62,7 @@ impl DimensionRegistry {
     pub fn add_derived_dimension(
         &mut self,
         name: &str,
-        expression: &DimensionExpression,
+        expression: &TypeExpression,
     ) -> Result<BaseRepresentation> {
         let base_representation = self.get_base_representation(expression)?;
         self.registry

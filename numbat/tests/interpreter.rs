@@ -52,9 +52,12 @@ fn expect_failure(code: &str, msg_part: &str) {
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         let error_message = e.to_string();
         println!("{}", error_message);
-        assert!(error_message.contains(msg_part));
+        assert!(
+            error_message.contains(msg_part),
+            "Expected {msg_part} but got {error_message}"
+        );
     } else {
-        panic!();
+        panic!("Expected an error but but instead {code} did not fail");
     }
 }
 
@@ -497,11 +500,17 @@ fn test_name_clash_errors() {
 fn test_type_check_errors() {
     expect_failure("foo", "Unknown identifier 'foo'");
 
-    expect_failure("let sin=2", "This name is already used by a function");
-    expect_failure("fn pi() = 1", "This name is already used by a constant");
+    expect_failure(
+        "let sin=2",
+        "Identifier is already in use by the foreign function: 'sin'",
+    );
+    expect_failure(
+        "fn pi() = 1",
+        "Identifier is already in use by the constant: 'pi'",
+    );
     expect_failure(
         "fn sin(x)=0",
-        "This name is already used by a foreign function",
+        "Identifier is already in use by the foreign function: 'sin'",
     );
 }
 

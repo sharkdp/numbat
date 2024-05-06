@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use indexmap::IndexMap;
 use itertools::Itertools;
 
 use crate::ast::ProcedureKind;
@@ -168,39 +167,28 @@ impl BytecodeInterpreter {
                     self.vm.add_op2(Op::Call, idx, args.len() as u16); // TODO: check overflow
                 }
             }
-            Expression::MakeStruct(_span, exprs, type_) => {
-                // here we discard any type information about the struct, so we must have a consistent ordering of fields
-                //
-                // to do that, sort the fields lexographically
+            Expression::MakeStruct(_span, exprs, struct_info) => {
+                // structs must be consistently ordered in the VM, so we reorder
+                // the field values so that they are evaluated in the order the
+                // struct fields are defined.
+
                 let sorted_exprs = exprs
                     .iter()
-                    .sorted_by_key(|(n, _)| n)
-                    .cloned()
-                    .collect::<IndexMap<_, _>>();
+                    .sorted_by_key(|(n, _)| struct_info.fields.get_index_of(n).unwrap());
 
-                for (_, expr) in sorted_exprs.iter().rev() {
+                for (_, expr) in sorted_exprs.rev() {
                     self.compile_expression_with_simplify(expr)?;
                 }
 
-                let field_meta = type_
-                    .iter()
-                    .map(|(n, _)| (n.clone(), sorted_exprs.get_index_of(n).unwrap()))
-                    .collect();
-
-                let field_meta_idx = self.vm.add_struct_fields(field_meta);
+                let struct_info_idx = self.vm.get_structinfo_idx(&struct_info.name).unwrap() as u16;
 
                 self.vm
-                    .add_op2(Op::BuildStruct, field_meta_idx, exprs.len() as u16);
+                    .add_op2(Op::BuildStruct, struct_info_idx, exprs.len() as u16);
             }
-            Expression::AccessStruct(_span, _full_span, expr, attr, struct_type, _result_type) => {
+            Expression::AccessStruct(_span, _full_span, expr, attr, struct_info, _result_type) => {
                 self.compile_expression_with_simplify(expr)?;
 
-                let (idx, _) = struct_type
-                    .iter()
-                    .map(|(n, _)| n)
-                    .sorted()
-                    .find_position(|n| *n == attr)
-                    .unwrap();
+                let idx = struct_info.fields.get_index_of(attr).unwrap();
 
                 self.vm.add_op1(Op::DestructureStruct, idx as u16);
             }
@@ -477,6 +465,9 @@ impl BytecodeInterpreter {
                 let idx = self.vm.get_ffi_callable_idx(name).unwrap();
                 self.vm
                     .add_op2(Op::FFICallProcedure, idx, args.len() as u16); // TODO: check overflow
+            }
+            Statement::DefineStruct(struct_info) => {
+                self.vm.add_struct_info(struct_info);
             }
         }
 

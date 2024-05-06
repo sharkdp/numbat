@@ -113,9 +113,12 @@ type(2 m/s)                      # Print the type of an expression
 
 # 9. Structs
 
-${foo: 1A, bar: pi}  # Constructing a record
+# defining a struct
+struct Foo { foo: Current, bar: Scalar }
 
-# Records are structurally typed and field order is not fixed
-let r: ${bar: Scalar, foo: Current} = ${foo: 1A, bar: pi}
+# Constructing a struct
+Foo {foo: 1A, bar: pi}
+
+let r: Foo = Foo {foo: 1A, bar: pi}
 
 r.foo  # Field access is performed with `.field` notation

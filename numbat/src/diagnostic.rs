@@ -46,6 +46,7 @@ impl ErrorDiagnostic for NameResolutionError {
         match self {
             NameResolutionError::IdentifierClash {
                 conflicting_identifier: _,
+                original_item_type,
                 conflict_span,
                 original_span,
             } => vec![Diagnostic::error()
@@ -53,7 +54,11 @@ impl ErrorDiagnostic for NameResolutionError {
                 .with_labels(vec![
                     original_span
                         .diagnostic_label(LabelStyle::Secondary)
-                        .with_message("Previously defined here"),
+                        .with_message(if let Some(t) = original_item_type.as_ref() {
+                            format!("Previously defined {t} here")
+                        } else {
+                            "Previously defined here".to_owned()
+                        }),
                     conflict_span
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message("identifier is already in use"),
@@ -323,23 +328,6 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_notes(vec![inner_error])
                 }
             }
-            TypeCheckError::NameAlreadyUsedBy(_, definition_span, previous_definition_span) => {
-                let mut labels = vec![];
-
-                if let Some(span) = previous_definition_span {
-                    labels.push(
-                        span.diagnostic_label(LabelStyle::Secondary)
-                            .with_message("Previously defined here"),
-                    );
-                }
-
-                labels.push(
-                    definition_span
-                        .diagnostic_label(LabelStyle::Primary)
-                        .with_message(inner_error),
-                );
-                d.with_labels(labels)
-            }
             TypeCheckError::NoDimensionlessBaseUnit(span, unit_name) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
@@ -416,6 +404,67 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Secondary)
                         .with_message(type_.to_string()),
                 ]),
+            TypeCheckError::IncompatibleTypesForStructField(
+                expected_field_span,
+                _expected_type,
+                expr_span,
+                _found_type,
+            ) => d.with_labels(vec![
+                expr_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                expected_field_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("Defined here"),
+            ]),
+            TypeCheckError::UnknownStruct(span, _name) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
+            TypeCheckError::UnknownFieldOfStruct(field_span, defn_span, _, _) => {
+                d.with_labels(vec![
+                    field_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    defn_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message("Struct defined here"),
+                ])
+            }
+            TypeCheckError::DuplicateFieldInStructDefinition(
+                this_field_span,
+                that_field_span,
+                _attr_name,
+            ) => d.with_labels(vec![
+                this_field_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                that_field_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("Already defined here"),
+            ]),
+            TypeCheckError::MissingFieldsFromStructConstruction(
+                construction_span,
+                defn_span,
+                missing,
+            ) => d
+                .with_labels(vec![
+                    construction_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    defn_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message("Struct defined here"),
+                ])
+                .with_notes(vec!["Missing fields: ".to_owned()])
+                .with_notes(
+                    missing
+                        .iter()
+                        .map(|(n, t)| n.to_owned() + ": " + &t.to_string())
+                        .collect(),
+                ),
+            TypeCheckError::NameResolutionError(inner) => {
+                return inner.diagnostics();
+            }
         };
         vec![d]
     }

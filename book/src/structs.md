@@ -1,21 +1,24 @@
 # Struct types
 
-Numbat supports structurally typed records:
+Numbat supports nominally typed records:
 
 ```nbt
-# A value level struct
-${x: Length, y: Length}
+# Define a struct
+struct Vector {
+  x: Length,
+  y: Length,
+}
+
+let v = Vector {x: 6m, y: 8m}
 
 # A function with a struct as a parameter
-fn euclidian_distance(a: ${x: Length, y: Length}, b: ${x: Length, y: Length}) =
+fn euclidian_distance(a: Vector, b: Vector) =
   sqrt(sqr(a.x - b.x) + sqr(a.y - b.y))
   
 assert_eq(
-  euclidian_distance(${x: 0m, y: 0m}, ${x: 6m, y: 8m}),
+  euclidian_distance(Vector {x: 0m, y: 0m}, v),
   10m)
   
-let r = ${foo: 1}
-
 # Struct fields can be accessed using `.field` notation
-let x = r.foo
+let x = v.x
 ```

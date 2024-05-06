@@ -85,7 +85,12 @@ pub enum Expression {
     Boolean(Span, bool),
     String(Span, Vec<StringPart>),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
-    MakeStruct(Span, Vec<(Span, String, Expression)>),
+    MakeStruct {
+        full_span: Span,
+        ident_span: Span,
+        name: String,
+        fields: Vec<(Span, String, Expression)>,
+    },
     AccessStruct(Span, Span, Box<Expression>, String),
 }
 
@@ -118,7 +123,7 @@ impl Expression {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
-            Expression::MakeStruct(full_span, _) => *full_span,
+            Expression::MakeStruct { full_span, .. } => *full_span,
             Expression::AccessStruct(full_span, _ident_span, _, _) => *full_span,
         }
     }
@@ -204,13 +209,15 @@ macro_rules! conditional {
 
 #[cfg(test)]
 macro_rules! struct_ {
-    ( $( $field:ident : $val:expr ),* ) => {{
-        crate::ast::Expression::MakeStruct(
-            Span::dummy(),
-            vec![
+    ( $name:ident, $( $field:ident : $val:expr ),* ) => {{
+        crate::ast::Expression::MakeStruct {
+            full_span: Span::dummy(),
+            ident_span: Span::dummy(),
+            name: stringify!($name).to_owned(),
+            fields: vec![
                 $((Span::dummy(), stringify!($field).to_owned(), $val)),*
             ]
-        )
+        }
     }};
 }
 
@@ -236,24 +243,22 @@ pub(crate) use struct_;
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeAnnotation {
     Never(Span),
-    DimensionExpression(DimensionExpression),
+    TypeExpression(TypeExpression),
     Bool(Span),
     String(Span),
     DateTime(Span),
     Fn(Span, Vec<TypeAnnotation>, Box<TypeAnnotation>),
-    Struct(Span, Vec<(Span, String, TypeAnnotation)>),
 }
 
 impl TypeAnnotation {
     pub fn full_span(&self) -> Span {
         match self {
             TypeAnnotation::Never(span) => *span,
-            TypeAnnotation::DimensionExpression(d) => d.full_span(),
+            TypeAnnotation::TypeExpression(d) => d.full_span(),
             TypeAnnotation::Bool(span) => *span,
             TypeAnnotation::String(span) => *span,
             TypeAnnotation::DateTime(span) => *span,
             TypeAnnotation::Fn(span, _, _) => *span,
-            TypeAnnotation::Struct(span, _) => *span,
         }
     }
 }
@@ -262,7 +267,7 @@ impl PrettyPrint for TypeAnnotation {
     fn pretty_print(&self) -> Markup {
         match self {
             TypeAnnotation::Never(_) => m::type_identifier("!"),
-            TypeAnnotation::DimensionExpression(d) => d.pretty_print(),
+            TypeAnnotation::TypeExpression(d) => d.pretty_print(),
             TypeAnnotation::Bool(_) => m::type_identifier("Bool"),
             TypeAnnotation::String(_) => m::type_identifier("String"),
             TypeAnnotation::DateTime(_) => m::type_identifier("DateTime"),
@@ -281,48 +286,37 @@ impl PrettyPrint for TypeAnnotation {
                     + return_type.pretty_print()
                     + m::operator("]")
             }
-            TypeAnnotation::Struct(_, fields) => {
-                m::operator("${")
-                    + Itertools::intersperse(
-                        fields.iter().map(|(_, n, t)| {
-                            m::identifier(n) + m::operator(":") + m::space() + t.pretty_print()
-                        }),
-                        m::operator(",") + m::space(),
-                    )
-                    .sum()
-                    + m::operator("}")
-            }
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 
-pub enum DimensionExpression {
+pub enum TypeExpression {
     Unity(Span),
-    Dimension(Span, String),
-    Multiply(Span, Box<DimensionExpression>, Box<DimensionExpression>),
-    Divide(Span, Box<DimensionExpression>, Box<DimensionExpression>),
+    TypeIdentifier(Span, String),
+    Multiply(Span, Box<TypeExpression>, Box<TypeExpression>),
+    Divide(Span, Box<TypeExpression>, Box<TypeExpression>),
     Power(
         Option<Span>, // operator span, not available for unicode exponents
-        Box<DimensionExpression>,
+        Box<TypeExpression>,
         Span, // span for the exponent
         Exponent,
     ),
 }
 
-impl DimensionExpression {
+impl TypeExpression {
     pub fn full_span(&self) -> Span {
         match self {
-            DimensionExpression::Unity(s) => *s,
-            DimensionExpression::Dimension(s, _) => *s,
-            DimensionExpression::Multiply(span_op, lhs, rhs) => {
+            TypeExpression::Unity(s) => *s,
+            TypeExpression::TypeIdentifier(s, _) => *s,
+            TypeExpression::Multiply(span_op, lhs, rhs) => {
                 span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
             }
-            DimensionExpression::Divide(span_op, lhs, rhs) => {
+            TypeExpression::Divide(span_op, lhs, rhs) => {
                 span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
             }
-            DimensionExpression::Power(span_op, lhs, span_exponent, _exp) => match span_op {
+            TypeExpression::Power(span_op, lhs, span_exponent, _exp) => match span_op {
                 Some(span_op) => span_op.extend(&lhs.full_span()).extend(span_exponent),
                 None => lhs.full_span().extend(span_exponent),
             },
@@ -330,29 +324,29 @@ impl DimensionExpression {
     }
 }
 
-fn with_parens(dexpr: &DimensionExpression) -> Markup {
+fn with_parens(dexpr: &TypeExpression) -> Markup {
     match dexpr {
-        expr @ (DimensionExpression::Unity(..)
-        | DimensionExpression::Dimension(..)
-        | DimensionExpression::Power(..)) => expr.pretty_print(),
-        expr @ (DimensionExpression::Multiply(..) | DimensionExpression::Divide(..)) => {
+        expr @ (TypeExpression::Unity(..)
+        | TypeExpression::TypeIdentifier(..)
+        | TypeExpression::Power(..)) => expr.pretty_print(),
+        expr @ (TypeExpression::Multiply(..) | TypeExpression::Divide(..)) => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
         }
     }
 }
 
-impl PrettyPrint for DimensionExpression {
+impl PrettyPrint for TypeExpression {
     fn pretty_print(&self) -> Markup {
         match self {
-            DimensionExpression::Unity(_) => m::type_identifier("1"),
-            DimensionExpression::Dimension(_, ident) => m::type_identifier(ident),
-            DimensionExpression::Multiply(_, lhs, rhs) => {
+            TypeExpression::Unity(_) => m::type_identifier("1"),
+            TypeExpression::TypeIdentifier(_, ident) => m::type_identifier(ident),
+            TypeExpression::Multiply(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
             }
-            DimensionExpression::Divide(_, lhs, rhs) => {
+            TypeExpression::Divide(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("/") + m::space() + with_parens(rhs)
             }
-            DimensionExpression::Power(_, lhs, _, exp) => {
+            TypeExpression::Power(_, lhs, _, exp) => {
                 with_parens(lhs)
                     + m::operator("^")
                     + if exp.is_positive() {
@@ -395,18 +389,23 @@ pub enum Statement {
         /// Optional annotated return type
         return_type_annotation: Option<TypeAnnotation>,
     },
-    DefineDimension(String, Vec<DimensionExpression>),
-    DefineBaseUnit(Span, String, Option<DimensionExpression>, Vec<Decorator>),
+    DefineDimension(Span, String, Vec<TypeExpression>),
+    DefineBaseUnit(Span, String, Option<TypeExpression>, Vec<Decorator>),
     DefineDerivedUnit {
         identifier_span: Span,
         identifier: String,
         expr: Expression,
         type_annotation_span: Option<Span>,
-        type_annotation: Option<DimensionExpression>,
+        type_annotation: Option<TypeExpression>,
         decorators: Vec<Decorator>,
     },
     ProcedureCall(Span, ProcedureKind, Vec<Expression>),
     ModuleImport(Span, ModulePath),
+    DefineStruct {
+        struct_name_span: Span,
+        struct_name: String,
+        fields: Vec<(Span, String, TypeAnnotation)>,
+    },
 }
 
 #[cfg(test)]
@@ -419,45 +418,36 @@ impl ReplaceSpans for TypeAnnotation {
     fn replace_spans(&self) -> Self {
         match self {
             TypeAnnotation::Never(_) => TypeAnnotation::Never(Span::dummy()),
-            TypeAnnotation::DimensionExpression(d) => {
-                TypeAnnotation::DimensionExpression(d.replace_spans())
-            }
+            TypeAnnotation::TypeExpression(d) => TypeAnnotation::TypeExpression(d.replace_spans()),
             TypeAnnotation::Bool(_) => TypeAnnotation::Bool(Span::dummy()),
             TypeAnnotation::String(_) => TypeAnnotation::String(Span::dummy()),
             TypeAnnotation::DateTime(_) => TypeAnnotation::DateTime(Span::dummy()),
             TypeAnnotation::Fn(_, pt, rt) => {
                 TypeAnnotation::Fn(Span::dummy(), pt.clone(), rt.clone())
             }
-            TypeAnnotation::Struct(_, fields) => TypeAnnotation::Struct(
-                Span::dummy(),
-                fields
-                    .iter()
-                    .map(|(_, n, v)| (Span::dummy(), n.clone(), v.replace_spans()))
-                    .collect(),
-            ),
         }
     }
 }
 
 #[cfg(test)]
-impl ReplaceSpans for DimensionExpression {
+impl ReplaceSpans for TypeExpression {
     fn replace_spans(&self) -> Self {
         match self {
-            DimensionExpression::Unity(_) => DimensionExpression::Unity(Span::dummy()),
-            DimensionExpression::Dimension(_, d) => {
-                DimensionExpression::Dimension(Span::dummy(), d.clone())
+            TypeExpression::Unity(_) => TypeExpression::Unity(Span::dummy()),
+            TypeExpression::TypeIdentifier(_, d) => {
+                TypeExpression::TypeIdentifier(Span::dummy(), d.clone())
             }
-            DimensionExpression::Multiply(_, lhs, rhs) => DimensionExpression::Multiply(
+            TypeExpression::Multiply(_, lhs, rhs) => TypeExpression::Multiply(
                 Span::dummy(),
                 Box::new(lhs.replace_spans()),
                 Box::new(rhs.replace_spans()),
             ),
-            DimensionExpression::Divide(_, lhs, rhs) => DimensionExpression::Divide(
+            TypeExpression::Divide(_, lhs, rhs) => TypeExpression::Divide(
                 Span::dummy(),
                 Box::new(lhs.replace_spans()),
                 Box::new(rhs.replace_spans()),
             ),
-            DimensionExpression::Power(span_op, lhs, _, exp) => DimensionExpression::Power(
+            TypeExpression::Power(span_op, lhs, _, exp) => TypeExpression::Power(
                 span_op.map(|_| Span::dummy()),
                 Box::new(lhs.replace_spans()),
                 Span::dummy(),
@@ -531,13 +521,15 @@ impl ReplaceSpans for Expression {
                 Span::dummy(),
                 parts.iter().map(|p| p.replace_spans()).collect(),
             ),
-            Expression::MakeStruct(_, fields) => Expression::MakeStruct(
-                Span::dummy(),
-                fields
+            Expression::MakeStruct { name, fields, .. } => Expression::MakeStruct {
+                full_span: Span::dummy(),
+                ident_span: Span::dummy(),
+                name: name.clone(),
+                fields: fields
                     .iter()
                     .map(|(_, n, v)| (Span::dummy(), n.clone(), v.replace_spans()))
                     .collect(),
-            ),
+            },
             Expression::AccessStruct(_, _, expr, attr) => Expression::AccessStruct(
                 Span::dummy(),
                 Span::dummy(),
@@ -596,7 +588,8 @@ impl ReplaceSpans for Statement {
                 return_type_annotation_span: return_type_span.map(|_| Span::dummy()),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
             },
-            Statement::DefineDimension(name, dexprs) => Statement::DefineDimension(
+            Statement::DefineDimension(_, name, dexprs) => Statement::DefineDimension(
+                Span::dummy(),
                 name.clone(),
                 dexprs.iter().map(|t| t.replace_spans()).collect(),
             ),
@@ -629,6 +622,20 @@ impl ReplaceSpans for Statement {
             Statement::ModuleImport(_, module_path) => {
                 Statement::ModuleImport(Span::dummy(), module_path.clone())
             }
+            Statement::DefineStruct {
+                struct_name,
+                fields,
+                ..
+            } => Statement::DefineStruct {
+                struct_name_span: Span::dummy(),
+                struct_name: struct_name.clone(),
+                fields: fields
+                    .into_iter()
+                    .map(|(_span, name, type_)| {
+                        (Span::dummy(), name.clone(), type_.replace_spans())
+                    })
+                    .collect(),
+            },
         }
     }
 }
