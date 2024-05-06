@@ -1,11 +1,13 @@
 use std::collections::HashMap;
+use std::fmt::Write;
 
 use std::sync::OnceLock;
 
 use crate::currency::ExchangeRatesCache;
+use crate::datetime;
 use crate::interpreter::RuntimeError;
 use crate::pretty_print::PrettyPrint;
-use crate::value::Value;
+use crate::value::{FunctionReference, Value};
 use crate::vm::ExecutionContext;
 use crate::{ast::ProcedureKind, quantity::Quantity};
 
@@ -115,6 +117,22 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 name: "ceil".into(),
                 arity: 1..=1,
                 callable: Callable::Function(Box::new(ceil)),
+            },
+        );
+        m.insert(
+            "is_nan".to_string(),
+            ForeignFunction {
+                name: "is_nan".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(is_nan)),
+            },
+        );
+        m.insert(
+            "is_infinite".to_string(),
+            ForeignFunction {
+                name: "is_infinite".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(is_infinite)),
             },
         );
 
@@ -299,7 +317,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         );
 
         m.insert(
-            format!("exchange_rate"),
+            "exchange_rate".to_string(),
             ForeignFunction {
                 name: "exchange_rate".into(),
                 arity: 1..=1,
@@ -316,11 +334,105 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
             },
         );
         m.insert(
+            "lowercase".to_string(),
+            ForeignFunction {
+                name: "lowercase".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(lowercase)),
+            },
+        );
+        m.insert(
+            "uppercase".to_string(),
+            ForeignFunction {
+                name: "uppercase".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(uppercase)),
+            },
+        );
+        m.insert(
             "str_slice".to_string(),
             ForeignFunction {
                 name: "str_slice".into(),
                 arity: 3..=3,
                 callable: Callable::Function(Box::new(str_slice)),
+            },
+        );
+        m.insert(
+            "chr".to_string(),
+            ForeignFunction {
+                name: "chr".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(chr)),
+            },
+        );
+        m.insert(
+            "now".to_string(),
+            ForeignFunction {
+                name: "now".into(),
+                arity: 0..=0,
+                callable: Callable::Function(Box::new(now)),
+            },
+        );
+        m.insert(
+            "datetime".to_string(),
+            ForeignFunction {
+                name: "datetime".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(datetime)),
+            },
+        );
+
+        m.insert(
+            "format_datetime".to_string(),
+            ForeignFunction {
+                name: "format_datetime".into(),
+                arity: 2..=2,
+                callable: Callable::Function(Box::new(format_datetime)),
+            },
+        );
+
+        m.insert(
+            "get_local_timezone".to_string(),
+            ForeignFunction {
+                name: "get_local_timezone".into(),
+                arity: 0..=0,
+                callable: Callable::Function(Box::new(get_local_timezone)),
+            },
+        );
+
+        m.insert(
+            "tz".to_string(),
+            ForeignFunction {
+                name: "tz".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(tz)),
+            },
+        );
+
+        m.insert(
+            "unixtime".to_string(),
+            ForeignFunction {
+                name: "unixtime".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(unixtime)),
+            },
+        );
+
+        m.insert(
+            "from_unixtime".to_string(),
+            ForeignFunction {
+                name: "from_unixtime".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(from_unixtime)),
+            },
+        );
+
+        m.insert(
+            "random".to_string(),
+            ForeignFunction {
+                name: "random".into(),
+                arity: 0..=0,
+                callable: Callable::Function(Box::new(random)),
             },
         );
 
@@ -331,7 +443,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
 fn print(ctx: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
     assert!(args.len() <= 1);
 
-    if args.len() == 0 {
+    if args.is_empty() {
         (ctx.print_fn)(&crate::markup::text(""))
     } else {
         match &args[0] {
@@ -455,6 +567,20 @@ fn ceil(args: &[Value]) -> Result<Value> {
         value.ceil(),
         arg.unit().clone(),
     )))
+}
+
+fn is_nan(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+    let arg = args[0].unsafe_as_quantity();
+    let isnan = arg.unsafe_value().to_f64().is_nan();
+    Ok(Value::Boolean(isnan))
+}
+
+fn is_infinite(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+    let arg = args[0].unsafe_as_quantity();
+    let isnan = arg.unsafe_value().to_f64().is_infinite();
+    Ok(Value::Boolean(isnan))
 }
 
 fn sin(args: &[Value]) -> Result<Value> {
@@ -711,6 +837,18 @@ fn str_length(args: &[Value]) -> Result<Value> {
     Ok(Value::Quantity(Quantity::from_scalar(len as f64)))
 }
 
+fn lowercase(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    Ok(Value::String(args[0].unsafe_as_string().to_lowercase()))
+}
+
+fn uppercase(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    Ok(Value::String(args[0].unsafe_as_string().to_uppercase()))
+}
+
 fn str_slice(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 3);
 
@@ -721,4 +859,94 @@ fn str_slice(args: &[Value]) -> Result<Value> {
     let output = input.get(start..end).unwrap_or_default();
 
     Ok(Value::String(output.into()))
+}
+
+fn chr(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let idx = args[0].unsafe_as_quantity().unsafe_value().to_f64() as u32;
+
+    let output = char::from_u32(idx).unwrap_or('�');
+
+    Ok(Value::String(output.to_string()))
+}
+
+fn now(args: &[Value]) -> Result<Value> {
+    assert!(args.is_empty());
+    let now = chrono::Local::now().fixed_offset();
+
+    Ok(Value::DateTime(now))
+}
+
+fn datetime(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let input = args[0].unsafe_as_string();
+
+    let output = datetime::parse_datetime(input)
+        .ok_or(RuntimeError::DateParsingErrorUnknown)?
+        .fixed_offset();
+
+    Ok(Value::DateTime(output))
+}
+
+fn format_datetime(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 2);
+
+    let format = args[0].unsafe_as_string();
+    let dt = args[1].unsafe_as_datetime();
+
+    let mut output = String::new();
+    write!(output, "{}", dt.format(format)).map_err(|_| RuntimeError::DateFormattingError)?;
+
+    Ok(Value::String(output))
+}
+
+fn get_local_timezone(args: &[Value]) -> Result<Value> {
+    assert!(args.is_empty());
+
+    let local_tz = datetime::get_local_timezone_or_utc().to_string();
+
+    Ok(Value::String(local_tz))
+}
+
+fn tz(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let tz = args[0].unsafe_as_string();
+
+    Ok(Value::FunctionReference(FunctionReference::TzConversion(
+        tz.into(),
+    )))
+}
+
+fn unixtime(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let input = args[0].unsafe_as_datetime();
+
+    let output = input.timestamp();
+
+    Ok(Value::Quantity(Quantity::from_scalar(output as f64)))
+}
+
+fn from_unixtime(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let timestamp = args[0].unsafe_as_quantity().unsafe_value().to_f64() as i64;
+
+    let dt = chrono::DateTime::from_timestamp(timestamp, 0)
+        .ok_or(RuntimeError::DateTimeOutOfRange)?
+        .with_timezone(&datetime::get_local_timezone_or_utc())
+        .fixed_offset();
+
+    Ok(Value::DateTime(dt))
+}
+
+fn random(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 0);
+
+    let output = rand::random::<f64>();
+
+    Ok(Value::Quantity(Quantity::from_scalar(output)))
 }

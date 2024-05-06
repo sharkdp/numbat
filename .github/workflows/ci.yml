@@ -18,7 +18,7 @@ jobs:
     name: Extract crate metadata
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Extract crate information
       id: crate_metadata
       run: |
@@ -41,7 +41,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: cargo fmt -- --check
 
   documentation_checks:
@@ -58,11 +58,29 @@ jobs:
       run: |
         cd book
         bash build.sh
-        if [ -n "$(git status --porcelain)" ]; then 
+        if [ -n "$(git status --porcelain)" ]; then
           echo "Documentation not up to date."
-          echo "Make sure to run 'build.sh' in the documentation/ folder"
+          echo "Make sure to run 'build.sh' in the book/ folder"
           exit 1
         fi
+
+  wasm:
+    name: WASM version
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: actions/checkout@v3
+    - name: Install wasm-pack
+      run: |
+        curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - name: Build WASM version
+      run: |
+        cd numbat-wasm
+        bash build.sh
+    - name: Test WASM version
+      run: |
+        cd numbat-wasm
+        bash test.sh
 
   min_version:
     name: Minimum supported rust version
@@ -70,7 +88,7 @@ jobs:
     needs: crate_metadata
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install rust toolchain (v${{ needs.crate_metadata.outputs.msrv }})
       uses: dtolnay/rust-toolchain@master
@@ -105,7 +123,7 @@ jobs:
       BUILD_CMD: cargo
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install prerequisites
       shell: bash
@@ -195,6 +213,10 @@ jobs:
         # README and LICENSE files
         cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "$ARCHIVE_DIR"
 
+        # Desktop file and icons
+        mkdir "$ARCHIVE_DIR/assets"
+        cp "assets/numbat.desktop" assets/numbat-*x*.png "assets/numbat.svg" "$ARCHIVE_DIR/assets"
+
         # Numbat prelude
         cp -r numbat/modules "$ARCHIVE_DIR"
 
@@ -221,7 +243,7 @@ jobs:
 
         DPKG_BASENAME=${{ needs.crate_metadata.outputs.name }}
         DPKG_CONFLICTS=${{ needs.crate_metadata.outputs.name }}-musl
-        case ${{ matrix.job.target }} in *-musl) DPKG_BASENAME=${{ needs.crate_metadata.outputs.name }}-musl ; DPKG_CONFLICTS=${{ needs.crate_metadata.outputs.name }} ;; esac;
+        case ${{ matrix.job.target }} in *-musl*) DPKG_BASENAME=${{ needs.crate_metadata.outputs.name }}-musl ; DPKG_CONFLICTS=${{ needs.crate_metadata.outputs.name }} ;; esac;
         DPKG_VERSION=${{ needs.crate_metadata.outputs.version }}
 
         unset DPKG_ARCH
@@ -243,6 +265,14 @@ jobs:
         install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/README.md"
         install -Dm644 "LICENSE-MIT" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-MIT"
         install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-APACHE"
+
+        # Desktop file and icons
+        install -Dm644 "assets/numbat.desktop" "${DPKG_DIR}/usr/share/applications/numbat.desktop"
+        install -Dm644 "assets/numbat.svg" "${DPKG_DIR}/usr/share/icons/hicolor/scalable/apps/numbat.svg"
+
+        for s in 16 22 24 32 48 64 128 256 512; do
+          install -Dm644 "assets/numbat-${s}x${s}.png" "${DPKG_DIR}/usr/share/icons/hicolor/${s}x${s}/apps/numbat.png"
+        done
 
         # Numbat prelude
         mkdir -p "${DPKG_DIR}/usr/share/${DPKG_BASENAME}"

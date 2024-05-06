@@ -30,6 +30,9 @@ use units::stoney  # Load a specific module
 0o52        # octal
 0b101010    # binary
 
+NaN         # Not a number
+inf         # Infinity
+
 # 3. Simple expressions
 
 3 + (4 - 3)       # Addition and subtraction
@@ -92,10 +95,10 @@ unit thing                       # New base unit with automatically generated
 
 # 8. Conditionals
 
-fn step(x: Scalar) -> Scalar =   # The construct 'if <cond> then <expr> else <expr>'
-  if x < 0                       # is an expression, not a statement. It can span
-    then 0                       # multiple lines.
-    else 1
+fn bump(x: Scalar) -> Scalar =   # The construct 'if <cond> then <expr> else <expr>'
+  if x >= 0 && x <= 1            # is an expression, not a statement. It can span
+    then 1                       # multiple lines.
+    else 0
 
 # 9. Procedures
 
@@ -103,6 +106,7 @@ print(2 kilowarhol)              # Print the value of an expression
 print("hello world")             # Print a message
 print("value of pi = {pi}")      # String interpolation
 print("sqrt(10) = {sqrt(10)}")   # Expressions in string interpolation
+print("value of π ≈ {π:.3}")     # Format specifiers
 
 assert(1 yard < 1 meter)         # Assertion
 

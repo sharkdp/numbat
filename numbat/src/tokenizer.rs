@@ -30,7 +30,7 @@ pub enum TokenizerErrorKind {
     #[error("Unterminated string")]
     UnterminatedString,
 
-    #[error("Unterminated {{...}} interpolation in this string")]
+    #[error("Unterminated string interpolation")]
     UnterminatedStringInterpolation,
 
     #[error("Unexpected '{{' inside string interpolation")]
@@ -44,13 +44,15 @@ pub struct TokenizerError {
     pub span: Span,
 }
 
-type Result<T> = std::result::Result<T, TokenizerError>;
+type Result<T, E = TokenizerError> = std::result::Result<T, E>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
     // Brackets
     LeftParen,
     RightParen,
+    LeftBracket,
+    RightBracket,
 
     // Operators and special signs
     Plus,
@@ -75,10 +77,12 @@ pub enum TokenKind {
     GreaterThan,
     LessOrEqual,
     GreaterOrEqual,
+    LogicalAnd,
+    LogicalOr,
 
     // Keywords
     Let,
-    Fn,
+    Fn, // 'fn'
     Dimension,
     Unit,
     Use,
@@ -93,6 +97,12 @@ pub enum TokenKind {
     Else,
 
     String,
+    DateTime,
+
+    NaN,
+    Inf,
+
+    CapitalFn, // 'Fn'
 
     Long,
     Short,
@@ -116,6 +126,8 @@ pub enum TokenKind {
     StringInterpolationStart,
     // A part of a string between two interpolations: `}, and bar = {`
     StringInterpolationMiddle,
+    // Format specifiers for an interpolation, e.g. `:.03f`
+    StringInterpolationSpecifiers,
     // A part of a string which ends an interpolation: `}."`
     StringInterpolationEnd,
 
@@ -169,6 +181,13 @@ fn is_other_allowed_identifier_char(c: char) -> bool {
     c == '%'
 }
 
+fn is_subscript_char(c: char) -> bool {
+    let c_u32 = c as u32;
+
+    // See https://en.wikipedia.org/wiki/Unicode_subscripts_and_superscripts#Superscripts_and_subscripts_block
+    (0x2080..=0x209CF).contains(&c_u32)
+}
+
 fn is_identifier_start(c: char) -> bool {
     unicode_ident::is_xid_start(c)
         || is_numerical_fraction_char(c)
@@ -180,6 +199,7 @@ fn is_identifier_start(c: char) -> bool {
 
 fn is_identifier_continue(c: char) -> bool {
     (unicode_ident::is_xid_continue(c)
+        || is_subscript_char(c)
         || is_currency_char(c)
         || is_other_allowed_identifier_char(c))
         && !is_exponent_char(c)
@@ -343,6 +363,10 @@ impl Tokenizer {
             m.insert("then", TokenKind::Then);
             m.insert("else", TokenKind::Else);
             m.insert("String", TokenKind::String);
+            m.insert("DateTime", TokenKind::DateTime);
+            m.insert("Fn", TokenKind::CapitalFn);
+            m.insert("NaN", TokenKind::NaN);
+            m.insert("inf", TokenKind::Inf);
             // Keep this list in sync with keywords::KEYWORDS!
             m
         });
@@ -373,6 +397,8 @@ impl Tokenizer {
         let kind = match current_char {
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
+            '[' => TokenKind::LeftBracket,
+            ']' => TokenKind::RightBracket,
             '≤' => TokenKind::LessOrEqual,
             '<' if self.match_char('=') => TokenKind::LessOrEqual,
             '<' => TokenKind::LessThan,
@@ -394,13 +420,30 @@ impl Tokenizer {
 
                 self.advance(); // skip over the x/o/b
 
-                let mut has_advanced = false;
-                while self.peek().map(&is_digit_in_base).unwrap_or(false) {
-                    self.advance();
-                    has_advanced = true;
+                // If the first character is not a digits, that's an error.
+                if !self.peek().map(&is_digit_in_base).unwrap_or(false) {
+                    return tokenizer_error(
+                        &self.current,
+                        TokenizerErrorKind::ExpectedDigitInBase {
+                            base,
+                            character: self.peek(),
+                        },
+                    );
                 }
 
-                if !has_advanced
+                let mut last_char = None;
+
+                while self
+                    .peek()
+                    .map(|c| is_digit_in_base(c) || c == '_')
+                    .unwrap_or(false)
+                {
+                    last_char = self.peek();
+                    self.advance();
+                }
+
+                // Numeric literal should not end with a `_` either.
+                if last_char == Some('_')
                     || self
                         .peek()
                         .map(|c| is_identifier_continue(c) || c == '.')
@@ -429,6 +472,12 @@ impl Tokenizer {
 
                 TokenKind::Number
             }
+            '.' if self.peek() == Some('.') && self.peek2() == Some('.') => {
+                self.advance();
+                self.advance();
+
+                TokenKind::Ellipsis
+            }
             '.' => {
                 self.consume_stream_of_digits(true, true, true)?;
                 self.scientific_notation()?;
@@ -439,6 +488,8 @@ impl Tokenizer {
                 return Ok(None);
             }
             '\n' => TokenKind::Newline,
+            '&' if self.match_char('&') => TokenKind::LogicalAnd,
+            '|' if self.match_char('|') => TokenKind::LogicalOr,
             '*' if self.match_char('*') => TokenKind::Power,
             '+' => TokenKind::Plus,
             '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
@@ -450,8 +501,6 @@ impl Tokenizer {
             '⩵' => TokenKind::EqualEqual,
             '=' if self.match_char('=') => TokenKind::EqualEqual,
             '=' => TokenKind::Equal,
-            ':' if self.match_char(':') => TokenKind::DoubleColon,
-            ':' => TokenKind::Colon,
             '@' => TokenKind::At,
             '→' | '➞' => TokenKind::Arrow,
             '-' if self.match_char('>') => TokenKind::Arrow,
@@ -503,13 +552,41 @@ impl Tokenizer {
                     return Err(TokenizerError {
                         kind: TokenizerErrorKind::UnterminatedStringInterpolation,
                         span: Span {
-                            start: self.string_start,
-                            end: self.current,
+                            start: self.interpolation_start,
+                            end: self.last,
                             code_source_id: self.code_source_id,
                         },
                     });
                 }
             },
+            ':' if self.interpolation_state.is_inside() => {
+                while self.peek().map(|c| c != '"' && c != '}').unwrap_or(false) {
+                    self.advance();
+                }
+
+                if self.peek() == Some('"') {
+                    return Err(TokenizerError {
+                        kind: TokenizerErrorKind::UnterminatedStringInterpolation,
+                        span: Span {
+                            start: self.token_start,
+                            end: self.current,
+                            code_source_id: self.code_source_id,
+                        },
+                    });
+                }
+                if self.peek() == Some('}') {
+                    TokenKind::StringInterpolationSpecifiers
+                } else {
+                    return Err(TokenizerError {
+                        kind: TokenizerErrorKind::UnterminatedString,
+                        span: Span {
+                            start: self.token_start,
+                            end: self.current,
+                            code_source_id: self.code_source_id,
+                        },
+                    });
+                }
+            }
             '}' if self.interpolation_state.is_inside() => {
                 while self.peek().map(|c| c != '"' && c != '{').unwrap_or(false) {
                     self.advance();
@@ -557,6 +634,8 @@ impl Tokenizer {
                     TokenKind::Identifier
                 }
             }
+            ':' if self.match_char(':') => TokenKind::DoubleColon,
+            ':' => TokenKind::Colon,
             c => {
                 return tokenizer_error(
                     &self.token_start,
@@ -626,9 +705,14 @@ pub fn tokenize(input: &str, code_source_id: usize) -> Result<Vec<Token>> {
 }
 
 #[cfg(test)]
-fn tokenize_reduced(input: &str) -> Vec<(String, TokenKind, (u32, u32))> {
-    tokenize(input, 0)
-        .unwrap()
+fn tokenize_reduced(input: &str) -> Result<Vec<(String, TokenKind, (u32, u32))>, String> {
+    Ok(tokenize(input, 0)
+        .map_err(|e| {
+            format!(
+                "Error at {:?}: `{e}`",
+                (e.span.start.line, e.span.start.position)
+            )
+        })?
         .iter()
         .map(|token| {
             (
@@ -637,7 +721,17 @@ fn tokenize_reduced(input: &str) -> Vec<(String, TokenKind, (u32, u32))> {
                 (token.span.start.line, token.span.start.position),
             )
         })
-        .collect()
+        .collect())
+}
+
+#[cfg(test)]
+fn tokenize_reduced_pretty(input: &str) -> Result<String, String> {
+    use std::fmt::Write;
+    let mut ret = String::new();
+    for (lexeme, kind, pos) in tokenize_reduced(input)? {
+        writeln!(ret, "{lexeme:?}, {kind:?}, {pos:?}").unwrap();
+    }
+    Ok(ret)
 }
 
 #[test]
@@ -645,7 +739,7 @@ fn test_tokenize_basic() {
     use TokenKind::*;
 
     assert_eq!(
-        tokenize_reduced("  12 + 34  "),
+        tokenize_reduced("  12 + 34  ").unwrap(),
         [
             ("12".to_string(), Number, (1, 3)),
             ("+".to_string(), Plus, (1, 6)),
@@ -655,7 +749,7 @@ fn test_tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize_reduced("1 2"),
+        tokenize_reduced("1 2").unwrap(),
         [
             ("1".to_string(), Number, (1, 1)),
             ("2".to_string(), Number, (1, 3)),
@@ -664,7 +758,7 @@ fn test_tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize_reduced("12 × (3 - 4)"),
+        tokenize_reduced("12 × (3 - 4)").unwrap(),
         [
             ("12".to_string(), Number, (1, 1)),
             ("×".to_string(), Multiply, (1, 4)),
@@ -678,7 +772,7 @@ fn test_tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize_reduced("foo to bar"),
+        tokenize_reduced("foo to bar").unwrap(),
         [
             ("foo".to_string(), Identifier, (1, 1)),
             ("to".to_string(), To, (1, 5)),
@@ -688,7 +782,7 @@ fn test_tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize_reduced("1 -> 2"),
+        tokenize_reduced("1 -> 2").unwrap(),
         [
             ("1".to_string(), Number, (1, 1)),
             ("->".to_string(), Arrow, (1, 3)),
@@ -698,7 +792,7 @@ fn test_tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize_reduced("45°"),
+        tokenize_reduced("45°").unwrap(),
         [
             ("45".to_string(), Number, (1, 1)),
             ("°".to_string(), Identifier, (1, 3)),
@@ -707,7 +801,7 @@ fn test_tokenize_basic() {
     );
 
     assert_eq!(
-        tokenize_reduced("1+2\n42"),
+        tokenize_reduced("1+2\n42").unwrap(),
         [
             ("1".to_string(), Number, (1, 1)),
             ("+".to_string(), Plus, (1, 2)),
@@ -718,7 +812,203 @@ fn test_tokenize_basic() {
         ]
     );
 
-    assert!(tokenize("~", 0).is_err());
+    assert_eq!(
+        tokenize_reduced("…").unwrap(),
+        [
+            ("…".to_string(), Ellipsis, (1, 1)),
+            ("".to_string(), Eof, (1, 2))
+        ]
+    );
+
+    assert_eq!(
+        tokenize_reduced("...").unwrap(),
+        [
+            ("...".to_string(), Ellipsis, (1, 1)),
+            ("".to_string(), Eof, (1, 4))
+        ]
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("~").unwrap_err(),
+    @"Error at (1, 1): `Unexpected character: '~'`");
+}
+
+#[test]
+fn test_tokenize_numbers() {
+    // valid queries
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("12").unwrap(),
+        @r###"
+    "12", Number, (1, 1)
+    "", Eof, (1, 3)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("1_2").unwrap(),
+        @r###"
+    "1_2", Number, (1, 1)
+    "", Eof, (1, 4)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("1.").unwrap(),
+        @r###"
+    "1.", Number, (1, 1)
+    "", Eof, (1, 3)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("1.2").unwrap(),
+        @r###"
+    "1.2", Number, (1, 1)
+    "", Eof, (1, 4)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("1_1.2_2").unwrap(),
+        @r###"
+    "1_1.2_2", Number, (1, 1)
+    "", Eof, (1, 8)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0b01").unwrap(),
+        @r###"
+    "0b01", IntegerWithBase(2), (1, 1)
+    "", Eof, (1, 5)
+    "###
+    );
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0b1_0").unwrap(),
+        @r###"
+    "0b1_0", IntegerWithBase(2), (1, 1)
+    "", Eof, (1, 6)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0o01234567").unwrap(),
+        @r###"
+    "0o01234567", IntegerWithBase(8), (1, 1)
+    "", Eof, (1, 11)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0o1_2").unwrap(),
+        @r###"
+    "0o1_2", IntegerWithBase(8), (1, 1)
+    "", Eof, (1, 6)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0x1234567890abcdef").unwrap(),
+        @r###"
+    "0x1234567890abcdef", IntegerWithBase(16), (1, 1)
+    "", Eof, (1, 19)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0x1_2").unwrap(),
+        @r###"
+    "0x1_2", IntegerWithBase(16), (1, 1)
+    "", Eof, (1, 6)
+    "###
+    );
+
+    // Failing queries
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("1_.2").unwrap_err(),
+        @"Error at (1, 2): `Unexpected character in number literal: '_'`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("1.2_").unwrap_err(),
+        @"Error at (1, 4): `Unexpected character in number literal: '_'`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0b012").unwrap_err(),
+        @"Error at (1, 5): `Expected base-2 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0b").unwrap_err(),
+        @"Error at (1, 3): `Expected base-2 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0b_").unwrap_err(),
+        @"Error at (1, 3): `Expected base-2 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0b_1").unwrap_err(),
+        @"Error at (1, 3): `Expected base-2 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0b1_").unwrap_err(),
+        @"Error at (1, 5): `Expected base-2 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0o012345678").unwrap_err(),
+        @"Error at (1, 11): `Expected base-8 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0o").unwrap_err(),
+        @"Error at (1, 3): `Expected base-8 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0o_").unwrap_err(),
+        @"Error at (1, 3): `Expected base-8 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0o_1").unwrap_err(),
+        @"Error at (1, 3): `Expected base-8 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0o1_").unwrap_err(),
+        @"Error at (1, 5): `Expected base-8 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0x1234567890abcdefg").unwrap_err(),
+        @"Error at (1, 19): `Expected base-16 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0x").unwrap_err(),
+        @"Error at (1, 3): `Expected base-16 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0x_").unwrap_err(),
+        @"Error at (1, 3): `Expected base-16 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0x_1").unwrap_err(),
+        @"Error at (1, 3): `Expected base-16 digit`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("0x1_").unwrap_err(),
+        @"Error at (1, 5): `Expected base-16 digit`"
+    );
 }
 
 #[test]
@@ -726,7 +1016,7 @@ fn test_tokenize_string() {
     use TokenKind::*;
 
     assert_eq!(
-        tokenize_reduced("\"foo\""),
+        tokenize_reduced("\"foo\"").unwrap(),
         [
             ("\"foo\"".to_string(), StringFixed, (1, 1)),
             ("".to_string(), Eof, (1, 6))
@@ -734,7 +1024,7 @@ fn test_tokenize_string() {
     );
 
     assert_eq!(
-        tokenize_reduced("\"foo = {foo}\""),
+        tokenize_reduced("\"foo = {foo}\"").unwrap(),
         [
             ("\"foo = {".to_string(), StringInterpolationStart, (1, 1)),
             ("foo".to_string(), Identifier, (1, 9)),
@@ -744,7 +1034,7 @@ fn test_tokenize_string() {
     );
 
     assert_eq!(
-        tokenize_reduced("\"foo = {foo}, and bar = {bar}\""),
+        tokenize_reduced("\"foo = {foo}, and bar = {bar}\"").unwrap(),
         [
             ("\"foo = {".to_string(), StringInterpolationStart, (1, 1)),
             ("foo".to_string(), Identifier, (1, 9)),
@@ -760,7 +1050,7 @@ fn test_tokenize_string() {
     );
 
     assert_eq!(
-        tokenize_reduced("\"1 + 2 = {1 + 2}\""),
+        tokenize_reduced("\"1 + 2 = {1 + 2}\"").unwrap(),
         [
             ("\"1 + 2 = {".to_string(), StringInterpolationStart, (1, 1)),
             ("1".to_string(), Number, (1, 11)),
@@ -790,6 +1080,39 @@ fn test_tokenize_string() {
 }
 
 #[test]
+fn test_logical_operators() {
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("true || false").unwrap(),
+        @r###"
+    "true", True, (1, 1)
+    "||", LogicalOr, (1, 6)
+    "false", False, (1, 9)
+    "", Eof, (1, 14)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("true && false").unwrap(),
+        @r###"
+    "true", True, (1, 1)
+    "&&", LogicalAnd, (1, 6)
+    "false", False, (1, 9)
+    "", Eof, (1, 14)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("true | false").unwrap_err(),
+        @"Error at (1, 6): `Unexpected character: '|'`"
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("true & false").unwrap_err(),
+        @"Error at (1, 6): `Unexpected character: '&'`"
+    );
+}
+
+#[test]
 fn test_is_currency_char() {
     assert!(is_currency_char('€'));
     assert!(is_currency_char('$'));
@@ -799,4 +1122,13 @@ fn test_is_currency_char() {
     assert!(is_currency_char('₿'));
 
     assert!(!is_currency_char('E'));
+}
+
+#[test]
+fn test_is_subscript_char() {
+    assert!(is_subscript_char('₅'));
+    assert!(is_subscript_char('₁'));
+    assert!(is_subscript_char('ₓ'));
+    assert!(is_subscript_char('ₘ'));
+    assert!(is_subscript_char('₎'));
 }

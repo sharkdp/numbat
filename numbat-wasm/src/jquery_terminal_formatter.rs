@@ -1,3 +1,4 @@
+use numbat::buffered_writer::BufferedWriter;
 use numbat::markup::{FormatType, FormattedString, Formatter};
 
 use termcolor::{Color, WriteColor};
@@ -27,6 +28,7 @@ impl Formatter for JqueryTerminalFormatter {
     ) -> String {
         let css_class = match format_type {
             FormatType::Whitespace => None,
+            FormatType::Emphasized => Some("emphasized"),
             FormatType::Dimmed => Some("dimmed"),
             FormatType::Text => None,
             FormatType::String => Some("string"),
@@ -54,8 +56,10 @@ impl JqueryTerminalWriter {
             color: None,
         }
     }
+}
 
-    pub fn to_string(self) -> String {
+impl BufferedWriter for JqueryTerminalWriter {
+    fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.buffer).into()
     }
 }

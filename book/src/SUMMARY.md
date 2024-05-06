@@ -28,12 +28,14 @@
   - [Operations and precedence](./operations.md)
   - [Constants](./constant-definitions.md)
   - [Unit conversions](./unit-conversions.md)
+  - [Conversions functions](./conversion-functions.md)
   - [Function definitions](./function-definitions.md)
   - [Conditionals](./conditionals.md)
+  - [Date and time](./date-and-time.md)
   - [Printing, testing, debugging](./procedures.md)
 - [Advanced](./advanced.md)
-  - [Unit definitions](./unit-definitions.md)
   - [Dimension definitions](./dimension-definitions.md)
+  - [Unit definitions](./unit-definitions.md)
   - [Syntax overview](./example-numbat_syntax.md)
 
 # Standard library reference
@@ -56,3 +58,7 @@
 # Notes for developers
 
 - [Type system](./type-system.md)
+
+# Support
+
+- [Contact us](./contact-us.md)

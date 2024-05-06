@@ -4,11 +4,14 @@ description = "A library to fetch and parse currency exchange rates from the ECB
 authors = ["David Peter <mail@david-peter.de>"]
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
-version = "0.3.0"
+version = "0.5.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 rust-version = "1.70"
 
 [dependencies]
-attohttpc = { version = "0.26.0", default-features = false, features = ["tls-rustls-webpki-roots"] }
-quick-xml = "0.30.0"
+attohttpc = { version = "0.27.0", default-features = false, features = ["tls-rustls-webpki-roots"], optional = true }
+quick-xml = "0.31.0"
+
+[features]
+fetch-exchangerates = ["dep:attohttpc"]

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     ast::Statement, module_importer::ModuleImporter, parser::parse, span::Span, ParseError,
@@ -7,7 +7,7 @@ use crate::{
 use codespan_reporting::files::SimpleFiles;
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ModulePath(pub Vec<String>);
 
 impl std::fmt::Display for ModulePath {
@@ -37,14 +37,15 @@ pub enum ResolverError {
     #[error("Unknown module '{1}'.")]
     UnknownModule(Span, ModulePath),
 
-    #[error("{0}")]
-    ParseError(ParseError),
+    #[error("{}", .0.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n"))]
+    ParseErrors(Vec<ParseError>),
 }
 
 type Result<T> = std::result::Result<T, ResolverError>;
 
+#[derive(Clone)]
 pub struct Resolver {
-    importer: Box<dyn ModuleImporter + Send>,
+    importer: Arc<dyn ModuleImporter>,
     pub files: SimpleFiles<String, String>,
     text_code_source_count: usize,
     internal_code_source_count: usize,
@@ -54,7 +55,7 @@ pub struct Resolver {
 impl Resolver {
     pub(crate) fn new(importer: impl ModuleImporter + Send + 'static) -> Self {
         Self {
-            importer: Box::new(importer),
+            importer: Arc::new(importer),
             files: SimpleFiles::new(),
             text_code_source_count: 0,
             internal_code_source_count: 0,
@@ -87,7 +88,7 @@ impl Resolver {
     }
 
     fn parse(&self, code: &str, code_source_id: usize) -> Result<Vec<Statement>> {
-        parse(code, code_source_id).map_err(ResolverError::ParseError)
+        parse(code, code_source_id).map_err(|e| ResolverError::ParseErrors(e.1))
     }
 
     fn inlining_pass(&mut self, program: &[Statement]) -> Result<Vec<Statement>> {
@@ -97,8 +98,8 @@ impl Resolver {
             match statement {
                 Statement::ModuleImport(span, module_path) => {
                     if !self.imported_modules.contains(module_path) {
-                        self.imported_modules.push(module_path.clone());
                         if let Some((code, filesystem_path)) = self.importer.import(module_path) {
+                            self.imported_modules.push(module_path.clone());
                             let code_source_id = self.add_code_source(
                                 CodeSource::Module(module_path.clone(), filesystem_path),
                                 &code,
@@ -126,6 +127,10 @@ impl Resolver {
         let statements = self.parse(code, code_source_id)?;
 
         self.inlining_pass(&statements)
+    }
+
+    pub fn get_importer(&self) -> &dyn ModuleImporter {
+        self.importer.as_ref()
     }
 }
 
@@ -155,6 +160,10 @@ mod tests {
                 _ => None,
             }
         }
+
+        fn list_modules(&self) -> Vec<ModulePath> {
+            unimplemented!()
+        }
     }
 
     #[test]
@@ -178,7 +187,8 @@ mod tests {
                     identifier_span: Span::dummy(),
                     identifier: "a".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    type_annotation: None
+                    type_annotation: None,
+                    decorators: Vec::new(),
                 },
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
             ]
@@ -207,7 +217,8 @@ mod tests {
                     identifier_span: Span::dummy(),
                     identifier: "a".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    type_annotation: None
+                    type_annotation: None,
+                    decorators: Vec::new(),
                 },
                 Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
             ]
@@ -235,13 +246,15 @@ mod tests {
                     identifier_span: Span::dummy(),
                     identifier: "y".into(),
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
-                    type_annotation: None
+                    type_annotation: None,
+                    decorators: Vec::new(),
                 },
                 Statement::DefineVariable {
                     identifier_span: Span::dummy(),
                     identifier: "x".into(),
                     expr: Expression::Identifier(Span::dummy(), "y".into()),
-                    type_annotation: None
+                    type_annotation: None,
+                    decorators: Vec::new(),
                 },
             ]
         );

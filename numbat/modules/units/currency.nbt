@@ -1,5 +1,8 @@
 dimension Money
 
+
+@name("Euro")
+@url("https://en.wikipedia.org/wiki/Euro")
 @aliases(euros, EUR, €: short)
 unit euro: Money
 

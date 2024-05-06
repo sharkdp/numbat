@@ -1,22 +1,25 @@
 use itertools::Itertools;
 
-use crate::arithmetic::Exponent;
+use crate::arithmetic::{Exponent, Rational};
 use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, DimensionExpression, UnaryOperator};
 use crate::dimension::DimensionRegistry;
-use crate::markup as m;
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, registry::BaseRepresentation,
     span::Span,
 };
+use crate::{markup as m, BaseRepresentationFactor};
 
 /// Dimension type
 pub type DType = BaseRepresentation;
 
 impl DType {
+    pub fn is_scalar(&self) -> bool {
+        self == &DType::unity()
+    }
     pub fn to_readable_type(&self, registry: &DimensionRegistry) -> m::Markup {
-        if self == &DType::unity() {
+        if self.is_scalar() {
             return m::type_identifier("Scalar");
         }
 
@@ -31,28 +34,49 @@ impl DType {
         match &names[..] {
             [] => self.pretty_print(),
             [single] => m::type_identifier(single),
-            ref multiple => Itertools::intersperse(
-                multiple.iter().map(|n| m::type_identifier(n)),
-                m::dimmed(" or "),
-            )
-            .sum(),
+            multiple => {
+                Itertools::intersperse(multiple.iter().map(m::type_identifier), m::dimmed(" or "))
+                    .sum()
+            }
         }
+    }
+    /// Is the current dimension type the Time dimension?
+    ///
+    /// This is special helper that's useful when dealing with DateTimes
+    pub fn is_time_dimension(&self) -> bool {
+        *self
+            == BaseRepresentation::from_factor(BaseRepresentationFactor(
+                "Time".into(),
+                Rational::from_integer(1),
+            ))
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
+    Never,
     Dimension(DType),
     Boolean,
     String,
+    DateTime,
+    Fn(Vec<Type>, Box<Type>),
 }
 
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Type::Never => write!(f, "!"),
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
+            Type::DateTime => write!(f, "DateTime"),
+            Type::Fn(param_types, return_type) => {
+                write!(
+                    f,
+                    "Fn[({ps}) -> {return_type}]",
+                    ps = param_types.iter().map(|p| p.to_string()).join(", ")
+                )
+            }
         }
     }
 }
@@ -60,9 +84,26 @@ impl std::fmt::Display for Type {
 impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
+            Type::Never => m::keyword("!"),
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::keyword("Bool"),
             Type::String => m::keyword("String"),
+            Type::DateTime => m::keyword("DateTime"),
+            Type::Fn(param_types, return_type) => {
+                m::type_identifier("Fn")
+                    + m::operator("[(")
+                    + Itertools::intersperse(
+                        param_types.iter().map(|t| t.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
+                    + m::space()
+                    + m::operator("->")
+                    + m::space()
+                    + return_type.pretty_print()
+                    + m::operator("]")
+            }
         }
     }
 }
@@ -79,23 +120,55 @@ impl Type {
         Type::Dimension(DType::unity())
     }
 
+    pub fn is_never(&self) -> bool {
+        matches!(self, Type::Never)
+    }
+
     pub fn is_dtype(&self) -> bool {
         matches!(self, Type::Dimension(..))
+    }
+
+    pub fn is_fn_type(&self) -> bool {
+        matches!(self, Type::Fn(..))
+    }
+
+    pub fn is_subtype_of(&self, other: &Type) -> bool {
+        match (self, other) {
+            (Type::Never, _) => true,
+            (_, Type::Never) => false,
+            (t1, t2) => t1 == t2,
+        }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum StringPart {
     Fixed(String),
-    Interpolation(Span, Box<Expression>),
+    Interpolation {
+        span: Span,
+        expr: Box<Expression>,
+        format_specifiers: Option<String>,
+    },
 }
 
 impl PrettyPrint for StringPart {
     fn pretty_print(&self) -> Markup {
         match self {
             StringPart::Fixed(s) => s.pretty_print(),
-            StringPart::Interpolation(_, expr) => {
-                m::operator("{") + expr.pretty_print() + m::operator("}")
+            StringPart::Interpolation {
+                span: _,
+                expr,
+                format_specifiers,
+            } => {
+                let mut markup = m::operator("{") + expr.pretty_print();
+
+                if let Some(format_specifiers) = format_specifiers {
+                    markup += m::text(format_specifiers);
+                }
+
+                markup += m::operator("}");
+
+                markup
             }
         }
     }
@@ -120,7 +193,20 @@ pub enum Expression {
         Box<Expression>,
         Type,
     ),
+    /// A special binary operator that has a DateTime as one (or both) of the operands
+    BinaryOperatorForDate(
+        Option<Span>,
+        BinaryOperator,
+        /// LHS must evaluate to a DateTime
+        Box<Expression>,
+        /// RHS can evaluate to a DateTime or a quantity of type Time
+        Box<Expression>,
+        Type,
+    ),
+    // A 'proper' function call
     FunctionCall(Span, Span, String, Vec<Expression>, Type),
+    // A call via a function object
+    CallableCall(Span, Box<Expression>, Vec<Expression>, Type),
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
@@ -140,7 +226,15 @@ impl Expression {
                 }
                 span
             }
+            Expression::BinaryOperatorForDate(span_op, _op, lhs, rhs, ..) => {
+                let mut span = lhs.full_span().extend(&rhs.full_span());
+                if let Some(span_op) = span_op {
+                    span = span.extend(span_op);
+                }
+                span
+            }
             Expression::FunctionCall(_identifier_span, full_span, _, _, _) => *full_span,
+            Expression::CallableCall(full_span, _, _, _) => *full_span,
             Expression::Boolean(span, _) => *span,
             Expression::Condition(span_if, _, _, then_expr) => {
                 span_if.extend(&then_expr.full_span())
@@ -153,7 +247,7 @@ impl Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DefineVariable(String, Expression, Markup, Type),
+    DefineVariable(String, Vec<Decorator>, Expression, Markup, Type),
     DefineFunction(
         String,
         Vec<String>, // type parameters
@@ -171,8 +265,18 @@ pub enum Statement {
     ),
     DefineDimension(String, Vec<DimensionExpression>),
     DefineBaseUnit(String, Vec<Decorator>, Markup, Type),
-    DefineDerivedUnit(String, Expression, Vec<Decorator>, Markup),
+    DefineDerivedUnit(String, Expression, Vec<Decorator>, Markup, Type),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
+}
+
+impl Statement {
+    pub fn as_expression(&self) -> Option<&Expression> {
+        if let Self::Expression(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
 }
 
 impl Expression {
@@ -183,9 +287,17 @@ impl Expression {
             Expression::UnitIdentifier(_, _, _, _, _type) => _type.clone(),
             Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
             Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
+            Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.clone(),
             Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
+            Expression::CallableCall(_, _, _, type_) => type_.clone(),
             Expression::Boolean(_, _) => Type::Boolean,
-            Expression::Condition(_, _, then, _) => then.get_type(),
+            Expression::Condition(_, _, then_, else_) => {
+                if then_.get_type().is_never() {
+                    else_.get_type()
+                } else {
+                    then_.get_type()
+                }
+            }
             Expression::String(_, _) => Type::String,
         }
     }
@@ -237,6 +349,12 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         .sum()
                         + m::operator(")")
                 }
+                Decorator::Url(url) => {
+                    m::decorator("@url") + m::operator("(") + m::string(url) + m::operator(")")
+                }
+                Decorator::Name(name) => {
+                    m::decorator("@name") + m::operator("(") + m::string(name) + m::operator(")")
+                }
             }
             + m::nl();
     }
@@ -246,7 +364,7 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DefineVariable(identifier, expr, readable_type, _type) => {
+            Statement::DefineVariable(identifier, _decs, expr, readable_type, _type) => {
                 m::keyword("let")
                     + m::space()
                     + m::identifier(identifier)
@@ -338,7 +456,7 @@ impl PrettyPrint for Statement {
                     + m::space()
                     + readable_type.clone()
             }
-            Statement::DefineDerivedUnit(identifier, expr, decorators, readable_type) => {
+            Statement::DefineDerivedUnit(identifier, expr, decorators, readable_type, _type) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
@@ -371,8 +489,8 @@ impl PrettyPrint for Statement {
     }
 }
 
-fn pretty_scalar(Number(n): Number) -> Markup {
-    m::value(format!("{n}"))
+fn pretty_scalar(n: Number) -> Markup {
+    m::value(n.pretty_print())
 }
 
 fn with_parens(expr: &Expression) -> Markup {
@@ -381,10 +499,12 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::Identifier(..)
         | Expression::UnitIdentifier(..)
         | Expression::FunctionCall(..)
+        | Expression::CallableCall(..)
         | Expression::Boolean(..)
         | Expression::String(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
+        | Expression::BinaryOperatorForDate { .. }
         | Expression::Condition(..) => m::operator("(") + expr.pretty_print() + m::operator(")"),
     }
 }
@@ -520,9 +640,23 @@ impl PrettyPrint for Expression {
             UnaryOperator(_, self::UnaryOperator::Factorial, expr, _type) => {
                 with_parens(expr) + m::operator("!")
             }
+            UnaryOperator(_, self::UnaryOperator::LogicalNeg, expr, _type) => {
+                m::operator("!") + with_parens(expr)
+            }
             BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
+            BinaryOperatorForDate(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(_, _, name, args, _type) => {
                 m::identifier(name)
+                    + m::operator("(")
+                    + itertools::Itertools::intersperse(
+                        args.iter().map(|e| e.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
+            }
+            CallableCall(_, expr, args, _type) => {
+                expr.pretty_print()
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
                         args.iter().map(|e| e.pretty_print()),
@@ -536,11 +670,11 @@ impl PrettyPrint for Expression {
             Condition(_, condition, then, else_) => {
                 m::keyword("if")
                     + m::space()
-                    + with_parens(&condition)
+                    + with_parens(condition)
                     + m::space()
                     + m::keyword("then")
                     + m::space()
-                    + with_parens(&then)
+                    + with_parens(then)
                     + m::space()
                     + m::keyword("else")
                     + m::space()
@@ -587,13 +721,16 @@ mod tests {
 
                  @aliases(rad: short)
                  @metric_prefixes
-                 unit radian: Scalar
+                 unit radian: Scalar = meter / meter
 
                  @aliases(°: none)
                  unit degree = 180/pi × radian
 
                  @aliases(in: short)
                  unit inch = 0.0254 m
+
+                 @metric_prefixes
+                 unit points
 
                  let a = 1
                  let b = 1
@@ -710,6 +847,7 @@ mod tests {
         roundtrip_check("2^3!");
         roundtrip_check("-3!");
         roundtrip_check("(-3)!");
+        roundtrip_check("megapoints");
     }
 
     #[test]

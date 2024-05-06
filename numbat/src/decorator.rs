@@ -1,10 +1,12 @@
-use crate::prefix_parser::AcceptsPrefix;
+use crate::{prefix_parser::AcceptsPrefix, unit::CanonicalName};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Decorator {
     MetricPrefixes,
     BinaryPrefixes,
     Aliases(Vec<(String, Option<AcceptsPrefix>)>),
+    Url(String),
+    Name(String),
 }
 
 pub fn name_and_aliases<'a>(
@@ -34,15 +36,51 @@ pub fn name_and_aliases<'a>(
     }
 }
 
-pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> String {
+pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> CanonicalName {
     for decorator in decorators {
         if let Decorator::Aliases(aliases) = decorator {
             for (alias, accepts_prefix) in aliases {
-                if accepts_prefix.map(|ap| ap.short).unwrap_or(false) {
-                    return alias.into();
+                match accepts_prefix {
+                    &Some(ap) if ap.short => {
+                        return CanonicalName::new(alias, ap);
+                    }
+                    _ => {}
                 }
             }
         }
     }
-    unit_name.into()
+    CanonicalName {
+        name: unit_name.into(),
+        accepts_prefix: AcceptsPrefix::only_long(),
+    }
+}
+
+pub fn name(decorators: &[Decorator]) -> Option<String> {
+    for decorator in decorators {
+        if let Decorator::Name(name) = decorator {
+            return Some(name.clone());
+        }
+    }
+    None
+}
+
+pub fn url(decorators: &[Decorator]) -> Option<String> {
+    for decorator in decorators {
+        if let Decorator::Url(url) = decorator {
+            return Some(url.clone());
+        }
+    }
+    None
+}
+
+pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
+    for decorator in decorates {
+        if let Decorator::Aliases(aliases) = decorator {
+            if aliases.iter().any(|(_, prefixes)| prefixes.is_some()) {
+                return true;
+            }
+        }
+    }
+
+    false
 }

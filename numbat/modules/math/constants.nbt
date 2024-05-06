@@ -2,35 +2,73 @@ use core::scalar
 
 ### Mathematical
 
-let pi = 3.14159265358979323846264338327950288
-let π = pi
+@name("Pi")
+@url("https://en.wikipedia.org/wiki/Pi")
+@aliases(pi)
+let π = 3.14159265358979323846264338327950288
+
+@name("Tau")
+@url("https://en.wikipedia.org/wiki/Turn_(angle)#Tau_proposals")
 let τ = 2 π
+
+@name("Euler's number")
+@url("https://en.wikipedia.org/wiki/E_(mathematical_constant)")
 let e = 2.71828182845904523536028747135266250
+
+@name("Golden ratio")
+@url("https://en.wikipedia.org/wiki/Golden_ratio")
+@aliases(golden_ratio)
 let φ = 1.61803398874989484820458683436563811
-let golden_ratio = φ
 
 ### Named numbers
 
 #### Large numbers
 
-unit hundred =  100
-unit thousand =  1_000
-unit million =  1_000_000
-unit billion =  10^9
-unit trillion =  10^12
-unit quadrillion =  10^15
-unit quintillion =  10^18
+@name("Hundred")
+@url("https://en.wikipedia.org/wiki/100_(number)")
+unit hundred = 100
 
+@name("Thousand")
+@url("https://en.wikipedia.org/wiki/1000_(number)")
+unit thousand = 1_000
+
+@name("Million")
+@url("https://en.wikipedia.org/wiki/Million")
+unit million = 1_000_000
+
+@name("Billion")
+@url("https://en.wikipedia.org/wiki/Billion")
+unit billion = 10^9
+
+@name("Trillion")
+@url("https://en.wikipedia.org/wiki/Trillion")
+unit trillion = 10^12
+
+@name("Quadrillion")
+@url("https://en.wikipedia.org/wiki/Quadrillion")
+unit quadrillion = 10^15
+
+@name("Quintillion")
+@url("https://en.wikipedia.org/wiki/Quintillion")
+unit quintillion = 10^18
+
+@name("Googol")
+@url("https://en.wikipedia.org/wiki/Googol")
 let googol =  10^100
 
 ### Unicode fractions
 
+@name("One half")
+@url("https://en.wikipedia.org/wiki/One_half")
+@aliases(half, semi)
 let ½ = 1 / 2
 
 let ⅓ = 1 / 3
 let ⅔ = 2 / 3
 
+@aliases(quarter)
 let ¼ = 1 / 4
+
 let ¾ = 3 / 4
 
 let ⅕ = 1 / 5
@@ -52,11 +90,59 @@ let ⅑ = 1 / 9
 
 let ⅒ = 1 / 10
 
-#### Colloquial
+#### Integers and colloquial names
 
-let quarter = 1 / 4
-let half = 1 / 2
-let semi = 1 / 2
-let double = 2
-let triple = 3
+@name("One")
+@url("https://en.wikipedia.org/wiki/1")
+let one = 1
+
+@name("Two")
+@url("https://en.wikipedia.org/wiki/2")
+@aliases(double)
+let two = 2
+
+@name("Three")
+@url("https://en.wikipedia.org/wiki/3")
+@aliases(triple)
+let three = 3
+
+@name("Four")
+@url("https://en.wikipedia.org/wiki/4")
+@aliases(quadruple)
+let four = 4
+
+@name("Five")
+@url("https://en.wikipedia.org/wiki/5")
+let five = 5
+
+@name("Six")
+@url("https://en.wikipedia.org/wiki/6")
+let six = 6
+
+@name("Seven")
+@url("https://en.wikipedia.org/wiki/7")
+let seven = 7
+
+@name("Eight")
+@url("https://en.wikipedia.org/wiki/8")
+let eight = 8
+
+@name("Nine")
+@url("https://en.wikipedia.org/wiki/9")
+let nine = 9
+
+@name("Ten")
+@url("https://en.wikipedia.org/wiki/10")
+let ten = 10
+
+@name("Eleven")
+@url("https://en.wikipedia.org/wiki/11")
+let eleven = 11
+
+@name("Twelve")
+@url("https://en.wikipedia.org/wiki/12")
+let twelve = 12
+
+@name("Dozen")
+@url("https://en.wikipedia.org/wiki/Dozen")
 unit dozen = 12

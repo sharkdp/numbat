@@ -1,8 +1,15 @@
 use core::scalar
+use core::functions
+use core::error
 
 fn str_length(s: String) -> Scalar
 
 fn str_slice(s: String, start: Scalar, end: Scalar) -> String
+
+fn chr(n: Scalar) -> String
+
+fn lowercase(s: String) -> String
+fn uppercase(s: String) -> String
 
 fn str_append(a: String, b: String) -> String = "{a}{b}"
 
@@ -18,7 +25,7 @@ fn str_replace(s: String, pattern: String, replacement: String) -> String =
     then s
     else if str_contains(s, pattern)
            then if str_slice(s, 0, str_length(pattern)) == pattern
-               then str_replace(str_append(replacement, str_slice(s, str_length(pattern), str_length(s))), pattern, replacement)
+               then str_append(replacement, str_replace(str_slice(s, str_length(pattern), str_length(s)), pattern, replacement))
                else str_append(str_slice(s, 0, 1), str_replace(str_slice(s, 1, str_length(s)), pattern, replacement))
            else s
 
@@ -26,3 +33,44 @@ fn str_repeat(a: String, n: Scalar) -> String =
   if n > 0
     then str_append(a, str_repeat(a, n - 1))
     else ""
+
+fn _bin_digit(x: Scalar) -> String =
+  chr(48 + mod(x, 2))
+
+fn _oct_digit(x: Scalar) -> String =
+  chr(48 + mod(x, 8))
+
+fn _hex_digit(x: Scalar) -> String =
+    if mod(x, 16) < 10 then chr(48 + mod(x, 16)) else chr(97 + mod(x, 16) - 10)
+
+fn _digit_in_base(x: Scalar, base: Scalar) -> String =
+  if base < 2 || base > 16
+    then error("base must be between 2 and 16")
+    else if mod(x, 16) < 10 then chr(48 + mod(x, 16)) else chr(97 + mod(x, 16) - 10)
+
+fn _number_in_base(x: Scalar, b: Scalar) -> String =
+  if x < 0
+    then "-{_number_in_base(-x, b)}"
+    else if x < b
+      then _digit_in_base(x, b)
+      else str_append(_number_in_base(floor(x / b), b), _digit_in_base(mod(x, b), b))
+
+fn bin(x: Scalar) -> String = if x < 0 then "-{bin(-x)}" else "0b{_number_in_base(x, 2)}"
+fn oct(x: Scalar) -> String = if x < 0 then "-{oct(-x)}" else "0o{_number_in_base(x, 8)}"
+fn dec(x: Scalar) -> String = _number_in_base(x, 10)
+fn hex(x: Scalar) -> String = if x < 0 then "-{hex(-x)}" else "0x{_number_in_base(x, 16)}"
+
+# TODO: once we have anonymous functions / closures, we can implement base in a way
+# that it returns a partially-applied version of '_number_in_base'. This would allow
+# arbitrary 'x -> base(b)' conversions.
+fn _not_implemented(unused: Scalar) -> String = "<bases other than 2, 8, 10, and 16 are currently not implemented>"
+fn base(b: Scalar) -> Fn[(Scalar) -> String] =
+  if b == 2
+    then bin
+    else if b == 8
+      then oct
+      else if b == 10
+        then dec
+        else if b == 16
+          then hex
+          else _not_implemented

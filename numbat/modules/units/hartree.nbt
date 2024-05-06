@@ -1,6 +1,10 @@
 use physics::constants
 
+@name("Hartree")
+@url("https://en.wikipedia.org/wiki/Hartree")
 @aliases(hartrees)
 unit hartree: Energy = ℏ^2 / (electron_mass a0^2)
 
+@name("Bohr")
+@url("https://en.wikipedia.org/wiki/Hartree_atomic_units")
 unit bohr: Length = a0 × θC

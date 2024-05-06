@@ -7,6 +7,7 @@ use crate::{
     arithmetic::{pretty_exponent, Exponent, Power, Rational},
     number::Number,
     prefix::Prefix,
+    prefix_parser::AcceptsPrefix,
     product::{Canonicalize, Product},
 };
 
@@ -21,13 +22,28 @@ pub enum UnitKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CanonicalName {
+    pub name: String,
+    pub accepts_prefix: AcceptsPrefix,
+}
+
+impl CanonicalName {
+    pub fn new(name: &str, accepts_prefix: AcceptsPrefix) -> Self {
+        Self {
+            name: name.into(),
+            accepts_prefix,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitIdentifier {
     pub name: String,
-    pub canonical_name: String,
+    pub canonical_name: CanonicalName,
     kind: UnitKind,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BaseUnitAndFactor(pub Unit, pub Number);
 
 impl std::iter::Product for BaseUnitAndFactor {
@@ -42,10 +58,22 @@ impl UnitIdentifier {
         matches!(self.kind, UnitKind::Base)
     }
 
+    pub fn unit_and_factor(&self) -> BaseUnitAndFactor {
+        match &self.kind {
+            UnitKind::Base => BaseUnitAndFactor(
+                Unit::new_base(&self.name, self.canonical_name.clone()),
+                Number::from_f64(1.0),
+            ),
+            UnitKind::Derived(factor, defining_unit) => {
+                BaseUnitAndFactor(defining_unit.clone(), *factor)
+            }
+        }
+    }
+
     pub fn base_unit_and_factor(&self) -> BaseUnitAndFactor {
         match &self.kind {
             UnitKind::Base => BaseUnitAndFactor(
-                Unit::new_base(&self.name, &self.canonical_name),
+                Unit::new_base(&self.name, self.canonical_name.clone()),
                 Number::from_f64(1.0),
             ),
             UnitKind::Derived(factor, defining_unit) => {
@@ -127,7 +155,7 @@ impl UnitIdentifier {
 
 impl PartialOrd for UnitIdentifier {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.sort_key().partial_cmp(&other.sort_key())
+        Some(self.cmp(other))
     }
 }
 
@@ -176,11 +204,17 @@ impl Power for UnitFactor {
 
 impl Display for UnitFactor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let prefix = if self.unit_id.canonical_name.accepts_prefix.short {
+            self.prefix.as_string_short()
+        } else {
+            self.prefix.as_string_long()
+        };
+
         write!(
             f,
             "{}{}{}",
-            self.prefix.as_string_short(),
-            self.unit_id.canonical_name,
+            prefix,
+            self.unit_id.canonical_name.name,
             pretty_exponent(&self.exponent)
         )
     }
@@ -197,12 +231,12 @@ impl Unit {
         self == &Self::scalar()
     }
 
-    pub fn new_base(name: &str, canonical_name: &str) -> Self {
+    pub fn new_base(name: &str, canonical_name: CanonicalName) -> Self {
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
                 name: name.into(),
-                canonical_name: canonical_name.into(),
+                canonical_name,
                 kind: UnitKind::Base,
             },
             exponent: Rational::from_integer(1),
@@ -211,7 +245,7 @@ impl Unit {
 
     pub fn new_derived(
         name: &str,
-        canonical_name: &str,
+        canonical_name: CanonicalName,
         factor: ConversionFactor,
         base_unit: Unit,
     ) -> Self {
@@ -219,7 +253,7 @@ impl Unit {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
                 name: name.into(),
-                canonical_name: canonical_name.into(),
+                canonical_name,
                 kind: UnitKind::Derived(factor, base_unit),
             },
             exponent: Rational::from_integer(1),
@@ -268,32 +302,50 @@ impl Unit {
 
     #[cfg(test)]
     pub fn meter() -> Self {
-        Self::new_base("meter", "m")
+        Self::new_base(
+            "meter",
+            CanonicalName::new("m", AcceptsPrefix::only_short()),
+        )
     }
 
     #[cfg(test)]
     pub fn centimeter() -> Self {
-        Self::new_base("meter", "m").with_prefix(Prefix::centi())
+        Self::new_base(
+            "meter",
+            CanonicalName::new("m", AcceptsPrefix::only_short()),
+        )
+        .with_prefix(Prefix::centi())
     }
 
     #[cfg(test)]
     pub fn millimeter() -> Self {
-        Self::new_base("meter", "m").with_prefix(Prefix::milli())
+        Self::new_base(
+            "meter",
+            CanonicalName::new("m", AcceptsPrefix::only_short()),
+        )
+        .with_prefix(Prefix::milli())
     }
 
     #[cfg(test)]
     pub fn kilometer() -> Self {
-        Self::new_base("meter", "m").with_prefix(Prefix::kilo())
+        Self::new_base(
+            "meter",
+            CanonicalName::new("m", AcceptsPrefix::only_short()),
+        )
+        .with_prefix(Prefix::kilo())
     }
 
     #[cfg(test)]
     pub fn second() -> Self {
-        Self::new_base("second", "s")
+        Self::new_base(
+            "second",
+            CanonicalName::new("s", AcceptsPrefix::only_short()),
+        )
     }
 
     #[cfg(test)]
     pub fn gram() -> Self {
-        Self::new_base("gram", "g")
+        Self::new_base("gram", CanonicalName::new("g", AcceptsPrefix::only_short()))
     }
 
     #[cfg(test)]
@@ -303,14 +355,17 @@ impl Unit {
 
     #[cfg(test)]
     pub fn kelvin() -> Self {
-        Self::new_base("kelvin", "K")
+        Self::new_base(
+            "kelvin",
+            CanonicalName::new("K", AcceptsPrefix::only_short()),
+        )
     }
 
     #[cfg(test)]
     pub fn radian() -> Self {
         Self::new_derived(
             "radian",
-            "rad",
+            CanonicalName::new("rad", AcceptsPrefix::only_long()),
             Number::from_f64(1.0),
             Self::meter() / Self::meter(),
         )
@@ -320,7 +375,7 @@ impl Unit {
     pub fn degree() -> Self {
         Self::new_derived(
             "degree",
-            "°",
+            CanonicalName::new("°", AcceptsPrefix::none()),
             Number::from_f64(std::f64::consts::PI / 180.0),
             Self::radian(),
         )
@@ -328,14 +383,19 @@ impl Unit {
 
     #[cfg(test)]
     pub fn percent() -> Self {
-        Self::new_derived("percent", "%", Number::from_f64(1e-2), Self::scalar())
+        Self::new_derived(
+            "percent",
+            CanonicalName::new("%", AcceptsPrefix::none()),
+            Number::from_f64(1e-2),
+            Self::scalar(),
+        )
     }
 
     #[cfg(test)]
     pub fn hertz() -> Self {
         Self::new_derived(
             "hertz",
-            "Hz",
+            CanonicalName::new("Hz", AcceptsPrefix::only_short()),
             Number::from_f64(1.0),
             Unit::second().powi(-1),
         )
@@ -345,7 +405,7 @@ impl Unit {
     pub fn newton() -> Self {
         Self::new_derived(
             "newton",
-            "N",
+            CanonicalName::new("N", AcceptsPrefix::only_short()),
             Number::from_f64(1.0),
             Unit::kilogram() * Unit::meter() / Unit::second().powi(2),
         )
@@ -353,19 +413,29 @@ impl Unit {
 
     #[cfg(test)]
     pub fn minute() -> Self {
-        Self::new_derived("minute", "min", Number::from_f64(60.0), Self::second())
+        Self::new_derived(
+            "minute",
+            CanonicalName::new("min", AcceptsPrefix::none()),
+            Number::from_f64(60.0),
+            Self::second(),
+        )
     }
 
     #[cfg(test)]
     pub fn hour() -> Self {
-        Self::new_derived("hour", "h", Number::from_f64(60.0), Self::minute())
+        Self::new_derived(
+            "hour",
+            CanonicalName::new("h", AcceptsPrefix::none()),
+            Number::from_f64(60.0),
+            Self::minute(),
+        )
     }
 
     #[cfg(test)]
     pub fn kph() -> Self {
         Self::new_derived(
             "kilometer_per_hour",
-            "kph",
+            CanonicalName::new("kph", AcceptsPrefix::none()),
             Number::from_f64(1.0),
             Self::kilometer() / Self::hour(),
         )
@@ -373,14 +443,19 @@ impl Unit {
 
     #[cfg(test)]
     pub fn inch() -> Self {
-        Self::new_derived("inch", "in", Number::from_f64(0.0254), Self::meter())
+        Self::new_derived(
+            "inch",
+            CanonicalName::new("in", AcceptsPrefix::none()),
+            Number::from_f64(0.0254),
+            Self::meter(),
+        )
     }
 
     #[cfg(test)]
     pub fn gallon() -> Self {
         Self::new_derived(
             "gallon",
-            "gal",
+            CanonicalName::new("gal", AcceptsPrefix::none()),
             Number::from_f64(231.0),
             Self::inch().powi(3),
         )
@@ -388,27 +463,47 @@ impl Unit {
 
     #[cfg(test)]
     pub fn foot() -> Self {
-        Self::new_derived("foot", "ft", Number::from_f64(12.0), Self::inch())
+        Self::new_derived(
+            "foot",
+            CanonicalName::new("ft", AcceptsPrefix::none()),
+            Number::from_f64(12.0),
+            Self::inch(),
+        )
     }
 
     #[cfg(test)]
     pub fn yard() -> Self {
-        Self::new_derived("yard", "yd", Number::from_f64(3.0), Self::foot())
+        Self::new_derived(
+            "yard",
+            CanonicalName::new("yd", AcceptsPrefix::none()),
+            Number::from_f64(3.0),
+            Self::foot(),
+        )
     }
 
     #[cfg(test)]
     pub fn mile() -> Self {
-        Self::new_derived("mile", "mi", Number::from_f64(1760.0), Self::yard())
+        Self::new_derived(
+            "mile",
+            CanonicalName::new("mi", AcceptsPrefix::none()),
+            Number::from_f64(1760.0),
+            Self::yard(),
+        )
     }
 
     #[cfg(test)]
     pub fn bit() -> Self {
-        Self::new_base("bit", "B")
+        Self::new_base("bit", CanonicalName::new("bit", AcceptsPrefix::only_long()))
     }
 
     #[cfg(test)]
     pub fn byte() -> Self {
-        Self::new_derived("byte", "B", Number::from_f64(8.0), Self::bit())
+        Self::new_derived(
+            "byte",
+            CanonicalName::new("B", AcceptsPrefix::only_short()),
+            Number::from_f64(8.0),
+            Self::bit(),
+        )
     }
 }
 
@@ -483,7 +578,7 @@ mod tests {
                 prefix: Prefix::none(),
                 unit_id: UnitIdentifier {
                     name: "meter".into(),
-                    canonical_name: "m".into(),
+                    canonical_name: CanonicalName::new("m", AcceptsPrefix::only_short()),
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(1),
@@ -492,7 +587,7 @@ mod tests {
                 prefix: Prefix::none(),
                 unit_id: UnitIdentifier {
                     name: "second".into(),
-                    canonical_name: "s".into(),
+                    canonical_name: CanonicalName::new("s", AcceptsPrefix::only_short()),
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(-1),
@@ -555,7 +650,7 @@ mod tests {
                 prefix: Prefix::Metric(-3),
                 unit_id: UnitIdentifier {
                     name: "meter".into(),
-                    canonical_name: "m".into(),
+                    canonical_name: CanonicalName::new("m", AcceptsPrefix::only_short()),
                     kind: UnitKind::Base,
                 },
                 exponent: Rational::from_integer(1),

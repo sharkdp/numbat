@@ -21,12 +21,18 @@ pub const KEYWORDS: &[&str] = &[
     "true",
     "false",
     "String",
+    "DateTime",
+    "NaN",
+    "inf",
     // decorators
     "metric_prefixes",
     "binary_prefixes",
     "aliases",
+    "name",
+    "url",
     // procedures
     "print(",
     "assert_eq(",
+    "assert(",
     "type(",
 ];

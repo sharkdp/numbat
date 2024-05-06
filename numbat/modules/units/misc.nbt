@@ -2,85 +2,163 @@ use units::si
 
 ### Other units
 
+@name("Bar")
+@url("https://en.wikipedia.org/wiki/Bar_(unit)")
 @metric_prefixes
 @aliases(bar: both, bars: both)
 unit bar: Pressure = 100 kPa
 
-@aliases(angstroms, Å: short)
+@name("Ångström")
+@url("https://en.wikipedia.org/wiki/Angstrom")
+@aliases(angstroms, Å: short, Å: short)
 unit angstrom: Length = 1e-10 meter
 
+@name("Barn")
+@url("https://en.wikipedia.org/wiki/Barn_(unit)")
 @metric_prefixes
 @aliases(barns)
 unit barn: Area = 1e-28 meter^2
 
+@name("Calorie")
+@url("https://en.wikipedia.org/wiki/Calorie")
 @metric_prefixes
 @aliases(calories, cal: both)
 unit calorie: Energy = 4.184 joule
 
+@name("British thermal unit")
+@url("https://en.wikipedia.org/wiki/British_thermal_unit")
 @aliases(Btu)
 unit BTU: Energy = 1055.05585262 joule
 
+@name("Pound-force")
+@url("https://en.wikipedia.org/wiki/Pound_(force)")
 @aliases(lbf: short)
 unit pound_force: Force = 4.448222 newton
 
+@name("Ounce-force")
+@url("https://en.wikipedia.org/wiki/Ounce-force")
 @aliases(ozf: short)
 unit ounce_force: Force = 1 / 16 * lbf
 
+@name("Kilogram-force")
+@url("https://en.wikipedia.org/wiki/Kilogram-force")
 @aliases(kgf: short)
 unit kilogram_force: Force = 9.80665 newton
 
-# Metric horsepower
+@name("Metric horsepower")
+@url("https://en.wikipedia.org/wiki/Horsepower")
 @aliases(hp: short)
 unit horsepower: Power = 735.49875 W
 
+@name("Revolution")
+@url("https://en.wikipedia.org/wiki/Revolution_(unit)")
 @aliases(revolutions, rev: short)
 unit revolution: Angle = 360°
 
+@name("Revolutions per minute")
+@url("https://en.wikipedia.org/wiki/Revolutions_per_minute")
 @aliases(RPM: short)
 unit rpm: AngularFrequency = revolutions per minute
 
+@name("Millimeter of mercury")
+@url("https://en.wikipedia.org/wiki/Millimeter_of_mercury")
 unit mmHg: Pressure = 133.322387415 pascal
 
+@name("Mercury")
+@url("https://en.wikipedia.org/wiki/Mercury_(element)")
 unit Hg: Force / Volume = mmHg / mm
 
+@name("Torr")
+@url("https://en.wikipedia.org/wiki/Torr")
 unit torr: Pressure = 101325 / 760 × pascal
 
+@name("Pound-force per square inch")
+@url("https://en.wikipedia.org/wiki/Pounds_per_square_inch")
 @aliases(PSI: short)
 unit psi: Pressure = 6.894757 kPa
 
+@name("Kilopound-force per square inch")
+@url("https://en.wikipedia.org/wiki/Ksi_(unit)")
+@aliases(KSI: short)
+unit ksi: Pressure = 1000 psi
+
+@name("Megapound-force per square inch")
+@url("https://en.wikipedia.org/wiki/Ksi_(unit)")
+@aliases(MPSI: short)
+unit mpsi: Pressure = 1000000 psi
+
+@name("Standard atmosphere")
+@url("https://en.wikipedia.org/wiki/Standard_atmosphere_(unit)")
 @aliases(atmospheres, atm: short)
 unit atmosphere: Pressure = 101_325 pascal
 
+@name("Molar")
+@url("https://en.wikipedia.org/wiki/Molar_concentration")
 @metric_prefixes
 unit molar: Molarity = 1 mol / litre
 
+@name("Molal")
+@url("https://en.wikipedia.org/wiki/Molality")
 @metric_prefixes
 unit molal: Molality = 1 mole / kilogram
 
-# Standard FIFA football pitch
-unit footballfield: Area = 105 m × 68 m
+@name("Football field")
+@url("https://en.wikipedia.org/wiki/Football_pitch")
+unit footballfield: Area = 105 m × 68 m # Standard FIFA football pitch
 
-# Olympic-size swimming pool (FR3)
-unit swimmingpool: Volume = 50 m × 25 m × 2 m
+@name("Swimming pool")
+@url("https://en.wikipedia.org/wiki/Olympic-size_swimming_pool")
+unit swimmingpool: Volume = 50 m × 25 m × 2 m # Olympic-size swimming pool (FR3)
+
+@name("Rack unit")
+@url("https://en.wikipedia.org/wiki/Rack_unit")
+@aliases(rackunits, RU: short, U: short)
+unit rackunit: Length = 0.04445 meter
+
+@metric_prefixes
+@aliases(darcys, darcies)
+@url("https://en.wikipedia.org/wiki/Darcy_(unit)")
+unit darcy: Length^2 = (1 bar / 1 atmosphere) × micrometer²
 
 # Angles
 
+@name("Turn")
+@url("https://en.wikipedia.org/wiki/Turn_(geometry)")
 @aliases(turns)
 unit turn: Angle = 2 π rad
 
-unit gon: Angle = 90° / 100
+@name("Gradian")
+@url("https://en.wikipedia.org/wiki/Gradian")
+@aliases(gradians, grad, grads, grade, grades, gon, gons)
+unit gradian: Angle = 90° / 100
 
 ### Abbreviations
 
+@name("Watt-hour")
+@url("https://en.wikipedia.org/wiki/Watt_hour")
 @metric_prefixes
 @aliases(Wh: short)
 unit watthour: Energy = W h
 
+@name("Ampere-hour")
+@url("https://en.wikipedia.org/wiki/Ampere_hour")
+@metric_prefixes
+@aliases(Ah: short)
+unit amperehour: ElectricCharge = A h
+
+@name("Kilometres per hour")
+@url("https://en.wikipedia.org/wiki/Kilometres_per_hour")
 unit kph: Velocity = kilometer per hour
 
+@name("Micron")
+@url("https://en.wikipedia.org/wiki/Micrometre")
 unit micron: Length = µm
 
+@name("Cubic centimetre")
+@url("https://en.wikipedia.org/wiki/Cubic_centimetre")
 @aliases(ccm)
 unit cc: Volume = cm^3
 
+@name("Fermi")
+@url("https://en.wikipedia.org/wiki/Femtometre")
 unit fermi: Length = 1 fm

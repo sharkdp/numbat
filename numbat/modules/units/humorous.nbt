@@ -1,0 +1,6 @@
+use units::si
+use units::imperial
+
+@name("Smoot")
+@url("https://en.wikipedia.org/wiki/Smoot")
+unit smoot: Length = 5 feet + 7 inch

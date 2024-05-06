@@ -2,11 +2,16 @@ mod common;
 
 use common::get_test_context;
 
+use insta::assert_snapshot;
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
+use numbat::NumbatError;
 use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
 
-fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &str) {
+#[track_caller]
+fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: impl AsRef<str>) {
+    let expected_output = expected_output.as_ref();
+    println!("Expecting output '{expected_output}' for code '{code}'");
     if let InterpreterResult::Value(val) = ctx.interpret(code, CodeSource::Internal).unwrap().1 {
         let fmt = PlainTextFormatter {};
 
@@ -17,12 +22,31 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: &s
     }
 }
 
-fn expect_output(code: &str, expected_output: &str) {
-    println!("Expecting output '{expected_output}' for code '{code}'");
+#[track_caller]
+fn fail(code: &str) -> NumbatError {
+    let mut ctx = get_test_context();
+    let ret = ctx.interpret(code, CodeSource::Internal);
+    match ret {
+        Err(e) => e,
+        Ok((_stmts, ret)) => {
+            if let InterpreterResult::Value(val) = ret {
+                let fmt = PlainTextFormatter {};
+                let output = fmt.format(&val.pretty_print(), false);
+                panic!("was supposed to fail but instead got:\n{}", output.trim())
+            } else {
+                panic!("was supposed to fail but instead got:\n{:?}", ret)
+            }
+        }
+    }
+}
+
+#[track_caller]
+fn expect_output(code: &str, expected_output: impl AsRef<str>) {
     let mut ctx = get_test_context();
     expect_output_with_context(&mut ctx, code, expected_output)
 }
 
+#[track_caller]
 fn expect_failure(code: &str, msg_part: &str) {
     let mut ctx = get_test_context();
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
@@ -34,13 +58,59 @@ fn expect_failure(code: &str, msg_part: &str) {
     }
 }
 
-fn expect_exact_failure(code: &str, expected: &str) {
+#[track_caller]
+fn get_error_message(code: &str) -> String {
     let mut ctx = get_test_context();
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
-        assert_eq!(e.to_string(), expected);
+        e.to_string()
     } else {
         panic!();
     }
+}
+
+#[test]
+fn simple_value() {
+    expect_output("0", "0");
+    expect_output("0_0", "0");
+    expect_output("0_0.0_0", "0");
+    expect_output(".0", "0");
+    expect_failure("_.0", "Unexpected character in identifier: '.'");
+    expect_failure("._0", "Expected digit");
+    expect_output(".0_0", "0");
+    expect_failure(".0_", "Unexpected character in number literal: '_'");
+
+    expect_output("0b0", "0");
+    expect_output("0b01", "1");
+    expect_output("0b0_0", "0");
+    expect_failure("0b012", "Expected base-2 digit");
+    expect_failure("0b", "Expected base-2 digit");
+    expect_failure("0b_", "Expected base-2 digit");
+    expect_failure("0b_0", "Expected base-2 digit");
+    expect_failure("0b0_", "Expected base-2 digit");
+    expect_failure("0b0.0", "Expected base-2 digit");
+
+    expect_output("0o0", "0");
+    expect_output("0o01234567", "342_391");
+    expect_output("0o0_0", "0");
+    expect_failure("0o012345678", "Expected base-8 digit");
+    expect_failure("0o", "Expected base-8 digit");
+    expect_failure("0o_", "Expected base-8 digit");
+    expect_failure("0o_0", "Expected base-8 digit");
+    expect_failure("0o0_", "Expected base-8 digit");
+    expect_failure("0o0.0", "Expected base-8 digit");
+
+    expect_output("0x0", "0");
+    expect_output("0x0123456789abcdef", "8.19855e+16");
+    expect_output("0x0_0", "0");
+    expect_failure("0x0123456789abcdefg", "Expected base-16 digit");
+    expect_failure("0x", "Expected base-16 digit");
+    expect_failure("0x_", "Expected base-16 digit");
+    expect_failure("0x_0", "Expected base-16 digit");
+    expect_failure("0x0_", "Expected base-16 digit");
+    expect_failure("0x0.0", "Expected base-16 digit");
+
+    expect_output("NaN", "NaN");
+    expect_output("inf", "inf");
 }
 
 #[test]
@@ -159,6 +229,31 @@ fn test_function_inverses() {
 }
 
 #[test]
+fn test_algebra() {
+    let mut ctx = get_test_context();
+    let _ = ctx
+        .interpret("use extra::algebra", CodeSource::Internal)
+        .unwrap();
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, -1)", "x₁ = 1; x₂ = -1");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "x = -0.333333");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 0, 1)", "no solution");
+    expect_output_with_context(&mut ctx, "quadratic_equation(9, -126, 441)", "x = 7");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, -2, 1)", "x = 1");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 1, 1)", "x = -1");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, 0)", "x = 0");
+    expect_output_with_context(
+        &mut ctx,
+        "quadratic_equation(0, 0, 0)",
+        "infinitely many solutions",
+    );
+    expect_output_with_context(
+        &mut ctx,
+        "quadratic_equation(1, 1, 1)",
+        "no real-valued solution",
+    );
+}
+
+#[test]
 fn test_math() {
     expect_output("Sin(90°)", "1");
     expect_output("Sin(30°)", "0.5");
@@ -184,35 +279,90 @@ fn test_math() {
 
 #[test]
 fn test_incompatible_dimension_errors() {
-    expect_exact_failure(
-        "kg m / s^2 + kg m^2",
-        " left hand side: Length  × Mass × Time⁻²    [= Force]\n\
-         right hand side: Length² × Mass\n\n\
-         Suggested fix: multiply left hand side by Length × Time²",
+    assert_snapshot!(
+        get_error_message("kg m / s^2 + kg m^2"),
+        @r###"
+     left hand side: Length  × Mass × Time⁻²    [= Force]
+    right hand side: Length² × Mass
+    "###
     );
-    expect_exact_failure(
-        "1 + m",
-        " left hand side: Scalar    [= Scalar]\n\
-         right hand side: Length\n\n\
-         Suggested fix: multiply left hand side by Length",
+
+    assert_snapshot!(
+        get_error_message("1 + m"),
+        @r###"
+     left hand side: Scalar    [= Angle, Scalar, SolidAngle]
+    right hand side: Length
+
+    Suggested fix: divide the expression on the right hand side by a `Length` factor
+    "###
     );
-    expect_exact_failure(
-        "m / s + K A",
-        " left hand side: Length / Time            [= Velocity]\n\
-         right hand side: Current × Temperature\n\n\
-         Suggested fix: multiply left hand side by Current × Temperature × Time / Length",
+
+    assert_snapshot!(
+        get_error_message("m / s + K A"),
+        @r###"
+     left hand side: Length / Time            [= Velocity]
+    right hand side: Current × Temperature
+    "###
     );
-    expect_exact_failure(
-        "m + 1 / m",
-        " left hand side: Length\n\
-         right hand side: Length⁻¹    [= Wavenumber]\n\n\
-         Suggested fix: multiply right hand side by Length²",
+
+    assert_snapshot!(
+        get_error_message("m + 1 / m"),
+        @r###"
+     left hand side: Length
+    right hand side: Length⁻¹    [= Wavenumber]
+
+    Suggested fix: invert the expression on the right hand side
+    "###
     );
-    expect_exact_failure(
-        "kW -> J",
-        " left hand side: Length² × Mass × Time⁻³    [= Power]\n\
-         right hand side: Length² × Mass × Time⁻²    [= Energy]\n\n\
-         Suggested fix: multiply left hand side by Time",
+
+    assert_snapshot!(
+        get_error_message("kW -> J"),
+        @r###"
+     left hand side: Length² × Mass × Time⁻³    [= Power]
+    right hand side: Length² × Mass × Time⁻²    [= Energy, Torque]
+
+    Suggested fix: divide the expression on the right hand side by a `Time` factor
+    "###
+    );
+
+    assert_snapshot!(
+        get_error_message("sin(1 meter)"),
+        @r###"
+    parameter type: Scalar    [= Angle, Scalar, SolidAngle]
+     argument type: Length
+
+    Suggested fix: divide the function argument by a `Length` factor
+    "###
+    );
+
+    assert_snapshot!(
+        get_error_message("let x: Acceleration = 4 m / s"),
+        @r###"
+    specified dimension: Length × Time⁻²    [= Acceleration]
+       actual dimension: Length × Time⁻¹    [= Velocity]
+
+    Suggested fix: divide the right hand side expression by a `Time` factor
+    "###
+    );
+
+    assert_snapshot!(
+        get_error_message("unit x: Acceleration = 4 m / s"),
+        @r###"
+    specified dimension: Length × Time⁻²    [= Acceleration]
+       actual dimension: Length × Time⁻¹    [= Velocity]
+
+    Suggested fix: divide the right hand side expression by a `Time` factor
+    "###
+    );
+
+    assert_snapshot!(
+        get_error_message("fn acceleration(length: Length, time: Time) -> Acceleration = length / time"),
+        @r###"
+    specified return type: Length × Time⁻²    [= Acceleration]
+       actual return type: Length × Time⁻¹    [= Velocity]
+
+    Suggested fix: divide the expression in the function body by a `Time` factor
+    "###
     );
 }
 
@@ -220,14 +370,14 @@ fn test_incompatible_dimension_errors() {
 fn test_temperature_conversions() {
     expect_output("from_celsius(11.5)", "284.65 K");
     expect_output("from_fahrenheit(89.3)", "304.983 K");
-    expect_output("to_celsius(0 K)", "-273.15");
-    expect_output("to_fahrenheit(30 K)", "-405.67");
-    expect_output("to_celsius(from_celsius(100))", "100");
-    expect_output("to_fahrenheit(from_fahrenheit(100))", "100.0");
-    expect_output("from_celsius(to_celsius(123 K))", "123 K");
-    expect_output("from_fahrenheit(to_fahrenheit(123 K))", "123 K");
+    expect_output("0 K -> celsius", "-273.15");
+    expect_output("fahrenheit(30 K)", "-405.67");
+    expect_output("from_celsius(100) -> celsius", "100");
+    expect_output("from_fahrenheit(100) -> fahrenheit", "100.0");
+    expect_output("from_celsius(123 K -> celsius)", "123 K");
+    expect_output("from_fahrenheit(123 K -> fahrenheit)", "123 K");
 
-    expect_output("-40 // from_fahrenheit // to_celsius", "-40");
+    expect_output("-40 -> from_fahrenheit -> celsius", "-40");
 }
 
 #[test]
@@ -240,6 +390,13 @@ fn test_other_functions() {
     expect_output("floor(3.9)", "3");
     expect_output("round(3.9)", "4");
     expect_output("round(3.1)", "3");
+    expect_output("is_nan(NaN)", "true");
+    expect_output("is_nan(NaN cm)", "true");
+    expect_output("is_nan(ln(-1))", "true");
+    expect_output("is_nan(1)", "false");
+    expect_output("is_infinite(inf)", "true");
+    expect_output("is_infinite(-inf)", "true");
+    expect_output("is_infinite(1)", "false");
 }
 
 #[test]
@@ -256,12 +413,12 @@ fn test_last_result_identifier() {
 #[test]
 fn test_misc_examples() {
     expect_output("1920/16*9", "1080");
-    expect_output("2^32", "4294967296");
+    expect_output("2^32", "4_294_967_296");
     expect_output("sqrt(1.4^2 + 1.5^2) * cos(pi/3)^2", "0.512957");
 
     expect_output("2min + 30s", "2.5 min");
     expect_output("2min + 30s -> sec", "150 s");
-    expect_output("4/3 * pi * (6000km)³", "9.04779e11 km³");
+    expect_output("4/3 * pi * (6000km)³", "9.04779e+11 km³");
     expect_output("40kg * 9.8m/s^2 * 150cm", "588 kg·m²/s²");
     expect_output("Sin(30°)", "0.5");
 
@@ -380,6 +537,35 @@ fn test_comparisons() {
 }
 
 #[test]
+fn test_logical() {
+    // negation
+    expect_output("!true", "false");
+    expect_output("!false", "true");
+
+    // or
+    expect_output("true || false", "true");
+    expect_output("false || false", "false");
+
+    // and
+    expect_output("true && false", "false");
+    expect_output("true && true", "true");
+
+    // priority
+    expect_output("false || true && false", "false");
+    expect_output("false || true && !false", "true");
+
+    // Errors
+    insta::assert_display_snapshot!(fail("1 || 2"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("true || 2"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("1 || true"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("1 && 2"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("true && 2"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("1 && true"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("!1"), @"Expected boolean value");
+    insta::assert_display_snapshot!(fail("!1 || true"), @"Expected boolean value");
+}
+
+#[test]
 fn test_conditionals() {
     expect_output("if 1 < 2 then 3 else 4", "3");
     expect_output("if 4 < 3 then 2 else 1", "1");
@@ -393,6 +579,51 @@ fn test_conditionals() {
 fn test_string_interpolation() {
     expect_output("\"pi = {pi}!\"", "pi = 3.14159!");
     expect_output("\"1 + 2 = {1 + 2}\"", "1 + 2 = 3");
+
+    expect_output("\"{0.2:0.5}\"", "0.20000");
+    expect_output("\"pi ~= {pi:.3}\"", "pi ~= 3.142");
+    expect_output(
+        "\"both {pi:.3} and {e} are irrational and transcendental numbers\"",
+        "both 3.142 and 2.71828 are irrational and transcendental numbers",
+    );
+    expect_output(
+        "
+        let str = \"1234\"
+        \"{str:0.2}\"
+        ",
+        "12",
+    );
+
+    expect_output("\"{1_000_300:+.3}\"", "+1000300.000");
+
+    expect_output(
+        "
+        let str = \"1234\"
+        \"a {str:^10} b\"
+        ",
+        "a    1234    b",
+    );
+
+    // Doesn't work at the moment, as `strfmt` expects `i64`'s for `#x`, but Numbat deals with `f64`'s
+    // internally
+    //expect_output("\"{31:#x}\"", "0x1f")
+
+    expect_failure(
+        "\"{200:x}\"",
+        "Incorrect type for format specifiers: Unknown format code 'x' for type",
+    );
+    expect_failure(
+        "\"{200:.}\"",
+        "Invalid format specifiers: Format specifier missing precision",
+    );
+
+    expect_failure(
+        "
+        let str = \"1234\"
+        \"{str:.3f}\"
+        ",
+        "Incorrect type for format specifiers: Unknown format code Some('f') for object of type 'str'",
+    );
 }
 
 #[test]
@@ -438,4 +669,43 @@ fn test_overwrite_captured_constant() {
         ",
         "0.841471",
     );
+}
+
+#[test]
+fn test_pretty_print_prefixes() {
+    expect_output("1 megabarn", "1 megabarn");
+}
+
+#[test]
+fn test_full_simplify_for_function_calls() {
+    expect_output("floor(1.2 hours / hour)", "1");
+}
+
+#[test]
+fn test_datetime_runtime_errors() {
+    expect_failure("datetime(\"2000-01-99\")", "Unrecognized datetime format");
+    expect_failure("now() -> tz(\"Europe/NonExisting\")", "Unknown timezone");
+    expect_failure(
+        "date(\"2000-01-01\") + 1e100 years",
+        "Exceeded maximum size for time durations",
+    );
+    expect_failure(
+        "date(\"2000-01-01\") + 100000000 years",
+        "DateTime out of range",
+    );
+    expect_failure(
+        "format_datetime(\"%Y-%m-%dT%H%:M\", now())",
+        "Error in datetime format",
+    )
+}
+
+#[test]
+fn test_user_errors() {
+    expect_failure("error(\"test\")", "User error: test");
+
+    // Make sure that the never type (!) can be used in all contexts
+    expect_failure("- error(\"test\")", "User error: test");
+    expect_failure("1 + error(\"test\")", "User error: test");
+    expect_failure("1 m + error(\"test\")", "User error: test");
+    expect_failure("if 3 < 2 then 2 m else error(\"test\")", "User error: test");
 }

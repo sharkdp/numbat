@@ -1,4 +1,4 @@
-import { setup_panic_hook, Numbat } from "numbat-wasm";
+import init, { setup_panic_hook, Numbat, FormatType } from "./pkg/numbat_wasm.js";
 
 async function fetch_exchange_rates() {
   try {
@@ -16,13 +16,9 @@ async function fetch_exchange_rates() {
   }
 }
 
-setup_panic_hook();
-
-var numbat = Numbat.new();
-var combined_input = "";
-
-// Load KeyboardEvent polyfill for old browsers
-keyboardeventKeyPolyfill.polyfill();
+function create_numbat_instance() {
+    return Numbat.new(true, true, FormatType.JqueryTerminal);
+}
 
 function updateUrlQuery(query) {
   let url = new URL(window.location);
@@ -46,27 +42,43 @@ function interpret(input) {
     this.clear();
     var output = "";
   } else if (input_trimmed == "reset") {
-    numbat = Numbat.new();
+    numbat = create_numbat_instance();
     numbat.interpret("use units::currencies");
     combined_input = "";
     updateUrlQuery(null);
     this.clear();
-  } else if (input_trimmed == "list" || input_trimmed == "ll" || input_trimmed == "ls") {
+  } else if (input_trimmed == "list" || input_trimmed == "ls") {
     output = numbat.print_environment();
+  } else if (input_trimmed == "list functions" || input_trimmed == "ls functions") {
+    output = numbat.print_functions();
+  } else if (input_trimmed == "list dimensions" || input_trimmed == "ls dimensions") {
+    output = numbat.print_dimensions();
+} else if (input_trimmed == "list variables" || input_trimmed == "ls variables") {
+    output = numbat.print_variables();
+} else if (input_trimmed == "list units" || input_trimmed == "ls units") {
+    output = numbat.print_units();
+  } else if (input_trimmed == "help" || input_trimmed == "?") {
+    output = numbat.help();
   } else {
-    var result = numbat.interpret(input);
-    output = result.output;
+    var result = {is_error: false};
+    if (input_trimmed.startsWith("info ")) {
+      var keyword = input_trimmed.substring(4).trim();
+      output = numbat.print_info(keyword);
+    } else {
+      result = numbat.interpret(input);
+      output = result.output;
+    }
 
     if (!result.is_error) {
-        combined_input += input + "\n";
-        updateUrlQuery(combined_input.trim());
+        combined_input += input.trim() + "⏎";
+        updateUrlQuery(combined_input);
     }
   }
 
   return output;
 }
 
-function main() {
+function setup() {
   $(document).ready(function() {
     var term = $('#terminal').terminal(interpret, {
         greetings: false,
@@ -87,10 +99,32 @@ function main() {
     if (location.search) {
       var queryParams = new URLSearchParams(location.search);
       if (queryParams.has("q")) {
-        term.exec(queryParams.get("q"));
+        // feed in the query line by line, as if the user typed it in
+        for (const line of queryParams.get("q").split("⏎")) {
+          if (line.trim().length > 0) {
+            term.exec(line.trim() + "\n");
+          }
+        }
       }
     }
   });
 }
 
-fetch_exchange_rates().then(main);
+var numbat;
+var combined_input = "";
+
+async function main() {
+  await init();
+
+  setup_panic_hook();
+
+  numbat = create_numbat_instance();
+  combined_input = "";
+
+  // Load KeyboardEvent polyfill for old browsers
+  keyboardeventKeyPolyfill.polyfill();
+
+  fetch_exchange_rates().then(setup);
+}
+
+main();

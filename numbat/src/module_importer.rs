@@ -1,4 +1,5 @@
 use std::{
+    ffi::OsStr,
     fs,
     path::{Path, PathBuf},
 };
@@ -7,8 +8,9 @@ use rust_embed::RustEmbed;
 
 use crate::resolver::ModulePath;
 
-pub trait ModuleImporter {
+pub trait ModuleImporter: Send + Sync {
     fn import(&self, path: &ModulePath) -> Option<(String, Option<PathBuf>)>;
+    fn list_modules(&self) -> Vec<ModulePath>;
 }
 
 #[derive(Debug, Clone, Default)]
@@ -17,6 +19,10 @@ pub struct NullImporter {}
 impl ModuleImporter for NullImporter {
     fn import(&self, _: &ModulePath) -> Option<(String, Option<PathBuf>)> {
         None
+    }
+
+    fn list_modules(&self) -> Vec<ModulePath> {
+        vec![]
     }
 }
 
@@ -48,6 +54,37 @@ impl ModuleImporter for FileSystemImporter {
 
         None
     }
+
+    fn list_modules(&self) -> Vec<ModulePath> {
+        use walkdir::WalkDir;
+        let mut modules = vec![];
+        for root_path in &self.root_paths {
+            for entry in WalkDir::new(root_path)
+                .follow_links(true)
+                .follow_root_links(false)
+                .into_iter()
+                .flatten()
+            {
+                let path = entry.path();
+                if path.is_file() && path.extension() == Some(OsStr::new("nbt")) {
+                    if let Ok(relative_path) = path.strip_prefix(root_path) {
+                        let components: Vec<String> = relative_path
+                            .components()
+                            .map(|c| {
+                                c.as_os_str()
+                                    .to_string_lossy()
+                                    .trim_end_matches(".nbt")
+                                    .to_string()
+                            })
+                            .collect();
+
+                        modules.push(ModulePath(components));
+                    }
+                }
+            }
+        }
+        modules
+    }
 }
 
 #[derive(RustEmbed)]
@@ -77,18 +114,28 @@ impl ModuleImporter for BuiltinModuleImporter {
                 (content, Some(user_facing_path))
             })
     }
+
+    fn list_modules(&self) -> Vec<ModulePath> {
+        BuiltinAssets::iter()
+            .map(|path| {
+                ModulePath(
+                    path.trim_end_matches(".nbt")
+                        .split('/')
+                        .map(|s| s.to_string())
+                        .collect(),
+                )
+            })
+            .collect()
+    }
 }
 
 pub struct ChainedImporter {
-    main: Box<dyn ModuleImporter + Send>,
-    fallback: Box<dyn ModuleImporter + Send>,
+    main: Box<dyn ModuleImporter>,
+    fallback: Box<dyn ModuleImporter>,
 }
 
 impl ChainedImporter {
-    pub fn new(
-        main: Box<dyn ModuleImporter + Send>,
-        fallback: Box<dyn ModuleImporter + Send>,
-    ) -> Self {
+    pub fn new(main: Box<dyn ModuleImporter>, fallback: Box<dyn ModuleImporter>) -> Self {
         Self { main, fallback }
     }
 }
@@ -100,5 +147,15 @@ impl ModuleImporter for ChainedImporter {
         } else {
             self.fallback.import(path)
         }
+    }
+
+    fn list_modules(&self) -> Vec<ModulePath> {
+        let mut modules = self.main.list_modules();
+        modules.extend(self.fallback.list_modules());
+
+        modules.sort();
+        modules.dedup();
+
+        modules
     }
 }

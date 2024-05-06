@@ -79,7 +79,7 @@ fn air_pressure(height: Length) -> Pressure = p0 · (1 - gradient · height / t0
 
 ## Generic types
 
-Numbats type system also supports generic types (type polymorphism).
+Numbat's type system also supports generic types (type polymorphism).
 These can be used for functions that work regardless of the physical dimension of the argument(s).
 For example, the type signature of the absolute value function is given by
 ``` numbat
@@ -118,7 +118,7 @@ In order to compute the type of `expr1 ^ expr2`, we need to fully *evaluate*
 hypothetical expression like `meter^f()` where `f()` could do *anything*. Maybe even
 get some input from the user at runtime.
 
-Numbats solution to this problem looks like this: If `expr1` is *not* dimensionless, 
+Numbat's solution to this problem looks like this: If `expr1` is *not* dimensionless,
 we restrict `expr2` to a small subset of allowed operations that can be fully
 evaluated at compile time (similar to `constexpr` expressions in C++, `const`
 expressions in Rust, etc). Expressions like `meter^(2 * (2 + 1) / 3)` are completely

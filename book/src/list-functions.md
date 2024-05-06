@@ -5,6 +5,8 @@
 ```nbt
 fn unit_of<T>(x: T) -> T
 fn value_of<T>(x: T) -> Scalar
+fn is_nan<T>(x: T) -> Bool
+fn is_infinite<T>(x: T) -> Bool
 ```
 
 ## Math
@@ -99,15 +101,40 @@ fn sphere_area<L>(radius: L) -> L^2
 fn sphere_volume<L>(radius: L) -> L^3
 ```
 
+### Random sampling 
+
+```nbt
+fn random() -> Scalar
+fn rand_uniform<T>(a: T, b: T) -> T
+fn rand_int<T>(a: T, b: T) -> T
+fn rand_normal<T>(μ: T, σ: T) -> T
+fn rand_bernoulli(p: Scalar) -> Scalar
+fn rand_binomial(n: Scalar, p: Scalar) -> Scalar
+fn rand_geometric(p: Scalar) -> Scalar
+fn rand_poisson<T>(λ: T) -> T
+fn rand_exponential<T>(λ: T) -> 1/T
+fn rand_lognormal(μ: Scalar, σ: Scalar) -> Scalar
+fn rand_pareto<T>(α: Scalar, min: T) -> T
+
+### Algebra (experimental)
+
+```nbt
+fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
+```
+
+## Date and time
+
+See [this page](date-and-time.md) for details.
+
 ## Physics
 
 ### Temperature conversion
 
 ```nbt
 fn from_celsius(t_celsius: Scalar) -> Temperature
-fn to_celsius(t_kelvin: Temperature) -> Scalar
+fn celsius(t_kelvin: Temperature) -> Scalar
 fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature
-fn to_fahrenheit(t_kelvin: Temperature) -> Scalar
+fn fahrenheit(t_kelvin: Temperature) -> Scalar
 ```
 
 ## Strings
@@ -119,4 +146,6 @@ fn str_append(a: String, b: String) -> String
 fn str_contains(haystack: String, needle: String) -> Bool
 fn str_replace(s: String, pattern: String, replacement: String) -> String
 fn str_repeat(a: String, n: Scalar) -> String
+fn chr(n: Scalar) -> String
+fn hex(n: Scalar) -> String
 ```

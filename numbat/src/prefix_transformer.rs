@@ -10,7 +10,7 @@ type Result<T> = std::result::Result<T, NameResolutionError>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Transformer {
-    prefix_parser: PrefixParser,
+    pub prefix_parser: PrefixParser,
 
     pub variable_names: Vec<String>,
     pub function_names: Vec<String>,
@@ -85,10 +85,15 @@ impl Transformer {
                     .into_iter()
                     .map(|p| match p {
                         f @ StringPart::Fixed(_) => f,
-                        StringPart::Interpolation(span, expr) => StringPart::Interpolation(
+                        StringPart::Interpolation {
                             span,
-                            Box::new(self.transform_expression(*expr)),
-                        ),
+                            expr,
+                            format_specifiers,
+                        } => StringPart::Interpolation {
+                            span,
+                            expr: Box::new(self.transform_expression(*expr)),
+                            format_specifiers,
+                        },
                     })
                     .collect(),
             ),
@@ -156,8 +161,11 @@ impl Transformer {
                 identifier,
                 expr,
                 type_annotation,
+                decorators,
             } => {
-                self.variable_names.push(identifier.clone());
+                for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
+                    self.variable_names.push(name.clone());
+                }
                 self.prefix_parser
                     .add_other_identifier(&identifier, identifier_span)?;
                 Statement::DefineVariable {
@@ -165,6 +173,7 @@ impl Transformer {
                     identifier,
                     expr: self.transform_expression(expr),
                     type_annotation,
+                    decorators,
                 }
             }
             Statement::DefineFunction {

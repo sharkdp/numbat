@@ -1,22 +1,25 @@
 mod ansi_formatter;
 mod completer;
+mod config;
 mod highlighter;
 
 use ansi_formatter::ansi_format;
 use completer::NumbatCompleter;
+use config::{Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode};
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::diagnostic::ErrorDiagnostic;
+use numbat::help::help_markup;
 use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::{Context, ExitStatus, InterpreterResult, NumbatError};
-use numbat::{InterpreterSettings, NameResolutionError, Type};
+use numbat::{Context, NumbatError};
+use numbat::{InterpreterSettings, NameResolutionError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use rustyline::config::Configurer;
 use rustyline::{
     self, error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter,
@@ -29,16 +32,13 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
 
-type ControlFlow = std::ops::ControlFlow<numbat::ExitStatus>;
-
-const PROMPT: &str = ">>> ";
-
-#[derive(Debug, Clone, Copy, PartialEq, ValueEnum)]
-enum PrettyPrintMode {
-    Always,
-    Never,
-    Auto,
+#[derive(Debug, PartialEq, Eq)]
+pub enum ExitStatus {
+    Success,
+    Error,
 }
+
+type ControlFlow = std::ops::ControlFlow<ExitStatus>;
 
 #[derive(Parser, Debug)]
 #[command(version, about, name("numbat"), max_term_width = 90)]
@@ -52,24 +52,39 @@ struct Args {
         short,
         long,
         value_name = "CODE",
-        conflicts_with = "file",
         action = clap::ArgAction::Append
     )]
     expression: Option<Vec<String>>,
 
+    /// Enter interactive session after running a numbat script or expression
+    #[arg(short, long)]
+    inspect_interactively: bool,
+
+    /// Do not load the user configuration file.
+    #[arg(long, hide_short_help = true)]
+    no_config: bool,
+
     /// Do not load the prelude with predefined physical dimensions and units. This implies --no-init.
-    #[arg(long)]
+    #[arg(long, hide_short_help = true)]
     no_prelude: bool,
 
     /// Do not load the user init file.
-    #[arg(long)]
+    #[arg(long, hide_short_help = true)]
     no_init: bool,
 
     /// Whether or not to pretty-print every input expression.
-    #[arg(long, value_name = "WHEN", default_value = "auto")]
-    pretty_print: PrettyPrintMode,
+    #[arg(long, value_name = "WHEN")]
+    pretty_print: Option<PrettyPrintMode>,
 
-    /// Turn on debug mode (e.g. disassembler output).
+    /// What kind of intro banner to show (if any).
+    #[arg(long, value_name = "MODE")]
+    intro_banner: Option<IntroBanner>,
+
+    /// Generate a default configuration file
+    #[arg(long, hide_short_help = true)]
+    generate_config: bool,
+
+    /// Turn on debug mode and print disassembler output (hidden, mainly for development)
     #[arg(long, short, hide = true)]
     debug: bool,
 }
@@ -99,13 +114,35 @@ struct NumbatHelper {
 }
 
 struct Cli {
-    args: Args,
+    config: Config,
     context: Arc<Mutex<Context>>,
+    file: Option<PathBuf>,
+    expression: Option<Vec<String>>,
 }
 
 impl Cli {
-    fn new() -> Self {
-        let args = Args::parse();
+    fn new(args: Args) -> Result<Self> {
+        let user_config_path = Self::get_config_path().join("config.toml");
+
+        let mut config = if args.no_config {
+            Config::default()
+        } else if let Ok(contents) = fs::read_to_string(&user_config_path) {
+            toml::from_str(&contents).context(format!(
+                "Error while loading {}",
+                user_config_path.to_string_lossy()
+            ))?
+        } else {
+            Config::default()
+        };
+
+        config.load_prelude &= !args.no_prelude;
+        config.load_user_init &= !(args.no_prelude || args.no_init);
+
+        config.intro_banner = args.intro_banner.unwrap_or(config.intro_banner);
+        config.pretty_print = args.pretty_print.unwrap_or(config.pretty_print);
+
+        config.enter_repl =
+            (args.file.is_none() && args.expression.is_none()) || args.inspect_interactively;
 
         let mut fs_importer = FileSystemImporter::default();
         for path in Self::get_modules_paths() {
@@ -114,23 +151,26 @@ impl Cli {
 
         let importer = ChainedImporter::new(
             Box::new(fs_importer),
-            Box::new(BuiltinModuleImporter::default()),
+            Box::<BuiltinModuleImporter>::default(),
         );
 
         let mut context = Context::new(importer);
         context.set_debug(args.debug);
 
-        Self {
+        context.set_terminal_width(
+            terminal_size::terminal_size().map(|(terminal_size::Width(w), _)| w as usize),
+        );
+
+        Ok(Self {
             context: Arc::new(Mutex::new(context)),
-            args,
-        }
+            config,
+            file: args.file,
+            expression: args.expression,
+        })
     }
 
     fn run(&mut self) -> Result<()> {
-        let load_prelude = !self.args.no_prelude;
-        let load_init = !(self.args.no_prelude || self.args.no_init);
-
-        if load_prelude {
+        if self.config.load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
                 CodeSource::Internal,
@@ -142,7 +182,7 @@ impl Cli {
             }
         }
 
-        if load_init {
+        if self.config.load_user_init {
             let user_init_path = Self::get_config_path().join("init.nbt");
 
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
@@ -158,57 +198,73 @@ impl Cli {
             }
         }
 
-        if load_prelude {
-            {
-                self.context
-                    .lock()
-                    .unwrap()
-                    .load_currency_module_on_demand(true);
-            }
-            thread::spawn(move || {
-                numbat::Context::prefetch_exchange_rates();
-            });
+        if self.config.load_prelude
+            && self.config.exchange_rates.fetching_policy != ExchangeRateFetchingPolicy::Never
+        {
+            self.context
+                .lock()
+                .unwrap()
+                .load_currency_module_on_demand(true);
         }
 
-        let pretty_print_mode =
-            if self.args.file.is_none() && self.args.pretty_print == PrettyPrintMode::Auto {
-                PrettyPrintMode::Always
-            } else {
-                self.args.pretty_print
-            };
+        let mut code_and_source = Vec::new();
 
-        let code_and_source: Option<(String, CodeSource)> = if let Some(ref path) = self.args.file {
-            Some((
-                fs::read_to_string(path).context(format!(
+        if let Some(ref path) = self.file {
+            code_and_source.push((
+                (fs::read_to_string(path).context(format!(
                     "Could not load source file '{}'",
                     path.to_string_lossy()
-                ))?,
+                ))?),
                 CodeSource::File(path.clone()),
-            ))
-        } else if let Some(exprs) = &self.args.expression {
-            Some((exprs.iter().join("\n"), CodeSource::Text))
-        } else {
-            None
+            ));
         };
 
-        if let Some((code, code_source)) = code_and_source {
-            let result = self.parse_and_evaluate(
-                &code,
-                code_source,
-                ExecutionMode::Normal,
-                pretty_print_mode,
-            );
-
-            match result {
-                std::ops::ControlFlow::Continue(()) => Ok(()),
-                std::ops::ControlFlow::Break(ExitStatus::Success) => Ok(()),
-                std::ops::ControlFlow::Break(ExitStatus::Error) => {
-                    bail!("Interpreter stopped due to error")
-                }
-            }
-        } else {
-            self.repl()
+        if let Some(expressions) = &self.expression {
+            code_and_source.push((expressions.iter().join("\n"), CodeSource::Text));
         }
+
+        let mut run_result = Ok(());
+
+        if !code_and_source.is_empty() {
+            for (code, code_source) in code_and_source {
+                let result = self.parse_and_evaluate(
+                    &code,
+                    code_source,
+                    ExecutionMode::Normal,
+                    self.config.pretty_print,
+                );
+
+                let result_status = match result {
+                    std::ops::ControlFlow::Continue(()) => Ok(()),
+                    std::ops::ControlFlow::Break(_) => {
+                        bail!("Interpreter stopped")
+                    }
+                };
+
+                run_result = run_result.and(result_status);
+            }
+        }
+
+        if self.config.enter_repl {
+            let mut currency_fetch_thread = if self.config.load_prelude
+                && self.config.exchange_rates.fetching_policy
+                    == ExchangeRateFetchingPolicy::OnStartup
+            {
+                Some(thread::spawn(move || {
+                    numbat::Context::prefetch_exchange_rates();
+                }))
+            } else {
+                None
+            };
+
+            let repl_result = self.repl();
+            if let Some(thread) = currency_fetch_thread.take() {
+                let _ = thread.join();
+            }
+            run_result = run_result.and(repl_result);
+        }
+
+        run_result
     }
 
     fn repl(&mut self) -> Result<()> {
@@ -222,6 +278,8 @@ impl Cli {
         rl.set_helper(Some(NumbatHelper {
             completer: NumbatCompleter {
                 context: self.context.clone(),
+                modules: self.context.lock().unwrap().list_modules().collect(),
+                all_timezones: chrono_tz::TZ_VARIANTS.map(|v| v.name()).into(),
             },
             highlighter: NumbatHighlighter {
                 context: self.context.clone(),
@@ -233,7 +291,28 @@ impl Cli {
         );
         rl.load_history(&history_path).ok();
 
-        let result = self.repl_loop(&mut rl);
+        if interactive {
+            match self.config.intro_banner {
+                IntroBanner::Long => {
+                    println!();
+                    println!(
+                        "  █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀    Numbat {}",
+                        env!("CARGO_PKG_VERSION")
+                    );
+                    println!(
+                        "  █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░    {}",
+                        env!("CARGO_PKG_HOMEPAGE")
+                    );
+                    println!();
+                }
+                IntroBanner::Short => {
+                    println!("Numbat {}", env!("CARGO_PKG_VERSION"));
+                }
+                IntroBanner::Off => {}
+            }
+        }
+
+        let result = self.repl_loop(&mut rl, interactive);
 
         if interactive {
             rl.save_history(&history_path).context(format!(
@@ -245,20 +324,60 @@ impl Cli {
         result
     }
 
-    fn repl_loop(&mut self, rl: &mut Editor<NumbatHelper, DefaultHistory>) -> Result<()> {
+    fn repl_loop(
+        &mut self,
+        rl: &mut Editor<NumbatHelper, DefaultHistory>,
+        interactive: bool,
+    ) -> Result<()> {
         loop {
-            let readline = rl.readline(PROMPT);
+            let readline = rl.readline(&self.config.prompt);
             match readline {
                 Ok(line) => {
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line)?;
 
                         match line.trim() {
-                            "list" | "ls" | "ll" => {
-                                let ctx = self.context.lock().unwrap();
-
-                                let markup = ctx.print_environment();
-                                println!("{}", ansi_format(&markup, false));
+                            "list" | "ls" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(
+                                        &self.context.lock().unwrap().print_environment(),
+                                        false
+                                    )
+                                );
+                            }
+                            "list functions" | "ls functions" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(
+                                        &self.context.lock().unwrap().print_functions(),
+                                        false
+                                    )
+                                );
+                            }
+                            "list dimensions" | "ls dimensions" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(
+                                        &self.context.lock().unwrap().print_dimensions(),
+                                        false
+                                    )
+                                );
+                            }
+                            "list variables" | "ls variables" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(
+                                        &self.context.lock().unwrap().print_variables(),
+                                        false
+                                    )
+                                );
+                            }
+                            "list units" | "ls units" => {
+                                println!(
+                                    "{}",
+                                    ansi_format(&self.context.lock().unwrap().print_units(), false)
+                                );
                             }
                             "clear" => {
                                 rl.clear_screen()?;
@@ -266,12 +385,33 @@ impl Cli {
                             "quit" | "exit" => {
                                 return Ok(());
                             }
+                            "help" | "?" => {
+                                let help = help_markup();
+                                print!("{}", ansi_format(&help, true));
+                                // currently, the ansi formatter adds indents
+                                // _after_ each newline and so we need to manually
+                                // add an extra blank line to absorb this indent
+                                println!();
+                            }
                             _ => {
+                                if let Some(keyword) = line.strip_prefix("info ") {
+                                    let help = self
+                                        .context
+                                        .lock()
+                                        .unwrap()
+                                        .print_info_for_keyword(keyword.trim());
+                                    println!("{}", ansi_format(&help, true));
+                                    continue;
+                                }
                                 let result = self.parse_and_evaluate(
                                     &line,
                                     CodeSource::Text,
-                                    ExecutionMode::Interactive,
-                                    self.args.pretty_print,
+                                    if interactive {
+                                        ExecutionMode::Interactive
+                                    } else {
+                                        ExecutionMode::Normal
+                                    },
+                                    self.config.pretty_print,
                                 );
 
                                 match result {
@@ -323,67 +463,49 @@ impl Cli {
             )
         };
 
+        let interactive = execution_mode == ExecutionMode::Interactive;
+
         let pretty_print = match pretty_print_mode {
             PrettyPrintMode::Always => true,
             PrettyPrintMode::Never => false,
-            PrettyPrintMode::Auto => execution_mode == ExecutionMode::Interactive,
+            PrettyPrintMode::Auto => interactive,
         };
 
         match result {
             Ok((statements, interpreter_result)) => {
-                if pretty_print {
+                if interactive || pretty_print {
                     println!();
+                }
+
+                if pretty_print {
                     for statement in &statements {
                         let repr = ansi_format(&statement.pretty_print(), true);
                         println!("{}", repr);
                         println!();
                     }
-                } else if execution_mode == ExecutionMode::Interactive {
-                    println!();
                 }
 
                 let to_be_printed = to_be_printed.lock().unwrap();
                 for s in to_be_printed.iter() {
-                    println!(
-                        "{}",
-                        ansi_format(s, execution_mode == ExecutionMode::Interactive)
-                    );
+                    println!("{}", ansi_format(s, interactive));
                 }
-                if !to_be_printed.is_empty() && execution_mode == ExecutionMode::Interactive {
+                if interactive && !to_be_printed.is_empty() {
                     println!();
                 }
 
-                match interpreter_result {
-                    InterpreterResult::Value(value) => {
-                        let type_ = statements.last().map_or(m::empty(), |s| {
-                            if let numbat::Statement::Expression(e) = s {
-                                let type_ = e.get_type();
+                let result_markup = interpreter_result.to_markup(
+                    statements.last(),
+                    &registry,
+                    interactive || pretty_print,
+                    interactive || pretty_print,
+                );
+                print!("{}", ansi_format(&result_markup, false));
 
-                                if type_ == Type::scalar() {
-                                    m::empty()
-                                } else {
-                                    m::dimmed("    [")
-                                        + e.get_type().to_readable_type(&registry)
-                                        + m::dimmed("]")
-                                }
-                            } else {
-                                m::empty()
-                            }
-                        });
-
-                        let q_markup = m::whitespace("    ")
-                            + m::operator("=")
-                            + m::space()
-                            + value.pretty_print()
-                            + type_;
-                        println!("{}", ansi_format(&q_markup, false));
-                        println!();
-
-                        ControlFlow::Continue(())
-                    }
-                    InterpreterResult::Continue => ControlFlow::Continue(()),
-                    InterpreterResult::Exit(exit_status) => ControlFlow::Break(exit_status),
+                if (interactive || pretty_print) && interpreter_result.is_value() {
+                    println!();
                 }
+
+                ControlFlow::Continue(())
             }
             Err(NumbatError::ResolverError(e)) => {
                 self.print_diagnostic(e.clone());
@@ -434,12 +556,10 @@ impl Cli {
             if !system_module_path.is_empty() {
                 paths.push(system_module_path.into());
             }
+        } else if cfg!(unix) {
+            paths.push("/usr/share/numbat/modules".into());
         } else {
-            if cfg!(unix) {
-                paths.push("/usr/share/numbat/modules".into());
-            } else {
-                paths.push("C:\\Program Files\\numbat\\modules".into());
-            }
+            paths.push("C:\\Program Files\\numbat\\modules".into());
         }
         paths
     }
@@ -448,15 +568,53 @@ impl Cli {
         let data_dir = dirs::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join("numbat");
-        fs::create_dir(&data_dir).ok();
+        fs::create_dir_all(&data_dir).ok();
         Ok(data_dir.join("history"))
     }
 }
 
-fn main() {
-    let mut cli = Cli::new();
+fn generate_config() -> Result<()> {
+    let config_folder_path = Cli::get_config_path();
+    let config_file_path = config_folder_path.join("config.toml");
 
-    if let Err(e) = cli.run() {
+    if config_file_path.exists() {
+        bail!(
+            "The file '{}' exists already.",
+            config_file_path.to_string_lossy()
+        );
+    }
+
+    std::fs::create_dir_all(&config_folder_path).context(format!(
+        "Error while creating folder '{}'",
+        config_folder_path.to_string_lossy()
+    ))?;
+
+    let config = Config::default();
+    let content = toml::to_string(&config).context("Error while creating TOML from config")?;
+
+    std::fs::write(&config_file_path, content)?;
+
+    println!(
+        "A default configuration has been written to '{}'.",
+        config_file_path.to_string_lossy()
+    );
+    println!("Open the file in a text editor. Modify whatever you want to change and remove the other fields");
+
+    Ok(())
+}
+
+fn main() {
+    let args = Args::parse();
+
+    if args.generate_config {
+        if let Err(e) = generate_config() {
+            eprintln!("{:#}", e);
+            std::process::exit(1);
+        }
+        std::process::exit(0);
+    }
+
+    if let Err(e) = Cli::new(args).and_then(|mut cli| cli.run()) {
         eprintln!("{:#}", e);
         std::process::exit(1);
     }

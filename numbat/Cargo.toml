@@ -1,12 +1,12 @@
 [package]
 name = "numbat"
-description = " A statically typed programming language for scientific computations with first class support for physical dimensions and units"
+description = "A statically typed programming language for scientific computations with first class support for physical dimensions and units."
 authors = ["David Peter <mail@david-peter.de>"]
 categories = ["science", "mathematics", "compilers"]
 keywords = ["language", "compiler", "physics", "units", "calculation"]
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
-version = "1.6.3"
+version = "1.11.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -14,20 +14,41 @@ rust-version = "1.70"
 
 [dependencies]
 thiserror = "1"
-itertools = "0.11"
+itertools = "0.12"
 num-rational = "0.4"
 num-integer = "0.1.45"
 num-traits = "0.2"
 codespan-reporting = "0.11"
-strsim = "0.10.0"
+strsim = "0.11.0"
 pretty_dtoa = "0.3"
-numbat-exchange-rates = { version = "0.3.0", path = "../numbat-exchange-rates" }
+numbat-exchange-rates = { version = "0.5.0", path = "../numbat-exchange-rates" }
 heck = { version = "0.4.1", features = ["unicode"] }
-unicode-ident = "1.0.11"
-unicode-width = "0.1.10"
-libc = "0.2.147"
-rust-embed = { version = "8.0.0", features = ["interpolate-folder-path"] }
+unicode-ident = "1.0.12"
+unicode-width = "0.1.11"
+libc = "0.2.152"
+rust-embed = { version = "8.2.0", features = ["interpolate-folder-path", "debug-embed"] }
+num-format = "0.4.4"
+walkdir = "2"
+chrono = "0.4.31"
+chrono-tz = "0.8.5"
+iana-time-zone = "0.1"
+termcolor = { version = "1.4.1", optional = true }
+html-escape = { version = "0.2.13", optional = true }
+rand = "0.8.5"
+strfmt = "0.2.4"
+
+[features]
+default = ["fetch-exchangerates"]
+fetch-exchangerates = ["numbat-exchange-rates/fetch-exchangerates"]
+html-formatter = ["termcolor", "html-escape"]
 
 [dev-dependencies]
 approx = "0.5"
 glob = "0.3"
+insta = "1.34.0"
+once_cell = "1.19.0"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "prelude"
+harness = false

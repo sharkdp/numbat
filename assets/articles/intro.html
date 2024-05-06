@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="David Peter">
+    <title>Introducing Numbat</title>
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://numbat.dev/numbat.png">
+    <meta property="og:title" content="Introducing Numbat: The type system">
+    <meta property="og:url" content="https://numbat.dev/articles/intro.html">
+    <meta property="og:description" content="Introduces the programming language Numbat and its type system">
+    <link rel="stylesheet" href="main.css">
+    <script src="pkg/ace.min.js"></script>
+</head>
+<body>
+
+<article class="blog-post">
+    <h1 style="margin-bottom: 0.5em">Introducing Numbat</h1>
+
+    <p style="margin-top: 0"><i>Part I: The type system</i></p>
+
+    <p>Numbat is a programming language that aims to provide a convenient way
+    to perform computations with physical units.
+    One of the main goals of the language is to help users write <em>correct</em> programs.
+
+    It has a static type system where <em>physical dimensions</em> act as types.
+    The expression <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span></code>, for example, has a <em>type</em> of <code class="numbat-type-identifier">Time</code>.
+    Similarly, the expression <code><span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> also has a type of <code class="numbat-type-identifier">Time</code>.
+    The compound expression <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span> + <span class="numbat-value">2</span> <span class="numbat-unit">years</span></code> is therefore well-typed:
+    </p>
+
+    <div id="editor1" class="code-editor">3 months + 2 years    # you can edit these examples!</div>
+    <pre id="output1" class="numbat-output"></pre>
+
+    <p>
+    On the other hand, <code><span class="numbat-value">3</span> <span class="numbat-unit">months</span> + <span class="numbat-value">2</span> <span class="numbat-unit">lightyears</span></code> is <em>ill</em>-typed, because the right-hand side is of type <code class="numbat-type-identifier">Length</code>.
+    You can change &lsquo;years&rsquo; to &lsquo;lightyears&rsquo; in the editor above to see the resulting compiler error.
+    </p>
+
+    <p>
+    Before we describe the type system in more detail, let's look at two simple examples. The first program
+    computes the oscillation period of a (mathematical) pendulum using the gravitational acceleration
+    <code>g0</code>.
+    Note that you can change the unit of the pendulum length to, say, <code span="numbat-unit">inch</code> without
+    having to change the type annotations. This is in contrast to a lot of unit libraries in other
+    programming languages that typically lift <em>units</em> &mdash; not the physical dimensions &mdash; to the type level.
+
+    Also, note that you can completely remove the explicit <code><span class="ace_operator">:</span> <span class="numbat-type-identifier">Type</span></code> annotations and let the compiler infer the types:
+    </p>
+
+    <div id="editor2" class="code-editor">let pendulum_length: Length = 30 cm
+let t_oscillation: Time = 2 π sqrt(pendulum_length / g0)
+
+t_oscillation</div>
+    <pre id="output2" class="numbat-output"></pre>
+
+    <div class="spacer"></div>
+
+    <p>The second example demonstrates how explicit type annotations
+    can help avoid mistakes. We want to compute the ratio of gravitational forces exerted on Earth by both the Sun and the Moon.
+    However, the computation contains a mistake. Try to annotate the definitions of <code>force_sun</code> and <code>force_moon</code> with the intended <span class="numbat-type-identifier">Force</span> dimension
+    and see if the compiler error can help you fix the <a href="https://en.wikipedia.org/wiki/Newton%27s_law_of_universal_gravitation">equations</a>.
+    The correct result should be closer to <code class="numbat-value">180</code>.
+    </p>
+
+    <div id="editor3" class="code-editor">let distance_sun: Length = 1 AU  # astronomical unit
+let distance_moon: Length = 384_400 km
+
+let force_sun = G * earth_mass * solar_mass / distance_sun
+let force_moon = G * earth_mass * lunar_mass / distance_moon
+
+force_sun / force_moon</div>
+    <pre id="output3" class="numbat-output"></pre>
+
+    <div class="spacer"></div>
+
+    <p>
+        A type in Numbat can be one of three things. It can be <code class="numbat-value">1</code> &mdash; which is a special type for dimensionless quantities, it can be a base dimension, or it can be an algebraic combination of other types.
+        We use the <code class="numbat-keyword">dimension</code> keyword to introduce new types. For example, this
+        is how basic physical dimensions from classical mechanics are defined in Numbat's <a href="https://github.com/sharkdp/numbat/tree/master/numbat/modules">prelude</a>:
+    </p>
+
+    <div id="editor4" class="code-editor">dimension Length
+dimension Area = Length²
+
+dimension Time
+dimension Frequency = 1 / Time
+dimension Velocity = Length / Time
+dimension Acceleration = Length / Time²
+
+dimension Mass
+dimension Force = Mass × Acceleration
+dimension Pressure = Force / Area
+dimension Energy = Force × Length
+dimension Power = Energy / Time</div>
+
+    <p>
+        Note how the three base dimensions <em>length</em>, <em>time</em> and <em>mass</em> can be combined using multiplication, division and exponentiation. Now there is not a lot we can do with those types until we
+        introduce corresponding <em>units</em> to build quantities that inhabit those types:
+    </p>
+
+    <div id="editor5" class="code-editor">unit metre: Length
+unit second: Time
+unit kilogram: Mass  # in the real prelude, we properly handle prefixes
+
+unit hertz: Frequency = 1 / second
+unit newton: Force = kilogram metre / second²
+unit pascal: Pressure = newton / metre²
+unit joule: Energy = newton metre
+unit watt: Power = joule / second
+
+2 * newton + 1 * watt / (metre / second)</div>
+    <pre id="output4and5" class="numbat-output"></pre>
+
+    <p style="margin-bottom: 0">
+    Now take a look at the last line. When the type checker encounters an expression like this, it infers
+    the overall type (<code class="numbat-type-identifier">Force</code>) by recursively walking the
+    syntax tree. Multiplication and division nodes are easy. We simply combine the types
+    in the same way that we combine the expressions:
+    </p>
+
+    <pre class="type-expr"><span class="numbat-keyword">type</span>(a * b) = <span class="numbat-keyword">type</span>(a) * <span class="numbat-keyword">type</span>(b)
+<span class="numbat-keyword">type</span>(a / b) = <span class="numbat-keyword">type</span>(a) / <span class="numbat-keyword">type</span>(b)</pre>
+
+    <p style="margin-top: 0; margin-bottom: 0">
+    However, addition and subtraction are different. If the types
+    on both hand sides are the same, we return that type. If they are not, we raise a type check
+    error:
+    </p>
+
+    <pre class="type-expr"><span class="numbat-keyword">type</span>(a + b) =
+  <b>if</b> <span class="numbat-keyword">type</span>(a) == <span class="numbat-keyword">type</span>(b) {
+    <span class="numbat-keyword">type</span>(a)
+  } <b>else</b> {
+    error(<span class="numbat-string">"incompatible dimensions in addition …"</span>)
+  }</pre>
+
+    <p style="margin-top: 0">
+    Comparison operators like <code>==</code> or <code>&gt;</code> also work in a
+    similar way &mdash; can't compare apples and oranges &mdash; except that they return a boolean type. You can try this by replacing addition with a comparison operator in the
+    example above.</p>
+
+
+    <p style="margin-bottom: 0">
+    Finally, there is exponentiation: <code>a^b</code>. And it turns out to be quite a bit more complicated.
+    We first note that the exponent <code>b</code> needs to be dimensionless. An expression like <code>(<span class="numbat-value">2</span> <span class="numbat-unit">m</span>)^(<span class="numbat-value">3</span> <span class="numbat-unit">kg</span>)</code> is not
+    meaningful. But even then there is a problem. Imagine something like <code>(<span class="numbat-value">2</span> <span class="numbat-unit">m</span>)^(<span class="numbat-value">1</span> + <span class="numbat-value">2</span>)</code>. It should have a type of <code><span class="numbat-type-identifier">Length</span>^<span class="numbat-value">3</span></code>. But this means that the <em>type</em> of the expression depends on the <em>value</em> of the exponent. It turns out we need to <em>evaluate</em> the expression
+    <code>b</code> <em>at compile time</em> to determine the type of <code>a^b</code>:
+    </p>
+
+    <pre class="type-expr"><span class="numbat-keyword">type</span>(a ^ b) =
+  <b>if</b> <span class="numbat-keyword">type</span>(b) != <span class="numbat-value">1</span> {
+    error(<span class="numbat-string">"exponent needs to be dimensionless"</span>)
+  } <b>else</b> {
+      <b>if</b> <span class="numbat-keyword">type</span>(a) == <span class="numbat-value">1</span> {
+        <span class="numbat-value">1</span>
+      } <b>else</b> {
+        <span class="numbat-keyword">type</span>(a) ^ <span class="numbat-keyword">consteval</span>(b)
+      }
+  }</pre>
+
+    <p style="margin-top: 0">
+    Numbat therefore has a special const-evaluation mode that can compute a subset of expressions as part of the type-checking phase.
+    Note that the restriction to a subset of operations is not a limitation in practice. Real world computations often have complicated expressions in the exponent.
+    But in those cases, the left-hand side (<code>a</code>) is always dimensionless and the overall type is simply <code class="numbat-value">1</code>. And when <code>a</code> is not dimensionless, the exponent expression is typically just a (rational) number.<br>
+    One interesting application of the exponentiation operator is the <code>sqrt</code> function that you
+    saw in the very first example. It can take dimensionful quantities as an argument. And it can be defined in this way:
+    </p>
+
+    <div id="editor6" class="code-editor">fn my_sqrt&lt;D&gt(x: D^2) -&gt; D = x^(1/2)
+
+my_sqrt(ℏ G / c^5)  # Planck time</div>
+    <pre id="output6" class="numbat-output"></pre>
+
+    <p>
+    Here, <code class="numbat-type-identifier">D</code> is a generic type parameter. The function takes an argument of type
+    <code><span class="numbat-type-identifier">D</span>^<span class="numbat-value">2</span></code> and returns a <code class="numbat-type-identifier">D</code>. In the example here, it turns
+    <code><span class="numbat-type-identifier">Time</span>^<span class="numbat-value">2</span></code> into <code class="numbat-type-identifier">Time</code>.
+    In general, type inference for functions is <a href="https://github.com/sharkdp/numbat/issues/29">an interesting topic</a> for another day.
+    </p>
+
+    <p>
+    Our final example demonstrates how you can make use of custom dimensions and units. This
+    is often useful when you want to count things (people, atoms, pixels, or in this case: drops).
+    Say we want to compute the required IV drip rate for an infusion of 1200&nbsp;mL of saline solution
+    over 6&nbsp;hours. Even if it might look like overkill in this simple example, note how the
+    introduction of a new unit not just helps with correctness, but also with readability:
+    </p>
+
+    <div id="editor7" class="code-editor">unit drops  # Implicitly creates a new base dimension 'Drops'
+
+dimension DripRate = Drops / Time
+
+let saline_volume = 1200 mL
+let drop_factor = 15 drops / mL
+let total_time = 6 hours
+
+let iv_drip_rate = saline_volume * drop_factor / total_time
+
+iv_drip_rate -> drops / min</div>
+    <pre id="output7" class="numbat-output"></pre>
+
+    <div class="spacer"></div>
+
+</article>
+
+
+    <p>
+        If you want to learn more about Numbat, consider reading the language <a href="https://numbat.dev/doc/tutorial.html">tutorial</a>.
+        Numbat is <a href="https://github.com/sharkdp/numbat">open source</a>. It is available both <a href="http://numbat.dev">on the web</a> (running locally in your browser) and as a <a href="https://github.com/sharkdp/numbat">command-line application</a>.
+    </p>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>

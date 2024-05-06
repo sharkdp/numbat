@@ -24,8 +24,10 @@
 use core::scalar
 use core::quantities
 use core::dimensions
+use core::functions
 use core::strings
 use core::error
+use core::random
 
 use math::constants
 use math::functions
@@ -41,6 +43,7 @@ use units::cgs
 use units::planck
 use units::fff
 use units::misc
+use units::humorous
 use units::partsperx
 
 use units::currency
@@ -49,6 +52,9 @@ use units::placeholder
 
 use physics::constants
 use physics::temperature_conversion
+
+use datetime::functions
+use datetime::human
 
 fn Sin(θ: Angle) -> Scalar = sin(θ / θC)
 fn Cos(θ: Angle) -> Scalar = cos(θ / θC)

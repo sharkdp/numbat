@@ -3,33 +3,109 @@ use units::misc
 
 ### Imperial unit system
 
+@name("Inch")
+@url("https://en.wikipedia.org/wiki/Inch")
 @aliases(inches, in: short)
 unit inch: Length = 0.0254 meter
 
+@name("Foot")
+@url("https://en.wikipedia.org/wiki/Foot_(unit)")
 @aliases(feet, ft: short)
 unit foot: Length = 12 inch
 
+@name("Yard")
+@url("https://en.wikipedia.org/wiki/Yard")
 @aliases(yards, yd: short)
 unit yard: Length = 3 feet
 
+@name("Mile")
+@url("https://en.wikipedia.org/wiki/Mile")
 @aliases(miles, mi: short)
 unit mile: Length = 1760 yard
 
-@aliases(ounces, oz: short)
-unit ounce: Mass = 28.35 gram
-
-@aliases(pounds, lb: short, lbs)
-unit pound: Mass = 16 ounces
-
+@name("Thousandth of an inch")
+@url("https://en.wikipedia.org/wiki/Thousandth_of_an_inch")
 @aliases(mils, mil: short)
 unit thou: Length = inch / 1000
 
+@name("Fathom")
+@url("https://en.wikipedia.org/wiki/Fathom")
 @aliases(fathoms)
 unit fathom: Length = 2 yard
 
+@name("League")
+@url("https://en.wikipedia.org/wiki/League_(unit)")
 @aliases(leagues)
 unit league: Length = 3 mile
 
+@name("Grain")
+@url("https://en.wikipedia.org/wiki/Grain_(unit)")
+@aliases(grains)
+unit grain: Mass = 64.79891 milligram
+
+@name("Pound")
+@url("https://en.wikipedia.org/wiki/Pound_(mass)")
+@aliases(pounds, lb: short, lbs)
+unit pound: Mass = 7000 grain
+
+@name("Ounce")
+@url("https://en.wikipedia.org/wiki/Ounce")
+@aliases(ounces, oz: short)
+unit ounce: Mass = (1 / 16) × pound
+
+@name("Stone")
+@url("https://en.wikipedia.org/wiki/Stone_(unit)")
+unit stone: Mass = 14 pound
+
+@name("Hundredweight")
+@url("https://en.wikipedia.org/wiki/Hundredweight")
+@aliases(cwt)
+unit long_hundredweight = 8 stone
+
+@name("Long ton")
+@url("https://en.wikipedia.org/wiki/Long_ton")
+@aliases(long_tons)
+unit long_ton: Mass = 2240 lb
+
+@name("Miles per hour")
+@url("https://en.wikipedia.org/wiki/Miles_per_hour")
 unit mph: Velocity = miles per hour
 
+@name("Inch of mercury")
+@url("https://en.wikipedia.org/wiki/Inch_of_mercury")
 unit inHg: Pressure = in Hg
+
+@name("Imperial Fluid Ounce")
+@url("https://en.wikipedia.org/wiki/Fluid_ounce")
+@aliases(imperial_fluidounces, UK_floz: short)
+unit imperial_fluidounce: Volume = 28.4130625 mL
+
+@name("Imperial Pint")
+@url("https://en.wikipedia.org/wiki/Pint#Imperial_pint")
+@aliases(imperial_pints, UK_pt: short)
+unit imperial_pint: Volume = 20 imperial_fluidounces
+
+@name("Imperial Quart")
+@url("https://en.wikipedia.org/wiki/Quart#Imperial_quart")
+@aliases(imperial_quarts, UK_qt: short)
+unit imperial_quart: Volume = 2 imperial_pints
+
+@name("Imperial Gallon")
+@url("https://en.wikipedia.org/wiki/Gallon#Imperial_gallon")
+@aliases(imperial_gallons, UK_gal: short)
+unit imperial_gallon: Volume = 4 imperial_quart
+
+@name("Imperial Bushel")
+@url("https://en.wikipedia.org/wiki/Bushel#Imperial_bushel")
+@aliases(imperial_bushels, UK_bu: short)
+unit imperial_bushel: Volume = 8 imperial_gallons
+
+@name("Imperial Fluid Drachm")
+@url("https://en.wikipedia.org/wiki/Fluid_drachm#Imperial_fluid_drachm")
+@aliases(imperial_fluid_drachms, UK_fldr: short)
+unit imperial_fluid_drachm: Volume = 1/8 × imperial_fluidounce
+
+@name("Imperial Gill")
+@url("https://en.wikipedia.org/wiki/Gill_(unit)")
+@aliases(imperial_gills, UK_gi: short)
+unit imperial_gill: Volume = 5 imperial_fluidounces

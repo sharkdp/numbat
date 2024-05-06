@@ -11,6 +11,7 @@ impl Formatter for ANSIFormatter {
     ) -> String {
         (match format_type {
             FormatType::Whitespace => text.normal(),
+            FormatType::Emphasized => text.bold(),
             FormatType::Dimmed => text.dimmed(),
             FormatType::Text => text.normal(),
             FormatType::String => text.green(),

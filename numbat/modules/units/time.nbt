@@ -1,26 +1,63 @@
 use units::si
 
-### Time units
-
+@name("Week")
+@url("https://en.wikipedia.org/wiki/Week")
 @aliases(weeks)
 unit week: Time = 7 days
 
-# Gregorian year
+# The mean tropical year changes over time (half a second per century). It's current
+# value can be approximated using
+#
+#   365.2421896698 - 6.15359e-6 T - 7.29e-10 T^2 + 2.64e-10 T^3
+#
+# where T is in Julian centuries, measured from noon January 1st, 2000.
+# (https://en.wikipedia.org/wiki/Tropical_year#Mean_tropical_year_current_value)
+#
+# Values of the mean tropical year for the recent past and near future:
+#
+#   Year    Length (days)
+#   ---------------------
+#   2020    365.242 189 7
+#   2025    365.242 188 1
+#   2050    365.242 186 6
+#
+# For now, we use the 2025 value as a hardcoded constant. Those numbers
+# are mainly shown to illustrate that it is not sensible to define this
+# number more precise.
+#
+@name("Tropical year")
+@url("https://en.wikipedia.org/wiki/Tropical_year")
 @metric_prefixes
-@aliases(year: both, years, yr: short)
-unit year: Time = 365.2425 days
+@aliases(years, yr: short, tropical_year, tropical_years)
+unit year: Time = 365.242_188_1 days
 
+@name("Month")
+@url("https://en.wikipedia.org/wiki/Month")
 @aliases(months)
 unit month: Time = year / 12
 
+@name("Gregorian year")
+@url("https://en.wikipedia.org/wiki/Gregorian_year")
+@metric_prefixes
+@aliases(gregorian_years)
+unit gregorian_year: Time = 365.2425 days
+
+@name("Julian year")
+@url("https://en.wikipedia.org/wiki/Julian_year_(astronomy)")
 @aliases(julian_years)
 unit julian_year: Time = 365.25 days
 
+@name("Decade")
+@url("https://en.wikipedia.org/wiki/Decade")
 @aliases(decades)
 unit decade: Time = 10 years
 
+@name("Century")
+@url("https://en.wikipedia.org/wiki/Century")
 @aliases(centuries)
 unit century: Time = 100 years
 
+@name("Millennium")
+@url("https://en.wikipedia.org/wiki/Millennium")
 @aliases(millennia)
 unit millennium: Time = 1000 years

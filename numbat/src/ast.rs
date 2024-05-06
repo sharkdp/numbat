@@ -4,12 +4,14 @@ use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint, resolver::ModulePath,
 };
+use itertools::Itertools;
 use num_traits::Signed;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOperator {
     Factorial,
     Negate,
+    LogicalNeg,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,6 +28,8 @@ pub enum BinaryOperator {
     GreaterOrEqual,
     Equal,
     NotEqual,
+    LogicalAnd,
+    LogicalOr,
 }
 
 impl PrettyPrint for BinaryOperator {
@@ -45,6 +49,8 @@ impl PrettyPrint for BinaryOperator {
             GreaterOrEqual => m::space() + m::operator("≥") + m::space(),
             Equal => m::space() + m::operator("==") + m::space(),
             NotEqual => m::space() + m::operator("≠") + m::space(),
+            LogicalAnd => m::space() + m::operator("&&") + m::space(),
+            LogicalOr => m::space() + m::operator("||") + m::space(),
         }
     }
 }
@@ -52,7 +58,11 @@ impl PrettyPrint for BinaryOperator {
 #[derive(Debug, Clone, PartialEq)]
 pub enum StringPart {
     Fixed(String),
-    Interpolation(Span, Box<Expression>),
+    Interpolation {
+        span: Span,
+        expr: Box<Expression>,
+        format_specifiers: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -71,7 +81,7 @@ pub enum Expression {
         rhs: Box<Expression>,
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
-    FunctionCall(Span, Span, String, Vec<Expression>),
+    FunctionCall(Span, Span, Box<Expression>, Vec<Expression>),
     Boolean(Span, bool),
     String(Span, Vec<StringPart>),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
@@ -125,6 +135,24 @@ macro_rules! identifier {
 }
 
 #[cfg(test)]
+macro_rules! boolean {
+    ( $name:expr ) => {{
+        crate::ast::Expression::Boolean(Span::dummy(), $name.into())
+    }};
+}
+
+#[cfg(test)]
+macro_rules! logical_neg {
+    ( $rhs:expr ) => {{
+        crate::ast::Expression::UnaryOperator {
+            op: UnaryOperator::LogicalNeg,
+            expr: Box::new($rhs),
+            span_op: Span::dummy(),
+        }
+    }};
+}
+
+#[cfg(test)]
 macro_rules! negate {
     ( $rhs:expr ) => {{
         crate::ast::Expression::UnaryOperator {
@@ -173,11 +201,15 @@ macro_rules! conditional {
 #[cfg(test)]
 pub(crate) use binop;
 #[cfg(test)]
+pub(crate) use boolean;
+#[cfg(test)]
 pub(crate) use conditional;
 #[cfg(test)]
 pub(crate) use factorial;
 #[cfg(test)]
 pub(crate) use identifier;
+#[cfg(test)]
+pub(crate) use logical_neg;
 #[cfg(test)]
 pub(crate) use negate;
 #[cfg(test)]
@@ -185,17 +217,23 @@ pub(crate) use scalar;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeAnnotation {
+    Never(Span),
     DimensionExpression(DimensionExpression),
     Bool(Span),
     String(Span),
+    DateTime(Span),
+    Fn(Span, Vec<TypeAnnotation>, Box<TypeAnnotation>),
 }
 
 impl TypeAnnotation {
     pub fn full_span(&self) -> Span {
         match self {
+            TypeAnnotation::Never(span) => *span,
             TypeAnnotation::DimensionExpression(d) => d.full_span(),
             TypeAnnotation::Bool(span) => *span,
             TypeAnnotation::String(span) => *span,
+            TypeAnnotation::DateTime(span) => *span,
+            TypeAnnotation::Fn(span, _, _) => *span,
         }
     }
 }
@@ -203,9 +241,26 @@ impl TypeAnnotation {
 impl PrettyPrint for TypeAnnotation {
     fn pretty_print(&self) -> Markup {
         match self {
+            TypeAnnotation::Never(_) => m::type_identifier("!"),
             TypeAnnotation::DimensionExpression(d) => d.pretty_print(),
             TypeAnnotation::Bool(_) => m::type_identifier("Bool"),
             TypeAnnotation::String(_) => m::type_identifier("String"),
+            TypeAnnotation::DateTime(_) => m::type_identifier("DateTime"),
+            TypeAnnotation::Fn(_, parameter_types, return_type) => {
+                m::type_identifier("Fn")
+                    + m::operator("[(")
+                    + Itertools::intersperse(
+                        parameter_types.iter().map(|t| t.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
+                    + m::space()
+                    + m::operator("->")
+                    + m::space()
+                    + return_type.pretty_print()
+                    + m::operator("]")
+            }
         }
     }
 }
@@ -295,6 +350,7 @@ pub enum Statement {
         identifier: String,
         expr: Expression,
         type_annotation: Option<TypeAnnotation>,
+        decorators: Vec<Decorator>,
     },
     DefineFunction {
         function_name_span: Span,
@@ -331,11 +387,16 @@ pub trait ReplaceSpans {
 impl ReplaceSpans for TypeAnnotation {
     fn replace_spans(&self) -> Self {
         match self {
+            TypeAnnotation::Never(_) => TypeAnnotation::Never(Span::dummy()),
             TypeAnnotation::DimensionExpression(d) => {
                 TypeAnnotation::DimensionExpression(d.replace_spans())
             }
             TypeAnnotation::Bool(_) => TypeAnnotation::Bool(Span::dummy()),
             TypeAnnotation::String(_) => TypeAnnotation::String(Span::dummy()),
+            TypeAnnotation::DateTime(_) => TypeAnnotation::DateTime(Span::dummy()),
+            TypeAnnotation::Fn(_, pt, rt) => {
+                TypeAnnotation::Fn(Span::dummy(), pt.clone(), rt.clone())
+            }
         }
     }
 }
@@ -373,9 +434,15 @@ impl ReplaceSpans for StringPart {
     fn replace_spans(&self) -> Self {
         match self {
             f @ StringPart::Fixed(_) => f.clone(),
-            StringPart::Interpolation(_, expr) => {
-                StringPart::Interpolation(Span::dummy(), Box::new(expr.replace_spans()))
-            }
+            StringPart::Interpolation {
+                expr,
+                format_specifiers,
+                span: _,
+            } => StringPart::Interpolation {
+                span: Span::dummy(),
+                expr: Box::new(expr.replace_spans()),
+                format_specifiers: format_specifiers.clone(),
+            },
         }
     }
 }
@@ -409,10 +476,10 @@ impl ReplaceSpans for Expression {
                 rhs: Box::new(rhs.replace_spans()),
                 span_op: Some(Span::dummy()),
             },
-            Expression::FunctionCall(_, _, name, args) => Expression::FunctionCall(
+            Expression::FunctionCall(_, _, callable, args) => Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
-                name.clone(),
+                Box::new(callable.replace_spans()),
                 args.iter().map(|a| a.replace_spans()).collect(),
             ),
             Expression::Boolean(_, val) => Expression::Boolean(Span::dummy(), *val),
@@ -440,11 +507,13 @@ impl ReplaceSpans for Statement {
                 identifier,
                 expr,
                 type_annotation,
+                decorators,
             } => Statement::DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: identifier.clone(),
                 expr: expr.replace_spans(),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
+                decorators: decorators.clone(),
             },
             Statement::DefineFunction {
                 function_name_span: _,

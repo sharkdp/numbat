@@ -25,16 +25,21 @@ pub struct Product<Factor, const CANONICALIZE: bool = false> {
 impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: bool>
     Product<Factor, CANONICALIZE>
 {
+    /// The last argument controls how the factor is formated.
+    ///
+    /// By default it is with `TypeIdentifier`, but `Unit` can be used too.
     pub fn pretty_print_with<GetExponent>(
         &self,
         get_exponent: GetExponent,
         times_separator: char,
         over_separator: char,
         separator_padding: bool,
+        format_type: Option<m::FormatType>,
     ) -> m::Markup
     where
         GetExponent: Fn(&Factor) -> Exponent,
     {
+        let format_type = format_type.unwrap_or(m::FormatType::TypeIdentifier);
         let separator_padding = if separator_padding {
             m::space()
         } else {
@@ -46,7 +51,11 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
             let num_factors = fs.len();
             for (i, factor) in fs.iter().enumerate() {
                 result = result
-                    + m::type_identifier(&factor.to_string()) // TODO: for units, this should be m::unit. This is not a problem so far, since we only plain-text format units
+                    + m::Markup::from(m::FormattedString(
+                        m::OutputType::Normal,
+                        format_type,
+                        factor.to_string(),
+                    ))
                     + if i == num_factors - 1 {
                         m::empty()
                     } else {
@@ -108,6 +117,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
                 times_separator,
                 over_separator,
                 separator_padding,
+                None,
             ),
             false,
         )

@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;700&family=Lustria&family=Lato:wght@700&display=swap');
+
+body {
+    font-family: 'Lustria', serif;
+    line-height: 1.4;
+    font-size: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fefefe;
+    color: #111;
+}
+
+h1,
+h2,
+h3 {
+    font-family: 'Lato', sans-serif;
+    color: #3e454c;
+}
+
+h1 {
+    font-size: 1.8em;
+}
+
+p {
+    text-align: justify;
+    hyphens: auto;
+}
+
+.spacer {
+    height: 2em;
+}
+
+a {
+    color: #0040ff;
+}
+
+.blog-post {
+    display: flex;
+    flex-direction: column;
+}
+
+code {
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.96em;
+    padding-left: 0.2em;
+    padding-right: 0.2em;
+    white-space: nowrap;
+    background-color: #f7f7f7;
+    border-radius: 6px;
+}
+
+.code-editor {
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.82em;
+    border: 1px solid #ddd;
+}
+
+.type-expr {
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.82em;
+    margin-top: 0em;
+    margin-bottom: 0;
+    padding: 1em;
+    overflow: auto;
+    display: block;
+}
+
+.numbat-output {
+    font-family: 'Fira Mono', monospace;
+    font-size: 0.82em;
+    border: 1px solid #ddd;
+    margin-top: 0.5em;
+    margin-bottom: 0;
+    padding: 1em;
+    background-color: #f6f8f6;
+    overflow: auto;
+}
+
+.numbat-type-identifier {
+    color: #ca3b63;
+}
+
+.ace_type {
+    color: #ca3b63 !important;
+}
+
+.numbat-value {
+    color: #0040ff;
+}
+
+.ace_numeric {
+    color: #0040ff !important;
+}
+
+.numbat-keyword {
+    color: #c802ff !important;
+}
+
+.ace_keyword {
+    color: #c802ff !important;
+}
+
+.ace_comment {
+    color: #8c8c8c !important;
+}
+
+.ace_string {
+    color: #27a85f !important;
+}
+
+.ace_decorator {
+    color: #27a85f !important;
+}
+
+.numbat-string {
+    color: #27a85f;
+}
+
+.ace_operator {
+    color: #db2828 !important;
+}
+
+.numbat-unit {
+    color: #5c12a6;
+}
+
+.numbat-dimmed {
+    color: #888;
+}
+
+.numbat-diagnostic-red {
+    color: #cc3b0a;
+}
+
+.numbat-diagnostic-blue {
+    color: #0040ff;
+}
+
+.numbat-diagnostic-bold {
+    font-weight: bold;
+}
+
+/* hide cursor when editor is not in focus */
+.ace_hidden-cursors {
+    opacity: 0
+}
+
+.ace_mobile-menu {
+    display: none !important
+}
+
+@media only screen and (max-width: 600px) {
+    body {
+        font-size: 17px;
+    }
+
+    p {
+        text-align: left;
+    }
+
+    code {
+        white-space: normal;
+    }
+}

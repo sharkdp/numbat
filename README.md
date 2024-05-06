@@ -33,7 +33,7 @@ Numbat has a static type system where physical dimensions like `Length` and `Tim
 Definitions of constants and functions can optionally contain type annotations that will be statically enforced.
 If the types are not specified, they will be inferred (`Speed`, `Money` and `Frequency` in the screenshot).
 
-See [this article](https://numbat.dev/doc/type-system.html) to learn more about Numbats type system.
+See [this article](https://numbat.dev/doc/type-system.html) to learn more about Numbat's type system.
 </details>
 
 <details>
@@ -56,7 +56,7 @@ And unit expressions are simplified using various heuristics (`15 km/h * 30 min 
 </summary>
 <p></p>
 
-Numbats [standard library](https://numbat.dev/doc/prelude.html) comes with a large number of physical dimensions and units (SI, US Customary, Imperial, Nautical, Astronomical, Atomic, Nuclear, …).
+Numbat's [standard library](https://numbat.dev/doc/prelude.html) comes with a large number of physical dimensions and units (SI, US Customary, Imperial, Nautical, Astronomical, Atomic, Nuclear, …).
 See [this reference page](https://numbat.dev/doc/list-units.html) for a complete overview.
 It also contains a lot of [mathematical and physical constants](https://numbat.dev/doc/list-constants.html)
 as well as a large range of [pre-defined functions](https://numbat.dev/doc/list-functions.html).
@@ -68,7 +68,7 @@ as well as a large range of [pre-defined functions](https://numbat.dev/doc/list-
 </summary>
 <p></p>
 
-Numbats parser never tries to be "smart" on syntactically incorrect input.
+Numbat's parser never tries to be "smart" on syntactically incorrect input.
 This means you will either get a (descriptive) error message, or you can trust the result of your calculation.
 </details>
 
@@ -98,7 +98,7 @@ readline interface, including all the usual features like a command history, Ctr
 </summary>
 <p></p>
 
-The whole system of physical dimensions and units is specified Numbats standard library, which is
+The whole system of physical dimensions and units is specified Numbat's standard library, which is
 [written in the Numbat language](https://github.com/sharkdp/numbat/tree/master/numbat/modules) itself. It is therefore
 easily extensible by [providing a `init.nbt` file](https://numbat.dev/doc/cli-customization.html). For example,
 a single line (`unit bathtub = 150 L`) is usually enough to add a new unit. Users can even choose to write their
@@ -143,6 +143,8 @@ See [this page](https://numbat.dev/doc/cli-installation.html) for details on how
 
 ## Development
 
+[![CICD](https://github.com/sharkdp/numbat/actions/workflows/ci.yml/badge.svg)](https://github.com/sharkdp/numbat/actions/workflows/ci.yml)
+
 Run Numbat CLI
 ```
 cargo run -- <numbat args>
@@ -160,10 +162,16 @@ cargo test
 
 ### Working on the `prelude`
 
-If you are working on [Numbats standard library](numbat/modules/), it is convenient to point
+If you are working on [Numbat's standard library](numbat/modules/), it is convenient to point
 the `NUMBAT_MODULES_PATH` environment variable to the `numbat/modules/` folder. This way,
 you don't have to recompile Numbat to see your changes.
 
 Alternatively, you can create a symlink from `~/.config/numbat/modules` to the `numbat/modules/`
 folder in the repository (see [this page](https://numbat.dev/doc/cli-customization.html#module-paths)
-for the standard paths on other operating systems.
+for the standard paths on other operating systems).
+
+## Contact us
+
+To contact us, either [open a GitHub issue](https://github.com/sharkdp/numbat/issues/new/choose)
+or [discussion](https://github.com/sharkdp/numbat/discussions), or pop into `#numbat` on
+[Libera.Chat](https://libera.chat) ([link to webchat](https://web.libera.chat/gamja/#numbat)).

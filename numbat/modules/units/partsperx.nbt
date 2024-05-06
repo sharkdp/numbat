@@ -1,14 +1,24 @@
+@name("Percent")
+@url("https://en.wikipedia.org/wiki/Percentage")
 @aliases(%: short, pct)
 unit percent = 1e-02
 
+@name("Parts per million")
+@url("https://en.wikipedia.org/wiki/Parts-per_notation")
 @aliases(ppm)
 unit partspermillion = 1e-06
 
+@name("Parts per billion")
+@url("https://en.wikipedia.org/wiki/Parts-per_notation")
 @aliases(ppb)
 unit partsperbillion = 1e-09
 
+@name("Parts per trillion")
+@url("https://en.wikipedia.org/wiki/Parts-per_notation")
 @aliases(ppt)
 unit partspertrillion = 1e-12
 
+@name("Parts per quadrillion")
+@url("https://en.wikipedia.org/wiki/Parts-per_notation")
 @aliases(ppq)
 unit partsperquadrillion = 1e-15

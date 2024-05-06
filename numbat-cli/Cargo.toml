@@ -1,12 +1,12 @@
 [package]
 name = "numbat-cli"
-description = " A statically typed programming language for scientific computations with first class support for physical dimensions and units"
+description = "A statically typed programming language for scientific computations with first class support for physical dimensions and units."
 authors = ["David Peter <mail@david-peter.de>"]
 categories = ["command-line-utilities", "science", "mathematics", "compilers"]
 keywords = ["language", "compiler", "physics", "units", "calculation"]
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
-version = "1.6.3"
+version = "1.11.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "../README.md"
@@ -14,11 +14,15 @@ rust-version = "1.70"
 
 [dependencies]
 anyhow = "1"
-rustyline = { version = "12", features = ["derive"] }
+rustyline = { version = "13", features = ["derive"] }
 dirs = "5"
-numbat = { version = "1.6.3", path = "../numbat" }
+numbat = { version = "1.11.0", path = "../numbat" }
 colored = "2"
-itertools = "0.11"
+itertools = "0.12"
+toml = { version = "0.8.8", features = ["parse"] }
+serde = { version = "1.0.195", features = ["derive"] }
+terminal_size = "0.3.0"
+chrono-tz = "0.8.5"
 
 [dependencies.clap]
 version = "4"

@@ -1,15 +1,17 @@
-use std::fmt::Display;
+use std::collections::HashMap;
+use std::{cmp::Ordering, fmt::Display};
 
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
     markup::Markup,
     math,
+    number::Number,
     prefix::Prefix,
-    quantity::Quantity,
+    quantity::{Quantity, QuantityError},
     unit::Unit,
-    unit_registry::UnitRegistry,
-    value::Value,
+    unit_registry::{UnitMetadata, UnitRegistry},
+    value::{FunctionReference, Value},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,6 +67,16 @@ pub enum Op {
     GreatorOrEqual,
     Equal,
     NotEqual,
+    LogicalAnd,
+    LogicalOr,
+    LogicalNeg,
+
+    /// Similar to Add, but has DateTime on the LHS and a quantity on the RHS
+    AddToDateTime,
+    /// Similar to Sub, but has DateTime on the LHS and a quantity on the RHS
+    SubFromDateTime,
+    /// Computes the difference between two DateTimes
+    DiffDateTime,
 
     /// Move IP forward by the given offset argument if the popped-of value on
     /// top of the stack is false.
@@ -78,6 +90,9 @@ pub enum Op {
     FFICallFunction,
     /// Same as above, but call a procedure which does not return anything (does not push a value onto the stack)
     FFICallProcedure,
+
+    /// Call a callable object
+    CallCallable,
 
     /// Print a compile-time string
     PrintString,
@@ -103,11 +118,15 @@ impl Op {
             | Op::PrintString
             | Op::JoinString
             | Op::JumpIfFalse
-            | Op::Jump => 1,
+            | Op::Jump
+            | Op::CallCallable => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
+            | Op::AddToDateTime
             | Op::Subtract
+            | Op::SubFromDateTime
+            | Op::DiffDateTime
             | Op::Multiply
             | Op::Divide
             | Op::Power
@@ -118,6 +137,9 @@ impl Op {
             | Op::GreatorOrEqual
             | Op::Equal
             | Op::NotEqual
+            | Op::LogicalAnd
+            | Op::LogicalOr
+            | Op::LogicalNeg
             | Op::FullSimplify
             | Op::Return
             | Op::GetLastResult => 0,
@@ -135,7 +157,10 @@ impl Op {
             Op::Negate => "Negate",
             Op::Factorial => "Factorial",
             Op::Add => "Add",
+            Op::AddToDateTime => "AddDateTime",
             Op::Subtract => "Subtract",
+            Op::SubFromDateTime => "SubDateTime",
+            Op::DiffDateTime => "DiffDateTime",
             Op::Multiply => "Multiply",
             Op::Divide => "Divide",
             Op::Power => "Power",
@@ -146,11 +171,15 @@ impl Op {
             Op::GreatorOrEqual => "GreatorOrEqual",
             Op::Equal => "Equal",
             Op::NotEqual => "NotEqual",
+            Op::LogicalAnd => "LogicalAnd",
+            Op::LogicalOr => "LogicalOr",
+            Op::LogicalNeg => "LogicalNeg",
             Op::JumpIfFalse => "JumpIfFalse",
             Op::Jump => "Jump",
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
             Op::FFICallProcedure => "FFICallProcedure",
+            Op::CallCallable => "CallCallable",
             Op::PrintString => "PrintString",
             Op::JoinString => "JoinString",
             Op::FullSimplify => "FullSimplify",
@@ -159,11 +188,14 @@ impl Op {
     }
 }
 
+#[derive(Clone, Debug)]
 pub enum Constant {
     Scalar(f64),
     Unit(Unit),
     Boolean(bool),
     String(String),
+    FunctionReference(FunctionReference),
+    FormatSpecifiers(Option<String>),
 }
 
 impl Constant {
@@ -173,6 +205,8 @@ impl Constant {
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
+            Constant::FunctionReference(inner) => Value::FunctionReference(inner.clone()),
+            Constant::FormatSpecifiers(s) => Value::FormatSpecifiers(s.clone()),
         }
     }
 }
@@ -184,10 +218,13 @@ impl Display for Constant {
             Constant::Unit(unit) => write!(f, "{}", unit),
             Constant::Boolean(val) => write!(f, "{}", val),
             Constant::String(val) => write!(f, "\"{}\"", val),
+            Constant::FunctionReference(inner) => write!(f, "{}", inner),
+            Constant::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
         }
     }
 }
 
+#[derive(Clone)]
 struct CallFrame {
     /// The function being executed, index into [Vm]s `bytecode` vector.
     function_idx: usize,
@@ -215,6 +252,7 @@ pub struct ExecutionContext<'a> {
     pub print_fn: &'a mut PrintFunction,
 }
 
+#[derive(Clone)]
 pub struct Vm {
     /// The actual code of the program, structured by function name. The code
     /// for the global scope is at index 0 under the function name `<main>`.
@@ -233,9 +271,11 @@ pub struct Vm {
     /// Strings/text that is already available at compile time
     strings: Vec<Markup>,
 
-    /// The names of global variables or [Unit]s. The second
-    /// entry is the canonical name for units.
-    global_identifiers: Vec<(String, Option<String>)>,
+    /// Meta information about derived units:
+    /// - Unit name
+    /// - Canonical name
+    /// - Metadata
+    unit_information: Vec<(String, Option<String>, UnitMetadata)>,
 
     /// Result of the last expression
     last_result: Option<Value>,
@@ -263,7 +303,7 @@ impl Vm {
             constants: vec![],
             prefixes: vec![],
             strings: vec![],
-            global_identifiers: vec![],
+            unit_information: vec![],
             last_result: None,
             ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
             frames: vec![CallFrame::root()],
@@ -333,25 +373,23 @@ impl Vm {
         }
     }
 
-    pub fn add_global_identifier(
+    pub fn add_unit_information(
         &mut self,
-        identifier: &str,
+        unit_name: &str,
         canonical_unit_name: Option<&str>,
+        metadata: UnitMetadata,
     ) -> u16 {
-        if let Some(idx) = self
-            .global_identifiers
-            .iter()
-            .position(|i| i.0 == identifier)
-        {
+        if let Some(idx) = self.unit_information.iter().position(|i| i.0 == unit_name) {
             return idx as u16;
         }
 
-        self.global_identifiers.push((
-            identifier.to_owned(),
+        self.unit_information.push((
+            unit_name.to_owned(),
             canonical_unit_name.map(|s| s.to_owned()),
+            metadata,
         ));
-        assert!(self.global_identifiers.len() <= u16::MAX as usize);
-        (self.global_identifiers.len() - 1) as u16 // TODO: this can overflow, see above
+        assert!(self.unit_information.len() <= u16::MAX as usize);
+        (self.unit_information.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
     pub(crate) fn begin_function(&mut self, name: &str) {
@@ -396,13 +434,13 @@ impl Vm {
             return;
         }
 
-        eprintln!("");
+        eprintln!();
         eprintln!(".CONSTANTS");
         for (idx, constant) in self.constants.iter().enumerate() {
             eprintln!("  {:04} {}", idx, constant);
         }
         eprintln!(".IDENTIFIERS");
-        for (idx, identifier) in self.global_identifiers.iter().enumerate() {
+        for (idx, identifier) in self.unit_information.iter().enumerate() {
             eprintln!("  {:04} {}", idx, identifier.0);
         }
         for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
@@ -475,10 +513,15 @@ impl Vm {
         self.stack.push(Value::Quantity(quantity));
     }
 
+    fn push_bool(&mut self, boolean: bool) {
+        self.stack.push(Value::Boolean(boolean));
+    }
+
     fn push(&mut self, value: Value) {
         self.stack.push(value);
     }
 
+    #[track_caller]
     fn pop_quantity(&mut self) -> Quantity {
         match self.pop() {
             Value::Quantity(q) => q,
@@ -486,10 +529,20 @@ impl Vm {
         }
     }
 
+    #[track_caller]
     fn pop_bool(&mut self) -> bool {
         self.pop().unsafe_as_bool()
     }
 
+    #[track_caller]
+    fn pop_datetime(&mut self) -> chrono::DateTime<chrono::FixedOffset> {
+        match self.pop() {
+            Value::DateTime(q) => q,
+            _ => panic!("Expected datetime to be on the top of the stack"),
+        }
+    }
+
+    #[track_caller]
     fn pop(&mut self) -> Value {
         self.stack.pop().expect("stack should not be empty")
     }
@@ -541,23 +594,27 @@ impl Vm {
                     ));
                 }
                 Op::SetUnitConstant => {
-                    let identifier_idx = self.read_u16();
+                    let unit_information_idx = self.read_u16();
                     let constant_idx = self.read_u16();
 
                     let conversion_value = self.pop_quantity();
 
-                    let unit_name = &self.global_identifiers[identifier_idx as usize];
+                    let unit_information = &self.unit_information[unit_information_idx as usize];
                     let defining_unit = conversion_value.unit();
 
                     let (base_unit_representation, _) = defining_unit.to_base_unit_representation();
 
                     self.unit_registry
-                        .add_derived_unit(&unit_name.0, &base_unit_representation)
+                        .add_derived_unit(
+                            &unit_information.0,
+                            &base_unit_representation,
+                            unit_information.2.clone(),
+                        )
                         .map_err(RuntimeError::UnitRegistryError)?;
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
-                        &unit_name.0,
-                        unit_name.1.as_ref().unwrap(),
+                        &unit_information.0,
+                        unit_information.2.canonical_name.clone(),
                         *conversion_value.unsafe_value(),
                         defining_unit.clone(),
                     ));
@@ -586,24 +643,71 @@ impl Vm {
                         Op::Add => &lhs + &rhs,
                         Op::Subtract => &lhs - &rhs,
                         Op::Multiply => Ok(lhs * rhs),
-                        Op::Divide => Ok(lhs
-                            .checked_div(rhs)
-                            .ok_or_else(|| RuntimeError::DivisionByZero)?),
+                        Op::Divide => {
+                            Ok(lhs.checked_div(rhs).ok_or(RuntimeError::DivisionByZero)?)
+                        }
                         Op::Power => lhs.power(rhs),
                         Op::ConvertTo => lhs.convert_to(rhs.unit()),
                         _ => unreachable!(),
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
                 }
+                op @ (Op::AddToDateTime | Op::SubFromDateTime) => {
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_datetime();
+
+                    // for time, the base unit is in seconds
+                    let base = rhs.to_base_unit_representation();
+                    let seconds_f = base.unsafe_value().to_f64();
+
+                    let duration = chrono::Duration::try_seconds(seconds_f.trunc() as i64)
+                        .ok_or(RuntimeError::DurationOutOfRange)?
+                        + chrono::Duration::nanoseconds(
+                            (seconds_f.fract() * 1_000_000_000f64).round() as i64,
+                        );
+
+                    self.push(Value::DateTime(match op {
+                        Op::AddToDateTime => lhs
+                            .checked_add_signed(duration)
+                            .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                        Op::SubFromDateTime => lhs
+                            .checked_sub_signed(duration)
+                            .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                        _ => unreachable!(),
+                    }));
+                }
+                Op::DiffDateTime => {
+                    let unit = self.pop_quantity();
+                    let rhs = self.pop_datetime();
+                    let lhs = self.pop_datetime();
+
+                    let duration = lhs - rhs;
+                    let duration = duration.subsec_nanos() as f64 / 1_000_000_000f64
+                        + duration.num_seconds() as f64;
+
+                    let ret = Value::Quantity(Quantity::new(
+                        Number::from_f64(duration),
+                        unit.unit().clone(),
+                    ));
+
+                    self.push(ret);
+                }
                 op @ (Op::LessThan | Op::GreaterThan | Op::LessOrEqual | Op::GreatorOrEqual) => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
 
+                    let result = lhs.partial_cmp(&rhs).ok_or_else(|| {
+                        RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
+                            lhs.unit().clone(),
+                            rhs.unit().clone(),
+                        ))
+                    })?;
+
                     let result = match op {
-                        Op::LessThan => lhs < rhs,
-                        Op::GreaterThan => lhs > rhs,
-                        Op::LessOrEqual => lhs <= rhs,
-                        Op::GreatorOrEqual => lhs >= rhs,
+                        Op::LessThan => result == Ordering::Less,
+                        Op::GreaterThan => result == Ordering::Greater,
+                        Op::LessOrEqual => result != Ordering::Greater,
+                        Op::GreatorOrEqual => result != Ordering::Less,
                         _ => unreachable!(),
                     };
 
@@ -619,6 +723,21 @@ impl Vm {
                         _ => unreachable!(),
                     };
                     self.push(Value::Boolean(result));
+                }
+                op @ (Op::LogicalAnd | Op::LogicalOr) => {
+                    let rhs = self.pop_bool();
+                    let lhs = self.pop_bool();
+
+                    let result = match op {
+                        Op::LogicalAnd => lhs && rhs,
+                        Op::LogicalOr => lhs || rhs,
+                        _ => unreachable!(),
+                    };
+                    self.push_bool(result);
+                }
+                Op::LogicalNeg => {
+                    let rhs = self.pop_bool();
+                    self.push_bool(!rhs);
                 }
                 Op::Negate => {
                     let rhs = self.pop_quantity();
@@ -688,6 +807,56 @@ impl Vm {
                         }
                     }
                 }
+                Op::CallCallable => {
+                    let num_args = self.read_u16() as usize;
+
+                    let callable = self.pop();
+                    match callable.unsafe_as_function_reference() {
+                        FunctionReference::Normal(name) => {
+                            let function_idx = self.get_function_idx(name) as usize;
+
+                            // TODO: unify code with 'Op::Call'?
+                            self.frames.push(CallFrame {
+                                function_idx,
+                                ip: 0,
+                                fp: self.stack.len() - num_args,
+                            })
+                        }
+                        FunctionReference::Foreign(name) => {
+                            let function_idx = self
+                                .get_ffi_callable_idx(name)
+                                .expect("Foreign function exists")
+                                as usize;
+
+                            let mut args = vec![];
+                            for _ in 0..num_args {
+                                args.push(self.pop());
+                            }
+                            args.reverse();
+
+                            match &self.ffi_callables[function_idx].callable {
+                                Callable::Function(function) => {
+                                    let result = (function)(&args[..]);
+                                    self.push(result?);
+                                }
+                                Callable::Procedure(..) => unreachable!("Foreign procedures can not be targeted by a function reference"),
+                            }
+                        }
+                        FunctionReference::TzConversion(tz_name) => {
+                            // TODO: implement this using a closure, once we have that in the language
+
+                            let dt = self.pop_datetime();
+
+                            let tz: chrono_tz::Tz = tz_name
+                                .parse()
+                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name.into()))?;
+
+                            let dt = dt.with_timezone(&tz).fixed_offset();
+
+                            self.push(Value::DateTime(dt));
+                        }
+                    }
+                }
                 Op::PrintString => {
                     let s_idx = self.read_u16() as usize;
                     let s = &self.strings[s_idx];
@@ -696,11 +865,53 @@ impl Vm {
                 Op::JoinString => {
                     let num_parts = self.read_u16() as usize;
                     let mut joined = String::new();
+                    let to_str = |value| match value {
+                        Value::Quantity(q) => q.to_string(),
+                        Value::Boolean(b) => b.to_string(),
+                        Value::String(s) => s,
+                        Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
+                        Value::FunctionReference(r) => r.to_string(),
+                        Value::FormatSpecifiers(_) => unreachable!(),
+                    };
+
+                    let map_strfmt_error_to_runtime_error = |err| match err {
+                        strfmt::FmtError::Invalid(s) => RuntimeError::InvalidFormatSpecifiers(s),
+                        strfmt::FmtError::TypeError(s) => {
+                            RuntimeError::InvalidTypeForFormatSpecifiers(s)
+                        }
+                        strfmt::FmtError::KeyError(_) => unreachable!(),
+                    };
+
                     for _ in 0..num_parts {
                         let part = match self.pop() {
-                            Value::Quantity(q) => q.to_string(),
-                            Value::Boolean(b) => b.to_string(),
-                            Value::String(s) => s,
+                            Value::FormatSpecifiers(Some(specifiers)) => match self.pop() {
+                                Value::Quantity(q) => {
+                                    let mut vars = HashMap::new();
+                                    vars.insert("value".to_string(), q.unsafe_value().to_f64());
+
+                                    let mut str =
+                                        strfmt::strfmt(&format!("{{value{}}}", specifiers), &vars)
+                                            .map_err(map_strfmt_error_to_runtime_error)?;
+
+                                    let unit_str = q.unit().to_string();
+
+                                    if !unit_str.is_empty() {
+                                        str += " ";
+                                        str += &unit_str;
+                                    }
+
+                                    str
+                                }
+                                value => {
+                                    let mut vars = HashMap::new();
+                                    vars.insert("value".to_string(), to_str(value));
+
+                                    strfmt::strfmt(&format!("{{value{}}}", specifiers), &vars)
+                                        .map_err(map_strfmt_error_to_runtime_error)?
+                                }
+                            },
+                            Value::FormatSpecifiers(None) => to_str(self.pop()),
+                            v => to_str(v),
                         };
                         joined = part + &joined; // reverse order
                     }
@@ -772,7 +983,7 @@ impl Vm {
     }
 
     fn print(&self, ctx: &mut ExecutionContext, m: &Markup) {
-        (ctx.print_fn)(&m);
+        (ctx.print_fn)(m);
     }
 }
 

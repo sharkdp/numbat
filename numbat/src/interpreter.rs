@@ -1,15 +1,19 @@
 use crate::{
+    dimension::DimensionRegistry,
     markup::Markup,
+    pretty_print::PrettyPrint,
     quantity::{Quantity, QuantityError},
-    typed_ast::Statement,
+    typed_ast::{Statement, Type},
     unit_registry::{UnitRegistry, UnitRegistryError},
 };
+
+use crate::markup as m;
 
 use thiserror::Error;
 
 pub use crate::value::Value;
 
-#[derive(Debug, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
@@ -33,12 +37,22 @@ pub enum RuntimeError {
     CouldNotLoadExchangeRates,
     #[error("User error: {0}")]
     UserError(String),
-}
+    #[error("Unrecognized datetime format")]
+    DateParsingErrorUnknown,
+    #[error("Unknown timezone: {0}")]
+    UnknownTimezone(String),
+    #[error("Exceeded maximum size for time durations")]
+    DurationOutOfRange,
+    #[error("DateTime out of range")]
+    DateTimeOutOfRange,
+    #[error("Error in datetime format. See https://docs.rs/chrono/latest/chrono/format/strftime/index.html for possible format specifiers.")]
+    DateFormattingError,
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum ExitStatus {
-    Success,
-    Error,
+    #[error("Invalid format specifiers: {0}")]
+    InvalidFormatSpecifiers(String),
+
+    #[error("Incorrect type for format specifiers: {0}")]
+    InvalidTypeForFormatSpecifiers(String),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -46,22 +60,73 @@ pub enum ExitStatus {
 pub enum InterpreterResult {
     Value(Value),
     Continue,
-    Exit(ExitStatus),
 }
 
 impl InterpreterResult {
-    pub fn is_success(&self) -> bool {
+    pub fn to_markup(
+        &self,
+        evaluated_statement: Option<&Statement>,
+        registry: &DimensionRegistry,
+        with_type_info: bool,
+        with_equal_sign: bool,
+    ) -> Markup {
         match self {
-            Self::Value(_) => true,
-            Self::Continue => true,
-            Self::Exit(_) => false,
+            Self::Value(value) => {
+                let leader = if with_equal_sign {
+                    m::whitespace("    ") + m::operator("=") + m::space()
+                } else {
+                    m::empty()
+                };
+
+                let type_markup = if with_type_info {
+                    evaluated_statement
+                        .and_then(Statement::as_expression)
+                        .and_then(|e| {
+                            if e.get_type() == Type::scalar() {
+                                None
+                            } else {
+                                let ty = e.get_type().to_readable_type(registry);
+                                Some(m::dimmed("    [") + ty + m::dimmed("]"))
+                            }
+                        })
+                        .unwrap_or_else(m::empty)
+                } else {
+                    m::empty()
+                };
+
+                leader + value.pretty_print() + type_markup + m::nl()
+            }
+            Self::Continue => m::empty(),
+        }
+    }
+
+    /// Returns `true` if the interpreter result is [`Value`].
+    ///
+    /// [`Value`]: InterpreterResult::Value
+    #[must_use]
+    pub fn is_value(&self) -> bool {
+        matches!(self, Self::Value(..))
+    }
+
+    /// Returns `true` if the interpreter result is [`Continue`].
+    ///
+    /// [`Continue`]: InterpreterResult::Continue
+    #[must_use]
+    pub fn is_continue(&self) -> bool {
+        matches!(self, Self::Continue)
+    }
+
+    pub fn value_as_string(&self) -> Option<String> {
+        match self {
+            Self::Continue => None,
+            Self::Value(value) => Some(value.to_string()),
         }
     }
 }
 
 pub type Result<T> = std::result::Result<T, RuntimeError>;
 
-pub type PrintFunction = dyn FnMut(&Markup) -> () + Send;
+pub type PrintFunction = dyn FnMut(&Markup) + Send;
 
 pub struct InterpreterSettings {
     pub print_fn: Box<PrintFunction>,
@@ -90,7 +155,8 @@ pub trait Interpreter {
 
 #[cfg(test)]
 mod tests {
-    use crate::unit::Unit;
+    use crate::prefix_parser::AcceptsPrefix;
+    use crate::unit::{CanonicalName, Unit};
     use crate::{bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer};
 
     use super::*;
@@ -109,6 +175,8 @@ mod tests {
         @metric_prefixes
         @aliases(m: short)
         unit meter : Length
+
+        unit alternative_length_base_unit: Length # maybe this should be disallowed
 
         @aliases(s: short)
         unit second : Time
@@ -136,6 +204,7 @@ mod tests {
             .interpret_statements(&mut InterpreterSettings::default(), &statements_typechecked)
     }
 
+    #[track_caller]
     fn assert_evaluates_to(input: &str, expected: Quantity) {
         if let InterpreterResult::Value(actual) = get_interpreter_result(input).unwrap() {
             let actual = actual.unsafe_as_quantity();
@@ -145,10 +214,12 @@ mod tests {
         }
     }
 
+    #[track_caller]
     fn assert_evaluates_to_scalar(input: &str, expected: f64) {
         assert_evaluates_to(input, Quantity::from_scalar(expected))
     }
 
+    #[track_caller]
     fn assert_runtime_error(input: &str, err_expected: RuntimeError) {
         if let Err(err_actual) = get_interpreter_result(input) {
             assert_eq!(err_actual, err_expected);
@@ -173,6 +244,29 @@ mod tests {
         assert_evaluates_to_scalar("2 * -3", 2.0 * -3.0);
         assert_evaluates_to_scalar("2 - 3 - 4", 2.0 - 3.0 - 4.0);
         assert_evaluates_to_scalar("2 - -3", 2.0 - -3.0);
+
+        assert_evaluates_to_scalar("+2 * 3", 2.0 * 3.0);
+        assert_evaluates_to_scalar("2 * +3", 2.0 * 3.0);
+        assert_evaluates_to_scalar("+2 - +3", 2.0 - 3.0);
+    }
+
+    #[test]
+    fn comparisons() {
+        assert_evaluates_to_scalar("if 2 meter > 150 cm then 1 else 0", 1.0);
+
+        assert_runtime_error(
+            "1 meter > alternative_length_base_unit",
+            RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
+                Unit::new_base(
+                    "meter",
+                    CanonicalName::new("m", AcceptsPrefix::only_short()),
+                ),
+                Unit::new_base(
+                    "alternative_length_base_unit",
+                    CanonicalName::new("alternative_length_base_unit", AcceptsPrefix::only_long()),
+                ),
+            )),
+        );
     }
 
     #[test]
@@ -189,7 +283,11 @@ mod tests {
              @aliases(px: short)
              unit pixel : Pixel
              2 * pixel",
-            Quantity::from_scalar(2.0) * Quantity::from_unit(Unit::new_base("pixel", "px")),
+            Quantity::from_scalar(2.0)
+                * Quantity::from_unit(Unit::new_base(
+                    "pixel",
+                    CanonicalName::new("px", AcceptsPrefix::only_short()),
+                )),
         );
 
         assert_evaluates_to(

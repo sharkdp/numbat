@@ -77,7 +77,7 @@ impl PrettyPrint for BaseRepresentation {
         if self.iter().count() == 0 {
             crate::markup::type_identifier("Scalar")
         } else {
-            self.pretty_print_with(|f| f.1, '×', '/', true)
+            self.pretty_print_with(|f| f.1, '×', '/', true, None)
         }
     }
 }
@@ -85,7 +85,7 @@ impl PrettyPrint for BaseRepresentation {
 #[derive(Debug, Clone)]
 pub struct Registry<Metadata> {
     base_entries: Vec<(String, Metadata)>,
-    derived_entries: HashMap<String, BaseRepresentation>,
+    derived_entries: HashMap<String, (BaseRepresentation, Metadata)>,
 }
 
 impl<T> Default for Registry<T> {
@@ -97,7 +97,7 @@ impl<T> Default for Registry<T> {
     }
 }
 
-impl<Metadata> Registry<Metadata> {
+impl<Metadata: Clone> Registry<Metadata> {
     pub fn add_base_entry(&mut self, name: &str, metadata: Metadata) -> Result<()> {
         if self.contains(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
@@ -113,42 +113,49 @@ impl<Metadata> Registry<Metadata> {
     ) -> Vec<String> {
         self.derived_entries
             .iter()
-            .filter(|(_, br)| *br == base_representation)
+            .filter(|(_, (br, _))| br == base_representation)
             .map(|(name, _)| name.clone())
             .sorted_unstable()
             .collect()
-    }
-
-    pub fn is_base_entry(&self, name: &str) -> bool {
-        self.base_entries.iter().any(|(n, _)| n == name)
     }
 
     pub fn add_derived_entry(
         &mut self,
         name: &str,
         base_representation: BaseRepresentation,
+        metadata: Metadata,
     ) -> Result<()> {
         if self.contains(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
 
         self.derived_entries
-            .insert(name.to_owned(), base_representation);
+            .insert(name.to_owned(), (base_representation, metadata));
 
         Ok(())
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.base_entries.iter().find(|(n, _)| n == name).is_some()
-            || self.derived_entries.contains_key(name)
+        self.base_entries.iter().any(|(n, _)| n == name) || self.derived_entries.contains_key(name)
     }
 
-    pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
-        if self.is_base_entry(name) {
-            Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
-                name.to_owned(),
-                Rational::from_integer(1),
-            )))
+    pub fn get_base_representation_for_name(
+        &self,
+        name: &str,
+    ) -> Result<(BaseRepresentation, Metadata)> {
+        if let Some(metadata) = self
+            .base_entries
+            .iter()
+            .find(|(n, _)| n == name)
+            .map(|(_, m)| m)
+        {
+            Ok((
+                BaseRepresentation::from_factor(BaseRepresentationFactor(
+                    name.to_owned(),
+                    Rational::from_integer(1),
+                )),
+                metadata.clone(),
+            ))
         } else {
             self.derived_entries
                 .get(name)

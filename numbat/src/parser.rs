@@ -25,17 +25,20 @@
 //! expression      ::=   postfix_apply
 //! postfix_apply   ::=   condition ( "//" identifier ) *
 //! condition       ::=   ( "if" conversion "then" condition "else" condition ) | conversion
-//! conversion      ::=   comparison ( ( "→" | "->" | "to" ) comparison ) *
+//! conversion      ::=   logical_or ( ( "→" | "->" | "to" ) logical_or ) *
+//! logical_or      ::=   logical_and ( "||" logical_and ) *
+//! logical_and     ::=   logical_neg ( "&&" logical_neg ) *
+//! logical_neg     ::=   ( "!" logical_neg) | comparison
 //! comparison      ::=   term ( (">" | ">="| "≥" | "<" | "<=" | "≤" | "==" | "!=" | "≠" ) term ) *
 //! term            ::=   factor ( ( "+" | "-") factor ) *
-//! factor          ::=   negate ( ( "*" | "/") per_factor ) *
-//! per_factor      ::=   negate ( "per" negate ) *
-//! negate          ::=   ( "-" negate ) | ifactor
+//! factor          ::=   unary ( ( "*" | "/") per_factor ) *
+//! per_factor      ::=   unary ( "per" unary ) *
+//! unary           ::=   ( ( minus | plus ) unary ) | ifactor
 //! ifactor         ::=   power ( " " power ) *
 //! power           ::=   factorial ( "^" "-" ? power ) ?
 //! factorial       ::=   unicode_power "!" *
 //! unicode_power   ::=   call ( "⁻" ? ( "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ) ) ?
-//! call            ::=   primary ( "(" arguments? ")" ) ?
+//! call            ::=   primary ( "(" arguments? ")" ) *
 //! arguments       ::=   expression ( "," expression ) *
 //! primary         ::=   boolean | string | hex_number | oct_number | bin_number | number | identifier | "(" expression ")"
 //!
@@ -60,7 +63,7 @@ use crate::ast::{
     BinaryOperator, DimensionExpression, Expression, ProcedureKind, Statement, StringPart,
     TypeAnnotation, UnaryOperator,
 };
-use crate::decorator::Decorator;
+use crate::decorator::{self, Decorator};
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::resolver::ModulePath;
@@ -168,8 +171,11 @@ pub enum ParseErrorKind {
     #[error("Only integer numbers (< 2^128) are allowed in dimension exponents")]
     NumberInDimensionExponentOutOfRange,
 
-    #[error("Decorators can only be used on unit definitions")]
-    DecoratorsCanOnlyBeUsedOnUnitDefinitions,
+    #[error("Decorators can only be used on unit definitions or let definitions")]
+    DecoratorsCanOnlyBeUsedOnUnitOrLetDefinitions,
+
+    #[error("Decorators on let definitions cannot have prefix information")]
+    DecoratorsWithPrefixOnLetDefinition,
 
     #[error("Expected opening parenthesis after decorator")]
     ExpectedLeftParenAfterDecorator,
@@ -186,8 +192,14 @@ pub enum ParseErrorKind {
     #[error("Expected 'else' in if-then-else condition")]
     ExpectedElse,
 
-    #[error("Unterminated string interpolation")]
-    UnterminatedStringInterpolation,
+    #[error("Unterminated string")]
+    UnterminatedString,
+
+    #[error("Expected a string")]
+    ExpectedString,
+
+    #[error("Expected {0} in function type")]
+    ExpectedTokenInFunctionType(&'static str),
 }
 
 #[derive(Debug, Clone, Error)]
@@ -203,7 +215,8 @@ impl ParseError {
     }
 }
 
-type Result<T> = std::result::Result<T, ParseError>;
+type Result<T, E = ParseError> = std::result::Result<T, E>;
+type ParseResult = Result<Vec<Statement>, (Vec<Statement>, Vec<ParseError>)>;
 
 static PROCEDURES: &[TokenKind] = &[
     TokenKind::ProcedurePrint,
@@ -231,8 +244,14 @@ impl<'a> Parser<'a> {
         while self.match_exact(TokenKind::Newline).is_some() {}
     }
 
-    fn parse(&mut self) -> Result<Vec<Statement>> {
+    /// Parse a token stream.
+    /// If an error is encountered and `stop_on_error` is set to false, the parser
+    /// will try to recover from the error and parse as many statements as possible
+    /// while stacking all the errors in a `Vec`. At the end, it returns the complete
+    /// list of statements parsed + the list of errors accumulated.
+    fn parse(&mut self) -> ParseResult {
         let mut statements = vec![];
+        let mut errors = vec![];
 
         self.skip_empty_lines();
 
@@ -240,7 +259,8 @@ impl<'a> Parser<'a> {
             match self.statement() {
                 Ok(statement) => statements.push(statement),
                 Err(e) => {
-                    return Err(e);
+                    errors.push(e);
+                    self.recover_from_error();
                 }
             }
 
@@ -253,23 +273,37 @@ impl<'a> Parser<'a> {
                     break;
                 }
                 TokenKind::Equal => {
-                    return Err(ParseError {
+                    errors.push(ParseError {
                         kind: ParseErrorKind::TrailingEqualSign(
                             self.last().unwrap().lexeme.clone(),
                         ),
                         span: self.peek().span,
                     });
+                    self.recover_from_error();
                 }
                 _ => {
-                    return Err(ParseError {
+                    errors.push(ParseError {
                         kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
                         span: self.peek().span,
                     });
+                    self.recover_from_error();
                 }
             }
         }
 
-        Ok(statements)
+        if errors.is_empty() {
+            Ok(statements)
+        } else {
+            Err((statements, errors))
+        }
+    }
+
+    /// Must be called after encountering an error.
+    fn recover_from_error(&mut self) {
+        // Skip all the tokens until we encounter a newline or EoF.
+        while !matches!(self.peek().kind, TokenKind::Newline | TokenKind::Eof) {
+            self.advance()
+        }
     }
 
     fn accepts_prefix(&mut self) -> Result<Option<AcceptsPrefix>> {
@@ -317,10 +351,11 @@ impl<'a> Parser<'a> {
     fn statement(&mut self) -> Result<Statement> {
         if !(self.peek().kind == TokenKind::At
             || self.peek().kind == TokenKind::Unit
+            || self.peek().kind == TokenKind::Let
             || self.decorator_stack.is_empty())
         {
             return Err(ParseError {
-                kind: ParseErrorKind::DecoratorsCanOnlyBeUsedOnUnitDefinitions,
+                kind: ParseErrorKind::DecoratorsCanOnlyBeUsedOnUnitOrLetDefinitions,
                 span: self.peek().span,
             });
         }
@@ -344,11 +379,21 @@ impl<'a> Parser<'a> {
                     self.skip_empty_lines();
                     let expr = self.expression()?;
 
+                    if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
+                            span: self.peek().span,
+                        });
+                    }
+                    let mut decorators = vec![];
+                    std::mem::swap(&mut decorators, &mut self.decorator_stack);
+
                     Ok(Statement::DefineVariable {
                         identifier_span,
                         identifier: identifier.lexeme.clone(),
                         expr,
                         type_annotation,
+                        decorators,
                     })
                 }
             } else {
@@ -415,13 +460,10 @@ impl<'a> Parser<'a> {
 
                         parameter_span = parameter_span.extend(&self.last().unwrap().span);
 
-                        let mut has_comma = || -> bool {
-                            let yes = self.match_exact(TokenKind::Comma).is_some();
-                            self.match_exact(TokenKind::Newline);
-                            yes
-                        };
+                        let has_comma = self.match_exact(TokenKind::Comma).is_some();
+                        self.match_exact(TokenKind::Newline);
 
-                        if !has_comma() && self.peek().kind != TokenKind::RightParen {
+                        if !has_comma && self.peek().kind != TokenKind::RightParen {
                             return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
                                 span: self.peek().span,
@@ -519,25 +561,56 @@ impl<'a> Parser<'a> {
             }
         } else if self.match_exact(TokenKind::At).is_some() {
             if let Some(decorator) = self.match_exact(TokenKind::Identifier) {
-                let decorator = if decorator.lexeme == "metric_prefixes" {
-                    Decorator::MetricPrefixes
-                } else if decorator.lexeme == "binary_prefixes" {
-                    Decorator::BinaryPrefixes
-                } else if decorator.lexeme == "aliases" {
-                    if self.match_exact(TokenKind::LeftParen).is_some() {
-                        let aliases = self.list_of_aliases()?;
-                        Decorator::Aliases(aliases)
-                    } else {
+                let decorator = match decorator.lexeme.as_str() {
+                    "metric_prefixes" => Decorator::MetricPrefixes,
+                    "binary_prefixes" => Decorator::BinaryPrefixes,
+                    "aliases" => {
+                        if self.match_exact(TokenKind::LeftParen).is_some() {
+                            let aliases = self.list_of_aliases()?;
+                            Decorator::Aliases(aliases)
+                        } else {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                                span: self.peek().span,
+                            });
+                        }
+                    }
+                    "url" | "name" => {
+                        if self.match_exact(TokenKind::LeftParen).is_some() {
+                            if let Some(token) = self.match_exact(TokenKind::StringFixed) {
+                                if self.match_exact(TokenKind::RightParen).is_none() {
+                                    return Err(ParseError::new(
+                                        ParseErrorKind::MissingClosingParen,
+                                        self.peek().span,
+                                    ));
+                                }
+
+                                let content = token.lexeme.trim_matches('"');
+
+                                match decorator.lexeme.as_str() {
+                                    "url" => Decorator::Url(content.into()),
+                                    "name" => Decorator::Name(content.into()),
+                                    _ => unreachable!(),
+                                }
+                            } else {
+                                return Err(ParseError {
+                                    kind: ParseErrorKind::ExpectedString,
+                                    span: self.peek().span,
+                                });
+                            }
+                        } else {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                                span: self.peek().span,
+                            });
+                        }
+                    }
+                    _ => {
                         return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
-                            span: self.peek().span,
+                            kind: ParseErrorKind::UnknownDecorator,
+                            span: decorator.span,
                         });
                     }
-                } else {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::UnknownDecorator,
-                        span: decorator.span,
-                    });
                 };
 
                 self.decorator_stack.push(decorator); // TODO: make sure that there are no duplicate decorators
@@ -578,11 +651,11 @@ impl<'a> Parser<'a> {
                         type_annotation: dexpr,
                         decorators,
                     })
-                } else if let Some(dexpr) = dexpr {
+                } else if dexpr.is_some() {
                     Ok(Statement::DefineBaseUnit(
                         identifier_span,
                         unit_name,
-                        Some(dexpr),
+                        dexpr,
                         decorators,
                     ))
                 } else if self.is_end_of_statement() {
@@ -639,36 +712,50 @@ impl<'a> Parser<'a> {
                 _ => unreachable!(),
             };
 
-            if self.match_exact(TokenKind::LeftParen).is_none() {
-                Err(ParseError {
-                    kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
-                    span: self.peek().span,
-                })
-            } else {
+            if self.match_exact(TokenKind::LeftParen).is_some() {
                 Ok(Statement::ProcedureCall(
                     span,
                     procedure_kind,
                     self.arguments()?,
                 ))
+            } else {
+                Err(ParseError {
+                    kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
+                    span: self.peek().span,
+                })
             }
         } else {
             Ok(Statement::Expression(self.expression()?))
         }
     }
 
-    pub fn expression(&mut self) -> Result<Expression> {
-        self.postfix_apply()
+    /// Helper function to parse binary operations
+    /// - arg `op_symbol` specifiy the separator / symbol of your operation
+    /// - arg `op` specifiy the operation you're currently parsing
+    /// - arg `next` specifiy the next parser to call between each symbols
+    fn parse_binop(
+        &mut self,
+        op_symbol: &[TokenKind],
+        op: impl Fn(TokenKind) -> BinaryOperator,
+        next_parser: impl Fn(&mut Self) -> Result<Expression>,
+    ) -> Result<Expression> {
+        let mut expr = next_parser(self)?;
+        while let Some(matched) = self.match_any(op_symbol) {
+            let span_op = Some(self.last().unwrap().span);
+            let rhs = next_parser(self)?;
+
+            expr = Expression::BinaryOperator {
+                op: op(matched.kind),
+                lhs: Box::new(expr),
+                rhs: Box::new(rhs),
+                span_op,
+            };
+        }
+        Ok(expr)
     }
 
-    fn function_name_from_primary(&self, primary: &Expression) -> Result<String> {
-        if let Expression::Identifier(_, name) = primary {
-            Ok(name.clone())
-        } else {
-            Err(ParseError::new(
-                ParseErrorKind::CanOnlyCallIdentifier,
-                primary.full_span(),
-            ))
-        }
+    pub fn expression(&mut self) -> Result<Expression> {
+        self.postfix_apply()
     }
 
     fn identifier(&mut self) -> Result<String> {
@@ -690,7 +777,12 @@ impl<'a> Parser<'a> {
             let identifier_span = self.last().unwrap().span;
             full_span = full_span.extend(&identifier_span);
 
-            expr = Expression::FunctionCall(identifier_span, full_span, identifier, vec![expr]);
+            expr = Expression::FunctionCall(
+                identifier_span,
+                full_span,
+                Box::new(Expression::Identifier(identifier_span, identifier)),
+                vec![expr],
+            );
         }
         Ok(expr)
     }
@@ -734,35 +826,55 @@ impl<'a> Parser<'a> {
     }
 
     fn conversion(&mut self) -> Result<Expression> {
-        let mut expr = self.comparison()?;
-        while self.match_any(&[TokenKind::Arrow, TokenKind::To]).is_some() {
-            let span_op = Some(self.last().unwrap().span);
-            let rhs = self.comparison()?;
+        self.parse_binop(
+            &[TokenKind::Arrow, TokenKind::To],
+            |_| BinaryOperator::ConvertTo,
+            Self::logical_or,
+        )
+    }
 
-            expr = Expression::BinaryOperator {
-                op: BinaryOperator::ConvertTo,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
+    fn logical_or(&mut self) -> Result<Expression> {
+        self.parse_binop(
+            &[TokenKind::LogicalOr],
+            |_| BinaryOperator::LogicalOr,
+            Self::logical_and,
+        )
+    }
+
+    fn logical_and(&mut self) -> Result<Expression> {
+        self.parse_binop(
+            &[TokenKind::LogicalAnd],
+            |_| BinaryOperator::LogicalAnd,
+            Self::logical_neg,
+        )
+    }
+
+    fn logical_neg(&mut self) -> Result<Expression> {
+        if self.match_exact(TokenKind::ExclamationMark).is_some() {
+            let span = self.last().unwrap().span;
+            let rhs = self.logical_neg()?;
+
+            Ok(Expression::UnaryOperator {
+                op: UnaryOperator::LogicalNeg,
+                expr: Box::new(rhs),
+                span_op: span,
+            })
+        } else {
+            self.comparison()
         }
-        Ok(expr)
     }
 
     fn comparison(&mut self) -> Result<Expression> {
-        let mut expr = self.term()?;
-        while let Some(token) = self.match_any(&[
-            TokenKind::LessThan,
-            TokenKind::GreaterThan,
-            TokenKind::LessOrEqual,
-            TokenKind::GreaterOrEqual,
-            TokenKind::EqualEqual,
-            TokenKind::NotEqual,
-        ]) {
-            let span_op = Some(self.last().unwrap().span);
-            let rhs = self.term()?;
-
-            let op = match token.kind {
+        self.parse_binop(
+            &[
+                TokenKind::LessThan,
+                TokenKind::GreaterThan,
+                TokenKind::LessOrEqual,
+                TokenKind::GreaterOrEqual,
+                TokenKind::EqualEqual,
+                TokenKind::NotEqual,
+            ],
+            |matched| match matched {
                 TokenKind::LessThan => BinaryOperator::LessThan,
                 TokenKind::GreaterThan => BinaryOperator::GreaterThan,
                 TokenKind::LessOrEqual => BinaryOperator::LessOrEqual,
@@ -770,90 +882,53 @@ impl<'a> Parser<'a> {
                 TokenKind::EqualEqual => BinaryOperator::Equal,
                 TokenKind::NotEqual => BinaryOperator::NotEqual,
                 _ => unreachable!(),
-            };
-
-            expr = Expression::BinaryOperator {
-                op,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+            },
+            Self::term,
+        )
     }
 
     fn term(&mut self) -> Result<Expression> {
-        let mut expr = self.factor()?;
-        while let Some(operator_token) = self.match_any(&[TokenKind::Plus, TokenKind::Minus]) {
-            let span_op = Some(self.last().unwrap().span);
-            let operator = if operator_token.kind == TokenKind::Plus {
-                BinaryOperator::Add
-            } else {
-                BinaryOperator::Sub
-            };
-
-            let rhs = self.factor()?;
-
-            expr = Expression::BinaryOperator {
-                op: operator,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+        self.parse_binop(
+            &[TokenKind::Plus, TokenKind::Minus],
+            |matched| match matched {
+                TokenKind::Plus => BinaryOperator::Add,
+                TokenKind::Minus => BinaryOperator::Sub,
+                _ => unreachable!(),
+            },
+            Self::factor,
+        )
     }
 
     fn factor(&mut self) -> Result<Expression> {
-        let mut expr = self.per_factor()?;
-        while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
-            let span_op = Some(self.last().unwrap().span);
-            let op = if operator_token.kind == TokenKind::Multiply {
-                BinaryOperator::Mul
-            } else {
-                BinaryOperator::Div
-            };
-
-            let rhs = self.per_factor()?;
-
-            expr = Expression::BinaryOperator {
-                op,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-        Ok(expr)
+        self.parse_binop(
+            &[TokenKind::Multiply, TokenKind::Divide],
+            |matched| match matched {
+                TokenKind::Multiply => BinaryOperator::Mul,
+                TokenKind::Divide => BinaryOperator::Div,
+                _ => unreachable!(),
+            },
+            Self::per_factor,
+        )
     }
 
     fn per_factor(&mut self) -> Result<Expression> {
-        let mut expr = self.negate()?;
-
-        while self.match_exact(TokenKind::Per).is_some() {
-            let span_op = Some(self.last().unwrap().span);
-            let rhs = self.negate()?;
-
-            expr = Expression::BinaryOperator {
-                op: BinaryOperator::Div,
-                lhs: Box::new(expr),
-                rhs: Box::new(rhs),
-                span_op,
-            };
-        }
-
-        Ok(expr)
+        self.parse_binop(&[TokenKind::Per], |_| BinaryOperator::Div, Self::unary)
     }
 
-    fn negate(&mut self) -> Result<Expression> {
+    fn unary(&mut self) -> Result<Expression> {
         if self.match_exact(TokenKind::Minus).is_some() {
             let span = self.last().unwrap().span;
-            let rhs = self.negate()?;
+            let rhs = self.unary()?;
 
             Ok(Expression::UnaryOperator {
                 op: UnaryOperator::Negate,
                 expr: Box::new(rhs),
                 span_op: span,
             })
+        } else if self.match_exact(TokenKind::Plus).is_some() {
+            // A unary `+` is equivalent to nothing. We can get rid of the
+            // symbol without inserting any nodes in the AST.
+            self.unary()
         } else {
             self.ifactor()
         }
@@ -973,20 +1048,18 @@ impl<'a> Parser<'a> {
     }
 
     fn call(&mut self) -> Result<Expression> {
-        let primary = self.primary()?;
+        let mut expr = self.primary()?;
 
-        if self.match_exact(TokenKind::LeftParen).is_some() {
-            let function_name = self.function_name_from_primary(&primary)?;
-
+        while self.match_exact(TokenKind::LeftParen).is_some() {
             let args = self.arguments()?;
-            return Ok(Expression::FunctionCall(
-                primary.full_span(),
-                primary.full_span().extend(&self.last().unwrap().span),
-                function_name,
+            expr = Expression::FunctionCall(
+                expr.full_span(),
+                expr.full_span().extend(&self.last().unwrap().span),
+                Box::new(expr),
                 args,
-            ));
+            );
         }
-        Ok(primary)
+        Ok(expr)
     }
 
     fn arguments(&mut self) -> Result<Vec<Expression>> {
@@ -1030,7 +1103,7 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
-                    i128::from_str_radix(&hex_int.lexeme[2..], 16)
+                    i128::from_str_radix(&hex_int.lexeme[2..].replace('_', ""), 16)
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
@@ -1039,7 +1112,7 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
-                    i128::from_str_radix(&oct_int.lexeme[2..], 8)
+                    i128::from_str_radix(&oct_int.lexeme[2..].replace('_', ""), 8)
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
@@ -1048,21 +1121,23 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
-                    i128::from_str_radix(&bin_int.lexeme[2..], 2)
+                    i128::from_str_radix(&bin_int.lexeme[2..].replace('_', ""), 2)
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
+        } else if let Some(_) = self.match_exact(TokenKind::NaN) {
+            let span = self.last().unwrap().span;
+            Ok(Expression::Scalar(span, Number::from_f64(f64::NAN)))
+        } else if let Some(_) = self.match_exact(TokenKind::Inf) {
+            let span = self.last().unwrap().span;
+            Ok(Expression::Scalar(span, Number::from_f64(f64::INFINITY)))
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             let span = self.last().unwrap().span;
             Ok(Expression::Identifier(span, identifier.lexeme.clone()))
         } else if let Some(inner) = self.match_any(&[TokenKind::True, TokenKind::False]) {
             Ok(Expression::Boolean(
                 inner.span,
-                if matches!(inner.kind, TokenKind::True) {
-                    true
-                } else {
-                    false
-                },
+                matches!(inner.kind, TokenKind::True),
             ))
         } else if let Some(token) = self.match_exact(TokenKind::StringFixed) {
             Ok(Expression::String(
@@ -1070,10 +1145,9 @@ impl<'a> Parser<'a> {
                 vec![StringPart::Fixed(strip_first_and_last(&token.lexeme))],
             ))
         } else if let Some(token) = self.match_exact(TokenKind::StringInterpolationStart) {
-            let mut parts = vec![StringPart::Fixed(strip_first_and_last(&token.lexeme))];
+            let mut parts = Vec::new();
 
-            let expr = self.expression()?;
-            parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
+            self.interpolation(&mut parts, &token)?;
 
             let mut span_full_string = token.span;
             let mut has_end = false;
@@ -1084,10 +1158,7 @@ impl<'a> Parser<'a> {
                 span_full_string = span_full_string.extend(&inner_token.span);
                 match inner_token.kind {
                     TokenKind::StringInterpolationMiddle => {
-                        parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
-
-                        let expr = self.expression()?;
-                        parts.push(StringPart::Interpolation(expr.full_span(), Box::new(expr)));
+                        self.interpolation(&mut parts, &inner_token)?;
                     }
                     TokenKind::StringInterpolationEnd => {
                         parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
@@ -1099,16 +1170,14 @@ impl<'a> Parser<'a> {
             }
 
             if !has_end {
+                span_full_string = span_full_string.extend(&self.last().unwrap().span);
                 return Err(ParseError::new(
-                    ParseErrorKind::UnterminatedStringInterpolation,
+                    ParseErrorKind::UnterminatedString,
                     span_full_string,
                 ));
             }
 
-            parts = parts
-                .into_iter()
-                .filter(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()))
-                .collect();
+            parts.retain(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()));
 
             Ok(Expression::String(span_full_string, parts))
         } else if self.match_exact(TokenKind::LeftParen).is_some() {
@@ -1138,6 +1207,24 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn interpolation(&mut self, parts: &mut Vec<StringPart>, token: &Token) -> Result<()> {
+        parts.push(StringPart::Fixed(strip_first_and_last(&token.lexeme)));
+
+        let expr = self.expression()?;
+
+        let format_specifiers = self
+            .match_exact(TokenKind::StringInterpolationSpecifiers)
+            .map(|token| token.lexeme.clone());
+
+        parts.push(StringPart::Interpolation {
+            span: expr.full_span(),
+            expr: Box::new(expr),
+            format_specifiers,
+        });
+
+        Ok(())
+    }
+
     /// Returns true iff the upcoming token indicates the beginning of a 'power'
     /// expression (which needs to start with a 'primary' expression).
     fn next_token_could_start_power_expression(&self) -> bool {
@@ -1150,10 +1237,63 @@ impl<'a> Parser<'a> {
     }
 
     fn type_annotation(&mut self) -> Result<TypeAnnotation> {
-        if let Some(token) = self.match_exact(TokenKind::Bool) {
+        if let Some(token) = self.match_exact(TokenKind::ExclamationMark) {
+            Ok(TypeAnnotation::Never(token.span))
+        } else if let Some(token) = self.match_exact(TokenKind::Bool) {
             Ok(TypeAnnotation::Bool(token.span))
         } else if let Some(token) = self.match_exact(TokenKind::String) {
             Ok(TypeAnnotation::String(token.span))
+        } else if let Some(token) = self.match_exact(TokenKind::DateTime) {
+            Ok(TypeAnnotation::DateTime(token.span))
+        } else if self.match_exact(TokenKind::CapitalFn).is_some() {
+            let span = self.last().unwrap().span;
+            if self.match_exact(TokenKind::LeftBracket).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInFunctionType("left bracket"),
+                    self.peek().span,
+                ));
+            }
+            if self.match_exact(TokenKind::LeftParen).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInFunctionType("left parenthesis"),
+                    self.peek().span,
+                ));
+            }
+
+            let mut params = vec![];
+            if self.peek().kind != TokenKind::RightParen {
+                params.push(self.type_annotation()?);
+                while self.match_exact(TokenKind::Comma).is_some() {
+                    params.push(self.type_annotation()?);
+                }
+            }
+
+            if self.match_exact(TokenKind::RightParen).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::MissingClosingParen,
+                    self.peek().span,
+                ));
+            }
+
+            if self.match_exact(TokenKind::Arrow).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInFunctionType("arrow (->)"),
+                    self.peek().span,
+                ));
+            }
+
+            let return_type = self.type_annotation()?;
+
+            if self.match_exact(TokenKind::RightBracket).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInFunctionType("right bracket"),
+                    self.peek().span,
+                ));
+            }
+
+            let span = span.extend(&self.last().unwrap().span);
+
+            Ok(TypeAnnotation::Fn(span, params, Box::new(return_type)))
         } else {
             Ok(TypeAnnotation::DimensionExpression(
                 self.dimension_expression()?,
@@ -1348,15 +1488,22 @@ impl<'a> Parser<'a> {
 }
 
 fn strip_first_and_last(s: &str) -> String {
-    (&s[1..(s.len() - 1)]).to_string()
+    s[1..(s.len() - 1)].to_string()
 }
 
-pub fn parse(input: &str, code_source_id: usize) -> Result<Vec<Statement>> {
+/// Parse a string.
+/// If an error is encountered and `stop_on_error` is set to false, the parser
+/// will try to recover from the error and parse as many statements as possible
+/// while stacking all the errors in a `Vec`. At the end, it returns the complete
+/// list of statements parsed + the list of errors accumulated.
+pub fn parse(input: &str, code_source_id: usize) -> ParseResult {
     use crate::tokenizer::tokenize;
 
-    let tokens = tokenize(input, code_source_id).map_err(|TokenizerError { kind, span }| {
-        ParseError::new(ParseErrorKind::TokenizerError(kind), span)
-    })?;
+    let tokens = tokenize(input, code_source_id)
+        .map_err(|TokenizerError { kind, span }| {
+            ParseError::new(ParseErrorKind::TokenizerError(kind), span)
+        })
+        .map_err(|e| (Vec::new(), vec![e]))?;
     let mut parser = Parser::new(&tokens);
     parser.parse()
 }
@@ -1374,9 +1521,16 @@ pub fn parse_dexpr(input: &str) -> DimensionExpression {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::ast::{binop, conditional, factorial, identifier, negate, scalar, ReplaceSpans};
+    use insta::assert_snapshot;
+    use std::fmt::Write;
 
+    use super::*;
+    use crate::ast::{
+        binop, boolean, conditional, factorial, identifier, logical_neg, negate, scalar,
+        ReplaceSpans,
+    };
+
+    #[track_caller]
     fn parse_as(inputs: &[&str], statement_expected: Statement) {
         for input in inputs {
             let statements = parse(input, 0).expect("parse error").replace_spans();
@@ -1388,27 +1542,53 @@ mod tests {
         }
     }
 
+    #[track_caller]
     fn parse_as_expression(inputs: &[&str], expr_expected: Expression) {
         parse_as(inputs, Statement::Expression(expr_expected));
     }
 
+    #[track_caller]
     fn should_fail(inputs: &[&str]) {
         for input in inputs {
             assert!(parse(input, 0).is_err());
         }
     }
 
+    #[track_caller]
     fn should_fail_with(inputs: &[&str], error_kind: ParseErrorKind) {
         for input in inputs {
             match parse(input, 0) {
-                Err(e) => {
-                    assert_eq!(e.kind, error_kind);
+                Err((_, errors)) => {
+                    assert_eq!(errors[0].kind, error_kind);
                 }
                 _ => {
                     panic!();
                 }
             }
         }
+    }
+
+    #[track_caller]
+    fn snap_parse(input: impl AsRef<str>) -> String {
+        let mut ret = String::new();
+        match parse(input.as_ref(), 0) {
+            Ok(stmts) => {
+                for stmt in stmts {
+                    writeln!(&mut ret, "{stmt:?}").unwrap();
+                }
+            }
+            Err((stmts, errors)) => {
+                writeln!(&mut ret, "Successfully parsed:").unwrap();
+                for stmt in stmts {
+                    writeln!(&mut ret, "{stmt:?}").unwrap();
+                }
+                writeln!(&mut ret, "Errors encountered:").unwrap();
+                for error in errors {
+                    writeln!(&mut ret, "{error} - {error:?}").unwrap();
+                }
+            }
+        }
+        ret
     }
 
     #[test]
@@ -1490,7 +1670,7 @@ mod tests {
     }
 
     #[test]
-    fn negation() {
+    fn unary() {
         parse_as_expression(&["-1", "  - 1   "], negate!(scalar!(1.0)));
         parse_as_expression(&["-123.45"], negate!(scalar!(123.45)));
         parse_as_expression(&["--1", " -  - 1   "], negate!(negate!(scalar!(1.0))));
@@ -1500,6 +1680,22 @@ mod tests {
         parse_as_expression(
             &["-1 + 2"],
             binop!(negate!(scalar!(1.0)), Add, scalar!(2.0)),
+        );
+
+        parse_as_expression(&["+1", "  + 1   "], scalar!(1.0));
+        parse_as_expression(&["+123.45"], scalar!(123.45));
+        parse_as_expression(&["++1", " +  + 1   "], scalar!(1.0));
+        parse_as_expression(&["+x", " + x"], identifier!("x"));
+        parse_as_expression(&["+0.61", "+.61", "+  .61"], scalar!(0.61));
+
+        parse_as_expression(
+            &["+1 + 2", "1 +++++ 2"],
+            binop!(scalar!(1.0), Add, scalar!(2.0)),
+        );
+
+        parse_as_expression(
+            &["+1 - 2", "+1 - +2 "],
+            binop!(scalar!(1.0), Sub, scalar!(2.0)),
         );
     }
 
@@ -1550,11 +1746,18 @@ mod tests {
     }
 
     #[test]
+    fn nonfinite() {
+        parse_as_expression(&["inf"], scalar!(f64::INFINITY));
+        parse_as_expression(&["-inf"], negate!(scalar!(f64::INFINITY)));
+    }
+
+    #[test]
     fn identifiers() {
         parse_as_expression(&["foo", "  foo   "], identifier!("foo"));
         parse_as_expression(&["foo_bar"], identifier!("foo_bar"));
         parse_as_expression(&["MeineSchöneVariable"], identifier!("MeineSchöneVariable"));
         parse_as_expression(&["°"], identifier!("°"));
+        parse_as_expression(&["Mass_H₂O"], identifier!("Mass_H₂O"));
     }
 
     #[test]
@@ -1740,6 +1943,7 @@ mod tests {
                 identifier: "foo".into(),
                 expr: scalar!(1.0),
                 type_annotation: None,
+                decorators: Vec::new(),
             },
         );
 
@@ -1752,6 +1956,24 @@ mod tests {
                 type_annotation: Some(TypeAnnotation::DimensionExpression(
                     DimensionExpression::Dimension(Span::dummy(), "Length".into()),
                 )),
+                decorators: Vec::new(),
+            },
+        );
+
+        // same as above, but with some decorators
+        parse_as(
+            &["@name(\"myvar\") @aliases(foo, bar) let x: Length = 1 * meter"],
+            Statement::DefineVariable {
+                identifier_span: Span::dummy(),
+                identifier: "x".into(),
+                expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
+                type_annotation: Some(TypeAnnotation::DimensionExpression(
+                    DimensionExpression::Dimension(Span::dummy(), "Length".into()),
+                )),
+                decorators: vec![
+                    decorator::Decorator::Name("myvar".into()),
+                    decorator::Decorator::Aliases(vec![("foo".into(), None), ("bar".into(), None)]),
+                ],
             },
         );
 
@@ -1770,7 +1992,12 @@ mod tests {
             ParseErrorKind::TrailingEqualSign("foo".into()),
         );
 
-        should_fail(&["let x²=2", "let x+y=2", "let 3=5", "let x=", "let x"])
+        should_fail(&["let x²=2", "let x+y=2", "let 3=5", "let x=", "let x"]);
+
+        should_fail_with(
+            &["@aliases(foo, f: short) let foobar = 1"],
+            ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
+        );
     }
 
     #[test]
@@ -2069,7 +2296,12 @@ mod tests {
     fn function_call() {
         parse_as_expression(
             &["foo()"],
-            Expression::FunctionCall(Span::dummy(), Span::dummy(), "foo".into(), vec![]),
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(identifier!("foo")),
+                vec![],
+            ),
         );
 
         parse_as_expression(
@@ -2077,7 +2309,7 @@ mod tests {
             Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
-                "foo".into(),
+                Box::new(identifier!("foo")),
                 vec![scalar!(1.0)],
             ),
         );
@@ -2087,12 +2319,45 @@ mod tests {
             Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
-                "foo".into(),
+                Box::new(identifier!("foo")),
                 vec![scalar!(1.0), scalar!(2.0), scalar!(3.0)],
             ),
         );
 
         should_fail(&["exp(,)", "exp(1,)"])
+    }
+
+    #[test]
+    fn callable_calls() {
+        parse_as_expression(
+            &["(returns_fn())()"],
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(Expression::FunctionCall(
+                    Span::dummy(),
+                    Span::dummy(),
+                    Box::new(identifier!("returns_fn")),
+                    vec![],
+                )),
+                vec![],
+            ),
+        );
+
+        parse_as_expression(
+            &["returns_fn()()"],
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(Expression::FunctionCall(
+                    Span::dummy(),
+                    Span::dummy(),
+                    Box::new(identifier!("returns_fn")),
+                    vec![],
+                )),
+                vec![],
+            ),
+        );
     }
 
     #[test]
@@ -2102,7 +2367,7 @@ mod tests {
             Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
-                "foo".into(),
+                Box::new(identifier!("foo")),
                 vec![binop!(scalar!(1.0), Add, scalar!(1.0))],
             ),
         );
@@ -2135,6 +2400,44 @@ mod tests {
             &["fn print() = 1"],
             ParseErrorKind::ExpectedIdentifierAfterFn,
         );
+    }
+
+    #[test]
+    fn logical_operation() {
+        // basic
+        assert_snapshot!(snap_parse(
+            "true || false"), @r###"
+        Expression(BinaryOperator { op: LogicalOr, lhs: Boolean(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, true), rhs: Boolean(Span { start: SourceCodePositition { byte: 8, line: 1, position: 9 }, end: SourceCodePositition { byte: 13, line: 1, position: 14 }, code_source_id: 0 }, false), span_op: Some(Span { start: SourceCodePositition { byte: 5, line: 1, position: 6 }, end: SourceCodePositition { byte: 7, line: 1, position: 8 }, code_source_id: 0 }) })
+        "###);
+        assert_snapshot!(snap_parse(
+            "true && false"), @r###"
+        Expression(BinaryOperator { op: LogicalAnd, lhs: Boolean(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, true), rhs: Boolean(Span { start: SourceCodePositition { byte: 8, line: 1, position: 9 }, end: SourceCodePositition { byte: 13, line: 1, position: 14 }, code_source_id: 0 }, false), span_op: Some(Span { start: SourceCodePositition { byte: 5, line: 1, position: 6 }, end: SourceCodePositition { byte: 7, line: 1, position: 8 }, code_source_id: 0 }) })
+        "###);
+        assert_snapshot!(snap_parse(
+            "!true"), @r###"
+        Expression(UnaryOperator { op: LogicalNeg, expr: Boolean(Span { start: SourceCodePositition { byte: 1, line: 1, position: 2 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, true), span_op: Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 1, line: 1, position: 2 }, code_source_id: 0 } })
+        "###);
+
+        // priority
+        #[rustfmt::skip]
+        parse_as_expression(
+            &["true || false && true || false"],
+            binop!( // the 'and' operator has the highest priority
+                binop!(boolean!(true), LogicalOr, binop!(boolean!(false), LogicalAnd, boolean!(true))),
+                LogicalOr,
+                boolean!(false)
+                )
+            );
+
+        #[rustfmt::skip]
+        parse_as_expression(
+            &["!true && false"],
+            binop!( // The negation has precedence over the 'and'
+                logical_neg!(boolean!(true)),
+                LogicalAnd,
+                boolean!(false)
+                )
+            );
     }
 
     #[test]
@@ -2209,7 +2512,11 @@ mod tests {
                 Span::dummy(),
                 vec![
                     StringPart::Fixed("pi = ".into()),
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("pi")),
+                        format_specifiers: None,
+                    },
                 ],
             ),
         );
@@ -2218,10 +2525,11 @@ mod tests {
             &["\"{pi}\""],
             Expression::String(
                 Span::dummy(),
-                vec![StringPart::Interpolation(
-                    Span::dummy(),
-                    Box::new(identifier!("pi")),
-                )],
+                vec![StringPart::Interpolation {
+                    span: Span::dummy(),
+                    expr: Box::new(identifier!("pi")),
+                    format_specifiers: None,
+                }],
             ),
         );
 
@@ -2230,8 +2538,16 @@ mod tests {
             Expression::String(
                 Span::dummy(),
                 vec![
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("e"))),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("pi")),
+                        format_specifiers: None,
+                    },
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("e")),
+                        format_specifiers: None,
+                    },
                 ],
             ),
         );
@@ -2241,30 +2557,95 @@ mod tests {
             Expression::String(
                 Span::dummy(),
                 vec![
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("pi"))),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("pi")),
+                        format_specifiers: None,
+                    },
                     StringPart::Fixed(" + ".into()),
-                    StringPart::Interpolation(Span::dummy(), Box::new(identifier!("e"))),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(identifier!("e")),
+                        format_specifiers: None,
+                    },
                 ],
             ),
         );
 
         parse_as_expression(
-            &["\"1 + 2 = {1 + 2}\""],
+            &["\"1 + 2 = {1 + 2:0.2}\""],
             Expression::String(
                 Span::dummy(),
                 vec![
                     StringPart::Fixed("1 + 2 = ".into()),
-                    StringPart::Interpolation(
-                        Span::dummy(),
-                        Box::new(binop!(scalar!(1.0), Add, scalar!(2.0))),
-                    ),
+                    StringPart::Interpolation {
+                        span: Span::dummy(),
+                        expr: Box::new(binop!(scalar!(1.0), Add, scalar!(2.0))),
+                        format_specifiers: Some(":0.2".to_string()),
+                    },
                 ],
             ),
         );
 
-        should_fail_with(
-            &["\"test {1"],
-            ParseErrorKind::UnterminatedStringInterpolation,
-        );
+        should_fail_with(&["\"test {1"], ParseErrorKind::UnterminatedString);
+    }
+
+    #[test]
+    fn accumulate_errors() {
+        // error on the last character of a line
+        assert_snapshot!(snap_parse(
+            "1 + 
+            2 + 3"), @r###"
+        Successfully parsed:
+        Expression(BinaryOperator { op: Add, lhs: Scalar(Span { start: SourceCodePositition { byte: 17, line: 2, position: 13 }, end: SourceCodePositition { byte: 18, line: 2, position: 14 }, code_source_id: 0 }, Number(2.0)), rhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 17 }, end: SourceCodePositition { byte: 22, line: 2, position: 18 }, code_source_id: 0 }, Number(3.0)), span_op: Some(Span { start: SourceCodePositition { byte: 19, line: 2, position: 15 }, end: SourceCodePositition { byte: 20, line: 2, position: 16 }, code_source_id: 0 }) })
+        Errors encountered:
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 4, line: 1, position: 5 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 } }
+        "###);
+        // error in the middle of something
+        assert_snapshot!(snap_parse(
+            "
+            let cool = 50
+            let tamo = * 30 
+            assert_eq(tamo + cool == 80)
+            30m"), @r###"
+        Successfully parsed:
+        DefineVariable { identifier_span: Span { start: SourceCodePositition { byte: 17, line: 2, position: 17 }, end: SourceCodePositition { byte: 21, line: 2, position: 21 }, code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: SourceCodePositition { byte: 24, line: 2, position: 24 }, end: SourceCodePositition { byte: 26, line: 2, position: 26 }, code_source_id: 0 }, Number(50.0)), type_annotation: None, decorators: [] }
+        ProcedureCall(Span { start: SourceCodePositition { byte: 68, line: 4, position: 13 }, end: SourceCodePositition { byte: 77, line: 4, position: 22 }, code_source_id: 0 }, AssertEq, [BinaryOperator { op: Equal, lhs: BinaryOperator { op: Add, lhs: Identifier(Span { start: SourceCodePositition { byte: 78, line: 4, position: 23 }, end: SourceCodePositition { byte: 82, line: 4, position: 27 }, code_source_id: 0 }, "tamo"), rhs: Identifier(Span { start: SourceCodePositition { byte: 85, line: 4, position: 30 }, end: SourceCodePositition { byte: 89, line: 4, position: 34 }, code_source_id: 0 }, "cool"), span_op: Some(Span { start: SourceCodePositition { byte: 83, line: 4, position: 28 }, end: SourceCodePositition { byte: 84, line: 4, position: 29 }, code_source_id: 0 }) }, rhs: Scalar(Span { start: SourceCodePositition { byte: 93, line: 4, position: 38 }, end: SourceCodePositition { byte: 95, line: 4, position: 40 }, code_source_id: 0 }, Number(80.0)), span_op: Some(Span { start: SourceCodePositition { byte: 90, line: 4, position: 35 }, end: SourceCodePositition { byte: 92, line: 4, position: 37 }, code_source_id: 0 }) }])
+        Expression(BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 109, line: 5, position: 13 }, end: SourceCodePositition { byte: 111, line: 5, position: 15 }, code_source_id: 0 }, Number(30.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 111, line: 5, position: 15 }, end: SourceCodePositition { byte: 112, line: 5, position: 16 }, code_source_id: 0 }, "m"), span_op: None })
+        Errors encountered:
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 50, line: 3, position: 24 }, end: SourceCodePositition { byte: 51, line: 3, position: 25 }, code_source_id: 0 } }
+        "###);
+        // error on a multiline let
+        assert_snapshot!(snap_parse(
+            "
+            let tamo =
+                * cool
+            "), @r###"
+        Successfully parsed:
+        Errors encountered:
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 40, line: 3, position: 17 }, end: SourceCodePositition { byte: 41, line: 3, position: 18 }, code_source_id: 0 } }
+        "###);
+        // error on a multiline if
+        assert_snapshot!(snap_parse(
+            "
+            if a =
+                then false
+                else true
+            "), @r###"
+        Successfully parsed:
+        Errors encountered:
+        Expected 'then' in if-then-else condition - ParseError { kind: ExpectedThen, span: Span { start: SourceCodePositition { byte: 18, line: 2, position: 18 }, end: SourceCodePositition { byte: 19, line: 2, position: 19 }, code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 36, line: 3, position: 17 }, end: SourceCodePositition { byte: 40, line: 3, position: 21 }, code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 63, line: 4, position: 17 }, end: SourceCodePositition { byte: 67, line: 4, position: 21 }, code_source_id: 0 } }
+        "###);
+
+        // #260
+        assert_snapshot!(snap_parse(
+            "x = 3"), @r###"
+        Successfully parsed:
+        Expression(Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 1, line: 1, position: 2 }, code_source_id: 0 }, "x"))
+        Errors encountered:
+        Trailing '=' sign. Use `let x = …` if you intended to define a new constant. - ParseError { kind: TrailingEqualSign("x"), span: Span { start: SourceCodePositition { byte: 2, line: 1, position: 3 }, end: SourceCodePositition { byte: 3, line: 1, position: 4 }, code_source_id: 0 } }
+        "###);
     }
 }

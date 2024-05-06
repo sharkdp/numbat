@@ -69,3 +69,39 @@ mm
 km
 ...
 ```
+
+## Ad-hoc units
+
+It is often useful to introduce 'fictional' physical units (and dimensions).
+This comes up frequently when you want to count things. For example:
+``` numbat
+unit book
+
+@aliases(pages)
+unit page
+
+@aliases(words)
+unit word
+
+let words_per_book = 500 words/page × 300 pages/book
+```
+Note that those base unit definitions will implicitly create new [dimensions](./dimension-definitions.md) which are capitalized
+versions of the unit names (`Book`, `Page`, `Word`). A definition like `unit book` is a shorthand
+for `dimension Book; unit book: Book`.
+Those units now allow us to count books, pages
+and words independently without any risk of mixing them. The `words_per_book` constant in this
+examples has a type of `Word / Book`.
+
+Another example shows how we introduce a `dot` unit to do calculations with
+screen resolutions:
+``` numbat
+@aliases(dots)
+unit dot
+
+unit dpi = dots / inch
+
+# Note: a `Dot` dimension was implicitly created for us
+fn inter_dot_spacing(resolution: Dot / Length) -> Length = 1 dot / resolution
+
+inter_dot_spacing(72 dpi) -> µm  # 353 µm
+```

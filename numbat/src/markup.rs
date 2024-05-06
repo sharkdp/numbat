@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FormatType {
     Whitespace,
+    Emphasized,
     Dimmed,
     Text,
     String,
@@ -28,7 +29,7 @@ pub struct FormattedString(pub OutputType, pub FormatType, pub String);
 pub struct Markup(pub Vec<FormattedString>);
 
 impl Markup {
-    fn from(f: FormattedString) -> Self {
+    pub fn from(f: FormattedString) -> Self {
         Self(vec![f])
     }
 }
@@ -51,7 +52,7 @@ impl std::ops::Add for Markup {
 
 impl std::ops::AddAssign for Markup {
     fn add_assign(&mut self, rhs: Self) {
-        self.0.extend(rhs.0.into_iter())
+        self.0.extend(rhs.0)
     }
 }
 
@@ -77,6 +78,14 @@ pub fn whitespace(text: impl AsRef<str>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Whitespace,
+        text.as_ref().to_string(),
+    ))
+}
+
+pub fn emphasized(text: impl AsRef<str>) -> Markup {
+    Markup::from(FormattedString(
+        OutputType::Normal,
+        FormatType::Emphasized,
         text.as_ref().to_string(),
     ))
 }

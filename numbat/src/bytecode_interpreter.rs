@@ -1,30 +1,44 @@
 use std::collections::HashMap;
 
 use crate::ast::ProcedureKind;
+use crate::decorator::Decorator;
 use crate::interpreter::{
     Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
 };
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
+use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
-use crate::unit::Unit;
-use crate::unit_registry::UnitRegistry;
+use crate::unit::{CanonicalName, Unit};
+use crate::unit_registry::{UnitMetadata, UnitRegistry};
+use crate::value::FunctionReference;
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Default)]
+pub struct LocalMetadata {
+    pub name: Option<String>,
+    pub url: Option<String>,
+    pub aliases: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct Local {
     identifier: String,
     depth: usize,
+    pub metadata: LocalMetadata,
 }
 
+#[derive(Clone)]
 pub struct BytecodeInterpreter {
     vm: Vm,
     /// List of local variables currently in scope, one vector for each scope (for now: 0: 'global' scope, 1: function scope)
     locals: Vec<Vec<Local>>,
     // Maps names of units to indices of the respective constants in the VM
     unit_name_to_constant_index: HashMap<String, u16>,
+    /// List of functions
+    functions: HashMap<String, bool>,
 }
 
 impl BytecodeInterpreter {
@@ -35,7 +49,7 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(_span, identifier, _type) => {
-                // Searching in reverse order ensures that we find the innermost identifer of that name first (shadowing)
+                // Searching in reverse order ensures that we find the innermost identifier of that name first (shadowing)
 
                 let current_depth = self.locals.len() - 1;
 
@@ -51,8 +65,17 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
                 } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
                     self.vm.add_op(Op::GetLastResult);
+                } else if let Some(is_foreign) = self.functions.get(identifier) {
+                    let index = self
+                        .vm
+                        .add_constant(Constant::FunctionReference(if *is_foreign {
+                            FunctionReference::Foreign(identifier.clone())
+                        } else {
+                            FunctionReference::Normal(identifier.clone())
+                        }));
+                    self.vm.add_op1(Op::LoadConstant, index);
                 } else {
-                    unreachable!("Unknown identifier {identifier}")
+                    unreachable!("Unknown identifier '{identifier}'")
                 }
             }
             Expression::UnitIdentifier(_span, prefix, unit_name, _full_name, _type) => {
@@ -76,6 +99,10 @@ impl BytecodeInterpreter {
                 self.compile_expression(lhs)?;
                 self.vm.add_op(Op::Factorial);
             }
+            Expression::UnaryOperator(_span, UnaryOperator::LogicalNeg, lhs, _type) => {
+                self.compile_expression(lhs)?;
+                self.vm.add_op(Op::LogicalNeg);
+            }
             Expression::BinaryOperator(_span, operator, lhs, rhs, _type) => {
                 self.compile_expression(lhs)?;
                 self.compile_expression(rhs)?;
@@ -93,13 +120,40 @@ impl BytecodeInterpreter {
                     BinaryOperator::GreaterOrEqual => Op::GreatorOrEqual,
                     BinaryOperator::Equal => Op::Equal,
                     BinaryOperator::NotEqual => Op::NotEqual,
+                    BinaryOperator::LogicalAnd => Op::LogicalAnd,
+                    BinaryOperator::LogicalOr => Op::LogicalOr,
                 };
+                self.vm.add_op(op);
+            }
+            Expression::BinaryOperatorForDate(_span, operator, lhs, rhs, type_) => {
+                self.compile_expression(lhs)?;
+                self.compile_expression(rhs)?;
+
+                // if the result is a duration:
+                let op = if type_.is_dtype() {
+                    // the VM will need to return a value with the units of Seconds.  so look up that unit here, and push it
+                    // onto the stack, so the VM can easily reference it.
+                    // TODO: We do not want to hard-code 'second' here. Instead, we might
+                    // introduce a decorator to register the 'second' unit in the prelude for
+                    // this specific purpose. We also need to handle errors in case no such unit
+                    // was registered.
+                    let second_idx = self.unit_name_to_constant_index.get("second");
+                    self.vm.add_op1(Op::LoadConstant, *second_idx.unwrap());
+                    Op::DiffDateTime
+                } else {
+                    match operator {
+                        BinaryOperator::Add => Op::AddToDateTime,
+                        BinaryOperator::Sub => Op::SubFromDateTime,
+                        _ => unreachable!("{operator:?} is not valid with a DateTime"), // should be unreachable, because the typechecker will error first
+                    }
+                };
+
                 self.vm.add_op(op);
             }
             Expression::FunctionCall(_span, _full_span, name, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression(arg)?;
+                    self.compile_expression_with_simplify(arg)?;
                 }
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
@@ -110,6 +164,17 @@ impl BytecodeInterpreter {
 
                     self.vm.add_op2(Op::Call, idx, args.len() as u16); // TODO: check overflow
                 }
+            }
+            Expression::CallableCall(_span, callable, args, _type) => {
+                // Put all arguments on top of the stack
+                for arg in args {
+                    self.compile_expression_with_simplify(arg)?;
+                }
+
+                // Put the callable on top of the stack
+                self.compile_expression(callable)?;
+
+                self.vm.add_op1(Op::CallCallable, args.len() as u16);
             }
             Expression::Boolean(_, val) => {
                 let index = self.vm.add_constant(Constant::Boolean(*val));
@@ -122,8 +187,16 @@ impl BytecodeInterpreter {
                             let index = self.vm.add_constant(Constant::String(s.clone()));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
-                        StringPart::Interpolation(_, expr) => {
+                        StringPart::Interpolation {
+                            expr,
+                            span: _,
+                            format_specifiers,
+                        } => {
                             self.compile_expression_with_simplify(expr)?;
+                            let index = self.vm.add_constant(Constant::FormatSpecifiers(
+                                format_specifiers.clone(),
+                            ));
+                            self.vm.add_op1(Op::LoadConstant, index)
                         }
                     }
                 }
@@ -164,12 +237,13 @@ impl BytecodeInterpreter {
             | Expression::Identifier(..)
             | Expression::UnitIdentifier(..)
             | Expression::FunctionCall(..)
+            | Expression::CallableCall(..)
             | Expression::UnaryOperator(..)
             | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
             | Expression::Boolean(..)
             | Expression::String(..)
             | Expression::Condition(..) => {}
-            Expression::BinaryOperator(..) => {
+            Expression::BinaryOperator(..) | Expression::BinaryOperatorForDate(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }
         }
@@ -183,13 +257,29 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DefineVariable(identifier, expr, _type_annotation, _type) => {
-                self.compile_expression_with_simplify(expr)?;
+            Statement::DefineVariable(identifier, decorators, expr, _type_annotation, _type) => {
                 let current_depth = self.current_depth();
-                self.locals[current_depth].push(Local {
-                    identifier: identifier.clone(),
-                    depth: 0,
-                });
+
+                // For variables, we ignore the prefix info and only use the names
+                let aliases = crate::decorator::name_and_aliases(identifier, decorators)
+                    .map(|(name, _)| name)
+                    .cloned()
+                    .collect::<Vec<_>>();
+                let metadata = LocalMetadata {
+                    name: crate::decorator::name(decorators),
+                    url: crate::decorator::url(decorators),
+                    aliases: aliases.clone(),
+                };
+
+                for alias_name in aliases {
+                    self.compile_expression_with_simplify(expr)?;
+
+                    self.locals[current_depth].push(Local {
+                        identifier: alias_name.clone(),
+                        depth: 0,
+                        metadata: metadata.clone(),
+                    });
+                }
             }
             Statement::DefineFunction(
                 name,
@@ -208,6 +298,7 @@ impl BytecodeInterpreter {
                     self.locals[current_depth].push(Local {
                         identifier: parameter.1.clone(),
                         depth: current_depth,
+                        metadata: LocalMetadata::default(),
                     });
                 }
 
@@ -217,6 +308,8 @@ impl BytecodeInterpreter {
                 self.locals.pop();
 
                 self.vm.end_function();
+
+                self.functions.insert(name.clone(), false);
             }
             Statement::DefineFunction(
                 name,
@@ -239,41 +332,82 @@ impl BytecodeInterpreter {
                         parameters.len()..=parameters.len()
                     },
                 );
+
+                self.functions.insert(name.clone(), true);
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DefineBaseUnit(unit_name, decorators, _type_annotation, type_) => {
+            Statement::DefineBaseUnit(unit_name, decorators, readable_type, type_) => {
+                let aliases = decorator::name_and_aliases(unit_name, decorators)
+                    .map(|(name, ap)| (name.clone(), ap))
+                    .collect();
+
                 self.vm
                     .unit_registry
-                    .add_base_unit(unit_name, type_.clone())
+                    .add_base_unit(
+                        unit_name,
+                        UnitMetadata {
+                            type_: type_.clone(),
+                            readable_type: readable_type.clone(),
+                            aliases,
+                            name: decorator::name(decorators),
+                            canonical_name: decorator::get_canonical_unit_name(
+                                unit_name, decorators,
+                            ),
+                            url: decorator::url(decorators),
+                            binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
+                            metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
+                        },
+                    )
                     .map_err(RuntimeError::UnitRegistryError)?;
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
                     unit_name,
-                    &crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
+                    crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
                 )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::DefineDerivedUnit(unit_name, expr, decorators, _type_annotation) => {
-                let constant_idx = self
-                    .vm
-                    .add_constant(Constant::Unit(Unit::new_base("<dummy>", "<dummy>"))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
-                let identifier_idx = self.vm.add_global_identifier(
+            Statement::DefineDerivedUnit(unit_name, expr, decorators, readable_type, type_) => {
+                let aliases = decorator::name_and_aliases(unit_name, decorators)
+                    .map(|(name, ap)| (name.clone(), ap))
+                    .collect();
+
+                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
+                    "<dummy>",
+                    CanonicalName {
+                        name: "<dummy>".to_string(),
+                        accepts_prefix: AcceptsPrefix::both(),
+                    },
+                ))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
+                let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
-                    Some(&crate::decorator::get_canonical_unit_name(
-                        unit_name.as_str(),
-                        &decorators[..],
-                    )),
+                    Some(
+                        &crate::decorator::get_canonical_unit_name(
+                            unit_name.as_str(),
+                            &decorators[..],
+                        )
+                        .name,
+                    ),
+                    UnitMetadata {
+                        type_: type_.clone(),
+                        readable_type: readable_type.clone(),
+                        aliases,
+                        name: decorator::name(decorators),
+                        canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
+                        url: decorator::url(decorators),
+                        binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
+                        metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
+                    },
                 ); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 
                 self.compile_expression_with_simplify(expr)?;
                 self.vm
-                    .add_op2(Op::SetUnitConstant, identifier_idx, constant_idx);
+                    .add_op2(Op::SetUnitConstant, unit_information_idx, constant_idx);
 
                 // TODO: code duplication with DeclareBaseUnit branch above
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
@@ -329,6 +463,20 @@ impl BytecodeInterpreter {
     fn current_depth(&self) -> usize {
         self.locals.len() - 1
     }
+
+    pub fn get_defining_unit(&self, unit_name: &str) -> Option<&Unit> {
+        self.unit_name_to_constant_index
+            .get(unit_name)
+            .and_then(|idx| self.vm.constants.get(*idx as usize))
+            .and_then(|constant| match constant {
+                Constant::Unit(u) => Some(u),
+                _ => None,
+            })
+    }
+
+    pub fn lookup_global(&self, name: &str) -> Option<&Local> {
+        self.locals[0].iter().find(|l| l.identifier == name)
+    }
 }
 
 impl Interpreter for BytecodeInterpreter {
@@ -337,6 +485,7 @@ impl Interpreter for BytecodeInterpreter {
             vm: Vm::new(),
             locals: vec![vec![]],
             unit_name_to_constant_index: HashMap::new(),
+            functions: HashMap::new(),
         }
     }
 

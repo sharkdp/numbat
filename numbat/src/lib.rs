@@ -1,12 +1,19 @@
 mod arithmetic;
 mod ast;
+#[cfg(feature = "html-formatter")]
+pub mod buffered_writer;
 mod bytecode_interpreter;
+mod column_formatter;
 mod currency;
+mod datetime;
 mod decorator;
 pub mod diagnostic;
 mod dimension;
 mod ffi;
 mod gamma;
+pub mod help;
+#[cfg(feature = "html-formatter")]
+pub mod html_formatter;
 mod interpreter;
 pub mod keywords;
 pub mod markup;
@@ -28,22 +35,25 @@ mod suggestion;
 mod tokenizer;
 mod typechecker;
 mod typed_ast;
+pub mod unicode_input;
 mod unit;
 mod unit_registry;
 pub mod value;
 mod vm;
 
 use bytecode_interpreter::BytecodeInterpreter;
+use column_formatter::ColumnFormatter;
 use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
 use interpreter::Interpreter;
 use keywords::KEYWORDS;
 use markup as m;
+use markup::FormatType;
 use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
-use registry::BaseRepresentationFactor;
+
 use resolver::CodeSource;
 use resolver::Resolver;
 use resolver::ResolverError;
@@ -51,16 +61,22 @@ use thiserror::Error;
 use typechecker::{TypeCheckError, TypeChecker};
 
 pub use diagnostic::Diagnostic;
-pub use interpreter::ExitStatus;
 pub use interpreter::InterpreterResult;
 pub use interpreter::InterpreterSettings;
 pub use interpreter::RuntimeError;
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
+pub use registry::BaseRepresentation;
+pub use registry::BaseRepresentationFactor;
 pub use typed_ast::Statement;
 pub use typed_ast::Type;
+use unit::BaseUnitAndFactor;
+use unit_registry::UnitMetadata;
 
-#[derive(Debug, Error)]
+use crate::prefix_parser::PrefixParserResult;
+use crate::unicode_input::UNICODE_INPUT;
+
+#[derive(Debug, Clone, Error)]
 pub enum NumbatError {
     #[error("{0}")]
     ResolverError(ResolverError),
@@ -74,22 +90,25 @@ pub enum NumbatError {
 
 type Result<T> = std::result::Result<T, NumbatError>;
 
+#[derive(Clone)]
 pub struct Context {
     prefix_transformer: Transformer,
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
     resolver: Resolver,
     load_currency_module_on_demand: bool,
+    terminal_width: Option<usize>,
 }
 
 impl Context {
-    pub fn new(module_importer: impl ModuleImporter + Send + 'static) -> Self {
+    pub fn new(module_importer: impl ModuleImporter + Send + Sync + 'static) -> Self {
         Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(),
             resolver: Resolver::new(module_importer),
             load_currency_module_on_demand: false,
+            terminal_width: None,
         }
     }
 
@@ -114,12 +133,20 @@ impl Context {
         ExchangeRatesCache::set_from_xml(xml_content);
     }
 
-    pub fn variable_names(&self) -> &[String] {
-        &self.prefix_transformer.variable_names
+    pub fn variable_names(&self) -> impl Iterator<Item = String> + '_ {
+        self.prefix_transformer
+            .variable_names
+            .iter()
+            .filter(|name| !name.starts_with('_'))
+            .cloned()
     }
 
-    pub fn function_names(&self) -> &[String] {
-        &self.prefix_transformer.function_names
+    pub fn function_names(&self) -> impl Iterator<Item = String> + '_ {
+        self.prefix_transformer
+            .function_names
+            .iter()
+            .filter(|name| !name.starts_with('_'))
+            .cloned()
     }
 
     pub fn unit_names(&self) -> &[Vec<String>] {
@@ -131,48 +158,83 @@ impl Context {
     }
 
     pub fn print_environment(&self) -> Markup {
-        let mut functions = Vec::from(self.function_names());
+        let mut functions: Vec<_> = self.function_names().collect();
         functions.sort();
         let mut dimensions = Vec::from(self.dimension_names());
         dimensions.sort();
         let mut units = Vec::from(self.unit_names());
         units.sort();
-        let mut variables = Vec::from(self.variable_names());
+        let mut variables: Vec<_> = self.variable_names().collect();
         variables.sort();
 
         let mut output = m::empty();
 
-        output += m::text("List of functions:") + m::nl();
-        for function in functions {
-            output += m::whitespace("  ") + m::identifier(function) + m::nl();
-        }
-        output += m::nl();
+        output += m::emphasized("List of functions:") + m::nl();
+        output += self.print_functions() + m::nl();
 
-        output += m::text("List of dimensions:") + m::nl();
-        for dimension in dimensions {
-            output += m::whitespace("  ") + m::type_identifier(dimension) + m::nl();
-        }
-        output += m::nl();
+        output += m::emphasized("List of dimensions:") + m::nl();
+        output += self.print_dimensions() + m::nl();
 
-        output += m::text("List of units:") + m::nl();
-        for unit_names in units {
-            output += m::whitespace("  ")
-                + itertools::intersperse(unit_names.iter().map(|n| m::unit(n)), m::text(", "))
-                    .sum()
-                + m::nl();
-        }
-        output += m::nl();
+        output += m::emphasized("List of units:") + m::nl();
+        output += self.print_units() + m::nl();
 
-        output += m::text("List of variables:") + m::nl();
-        for variable in variables {
-            output += m::whitespace("  ") + m::identifier(variable) + m::nl();
-        }
+        output += m::emphasized("List of variables:") + m::nl();
+        output += self.print_variables() + m::nl();
 
         output
     }
 
-    pub fn get_completions_for<'a>(&self, word_part: &'a str) -> impl Iterator<Item = String> + 'a {
+    fn print_sorted(&self, mut entries: Vec<String>, format_type: FormatType) -> Markup {
+        entries.sort_by_key(|e| e.to_lowercase());
+
+        let formatter = ColumnFormatter::new(self.terminal_width.unwrap_or(80));
+        formatter.format(entries, format_type)
+    }
+
+    pub fn print_functions(&self) -> Markup {
+        self.print_sorted(self.function_names().collect(), FormatType::Identifier)
+    }
+
+    pub fn print_dimensions(&self) -> Markup {
+        self.print_sorted(self.dimension_names().into(), FormatType::TypeIdentifier)
+    }
+
+    pub fn print_variables(&self) -> Markup {
+        self.print_sorted(self.variable_names().collect(), FormatType::Identifier)
+    }
+
+    pub fn print_units(&self) -> Markup {
+        let units = self.unit_names().iter().flatten().cloned().collect();
+        self.print_sorted(units, FormatType::Unit)
+    }
+
+    /// Gets completions for the given word_part
+    ///
+    /// If `add_paren` is true, then an opening paren will be added to the end of function names
+    pub fn get_completions_for<'a>(
+        &self,
+        word_part: &'a str,
+        add_paren: bool,
+    ) -> impl Iterator<Item = String> + 'a {
+        const COMMON_METRIC_PREFIXES: &[&str] = &[
+            "pico", "nano", "micro", "milli", "centi", "kilo", "mega", "giga", "tera",
+        ];
+
+        let metric_prefixes: Vec<_> = COMMON_METRIC_PREFIXES
+            .iter()
+            .filter(|prefix| {
+                word_part.starts_with(*prefix)
+                    || (!word_part.is_empty() && prefix.starts_with(word_part))
+            })
+            .collect();
+
         let mut words: Vec<_> = KEYWORDS.iter().map(|k| k.to_string()).collect();
+
+        for (patterns, _) in UNICODE_INPUT {
+            for pattern in *patterns {
+                words.push(pattern.to_string());
+            }
+        }
 
         {
             for variable in self.variable_names() {
@@ -180,16 +242,31 @@ impl Context {
             }
 
             for function in self.function_names() {
-                words.push(format!("{}(", function));
+                if add_paren {
+                    words.push(format!("{}(", function));
+                } else {
+                    words.push(function.to_string());
+                }
             }
 
             for dimension in self.dimension_names() {
                 words.push(dimension.clone());
             }
 
-            for unit_names in self.unit_names() {
-                for unit in unit_names {
+            for (_, (_, meta)) in self.unit_representations() {
+                for (unit, accepts_prefix) in meta.aliases {
                     words.push(unit.clone());
+
+                    // Add some of the common long prefixes for units that accept them.
+                    // We do not add all possible prefixes here in order to keep the
+                    // number of completions to a reasonable size. Also, we do not add
+                    // short prefixes for units that accept them, as that leads to lots
+                    // and lots of 2-3 character words.
+                    if accepts_prefix.long && meta.metric_prefixes {
+                        for prefix in &metric_prefixes {
+                            words.push(format!("{prefix}{unit}"));
+                        }
+                    }
                 }
             }
         }
@@ -198,6 +275,131 @@ impl Context {
         words.dedup();
 
         words.into_iter().filter(move |w| w.starts_with(word_part))
+    }
+
+    pub fn print_info_for_keyword(&mut self, keyword: &str) -> Markup {
+        let url_encode = |s: &str| s.replace('(', "%28").replace(')', "%29");
+
+        if keyword.is_empty() {
+            return m::text("Usage: info <unit or variable>");
+        }
+        let reg = self.interpreter.get_unit_registry();
+
+        if let PrefixParserResult::UnitIdentifier(_span, prefix, _, full_name) =
+            self.prefix_transformer.prefix_parser.parse(keyword)
+        {
+            if let Some(md) = reg
+                .inner
+                .get_base_representation_for_name(&full_name)
+                .ok()
+                .map(|(_, md)| md)
+            {
+                let mut help = m::text("Unit: ") + m::unit(md.name.as_deref().unwrap_or(keyword));
+                if let Some(url) = &md.url {
+                    help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
+                }
+                help += m::nl();
+                if md.aliases.len() > 1 {
+                    help += m::text("Aliases: ")
+                        + m::text(
+                            md.aliases
+                                .iter()
+                                .map(|(x, _)| x.as_str())
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                        )
+                        + m::nl();
+                }
+
+                if matches!(md.type_, Type::Dimension(d) if d.is_scalar()) {
+                    help += m::text("A dimensionless unit ([")
+                        + md.readable_type
+                        + m::text("])")
+                        + m::nl();
+                } else {
+                    help += m::text("A unit of [") + md.readable_type + m::text("]") + m::nl();
+                }
+
+                if let Some(defining_info) = self.interpreter.get_defining_unit(&full_name) {
+                    let x = defining_info
+                        .iter()
+                        .filter(|u| !u.unit_id.is_base())
+                        .map(|unit_factor| unit_factor.unit_id.unit_and_factor())
+                        .next();
+
+                    if !prefix.is_none() {
+                        help += m::nl()
+                            + m::value("1 ")
+                            + m::unit(keyword)
+                            + m::text(" = ")
+                            + m::value(prefix.factor().pretty_print())
+                            + m::space()
+                            + m::unit(&full_name);
+                    }
+
+                    if let Some(BaseUnitAndFactor(prod, num)) = x {
+                        help += m::nl()
+                            + m::value("1 ")
+                            + m::unit(&full_name)
+                            + m::text(" = ")
+                            + m::value(num.pretty_print())
+                            + m::space()
+                            + prod.pretty_print_with(
+                                |f| f.exponent,
+                                'x',
+                                '/',
+                                true,
+                                Some(m::FormatType::Unit),
+                            );
+                    } else {
+                        help += m::nl() + m::unit(&full_name) + m::text(" is a base unit");
+                    }
+                };
+
+                help += m::nl();
+
+                return help;
+            }
+        };
+
+        if let Some(l) = self.interpreter.lookup_global(keyword) {
+            let mut help = m::text("Variable: ");
+            if let Some(name) = &l.metadata.name {
+                help += m::text(name);
+            } else {
+                help += m::identifier(keyword);
+            }
+            if let Some(url) = &l.metadata.url {
+                help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
+            }
+            help += m::nl();
+
+            if l.metadata.aliases.len() > 1 {
+                help += m::text("Aliases: ")
+                    + m::text(
+                        l.metadata
+                            .aliases
+                            .iter()
+                            .map(|x| x.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    )
+                    + m::nl();
+            }
+
+            if let Ok((_, results)) = self.interpret(keyword, CodeSource::Internal) {
+                help += m::nl() + results.to_markup(None, self.dimension_registry(), true, true);
+            }
+
+            return help;
+        }
+
+        m::text("Not found")
+    }
+
+    pub fn list_modules(&self) -> impl Iterator<Item = String> {
+        let modules = self.resolver.get_importer().list_modules();
+        modules.into_iter().map(|m| m.0.join("::"))
     }
 
     pub fn dimension_registry(&self) -> &DimensionRegistry {
@@ -211,17 +413,22 @@ impl Context {
             .iter_base_entries()
     }
 
-    pub fn unit_representations(&self) -> impl Iterator<Item = (String, Vec<(String, i128)>)> + '_ {
+    pub fn unit_representations(
+        &self,
+    ) -> impl Iterator<Item = (String, (BaseRepresentation, UnitMetadata))> + '_ {
         let registry = self.interpreter.get_unit_registry();
-        registry.inner.iter_derived_entries().map(|unit_name| {
-            let derived_from = registry
+
+        let unit_names = registry
+            .inner
+            .iter_base_entries()
+            .chain(registry.inner.iter_derived_entries());
+
+        unit_names.map(|unit_name| {
+            let info = registry
                 .inner
                 .get_base_representation_for_name(&unit_name)
-                .unwrap()
-                .iter()
-                .map(|BaseRepresentationFactor(name, exp)| (name.clone(), exp.to_integer())) // TODO: check if to_integer can fail here
-                .collect();
-            (unit_name, derived_from)
+                .unwrap();
+            (unit_name, info)
         })
     }
 
@@ -316,6 +523,7 @@ impl Context {
                         "swiss_franc",
                         "swiss_francs",
                         "CNY",
+                        "yuan",
                         "renminbi",
                         "元",
                         "EUR",
@@ -331,6 +539,88 @@ impl Context {
                         "yens",
                         "¥",
                         "円",
+                        "bulgarian_lev",
+                        "bulgarian_leva",
+                        "BGN",
+                        "czech_koruna",
+                        "czech_korunas",
+                        "CZK",
+                        "Kč",
+                        "hungarian_forint",
+                        "hungarian_forints",
+                        "HUF",
+                        "Ft",
+                        "polish_zloty",
+                        "polish_zlotys",
+                        "PLN",
+                        "zł",
+                        "romanian_leu",
+                        "romanian_leus",
+                        "RON",
+                        "lei",
+                        "turkish_lira",
+                        "turkish_liras",
+                        "TRY",
+                        "₺",
+                        "brazilian_real",
+                        "brazilian_reals",
+                        "BRL",
+                        "R$",
+                        "hong_kong_dollar",
+                        "hong_kong_dollars",
+                        "HKD",
+                        "HK$",
+                        "indonesian_rupiah",
+                        "indonesian_rupiahs",
+                        "IDR",
+                        "Rp",
+                        "indian_rupee",
+                        "indian_rupees",
+                        "INR",
+                        "₹",
+                        "south_korean_won",
+                        "south_korean_wons",
+                        "KRW",
+                        "₩",
+                        "malaysian_ringgit",
+                        "malaysian_ringgits",
+                        "MYR",
+                        "RM",
+                        "new_zealand_dollar",
+                        "new_zealand_dollars",
+                        "NZD",
+                        "NZ$",
+                        "philippine_peso",
+                        "philippine_pesos",
+                        "PHP",
+                        "₱",
+                        "singapore_dollar",
+                        "singapore_dollars",
+                        "SGD",
+                        "S$",
+                        "thai_baht",
+                        "thai_bahts",
+                        "THB",
+                        "฿",
+                        "danish_krone",
+                        "danish_kroner",
+                        "DKK",
+                        "swedish_krona",
+                        "swedish_kronor",
+                        "SEK",
+                        "icelandic_króna",
+                        "icelandic_krónur",
+                        "ISK",
+                        "norwegian_krone",
+                        "norwegian_kroner",
+                        "NOK",
+                        "israeli_new_shekel",
+                        "israeli_new_shekels",
+                        "ILS",
+                        "₪",
+                        "NIS",
+                        "south_african_rand",
+                        "ZAR",
                     ];
                     if CURRENCY_IDENTIFIERS.contains(&identifier.as_str()) {
                         let mut no_print_settings = InterpreterSettings {
@@ -353,12 +643,17 @@ impl Context {
                             }
                         }
 
-                        self.interpret_with_settings(
+                        let _ = self.interpret_with_settings(
                             &mut no_print_settings,
                             "use units::currencies",
                             CodeSource::Internal,
-                        )
-                        .ok();
+                        )?;
+
+                        // Make sure we do not run into an infinite loop in case loading that
+                        // module did not bring in the required currency unit identifier. This
+                        // can happen if the list of currency identifiers is not in sync with
+                        // what the module actually defines.
+                        self.load_currency_module_on_demand = false;
 
                         // Now we try to evaluate the user expression again:
                         return self.interpret_with_settings(settings, code, code_source);
@@ -403,12 +698,14 @@ impl Context {
         let writer = StandardStream::stderr(ColorChoice::Auto);
         let config = Config::default();
 
-        term::emit(
-            &mut writer.lock(),
-            &config,
-            &self.resolver.files,
-            &error.diagnostic(),
-        )
-        .unwrap();
+        // we want to be sure no one can write between our diagnostics
+        let mut writer = writer.lock();
+        for diagnostic in error.diagnostics() {
+            term::emit(&mut writer, &config, &self.resolver.files, &diagnostic).unwrap();
+        }
+    }
+
+    pub fn set_terminal_width(&mut self, width: Option<usize>) {
+        self.terminal_width = width;
     }
 }

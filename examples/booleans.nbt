@@ -1,16 +1,12 @@
-fn not(a: Bool) = if a then false else true
-fn and(a: Bool, b: Bool) = if a then b else false
-fn or(a: Bool, b: Bool) = if a then true else b
+assert(!false)
+assert(!!true)
 
-assert(not(false))
-assert(not(not(true)))
+assert(true && true)
+assert(!(true && false))
+assert(!(false && true))
+assert(!(false && false))
 
-assert(and(true, true))
-assert(not(and(true, false)))
-assert(not(and(false, true)))
-assert(not(and(false, false)))
-
-assert(or(true, true))
-assert(or(true, false))
-assert(or(false, true))
-assert(not(or(false, false)))
+assert(true || true)
+assert(true || false)
+assert(false || true)
+assert(!(false || false))

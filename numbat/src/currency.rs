@@ -1,6 +1,6 @@
 use std::sync::{Mutex, MutexGuard, OnceLock};
 
-use numbat_exchange_rates::{fetch_exchange_rates, parse_exchange_rates, ExchangeRates};
+use numbat_exchange_rates::{parse_exchange_rates, ExchangeRates};
 
 static EXCHANGE_RATES: OnceLock<Mutex<Option<ExchangeRates>>> = OnceLock::new();
 
@@ -22,10 +22,16 @@ impl ExchangeRatesCache {
             .unwrap();
     }
 
+    #[cfg(feature = "fetch-exchangerates")]
     pub fn fetch() -> MutexGuard<'static, Option<ExchangeRates>> {
         EXCHANGE_RATES
-            .get_or_init(|| Mutex::new(fetch_exchange_rates()))
+            .get_or_init(|| Mutex::new(numbat_exchange_rates::fetch_exchange_rates()))
             .lock()
             .unwrap()
+    }
+
+    #[cfg(not(feature = "fetch-exchangerates"))]
+    pub fn fetch() -> MutexGuard<'static, Option<ExchangeRates>> {
+        EXCHANGE_RATES.get().unwrap().lock().unwrap()
     }
 }

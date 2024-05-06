@@ -19,13 +19,13 @@ use crate::{dimension::DimensionRegistry, typed_ast::DType};
 use crate::{ffi::ArityRange, typed_ast::Expression};
 use crate::{name_resolution::LAST_RESULT_IDENTIFIERS, pretty_print::PrettyPrint};
 
-use ast::DimensionExpression;
+use ast::{BinaryOperator, DimensionExpression};
 use itertools::Itertools;
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
 use thiserror::Error;
 use unicode_width::UnicodeWidthStr;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IncompatibleDimensionsError {
     pub span_operation: Span,
     pub operation: String,
@@ -35,6 +35,7 @@ pub struct IncompatibleDimensionsError {
     pub expected_dimensions: Vec<String>,
     pub span_actual: Span,
     pub actual_name: &'static str,
+    pub actual_name_for_fix: &'static str,
     pub actual_type: BaseRepresentation,
     pub actual_dimensions: Vec<String>,
 }
@@ -46,6 +47,40 @@ fn pad(a: &str, b: &str) -> (String, String) {
         format!("{a: <width$}", width = max_length),
         format!("{b: <width$}", width = max_length),
     )
+}
+
+fn suggested_fix(
+    expected_type: &BaseRepresentation,
+    actual_type: &BaseRepresentation,
+    expression_to_change: &str,
+) -> Option<String> {
+    // Heuristic 1: if actual_type == 1 / expected_type, suggest
+    // to invert the 'actual' expression:
+    if actual_type == &expected_type.clone().invert() {
+        return Some(format!("invert the {expression_to_change}"));
+    }
+
+    // Heuristic 2: compute the "missing" factor between the expected
+    // and the actual type. Suggest to multiply / divide with the
+    // appropriate delta.
+    let delta_type = expected_type.clone() / actual_type.clone();
+
+    let num_factors = delta_type.iter().count();
+    if num_factors > 1 {
+        return None; // Do not suggest fixes with complicated dimensions
+    }
+
+    let exponent_sum: Rational = delta_type.iter().map(|a| a.1).sum();
+
+    let (action, delta_type) = if exponent_sum >= Rational::zero() {
+        ("multiply", delta_type)
+    } else {
+        ("divide", delta_type.invert())
+    };
+
+    Some(format!(
+        "{action} the {expression_to_change} by a `{delta_type}` factor"
+    ))
 }
 
 impl fmt::Display for IncompatibleDimensionsError {
@@ -151,36 +186,24 @@ impl fmt::Display for IncompatibleDimensionsError {
             actual_result_string.trim_start_matches(" × ").trim_end(),
         )?;
 
-        let mut missing_type = self.actual_type.clone() / self.expected_type.clone();
+        if let Some(fix) = suggested_fix(
+            &self.expected_type,
+            &self.actual_type,
+            self.actual_name_for_fix,
+        ) {
+            write!(f, "\n\nSuggested fix: {fix}")?;
+        }
 
-        let suggestion_name =
-            if missing_type.iter().fold(Exponent::zero(), |a, b| a + b.1) >= Exponent::zero() {
-                self.expected_name
-            } else {
-                missing_type = missing_type.invert();
-                self.actual_name
-            };
-
-        write!(
-            f,
-            "\n\nSuggested fix: multiply {} by {}",
-            // Remove leading whitespace padding.
-            // TODO: don't pass in names with whitespace, pad them in programatically in this method instead.
-            suggestion_name.trim_start(),
-            missing_type,
-        )
+        Ok(())
     }
 }
 
 impl Error for IncompatibleDimensionsError {}
 
-#[derive(Debug, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
     UnknownIdentifier(Span, String, Option<String>),
-
-    #[error("Unknown callable '{1}'.")]
-    UnknownCallable(Span, String, Option<String>),
 
     #[error(transparent)]
     IncompatibleDimensions(IncompatibleDimensionsError),
@@ -254,8 +277,26 @@ pub enum TypeCheckError {
     #[error("Incompatible types in comparison operator")]
     IncompatibleTypesInComparison(Span, Type, Span, Type, Span),
 
+    #[error("Incompatible types in operator")]
+    IncompatibleTypesInOperator(Span, BinaryOperator, Type, Span, Type, Span),
+
+    #[error("Incompatible types in function call: expected '{1}', got '{3}' instead")]
+    IncompatibleTypesInFunctionCall(Option<Span>, Type, Span, Type),
+
     #[error("This name is already used by {0}")]
     NameAlreadyUsedBy(&'static str, Span, Option<Span>),
+
+    #[error("Missing a definition for dimension {1}")]
+    MissingDimension(Span, String),
+
+    #[error("Function references can not point to generic functions")]
+    NoFunctionReferenceToGenericFunction(Span),
+
+    #[error("Only functions and function references can be called")]
+    OnlyFunctionsAndReferencesCanBeCalled(Span),
+
+    #[error("Base units can not be dimensionless.")]
+    NoDimensionlessBaseUnit(Span, String),
 }
 
 type Result<T> = std::result::Result<T, TypeCheckError>;
@@ -285,6 +326,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         }
         e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "factorial"),
+        ),
+        e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::LogicalNeg, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "logical"),
         ),
         e @ typed_ast::Expression::BinaryOperator(_span_op, op, lhs_expr, rhs_expr, _) => {
             let lhs = evaluate_const_expr(lhs_expr)?;
@@ -337,6 +381,12 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 | typed_ast::BinaryOperator::NotEqual => Err(
                     TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "comparison"),
                 ),
+                typed_ast::BinaryOperator::LogicalAnd | typed_ast::BinaryOperator::LogicalOr => {
+                    Err(TypeCheckError::UnsupportedConstEvalExpression(
+                        e.full_span(),
+                        "logical",
+                    ))
+                }
             }
         }
         e @ typed_ast::Expression::Identifier(..) => Err(
@@ -348,6 +398,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::FunctionCall(_, _, _, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
         ),
+        e @ &typed_ast::Expression::CallableCall(_, _, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
+        ),
         e @ typed_ast::Expression::Boolean(_, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Boolean value"),
         ),
@@ -357,6 +410,12 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::Condition(..) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Conditional"),
         ),
+        e @ Expression::BinaryOperatorForDate(..) => {
+            Err(TypeCheckError::UnsupportedConstEvalExpression(
+                e.full_span(),
+                "binary operator for datetimes",
+            ))
+        }
     }
 }
 
@@ -378,20 +437,242 @@ pub struct TypeChecker {
 }
 
 impl TypeChecker {
-    fn identifier_type(&self, span: Span, name: &str) -> Result<&Type> {
-        self.identifiers
+    fn identifier_type(&self, span: Span, name: &str) -> Result<Type> {
+        let id = self
+            .identifiers
             .get(name)
             .ok_or_else(|| {
                 let suggestion = suggestion::did_you_mean(
                     self.identifiers
                         .keys()
-                        .map(|k| k.as_str())
-                        .chain(["true", "false"].into_iter()), // These are parsed as keywords, but can act like identifiers
+                        .map(|k| k.to_string())
+                        .chain(["true".into(), "false".into()]) // These are parsed as keywords, but can act like identifiers
+                        .chain(self.function_signatures.keys().cloned())
+                        .chain(ffi::procedures().values().map(|p| p.name.clone())),
                     name,
                 );
                 TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
             })
             .map(|(type_, _)| type_)
+            .cloned();
+
+        if id.is_err() {
+            if let Some(signature) = self.function_signatures.get(name) {
+                if !signature.type_parameters.is_empty() {
+                    return Err(TypeCheckError::NoFunctionReferenceToGenericFunction(span));
+                }
+
+                Ok(Type::Fn(
+                    signature
+                        .parameter_types
+                        .iter()
+                        .map(|(_, t)| t.clone())
+                        .collect(),
+                    Box::new(signature.return_type.clone()),
+                ))
+            } else {
+                id
+            }
+        } else {
+            id
+        }
+    }
+
+    fn get_proper_function_reference(
+        &self,
+        expr: &ast::Expression,
+    ) -> Option<(String, &FunctionSignature)> {
+        match expr {
+            ast::Expression::Identifier(_, name) => self
+                .function_signatures
+                .get(name)
+                .map(|signature| (name.clone(), signature)),
+            _ => None,
+        }
+    }
+
+    fn proper_function_call(
+        &self,
+        span: &Span,
+        full_span: &Span,
+        function_name: &str,
+        signature: &FunctionSignature,
+        arguments: Vec<typed_ast::Expression>,
+        argument_types: Vec<Type>,
+    ) -> Result<typed_ast::Expression> {
+        let FunctionSignature {
+            definition_span,
+            type_parameters,
+            parameter_types,
+            is_variadic,
+            return_type,
+            is_foreign: _,
+        } = signature;
+
+        let arity_range = if *is_variadic {
+            1..=usize::MAX
+        } else {
+            parameter_types.len()..=parameter_types.len()
+        };
+
+        if !arity_range.contains(&arguments.len()) {
+            return Err(TypeCheckError::WrongArity {
+                callable_span: *span,
+                callable_name: function_name.into(),
+                callable_definition_span: Some(*definition_span),
+                arity: arity_range,
+                num_args: arguments.len(),
+            });
+        }
+
+        let mut substitutions: Vec<(String, DType)> = vec![];
+
+        let substitute = |substitutions: &[(String, DType)], type_: &DType| -> DType {
+            let mut result_type = type_.clone();
+            for (name, substituted_type) in substitutions {
+                if let Some(factor @ BaseRepresentationFactor(_, exp)) = type_
+                    .clone() // TODO: remove this .clone() somehow?
+                    .iter()
+                    .find(|BaseRepresentationFactor(n, _)| n == name)
+                {
+                    result_type = result_type / DType::from_factor((*factor).clone())
+                        * substituted_type.clone().power(*exp);
+                }
+            }
+            result_type
+        };
+
+        let mut parameter_types = parameter_types.clone();
+
+        if *is_variadic {
+            // For a variadic function, we simply duplicate the parameter type
+            // N times, where N is the number of arguments given.
+            debug_assert!(parameter_types.len() == 1);
+
+            for _ in 1..argument_types.len() {
+                parameter_types.push(parameter_types[0].clone());
+            }
+        }
+
+        for (idx, ((parameter_span, parameter_type), argument_type)) in
+            parameter_types.iter().zip(argument_types).enumerate()
+        {
+            match (parameter_type, argument_type) {
+                (Type::Dimension(parameter_type), Type::Dimension(argument_type)) => {
+                    let mut parameter_type = substitute(&substitutions, parameter_type);
+
+                    let remaining_generic_subtypes: Vec<_> = parameter_type
+                        .iter()
+                        .filter(|BaseRepresentationFactor(name, _)| {
+                            type_parameters.iter().any(|(_, n)| name == n)
+                        })
+                        .collect();
+
+                    if remaining_generic_subtypes.len() > 1 {
+                        return Err(TypeCheckError::MultipleUnresolvedTypeParameters(
+                            *span,
+                            *parameter_span,
+                        ));
+                    }
+
+                    if let Some(&generic_subtype_factor) = remaining_generic_subtypes.first() {
+                        let generic_subtype = DType::from_factor(generic_subtype_factor.clone());
+
+                        // The type of the idx-th parameter of the called function has a generic type
+                        // parameter inside. We can now instantiate that generic parameter by solving
+                        // the equation "parameter_type == argument_type" for the generic parameter.
+                        // In order to do this, let's assume `generic_subtype = D^alpha`, then we have
+                        //
+                        //                                parameter_type == argument_type
+                        //    parameter_type / generic_subtype * D^alpha == argument_type
+                        //                                       D^alpha == argument_type / (parameter_type / generic_subtype)
+                        //                                             D == [argument_type / (parameter_type / generic_subtype)]^(1/alpha)
+                        //
+
+                        let alpha = Rational::from_integer(1) / generic_subtype_factor.1;
+                        let d = (argument_type.clone()
+                            / (parameter_type.clone() / generic_subtype))
+                            .power(alpha);
+
+                        // We can now substitute that generic parameter in all subsequent expressions
+                        substitutions.push((generic_subtype_factor.0.clone(), d));
+
+                        parameter_type = substitute(&substitutions, &parameter_type);
+                    }
+
+                    if parameter_type != argument_type {
+                        return Err(TypeCheckError::IncompatibleDimensions(
+                            IncompatibleDimensionsError {
+                                span_operation: *span,
+                                operation: format!(
+                                    "argument {num} of function call to '{name}'",
+                                    num = idx + 1,
+                                    name = function_name
+                                ),
+                                span_expected: parameter_types[idx].0,
+                                expected_name: "parameter type",
+                                expected_dimensions: self
+                                    .registry
+                                    .get_derived_entry_names_for(&parameter_type),
+                                expected_type: parameter_type,
+                                span_actual: arguments[idx].full_span(),
+                                actual_name: " argument type",
+                                actual_name_for_fix: "function argument",
+                                actual_dimensions: self
+                                    .registry
+                                    .get_derived_entry_names_for(&argument_type),
+                                actual_type: argument_type,
+                            },
+                        ));
+                    }
+                }
+                (parameter_type, argument_type) => {
+                    if !argument_type.is_subtype_of(parameter_type) {
+                        return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                            Some(*parameter_span),
+                            parameter_type.clone(),
+                            arguments[idx].full_span(),
+                            argument_type.clone(),
+                        ));
+                    }
+                }
+            }
+        }
+
+        if substitutions.len() != type_parameters.len() {
+            let parameters: HashSet<String> = type_parameters
+                .iter()
+                .map(|(_, name)| name)
+                .cloned()
+                .collect();
+            let inferred_parameters: HashSet<String> =
+                substitutions.iter().map(|t| t.0.clone()).collect();
+
+            let remaining: Vec<_> = (&parameters - &inferred_parameters)
+                .iter()
+                .cloned()
+                .collect();
+
+            return Err(TypeCheckError::CanNotInferTypeParameters(
+                *span,
+                *definition_span,
+                function_name.into(),
+                remaining.join(", "),
+            ));
+        }
+
+        let return_type = match return_type {
+            Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
+            type_ => type_.clone(),
+        };
+
+        Ok(typed_ast::Expression::FunctionCall(
+            *span,
+            *full_span,
+            function_name.into(),
+            arguments,
+            return_type,
+        ))
     }
 
     pub(crate) fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
@@ -416,27 +697,28 @@ impl TypeChecker {
             ast::Expression::UnaryOperator { op, expr, span_op } => {
                 let checked_expr = self.check_expression(expr)?;
                 let type_ = checked_expr.get_type();
-                let dtype = match &type_ {
-                    Type::Dimension(d) => d.clone(),
+                match (&type_, op) {
+                    (Type::Never, _) => {}
+                    (Type::Dimension(dtype), ast::UnaryOperator::Factorial) => {
+                        if !dtype.is_scalar() {
+                            return Err(TypeCheckError::NonScalarFactorialArgument(
+                                expr.full_span(),
+                                dtype.clone(),
+                            ));
+                        }
+                    }
+                    (Type::Dimension(_), ast::UnaryOperator::Negate) => (),
+                    (Type::Boolean, ast::UnaryOperator::LogicalNeg) => (),
+                    (_, ast::UnaryOperator::LogicalNeg) => {
+                        return Err(TypeCheckError::ExpectedBool(expr.full_span()))
+                    }
                     _ => {
                         return Err(TypeCheckError::ExpectedDimensionType(
                             checked_expr.full_span(),
                             type_.clone(),
-                        ))
+                        ));
                     }
                 };
-
-                match *op {
-                    ast::UnaryOperator::Factorial => {
-                        if dtype != DType::unity() {
-                            return Err(TypeCheckError::NonScalarFactorialArgument(
-                                expr.full_span(),
-                                dtype,
-                            ));
-                        }
-                    }
-                    ast::UnaryOperator::Negate => {}
-                }
 
                 typed_ast::Expression::UnaryOperator(*span_op, *op, Box::new(checked_expr), type_)
             }
@@ -449,99 +731,210 @@ impl TypeChecker {
                 let lhs_checked = self.check_expression(lhs)?;
                 let rhs_checked = self.check_expression(rhs)?;
 
-                let get_type_and_assert_equality = || {
-                    let lhs_type = dtype(&lhs_checked)?;
-                    let rhs_type = dtype(&rhs_checked)?;
-                    if lhs_type != rhs_type {
-                        let full_span = ast::Expression::BinaryOperator {
-                            op: *op,
-                            lhs: lhs.clone(),
-                            rhs: rhs.clone(),
-                            span_op: *span_op,
-                        }
-                        .full_span();
-                        Err(TypeCheckError::IncompatibleDimensions(
-                            IncompatibleDimensionsError {
-                                span_operation: span_op.unwrap_or(full_span),
-                                operation: match op {
-                                    typed_ast::BinaryOperator::Add => "addition".into(),
-                                    typed_ast::BinaryOperator::Sub => "subtraction".into(),
-                                    typed_ast::BinaryOperator::Mul => "multiplication".into(),
-                                    typed_ast::BinaryOperator::Div => "division".into(),
-                                    typed_ast::BinaryOperator::Power => "exponentiation".into(),
-                                    typed_ast::BinaryOperator::ConvertTo => {
-                                        "unit conversion".into()
-                                    }
-                                    typed_ast::BinaryOperator::LessThan
-                                    | typed_ast::BinaryOperator::GreaterThan
-                                    | typed_ast::BinaryOperator::LessOrEqual
-                                    | typed_ast::BinaryOperator::GreaterOrEqual
-                                    | typed_ast::BinaryOperator::Equal
-                                    | typed_ast::BinaryOperator::NotEqual => "comparison".into(),
-                                },
-                                span_expected: lhs.full_span(),
-                                expected_name: " left hand side",
-                                expected_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&lhs_type),
-                                expected_type: lhs_type,
-                                span_actual: rhs.full_span(),
-                                actual_name: "right hand side",
-                                actual_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&rhs_type),
-                                actual_type: rhs_type,
-                            },
-                        ))
+                let lhs_type = lhs_checked.get_type();
+                let rhs_type = rhs_checked.get_type();
+
+                if lhs_type.is_never() {
+                    return Ok(typed_ast::Expression::BinaryOperator(
+                        *span_op,
+                        *op,
+                        Box::new(lhs_checked),
+                        Box::new(rhs_checked),
+                        rhs_type,
+                    ));
+                } else if rhs_type.is_never() {
+                    return Ok(typed_ast::Expression::BinaryOperator(
+                        *span_op,
+                        *op,
+                        Box::new(lhs_checked),
+                        Box::new(rhs_checked),
+                        lhs_type,
+                    ));
+                } else if rhs_type.is_fn_type() && op == &BinaryOperator::ConvertTo {
+                    let (parameter_types, return_type) = match rhs_type {
+                        Type::Fn(p, r) => (p, r),
+                        _ => unreachable!(),
+                    };
+                    // make sure that there is just one paramter (return arity error otherwise)
+                    if parameter_types.len() != 1 {
+                        return Err(TypeCheckError::WrongArity {
+                            callable_span: rhs.full_span(),
+                            callable_name: "function".into(),
+                            callable_definition_span: None,
+                            arity: 1..=1,
+                            num_args: parameter_types.len(),
+                        });
+                    }
+
+                    if !parameter_types[0].is_subtype_of(&lhs_type) {
+                        return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                            None,
+                            parameter_types[0].clone(),
+                            lhs.full_span(),
+                            lhs_type,
+                        ));
+                    }
+
+                    typed_ast::Expression::CallableCall(
+                        lhs.full_span(),
+                        Box::new(rhs_checked),
+                        vec![lhs_checked],
+                        *return_type,
+                    )
+                } else if lhs_type == Type::DateTime {
+                    // DateTime types need special handling here, since they're not scalars with dimensions,
+                    // yet some select binary operators can be applied to them
+
+                    let rhs_is_time = dtype(&rhs_checked)
+                        .ok()
+                        .map(|t| t.is_time_dimension())
+                        .unwrap_or(false);
+                    let rhs_is_datetime = rhs_type == Type::DateTime;
+
+                    if *op == BinaryOperator::Sub && rhs_is_datetime {
+                        let time = self
+                            .registry
+                            .get_base_representation_for_name("Time")
+                            .map_err(|_| {
+                                TypeCheckError::MissingDimension(ast.full_span(), "Time".into())
+                            })?;
+
+                        // TODO make sure the "second" unit exists
+
+                        typed_ast::Expression::BinaryOperatorForDate(
+                            *span_op,
+                            *op,
+                            Box::new(lhs_checked),
+                            Box::new(rhs_checked),
+                            Type::Dimension(time),
+                        )
+                    } else if (*op == BinaryOperator::Add || *op == BinaryOperator::Sub)
+                        && rhs_is_time
+                    {
+                        typed_ast::Expression::BinaryOperatorForDate(
+                            *span_op,
+                            *op,
+                            Box::new(lhs_checked),
+                            Box::new(rhs_checked),
+                            Type::DateTime,
+                        )
                     } else {
-                        Ok(Type::Dimension(lhs_type))
+                        return Err(TypeCheckError::IncompatibleTypesInOperator(
+                            span_op.unwrap_or_else(|| {
+                                ast::Expression::BinaryOperator {
+                                    op: *op,
+                                    lhs: lhs.clone(),
+                                    rhs: rhs.clone(),
+                                    span_op: *span_op,
+                                }
+                                .full_span()
+                            }),
+                            *op,
+                            lhs_type,
+                            lhs.full_span(),
+                            rhs_type,
+                            rhs.full_span(),
+                        ));
                     }
-                };
-
-                let type_ = match op {
-                    typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::Mul => {
-                        Type::Dimension(dtype(&lhs_checked)? * dtype(&rhs_checked)?)
-                    }
-                    typed_ast::BinaryOperator::Div => {
-                        Type::Dimension(dtype(&lhs_checked)? / dtype(&rhs_checked)?)
-                    }
-                    typed_ast::BinaryOperator::Power => {
-                        let exponent_type = dtype(&rhs_checked)?;
-                        if exponent_type != DType::unity() {
-                            return Err(TypeCheckError::NonScalarExponent(
-                                rhs.full_span(),
-                                exponent_type,
-                            ));
-                        }
-
-                        let base_type = dtype(&lhs_checked)?;
-                        if base_type == DType::unity() {
-                            // Skip evaluating the exponent if the lhs is a scalar. This allows
-                            // for arbitrary (decimal) exponents, if the base is a scalar.
-
-                            Type::Dimension(base_type)
+                } else {
+                    let get_type_and_assert_equality = || {
+                        let lhs_type = dtype(&lhs_checked)?;
+                        let rhs_type = dtype(&rhs_checked)?;
+                        if lhs_type != rhs_type {
+                            let full_span = ast::Expression::BinaryOperator {
+                                op: *op,
+                                lhs: lhs.clone(),
+                                rhs: rhs.clone(),
+                                span_op: *span_op,
+                            }
+                            .full_span();
+                            Err(TypeCheckError::IncompatibleDimensions(
+                                IncompatibleDimensionsError {
+                                    span_operation: span_op.unwrap_or(full_span),
+                                    operation: match op {
+                                        typed_ast::BinaryOperator::Add => "addition".into(),
+                                        typed_ast::BinaryOperator::Sub => "subtraction".into(),
+                                        typed_ast::BinaryOperator::Mul => "multiplication".into(),
+                                        typed_ast::BinaryOperator::Div => "division".into(),
+                                        typed_ast::BinaryOperator::Power => "exponentiation".into(),
+                                        typed_ast::BinaryOperator::ConvertTo => {
+                                            "unit conversion".into()
+                                        }
+                                        typed_ast::BinaryOperator::LessThan
+                                        | typed_ast::BinaryOperator::GreaterThan
+                                        | typed_ast::BinaryOperator::LessOrEqual
+                                        | typed_ast::BinaryOperator::GreaterOrEqual
+                                        | typed_ast::BinaryOperator::Equal
+                                        | typed_ast::BinaryOperator::NotEqual => {
+                                            "comparison".into()
+                                        }
+                                        typed_ast::BinaryOperator::LogicalAnd => "and".into(),
+                                        typed_ast::BinaryOperator::LogicalOr => "or".into(),
+                                    },
+                                    span_expected: lhs.full_span(),
+                                    expected_name: " left hand side",
+                                    expected_dimensions: self
+                                        .registry
+                                        .get_derived_entry_names_for(&lhs_type),
+                                    expected_type: lhs_type,
+                                    span_actual: rhs.full_span(),
+                                    actual_name: "right hand side",
+                                    actual_name_for_fix: "expression on the right hand side",
+                                    actual_dimensions: self
+                                        .registry
+                                        .get_derived_entry_names_for(&rhs_type),
+                                    actual_type: rhs_type,
+                                },
+                            ))
                         } else {
-                            let exponent = evaluate_const_expr(&rhs_checked)?;
-                            Type::Dimension(base_type.power(exponent))
+                            Ok(Type::Dimension(lhs_type))
                         }
-                    }
-                    typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
-                    typed_ast::BinaryOperator::LessThan
-                    | typed_ast::BinaryOperator::GreaterThan
-                    | typed_ast::BinaryOperator::LessOrEqual
-                    | typed_ast::BinaryOperator::GreaterOrEqual => {
-                        let _ = get_type_and_assert_equality()?;
-                        Type::Boolean
-                    }
-                    typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
-                        let lhs_type = lhs_checked.get_type();
-                        let rhs_type = rhs_checked.get_type();
-                        if lhs_type.is_dtype() || rhs_type.is_dtype() {
+                    };
+
+                    let type_ = match op {
+                        typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
+                        typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
+                        typed_ast::BinaryOperator::Mul => {
+                            Type::Dimension(dtype(&lhs_checked)? * dtype(&rhs_checked)?)
+                        }
+                        typed_ast::BinaryOperator::Div => {
+                            Type::Dimension(dtype(&lhs_checked)? / dtype(&rhs_checked)?)
+                        }
+                        typed_ast::BinaryOperator::Power => {
+                            let exponent_type = dtype(&rhs_checked)?;
+                            if !exponent_type.is_scalar() {
+                                return Err(TypeCheckError::NonScalarExponent(
+                                    rhs.full_span(),
+                                    exponent_type,
+                                ));
+                            }
+
+                            let base_type = dtype(&lhs_checked)?;
+                            if base_type.is_scalar() {
+                                // Skip evaluating the exponent if the lhs is a scalar. This allows
+                                // for arbitrary (decimal) exponents, if the base is a scalar.
+
+                                Type::Dimension(base_type)
+                            } else {
+                                let exponent = evaluate_const_expr(&rhs_checked)?;
+                                Type::Dimension(base_type.power(exponent))
+                            }
+                        }
+                        typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
+                        typed_ast::BinaryOperator::LessThan
+                        | typed_ast::BinaryOperator::GreaterThan
+                        | typed_ast::BinaryOperator::LessOrEqual
+                        | typed_ast::BinaryOperator::GreaterOrEqual => {
                             let _ = get_type_and_assert_equality()?;
-                        } else {
-                            if lhs_type != rhs_type {
+                            Type::Boolean
+                        }
+                        typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
+                            if lhs_type.is_dtype() || rhs_type.is_dtype() {
+                                let _ = get_type_and_assert_equality()?;
+                            } else if lhs_type != rhs_type
+                                || lhs_type.is_fn_type()
+                                || rhs_type.is_fn_type()
+                            {
                                 return Err(TypeCheckError::IncompatibleTypesInComparison(
                                     span_op.unwrap(),
                                     lhs_type,
@@ -550,55 +943,31 @@ impl TypeChecker {
                                     rhs.full_span(),
                                 ));
                             }
+
+                            Type::Boolean
                         }
+                        typed_ast::BinaryOperator::LogicalAnd
+                        | typed_ast::BinaryOperator::LogicalOr => {
+                            if lhs_type != Type::Boolean {
+                                return Err(TypeCheckError::ExpectedBool(lhs.full_span()));
+                            } else if rhs_type != Type::Boolean {
+                                return Err(TypeCheckError::ExpectedBool(rhs.full_span()));
+                            }
 
-                        Type::Boolean
-                    }
-                };
+                            Type::Boolean
+                        }
+                    };
 
-                typed_ast::Expression::BinaryOperator(
-                    *span_op,
-                    *op,
-                    Box::new(lhs_checked),
-                    Box::new(rhs_checked),
-                    type_,
-                )
-            }
-            ast::Expression::FunctionCall(span, full_span, function_name, args) => {
-                let FunctionSignature {
-                    definition_span,
-                    type_parameters,
-                    parameter_types,
-                    is_variadic,
-                    return_type,
-                    is_foreign: _,
-                } = self.function_signatures.get(function_name).ok_or_else(|| {
-                    let suggestion = suggestion::did_you_mean(
-                        self.function_signatures
-                            .keys()
-                            .chain(ffi::procedures().values().map(|p| &p.name)),
-                        function_name,
-                    );
-
-                    TypeCheckError::UnknownCallable(*span, function_name.clone(), suggestion)
-                })?;
-
-                let arity_range = if *is_variadic {
-                    1..=usize::MAX
-                } else {
-                    parameter_types.len()..=parameter_types.len()
-                };
-
-                if !arity_range.contains(&args.len()) {
-                    return Err(TypeCheckError::WrongArity {
-                        callable_span: *span,
-                        callable_name: function_name.clone(),
-                        callable_definition_span: Some(*definition_span),
-                        arity: arity_range,
-                        num_args: args.len(),
-                    });
+                    typed_ast::Expression::BinaryOperator(
+                        *span_op,
+                        *op,
+                        Box::new(lhs_checked),
+                        Box::new(rhs_checked),
+                        type_,
+                    )
                 }
-
+            }
+            ast::Expression::FunctionCall(span, full_span, callable, args) => {
                 let arguments_checked = args
                     .iter()
                     .map(|a| self.check_expression(a))
@@ -608,165 +977,82 @@ impl TypeChecker {
                     .map(|e| e.get_type())
                     .collect::<Vec<Type>>();
 
-                let mut substitutions: Vec<(String, DType)> = vec![];
+                // There are two options here. The 'callable' can either be a direct reference
+                // to a (proper) function, or it can be an arbitrary complicated expression
+                // that evaluates to a function "pointer".
 
-                let substitute = |substitutions: &[(String, DType)], type_: &DType| -> DType {
-                    let mut result_type = type_.clone();
-                    for (name, substituted_type) in substitutions {
-                        if let Some(factor @ BaseRepresentationFactor(_, exp)) = type_
-                            .clone() // TODO: remove this .clone() somehow?
-                            .iter()
-                            .find(|BaseRepresentationFactor(n, _)| n == name)
-                        {
-                            result_type = result_type / DType::from_factor((*factor).clone())
-                                * substituted_type.clone().power(*exp);
-                        }
-                    }
-                    result_type
-                };
+                if let Some((name, signature)) = self.get_proper_function_reference(callable) {
+                    self.proper_function_call(
+                        span,
+                        full_span,
+                        &name,
+                        signature,
+                        arguments_checked,
+                        argument_types,
+                    )?
+                } else {
+                    let callable_checked = self.check_expression(callable)?;
+                    let callable_type = callable_checked.get_type();
 
-                let mut parameter_types = parameter_types.clone();
+                    match callable_type {
+                        Type::Fn(parameters_types, return_type) => {
+                            let num_parameters = parameters_types.len();
+                            let num_arguments = arguments_checked.len();
 
-                if *is_variadic {
-                    // For a variadic function, we simply duplicate the parameter type
-                    // N times, where N is the number of arguments given.
-                    debug_assert!(parameter_types.len() == 1);
-
-                    for _ in 1..argument_types.len() {
-                        parameter_types.push(parameter_types[0].clone());
-                    }
-                }
-
-                for (idx, ((parameter_span, parameter_type), argument_type)) in
-                    parameter_types.iter().zip(argument_types).enumerate()
-                {
-                    match (parameter_type, argument_type) {
-                        (Type::Dimension(parameter_type), Type::Dimension(argument_type)) => {
-                            let mut parameter_type = substitute(&substitutions, parameter_type);
-
-                            let remaining_generic_subtypes: Vec<_> = parameter_type
-                                .iter()
-                                .filter(|BaseRepresentationFactor(name, _)| {
-                                    type_parameters.iter().any(|(_, n)| name == n)
-                                })
-                                .collect();
-
-                            if remaining_generic_subtypes.len() > 1 {
-                                return Err(TypeCheckError::MultipleUnresolvedTypeParameters(
-                                    *span,
-                                    *parameter_span,
-                                ));
+                            if num_parameters != num_arguments {
+                                return Err(TypeCheckError::WrongArity {
+                                    callable_span: *span,
+                                    callable_name: "function".into(),
+                                    callable_definition_span: None,
+                                    arity: num_parameters..=num_parameters,
+                                    num_args: num_arguments,
+                                });
                             }
 
-                            if let Some(&generic_subtype_factor) =
-                                remaining_generic_subtypes.first()
+                            for (param_type, arg_checked) in
+                                parameters_types.iter().zip(&arguments_checked)
                             {
-                                let generic_subtype =
-                                    DType::from_factor(generic_subtype_factor.clone());
-
-                                // The type of the idx-th parameter of the called function has a generic type
-                                // parameter inside. We can now instantiate that generic parameter by solving
-                                // the equation "parameter_type == argument_type" for the generic parameter.
-                                // In order to do this, let's assume `generic_subtype = D^alpha`, then we have
-                                //
-                                //                                parameter_type == argument_type
-                                //    parameter_type / generic_subtype * D^alpha == argument_type
-                                //                                       D^alpha == argument_type / (parameter_type / generic_subtype)
-                                //                                             D == [argument_type / (parameter_type / generic_subtype)]^(1/alpha)
-                                //
-
-                                let alpha = Rational::from_integer(1) / generic_subtype_factor.1;
-                                let d = (argument_type.clone()
-                                    / (parameter_type.clone() / generic_subtype))
-                                    .power(alpha);
-
-                                // We can now substitute that generic parameter in all subsequent expressions
-                                substitutions.push((generic_subtype_factor.0.clone(), d));
-
-                                parameter_type = substitute(&substitutions, &parameter_type);
+                                if !arg_checked.get_type().is_subtype_of(param_type) {
+                                    return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                                        None,
+                                        param_type.clone(),
+                                        arg_checked.full_span(),
+                                        arg_checked.get_type(),
+                                    ));
+                                }
                             }
 
-                            if parameter_type != argument_type {
-                                return Err(TypeCheckError::IncompatibleDimensions(
-                                    IncompatibleDimensionsError {
-                                        span_operation: *span,
-                                        operation: format!(
-                                            "argument {num} of function call to '{name}'",
-                                            num = idx + 1,
-                                            name = function_name
-                                        ),
-                                        span_expected: parameter_types[idx].0,
-                                        expected_name: "parameter type",
-                                        expected_dimensions: self
-                                            .registry
-                                            .get_derived_entry_names_for(&parameter_type),
-                                        expected_type: parameter_type,
-                                        span_actual: args[idx].full_span(),
-                                        actual_name: " argument type",
-                                        actual_dimensions: self
-                                            .registry
-                                            .get_derived_entry_names_for(&argument_type),
-                                        actual_type: argument_type,
-                                    },
-                                ));
-                            }
+                            typed_ast::Expression::CallableCall(
+                                *full_span,
+                                Box::new(callable_checked),
+                                arguments_checked,
+                                *return_type,
+                            )
                         }
-                        (parameter_type, argument_type) => {
-                            if parameter_type != &argument_type {
-                                todo!()
-                            }
+                        _ => {
+                            return Err(TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
+                                callable.full_span(),
+                            ));
                         }
                     }
                 }
-
-                if substitutions.len() != type_parameters.len() {
-                    let parameters: HashSet<String> = type_parameters
-                        .iter()
-                        .map(|(_, name)| name)
-                        .cloned()
-                        .collect();
-                    let inferred_parameters: HashSet<String> =
-                        substitutions.iter().map(|t| t.0.clone()).collect();
-
-                    let remaining: Vec<_> = (&parameters - &inferred_parameters)
-                        .iter()
-                        .cloned()
-                        .collect();
-
-                    return Err(TypeCheckError::CanNotInferTypeParameters(
-                        *span,
-                        *definition_span,
-                        function_name.clone(),
-                        remaining.join(", "),
-                    ));
-                }
-
-                let return_type = match return_type {
-                    Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
-                    type_ => type_.clone(),
-                };
-
-                typed_ast::Expression::FunctionCall(
-                    *span,
-                    *full_span,
-                    function_name.clone(),
-                    arguments_checked,
-                    return_type,
-                )
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
             ast::Expression::String(span, parts) => typed_ast::Expression::String(
                 *span,
                 parts
-                    .into_iter()
+                    .iter()
                     .map(|p| match p {
                         StringPart::Fixed(s) => Ok(typed_ast::StringPart::Fixed(s.clone())),
-                        StringPart::Interpolation(span, expr) => {
-                            Ok(typed_ast::StringPart::Interpolation(
-                                *span,
-                                Box::new(self.check_expression(expr)?),
-                            ))
-                        }
+                        StringPart::Interpolation {
+                            span,
+                            expr,
+                            format_specifiers,
+                        } => Ok(typed_ast::StringPart::Interpolation {
+                            span: *span,
+                            format_specifiers: format_specifiers.clone(),
+                            expr: Box::new(self.check_expression(expr)?),
+                        }),
                     })
                     .collect::<Result<_>>()?,
             ),
@@ -782,7 +1068,16 @@ impl TypeChecker {
                 let then_type = then.get_type();
                 let else_type = else_.get_type();
 
-                if then_type != else_type {
+                if then_type.is_never() || else_type.is_never() {
+                    // This case is fine. We use the type of the *other* branch in those cases.
+                    // For example:
+                    //
+                    //   if <some precondition>
+                    //     then X
+                    //     else error("please make sure <some precondition> is met")
+                    //
+                    // Here, we simply use the type of `X` as the type of the whole expression.
+                } else if then_type != else_type {
                     return Err(TypeCheckError::IncompatibleTypesInCondition(
                         *span,
                         then_type,
@@ -817,10 +1112,11 @@ impl TypeChecker {
                 identifier,
                 expr,
                 type_annotation,
+                decorators,
             } => {
                 // Make sure that identifier does not clash with a function name. We do not
                 // check for clashes with unit names, as this is handled by the prefix parser.
-                if let Some(ref signature) = self.function_signatures.get(identifier) {
+                if let Some(signature) = self.function_signatures.get(identifier) {
                     return Err(TypeCheckError::NameAlreadyUsedBy(
                         "a function",
                         *identifier_span,
@@ -849,16 +1145,17 @@ impl TypeChecker {
                                         expected_type: dexpr_specified,
                                         span_actual: expr.full_span(),
                                         actual_name: "   actual dimension",
+                                        actual_name_for_fix: "right hand side expression",
                                         actual_dimensions: self
                                             .registry
-                                            .get_derived_entry_names_for(&dexpr_deduced),
+                                            .get_derived_entry_names_for(dexpr_deduced),
                                         actual_type: dexpr_deduced.clone(),
                                     },
                                 ));
                             }
                         }
                         (deduced, annotated) => {
-                            if deduced != &annotated {
+                            if !deduced.is_subtype_of(&annotated) {
                                 return Err(TypeCheckError::IncompatibleTypesInAnnotation(
                                     "definition".into(),
                                     *identifier_span,
@@ -872,13 +1169,14 @@ impl TypeChecker {
                     }
                 }
 
-                self.identifiers.insert(
-                    identifier.clone(),
-                    (type_deduced.clone(), Some(*identifier_span)),
-                );
+                for (name, _) in decorator::name_and_aliases(identifier, decorators) {
+                    self.identifiers
+                        .insert(name.clone(), (type_deduced.clone(), Some(*identifier_span)));
+                }
 
                 typed_ast::Statement::DefineVariable(
                     identifier.clone(),
+                    decorators.clone(),
                     expr_checked,
                     type_annotation
                         .as_ref()
@@ -889,9 +1187,19 @@ impl TypeChecker {
             }
             ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
                 let type_specified = if let Some(dexpr) = type_annotation {
-                    self.registry
+                    let base_representation = self
+                        .registry
                         .get_base_representation(dexpr)
-                        .map_err(TypeCheckError::RegistryError)?
+                        .map_err(TypeCheckError::RegistryError)?;
+
+                    if base_representation.is_scalar() {
+                        return Err(TypeCheckError::NoDimensionlessBaseUnit(
+                            *span,
+                            unit_name.into(),
+                        ));
+                    }
+
+                    base_representation
                 } else {
                     use heck::ToUpperCamelCase;
                     // In a unit definition like 'unit pixel' without a specified type,
@@ -948,6 +1256,7 @@ impl TypeChecker {
                                 expected_type: type_specified,
                                 span_actual: expr.full_span(),
                                 actual_name: "   actual dimension",
+                                actual_name_for_fix: "right hand side expression",
                                 actual_dimensions: self
                                     .registry
                                     .get_derived_entry_names_for(&type_deduced),
@@ -973,6 +1282,7 @@ impl TypeChecker {
                         .as_ref()
                         .map(|d| d.pretty_print())
                         .unwrap_or_else(|| type_deduced.to_readable_type(&self.registry)),
+                    Type::Dimension(type_deduced),
                 )
             }
             ast::Statement::DefineFunction {
@@ -990,11 +1300,11 @@ impl TypeChecker {
                     return Err(TypeCheckError::NameAlreadyUsedBy(
                         "a constant",
                         *function_name_span,
-                        span.clone(),
+                        *span,
                     ));
                 }
 
-                if let Some(ref signature) = self.function_signatures.get(function_name) {
+                if let Some(signature) = self.function_signatures.get(function_name) {
                     if signature.is_foreign {
                         return Err(TypeCheckError::NameAlreadyUsedBy(
                             "a foreign function",
@@ -1141,6 +1451,7 @@ impl TypeChecker {
                                                 .map(|b| b.full_span())
                                                 .unwrap(),
                                             actual_name: "   actual return type",
+                                            actual_name_for_fix: "expression in the function body",
                                             actual_dimensions: self
                                                 .registry
                                                 .get_derived_entry_names_for(&dtype_deduced),
@@ -1152,7 +1463,7 @@ impl TypeChecker {
                                 Type::Dimension(dtype_deduced)
                             }
                             (type_deduced, type_specified) => {
-                                if type_deduced != type_specified {
+                                if !type_deduced.is_subtype_of(&type_specified) {
                                     return Err(TypeCheckError::IncompatibleTypesInAnnotation(
                                         "function definition".into(),
                                         *function_name_span,
@@ -1287,7 +1598,7 @@ impl TypeChecker {
                     ProcedureKind::AssertEq => {
                         let type_first = dtype(&checked_args[0])?;
                         for arg in &checked_args[1..] {
-                            let type_arg = dtype(&arg)?;
+                            let type_arg = dtype(arg)?;
                             if type_arg != type_first {
                                 return Err(TypeCheckError::IncompatibleTypesInAssertEq(
                                     *span,
@@ -1330,13 +1641,22 @@ impl TypeChecker {
 
     fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
         match annotation {
+            TypeAnnotation::Never(_) => Ok(Type::Never),
             TypeAnnotation::DimensionExpression(dexpr) => self
                 .registry
-                .get_base_representation(&dexpr)
+                .get_base_representation(dexpr)
                 .map(Type::Dimension)
                 .map_err(TypeCheckError::RegistryError),
             TypeAnnotation::Bool(_) => Ok(Type::Boolean),
             TypeAnnotation::String(_) => Ok(Type::String),
+            TypeAnnotation::DateTime(_) => Ok(Type::DateTime),
+            TypeAnnotation::Fn(_, param_types, return_type) => Ok(Type::Fn(
+                param_types
+                    .iter()
+                    .map(|p| self.type_from_annotation(p))
+                    .collect::<Result<Vec<_>>>()?,
+                Box::new(self.type_from_annotation(return_type)?),
+            )),
         }
     }
 }
@@ -1355,7 +1675,19 @@ mod tests {
     dimension C = A * B
     unit a: A
     unit b: B
-    unit c: C = a * b";
+    unit c: C = a * b
+
+    fn returns_a() -> A = a
+    fn takes_a_returns_a(x: A) -> A = x
+    fn takes_a_returns_b(x: A) -> B = b
+    fn takes_a_and_b_returns_c(x: A, y: B) -> C = x * y
+
+    fn error(m: String) -> !
+    fn returns_never() -> ! = error(\"…\")
+    fn takes_never_returns_a(x: !) -> A = a
+
+    let callable = takes_a_returns_b
+    ";
 
     fn base_type(name: &str) -> BaseRepresentation {
         BaseRepresentation::from_factor(BaseRepresentationFactor(
@@ -1456,6 +1788,17 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("a^(3/(1-1))"),
             TypeCheckError::DivisionByZeroInConstEvalExpression(_)
+        ));
+    }
+
+    #[test]
+    fn comparisons() {
+        assert_successful_typecheck("2 a > a");
+        assert_successful_typecheck("2 a / (3 a) > 3");
+
+        assert!(matches!(
+            get_typecheck_error("a > b"),
+            TypeCheckError::IncompatibleDimensions(..)
         ));
     }
 
@@ -1635,7 +1978,7 @@ mod tests {
     fn unknown_function() {
         assert!(matches!(
             get_typecheck_error("foo(2)"),
-            TypeCheckError::UnknownCallable(_, name, _) if name == "foo"
+            TypeCheckError::UnknownIdentifier(_, name, _) if name == "foo"
         ));
     }
 
@@ -1784,6 +2127,213 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("fn f() -> Bool = \"test\""),
             TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+    }
+
+    #[test]
+    fn function_types_basic() {
+        assert_successful_typecheck(
+            "
+            let returns_a_ref1 = returns_a
+            let returns_a_ref2: Fn[() -> A] = returns_a
+
+            let takes_a_returns_a_ref1 = takes_a_returns_a
+            let takes_a_returns_a_ref2: Fn[(A) -> A] = takes_a_returns_a
+
+            let takes_a_returns_b_ref1 = takes_a_returns_b
+            let takes_a_returns_b_ref2: Fn[(A) -> B] = takes_a_returns_b
+
+            let takes_a_and_b_returns_C_ref1 = takes_a_and_b_returns_c
+            let takes_a_and_b_returns_C_ref2: Fn[(A, B) -> C] = takes_a_and_b_returns_c
+            let takes_a_and_b_returns_C_ref3: Fn[(A, B) -> A × B] = takes_a_and_b_returns_c
+            ",
+        );
+
+        assert!(matches!(
+            get_typecheck_error("let wrong_return_type: Fn[() -> B] = returns_a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("let wrong_argument_type: Fn[(B) -> A] = takes_a_returns_a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("let wrong_argument_count: Fn[(A, B) -> C] = takes_a_returns_a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+    }
+
+    #[test]
+    fn function_types_in_return_position() {
+        assert_successful_typecheck(
+            "
+            fn returns_fn1() -> Fn[() -> A] = returns_a
+            fn returns_fn2() -> Fn[(A) -> A] = takes_a_returns_a
+            fn returns_fn3() -> Fn[(A) -> B] = takes_a_returns_b
+            fn returns_fn4() -> Fn[(A, B) -> C] = takes_a_and_b_returns_c
+            ",
+        );
+
+        assert!(matches!(
+            get_typecheck_error("fn returns_fn5() -> Fn[() -> B] = returns_a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+    }
+
+    #[test]
+    fn function_types_in_argument_position() {
+        assert_successful_typecheck(
+            "
+            fn takes_fn1(f: Fn[() -> A]) -> A = f()
+            fn takes_fn2(f: Fn[(A) -> A]) -> A = f(a)
+            fn takes_fn3(f: Fn[(A) -> B]) -> B = f(a)
+            fn takes_fn4(f: Fn[(A, B) -> C]) -> C = f(a, b)
+
+            takes_fn1(returns_a)
+            takes_fn2(takes_a_returns_a)
+            takes_fn3(takes_a_returns_b)
+            takes_fn4(takes_a_and_b_returns_c)
+            ",
+        );
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn wrong_arity(f: Fn[(A) -> B]) -> B = f()
+                "
+            ),
+            TypeCheckError::WrongArity { .. }
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn wrong_argument_type(f: Fn[(A) -> B]) -> B = f(b)
+                "
+            ),
+            TypeCheckError::IncompatibleTypesInFunctionCall(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn wrong_return_type(f: Fn[() -> A]) -> B = f()
+                "
+            ),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn argument_mismatch(f: Fn[() -> A]) -> A = f()
+                argument_mismatch(takes_a_returns_a)
+                "
+            ),
+            TypeCheckError::IncompatibleTypesInFunctionCall(..)
+        ));
+    }
+
+    #[test]
+    fn no_dimensionless_base_units() {
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                unit page: Scalar
+                "
+            ),
+            TypeCheckError::NoDimensionlessBaseUnit { .. }
+        ));
+    }
+
+    #[test]
+    fn never_type() {
+        // Expressions
+        assert_successful_typecheck("2 + returns_never()");
+        assert_successful_typecheck("a + returns_never()");
+        assert_successful_typecheck("(a + returns_never()) + a");
+        assert_successful_typecheck("returns_never() + returns_never()");
+        assert!(matches!(
+            get_typecheck_error("(a + returns_never()) + b"),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
+
+        // Variable assignments
+        assert_successful_typecheck("let x: ! = returns_never()");
+        assert_successful_typecheck("let x: A = returns_never()");
+
+        // Conditionals
+        assert_successful_typecheck("(if true then a else returns_never()) -> a");
+        assert_successful_typecheck("(if true then returns_never() else a) -> a");
+        assert!(matches!(
+            get_typecheck_error("(if true then returns_never() else a) -> b"),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
+        assert!(matches!(
+            get_typecheck_error("let x: A = if true then returns_never() else b"),
+            TypeCheckError::IncompatibleDimensions(..)
+        ));
+        assert_successful_typecheck("let x: ! = if true then returns_never() else returns_never()");
+
+        // Function calls
+        assert_successful_typecheck("let x: A = takes_a_returns_a(returns_never())");
+        assert_successful_typecheck(
+            "let x: C = takes_a_and_b_returns_c(returns_never(), returns_never())",
+        );
+        assert_successful_typecheck("let x: A = takes_never_returns_a(returns_never())");
+        assert!(matches!(
+            get_typecheck_error("takes_never_returns_a(a)"),
+            TypeCheckError::IncompatibleTypesInFunctionCall(..)
+        ));
+
+        // Function definitions
+        assert_successful_typecheck("fn my_returns_never() -> ! = returns_never()");
+        assert_successful_typecheck("fn my_takes_never_returns_a(x: !) -> A = a");
+        assert!(matches!(
+            get_typecheck_error("fn attempts_to_return_never() -> ! = a"),
+            TypeCheckError::IncompatibleTypesInAnnotation(..)
+        ));
+
+        // Generic functions:
+        assert_successful_typecheck(
+            "
+            fn absurd<T>(x: !) -> A = returns_never()
+            ",
+        );
+        assert_successful_typecheck(
+            "
+            fn check_and_return<T>(precondition: Bool, t: T) -> T =
+              if precondition then t else error(\"precondition failed\")
+            ",
+        );
+    }
+
+    #[test]
+    fn callables() {
+        assert_successful_typecheck("callable(a)");
+        assert_successful_typecheck("a -> callable");
+        assert!(matches!(
+            get_typecheck_error("callable(b)"),
+            TypeCheckError::IncompatibleTypesInFunctionCall(..)
+        ));
+        assert!(matches!(
+            get_typecheck_error("callable()"),
+            TypeCheckError::WrongArity { .. }
+        ));
+        assert!(matches!(
+            get_typecheck_error("callable(a, a)"),
+            TypeCheckError::WrongArity { .. }
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("a + callable"),
+            TypeCheckError::ExpectedDimensionType { .. }
+        ));
+        assert!(matches!(
+            get_typecheck_error("callable == callable"),
+            TypeCheckError::IncompatibleTypesInComparison { .. }
         ));
     }
 }

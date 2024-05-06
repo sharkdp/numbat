@@ -1,0 +1,102 @@
+use core::scalar
+use core::quantities
+use core::error
+use core::functions
+use math::functions
+
+# name: Standard uniform distribution sampling
+# description: Uniformly samples the interval [0,1).
+fn random() -> Scalar
+
+# name: Continuous uniform distribution sampling
+# url: https://en.wikipedia.org/wiki/Continuous_uniform_distribution
+# description: Uniformly samples the interval [a,b) if a<=b or [b,a) if b<a using inversion sampling.
+fn rand_uniform<T>(a: T, b: T) -> T =
+    if a <= b
+    then random() * (b - a) + a
+    else random() * (a - b) + b
+
+# name: Discrete uniform distribution sampling
+# url: https://en.wikipedia.org/wiki/Discrete_uniform_distribution
+# description: Uniformly samples the integers in the interval [a, b].
+fn rand_int(a: Scalar, b: Scalar) -> Scalar =
+    if a <= b
+    then floor( random() * (floor(b) - ceil(a) + 1) ) + ceil(a)
+    else floor( random() * (floor(a) - ceil(b) + 1) ) + ceil(b)
+
+# name: Bernoulli distribution sampling
+# url: https://en.wikipedia.org/wiki/Bernoulli_distribution
+# description: Samples a Bernoulli random variable, that is, 1 with probability p, 0 with probability 1-p.
+#              Parameter p must be a probability (0 <= p <= 1).
+fn rand_bernoulli(p: Scalar) -> Scalar =
+    if p>=0 && p<=1
+    then (if random() < p
+        then 1
+        else 0)
+    else error("Argument p must be a probability (0 <= p <= 1).")
+
+# name: Binomial distribution sampling
+# url: https://en.wikipedia.org/wiki/Binomial_distribution
+# description: Samples a binomial distribution by doing n Bernoulli trials with probability p.
+#              Parameter n must be a positive integer, parameter p must be a probability (0 <= p <= 1).
+fn rand_binom(n: Scalar, p: Scalar) -> Scalar =
+    if n >= 1
+    then rand_binom(n-1, p) + rand_bernoulli(p)
+    else if n == 0
+    then 0
+    else error("Argument n must be a positive integer.")
+
+# name: Normal distribution sampling
+# url: https://en.wikipedia.org/wiki/Normal_distribution
+# description: Samples a normal distribution with mean μ and standard deviation σ using the Box-Muller transform.
+fn rand_norm<T>(μ: T, σ: T) -> T =
+    μ + sqrt(-2 σ² × ln(random())) × sin(2π × random())
+
+# name: Geometric distribution sampling
+# url: https://en.wikipedia.org/wiki/Geometric_distribution
+# description: Samples a geometric distribution (the distribution of the number of Bernoulli trials with probability p needed to get one success) by inversion sampling.
+#              Parameter p must be a probability (0 <= p <= 1).
+fn rand_geom(p: Scalar) -> Scalar =
+    if p>=0 && p<=1
+    then ceil( ln(1-random()) / ln(1-p) )
+    else error("Argument p must be a probability (0 <= p <= 1).")
+
+# A helper function for rand_poisson, counts how many samples of the standard uniform distribution need to be multiplied to fall below lim.
+fn _poisson(lim: Scalar, prod: Scalar) -> Scalar =
+    if prod > lim
+    then _poisson(lim,  prod × random()) + 1
+    else -1
+
+# name: Poisson distribution sampling
+# url: https://en.wikipedia.org/wiki/Poisson_distribution
+# description: Sampling a poisson distribution with rate λ, that is, the distribution of the number of events occurring in a fixed interval if these events occur with mean rate λ.
+#              The rate parameter λ must not be negative.
+# This implementation is based on the exponential distribution of inter-arrival times. For details see L. Devroye, Non-Uniform Random Variate Generation, p. 504, Lemma 3.3.
+fn rand_poisson(λ: Scalar) -> Scalar =
+    if λ >= 0
+    then _poisson(exp(-λ), 1)
+    else error("Argument λ must not be negative.")
+
+# name: Exponential distribution sampling
+# url: https://en.wikipedia.org/wiki/Exponential_distribution
+# description: Sampling an exponential distribution (the distribution of the distance between events in a Poisson process with rate λ) using inversion sampling.
+#              The rate parameter λ must be positive.
+fn rand_expon<T>(λ: T) -> 1/T =
+    if value_of(λ) > 0
+    then - ln(1-random()) / λ
+    else error("Argument λ must be positive.")
+
+# name: Log-normal distribution sampling
+# url: https://en.wikipedia.org/wiki/Log-normal_distribution
+# description: Sampling a log-normal distribution, that is, a distribution whose log is a normal distribution with mean μ and standard deviation σ.
+fn rand_lognorm(μ: Scalar, σ: Scalar) -> Scalar =
+    exp( μ + σ × rand_norm(0, 1) )
+
+# name: Pareto distribution sampling
+# url: https://en.wikipedia.org/wiki/Pareto_distribution
+# description: Sampling a Pareto distribution with minimum value min and shape parameter α using inversion sampling.
+#              Both parameters α and min must be positive.
+fn rand_pareto<T>(α: Scalar, min: T) -> T =
+    if value_of(min) > 0 && α > 0
+    then min / ((1-random())^(1/α))
+    else error("Both arguments α and min must be positive.")

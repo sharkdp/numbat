@@ -53,13 +53,13 @@ impl Quantity {
         self.value.to_f64() == 0.0
     }
 
-    fn to_base_unit_representation(&self) -> Quantity {
+    pub fn to_base_unit_representation(&self) -> Quantity {
         let (unit, factor) = self.unit.to_base_unit_representation();
         Quantity::new(self.value * factor, unit)
     }
 
     pub fn convert_to(&self, target_unit: &Unit) -> Result<Quantity> {
-        if &self.unit == target_unit || self.is_zero() {
+        if &self.unit == target_unit {
             Ok(Quantity::new(self.value, target_unit.clone()))
         } else {
             // Remove common unit factors to reduce unnecessary conversion procedures
@@ -346,7 +346,7 @@ impl std::fmt::Display for Quantity {
 
 #[cfg(test)]
 mod tests {
-    use crate::prefix::Prefix;
+    use crate::{prefix::Prefix, prefix_parser::AcceptsPrefix, unit::CanonicalName};
 
     use super::*;
 
@@ -368,7 +368,12 @@ mod tests {
         use approx::assert_relative_eq;
 
         let meter = Unit::meter();
-        let foot = Unit::new_derived("foot", "ft", Number::from_f64(0.3048), meter.clone());
+        let foot = Unit::new_derived(
+            "foot",
+            CanonicalName::new("ft", AcceptsPrefix::none()),
+            Number::from_f64(0.3048),
+            meter.clone(),
+        );
 
         let length = Quantity::new_f64(2.0, meter.clone());
 
