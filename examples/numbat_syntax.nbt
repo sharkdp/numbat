@@ -111,14 +111,15 @@ assert_eq(1 yd, 1 m, 10 cm)      # Assert that two quantities are equal, up to
 type(2 m/s)                      # Print the type of an expression
 
 
-# 9. Structs
+# 10. Structs
 
-# defining a struct
-struct Foo { foo: Current, bar: Scalar }
+struct Foo {                        # defining a struct
+  foo: Current,
+  bar: Scalar
+}
 
-# Constructing a struct
-Foo {foo: 1A, bar: pi}
+Foo {foo: 1A, bar: pi}              # constructing a struct
 
 let r: Foo = Foo {foo: 1A, bar: pi}
 
-r.foo  # Field access is performed with `.field` notation
+r.foo                               # Field access is performed with `.field` notation
