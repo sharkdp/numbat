@@ -730,8 +730,12 @@ impl<'a> Parser<'a> {
                 });
             }
 
+            self.skip_empty_lines();
+
             let mut fields = vec![];
             while self.match_exact(TokenKind::RightCurly).is_none() {
+                self.skip_empty_lines();
+
                 let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedFieldNameInStruct,
@@ -739,17 +743,24 @@ impl<'a> Parser<'a> {
                     });
                 };
 
+                self.skip_empty_lines();
+
                 if self.match_exact(TokenKind::Colon).is_none() {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedColonAfterFieldName,
                         span: self.peek().span,
                     });
                 }
+                self.skip_empty_lines();
 
                 let attr_type = self.type_annotation()?;
 
+                self.skip_empty_lines();
+
                 let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                self.match_exact(TokenKind::Newline);
+
+                self.skip_empty_lines();
+
                 if !has_comma && self.peek().kind != TokenKind::RightCurly {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
@@ -1209,15 +1220,20 @@ impl<'a> Parser<'a> {
             let span = self.last().unwrap().span;
 
             if self.match_exact(TokenKind::LeftCurly).is_some() {
-                self.match_exact(TokenKind::Newline);
+                self.skip_empty_lines();
+
                 let mut fields = vec![];
                 while self.match_exact(TokenKind::RightCurly).is_none() {
+                    self.skip_empty_lines();
+
                     let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedFieldNameInStruct,
                             span: self.peek().span,
                         });
                     };
+
+                    self.skip_empty_lines();
 
                     if self.match_exact(TokenKind::Colon).is_none() {
                         return Err(ParseError {
@@ -1226,10 +1242,16 @@ impl<'a> Parser<'a> {
                         });
                     }
 
+                    self.skip_empty_lines();
+
                     let expr = self.expression()?;
 
+                    self.skip_empty_lines();
+
                     let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                    self.match_exact(TokenKind::Newline);
+
+                    self.skip_empty_lines();
+
                     if !has_comma && self.peek().kind != TokenKind::RightCurly {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
