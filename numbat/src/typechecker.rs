@@ -1912,8 +1912,7 @@ mod tests {
     fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
         let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
         let statements = parse(code, 0).expect("No parse errors for inputs in this test suite");
-        let transformed_statements = Transformer::new()
-            .transform(statements)?;
+        let transformed_statements = Transformer::new().transform(statements)?;
 
         TypeChecker::default()
             .check_statements(transformed_statements)
