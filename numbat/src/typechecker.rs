@@ -1913,8 +1913,7 @@ mod tests {
         let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
         let statements = parse(code, 0).expect("No parse errors for inputs in this test suite");
         let transformed_statements = Transformer::new()
-            .transform(statements)
-            .expect("No name resolution errors for inputs in this test suite");
+            .transform(statements)?;
 
         TypeChecker::default()
             .check_statements(transformed_statements)
@@ -1922,7 +1921,9 @@ mod tests {
     }
 
     fn assert_successful_typecheck(input: &str) {
-        assert!(run_typecheck(input).is_ok());
+        if let Err(err) = dbg!(run_typecheck(input)) {
+            panic!("Input was expected to typecheck successfully, but failed with: {err:?}")
+        }
     }
 
     fn get_typecheck_error(input: &str) -> TypeCheckError {
@@ -2115,25 +2116,6 @@ mod tests {
                 actual_type == base_type("T1") / base_type("T2")
         ));
     }
-
-    // #[test]
-    // fn generics_with_records() {
-    //     assert_successful_typecheck(
-    //         "
-    //         fn f<D>(x: D) = ${foo: x}
-    //         f(2)
-    //         f(2 a).foo == 2 a
-    //         ",
-    //     );
-
-    //     assert_successful_typecheck(
-    //         "
-    //         fn f<D>(x: D) -> ${foo: D} = ${foo: x}
-    //         f(2)
-    //         f(2 a).foo == 2 a
-    //         ",
-    //     );
-    // }
 
     #[test]
     fn generics_multiple_unresolved_type_parameters() {
@@ -2558,7 +2540,24 @@ mod tests {
     }
 
     #[test]
-    fn struct_errors() {
+    fn structs() {
+        assert_successful_typecheck(
+            "
+          struct Foo {
+            foo: A,
+            bar: C
+          }
+
+          let s = Foo {
+            foo: 1a,
+            bar: 2c
+          }
+
+          let foo: A = s.foo
+          let bar: C = s.bar
+          ",
+        );
+
         assert!(matches!(
             get_typecheck_error("SomeStruct {a: 1, b: 1b}"),
             TypeCheckError::IncompatibleTypesForStructField(..)
@@ -2598,5 +2597,76 @@ mod tests {
             get_typecheck_error("SomeStruct {}"),
             TypeCheckError::MissingFieldsFromStructConstruction(..)
         ));
+    }
+
+    #[test]
+    fn name_resolution() {
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                dimension Foo
+                struct Foo {}
+                "
+            ),
+            TypeCheckError::NameResolutionError(NameResolutionError::IdentifierClash { .. })
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                struct Foo {}
+                dimension Foo
+                "
+            ),
+            TypeCheckError::NameResolutionError(NameResolutionError::IdentifierClash { .. })
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn foo() -> Scalar = 1
+                let foo = 1
+                "
+            ),
+            TypeCheckError::NameResolutionError(NameResolutionError::IdentifierClash { .. })
+        ));
+
+        assert!(matches!(
+            get_typecheck_error(
+                "
+                fn foo() -> Scalar = 1
+                unit foo: Scalar
+                "
+            ),
+            TypeCheckError::NameResolutionError(NameResolutionError::IdentifierClash { .. })
+        ));
+
+        assert_successful_typecheck(
+            "
+            let Foo = 1
+            dimension Foo
+            ",
+        );
+
+        assert_successful_typecheck(
+            "
+            fn Foo() -> Scalar = 1
+            dimension Foo
+            ",
+        );
+
+        assert_successful_typecheck(
+            "
+            fn Foo() -> Scalar = 1
+            struct Foo {}
+            ",
+        );
+
+        assert_successful_typecheck(
+            "
+            fn Foo() -> Scalar = 1
+            fn Foo() -> Scalar = 2
+            ",
+        );
     }
 }
