@@ -2734,6 +2734,32 @@ mod tests {
 
     #[test]
     fn structs() {
+        parse_as(
+            &["struct Foo { foo: Scalar, bar: Scalar }"],
+            Statement::DefineStruct {
+                struct_name_span: Span::dummy(),
+                struct_name: "Foo".to_owned(),
+                fields: vec![
+                    (
+                        Span::dummy(),
+                        "foo".to_owned(),
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Scalar".to_owned(),
+                        )),
+                    ),
+                    (
+                        Span::dummy(),
+                        "bar".to_owned(),
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Scalar".to_owned(),
+                        )),
+                    ),
+                ],
+            },
+        );
+
         parse_as_expression(
             &["Foo {foo: 1, bar: 2}"],
             struct_! {
