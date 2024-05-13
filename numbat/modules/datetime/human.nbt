@@ -1,6 +1,7 @@
 use core::functions
 use core::strings
 use units::si
+use units::time
 use datetime::functions
 
 fn _human_join(a: String, b: String) -> String =
