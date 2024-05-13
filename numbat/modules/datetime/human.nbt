@@ -19,6 +19,8 @@ fn _human_hours(time: Time)   -> String = "{(time -> hours)   /  hour   // floor
 fn _human_minutes(time: Time) -> String = "{(time -> minutes) /  minute // floor} minutes" -> _prettier
 fn _human_seconds(time: Time) -> String = str_replace("{(time -> seconds) /  second} seconds", ".0 ", " ") -> _prettier
 
+fn _human_manage_past(str: String, time: Time) = str_append(str, if time < 0 s then " ago" else "")
+
 fn _human_recurse(t: Time, result: String, time_unit: String) -> String =
   if time_unit == "year"
     then _human_recurse(t - (t -> year  // floor) -> ms // round, _human_join(result, t -> _human_years),   "month")
@@ -39,5 +41,5 @@ fn _human_recurse(t: Time, result: String, time_unit: String) -> String =
 @description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
 fn human(time: Time) -> String =
   if time == 0 s then "0 seconds"
-  else if time < 60 s then time -> _human_seconds
-  else _human_recurse(time, "", "year")
+  else if abs(time) < 60 s then _human_manage_past(abs(time) -> _human_seconds, time)
+  else _human_manage_past(_human_recurse(abs(time), "", "year"), time)

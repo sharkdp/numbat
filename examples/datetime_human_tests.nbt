@@ -40,3 +40,6 @@ assert((1 µs             -> human) == "0.000001 seconds")
 assert((1 ns             -> human) == "1.0e-9 seconds")
 assert((1234 ns          -> human) == "0.000001234 seconds")
 assert((1s + 1234 ns     -> human) == "1 second")
+
+assert((-1 second        -> human) == "1 second ago")
+assert((-7.89 hour       -> human) == "7 hours + 53 minutes + 24 seconds ago")
