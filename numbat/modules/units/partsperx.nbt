@@ -3,6 +3,11 @@
 @aliases(%: short, pct)
 unit percent = 1e-02
 
+@name("Permille")
+@url("https://en.wikipedia.org/wiki/Per_mille")
+@aliases(‰: short, permil, permill)
+unit permille = 1e-03
+
 @name("Parts per million")
 @url("https://en.wikipedia.org/wiki/Parts-per_notation")
 @aliases(ppm)
