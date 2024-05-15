@@ -1138,7 +1138,7 @@ impl<'a> Parser<'a> {
                 let ident_span = self.last().unwrap().span;
                 let full_span = expr.full_span().extend(&ident_span);
 
-                expr = Expression::AccessStruct(full_span, ident_span, Box::new(expr), ident)
+                expr = Expression::AccessField(full_span, ident_span, Box::new(expr), ident)
             } else {
                 return Ok(expr);
             }
@@ -1264,7 +1264,7 @@ impl<'a> Parser<'a> {
 
                 let full_span = span.extend(&self.last().unwrap().span);
 
-                return Ok(Expression::MakeStruct {
+                return Ok(Expression::InstantiateStruct {
                     full_span,
                     ident_span: span,
                     name: identifier.lexeme.clone(),
@@ -2771,7 +2771,7 @@ mod tests {
 
         parse_as_expression(
             &["Foo {foo: 1, bar: 2}.foo"],
-            Expression::AccessStruct(
+            Expression::AccessField(
                 Span::dummy(),
                 Span::dummy(),
                 Box::new(struct_! {
