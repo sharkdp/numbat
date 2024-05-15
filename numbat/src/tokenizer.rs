@@ -178,7 +178,7 @@ fn is_currency_char(c: char) -> bool {
 }
 
 fn is_other_allowed_identifier_char(c: char) -> bool {
-    c == '%'
+    matches!(c, '%' | '‰')
 }
 
 fn is_subscript_char(c: char) -> bool {

@@ -161,6 +161,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Scalar` | [Parts per quadrillion](https://en.wikipedia.org/wiki/Parts-per_notation) | `partsperquadrillion`, `ppq` |
 | `Scalar` | [Parts per trillion](https://en.wikipedia.org/wiki/Parts-per_notation) | `partspertrillion`, `ppt` |
 | `Scalar` | [Percent](https://en.wikipedia.org/wiki/Percentage) | `%`, `pct`, `percent` |
+| `Scalar` | [Permille](https://en.wikipedia.org/wiki/Per_mille) | `permil`, `permill`, `permille`, `‰` |
 | `Scalar` | [Quadrillion](https://en.wikipedia.org/wiki/Quadrillion) | `quadrillion` |
 | `Scalar` | [Quintillion](https://en.wikipedia.org/wiki/Quintillion) | `quintillion` |
 | `Scalar` | [Thousand](https://en.wikipedia.org/wiki/1000_(number)) | `thousand` |
