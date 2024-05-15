@@ -998,13 +998,10 @@ impl Vm {
                 }
                 Op::AccessStructField => {
                     let field_idx = self.read_u16();
-                    let content = self.pop();
 
-                    let Value::Struct(_meta, mut content) = content else {
-                        panic!("tried to destructure something which was not a struct (the typechecker should prevent this)");
-                    };
+                    let mut fields = self.pop().unsafe_as_struct_fields();
 
-                    let value = content.remove(field_idx as usize);
+                    let value = fields.swap_remove(field_idx as usize);
                     self.stack.push(value);
                 }
             }
