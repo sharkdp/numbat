@@ -1331,7 +1331,7 @@ impl TypeChecker {
                     self.identifiers
                         .insert(name.clone(), (type_deduced.clone(), Some(*identifier_span)));
 
-                    self.value_namespace.add_allow_override(
+                    self.value_namespace.add_identifier_allow_override(
                         name.clone(),
                         *identifier_span,
                         "constant".to_owned(),
@@ -1459,13 +1459,13 @@ impl TypeChecker {
                 return_type_annotation,
             } => {
                 if body.is_none() {
-                    self.value_namespace.add(
+                    self.value_namespace.add_identifier(
                         function_name.clone(),
                         *function_name_span,
                         "foreign function".to_owned(),
                     )?;
                 } else {
-                    self.value_namespace.add_allow_override(
+                    self.value_namespace.add_identifier_allow_override(
                         function_name.clone(),
                         *function_name_span,
                         "function".to_owned(),
@@ -1477,6 +1477,13 @@ impl TypeChecker {
                 let mut type_parameters = type_parameters.clone();
 
                 for (span, type_parameter) in &type_parameters {
+                    if typechecker_fn.type_namespace.has_identifier(type_parameter) {
+                        return Err(TypeCheckError::TypeParameterNameClash(
+                            *span,
+                            type_parameter.clone(),
+                        ));
+                    }
+
                     match typechecker_fn.registry.add_base_dimension(type_parameter) {
                         Err(RegistryError::EntryExists(name)) => {
                             return Err(TypeCheckError::TypeParameterNameClash(*span, name))
@@ -1665,8 +1672,11 @@ impl TypeChecker {
                 )
             }
             ast::Statement::DefineDimension(name_span, name, dexprs) => {
-                self.type_namespace
-                    .add(name.clone(), *name_span, "dimension".to_owned())?;
+                self.type_namespace.add_identifier(
+                    name.clone(),
+                    *name_span,
+                    "dimension".to_owned(),
+                )?;
 
                 if let Some(dexpr) = dexprs.first() {
                     self.registry
@@ -1780,7 +1790,7 @@ impl TypeChecker {
                 struct_name,
                 fields,
             } => {
-                self.type_namespace.add(
+                self.type_namespace.add_identifier(
                     struct_name.clone(),
                     *struct_name_span,
                     "struct".to_owned(),
@@ -2167,6 +2177,14 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("
                 dimension Existing
+                fn f<Existing>(x: Existing) = 1
+            "),
+            TypeCheckError::TypeParameterNameClash(_, name) if name == "Existing"
+        ));
+
+        assert!(matches!(
+            get_typecheck_error("
+                struct Existing {}
                 fn f<Existing>(x: Existing) = 1
             "),
             TypeCheckError::TypeParameterNameClash(_, name) if name == "Existing"

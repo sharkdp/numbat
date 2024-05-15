@@ -27,25 +27,29 @@ pub struct Namespace {
 }
 
 impl Namespace {
-    pub fn add_allow_override(
+    pub fn add_identifier_allow_override(
         &mut self,
         name: String,
         span: Span,
         item_type: String,
     ) -> Result<(), NameResolutionError> {
-        self.add_inner(name, span, item_type, true)
+        self.add_impl(name, span, item_type, true)
     }
 
-    pub fn add(
+    pub fn add_identifier(
         &mut self,
         name: String,
         span: Span,
         item_type: String,
     ) -> Result<(), NameResolutionError> {
-        self.add_inner(name, span, item_type, false)
+        self.add_impl(name, span, item_type, false)
     }
 
-    fn add_inner(
+    pub fn has_identifier(&self, name: &str) -> bool {
+        self.seen.contains_key(name)
+    }
+
+    fn add_impl(
         &mut self,
         name: String,
         span: Span,
