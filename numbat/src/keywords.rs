@@ -18,22 +18,23 @@ pub const KEYWORDS: &[&str] = &[
     "if",
     "then",
     "else",
-    "Bool",
     "true",
     "false",
-    "String",
-    "DateTime",
     "NaN",
     "inf",
+    // procedures
+    "print(",
+    "assert(",
+    "assert_eq(",
+    "type(",
+    // Type names
+    "Bool",
+    "String",
+    "DateTime",
     // decorators
     "metric_prefixes",
     "binary_prefixes",
     "aliases",
     "name",
     "url",
-    // procedures
-    "print(",
-    "assert_eq(",
-    "assert(",
-    "type(",
 ];
