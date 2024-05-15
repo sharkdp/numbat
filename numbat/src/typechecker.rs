@@ -1,4 +1,3 @@
-#![allow(clippy::result_large_err)]
 use std::{
     collections::{HashMap, HashSet},
     error::Error,

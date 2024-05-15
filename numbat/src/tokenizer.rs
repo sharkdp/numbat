@@ -705,7 +705,6 @@ pub fn tokenize(input: &str, code_source_id: usize) -> Result<Vec<Token>> {
 }
 
 #[cfg(test)]
-#[allow(clippy::type_complexity)]
 fn tokenize_reduced(input: &str) -> Result<Vec<(String, TokenKind, (u32, u32))>, String> {
     Ok(tokenize(input, 0)
         .map_err(|e| {
