@@ -107,9 +107,11 @@ pub enum Op {
     /// Perform a simplification operation to the current value on the stack
     FullSimplify,
 
-    BuildStruct,
+    /// Build a struct from the field values on the stack
+    BuildStructInstance,
 
-    DestructureStruct,
+    /// Access a single field of a struct
+    AccessStructField,
 
     /// Return from the current function
     Return,
@@ -122,7 +124,7 @@ impl Op {
             | Op::Call
             | Op::FFICallFunction
             | Op::FFICallProcedure
-            | Op::BuildStruct => 2,
+            | Op::BuildStructInstance => 2,
             Op::LoadConstant
             | Op::ApplyPrefix
             | Op::GetLocal
@@ -132,7 +134,7 @@ impl Op {
             | Op::JumpIfFalse
             | Op::Jump
             | Op::CallCallable
-            | Op::DestructureStruct => 1,
+            | Op::AccessStructField => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
@@ -197,8 +199,8 @@ impl Op {
             Op::JoinString => "JoinString",
             Op::FullSimplify => "FullSimplify",
             Op::Return => "Return",
-            Op::BuildStruct => "BuildStruct",
-            Op::DestructureStruct => "DestructureStruct",
+            Op::BuildStructInstance => "BuildStructInstance",
+            Op::AccessStructField => "AccessStructField",
         }
     }
 }
@@ -978,7 +980,7 @@ impl Vm {
                         self.stack.push(return_value);
                     }
                 }
-                Op::BuildStruct => {
+                Op::BuildStructInstance => {
                     let info_idx = self.read_u16();
                     let (_, struct_info) = self
                         .struct_infos
@@ -995,7 +997,7 @@ impl Vm {
 
                     self.stack.push(Value::Struct(struct_info, content));
                 }
-                Op::DestructureStruct => {
+                Op::AccessStructField => {
                     let field_idx = self.read_u16();
                     let content = self.pop();
 
