@@ -125,4 +125,4 @@ let hydrogen = Element {         # Instantiate it
     density: 0.08988 g/L,
 }
 
-hydrogen.density                 # Access field of a struct
+hydrogen.density                 # Access the field of a struct
