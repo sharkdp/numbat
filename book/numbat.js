@@ -4,7 +4,7 @@ hljs.registerLanguage('numbat', function(hljs) {
     aliases: ['nbt'],
     case_insensitive: false,
     keywords: {
-      keyword: 'per to let fn dimension unit use long short both none print assert assert_eq type if then else true false',
+      keyword: 'per to let fn dimension unit use struct long short both none if then else true false print assert assert_eq type',
     },
     contains: [
       hljs.HASH_COMMENT_MODE,
@@ -16,7 +16,7 @@ hljs.registerLanguage('numbat', function(hljs) {
       },
       {
         className: 'number',
-        begin: '(-?)(\\b0[xX][a-fA-F0-9]+|(\\b[0-9_]+(\\.[0-9_]*)?|\\.[0-9_]+)([eE][-+]?[0-9_]+)?)'
+        begin: '(-?)(\\b0[xX][a-fA-F0-9]+|(\\b[0-9_]+(\\.[0-9_]*)?|\\.[0-9_]+)([eE][-+]?[0-9_]+)?|NaN|inf)'
       },
       {
         className: 'meta',
