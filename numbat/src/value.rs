@@ -103,14 +103,21 @@ impl std::fmt::Display for Value {
             Value::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
             Value::StructInstance(struct_info, values) => write!(
                 f,
-                "{} {{ {} }}",
+                "{} {{{}}}",
                 struct_info.name,
-                struct_info
-                    .fields
-                    .keys()
-                    .zip(values)
-                    .map(|(name, value)| name.to_owned() + ": " + &value.to_string())
-                    .join(", ")
+                if values.is_empty() {
+                    "".to_owned()
+                } else {
+                    format!(
+                        " {} ",
+                        struct_info
+                            .fields
+                            .keys()
+                            .zip(values)
+                            .map(|(name, value)| name.to_owned() + ": " + &value.to_string())
+                            .join(", ")
+                    )
+                }
             ),
         }
     }
@@ -130,16 +137,22 @@ impl PrettyPrint for Value {
                 crate::markup::type_identifier(struct_info.name.clone())
                     + crate::markup::space()
                     + crate::markup::operator("{")
-                    + itertools::Itertools::intersperse(
-                        struct_info.fields.keys().zip(values).map(|(name, val)| {
-                            crate::markup::identifier(name)
-                                + crate::markup::operator(":")
-                                + crate::markup::space()
-                                + val.pretty_print()
-                        }),
-                        crate::markup::operator(",") + crate::markup::space(),
-                    )
-                    .sum()
+                    + if values.is_empty() {
+                        crate::markup::empty()
+                    } else {
+                        crate::markup::space()
+                            + itertools::Itertools::intersperse(
+                                struct_info.fields.keys().zip(values).map(|(name, val)| {
+                                    crate::markup::identifier(name)
+                                        + crate::markup::operator(":")
+                                        + crate::markup::space()
+                                        + val.pretty_print()
+                                }),
+                                crate::markup::operator(",") + crate::markup::space(),
+                            )
+                            .sum()
+                            + crate::markup::space()
+                    }
                     + crate::markup::operator("}")
             }
         }
