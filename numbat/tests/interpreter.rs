@@ -57,7 +57,7 @@ fn expect_failure(code: &str, msg_part: &str) {
             "Expected '{msg_part}' but got '{error_message}'"
         );
     } else {
-        panic!("Expected an error but but instead {code} did not fail");
+        panic!("Expected an error but the code '{code}' did not fail");
     }
 }
 
