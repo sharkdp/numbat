@@ -113,13 +113,16 @@ type(2 m/s)                      # Print the type of an expression
 
 # 10. Structs
 
-struct Foo {                        # defining a struct
-  foo: Current,
-  bar: Scalar
+struct Element {                 # Define a struct
+    name: String,
+    atomic_number: Scalar,
+    density: MassDensity,
 }
 
-Foo {foo: 1A, bar: pi}              # constructing a struct
+let hydrogen = Element {         # Instantiate it
+    name: "Hydrogen",
+    atomic_number: 1,
+    density: 0.08988 g/L,
+}
 
-let r: Foo = Foo {foo: 1A, bar: pi}
-
-r.foo                               # Field access is performed with `.field` notation
+hydrogen.density                 # Access field of a struct
