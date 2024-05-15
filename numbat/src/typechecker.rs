@@ -305,23 +305,23 @@ pub enum TypeCheckError {
     #[error("Unknown struct '{1}")]
     UnknownStruct(Span, String),
 
-    #[error("Unknown field {2} of struct {3}")]
+    #[error("Unknown field '{2}' of struct '{3}'")]
     UnknownFieldOfStruct(Span, Span, String, String),
 
-    #[error("Duplicate field {2} in struct definition")]
+    #[error("Duplicate field '{2}' in struct definition")]
     DuplicateFieldInStructDefinition(Span, Span, String),
 
-    #[error("Duplicate field {2} in struct construction")]
+    #[error("Duplicate field '{2}' in struct instantiation")]
     DuplicateFieldInStructConstruction(Span, Span, String),
 
-    #[error("Accessing field {2} of non struct type {3}")]
+    #[error("Accessing field '{2}' of non struct type '{3}'")]
     AccessingFieldOfNonStruct(Span, Span, String, Type),
 
-    #[error("Accessing unknown field {2} of struct {3}")]
+    #[error("Accessing unknown field '{2}' of struct '{3}'")]
     AccessingUnknownFieldOfStruct(Span, Span, String, Type),
 
-    #[error("Missing fields from struct construction")]
-    MissingFieldsFromStructConstruction(Span, Span, Vec<(String, Type)>),
+    #[error("Missing fields in struct instantiation")]
+    MissingFieldsInStructInstantiation(Span, Span, Vec<(String, Type)>),
 
     #[error(transparent)]
     NameResolutionError(#[from] NameResolutionError),
@@ -445,10 +445,10 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
             ))
         }
         e @ typed_ast::Expression::MakeStruct(_, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "make struct"),
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "instantiate struct"),
         ),
         e @ typed_ast::Expression::AccessStruct(_, _, _, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "access struct"),
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "access field of struct"),
         ),
     }
 }
@@ -1213,7 +1213,7 @@ impl TypeChecker {
                 };
 
                 if !missing_fields.is_empty() {
-                    return Err(TypeCheckError::MissingFieldsFromStructConstruction(
+                    return Err(TypeCheckError::MissingFieldsInStructInstantiation(
                         *full_span,
                         struct_info.definition_span,
                         missing_fields,
@@ -2594,7 +2594,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("SomeStruct {}"),
-            TypeCheckError::MissingFieldsFromStructConstruction(..)
+            TypeCheckError::MissingFieldsInStructInstantiation(..)
         ));
     }
 
