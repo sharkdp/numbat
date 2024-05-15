@@ -115,6 +115,7 @@ fn rand_poisson<T>(λ: T) -> T
 fn rand_exponential<T>(λ: T) -> 1/T
 fn rand_lognormal(μ: Scalar, σ: Scalar) -> Scalar
 fn rand_pareto<T>(α: Scalar, min: T) -> T
+```
 
 ### Algebra (experimental)
 
