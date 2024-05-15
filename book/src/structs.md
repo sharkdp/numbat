@@ -1,6 +1,6 @@
 # Structs
 
-Numbat compound data structures in the form of structs:
+Numbat has compound data structures in the form of structs:
 
 ```nbt
 struct Vector {
