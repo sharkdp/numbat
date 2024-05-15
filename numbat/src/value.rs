@@ -33,7 +33,7 @@ pub enum Value {
     DateTime(chrono::DateTime<chrono::FixedOffset>),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<String>),
-    Struct(Arc<StructInfo>, Vec<Value>),
+    StructInstance(Arc<StructInfo>, Vec<Value>),
 }
 
 impl Value {
@@ -84,7 +84,7 @@ impl Value {
 
     #[track_caller]
     pub fn unsafe_as_struct_fields(self) -> Vec<Value> {
-        if let Value::Struct(_, values) = self {
+        if let Value::StructInstance(_, values) = self {
             values
         } else {
             panic!("Expected value to be a struct");
@@ -101,7 +101,7 @@ impl std::fmt::Display for Value {
             Value::DateTime(dt) => write!(f, "datetime(\"{}\")", dt),
             Value::FunctionReference(r) => write!(f, "{}", r),
             Value::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
-            Value::Struct(struct_info, values) => write!(
+            Value::StructInstance(struct_info, values) => write!(
                 f,
                 "{} {{ {} }}",
                 struct_info.name,
@@ -126,7 +126,7 @@ impl PrettyPrint for Value {
             Value::FunctionReference(r) => crate::markup::string(r.to_string()),
             Value::FormatSpecifiers(Some(s)) => crate::markup::string(s.to_string()),
             Value::FormatSpecifiers(None) => crate::markup::empty(),
-            Value::Struct(struct_info, values) => {
+            Value::StructInstance(struct_info, values) => {
                 crate::markup::type_identifier(struct_info.name.clone())
                     + crate::markup::space()
                     + crate::markup::operator("{")
