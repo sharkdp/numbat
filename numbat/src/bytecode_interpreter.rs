@@ -183,14 +183,14 @@ impl BytecodeInterpreter {
                 let struct_info_idx = self.vm.get_structinfo_idx(&struct_info.name).unwrap() as u16;
 
                 self.vm
-                    .add_op2(Op::BuildStruct, struct_info_idx, exprs.len() as u16);
+                    .add_op2(Op::BuildStructInstance, struct_info_idx, exprs.len() as u16);
             }
             Expression::AccessField(_span, _full_span, expr, attr, struct_info, _result_type) => {
                 self.compile_expression_with_simplify(expr)?;
 
                 let idx = struct_info.fields.get_index_of(attr).unwrap();
 
-                self.vm.add_op1(Op::DestructureStruct, idx as u16);
+                self.vm.add_op1(Op::AccessStructField, idx as u16);
             }
             Expression::CallableCall(_span, callable, args, _type) => {
                 // Put all arguments on top of the stack
