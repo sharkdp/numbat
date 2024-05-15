@@ -81,6 +81,15 @@ impl Value {
             panic!("Expected value to be a string");
         }
     }
+
+    #[track_caller]
+    pub fn unsafe_as_struct_fields(self) -> Vec<Value> {
+        if let Value::Struct(_, values) = self {
+            values
+        } else {
+            panic!("Expected value to be a struct");
+        }
+    }
 }
 
 impl std::fmt::Display for Value {
