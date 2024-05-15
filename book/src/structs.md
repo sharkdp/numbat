@@ -1,6 +1,6 @@
 # Struct types
 
-Numbat supports nominally typed records:
+Numbat supports structs as compound data structures:
 
 ```nbt
 # Define a struct
