@@ -97,12 +97,12 @@ impl Transformer {
                     })
                     .collect(),
             ),
-            Expression::MakeStruct {
+            Expression::InstantiateStruct {
                 full_span,
                 ident_span,
                 name,
                 fields,
-            } => Expression::MakeStruct {
+            } => Expression::InstantiateStruct {
                 full_span,
                 ident_span,
                 name,
@@ -111,14 +111,12 @@ impl Transformer {
                     .map(|(span, attr, arg)| (span, attr, self.transform_expression(arg)))
                     .collect(),
             },
-            Expression::AccessStruct(full_span, ident_span, expr, attr) => {
-                Expression::AccessStruct(
-                    full_span,
-                    ident_span,
-                    Box::new(self.transform_expression(*expr)),
-                    attr,
-                )
-            }
+            Expression::AccessField(full_span, ident_span, expr, attr) => Expression::AccessField(
+                full_span,
+                ident_span,
+                Box::new(self.transform_expression(*expr)),
+                attr,
+            ),
         }
     }
 

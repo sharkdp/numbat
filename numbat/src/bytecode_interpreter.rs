@@ -167,7 +167,7 @@ impl BytecodeInterpreter {
                     self.vm.add_op2(Op::Call, idx, args.len() as u16); // TODO: check overflow
                 }
             }
-            Expression::MakeStruct(_span, exprs, struct_info) => {
+            Expression::InstantiateStruct(_span, exprs, struct_info) => {
                 // structs must be consistently ordered in the VM, so we reorder
                 // the field values so that they are evaluated in the order the
                 // struct fields are defined.
@@ -185,7 +185,7 @@ impl BytecodeInterpreter {
                 self.vm
                     .add_op2(Op::BuildStruct, struct_info_idx, exprs.len() as u16);
             }
-            Expression::AccessStruct(_span, _full_span, expr, attr, struct_info, _result_type) => {
+            Expression::AccessField(_span, _full_span, expr, attr, struct_info, _result_type) => {
                 self.compile_expression_with_simplify(expr)?;
 
                 let idx = struct_info.fields.get_index_of(attr).unwrap();
@@ -270,8 +270,8 @@ impl BytecodeInterpreter {
             | Expression::Boolean(..)
             | Expression::String(..)
             | Expression::Condition(..)
-            | Expression::MakeStruct(..)
-            | Expression::AccessStruct(..) => {}
+            | Expression::InstantiateStruct(..)
+            | Expression::AccessField(..) => {}
             Expression::BinaryOperator(..) | Expression::BinaryOperatorForDate(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }

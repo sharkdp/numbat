@@ -305,20 +305,20 @@ pub enum TypeCheckError {
     #[error("Unknown struct '{1}")]
     UnknownStruct(Span, String),
 
-    #[error("Unknown field '{2}' of struct '{3}'")]
-    UnknownFieldOfStruct(Span, Span, String, String),
+    #[error("Field '{2}' does not exist in struct '{3}'")]
+    UnknownFieldInStructInstantiation(Span, Span, String, String),
 
     #[error("Duplicate field '{2}' in struct definition")]
     DuplicateFieldInStructDefinition(Span, Span, String),
 
     #[error("Duplicate field '{2}' in struct instantiation")]
-    DuplicateFieldInStructConstruction(Span, Span, String),
+    DuplicateFieldInStructInstantiation(Span, Span, String),
 
-    #[error("Accessing field '{2}' of non struct type '{3}'")]
-    AccessingFieldOfNonStruct(Span, Span, String, Type),
+    #[error("Can not access field '{2}' of non struct type '{3}'")]
+    FieldAccessOfNonStructType(Span, Span, String, Type),
 
-    #[error("Accessing unknown field '{2}' of struct '{3}'")]
-    AccessingUnknownFieldOfStruct(Span, Span, String, Type),
+    #[error("Field '{2}' does not exist in struct '{3}'")]
+    UnknownFieldAccess(Span, Span, String, Type),
 
     #[error("Missing fields in struct instantiation")]
     MissingFieldsInStructInstantiation(Span, Span, Vec<(String, Type)>),
@@ -444,10 +444,10 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                 "binary operator for datetimes",
             ))
         }
-        e @ typed_ast::Expression::MakeStruct(_, _, _) => Err(
+        e @ typed_ast::Expression::InstantiateStruct(_, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "instantiate struct"),
         ),
-        e @ typed_ast::Expression::AccessStruct(_, _, _, _, _, _) => Err(
+        e @ typed_ast::Expression::AccessField(_, _, _, _, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "access field of struct"),
         ),
     }
@@ -1155,7 +1155,7 @@ impl TypeChecker {
                     Box::new(else_),
                 )
             }
-            ast::Expression::MakeStruct {
+            ast::Expression::InstantiateStruct {
                 full_span,
                 ident_span,
                 name,
@@ -1176,7 +1176,7 @@ impl TypeChecker {
                     fields_checked.iter().zip(fields.iter().map(|(s, _, _)| s))
                 {
                     if let Some(other_span) = seen_fields.get(field) {
-                        return Err(TypeCheckError::DuplicateFieldInStructConstruction(
+                        return Err(TypeCheckError::DuplicateFieldInStructInstantiation(
                             *span,
                             *other_span,
                             field.to_string(),
@@ -1185,7 +1185,7 @@ impl TypeChecker {
 
                     let Some((expected_field_span, expected_type)) = struct_info.fields.get(field)
                     else {
-                        return Err(TypeCheckError::UnknownFieldOfStruct(
+                        return Err(TypeCheckError::UnknownFieldInStructInstantiation(
                             *span,
                             struct_info.definition_span,
                             field.clone(),
@@ -1220,15 +1220,19 @@ impl TypeChecker {
                     ));
                 }
 
-                typed_ast::Expression::MakeStruct(*full_span, fields_checked, struct_info.clone())
+                typed_ast::Expression::InstantiateStruct(
+                    *full_span,
+                    fields_checked,
+                    struct_info.clone(),
+                )
             }
-            ast::Expression::AccessStruct(full_span, ident_span, expr, attr) => {
+            ast::Expression::AccessField(full_span, ident_span, expr, attr) => {
                 let expr_checked = self.check_expression(expr)?;
 
                 let type_ = expr_checked.get_type();
 
                 let Type::Struct(struct_info) = type_.clone() else {
-                    return Err(TypeCheckError::AccessingFieldOfNonStruct(
+                    return Err(TypeCheckError::FieldAccessOfNonStructType(
                         *ident_span,
                         expr.full_span(),
                         attr.to_string(),
@@ -1237,7 +1241,7 @@ impl TypeChecker {
                 };
 
                 let Some((_, ret_ty)) = struct_info.fields.get(attr) else {
-                    return Err(TypeCheckError::AccessingUnknownFieldOfStruct(
+                    return Err(TypeCheckError::UnknownFieldAccess(
                         *ident_span,
                         expr.full_span(),
                         attr.to_string(),
@@ -1247,7 +1251,7 @@ impl TypeChecker {
 
                 let ret_ty = ret_ty.to_owned();
 
-                Expression::AccessStruct(
+                Expression::AccessField(
                     *ident_span,
                     *full_span,
                     Box::new(expr_checked),
@@ -2569,7 +2573,7 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("SomeStruct {not_a_field: 1}"),
-            TypeCheckError::UnknownFieldOfStruct(_, _, field, _) if field == "not_a_field"
+            TypeCheckError::UnknownFieldInStructInstantiation(_, _, field, _) if field == "not_a_field"
         ));
 
         assert!(matches!(
@@ -2579,17 +2583,17 @@ mod tests {
 
         assert!(matches!(
             get_typecheck_error("SomeStruct {a: 1a, a: 1a, b: 2b}"),
-            TypeCheckError::DuplicateFieldInStructConstruction(_, _, field) if field == "a"
+            TypeCheckError::DuplicateFieldInStructInstantiation(_, _, field) if field == "a"
         ));
 
         assert!(matches!(
             get_typecheck_error("SomeStruct {a: 1a, b: 1b}.foo"),
-            TypeCheckError::AccessingUnknownFieldOfStruct(_, _, field, _) if field == "foo"
+            TypeCheckError::UnknownFieldAccess(_, _, field, _) if field == "foo"
         ));
 
         assert!(matches!(
             get_typecheck_error("(1).foo"),
-            TypeCheckError::AccessingFieldOfNonStruct(_, _, field, _) if field == "foo"
+            TypeCheckError::FieldAccessOfNonStructType(_, _, field, _) if field == "foo"
         ));
 
         assert!(matches!(

@@ -374,7 +374,7 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message(rhs_type.to_string()),
             ]),
-            TypeCheckError::DuplicateFieldInStructConstruction(
+            TypeCheckError::DuplicateFieldInStructInstantiation(
                 this_field_span,
                 that_field_span,
                 _attr_name,
@@ -386,7 +386,7 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message("Already defined here"),
             ]),
-            TypeCheckError::AccessingFieldOfNonStruct(ident_span, expr_span, _attr, type_) => d
+            TypeCheckError::FieldAccessOfNonStructType(ident_span, expr_span, _attr, type_) => d
                 .with_labels(vec![
                     ident_span
                         .diagnostic_label(LabelStyle::Primary)
@@ -395,7 +395,7 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Secondary)
                         .with_message(type_.to_string()),
                 ]),
-            TypeCheckError::AccessingUnknownFieldOfStruct(ident_span, expr_span, _attr, type_) => d
+            TypeCheckError::UnknownFieldAccess(ident_span, expr_span, _attr, type_) => d
                 .with_labels(vec![
                     ident_span
                         .diagnostic_label(LabelStyle::Primary)
@@ -420,16 +420,15 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::UnknownStruct(span, _name) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
-            TypeCheckError::UnknownFieldOfStruct(field_span, defn_span, _, _) => {
-                d.with_labels(vec![
+            TypeCheckError::UnknownFieldInStructInstantiation(field_span, defn_span, _, _) => d
+                .with_labels(vec![
                     field_span
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message(inner_error),
                     defn_span
                         .diagnostic_label(LabelStyle::Secondary)
                         .with_message("Struct defined here"),
-                ])
-            }
+                ]),
             TypeCheckError::DuplicateFieldInStructDefinition(
                 this_field_span,
                 that_field_span,

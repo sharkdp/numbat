@@ -242,8 +242,8 @@ pub enum Expression {
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
-    MakeStruct(Span, Vec<(String, Expression)>, StructInfo),
-    AccessStruct(Span, Span, Box<Expression>, String, StructInfo, Type),
+    InstantiateStruct(Span, Vec<(String, Expression)>, StructInfo),
+    AccessField(Span, Span, Box<Expression>, String, StructInfo, Type),
 }
 
 impl Expression {
@@ -274,8 +274,8 @@ impl Expression {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
-            Expression::MakeStruct(span, _, _) => *span,
-            Expression::AccessStruct(_span, full_span, _, _, _, _) => *full_span,
+            Expression::InstantiateStruct(span, _, _) => *span,
+            Expression::AccessField(_span, full_span, _, _, _, _) => *full_span,
         }
     }
 }
@@ -336,8 +336,8 @@ impl Expression {
                 }
             }
             Expression::String(_, _) => Type::String,
-            Expression::MakeStruct(_, _, type_) => Type::Struct(type_.clone()),
-            Expression::AccessStruct(_, _, _, _, _, type_) => type_.clone(),
+            Expression::InstantiateStruct(_, _, type_) => Type::Struct(type_.clone()),
+            Expression::AccessField(_, _, _, _, _, type_) => type_.clone(),
         }
     }
 }
@@ -556,8 +556,8 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::CallableCall(..)
         | Expression::Boolean(..)
         | Expression::String(..)
-        | Expression::MakeStruct(..)
-        | Expression::AccessStruct(..) => expr.pretty_print(),
+        | Expression::InstantiateStruct(..)
+        | Expression::AccessField(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::BinaryOperatorForDate { .. }
@@ -736,7 +736,7 @@ impl PrettyPrint for Expression {
                     + m::space()
                     + with_parens(else_)
             }
-            MakeStruct(_, exprs, struct_info) => {
+            InstantiateStruct(_, exprs, struct_info) => {
                 m::type_identifier(struct_info.name.clone())
                     + m::space()
                     + m::operator("{")
@@ -749,7 +749,7 @@ impl PrettyPrint for Expression {
                     .sum()
                     + m::operator("}")
             }
-            AccessStruct(_, _, expr, attr, _, _) => {
+            AccessField(_, _, expr, attr, _, _) => {
                 expr.pretty_print() + m::operator(".") + m::identifier(attr)
             }
         }

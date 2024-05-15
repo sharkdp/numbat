@@ -85,13 +85,13 @@ pub enum Expression {
     Boolean(Span, bool),
     String(Span, Vec<StringPart>),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
-    MakeStruct {
+    InstantiateStruct {
         full_span: Span,
         ident_span: Span,
         name: String,
         fields: Vec<(Span, String, Expression)>,
     },
-    AccessStruct(Span, Span, Box<Expression>, String),
+    AccessField(Span, Span, Box<Expression>, String),
 }
 
 impl Expression {
@@ -123,8 +123,8 @@ impl Expression {
                 span_if.extend(&then_expr.full_span())
             }
             Expression::String(span, _) => *span,
-            Expression::MakeStruct { full_span, .. } => *full_span,
-            Expression::AccessStruct(full_span, _ident_span, _, _) => *full_span,
+            Expression::InstantiateStruct { full_span, .. } => *full_span,
+            Expression::AccessField(full_span, _ident_span, _, _) => *full_span,
         }
     }
 }
@@ -210,7 +210,7 @@ macro_rules! conditional {
 #[cfg(test)]
 macro_rules! struct_ {
     ( $name:ident, $( $field:ident : $val:expr ),* ) => {{
-        crate::ast::Expression::MakeStruct {
+        crate::ast::Expression::InstantiateStruct {
             full_span: Span::dummy(),
             ident_span: Span::dummy(),
             name: stringify!($name).to_owned(),
@@ -521,7 +521,7 @@ impl ReplaceSpans for Expression {
                 Span::dummy(),
                 parts.iter().map(|p| p.replace_spans()).collect(),
             ),
-            Expression::MakeStruct { name, fields, .. } => Expression::MakeStruct {
+            Expression::InstantiateStruct { name, fields, .. } => Expression::InstantiateStruct {
                 full_span: Span::dummy(),
                 ident_span: Span::dummy(),
                 name: name.clone(),
@@ -530,7 +530,7 @@ impl ReplaceSpans for Expression {
                     .map(|(_, n, v)| (Span::dummy(), n.clone(), v.replace_spans()))
                     .collect(),
             },
-            Expression::AccessStruct(_, _, expr, attr) => Expression::AccessStruct(
+            Expression::AccessField(_, _, expr, attr) => Expression::AccessField(
                 Span::dummy(),
                 Span::dummy(),
                 Box::new(expr.replace_spans()),
