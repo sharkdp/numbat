@@ -54,7 +54,7 @@ fn expect_failure(code: &str, msg_part: &str) {
         println!("{}", error_message);
         assert!(
             error_message.contains(msg_part),
-            "Expected {msg_part} but got {error_message}"
+            "Expected '{msg_part}' but got '{error_message}'"
         );
     } else {
         panic!("Expected an error but but instead {code} did not fail");
