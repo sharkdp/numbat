@@ -442,7 +442,7 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message("Already defined here"),
             ]),
-            TypeCheckError::MissingFieldsFromStructConstruction(
+            TypeCheckError::MissingFieldsInStructInstantiation(
                 construction_span,
                 defn_span,
                 missing,
