@@ -1,6 +1,6 @@
-# Struct types
+# Structs
 
-Numbat supports structs as compound data structures:
+Numbat compound data structures in the form of structs:
 
 ```nbt
 # Define a struct
@@ -9,16 +9,15 @@ struct Vector {
   y: Length,
 }
 
-let v = Vector {x: 6m, y: 8m}
+let origin = Vector { x: 0 m, y: 0 m }
+let position = Vector { x: 6 m, y: 8 m }
 
 # A function with a struct as a parameter
-fn euclidian_distance(a: Vector, b: Vector) =
+fn euclidean_distance(a: Vector, b: Vector) =
   sqrt((a.x - b.x)² + (a.y - b.y)²)
   
-assert_eq(
-  euclidian_distance(Vector {x: 0m, y: 0m}, v),
-  10m)
+assert_eq(euclidean_distance(origin, position), 10 m)
   
 # Struct fields can be accessed using `.field` notation
-let x = v.x
+let x = position.x
 ```
