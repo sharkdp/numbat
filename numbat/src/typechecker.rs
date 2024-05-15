@@ -704,6 +704,8 @@ impl TypeChecker {
         ) -> Type {
             match t {
                 Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
+                // The following case is not needed at the moment, but might be interesting
+                // in the future if we add support for generic structs.
                 Type::Struct(StructInfo {
                     definition_span,
                     name,
