@@ -1146,3 +1146,43 @@ fn test_is_subscript_char() {
     assert!(is_subscript_char('ₘ'));
     assert!(is_subscript_char('₎'));
 }
+
+#[test]
+fn test_field_access() {
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("instance2.field").unwrap(),
+        @r###"
+    "instance2", Identifier, (1, 1)
+    ".", Period, (1, 10)
+    "field", Identifier, (1, 11)
+    "", Eof, (1, 16)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("function().field").unwrap(),
+        @r###"
+    "function", Identifier, (1, 1)
+    "(", LeftParen, (1, 9)
+    ")", RightParen, (1, 10)
+    ".", Period, (1, 11)
+    "field", Identifier, (1, 12)
+    "", Eof, (1, 17)
+    "###
+    );
+
+    insta::assert_snapshot!(
+    tokenize_reduced_pretty("instance.0").unwrap_err(),
+        @"Error at (1, 9): `Unexpected character in identifier: '.'`"
+    );
+
+    insta::assert_snapshot!(
+    tokenize_reduced_pretty("instance..field").unwrap_err(),
+        @"Error at (1, 9): `Unexpected character in identifier: '.'`"
+    );
+
+    insta::assert_snapshot!(
+    tokenize_reduced_pretty("instance . field").unwrap_err(),
+        @"Error at (1, 11): `Expected digit`"
+    );
+}
