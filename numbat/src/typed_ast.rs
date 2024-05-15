@@ -123,19 +123,7 @@ impl PrettyPrint for Type {
                     + return_type.pretty_print()
                     + m::operator("]")
             }
-            Type::Struct(StructInfo { name, fields, .. }) => {
-                m::type_identifier(name)
-                    + m::space()
-                    + m::operator("{")
-                    + Itertools::intersperse(
-                        fields.iter().map(|(n, (_, t))| {
-                            m::type_identifier(n) + m::operator(":") + m::space() + t.pretty_print()
-                        }),
-                        m::operator(",") + m::space(),
-                    )
-                    .sum()
-                    + m::operator("}")
-            }
+            Type::Struct(StructInfo { name, .. }) => m::type_identifier(name),
         }
     }
 }
@@ -530,13 +518,22 @@ impl PrettyPrint for Statement {
                     + m::type_identifier(name.clone())
                     + m::space()
                     + m::operator("{")
-                    + Itertools::intersperse(
-                        fields.iter().map(|(n, (_, t))| {
-                            m::identifier(n) + m::operator(":") + m::space() + t.pretty_print()
-                        }),
-                        m::operator(",") + m::space(),
-                    )
-                    .sum()
+                    + if fields.is_empty() {
+                        m::empty()
+                    } else {
+                        m::space()
+                            + Itertools::intersperse(
+                                fields.iter().map(|(n, (_, t))| {
+                                    m::identifier(n)
+                                        + m::operator(":")
+                                        + m::space()
+                                        + t.pretty_print()
+                                }),
+                                m::operator(",") + m::space(),
+                            )
+                            .sum()
+                            + m::space()
+                    }
                     + m::operator("}")
             }
         }
@@ -740,13 +737,22 @@ impl PrettyPrint for Expression {
                 m::type_identifier(struct_info.name.clone())
                     + m::space()
                     + m::operator("{")
-                    + itertools::Itertools::intersperse(
-                        exprs.iter().map(|(n, e)| {
-                            m::identifier(n) + m::operator(":") + m::space() + e.pretty_print()
-                        }),
-                        m::operator(",") + m::space(),
-                    )
-                    .sum()
+                    + if exprs.is_empty() {
+                        m::empty()
+                    } else {
+                        m::space()
+                            + itertools::Itertools::intersperse(
+                                exprs.iter().map(|(n, e)| {
+                                    m::identifier(n)
+                                        + m::operator(":")
+                                        + m::space()
+                                        + e.pretty_print()
+                                }),
+                                m::operator(",") + m::space(),
+                            )
+                            .sum()
+                            + m::space()
+                    }
                     + m::operator("}")
             }
             AccessField(_, _, expr, attr, _, _) => {
@@ -922,7 +928,7 @@ mod tests {
         roundtrip_check("-3!");
         roundtrip_check("(-3)!");
         roundtrip_check("megapoints");
-        roundtrip_check("Foo {foo: 1 meter, bar: 1 second}");
+        roundtrip_check("Foo { foo: 1 meter, bar: 1 second }");
     }
 
     #[test]
