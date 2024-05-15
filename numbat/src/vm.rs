@@ -903,7 +903,7 @@ impl Vm {
                         Value::String(s) => s,
                         Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
                         Value::FunctionReference(r) => r.to_string(),
-                        s @ Value::Struct(..) => s.to_string(),
+                        s @ Value::StructInstance(..) => s.to_string(),
                         Value::FormatSpecifiers(_) => unreachable!(),
                     };
 
@@ -994,7 +994,7 @@ impl Vm {
                         content.push(self.pop());
                     }
 
-                    self.stack.push(Value::Struct(struct_info, content));
+                    self.stack.push(Value::StructInstance(struct_info, content));
                 }
                 Op::AccessStructField => {
                     let field_idx = self.read_u16();
