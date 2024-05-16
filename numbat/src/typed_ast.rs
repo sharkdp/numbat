@@ -105,11 +105,11 @@ impl std::fmt::Display for Type {
 impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
-            Type::Never => m::keyword("!"),
+            Type::Never => m::type_identifier("!"),
             Type::Dimension(d) => d.pretty_print(),
-            Type::Boolean => m::keyword("Bool"),
-            Type::String => m::keyword("String"),
-            Type::DateTime => m::keyword("DateTime"),
+            Type::Boolean => m::type_identifier("Bool"),
+            Type::String => m::type_identifier("String"),
+            Type::DateTime => m::type_identifier("DateTime"),
             Type::Fn(param_types, return_type) => {
                 m::type_identifier("Fn")
                     + m::operator("[(")
@@ -164,6 +164,7 @@ impl Type {
         match (self, other) {
             (Type::Never, _) => true,
             (_, Type::Never) => false,
+            (Type::List(el1), Type::List(el2)) => el1.is_subtype_of(el2),
             (t1, t2) => t1 == t2,
         }
     }

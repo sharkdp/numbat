@@ -1,3 +1,55 @@
+use core::scalar
+
+fn len<A>(xs: List<A>) -> Scalar
 fn head<A>(xs: List<A>) -> A
 fn tail<A>(xs: List<A>) -> List<A>
 fn cons<A>(x: A, xs: List<A>) -> List<A>
+
+fn is_empty<A>(xs: List<A>) -> Bool = len(xs) == 0
+
+# We definitely want to make the following functions generic, but this is not yet possible:
+# Also, we want the base case to be the empty list, but this is also not yet possible.
+
+fn generate(n: Scalar, f: Fn[() -> Scalar]) -> List<Scalar> =
+  if n == 1
+    then [f()]
+    else cons(f(), generate(n - 1, f))
+
+fn map(f: Fn[(Scalar) -> Scalar], xs: List<Scalar>) -> List<Scalar> =
+  if len(xs) == 1
+    then [f(head(xs))]
+    else cons(f(head(xs)), map(f, tail(xs)))
+
+fn cons_end(xs: List<Scalar>, x: Scalar) -> List<Scalar> =
+  if is_empty(xs)
+    then [x]
+    else cons(head(xs), cons_end(tail(xs), x))
+
+fn reverse(xs: List<Scalar>) -> List<Scalar> =
+  if len(xs) == 1
+    then xs
+    else cons_end(reverse(tail(xs)), head(xs))
+
+fn sequence(n: Scalar) -> List<Scalar> =
+  if n == 1
+    then [0]
+    else cons_end(sequence(n - 1), n - 1)
+
+fn foldl(f: Fn[(Scalar, Scalar) -> Scalar], acc: Scalar, xs: List<Scalar>) -> Scalar =
+  if len(xs) == 1
+    then f(acc, head(xs))
+    else foldl(f, f(acc, head(xs)), tail(xs))
+
+fn const_5() -> Scalar = 5
+
+fn inc(x: Scalar) -> Scalar = x + 1
+
+fn add(x: Scalar, y: Scalar) -> Scalar = x + y
+fn mul(x: Scalar, y: Scalar) -> Scalar = x * y
+
+assert(sequence(5) == [0, 1, 2, 3, 4])
+assert(generate(3, const_5) == [5, 5, 5])
+assert(map(inc, [1, 2, 3]) == [2, 3, 4])
+assert(reverse([1, 2, 3]) == [3, 2, 1])
+assert(foldl(add, 0, [1, 2, 3, 4, 5]) == 15)
+assert(foldl(mul, 1, [1, 2, 3, 4, 5]) == 120)
