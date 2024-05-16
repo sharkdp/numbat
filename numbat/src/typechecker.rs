@@ -323,6 +323,9 @@ pub enum TypeCheckError {
     #[error("Missing fields in struct instantiation")]
     MissingFieldsInStructInstantiation(Span, Span, Vec<(String, Type)>),
 
+    #[error("Incompatible types in list: expected '{1}', got '{3}' instead")]
+    IncompatibleTypesInList(Span, Type, Span, Type),
+
     #[error(transparent)]
     NameResolutionError(#[from] NameResolutionError),
 }
@@ -1284,13 +1287,20 @@ impl TypeChecker {
                 let element_type = if element_types.is_empty() {
                     todo!()
                 } else {
-                    let element_type = element_types[0].clone();
-                    for t in element_types.iter().skip(1) {
-                        if element_type != *t {
-                            todo!()
+                    let type_of_first_element = element_types[0].clone();
+                    for (subsequent_element, type_of_subsequent_element) in
+                        elements_checked.iter().zip(element_types.iter()).skip(1)
+                    {
+                        if type_of_first_element != *type_of_subsequent_element {
+                            return Err(TypeCheckError::IncompatibleTypesInList(
+                                elements_checked[0].full_span(),
+                                type_of_first_element.clone(),
+                                subsequent_element.full_span(),
+                                type_of_subsequent_element.clone(),
+                            ));
                         }
                     }
-                    element_type
+                    type_of_first_element
                 };
 
                 typed_ast::Expression::List(*span, elements_checked, element_type)
@@ -2665,6 +2675,31 @@ mod tests {
         assert!(matches!(
             get_typecheck_error("SomeStruct {}"),
             TypeCheckError::MissingFieldsInStructInstantiation(..)
+        ));
+    }
+
+    #[test]
+    fn lists() {
+        // assert_successful_typecheck("[]");
+        assert_successful_typecheck("[1]");
+        assert_successful_typecheck("[1, 2]");
+
+        assert_successful_typecheck("[1 a]");
+        assert_successful_typecheck("[1 a, 2 a]");
+
+        assert_successful_typecheck("[[1 a, 2 a], [3 a]]");
+
+        assert!(matches!(
+            get_typecheck_error("[1, a]"),
+            TypeCheckError::IncompatibleTypesInList(..)
+        ));
+        assert!(matches!(
+            get_typecheck_error("[[1 a], 2 a]"),
+            TypeCheckError::IncompatibleTypesInList(..)
+        ));
+        assert!(matches!(
+            get_typecheck_error("[[1 a], [1 b]]"),
+            TypeCheckError::IncompatibleTypesInList(..)
         ));
     }
 
