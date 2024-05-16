@@ -34,6 +34,7 @@ pub enum Value {
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<String>),
     StructInstance(Arc<StructInfo>, Vec<Value>),
+    List(Vec<Value>),
 }
 
 impl Value {
@@ -119,6 +120,14 @@ impl std::fmt::Display for Value {
                     )
                 }
             ),
+            Value::List(elements) => write!(
+                f,
+                "[{}]",
+                elements
+                    .iter()
+                    .map(|element| element.to_string())
+                    .join(", ")
+            ),
         }
     }
 }
@@ -154,6 +163,15 @@ impl PrettyPrint for Value {
                             + crate::markup::space()
                     }
                     + crate::markup::operator("}")
+            }
+            Value::List(elements) => {
+                crate::markup::operator("[")
+                    + itertools::Itertools::intersperse(
+                        elements.iter().map(|element| element.pretty_print()),
+                        crate::markup::operator(",") + crate::markup::space(),
+                    )
+                    .sum()
+                    + crate::markup::operator("]")
             }
         }
     }
