@@ -450,6 +450,9 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::AccessField(_, _, _, _, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "access field of struct"),
         ),
+        e @ typed_ast::Expression::List(_, _, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "lists"),
+        ),
     }
 }
 
@@ -1268,6 +1271,29 @@ impl TypeChecker {
                     struct_info,
                     ret_ty,
                 )
+            }
+            ast::Expression::List(span, elements) => {
+                let elements_checked = elements
+                    .iter()
+                    .map(|e| self.check_expression(e))
+                    .collect::<Result<Vec<_>>>()?;
+
+                let element_types: Vec<Type> =
+                    elements_checked.iter().map(|e| e.get_type()).collect();
+
+                let element_type = if element_types.is_empty() {
+                    todo!()
+                } else {
+                    let element_type = element_types[0].clone();
+                    for t in element_types.iter().skip(1) {
+                        if element_type != *t {
+                            todo!()
+                        }
+                    }
+                    element_type
+                };
+
+                typed_ast::Expression::List(*span, elements_checked, element_type)
             }
         })
     }

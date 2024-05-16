@@ -109,9 +109,11 @@ pub enum Op {
 
     /// Build a struct from the field values on the stack
     BuildStructInstance,
-
     /// Access a single field of a struct
     AccessStructField,
+
+    /// Build a list from the elements on the stack
+    BuildList,
 
     /// Return from the current function
     Return,
@@ -134,7 +136,8 @@ impl Op {
             | Op::JumpIfFalse
             | Op::Jump
             | Op::CallCallable
-            | Op::AccessStructField => 1,
+            | Op::AccessStructField
+            | Op::BuildList => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
@@ -201,6 +204,7 @@ impl Op {
             Op::Return => "Return",
             Op::BuildStructInstance => "BuildStructInstance",
             Op::AccessStructField => "AccessStructField",
+            Op::BuildList => "BuildList",
         }
     }
 }
@@ -904,6 +908,7 @@ impl Vm {
                         Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
                         Value::FunctionReference(r) => r.to_string(),
                         s @ Value::StructInstance(..) => s.to_string(),
+                        l @ Value::List(_) => l.to_string(),
                         Value::FormatSpecifiers(_) => unreachable!(),
                     };
 
@@ -1003,6 +1008,16 @@ impl Vm {
 
                     let value = fields.swap_remove(field_idx as usize);
                     self.stack.push(value);
+                }
+                Op::BuildList => {
+                    let length = self.read_u16();
+                    let mut list = Vec::with_capacity(length as usize);
+
+                    for _ in 0..length {
+                        list.push(self.pop());
+                    }
+
+                    self.stack.push(Value::List(list));
                 }
             }
         }
