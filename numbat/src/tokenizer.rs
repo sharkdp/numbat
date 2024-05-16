@@ -63,7 +63,6 @@ pub enum TokenKind {
     Multiply,
     Power,
     Divide,
-    Per,
     Comma,
     Arrow,
     Equal,
@@ -85,6 +84,8 @@ pub enum TokenKind {
     Period,
 
     // Keywords
+    Per,
+    To,
     Let,
     Fn, // 'fn'
     Dimension,
@@ -92,27 +93,26 @@ pub enum TokenKind {
     Use,
     Struct,
 
-    To,
-
-    Bool,
-    True,
-    False,
-    If,
-    Then,
-    Else,
-
-    String,
-    DateTime,
-
-    NaN,
-    Inf,
-
-    CapitalFn, // 'Fn'
-
     Long,
     Short,
     Both,
     None,
+
+    If,
+    Then,
+    Else,
+    True,
+    False,
+
+    NaN,
+    Inf,
+
+    // Type names
+    Bool,
+    String,
+    DateTime,
+    CapitalFn, // 'Fn'
+    List,
 
     // Procedure calls
     ProcedurePrint,
@@ -346,33 +346,40 @@ impl Tokenizer {
         static KEYWORDS: OnceLock<HashMap<&'static str, TokenKind>> = OnceLock::new();
         let keywords = KEYWORDS.get_or_init(|| {
             let mut m = HashMap::new();
+            // keywords
             m.insert("per", TokenKind::Per);
             m.insert("to", TokenKind::To);
             m.insert("let", TokenKind::Let);
             m.insert("fn", TokenKind::Fn);
-            m.insert("struct", TokenKind::Struct);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
             m.insert("use", TokenKind::Use);
+            m.insert("struct", TokenKind::Struct);
             m.insert("long", TokenKind::Long);
             m.insert("short", TokenKind::Short);
             m.insert("both", TokenKind::Both);
             m.insert("none", TokenKind::None);
+            m.insert("if", TokenKind::If);
+            m.insert("then", TokenKind::Then);
+            m.insert("else", TokenKind::Else);
+            m.insert("true", TokenKind::True);
+            m.insert("false", TokenKind::False);
+            m.insert("NaN", TokenKind::NaN);
+            m.insert("inf", TokenKind::Inf);
+
+            // procedures
             m.insert("print", TokenKind::ProcedurePrint);
             m.insert("assert", TokenKind::ProcedureAssert);
             m.insert("assert_eq", TokenKind::ProcedureAssertEq);
             m.insert("type", TokenKind::ProcedureType);
+
+            // type names
             m.insert("Bool", TokenKind::Bool);
-            m.insert("true", TokenKind::True);
-            m.insert("false", TokenKind::False);
-            m.insert("if", TokenKind::If);
-            m.insert("then", TokenKind::Then);
-            m.insert("else", TokenKind::Else);
             m.insert("String", TokenKind::String);
             m.insert("DateTime", TokenKind::DateTime);
             m.insert("Fn", TokenKind::CapitalFn);
-            m.insert("NaN", TokenKind::NaN);
-            m.insert("inf", TokenKind::Inf);
+            m.insert("List", TokenKind::List);
+
             // Keep this list in sync with keywords::KEYWORDS!
             m
         });

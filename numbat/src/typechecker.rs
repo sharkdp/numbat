@@ -607,8 +607,31 @@ impl TypeChecker {
             parameter_types.iter().zip(argument_types).enumerate()
         {
             match (parameter_type, argument_type) {
-                (Type::Dimension(parameter_type), Type::Dimension(argument_type)) => {
-                    let mut parameter_type = substitute(&substitutions, parameter_type);
+                (parameter_type, argument_type)
+                    if (parameter_type.is_dtype() && argument_type.is_dtype())
+                        || (matches!(parameter_type, Type::List(inner) if inner.is_dtype())
+                            && matches!(&argument_type, Type::List(inner) if inner.is_dtype())) =>
+                {
+                    // What we have above and below is horrible, but unfortunately, we do not
+                    // have box patterns on stable Rust, so we need to do this in two steps.
+                    let parameter_type = match parameter_type {
+                        Type::List(element_type) => match element_type.as_ref() {
+                            Type::Dimension(inner) => inner.clone(),
+                            _ => unreachable!(),
+                        },
+                        Type::Dimension(inner) => inner.clone(),
+                        _ => unreachable!(),
+                    };
+                    let argument_type = match argument_type {
+                        Type::List(element_type) => match *element_type {
+                            Type::Dimension(inner) => inner.clone(),
+                            _ => unreachable!(),
+                        },
+                        Type::Dimension(inner) => inner.clone(),
+                        _ => unreachable!(),
+                    };
+
+                    let mut parameter_type = substitute(&substitutions, &parameter_type);
 
                     let remaining_generic_subtypes: Vec<_> = parameter_type
                         .iter()
@@ -736,6 +759,11 @@ impl TypeChecker {
                         })
                         .collect(),
                 }),
+                Type::List(element_type) => Type::List(Box::new(apply_substitutions(
+                    element_type,
+                    substitute,
+                    substitutions,
+                ))),
                 type_ => type_.clone(),
             }
         }
@@ -1924,6 +1952,9 @@ impl TypeChecker {
                     .collect::<Result<Vec<_>>>()?,
                 Box::new(self.type_from_annotation(return_type)?),
             )),
+            TypeAnnotation::List(_, element_type) => Ok(Type::List(Box::new(
+                self.type_from_annotation(element_type)?,
+            ))),
         }
     }
 
