@@ -326,6 +326,14 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         );
 
         m.insert(
+            "len".to_string(),
+            ForeignFunction {
+                name: "len".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(len)),
+            },
+        );
+        m.insert(
             "head".to_string(),
             ForeignFunction {
                 name: "head".into(),
@@ -862,6 +870,14 @@ fn exchange_rate(args: &[Value]) -> Result<Value> {
     Ok(Value::Quantity(Quantity::from_scalar(
         exchange_rates.get_rate(rate).unwrap_or(f64::NAN),
     )))
+}
+
+fn len(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let list = args[0].unsafe_as_list();
+
+    Ok(Value::Quantity(Quantity::from_scalar(list.len() as f64)))
 }
 
 fn head(args: &[Value]) -> Result<Value> {
