@@ -13,6 +13,7 @@
     - [Medication dosage](./example-medication_dosage.md)
     - [Molarity](./example-molarity.md)
     - [Musical note frequency](./example-musical_note_frequency.md)
+    - [Paper sizes](./example-paper_size.md)
     - [Population growth](./example-population_growth.md)
     - [Recipe](./example-recipe.md)
     - [XKCD 687](./example-xkcd_687.md)
