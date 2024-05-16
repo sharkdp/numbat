@@ -91,6 +91,15 @@ impl Value {
             panic!("Expected value to be a struct");
         }
     }
+
+    #[track_caller]
+    pub fn unsafe_as_list(&self) -> Vec<Value> {
+        if let Value::List(values) = self {
+            values.clone()
+        } else {
+            panic!("Expected value to be a list");
+        }
+    }
 }
 
 impl std::fmt::Display for Value {

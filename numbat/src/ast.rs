@@ -262,6 +262,7 @@ pub enum TypeAnnotation {
     String(Span),
     DateTime(Span),
     Fn(Span, Vec<TypeAnnotation>, Box<TypeAnnotation>),
+    List(Span, Box<TypeAnnotation>),
 }
 
 impl TypeAnnotation {
@@ -273,6 +274,7 @@ impl TypeAnnotation {
             TypeAnnotation::String(span) => *span,
             TypeAnnotation::DateTime(span) => *span,
             TypeAnnotation::Fn(span, _, _) => *span,
+            TypeAnnotation::List(span, _) => *span,
         }
     }
 }
@@ -299,6 +301,12 @@ impl PrettyPrint for TypeAnnotation {
                     + m::space()
                     + return_type.pretty_print()
                     + m::operator("]")
+            }
+            TypeAnnotation::List(_, element_type) => {
+                m::type_identifier("List")
+                    + m::operator("<")
+                    + element_type.pretty_print()
+                    + m::operator(">")
             }
         }
     }
@@ -439,6 +447,9 @@ impl ReplaceSpans for TypeAnnotation {
             TypeAnnotation::DateTime(_) => TypeAnnotation::DateTime(Span::dummy()),
             TypeAnnotation::Fn(_, pt, rt) => {
                 TypeAnnotation::Fn(Span::dummy(), pt.clone(), rt.clone())
+            }
+            TypeAnnotation::List(_, et) => {
+                TypeAnnotation::List(Span::dummy(), Box::new(et.replace_spans()))
             }
         }
     }

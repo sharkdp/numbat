@@ -326,6 +326,31 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         );
 
         m.insert(
+            "head".to_string(),
+            ForeignFunction {
+                name: "head".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(head)),
+            },
+        );
+        m.insert(
+            "tail".to_string(),
+            ForeignFunction {
+                name: "tail".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(tail)),
+            },
+        );
+        m.insert(
+            "cons".to_string(),
+            ForeignFunction {
+                name: "cons".into(),
+                arity: 2..=2,
+                callable: Callable::Function(Box::new(cons)),
+            },
+        );
+
+        m.insert(
             "str_length".to_string(),
             ForeignFunction {
                 name: "str_length".into(),
@@ -837,6 +862,36 @@ fn exchange_rate(args: &[Value]) -> Result<Value> {
     Ok(Value::Quantity(Quantity::from_scalar(
         exchange_rates.get_rate(rate).unwrap_or(f64::NAN),
     )))
+}
+
+fn head(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let list = args[0].unsafe_as_list();
+
+    if let Some(first) = list.first() {
+        Ok(first.clone())
+    } else {
+        Err(RuntimeError::EmptyList)
+    }
+}
+
+fn tail(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let mut list = args[0].unsafe_as_list();
+    list.remove(0);
+
+    Ok(Value::List(list))
+}
+
+fn cons(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 2);
+
+    let mut list = args[1].unsafe_as_list().clone();
+    list.insert(0, args[0].clone());
+
+    Ok(Value::List(list))
 }
 
 fn str_length(args: &[Value]) -> Result<Value> {
