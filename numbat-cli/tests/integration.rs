@@ -102,7 +102,7 @@ fn print_calls() {
         .assert()
         .success()
         .stdout(predicates::str::contains(
-            "1 \n2 m\nhello world\npi = 3.14159\n1 + 2 = 3\n",
+            "1\n2 m\nhello world\npi = 3.14159\n1 + 2 = 3\n",
         ));
 }
 

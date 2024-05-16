@@ -101,7 +101,7 @@ fn sphere_area<L>(radius: L) -> L^2
 fn sphere_volume<L>(radius: L) -> L^3
 ```
 
-### Random sampling 
+### Random sampling
 
 ```nbt
 fn random() -> Scalar
@@ -136,6 +136,13 @@ fn from_celsius(t_celsius: Scalar) -> Temperature
 fn celsius(t_kelvin: Temperature) -> Scalar
 fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature
 fn fahrenheit(t_kelvin: Temperature) -> Scalar
+```
+
+## Chemistry
+
+```nbt
+# Get properties of a chemical element by its symbol or name (case-insensitive).
+fn element(pattern: String) -> ChemicalElement
 ```
 
 ## Strings
