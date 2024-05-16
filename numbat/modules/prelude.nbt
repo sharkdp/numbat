@@ -30,5 +30,7 @@ use units::placeholder
 use physics::constants
 use physics::temperature_conversion
 
+use chemistry::elements
+
 use datetime::functions
 use datetime::human

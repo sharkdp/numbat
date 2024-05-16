@@ -786,6 +786,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "523dc4f511e55ab87b694dc30d0f820d60906ef06413f93d4d7a1385599cc149"
 
 [[package]]
+name = "mendeleev"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b27414e33dd1f1d774e1a134bca391b5bbd58c60810253e0a6bea7258064dcf"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "nibble_vec"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -880,6 +889,7 @@ dependencies = [
  "insta",
  "itertools 0.12.0",
  "libc",
+ "mendeleev",
  "num-format",
  "num-integer",
  "num-rational",
