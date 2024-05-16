@@ -69,6 +69,7 @@ pub enum Type {
     DateTime,
     Fn(Vec<Type>, Box<Type>),
     Struct(StructInfo),
+    List(Box<Type>),
 }
 
 impl std::fmt::Display for Type {
@@ -96,6 +97,7 @@ impl std::fmt::Display for Type {
                         .join(", ")
                 )
             }
+            Type::List(element_type) => write!(f, "List<{}>", element_type.to_string()),
         }
     }
 }
@@ -124,6 +126,12 @@ impl PrettyPrint for Type {
                     + m::operator("]")
             }
             Type::Struct(StructInfo { name, .. }) => m::type_identifier(name),
+            Type::List(element_type) => {
+                m::type_identifier("List")
+                    + m::operator("<")
+                    + element_type.pretty_print()
+                    + m::operator(">")
+            }
         }
     }
 }
@@ -232,6 +240,7 @@ pub enum Expression {
     String(Span, Vec<StringPart>),
     InstantiateStruct(Span, Vec<(String, Expression)>, StructInfo),
     AccessField(Span, Span, Box<Expression>, String, StructInfo, Type),
+    List(Span, Vec<Expression>, Type),
 }
 
 impl Expression {
@@ -264,6 +273,7 @@ impl Expression {
             Expression::String(span, _) => *span,
             Expression::InstantiateStruct(span, _, _) => *span,
             Expression::AccessField(_span, full_span, _, _, _, _) => *full_span,
+            Expression::List(full_span, _, _) => *full_span,
         }
     }
 }
@@ -327,6 +337,7 @@ impl Expression {
             Expression::String(_, _) => Type::String,
             Expression::InstantiateStruct(_, _, type_) => Type::Struct(type_.clone()),
             Expression::AccessField(_, _, _, _, _, type_) => type_.clone(),
+            Expression::List(_, _, element_type) => Type::List(Box::new(element_type.clone())),
         }
     }
 }
@@ -562,7 +573,8 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::Boolean(..)
         | Expression::String(..)
         | Expression::InstantiateStruct(..)
-        | Expression::AccessField(..) => expr.pretty_print(),
+        | Expression::AccessField(..)
+        | Expression::List(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::BinaryOperatorForDate { .. }
@@ -765,6 +777,15 @@ impl PrettyPrint for Expression {
             }
             AccessField(_, _, expr, attr, _, _) => {
                 expr.pretty_print() + m::operator(".") + m::identifier(attr)
+            }
+            List(_, elements, _) => {
+                m::operator("[")
+                    + itertools::Itertools::intersperse(
+                        elements.iter().map(|e| e.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator("]")
             }
         }
     }

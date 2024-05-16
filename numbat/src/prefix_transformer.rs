@@ -117,6 +117,13 @@ impl Transformer {
                 Box::new(self.transform_expression(*expr)),
                 attr,
             ),
+            Expression::List(span, elements) => Expression::List(
+                span,
+                elements
+                    .into_iter()
+                    .map(|e| self.transform_expression(e))
+                    .collect(),
+            ),
         }
     }
 

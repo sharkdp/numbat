@@ -92,6 +92,7 @@ pub enum Expression {
         fields: Vec<(Span, String, Expression)>,
     },
     AccessField(Span, Span, Box<Expression>, String),
+    List(Span, Vec<Expression>),
 }
 
 impl Expression {
@@ -125,6 +126,7 @@ impl Expression {
             Expression::String(span, _) => *span,
             Expression::InstantiateStruct { full_span, .. } => *full_span,
             Expression::AccessField(full_span, _ident_span, _, _) => *full_span,
+            Expression::List(span, _) => *span,
         }
     }
 }
@@ -222,6 +224,16 @@ macro_rules! struct_ {
 }
 
 #[cfg(test)]
+macro_rules! list {
+    ( $( $val:expr ),* ) => {
+        crate::ast::Expression::List(
+             Span::dummy(),
+            vec![$($val,)*],
+        )
+    };
+}
+
+#[cfg(test)]
 pub(crate) use binop;
 #[cfg(test)]
 pub(crate) use boolean;
@@ -231,6 +243,8 @@ pub(crate) use conditional;
 pub(crate) use factorial;
 #[cfg(test)]
 pub(crate) use identifier;
+#[cfg(test)]
+pub(crate) use list;
 #[cfg(test)]
 pub(crate) use logical_neg;
 #[cfg(test)]
@@ -536,6 +550,10 @@ impl ReplaceSpans for Expression {
                 Span::dummy(),
                 Box::new(expr.replace_spans()),
                 attr.clone(),
+            ),
+            Expression::List(_, elements) => Expression::List(
+                Span::dummy(),
+                elements.iter().map(|e| e.replace_spans()).collect(),
             ),
         }
     }

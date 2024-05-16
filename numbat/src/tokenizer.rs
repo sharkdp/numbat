@@ -1186,3 +1186,20 @@ fn test_field_access() {
         @"Error at (1, 11): `Expected digit`"
     );
 }
+
+#[test]
+fn test_lists() {
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("[1, 2.3, 4]").unwrap(),
+        @r###"
+    "[", LeftBracket, (1, 1)
+    "1", Number, (1, 2)
+    ",", Comma, (1, 3)
+    "2.3", Number, (1, 5)
+    ",", Comma, (1, 8)
+    "4", Number, (1, 10)
+    "]", RightBracket, (1, 11)
+    "", Eof, (1, 12)
+    "###
+    );
+}

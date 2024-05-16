@@ -252,6 +252,13 @@ impl BytecodeInterpreter {
                 self.vm
                     .patch_u16_value_at(else_jump_offset, end_offset - (else_jump_offset + 2));
             }
+            Expression::List(_, elements, _) => {
+                for element in elements {
+                    self.compile_expression_with_simplify(element)?;
+                }
+
+                self.vm.add_op1(Op::BuildList, elements.len() as u16);
+            }
         };
 
         Ok(())
@@ -272,7 +279,8 @@ impl BytecodeInterpreter {
             | Expression::String(..)
             | Expression::Condition(..)
             | Expression::InstantiateStruct(..)
-            | Expression::AccessField(..) => {}
+            | Expression::AccessField(..)
+            | Expression::List(..) => {}
             Expression::BinaryOperator(..) | Expression::BinaryOperatorForDate(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }
