@@ -1016,6 +1016,7 @@ impl Vm {
                     for _ in 0..length {
                         list.push(self.pop());
                     }
+                    list.reverse();
 
                     self.stack.push(Value::List(list));
                 }

@@ -16,7 +16,7 @@
 //!
 //! decorator       ::=   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
 //!
-//! type_annotation ::=   "Bool" | "String" | dimension_expr
+//! type_annotation ::=   "Bool" | "String" | "List<" type ">" | dimension_expr
 //! dimension_expr  ::=   dim_factor
 //! dim_factor      ::=   dim_power ( (multiply | divide) dim_power ) *
 //! dim_power       ::=   dim_primary ( power dim_exponent | unicode_exponent ) ?
@@ -217,6 +217,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected {0} in function type")]
     ExpectedTokenInFunctionType(&'static str),
+
+    #[error("Expected {0} in list type")]
+    ExpectedTokenInListType(&'static str),
 
     #[error("Expected '{{' after struct name")]
     ExpectedLeftCurlyAfterStructName,
@@ -1475,6 +1478,28 @@ impl<'a> Parser<'a> {
             let span = span.extend(&self.last().unwrap().span);
 
             Ok(TypeAnnotation::Fn(span, params, Box::new(return_type)))
+        } else if self.match_exact(TokenKind::List).is_some() {
+            let span = self.last().unwrap().span;
+
+            if self.match_exact(TokenKind::LessThan).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInListType("'<'"),
+                    self.peek().span,
+                ));
+            }
+
+            let element_type = self.type_annotation()?;
+
+            if self.match_exact(TokenKind::GreaterThan).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedTokenInListType("'>'"),
+                    self.peek().span,
+                ));
+            }
+
+            let span = span.extend(&self.last().unwrap().span);
+
+            Ok(TypeAnnotation::List(span, Box::new(element_type)))
         } else {
             Ok(TypeAnnotation::TypeExpression(self.dimension_expression()?))
         }

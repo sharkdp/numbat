@@ -50,12 +50,14 @@ pub enum RuntimeError {
 
     #[error("Invalid format specifiers: {0}")]
     InvalidFormatSpecifiers(String),
-
     #[error("Incorrect type for format specifiers: {0}")]
     InvalidTypeForFormatSpecifiers(String),
 
     #[error("Chemical element not found: {0}")]
     ChemicalElementNotFound(String),
+
+    #[error("Empty list")]
+    EmptyList,
 }
 
 #[derive(Debug, PartialEq, Eq)]

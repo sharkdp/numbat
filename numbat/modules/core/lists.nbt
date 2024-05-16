@@ -1,0 +1,3 @@
+fn head<A>(xs: List<A>) -> A
+fn tail<A>(xs: List<A>) -> List<A>
+fn cons<A>(x: A, xs: List<A>) -> List<A>
