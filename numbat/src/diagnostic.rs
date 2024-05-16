@@ -328,6 +328,21 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_notes(vec![inner_error])
                 }
             }
+            TypeCheckError::IncompatibleTypesInList(
+                span_first,
+                type_first,
+                span_subsequent,
+                type_subsequent,
+            ) => d
+                .with_labels(vec![
+                    span_first
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(type_first.to_string()),
+                    span_subsequent
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(type_subsequent.to_string()),
+                ])
+                .with_notes(vec![inner_error]),
             TypeCheckError::NoDimensionlessBaseUnit(span, unit_name) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
