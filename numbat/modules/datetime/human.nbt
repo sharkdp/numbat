@@ -30,6 +30,9 @@ fn _human_readable_duration(time: Time, dt: DateTime, num_days: Scalar) -> Strin
 # we skip hours/minutes/seconds for durations larger than 1000 days because:
 #   (a) we run into floating point precision problems at the nanosecond level at this point
 #   (b) for much larger numbers, we can't convert to DateTimes anymore
+@name("Human-readable time duration")
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
 fn human(time: Time) =
   if _human_num_days(time) > 1000
     then "{_human_num_days(time)} days" 
