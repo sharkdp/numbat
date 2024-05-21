@@ -383,6 +383,12 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                 Decorator::Name(name) => {
                     m::decorator("@name") + m::operator("(") + m::string(name) + m::operator(")")
                 }
+                Decorator::Description(description) => {
+                    m::decorator("@description")
+                        + m::operator("(")
+                        + m::string(description)
+                        + m::operator(")")
+                }
             }
             + m::nl();
     }
