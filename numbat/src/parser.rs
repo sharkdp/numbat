@@ -182,17 +182,23 @@ pub enum ParseErrorKind {
     #[error("Only integer numbers (< 2^128) are allowed in dimension exponents")]
     NumberInDimensionExponentOutOfRange,
 
-    #[error("Decorators can only be used on unit definitions or let definitions")]
-    DecoratorsCanOnlyBeUsedOnUnitOrLetDefinitions,
+    #[error("Decorators can only be used on unit, let or function definitions")]
+    DecoratorUsedOnUnsuitableKind,
 
     #[error("Decorators on let definitions cannot have prefix information")]
     DecoratorsWithPrefixOnLetDefinition,
+
+    #[error("Decorators on function definitions cannot have prefix information")]
+    DecoratorsWithPrefixOnFnDefinition,
 
     #[error("Expected opening parenthesis after decorator")]
     ExpectedLeftParenAfterDecorator,
 
     #[error("Unknown alias annotation")]
     UnknownAliasAnnotation,
+
+    #[error("Aliases cannot be used on foreign functions.")]
+    AliasUsedOnFFIFunction,
 
     #[error("Numerical overflow in dimension exponent")]
     OverflowInDimensionExponent,
@@ -366,10 +372,11 @@ impl<'a> Parser<'a> {
         if !(self.peek().kind == TokenKind::At
             || self.peek().kind == TokenKind::Unit
             || self.peek().kind == TokenKind::Let
+            || self.peek().kind == TokenKind::Fn
             || self.decorator_stack.is_empty())
         {
             return Err(ParseError {
-                kind: ParseErrorKind::DecoratorsCanOnlyBeUsedOnUnitOrLetDefinitions,
+                kind: ParseErrorKind::DecoratorUsedOnUnsuitableKind,
                 span: self.peek().span,
             });
         }
@@ -525,6 +532,23 @@ impl<'a> Parser<'a> {
                     });
                 }
 
+                if body.is_none() && decorator::contains_aliases(&self.decorator_stack) {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::AliasUsedOnFFIFunction,
+                        span: self.peek().span,
+                    });
+                }
+
+                if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::DecoratorsWithPrefixOnFnDefinition,
+                        span: self.peek().span,
+                    });
+                }
+
+                let mut decorators = vec![];
+                std::mem::swap(&mut decorators, &mut self.decorator_stack);
+
                 Ok(Statement::DefineFunction {
                     function_name_span,
                     function_name: fn_name.lexeme.clone(),
@@ -533,6 +557,7 @@ impl<'a> Parser<'a> {
                     body,
                     return_type_annotation_span: return_type_span,
                     return_type_annotation,
+                    decorators,
                 })
             } else {
                 Err(ParseError {
@@ -2268,6 +2293,7 @@ mod tests {
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: None,
                 return_type_annotation: None,
+                decorators: vec![],
             },
         );
 
@@ -2283,6 +2309,7 @@ mod tests {
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
+                decorators: vec![],
             },
         );
 
@@ -2296,6 +2323,7 @@ mod tests {
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: None,
                 return_type_annotation: None,
+                decorators: vec![],
             },
         );
 
@@ -2313,6 +2341,7 @@ mod tests {
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: None,
                 return_type_annotation: None,
+                decorators: vec![],
             },
         );
 
@@ -2371,6 +2400,7 @@ mod tests {
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
+                decorators: vec![],
             },
         );
 
@@ -2391,6 +2421,7 @@ mod tests {
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: None,
                 return_type_annotation: None,
+                decorators: vec![],
             },
         );
 
@@ -2413,6 +2444,27 @@ mod tests {
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "D".into()),
                 )),
+                decorators: vec![],
+            },
+        );
+
+        parse_as(
+            &["@name(\"Some function\") @aliases(some_fn, some_func) fn some_function(x) = 1"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "some_function".into(),
+                type_parameters: vec![],
+                parameters: vec![(Span::dummy(), "x".into(), None, false)],
+                body: Some(scalar!(1.0)),
+                return_type_annotation_span: None,
+                return_type_annotation: None,
+                decorators: vec![
+                    decorator::Decorator::Name("Some function".into()),
+                    decorator::Decorator::Aliases(vec![
+                        ("some_fn".into(), None),
+                        ("some_func".into(), None),
+                    ]),
+                ],
             },
         );
 
@@ -2431,6 +2483,16 @@ mod tests {
                 "fn foo<D>(x: D…) -> 1 = 1",
             ],
             ParseErrorKind::VariadicParameterOnlyAllowedInForeignFunction,
+        );
+
+        should_fail_with(
+            &["@aliases(foo, f: short) fn foobar(a: Scalar) -> Scalar = 2*a"],
+            ParseErrorKind::DecoratorsWithPrefixOnFnDefinition,
+        );
+
+        should_fail_with(
+            &["@aliases(foo) fn foobar(a: Scalar) -> Scalar"],
+            ParseErrorKind::AliasUsedOnFFIFunction,
         );
     }
 

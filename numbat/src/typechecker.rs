@@ -1457,19 +1457,22 @@ impl TypeChecker {
                 body,
                 return_type_annotation_span,
                 return_type_annotation,
+                decorators,
             } => {
-                if body.is_none() {
-                    self.value_namespace.add_identifier(
-                        function_name.clone(),
-                        *function_name_span,
-                        "foreign function".to_owned(),
-                    )?;
-                } else {
-                    self.value_namespace.add_identifier_allow_override(
-                        function_name.clone(),
-                        *function_name_span,
-                        "function".to_owned(),
-                    )?;
+                for (name, _) in decorator::name_and_aliases(function_name, decorators) {
+                    if body.is_none() {
+                        self.value_namespace.add_identifier(
+                            name.clone(),
+                            *function_name_span,
+                            "foreign function".to_owned(),
+                        )?;
+                    } else {
+                        self.value_namespace.add_identifier_allow_override(
+                            name.clone(),
+                            *function_name_span,
+                            "function".to_owned(),
+                        )?;
+                    }
                 }
 
                 let mut typechecker_fn = self.clone();
@@ -1558,29 +1561,36 @@ impl TypeChecker {
                     .map(|annotation| typechecker_fn.type_from_annotation(annotation))
                     .transpose()?;
 
-                let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
-                    let parameter_types = typed_parameters
-                        .iter()
-                        .map(|(span, _, _, _, t)| (*span, t.clone()))
-                        .collect();
-                    tc.function_signatures.insert(
-                        function_name.clone(),
-                        FunctionSignature {
-                            definition_span: *function_name_span,
-                            type_parameters: type_parameters.clone(),
-                            parameter_types,
-                            is_variadic,
-                            return_type,
-                        },
-                    );
-                };
+                let add_function_signature =
+                    |tc: &mut TypeChecker, return_type: Type, name: &String| {
+                        let parameter_types = typed_parameters
+                            .iter()
+                            .map(|(span, _, _, _, t)| (*span, t.clone()))
+                            .collect();
+                        tc.function_signatures.insert(
+                            name.clone(),
+                            FunctionSignature {
+                                definition_span: *function_name_span,
+                                type_parameters: type_parameters.clone(),
+                                parameter_types,
+                                is_variadic,
+                                return_type,
+                            },
+                        );
+                    };
 
                 if let Some(ref return_type_specified) = return_type_specified {
                     // This is needed for recursive functions. If the return type
                     // has been specified, we can already provide a function
                     // signature before we check the body of the function. This
                     // way, the 'typechecker_fn' can resolve the recursive call.
-                    add_function_signature(&mut typechecker_fn, return_type_specified.clone());
+                    for (name, _) in decorator::name_and_aliases(function_name, decorators) {
+                        add_function_signature(
+                            &mut typechecker_fn,
+                            return_type_specified.clone(),
+                            name,
+                        );
+                    }
                 }
 
                 let body_checked = body
@@ -1654,10 +1664,13 @@ impl TypeChecker {
                     })?
                 };
 
-                add_function_signature(self, return_type.clone());
+                for (name, _) in decorator::name_and_aliases(function_name, decorators) {
+                    add_function_signature(self, return_type.clone(), name);
+                }
 
                 typed_ast::Statement::DefineFunction(
                     function_name.clone(),
+                    decorators.clone(),
                     type_parameters
                         .iter()
                         .map(|(_, name)| name.clone())
