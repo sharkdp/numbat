@@ -48,6 +48,7 @@ fn _convert_from_raw(raw: _ChemicalElementRaw) -> ChemicalElement =
         vaporization_heat: raw.vaporization_heat_kilojoule_per_mole * kJ/mol,
     }
 
-# Get properties of a chemical element by its symbol or name (case-insensitive).
+@name("Chemical element")
+@description("Get properties of a chemical element by its symbol or name (case-insensitive).")
 fn element(pattern: String) -> ChemicalElement =
     _convert_from_raw(_get_chemical_element_data_raw(pattern))

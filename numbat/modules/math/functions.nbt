@@ -3,42 +3,101 @@ use math::constants
 
 ## Basics
 
+@name("Square root")
+@url("https://en.wikipedia.org/wiki/Square_root")
 fn sqrt<D>(x: D^2) -> D = x^(1/2)
+
+@name("Square function")
 fn sqr<D>(x: D) -> D^2 = x^2
 
 ## Exponential and logarithm
 
+@name("Exponential function")
+@url("https://en.wikipedia.org/wiki/Exponential_function")
 fn exp(x: Scalar) -> Scalar
+
+@name("Natural logarithm")
+@url("https://en.wikipedia.org/wiki/Natural_logarithm")
 fn ln(x: Scalar) -> Scalar
+
+@name("Natural logarithm")
+@url("https://en.wikipedia.org/wiki/Natural_logarithm")
 fn log(x: Scalar) -> Scalar = ln(x)
+
+@name("Common logarithm")
+@url("https://en.wikipedia.org/wiki/Common_logarithm")
 fn log10(x: Scalar) -> Scalar
+
+@name("Binary logarithm")
+@url("https://en.wikipedia.org/wiki/Binary_logarithm")
 fn log2(x: Scalar) -> Scalar
 
 ## Trigonometry
 
+@name("Sine")
+@url("https://en.wikipedia.org/wiki/Trigonometric_functions")
 fn sin(x: Scalar) -> Scalar
+
+@name("Cosine")
+@url("https://en.wikipedia.org/wiki/Trigonometric_functions")
 fn cos(x: Scalar) -> Scalar
+
+@name("Tangent")
+@url("https://en.wikipedia.org/wiki/Trigonometric_functions")
 fn tan(x: Scalar) -> Scalar
+
+@name("Arc sine")
+@url("https://en.wikipedia.org/wiki/Inverse_trigonometric_functions")
 fn asin(x: Scalar) -> Scalar
+
+@name("Arc cosine")
+@url("https://en.wikipedia.org/wiki/Inverse_trigonometric_functions")
 fn acos(x: Scalar) -> Scalar
+
+@name("Arc tangent")
+@url("https://en.wikipedia.org/wiki/Inverse_trigonometric_functions")
 fn atan(x: Scalar) -> Scalar
+
+@url("https://en.wikipedia.org/wiki/Atan2")
 fn atan2<T>(y: T, x: T) -> Scalar
 
+@name("Hyperbolic sine")
+@url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
 fn sinh(x: Scalar) -> Scalar
+
+@name("Hyperbolic cosine")
+@url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
 fn cosh(x: Scalar) -> Scalar
+
+@name("Hyperbolic tangent")
+@url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
 fn tanh(x: Scalar) -> Scalar
+
+@name("Area hyperbolic sine")
+@url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
 fn asinh(x: Scalar) -> Scalar
+
+@name("Area hyperbolic cosine")
+@url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
 fn acosh(x: Scalar) -> Scalar
+
+@name("Area hyperbolic tangent ")
+@url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
 fn atanh(x: Scalar) -> Scalar
 
 # Note: there are even more functions in `math::trigonmetry_extra`.
 
 ## Others
 
+
+@name("Gamma function")
+@url("https://en.wikipedia.org/wiki/Gamma_function")
 fn gamma(x: Scalar) -> Scalar
 
 ### Statistics
 
+@name("Arithmetic mean")
+@url("https://en.wikipedia.org/wiki/Arithmetic_mean")
 fn mean<D>(xs: D…) -> D
 fn maximum<D>(xs: D…) -> D
 fn minimum<D>(xs: D…) -> D
