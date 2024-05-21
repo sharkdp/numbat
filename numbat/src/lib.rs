@@ -418,6 +418,57 @@ impl Context {
             return help;
         }
 
+        if let Some((_, fn_metadata)) = self.interpreter.lookup_function(keyword) {
+            let metadata = fn_metadata.clone();
+
+            let mut help = m::text("Function: ");
+            if let Some(name) = &metadata.name {
+                help += m::text(name);
+            } else {
+                help += m::identifier(keyword);
+            }
+            if let Some(url) = &metadata.url {
+                help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
+            }
+            help += m::nl();
+
+            if let Ok((statements, _)) = self.interpret(keyword, CodeSource::Internal) {
+                let signature = match Statement::as_expression(&statements[0]) {
+                    Some(expression) => expression
+                        .get_type()
+                        .to_readable_type(self.dimension_registry()),
+                    None => m::empty(),
+                };
+                help += m::text("Signature: ") + signature + m::nl();
+            }
+
+            if let Some(description) = &metadata.description {
+                let desc = "Description: ";
+                let mut lines = description.lines();
+                help +=
+                    m::text(desc) + m::text(lines.by_ref().next().unwrap_or("").trim()) + m::nl();
+
+                for line in lines {
+                    help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                }
+            }
+
+            if metadata.aliases.len() > 1 {
+                help += m::text("Aliases: ")
+                    + m::text(
+                        metadata
+                            .aliases
+                            .iter()
+                            .map(|x| x.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    )
+                    + m::nl();
+            }
+
+            return help;
+        }
+
         m::text("Not found")
     }
 
