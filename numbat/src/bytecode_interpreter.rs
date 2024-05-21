@@ -22,6 +22,7 @@ use crate::{decorator, ffi};
 pub struct DecoratorMetadata {
     pub name: Option<String>,
     pub url: Option<String>,
+    pub description: Option<String>,
     pub aliases: Vec<String>,
 }
 
@@ -297,6 +298,7 @@ impl BytecodeInterpreter {
                 let metadata = DecoratorMetadata {
                     name: crate::decorator::name(decorators),
                     url: crate::decorator::url(decorators),
+                    description: crate::decorator::description(decorators),
                     aliases: aliases.clone(),
                 };
 
@@ -326,6 +328,7 @@ impl BytecodeInterpreter {
                 let metadata = DecoratorMetadata {
                     name: crate::decorator::name(decorators),
                     url: crate::decorator::url(decorators),
+                    description: crate::decorator::description(decorators),
                     aliases: aliases.clone(),
                 };
 
@@ -373,6 +376,7 @@ impl BytecodeInterpreter {
                 let metadata = DecoratorMetadata {
                     name: crate::decorator::name(decorators),
                     url: crate::decorator::url(decorators),
+                    description: crate::decorator::description(decorators),
                     aliases: vec![],
                 };
 
@@ -410,6 +414,7 @@ impl BytecodeInterpreter {
                                 unit_name, decorators,
                             ),
                             url: decorator::url(decorators),
+                            description: decorator::description(decorators),
                             binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                             metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
                         },
@@ -453,6 +458,7 @@ impl BytecodeInterpreter {
                         name: decorator::name(decorators),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
                         url: decorator::url(decorators),
+                        description: decorator::description(decorators),
                         binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                         metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
                     },

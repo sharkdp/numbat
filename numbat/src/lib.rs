@@ -311,6 +311,19 @@ impl Context {
                         + m::nl();
                 }
 
+                if let Some(description) = &md.description {
+                    let desc = "Description: ";
+                    let mut lines = description.lines();
+                    help += m::text(desc)
+                        + m::text(lines.by_ref().next().unwrap_or("").trim())
+                        + m::nl();
+
+                    for line in lines {
+                        help +=
+                            m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                    }
+                }
+
                 if matches!(md.type_, Type::Dimension(d) if d.is_scalar()) {
                     help += m::text("A dimensionless unit ([")
                         + md.readable_type
@@ -373,6 +386,17 @@ impl Context {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
             }
             help += m::nl();
+
+            if let Some(description) = &l.metadata.description {
+                let desc = "Description: ";
+                let mut lines = description.lines();
+                help +=
+                    m::text(desc) + m::text(lines.by_ref().next().unwrap_or("").trim()) + m::nl();
+
+                for line in lines {
+                    help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                }
+            }
 
             if l.metadata.aliases.len() > 1 {
                 help += m::text("Aliases: ")

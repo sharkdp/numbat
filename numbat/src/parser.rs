@@ -617,7 +617,7 @@ impl<'a> Parser<'a> {
                             });
                         }
                     }
-                    "url" | "name" => {
+                    "url" | "name" | "description" => {
                         if self.match_exact(TokenKind::LeftParen).is_some() {
                             if let Some(token) = self.match_exact(TokenKind::StringFixed) {
                                 if self.match_exact(TokenKind::RightParen).is_none() {
@@ -632,6 +632,7 @@ impl<'a> Parser<'a> {
                                 match decorator.lexeme.as_str() {
                                     "url" => Decorator::Url(content.into()),
                                     "name" => Decorator::Name(content.into()),
+                                    "description" => Decorator::Description(content.into()),
                                     _ => unreachable!(),
                                 }
                             } else {
