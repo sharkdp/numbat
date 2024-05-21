@@ -204,8 +204,11 @@ impl Transformer {
                 body,
                 return_type_annotation_span: return_type_span,
                 return_type_annotation,
+                decorators,
             } => {
-                self.function_names.push(function_name.clone());
+                for (name, _) in decorator::name_and_aliases(&function_name, &decorators) {
+                    self.function_names.push(name.clone());
+                }
                 self.prefix_parser
                     .add_other_identifier(&function_name, function_name_span)?;
 
@@ -232,6 +235,7 @@ impl Transformer {
                     body: body.map(|expr| self.transform_expression(expr)),
                     return_type_annotation_span: return_type_span,
                     return_type_annotation,
+                    decorators,
                 }
             }
             Statement::DefineStruct {

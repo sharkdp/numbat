@@ -84,3 +84,13 @@ pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
 
     false
 }
+
+pub fn contains_aliases(decorates: &[Decorator]) -> bool {
+    for decorator in decorates {
+        if let Decorator::Aliases(_) = decorator {
+            return true;
+        }
+    }
+
+    false
+}

@@ -274,7 +274,8 @@ pub enum Statement {
     DefineVariable(String, Vec<Decorator>, Expression, Markup, Type),
     DefineFunction(
         String,
-        Vec<String>, // type parameters
+        Vec<Decorator>, // decorators
+        Vec<String>,    // type parameters
         Vec<(
             // parameter:
             Span,   // span of the parameter
@@ -405,6 +406,7 @@ impl PrettyPrint for Statement {
             }
             Statement::DefineFunction(
                 function_name,
+                _decorators,
                 type_parameters,
                 parameters,
                 body,

@@ -19,7 +19,7 @@ use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
 #[derive(Debug, Clone, Default)]
-pub struct LocalMetadata {
+pub struct DecoratorMetadata {
     pub name: Option<String>,
     pub url: Option<String>,
     pub aliases: Vec<String>,
@@ -29,7 +29,7 @@ pub struct LocalMetadata {
 pub struct Local {
     identifier: String,
     depth: usize,
-    pub metadata: LocalMetadata,
+    pub metadata: DecoratorMetadata,
 }
 
 #[derive(Clone)]
@@ -40,7 +40,7 @@ pub struct BytecodeInterpreter {
     // Maps names of units to indices of the respective constants in the VM
     unit_name_to_constant_index: HashMap<String, u16>,
     /// List of functions
-    functions: HashMap<String, bool>,
+    functions: HashMap<String, (bool, DecoratorMetadata)>,
 }
 
 impl BytecodeInterpreter {
@@ -67,7 +67,7 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
                 } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
                     self.vm.add_op(Op::GetLastResult);
-                } else if let Some(is_foreign) = self.functions.get(identifier) {
+                } else if let Some((is_foreign, _)) = self.functions.get(identifier) {
                     let index = self
                         .vm
                         .add_constant(Constant::FunctionReference(if *is_foreign {
@@ -294,7 +294,7 @@ impl BytecodeInterpreter {
                     .map(|(name, _)| name)
                     .cloned()
                     .collect::<Vec<_>>();
-                let metadata = LocalMetadata {
+                let metadata = DecoratorMetadata {
                     name: crate::decorator::name(decorators),
                     url: crate::decorator::url(decorators),
                     aliases: aliases.clone(),
@@ -312,36 +312,53 @@ impl BytecodeInterpreter {
             }
             Statement::DefineFunction(
                 name,
+                decorators,
                 _type_parameters,
                 parameters,
                 Some(expr),
                 _return_type_annotation,
                 _return_type,
             ) => {
-                self.vm.begin_function(name);
+                let aliases = crate::decorator::name_and_aliases(name, decorators)
+                    .map(|(fname, _)| fname)
+                    .cloned()
+                    .collect::<Vec<_>>();
+                let metadata = DecoratorMetadata {
+                    name: crate::decorator::name(decorators),
+                    url: crate::decorator::url(decorators),
+                    aliases: aliases.clone(),
+                };
 
-                self.locals.push(vec![]);
+                // This creates a copy of the function for each alias.
+                // A cleaner and more efficient way to handle aliases would probably be to use a 'function pointer'. This would also enable using aliases for FFI functions.
+                for alias_name in aliases {
+                    self.vm.begin_function(&alias_name);
 
-                let current_depth = self.current_depth();
-                for parameter in parameters {
-                    self.locals[current_depth].push(Local {
-                        identifier: parameter.1.clone(),
-                        depth: current_depth,
-                        metadata: LocalMetadata::default(),
-                    });
+                    self.locals.push(vec![]);
+
+                    let current_depth = self.current_depth();
+                    for parameter in parameters {
+                        self.locals[current_depth].push(Local {
+                            identifier: parameter.1.clone(),
+                            depth: current_depth,
+                            metadata: DecoratorMetadata::default(),
+                        });
+                    }
+
+                    self.compile_expression_with_simplify(expr)?;
+                    self.vm.add_op(Op::Return);
+
+                    self.locals.pop();
+
+                    self.vm.end_function();
+
+                    self.functions
+                        .insert(alias_name.clone(), (false, metadata.clone()));
                 }
-
-                self.compile_expression_with_simplify(expr)?;
-                self.vm.add_op(Op::Return);
-
-                self.locals.pop();
-
-                self.vm.end_function();
-
-                self.functions.insert(name.clone(), false);
             }
             Statement::DefineFunction(
                 name,
+                decorators,
                 _type_parameters,
                 parameters,
                 None,
@@ -353,6 +370,12 @@ impl BytecodeInterpreter {
 
                 let is_variadic = parameters.iter().any(|p| p.2);
 
+                let metadata = DecoratorMetadata {
+                    name: crate::decorator::name(decorators),
+                    url: crate::decorator::url(decorators),
+                    aliases: vec![],
+                };
+
                 self.vm.add_foreign_function(
                     name,
                     if is_variadic {
@@ -362,7 +385,8 @@ impl BytecodeInterpreter {
                     },
                 );
 
-                self.functions.insert(name.clone(), true);
+                self.functions
+                    .insert(name.clone(), (true, metadata.clone()));
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
@@ -508,6 +532,10 @@ impl BytecodeInterpreter {
 
     pub fn lookup_global(&self, name: &str) -> Option<&Local> {
         self.locals[0].iter().find(|l| l.identifier == name)
+    }
+
+    pub fn lookup_function(&self, name: &str) -> Option<&(bool, DecoratorMetadata)> {
+        self.functions.get(name)
     }
 }
 

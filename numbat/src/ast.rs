@@ -388,6 +388,7 @@ pub enum Statement {
         return_type_annotation_span: Option<Span>,
         /// Optional annotated return type
         return_type_annotation: Option<TypeAnnotation>,
+        decorators: Vec<Decorator>,
     },
     DefineDimension(Span, String, Vec<TypeExpression>),
     DefineBaseUnit(Span, String, Option<TypeExpression>, Vec<Decorator>),
@@ -566,6 +567,7 @@ impl ReplaceSpans for Statement {
                 body,
                 return_type_annotation_span: return_type_span,
                 return_type_annotation,
+                decorators,
             } => Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: function_name.clone(),
@@ -587,6 +589,7 @@ impl ReplaceSpans for Statement {
                 body: body.clone().map(|b| b.replace_spans()),
                 return_type_annotation_span: return_type_span.map(|_| Span::dummy()),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
+                decorators: decorators.clone(),
             },
             Statement::DefineDimension(_, name, dexprs) => Statement::DefineDimension(
                 Span::dummy(),
