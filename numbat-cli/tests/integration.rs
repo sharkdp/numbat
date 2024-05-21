@@ -159,4 +159,13 @@ fn info_text() {
     numbat().write_stdin("info C").assert().success().stdout(
         predicates::str::contains("Coulomb").and(predicates::str::contains("1 coulomb = ")),
     );
+
+    numbat()
+        .write_stdin("info round")
+        .assert()
+        .success()
+        .stdout(
+            predicates::str::contains("Round")
+                .and(predicates::str::contains("Round to the nearest integer.")),
+        );
 }
