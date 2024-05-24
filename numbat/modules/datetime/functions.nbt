@@ -6,7 +6,7 @@ use units::si
 fn now() -> DateTime
 
 @url("https://numbat.dev/doc/date-and-time.html")
-@description("Parses a string (date and time) into a DateTime object.")
+@description("Parses a string (date and time) into a DateTime object. See https://numbat.dev/doc/date-and-time.html#date-time-formats for an overview of the supported formats.")
 fn datetime(input: String) -> DateTime
 
 @url("https://numbat.dev/doc/date-and-time.html")
