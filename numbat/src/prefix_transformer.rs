@@ -206,9 +206,7 @@ impl Transformer {
                 return_type_annotation,
                 decorators,
             } => {
-                for (name, _) in decorator::name_and_aliases(&function_name, &decorators) {
-                    self.function_names.push(name.clone());
-                }
+                self.function_names.push(function_name.clone());
                 self.prefix_parser
                     .add_other_identifier(&function_name, function_name_span)?;
 
