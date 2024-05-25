@@ -321,43 +321,35 @@ impl BytecodeInterpreter {
                 _return_type_annotation,
                 _return_type,
             ) => {
-                let aliases = crate::decorator::name_and_aliases(name, decorators)
-                    .map(|(fname, _)| fname)
-                    .cloned()
-                    .collect::<Vec<_>>();
                 let metadata = DecoratorMetadata {
                     name: crate::decorator::name(decorators),
                     url: crate::decorator::url(decorators),
                     description: crate::decorator::description(decorators),
-                    aliases: aliases.clone(),
+                    aliases: vec![],
                 };
 
-                // This creates a copy of the function for each alias.
-                // A cleaner and more efficient way to handle aliases would probably be to use a 'function pointer'. This would also enable using aliases for FFI functions.
-                for alias_name in aliases {
-                    self.vm.begin_function(&alias_name);
+                self.vm.begin_function(name);
 
-                    self.locals.push(vec![]);
+                self.locals.push(vec![]);
 
-                    let current_depth = self.current_depth();
-                    for parameter in parameters {
-                        self.locals[current_depth].push(Local {
-                            identifier: parameter.1.clone(),
-                            depth: current_depth,
-                            metadata: DecoratorMetadata::default(),
-                        });
-                    }
-
-                    self.compile_expression_with_simplify(expr)?;
-                    self.vm.add_op(Op::Return);
-
-                    self.locals.pop();
-
-                    self.vm.end_function();
-
-                    self.functions
-                        .insert(alias_name.clone(), (false, metadata.clone()));
+                let current_depth = self.current_depth();
+                for parameter in parameters {
+                    self.locals[current_depth].push(Local {
+                        identifier: parameter.1.clone(),
+                        depth: current_depth,
+                        metadata: DecoratorMetadata::default(),
+                    });
                 }
+
+                self.compile_expression_with_simplify(expr)?;
+                self.vm.add_op(Op::Return);
+
+                self.locals.pop();
+
+                self.vm.end_function();
+
+                self.functions
+                    .insert(name.clone(), (false, metadata.clone()));
             }
             Statement::DefineFunction(
                 name,

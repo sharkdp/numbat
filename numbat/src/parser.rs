@@ -188,17 +188,14 @@ pub enum ParseErrorKind {
     #[error("Decorators on let definitions cannot have prefix information")]
     DecoratorsWithPrefixOnLetDefinition,
 
-    #[error("Decorators on function definitions cannot have prefix information")]
-    DecoratorsWithPrefixOnFnDefinition,
-
     #[error("Expected opening parenthesis after decorator")]
     ExpectedLeftParenAfterDecorator,
 
     #[error("Unknown alias annotation")]
     UnknownAliasAnnotation,
 
-    #[error("Aliases cannot be used on foreign functions.")]
-    AliasUsedOnFFIFunction,
+    #[error("Aliases cannot be used on functions.")]
+    AliasUsedOnFunction,
 
     #[error("Numerical overflow in dimension exponent")]
     OverflowInDimensionExponent,
@@ -532,16 +529,9 @@ impl<'a> Parser<'a> {
                     });
                 }
 
-                if body.is_none() && decorator::contains_aliases(&self.decorator_stack) {
+                if decorator::contains_aliases(&self.decorator_stack) {
                     return Err(ParseError {
-                        kind: ParseErrorKind::AliasUsedOnFFIFunction,
-                        span: self.peek().span,
-                    });
-                }
-
-                if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::DecoratorsWithPrefixOnFnDefinition,
+                        kind: ParseErrorKind::AliasUsedOnFunction,
                         span: self.peek().span,
                     });
                 }
@@ -2450,7 +2440,7 @@ mod tests {
         );
 
         parse_as(
-            &["@name(\"Some function\") @aliases(some_fn, some_func) fn some_function(x) = 1"],
+            &["@name(\"Some function\") @description(\"This is a description of some_function.\") fn some_function(x) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "some_function".into(),
@@ -2461,10 +2451,9 @@ mod tests {
                 return_type_annotation: None,
                 decorators: vec![
                     decorator::Decorator::Name("Some function".into()),
-                    decorator::Decorator::Aliases(vec![
-                        ("some_fn".into(), None),
-                        ("some_func".into(), None),
-                    ]),
+                    decorator::Decorator::Description(
+                        "This is a description of some_function.".into(),
+                    ),
                 ],
             },
         );
@@ -2487,13 +2476,8 @@ mod tests {
         );
 
         should_fail_with(
-            &["@aliases(foo, f: short) fn foobar(a: Scalar) -> Scalar = 2*a"],
-            ParseErrorKind::DecoratorsWithPrefixOnFnDefinition,
-        );
-
-        should_fail_with(
             &["@aliases(foo) fn foobar(a: Scalar) -> Scalar"],
-            ParseErrorKind::AliasUsedOnFFIFunction,
+            ParseErrorKind::AliasUsedOnFunction,
         );
     }
 

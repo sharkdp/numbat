@@ -101,8 +101,8 @@ pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
     false
 }
 
-pub fn contains_aliases(decorates: &[Decorator]) -> bool {
-    for decorator in decorates {
+pub fn contains_aliases(decorators: &[Decorator]) -> bool {
+    for decorator in decorators {
         if let Decorator::Aliases(_) = decorator {
             return true;
         }
