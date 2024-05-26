@@ -47,6 +47,7 @@ use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
 use interpreter::Interpreter;
+use itertools::Itertools;
 use keywords::KEYWORDS;
 use markup as m;
 use markup::FormatType;
@@ -418,8 +419,21 @@ impl Context {
             return help;
         }
 
-        if let Some((_, fn_metadata)) = self.interpreter.lookup_function(keyword) {
+        if let Some((fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
             let metadata = fn_metadata.clone();
+            let parameters = fn_signature
+                .parameter_types
+                .iter()
+                .map(|(_, name, typ)| (name, typ.to_readable_type(self.dimension_registry())))
+                .collect_vec();
+            let type_parameters = fn_signature
+                .type_parameters
+                .iter()
+                .map(|(_, s)| s)
+                .collect_vec();
+            let return_type = fn_signature
+                .return_type
+                .to_readable_type(self.dimension_registry());
 
             let mut help = m::text("Function: ");
             if let Some(name) = &metadata.name {
@@ -432,15 +446,29 @@ impl Context {
             }
             help += m::nl();
 
-            if let Ok((statements, _)) = self.interpret(keyword, CodeSource::Internal) {
-                let signature = match Statement::as_expression(&statements[0]) {
-                    Some(expression) => expression
-                        .get_type()
-                        .to_readable_type(self.dimension_registry()),
-                    None => m::empty(),
-                };
-                help += m::text("Signature: ") + signature + m::nl();
+            help += m::text("Signature:") + m::space() + m::identifier(keyword);
+            if !type_parameters.is_empty() {
+                help += m::operator("<");
+                help += Itertools::intersperse(
+                    type_parameters.iter().map(|t| m::type_identifier(t)),
+                    m::operator(",") + m::space(),
+                )
+                .sum();
+                help += m::operator(">");
             }
+            help += m::operator("(");
+            help += Itertools::intersperse(
+                parameters
+                    .iter()
+                    .map(|(p, t)| m::identifier(p) + m::text(":") + m::space() + t.clone()),
+                m::operator(",") + m::space(),
+            )
+            .sum();
+            if fn_signature.is_variadic {
+                help += m::operator("…");
+            }
+            help += m::operator(")");
+            help += m::space() + m::operator("->") + m::space() + return_type + m::nl();
 
             if let Some(description) = &metadata.description {
                 let desc = "Description: ";
@@ -451,19 +479,6 @@ impl Context {
                 for line in lines {
                     help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
                 }
-            }
-
-            if metadata.aliases.len() > 1 {
-                help += m::text("Aliases: ")
-                    + m::text(
-                        metadata
-                            .aliases
-                            .iter()
-                            .map(|x| x.as_str())
-                            .collect::<Vec<_>>()
-                            .join(", "),
-                    )
-                    + m::nl();
             }
 
             return help;

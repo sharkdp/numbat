@@ -19,7 +19,7 @@ use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi};
 
 #[derive(Debug, Clone, Default)]
-pub struct DecoratorMetadata {
+pub struct LocalMetadata {
     pub name: Option<String>,
     pub url: Option<String>,
     pub description: Option<String>,
@@ -30,7 +30,7 @@ pub struct DecoratorMetadata {
 pub struct Local {
     identifier: String,
     depth: usize,
-    pub metadata: DecoratorMetadata,
+    pub metadata: LocalMetadata,
 }
 
 #[derive(Clone)]
@@ -41,7 +41,7 @@ pub struct BytecodeInterpreter {
     // Maps names of units to indices of the respective constants in the VM
     unit_name_to_constant_index: HashMap<String, u16>,
     /// List of functions
-    functions: HashMap<String, (bool, DecoratorMetadata)>,
+    functions: HashMap<String, bool>,
 }
 
 impl BytecodeInterpreter {
@@ -68,7 +68,7 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
                 } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
                     self.vm.add_op(Op::GetLastResult);
-                } else if let Some((is_foreign, _)) = self.functions.get(identifier) {
+                } else if let Some(is_foreign) = self.functions.get(identifier) {
                     let index = self
                         .vm
                         .add_constant(Constant::FunctionReference(if *is_foreign {
@@ -295,7 +295,7 @@ impl BytecodeInterpreter {
                     .map(|(name, _)| name)
                     .cloned()
                     .collect::<Vec<_>>();
-                let metadata = DecoratorMetadata {
+                let metadata = LocalMetadata {
                     name: crate::decorator::name(decorators),
                     url: crate::decorator::url(decorators),
                     description: crate::decorator::description(decorators),
@@ -314,20 +314,13 @@ impl BytecodeInterpreter {
             }
             Statement::DefineFunction(
                 name,
-                decorators,
+                _decorators,
                 _type_parameters,
                 parameters,
                 Some(expr),
                 _return_type_annotation,
                 _return_type,
             ) => {
-                let metadata = DecoratorMetadata {
-                    name: crate::decorator::name(decorators),
-                    url: crate::decorator::url(decorators),
-                    description: crate::decorator::description(decorators),
-                    aliases: vec![],
-                };
-
                 self.vm.begin_function(name);
 
                 self.locals.push(vec![]);
@@ -337,7 +330,7 @@ impl BytecodeInterpreter {
                     self.locals[current_depth].push(Local {
                         identifier: parameter.1.clone(),
                         depth: current_depth,
-                        metadata: DecoratorMetadata::default(),
+                        metadata: LocalMetadata::default(),
                     });
                 }
 
@@ -348,12 +341,11 @@ impl BytecodeInterpreter {
 
                 self.vm.end_function();
 
-                self.functions
-                    .insert(name.clone(), (false, metadata.clone()));
+                self.functions.insert(name.clone(), false);
             }
             Statement::DefineFunction(
                 name,
-                decorators,
+                _decorators,
                 _type_parameters,
                 parameters,
                 None,
@@ -365,13 +357,6 @@ impl BytecodeInterpreter {
 
                 let is_variadic = parameters.iter().any(|p| p.2);
 
-                let metadata = DecoratorMetadata {
-                    name: crate::decorator::name(decorators),
-                    url: crate::decorator::url(decorators),
-                    description: crate::decorator::description(decorators),
-                    aliases: vec![],
-                };
-
                 self.vm.add_foreign_function(
                     name,
                     if is_variadic {
@@ -381,8 +366,7 @@ impl BytecodeInterpreter {
                     },
                 );
 
-                self.functions
-                    .insert(name.clone(), (true, metadata.clone()));
+                self.functions.insert(name.clone(), true);
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
@@ -530,10 +514,6 @@ impl BytecodeInterpreter {
 
     pub fn lookup_global(&self, name: &str) -> Option<&Local> {
         self.locals[0].iter().find(|l| l.identifier == name)
-    }
-
-    pub fn lookup_function(&self, name: &str) -> Option<&(bool, DecoratorMetadata)> {
-        self.functions.get(name)
     }
 }
 

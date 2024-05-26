@@ -454,18 +454,25 @@ fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
 }
 
 #[derive(Clone)]
-struct FunctionSignature {
+pub struct FunctionSignature {
     definition_span: Span,
-    type_parameters: Vec<(Span, String)>,
-    parameter_types: Vec<(Span, Type)>,
-    is_variadic: bool,
-    return_type: Type,
+    pub type_parameters: Vec<(Span, String)>,
+    pub parameter_types: Vec<(Span, String, Type)>,
+    pub is_variadic: bool,
+    pub return_type: Type,
+}
+
+#[derive(Clone, Debug)]
+pub struct FunctionMetadata {
+    pub name: Option<String>,
+    pub url: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     identifiers: HashMap<String, (Type, Option<Span>)>,
-    function_signatures: HashMap<String, FunctionSignature>,
+    functions: HashMap<String, (FunctionSignature, FunctionMetadata)>,
     structs: HashMap<String, StructInfo>,
     registry: DimensionRegistry,
 
@@ -484,7 +491,7 @@ impl TypeChecker {
                         .keys()
                         .map(|k| k.to_string())
                         .chain(["true".into(), "false".into()]) // These are parsed as keywords, but can act like identifiers
-                        .chain(self.function_signatures.keys().cloned())
+                        .chain(self.functions.keys().cloned())
                         .chain(ffi::procedures().values().map(|p| p.name.clone())),
                     name,
                 );
@@ -494,7 +501,7 @@ impl TypeChecker {
             .cloned();
 
         if id.is_err() {
-            if let Some(signature) = self.function_signatures.get(name) {
+            if let Some((signature, _)) = self.functions.get(name) {
                 if !signature.type_parameters.is_empty() {
                     return Err(TypeCheckError::NoFunctionReferenceToGenericFunction(span));
                 }
@@ -503,7 +510,7 @@ impl TypeChecker {
                     signature
                         .parameter_types
                         .iter()
-                        .map(|(_, t)| t.clone())
+                        .map(|(_, _, t)| t.clone())
                         .collect(),
                     Box::new(signature.return_type.clone()),
                 ))
@@ -521,9 +528,9 @@ impl TypeChecker {
     ) -> Option<(String, &FunctionSignature)> {
         match expr {
             ast::Expression::Identifier(_, name) => self
-                .function_signatures
+                .functions
                 .get(name)
-                .map(|signature| (name.clone(), signature)),
+                .map(|(signature, _)| (name.clone(), signature)),
             _ => None,
         }
     }
@@ -590,7 +597,7 @@ impl TypeChecker {
             }
         }
 
-        for (idx, ((parameter_span, parameter_type), argument_type)) in
+        for (idx, ((parameter_span, _, parameter_type), argument_type)) in
             parameter_types.iter().zip(argument_types).enumerate()
         {
             match (parameter_type, argument_type) {
@@ -1562,17 +1569,24 @@ impl TypeChecker {
                 let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
                     let parameter_types = typed_parameters
                         .iter()
-                        .map(|(span, _, _, _, t)| (*span, t.clone()))
+                        .map(|(span, name, _, _, t)| (*span, name.clone(), t.clone()))
                         .collect();
-                    tc.function_signatures.insert(
+                    tc.functions.insert(
                         function_name.clone(),
-                        FunctionSignature {
-                            definition_span: *function_name_span,
-                            type_parameters: type_parameters.clone(),
-                            parameter_types,
-                            is_variadic,
-                            return_type,
-                        },
+                        (
+                            FunctionSignature {
+                                definition_span: *function_name_span,
+                                type_parameters: type_parameters.clone(),
+                                parameter_types,
+                                is_variadic,
+                                return_type,
+                            },
+                            FunctionMetadata {
+                                name: crate::decorator::name(decorators),
+                                url: crate::decorator::url(decorators),
+                                description: crate::decorator::description(decorators),
+                            },
+                        ),
                     );
                 };
 
@@ -1875,6 +1889,10 @@ impl TypeChecker {
                 Box::new(self.type_from_annotation(return_type)?),
             )),
         }
+    }
+
+    pub fn lookup_function(&self, name: &str) -> Option<&(FunctionSignature, FunctionMetadata)> {
+        self.functions.get(name)
     }
 }
 
