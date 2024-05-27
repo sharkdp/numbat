@@ -236,22 +236,26 @@ fn test_algebra() {
     let _ = ctx
         .interpret("use extra::algebra", CodeSource::Internal)
         .unwrap();
-    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, -1)", "x₁ = 1; x₂ = -1");
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "x = -0.333333");
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 0, 1)", "no solution");
-    expect_output_with_context(&mut ctx, "quadratic_equation(9, -126, 441)", "x = 7");
-    expect_output_with_context(&mut ctx, "quadratic_equation(1, -2, 1)", "x = 1");
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 1, 1)", "x = -1");
-    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, 0)", "x = 0");
+    expect_output_with_context(
+        &mut ctx,
+        "quadratic_equation(1, 0, -1)",
+        "\"x₁ = 1; x₂ = -1\"",
+    );
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "\"x = -0.333333\"");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 0, 1)", "\"no solution\"");
+    expect_output_with_context(&mut ctx, "quadratic_equation(9, -126, 441)", "\"x = 7\"");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, -2, 1)", "\"x = 1\"");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 1, 1)", "\"x = -1\"");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, 0)", "\"x = 0\"");
     expect_output_with_context(
         &mut ctx,
         "quadratic_equation(0, 0, 0)",
-        "infinitely many solutions",
+        "\"infinitely many solutions\"",
     );
     expect_output_with_context(
         &mut ctx,
         "quadratic_equation(1, 1, 1)",
-        "no real-valued solution",
+        "\"no real-valued solution\"",
     );
 }
 
@@ -579,37 +583,37 @@ fn test_conditionals() {
     expect_output("if 4 < 3 then 2 else 1", "1");
     expect_output(
         "if 4 > 3 then \"four is larger!\" else \"four is not larger!\"",
-        "four is larger!",
+        "\"four is larger!\"",
     );
 }
 
 #[test]
 fn test_string_interpolation() {
-    expect_output("\"pi = {pi}!\"", "pi = 3.14159!");
-    expect_output("\"1 + 2 = {1 + 2}\"", "1 + 2 = 3");
+    expect_output("\"pi = {pi}!\"", "\"pi = 3.14159!\"");
+    expect_output("\"1 + 2 = {1 + 2}\"", "\"1 + 2 = 3\"");
 
-    expect_output("\"{0.2:0.5}\"", "0.20000");
-    expect_output("\"pi ~= {pi:.3}\"", "pi ~= 3.142");
+    expect_output("\"{0.2:0.5}\"", "\"0.20000\"");
+    expect_output("\"pi ~= {pi:.3}\"", "\"pi ~= 3.142\"");
     expect_output(
         "\"both {pi:.3} and {e} are irrational and transcendental numbers\"",
-        "both 3.142 and 2.71828 are irrational and transcendental numbers",
+        "\"both 3.142 and 2.71828 are irrational and transcendental numbers\"",
     );
     expect_output(
         "
         let str = \"1234\"
         \"{str:0.2}\"
         ",
-        "12",
+        "\"12\"",
     );
 
-    expect_output("\"{1_000_300:+.3}\"", "+1000300.000");
+    expect_output("\"{1_000_300:+.3}\"", "\"+1000300.000\"");
 
     expect_output(
         "
         let str = \"1234\"
         \"a {str:^10} b\"
         ",
-        "a    1234    b",
+        "\"a    1234    b\"",
     );
 
     // Doesn't work at the moment, as `strfmt` expects `i64`'s for `#x`, but Numbat deals with `f64`'s

@@ -12,6 +12,6 @@ impl PrettyPrint for bool {
 
 impl PrettyPrint for String {
     fn pretty_print(&self) -> Markup {
-        crate::markup::string(self)
+        crate::markup::operator("\"") + crate::markup::string(self) + crate::markup::operator("\"")
     }
 }
