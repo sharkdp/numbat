@@ -1,5 +1,7 @@
 # Installation
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/numbat.svg)](https://repology.org/project/numbat/versions)
+
 ## Linux
 
 ### Ubuntu
