@@ -174,7 +174,7 @@ pub enum StringPart {
 impl PrettyPrint for StringPart {
     fn pretty_print(&self) -> Markup {
         match self {
-            StringPart::Fixed(s) => s.pretty_print(),
+            StringPart::Fixed(s) => m::string(s),
             StringPart::Interpolation {
                 span: _,
                 expr,
