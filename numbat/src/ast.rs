@@ -400,8 +400,8 @@ pub enum Statement {
         function_name_span: Span,
         function_name: String,
         type_parameters: Vec<(Span, String)>,
-        /// Parameters, optionally with type annotations. The boolean argument specifies whether or not the parameter is variadic
-        parameters: Vec<(Span, String, Option<TypeAnnotation>, bool)>,
+        /// Parameters, optionally with type annotations.
+        parameters: Vec<(Span, String, Option<TypeAnnotation>)>,
         /// Function body. If it is absent, the function is implemented via FFI
         body: Option<Expression>,
         return_type_annotation_span: Option<Span>,
@@ -602,12 +602,11 @@ impl ReplaceSpans for Statement {
                     .collect(),
                 parameters: parameters
                     .iter()
-                    .map(|(_, name, type_, is_variadic)| {
+                    .map(|(_, name, type_)| {
                         (
                             Span::dummy(),
                             name.clone(),
                             type_.as_ref().map(|t| t.replace_spans()),
-                            *is_variadic,
                         )
                     })
                     .collect(),

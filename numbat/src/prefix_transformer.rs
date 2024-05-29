@@ -226,7 +226,7 @@ impl Transformer {
                 //   fn foo(t: Time) -> Time = t    # not okay: shadows 't' for ton
                 //
                 let mut fn_body_transformer = self.clone();
-                for (param_span, param, _, _) in &parameters {
+                for (param_span, param, _) in &parameters {
                     fn_body_transformer
                         .prefix_parser
                         .add_other_identifier(param, *param_span)?;

@@ -465,9 +465,6 @@ impl Context {
                 m::operator(",") + m::space(),
             )
             .sum();
-            if fn_signature.is_variadic {
-                help += m::operator("…");
-            }
             help += m::operator(")");
             help += m::space() + m::operator("->") + m::space() + return_type + m::nl();
 

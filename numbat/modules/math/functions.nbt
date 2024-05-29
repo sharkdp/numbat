@@ -96,11 +96,11 @@ fn gamma(x: Scalar) -> Scalar
 
 ### Statistics
 
-@name("Arithmetic mean")
-@url("https://en.wikipedia.org/wiki/Arithmetic_mean")
-fn mean<D>(xs: D…) -> D
-fn maximum<D>(xs: D…) -> D
-fn minimum<D>(xs: D…) -> D
+#@name("Arithmetic mean")
+#@url("https://en.wikipedia.org/wiki/Arithmetic_mean")
+#fn mean<D>(xs: D…) -> D
+#fn maximum<D>(xs: D…) -> D
+#fn minimum<D>(xs: D…) -> D
 
 ### Geometry
 

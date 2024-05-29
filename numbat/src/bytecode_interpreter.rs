@@ -361,16 +361,8 @@ impl BytecodeInterpreter {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
 
-                let is_variadic = parameters.iter().any(|p| p.2);
-
-                self.vm.add_foreign_function(
-                    name,
-                    if is_variadic {
-                        1..=usize::MAX
-                    } else {
-                        parameters.len()..=parameters.len()
-                    },
-                );
+                self.vm
+                    .add_foreign_function(name, parameters.len()..=parameters.len());
 
                 self.functions.insert(name.clone(), true);
             }

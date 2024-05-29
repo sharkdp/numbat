@@ -119,7 +119,7 @@ pub enum ParseErrorKind {
     #[error("Expected opening parenthesis '(' in function definition")]
     ExpectedLeftParenInFunctionDefinition,
 
-    #[error("Expected ',', '…', or ')' in function parameter list")]
+    #[error("Expected ',' or ')' in function parameter list")]
     ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
 
     #[error("Expected ',', or '}}' in struct field list")]
@@ -130,12 +130,6 @@ pub enum ParseErrorKind {
 
     #[error("Expected field name in struct")]
     ExpectedFieldNameInStruct,
-
-    #[error("Only a single variadic parameter is allowed in a function definition")]
-    OnlySingleVariadicParameter,
-
-    #[error("Variadic parameters are only allowed in foreign functions (without body)")]
-    VariadicParameterOnlyAllowedInForeignFunction,
 
     #[error("Expected identifier (dimension name)")]
     ExpectedIdentifierAfterDimension,
@@ -477,14 +471,7 @@ impl<'a> Parser<'a> {
                             None
                         };
 
-                        let is_variadic = self.match_exact(TokenKind::Ellipsis).is_some();
-
-                        parameters.push((
-                            span,
-                            param_name.lexeme.to_string(),
-                            param_type_dexpr,
-                            is_variadic,
-                        ));
+                        parameters.push((span, param_name.lexeme.to_string(), param_type_dexpr));
 
                         parameter_span = parameter_span.extend(&self.last().unwrap().span);
 
@@ -516,27 +503,12 @@ impl<'a> Parser<'a> {
                         (None, None)
                     };
 
-                let fn_is_variadic = parameters.iter().any(|p| p.3);
-                if fn_is_variadic && parameters.len() > 1 {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::OnlySingleVariadicParameter,
-                        span: parameter_span,
-                    });
-                }
-
                 let body = if self.match_exact(TokenKind::Equal).is_none() {
                     None
                 } else {
                     self.skip_empty_lines();
                     Some(self.expression()?)
                 };
-
-                if fn_is_variadic && body.is_some() {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::VariadicParameterOnlyAllowedInForeignFunction,
-                        span: parameter_span,
-                    });
-                }
 
                 if decorator::contains_aliases(&self.decorator_stack) {
                     return Err(ParseError {
@@ -2359,7 +2331,7 @@ mod tests {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
                 type_parameters: vec![],
-                parameters: vec![(Span::dummy(), "x".into(), None, false)],
+                parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: None,
                 return_type_annotation: None,
@@ -2374,9 +2346,9 @@ mod tests {
                 function_name: "foo".into(),
                 type_parameters: vec![],
                 parameters: vec![
-                    (Span::dummy(), "x".into(), None, false),
-                    (Span::dummy(), "y".into(), None, false),
-                    (Span::dummy(), "z".into(), None, false),
+                    (Span::dummy(), "x".into(), None),
+                    (Span::dummy(), "y".into(), None),
+                    (Span::dummy(), "z".into(), None),
                 ],
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: None,
@@ -2398,7 +2370,6 @@ mod tests {
                         Some(TypeAnnotation::TypeExpression(
                             TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
                         )),
-                        false,
                     ),
                     (
                         Span::dummy(),
@@ -2406,7 +2377,6 @@ mod tests {
                         Some(TypeAnnotation::TypeExpression(
                             TypeExpression::TypeIdentifier(Span::dummy(), "Time".into()),
                         )),
-                        false,
                     ),
                     (
                         Span::dummy(),
@@ -2432,7 +2402,6 @@ mod tests {
                                 Rational::new(2, 1),
                             )),
                         ))),
-                        false,
                     ),
                 ],
                 body: Some(scalar!(1.0)),
@@ -2456,34 +2425,10 @@ mod tests {
                     Some(TypeAnnotation::TypeExpression(
                         TypeExpression::TypeIdentifier(Span::dummy(), "X".into()),
                     )),
-                    false,
                 )],
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: None,
                 return_type_annotation: None,
-                decorators: vec![],
-            },
-        );
-
-        parse_as(
-            &["fn foo<D>(x: D…) -> D"],
-            Statement::DefineFunction {
-                function_name_span: Span::dummy(),
-                function_name: "foo".into(),
-                type_parameters: vec![(Span::dummy(), "D".into())],
-                parameters: vec![(
-                    Span::dummy(),
-                    "x".into(),
-                    Some(TypeAnnotation::TypeExpression(
-                        TypeExpression::TypeIdentifier(Span::dummy(), "D".into()),
-                    )),
-                    true,
-                )],
-                body: None,
-                return_type_annotation_span: Some(Span::dummy()),
-                return_type_annotation: Some(TypeAnnotation::TypeExpression(
-                    TypeExpression::TypeIdentifier(Span::dummy(), "D".into()),
-                )),
                 decorators: vec![],
             },
         );
@@ -2494,7 +2439,7 @@ mod tests {
                 function_name_span: Span::dummy(),
                 function_name: "some_function".into(),
                 type_parameters: vec![],
-                parameters: vec![(Span::dummy(), "x".into(), None, false)],
+                parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
                 return_type_annotation_span: None,
                 return_type_annotation: None,
@@ -2505,23 +2450,6 @@ mod tests {
                     ),
                 ],
             },
-        );
-
-        should_fail_with(
-            &[
-                "fn foo<D>(x: D, y: D…) -> D",
-                "fn foo<D>(y: D…, x: D) -> D",
-                "fn foo<D>(y: D…, x: D…) -> D",
-            ],
-            ParseErrorKind::OnlySingleVariadicParameter,
-        );
-
-        should_fail_with(
-            &[
-                "fn foo(x: Scalar…) -> Scalar = 1",
-                "fn foo<D>(x: D…) -> 1 = 1",
-            ],
-            ParseErrorKind::VariadicParameterOnlyAllowedInForeignFunction,
         );
 
         should_fail_with(
