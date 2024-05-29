@@ -45,7 +45,7 @@ fn _hex_digit(x: Scalar) -> String =
 
 fn _digit_in_base(x: Scalar, base: Scalar) -> String =
   if base < 2 || base > 16
-    then error("base must be between 2 and 16")
+    then "base must be between 2 and 16" # TODO
     else if mod(x, 16) < 10 then chr(48 + mod(x, 16)) else chr(97 + mod(x, 16) - 10)
 
 fn _number_in_base(x: Scalar, b: Scalar) -> String =

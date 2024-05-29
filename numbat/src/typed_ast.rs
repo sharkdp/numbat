@@ -160,7 +160,25 @@ impl Type {
     }
 
     pub(crate) fn type_variables(&self) -> Vec<TypeVariable> {
-        todo!()
+        match self {
+            Type::TVar(v) => vec![v.clone()],
+            Type::Dimension(_) | Type::Boolean | Type::String | Type::DateTime => vec![],
+            Type::Fn(param_types, return_type) => {
+                let mut vars = return_type.type_variables();
+                for param_type in param_types {
+                    vars.extend(param_type.type_variables());
+                }
+                vars
+            }
+            Type::Struct(StructInfo { fields, .. }) => {
+                let mut vars = vec![];
+                for (_, (_, t)) in fields {
+                    vars.extend(t.type_variables());
+                }
+                vars
+            }
+            Type::List(element_type) => element_type.type_variables(),
+        }
     }
 
     pub(crate) fn instantiate(&self, type_variables: &[TypeVariable]) -> Type {
