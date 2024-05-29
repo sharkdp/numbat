@@ -19,6 +19,7 @@ impl DType {
     pub fn is_scalar(&self) -> bool {
         self == &DType::unity()
     }
+
     pub fn to_readable_type(&self, registry: &DimensionRegistry) -> m::Markup {
         if self.is_scalar() {
             return m::type_identifier("Scalar");
@@ -41,6 +42,7 @@ impl DType {
             }
         }
     }
+
     /// Is the current dimension type the Time dimension?
     ///
     /// This is special helper that's useful when dealing with DateTimes
