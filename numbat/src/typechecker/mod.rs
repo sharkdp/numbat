@@ -470,7 +470,7 @@ impl TypeChecker {
         ))
     }
 
-    pub(crate) fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
+    fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
             ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar(*span, *n),
             ast::Expression::Identifier(span, name) => {
@@ -1027,7 +1027,7 @@ impl TypeChecker {
         })
     }
 
-    pub fn check_statement(&mut self, ast: &ast::Statement) -> Result<typed_ast::Statement> {
+    fn check_statement(&mut self, ast: &ast::Statement) -> Result<typed_ast::Statement> {
         Ok(match ast {
             ast::Statement::Expression(expr) => {
                 let checked_expr = self.check_expression(expr)?;
@@ -1599,7 +1599,7 @@ impl TypeChecker {
         })
     }
 
-    pub fn check_statements(
+    pub fn check(
         &mut self,
         statements: impl IntoIterator<Item = ast::Statement>,
     ) -> Result<Vec<typed_ast::Statement>> {

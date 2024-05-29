@@ -571,7 +571,7 @@ impl Context {
 
         let result = self
             .typechecker
-            .check_statements(transformed_statements)
+            .check(transformed_statements)
             .map_err(NumbatError::TypeCheckError);
 
         if result.is_err() {
