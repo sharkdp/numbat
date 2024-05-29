@@ -479,6 +479,7 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::NameResolutionError(inner) => {
                 return inner.diagnostics();
             }
+            TypeCheckError::ConstraintSolverError(_) => d.with_message(inner_error),
         };
         vec![d]
     }

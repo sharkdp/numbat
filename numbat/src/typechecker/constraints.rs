@@ -1,10 +1,15 @@
+use thiserror::Error;
+
+use super::error;
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{DType, Type};
 
-#[derive(Debug)]
-pub enum UnificationError {
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
+pub enum ConstraintSolverError {
+    #[error("Could not solve the following constraints:\n{0}")]
     CouldNotSolve(String),
+    #[error(transparent)]
     SubstitutionError(SubstitutionError),
 }
 
@@ -64,7 +69,7 @@ impl ConstraintSet {
         self.constraints.extend(other.constraints);
     }
 
-    pub fn solve(&mut self) -> Result<(Substitution, Vec<TypeVariable>), UnificationError> {
+    pub fn solve(&mut self) -> Result<(Substitution, Vec<TypeVariable>), ConstraintSolverError> {
         let mut substitution = Substitution::empty();
 
         let mut made_progress = true;
@@ -83,7 +88,7 @@ impl ConstraintSet {
 
                         new_constraint_set
                             .apply(&new_substitution)
-                            .map_err(UnificationError::SubstitutionError)?;
+                            .map_err(ConstraintSolverError::SubstitutionError)?;
 
                         substitution.extend(new_substitution);
 
@@ -120,7 +125,7 @@ impl ConstraintSet {
         dtypes.dedup();
 
         if !remaining_constraints.is_empty() {
-            return Err(UnificationError::CouldNotSolve(
+            return Err(ConstraintSolverError::CouldNotSolve(
                 remaining_constraints
                     .iter()
                     .map(|c| c.pretty_print())

@@ -1652,6 +1652,9 @@ impl TypeChecker {
         }
 
         // Solve constraints
+        self.constraints
+            .solve()
+            .map_err(TypeCheckError::ConstraintSolverError)?;
 
         Ok(statements_elaborated)
     }
