@@ -178,6 +178,40 @@ pub struct TypeChecker {
 }
 
 impl TypeChecker {
+    fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
+        match annotation {
+            TypeAnnotation::Never(_) => Ok(Type::Never),
+            TypeAnnotation::TypeExpression(dexpr) => {
+                if let TypeExpression::TypeIdentifier(_, name) = dexpr {
+                    if let Some(info) = self.structs.get(name) {
+                        // if we see a struct name here, it's safe to assume it
+                        // isn't accidentally clashing with a dimension, we
+                        // check that earlier.
+                        return Ok(Type::Struct(info.clone()));
+                    }
+                }
+
+                self.registry
+                    .get_base_representation(dexpr)
+                    .map(Type::Dimension)
+                    .map_err(TypeCheckError::RegistryError)
+            }
+            TypeAnnotation::Bool(_) => Ok(Type::Boolean),
+            TypeAnnotation::String(_) => Ok(Type::String),
+            TypeAnnotation::DateTime(_) => Ok(Type::DateTime),
+            TypeAnnotation::Fn(_, param_types, return_type) => Ok(Type::Fn(
+                param_types
+                    .iter()
+                    .map(|p| self.type_from_annotation(p))
+                    .collect::<Result<Vec<_>>>()?,
+                Box::new(self.type_from_annotation(return_type)?),
+            )),
+            TypeAnnotation::List(_, element_type) => Ok(Type::List(Box::new(
+                self.type_from_annotation(element_type)?,
+            ))),
+        }
+    }
+
     fn identifier_type(&self, span: Span, name: &str) -> Result<Type> {
         let id = self
             .identifiers
@@ -1613,40 +1647,6 @@ impl TypeChecker {
 
     pub(crate) fn registry(&self) -> &DimensionRegistry {
         &self.registry
-    }
-
-    fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
-        match annotation {
-            TypeAnnotation::Never(_) => Ok(Type::Never),
-            TypeAnnotation::TypeExpression(dexpr) => {
-                if let TypeExpression::TypeIdentifier(_, name) = dexpr {
-                    if let Some(info) = self.structs.get(name) {
-                        // if we see a struct name here, it's safe to assume it
-                        // isn't accidentally clashing with a dimension, we
-                        // check that earlier.
-                        return Ok(Type::Struct(info.clone()));
-                    }
-                }
-
-                self.registry
-                    .get_base_representation(dexpr)
-                    .map(Type::Dimension)
-                    .map_err(TypeCheckError::RegistryError)
-            }
-            TypeAnnotation::Bool(_) => Ok(Type::Boolean),
-            TypeAnnotation::String(_) => Ok(Type::String),
-            TypeAnnotation::DateTime(_) => Ok(Type::DateTime),
-            TypeAnnotation::Fn(_, param_types, return_type) => Ok(Type::Fn(
-                param_types
-                    .iter()
-                    .map(|p| self.type_from_annotation(p))
-                    .collect::<Result<Vec<_>>>()?,
-                Box::new(self.type_from_annotation(return_type)?),
-            )),
-            TypeAnnotation::List(_, element_type) => Ok(Type::List(Box::new(
-                self.type_from_annotation(element_type)?,
-            ))),
-        }
     }
 
     pub fn lookup_function(&self, name: &str) -> Option<&(FunctionSignature, FunctionMetadata)> {
