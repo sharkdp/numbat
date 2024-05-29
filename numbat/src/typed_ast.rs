@@ -181,11 +181,11 @@ impl Type {
         }
     }
 
-    pub(crate) fn instantiate(&self, type_variables: &[TypeVariable]) -> Type {
+    pub(crate) fn instantiate(&self, _type_variables: &[TypeVariable]) -> Type {
         todo!()
     }
 
-    pub(crate) fn contains(&self, x: &TypeVariable) -> bool {
+    pub(crate) fn contains(&self, _x: &TypeVariable) -> bool {
         false // TODO!
     }
 }

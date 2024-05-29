@@ -89,14 +89,14 @@ fn power_operator_with_scalar_base() {
     assert_successful_typecheck("2^2");
     assert_successful_typecheck("2^(2^2)");
 
-    // assert!(matches!(
-    //     get_typecheck_error("2^a"),
-    //     TypeCheckError::NonScalarExponent(_, t) if t == type_a()
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("2^(c/b)"),
-    //     TypeCheckError::NonScalarExponent(_, t) if t == type_a()
-    // ));
+    assert!(matches!(
+        get_typecheck_error("2^a"),
+        TypeCheckError::NonScalarExponent(_, t) if t == Type::Dimension(type_a())
+    ));
+    assert!(matches!(
+        get_typecheck_error("2^(c/b)"),
+        TypeCheckError::NonScalarExponent(_, t) if t == Type::Dimension(type_a())
+    ));
 }
 
 #[test]
@@ -110,7 +110,7 @@ fn power_operator_with_dimensionful_base() {
 
     assert!(matches!(
         get_typecheck_error("a^b"),
-        TypeCheckError::NonScalarExponent(_, t) if t == type_b()
+        TypeCheckError::NonScalarExponent(_, t) if t == Type::Dimension(type_b())
     ));
 
     // TODO: if we add ("constexpr") constants later, it would be great to support those in exponents.
@@ -152,26 +152,26 @@ fn variable_definitions() {
     assert_successful_typecheck("let x: Bool = true");
     assert_successful_typecheck("let x: String = \"hello\"");
 
-    // assert!(matches!(
-    //     get_typecheck_error("let x: A = b"),
-    //     TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a() && actual_type == type_b()
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("let x: A = true"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Dimension(type_a()) && actual_type == Type::Boolean
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("let x: A = \"foo\""),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Dimension(type_a()) && actual_type == Type::String
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("let x: Bool = a"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Boolean && actual_type == Type::Dimension(type_a())
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("let x: String = true"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::String && actual_type == Type::Boolean
-    // ));
+    assert!(matches!(
+        get_typecheck_error("let x: A = b"),
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a() && actual_type == type_b()
+    ));
+    assert!(matches!(
+        get_typecheck_error("let x: A = true"),
+        TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Dimension(type_a()) && actual_type == Type::Boolean
+    ));
+    assert!(matches!(
+        get_typecheck_error("let x: A = \"foo\""),
+        TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Dimension(type_a()) && actual_type == Type::String
+    ));
+    assert!(matches!(
+        get_typecheck_error("let x: Bool = a"),
+        TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::Boolean && actual_type == Type::Dimension(type_a())
+    ));
+    assert!(matches!(
+        get_typecheck_error("let x: String = true"),
+        TypeCheckError::IncompatibleTypesInAnnotation(_, _, annotated_type, _, actual_type, _) if annotated_type == Type::String && actual_type == Type::Boolean
+    ));
 }
 
 #[test]
@@ -179,10 +179,10 @@ fn unit_definitions() {
     assert_successful_typecheck("unit my_c: C = a * b");
     assert_successful_typecheck("unit foo: A*B^2 = a b^2");
 
-    // assert!(matches!(
-    //     get_typecheck_error("unit my_c: C = a"),
-    //     TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c() && actual_type == type_a()
-    // ));
+    assert!(matches!(
+        get_typecheck_error("unit my_c: C = a"),
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c() && actual_type == type_a()
+    ));
 }
 
 #[test]
@@ -193,16 +193,16 @@ fn function_definitions() {
 
     assert_successful_typecheck("fn f(x: A) = x");
 
-    // assert!(matches!(
-    //     get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
-    //     TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c() && actual_type == type_a() / type_b()
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c() && actual_type == type_a() / type_b()
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("fn f(x: A) -> A = a\n\
-    //                          f(b)"),
-    //     TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a() && actual_type == type_b()
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn f(x: A) -> A = a\n\
+                             f(b)"),
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a() && actual_type == type_b()
+    ));
 }
 
 #[test]
@@ -212,10 +212,10 @@ fn recursive_functions() {
         "fn factorial(n: Scalar) -> Scalar = if n < 0 then 1 else factorial(n - 1) * n",
     );
 
-    // assert!(matches!(
-    //     get_typecheck_error("fn f(x: Scalar) -> A = if x < 0 then f(-x) else 2 b"),
-    //     TypeCheckError::IncompatibleTypesInCondition(_, lhs, _, rhs, _) if lhs == Type::Dimension(type_a()) && rhs == Type::Dimension(type_b())
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn f(x: Scalar) -> A = if x < 0 then f(-x) else 2 b"),
+        TypeCheckError::IncompatibleTypesInCondition(_, lhs, _, rhs, _) if lhs == Type::Dimension(type_a()) && rhs == Type::Dimension(type_b())
+    ));
 }
 
 #[test]
@@ -242,12 +242,12 @@ fn generics_basic() {
             ",
     );
 
-    // assert!(matches!(
-    //     get_typecheck_error("fn f<T1, T2>(x: T1, y: T2) -> T2/T1 = x/y"),
-    //     TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..})
-    //         if expected_type == base_type("T2") / base_type("T1") &&
-    //         actual_type == base_type("T1") / base_type("T2")
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn f<T1, T2>(x: T1, y: T2) -> T2/T1 = x/y"),
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..})
+            if expected_type == base_type("T2") / base_type("T1") &&
+            actual_type == base_type("T1") / base_type("T2")
+    ));
 }
 
 // #[test]
@@ -427,50 +427,50 @@ fn conditionals() {
     assert_successful_typecheck("if true then 1 else 2");
     assert_successful_typecheck("if true then true else false");
 
-    // assert!(matches!(
-    //     get_typecheck_error("if 1 then 2 else 3"),
-    //     TypeCheckError::ExpectedBool(_)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("if 1 then 2 else 3"),
+        TypeCheckError::ExpectedBool(_)
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("if true then a else b"),
-    //     TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Dimension(base_type("A")) && t2 == Type::Dimension(base_type("B"))
-    // ));
+    assert!(matches!(
+        get_typecheck_error("if true then a else b"),
+        TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Dimension(base_type("A")) && t2 == Type::Dimension(base_type("B"))
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("if true then true else a"),
-    //     TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Boolean && t2 == Type::Dimension(base_type("A"))
-    // ));
+    assert!(matches!(
+        get_typecheck_error("if true then true else a"),
+        TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Boolean && t2 == Type::Dimension(base_type("A"))
+    ));
 }
 
 #[test]
 fn non_dtype_return_types() {
-    // assert!(matches!(
-    //     get_typecheck_error("fn f() -> String = 1"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("fn f() -> Scalar = \"test\""),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn f() -> String = 1"),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
+    assert!(matches!(
+        get_typecheck_error("fn f() -> Scalar = \"test\""),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("fn f() -> Bool = 1"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("fn f() -> Scalar = true"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn f() -> Bool = 1"),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
+    assert!(matches!(
+        get_typecheck_error("fn f() -> Scalar = true"),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("fn f() -> String = true"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("fn f() -> Bool = \"test\""),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn f() -> String = true"),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
+    assert!(matches!(
+        get_typecheck_error("fn f() -> Bool = \"test\""),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
 }
 
 #[test]

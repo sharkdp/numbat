@@ -19,10 +19,10 @@ pub enum TypeCheckError {
     IncompatibleDimensions(IncompatibleDimensionsError),
 
     #[error("Exponents need to be dimensionless (got {1}).")]
-    NonScalarExponent(Span, DType),
+    NonScalarExponent(Span, Type),
 
     #[error("Argument of factorial needs to be dimensionless (got {1}).")]
-    NonScalarFactorialArgument(Span, DType),
+    NonScalarFactorialArgument(Span, Type),
 
     #[error("Unsupported expression in const-evaluation of exponent: {1}.")]
     UnsupportedConstEvalExpression(Span, &'static str),

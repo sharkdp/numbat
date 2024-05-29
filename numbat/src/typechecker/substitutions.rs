@@ -20,13 +20,13 @@ impl Substitution {
         self.0.iter().find(|(var, _)| var == v).map(|(_, t)| t)
     }
 
-    pub fn pretty_print(&self) -> String {
-        self.0
-            .iter()
-            .map(|(v, t)| format!("  {} := {}", v.name(), t))
-            .collect::<Vec<String>>()
-            .join("\n")
-    }
+    // pub fn pretty_print(&self) -> String {
+    //     self.0
+    //         .iter()
+    //         .map(|(v, t)| format!("  {} := {}", v.name(), t))
+    //         .collect::<Vec<String>>()
+    //         .join("\n")
+    // }
 
     pub fn extend(&mut self, other: Substitution) {
         for (_, t) in &mut self.0 {
@@ -77,7 +77,7 @@ impl ApplySubstitution for Type {
 }
 
 impl ApplySubstitution for DType {
-    fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
+    fn apply(&mut self, _s: &Substitution) -> Result<(), SubstitutionError> {
         // TODO
         Ok(())
     }
