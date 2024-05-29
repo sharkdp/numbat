@@ -179,7 +179,7 @@ pub enum TrivialResultion {
 }
 
 impl TrivialResultion {
-    pub fn is_violated(self) -> bool {
+    pub fn is_trivially_violated(self) -> bool {
         matches!(self, TrivialResultion::Violated)
     }
 
@@ -302,7 +302,7 @@ impl Constraint {
             //     ]))
             // }
             Constraint::Equal(_, _) => None,
-            Constraint::IsDType(Type::Dimension(inner)) => {
+            Constraint::IsDType(Type::Dimension(_inner)) => {
                 Some(Satisfied::trivially()) // TODO: this is not correct, see below
 
                 // let new_constraints = inner
@@ -341,7 +341,7 @@ impl Constraint {
             //             Type::Dimension(result),
             //         )))
             //     }
-            _ => None,
+            // _ => None,
             // },
         }
     }
