@@ -2,9 +2,13 @@
 mod tests;
 
 mod constraints;
+mod environment;
 mod error;
 mod incompatible_dimensions;
+mod name_generator;
+mod qualified_type;
 mod substitutions;
+mod type_scheme;
 
 use std::collections::{HashMap, HashSet};
 
