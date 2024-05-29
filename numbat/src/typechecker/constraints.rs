@@ -1,0 +1,336 @@
+use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
+use crate::type_variable::TypeVariable;
+use crate::typed_ast::{DType, Type};
+
+#[derive(Debug)]
+pub enum UnificationError {
+    CouldNotSolve(String),
+    SubstitutionError(SubstitutionError),
+}
+
+/// Constraints can be solved trivially, with a new substitution,
+/// or by replacing an existing constraint with new constraints.
+///
+/// For example, the unification constraint `T1 ~ Bool` can be solved with
+/// the substitution `T1 := Bool`. The constraint `List<T1> ~ List<T2>`
+/// can be solved by replacing it with a `T1 ~ T2` constraint. And the
+/// constraint `T0/T1: Dim` can be 'solved' by replacing it with two new
+/// constraints `T0: Dim` and `T1: Dim`.
+pub struct Satisfied {
+    new_substitution: Substitution,
+    new_constraints: Vec<Constraint>,
+}
+
+impl Satisfied {
+    pub fn trivially() -> Self {
+        Satisfied {
+            new_substitution: Substitution::empty(),
+            new_constraints: vec![],
+        }
+    }
+
+    pub fn with_substitution(s: Substitution) -> Self {
+        Satisfied {
+            new_substitution: s,
+            new_constraints: vec![],
+        }
+    }
+
+    pub fn with_new_constraints(constraints: Vec<Constraint>) -> Self {
+        Satisfied {
+            new_substitution: Substitution::empty(),
+            new_constraints: constraints,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ConstraintSet {
+    constraints: Vec<Constraint>,
+}
+
+impl ConstraintSet {
+    pub fn new() -> Self {
+        ConstraintSet {
+            constraints: Vec::new(),
+        }
+    }
+
+    pub fn add(&mut self, constraint: Constraint) {
+        self.constraints.push(constraint);
+    }
+
+    pub fn extend(&mut self, other: ConstraintSet) {
+        self.constraints.extend(other.constraints);
+    }
+
+    pub fn solve(&mut self) -> Result<(Substitution, Vec<TypeVariable>), UnificationError> {
+        let mut substitution = Substitution::empty();
+
+        let mut made_progress = true;
+        while made_progress {
+            made_progress = false;
+            let mut new_constraint_set = self.clone();
+
+            for (i, c) in self.iter().enumerate() {
+                match c.try_satisfy() {
+                    Some(Satisfied {
+                        new_constraints,
+                        new_substitution,
+                    }) => {
+                        new_constraint_set.remove(i);
+                        new_constraint_set.constraints.extend(new_constraints);
+
+                        new_constraint_set
+                            .apply(&new_substitution)
+                            .map_err(UnificationError::SubstitutionError)?;
+
+                        substitution.extend(new_substitution);
+
+                        println!(
+                            "    New constraints:\n{}",
+                            new_constraint_set.pretty_print(6)
+                        );
+
+                        made_progress = true;
+                        break;
+                    }
+                    None => {}
+                }
+            }
+
+            self.constraints = new_constraint_set.constraints;
+        }
+
+        // Solve remaining type class constraints (if possible), by remembering
+        // `T_i: Dim` bounds for those type variables
+        let mut dtypes = vec![];
+        let mut remaining_constraints = vec![];
+        for c in self.iter() {
+            match c.get_dtype_constraint_type_variable() {
+                None => {
+                    remaining_constraints.push(c.clone());
+                }
+                Some(name) => {
+                    dtypes.push(name);
+                }
+            }
+        }
+        dtypes.sort();
+        dtypes.dedup();
+
+        if !remaining_constraints.is_empty() {
+            return Err(UnificationError::CouldNotSolve(
+                remaining_constraints
+                    .iter()
+                    .map(|c| c.pretty_print())
+                    .collect::<Vec<String>>()
+                    .join("\n"),
+            ));
+        }
+
+        Ok((substitution, dtypes))
+    }
+
+    fn remove(&mut self, i: usize) {
+        self.constraints.remove(i);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Constraint> {
+        self.constraints.iter()
+    }
+
+    pub fn pretty_print(&self, indent: usize) -> String {
+        self.constraints
+            .iter()
+            .map(|c| format!("{:indent$}{}", "", c.pretty_print(), indent = indent))
+            .collect::<Vec<String>>()
+            .join("\n")
+    }
+}
+
+impl ApplySubstitution for ConstraintSet {
+    fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
+        for c in self.constraints.iter_mut() {
+            c.apply(substitution)?;
+        }
+        Ok(())
+    }
+}
+
+/// A type checker constraint can be one of three things:
+/// - A unification constraint `Type1 ~ Type2` which constrains two types to be equal
+/// - A 'type class' constraint `Type: DType` which constrains `Type` to be a dimension type (like `Scalar`, `Length`, or `Length × Mass / Time²`).
+/// - A constraint `DType ~ Scalar` which constrains a dimension type to be dimensionless.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Constraint {
+    Equal(Type, Type),
+    IsDType(Type),
+    EqualScalar(DType),
+}
+
+impl Constraint {
+    /// Try to solve a constraint. Returns `None` if the constaint can not (yet) be solved.
+    fn try_satisfy(&self) -> Option<Satisfied> {
+        match self {
+            _ => None, // …
+
+                       // Constraint::Equal(t1, t2) if t1 == t2 => {
+                       //     println!(
+                       //         "  (1) SOLVING: {} ~ {} trivially ",
+                       //         t1.pretty_print(),
+                       //         t2.pretty_print()
+                       //     );
+                       //     Some(Satisfied::trivially())
+                       // }
+                       // Constraint::Equal(Type::TVar(x), t) if !t.contains(x) => {
+                       //     println!(
+                       //         "  (2) SOLVING: {x} ~ {t} with substitution {x} := {t}",
+                       //         x = x,
+                       //         t = t.pretty_print()
+                       //     );
+                       //     Some(Satisfied::with_substitution(Substitution::single(
+                       //         x.clone(),
+                       //         t.clone(),
+                       //     )))
+                       // }
+                       // Constraint::Equal(s, Type::TVar(x)) if !s.contains(x) => {
+                       //     println!(
+                       //         "  (3) SOLVING: {s} ~ {x} with substitution {x} := {s}",
+                       //         s = s.pretty_print(),
+                       //         x = x
+                       //     );
+                       //     Some(Satisfied::with_substitution(Substitution::single(
+                       //         x.clone(),
+                       //         s.clone(),
+                       //     )))
+                       // }
+                       // Constraint::Equal(t @ Type::TArr(s1, s2), s @ Type::TArr(t1, t2)) => {
+                       //     println!(
+                       //         "  (4) SOLVING: {t} ~ {s} with new constraints {s1} ~ {t1} and {s2} ~ {t2}",
+                       //         t = t.pretty_print(),
+                       //         s = s.pretty_print(),
+                       //         s1 = s1.pretty_print(),
+                       //         s2 = s2.pretty_print(),
+                       //         t1 = t1.pretty_print(),
+                       //         t2 = t2.pretty_print()
+                       //     );
+                       //     Some(Satisfied::with_new_constraints(vec![
+                       //         Constraint::Equal(s1.as_ref().clone(), t1.as_ref().clone()),
+                       //         Constraint::Equal(s2.as_ref().clone(), t2.as_ref().clone()),
+                       //     ]))
+                       // }
+                       // Constraint::Equal(s @ Type::List(s1), t @ Type::List(t1)) => {
+                       //     println!(
+                       //         "  (5) SOLVING: {s} ~ {t} with new constraint {s1} ~ {t1}",
+                       //         s = s.pretty_print(),
+                       //         t = t.pretty_print(),
+                       //         s1 = s1.pretty_print(),
+                       //         t1 = t1.pretty_print()
+                       //     );
+                       //     Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
+                       //         s1.as_ref().clone(),
+                       //         t1.as_ref().clone(),
+                       //     )]))
+                       // }
+                       // Constraint::Equal(Type::TVar(tv), Type::DType(d))
+                       // | Constraint::Equal(Type::DType(d), Type::TVar(tv)) => {
+                       //     println!(
+                       //         "  (6) SOLVING: {tv} ~ {d} by lifting the type variable to a DType",
+                       //         tv = tv,
+                       //         d = d.pretty_print()
+                       //     );
+
+                       //     Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
+                       //         Type::DType(DType::from_type_variable(tv.clone())),
+                       //         Type::DType(d.clone()),
+                       //     )]))
+                       // }
+                       // Constraint::Equal(Type::DType(d1), Type::DType(d2)) => {
+                       //     let d_result = d1.divide(d2);
+                       //     println!(
+                       //         "  (7) SOLVING: {} ~ {} with new constraint d_result = Scalar",
+                       //         d1.pretty_print(),
+                       //         d2.pretty_print()
+                       //     );
+                       //     Some(Satisfied::with_new_constraints(vec![
+                       //         Constraint::EqualScalar(d_result),
+                       //     ]))
+                       // }
+                       // Constraint::Equal(_, _) => None,
+                       // Constraint::IsDType(Type::DType(inner)) => {
+                       //     let new_constraints = inner
+                       //         .type_variables()
+                       //         .iter()
+                       //         .map(|tv| Constraint::IsDType(Type::TVar(tv.clone())))
+                       //         .collect();
+                       //     println!(
+                       //         "  (8) SOLVING: {} : DType through new constraints: {:?}",
+                       //         inner.pretty_print(),
+                       //         new_constraints
+                       //     );
+                       //     Some(Satisfied::with_new_constraints(new_constraints))
+                       // }
+                       // Constraint::IsDType(_) => None,
+                       // Constraint::EqualScalar(d) if d == &DType::scalar() => {
+                       //     println!("  (9) SOLVING: Scalar = Scalar trivially");
+                       //     Some(Satisfied::trivially())
+                       // }
+                       // Constraint::EqualScalar(dtype) => match dtype.split_first_factor() {
+                       //     Some(((DTypeFactor::TVar(tv), k), rest)) => {
+                       //         let result = DType::from_factors(
+                       //             &rest
+                       //                 .iter()
+                       //                 .map(|(f, j)| (f.clone(), -j / k))
+                       //                 .collect::<Vec<_>>(),
+                       //         );
+                       //         println!(
+                       //             "  (10) SOLVING: {dtype} = Scalar with substitution {tv} := {result}",
+                       //             dtype = dtype.pretty_print(),
+                       //             tv = tv,
+                       //             result = result.pretty_print()
+                       //         );
+                       //         Some(Satisfied::with_substitution(Substitution::single(
+                       //             tv.clone(),
+                       //             Type::DType(result),
+                       //         )))
+                       //     }
+                       //     _ => None,
+                       // },
+        }
+    }
+
+    fn pretty_print(&self) -> String {
+        match self {
+            Constraint::Equal(t1, t2) => {
+                format!("  {} ~ {}", t1, t2)
+            }
+            Constraint::IsDType(t) => format!("  {}: DType", t),
+            Constraint::EqualScalar(d) => format!("  {} = Scalar", d),
+        }
+    }
+
+    // Get the contained type variable, if this constraint is a trivial dtype constraint for a type variable
+    fn get_dtype_constraint_type_variable(&self) -> Option<TypeVariable> {
+        match self {
+            Constraint::IsDType(Type::TVar(tvar)) => Some(tvar.clone()),
+            _ => None,
+        }
+    }
+}
+
+impl ApplySubstitution for Constraint {
+    fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
+        match self {
+            Constraint::Equal(t1, t2) => {
+                t1.apply(substitution)?;
+                t2.apply(substitution)?;
+            }
+            Constraint::IsDType(t) => {
+                t.apply(substitution)?;
+            }
+            Constraint::EqualScalar(d) => d.apply(substitution)?,
+        }
+        Ok(())
+    }
+}

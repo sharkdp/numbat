@@ -33,6 +33,7 @@ pub mod resolver;
 mod span;
 mod suggestion;
 mod tokenizer;
+mod type_variable;
 mod typechecker;
 mod typed_ast;
 pub mod unicode_input;

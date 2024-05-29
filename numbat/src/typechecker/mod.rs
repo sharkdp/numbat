@@ -1,8 +1,10 @@
 #[cfg(test)]
 mod tests;
 
+mod constraints;
 mod error;
 mod incompatible_dimensions;
+mod substitutions;
 
 use std::collections::{HashMap, HashSet};
 
@@ -17,6 +19,7 @@ use crate::span::Span;
 use crate::typed_ast::{self, DType, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
 
+use constraints::ConstraintSet;
 use itertools::Itertools;
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
 
@@ -175,6 +178,8 @@ pub struct TypeChecker {
 
     type_namespace: Namespace,
     value_namespace: Namespace,
+
+    constraints: ConstraintSet,
 }
 
 impl TypeChecker {
@@ -504,7 +509,7 @@ impl TypeChecker {
         ))
     }
 
-    fn check_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
+    fn elaborate_expression(&self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
             ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar(*span, *n),
             ast::Expression::Identifier(span, name) => {
@@ -524,7 +529,7 @@ impl TypeChecker {
                 )
             }
             ast::Expression::UnaryOperator { op, expr, span_op } => {
-                let checked_expr = self.check_expression(expr)?;
+                let checked_expr = self.elaborate_expression(expr)?;
                 let type_ = checked_expr.get_type();
                 match (&type_, op) {
                     (Type::Never, _) => {}
@@ -557,8 +562,8 @@ impl TypeChecker {
                 rhs,
                 span_op,
             } => {
-                let lhs_checked = self.check_expression(lhs)?;
-                let rhs_checked = self.check_expression(rhs)?;
+                let lhs_checked = self.elaborate_expression(lhs)?;
+                let rhs_checked = self.elaborate_expression(rhs)?;
 
                 let lhs_type = lhs_checked.get_type();
                 let rhs_type = rhs_checked.get_type();
@@ -799,7 +804,7 @@ impl TypeChecker {
             ast::Expression::FunctionCall(span, full_span, callable, args) => {
                 let arguments_checked = args
                     .iter()
-                    .map(|a| self.check_expression(a))
+                    .map(|a| self.elaborate_expression(a))
                     .collect::<Result<Vec<_>>>()?;
                 let argument_types = arguments_checked
                     .iter()
@@ -820,7 +825,7 @@ impl TypeChecker {
                         argument_types,
                     )?
                 } else {
-                    let callable_checked = self.check_expression(callable)?;
+                    let callable_checked = self.elaborate_expression(callable)?;
                     let callable_type = callable_checked.get_type();
 
                     match callable_type {
@@ -880,19 +885,19 @@ impl TypeChecker {
                         } => Ok(typed_ast::StringPart::Interpolation {
                             span: *span,
                             format_specifiers: format_specifiers.clone(),
-                            expr: Box::new(self.check_expression(expr)?),
+                            expr: Box::new(self.elaborate_expression(expr)?),
                         }),
                     })
                     .collect::<Result<_>>()?,
             ),
             ast::Expression::Condition(span, condition, then, else_) => {
-                let condition = self.check_expression(condition)?;
+                let condition = self.elaborate_expression(condition)?;
                 if condition.get_type() != Type::Boolean {
                     return Err(TypeCheckError::ExpectedBool(condition.full_span()));
                 }
 
-                let then = self.check_expression(then)?;
-                let else_ = self.check_expression(else_)?;
+                let then = self.elaborate_expression(then)?;
+                let else_ = self.elaborate_expression(else_)?;
 
                 let then_type = then.get_type();
                 let else_type = else_.get_type();
@@ -931,7 +936,7 @@ impl TypeChecker {
             } => {
                 let fields_checked = fields
                     .iter()
-                    .map(|(_, n, v)| Ok((n.to_string(), self.check_expression(v)?)))
+                    .map(|(_, n, v)| Ok((n.to_string(), self.elaborate_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
                 let Some(struct_info) = self.structs.get(name) else {
@@ -995,7 +1000,7 @@ impl TypeChecker {
                 )
             }
             ast::Expression::AccessField(full_span, ident_span, expr, attr) => {
-                let expr_checked = self.check_expression(expr)?;
+                let expr_checked = self.elaborate_expression(expr)?;
 
                 let type_ = expr_checked.get_type();
 
@@ -1031,7 +1036,7 @@ impl TypeChecker {
             ast::Expression::List(span, elements) => {
                 let elements_checked = elements
                     .iter()
-                    .map(|e| self.check_expression(e))
+                    .map(|e| self.elaborate_expression(e))
                     .collect::<Result<Vec<_>>>()?;
 
                 let element_types: Vec<Type> =
@@ -1061,10 +1066,10 @@ impl TypeChecker {
         })
     }
 
-    fn check_statement(&mut self, ast: &ast::Statement) -> Result<typed_ast::Statement> {
+    fn elaborate_statement(&mut self, ast: &ast::Statement) -> Result<typed_ast::Statement> {
         Ok(match ast {
             ast::Statement::Expression(expr) => {
-                let checked_expr = self.check_expression(expr)?;
+                let checked_expr = self.elaborate_expression(expr)?;
                 for &identifier in LAST_RESULT_IDENTIFIERS {
                     self.identifiers
                         .insert(identifier.into(), (checked_expr.get_type(), None));
@@ -1078,7 +1083,7 @@ impl TypeChecker {
                 type_annotation,
                 decorators,
             } => {
-                let expr_checked = self.check_expression(expr)?;
+                let expr_checked = self.elaborate_expression(expr)?;
                 let type_deduced = expr_checked.get_type();
 
                 if let Some(ref type_annotation) = type_annotation {
@@ -1195,7 +1200,7 @@ impl TypeChecker {
             } => {
                 // TODO: this is the *exact same code* that we have above for
                 // variable definitions => deduplicate this somehow
-                let expr_checked = self.check_expression(expr)?;
+                let expr_checked = self.elaborate_expression(expr)?;
                 let type_deduced = dtype(&expr_checked)?;
 
                 if let Some(ref dexpr) = type_annotation {
@@ -1389,7 +1394,7 @@ impl TypeChecker {
 
                 let body_checked = body
                     .clone()
-                    .map(|expr| typechecker_fn.check_expression(&expr))
+                    .map(|expr| typechecker_fn.elaborate_expression(&expr))
                     .transpose()?;
 
                 let return_type = if let Some(ref expr) = body_checked {
@@ -1530,7 +1535,7 @@ impl TypeChecker {
 
                 let checked_args = args
                     .iter()
-                    .map(|e| self.check_expression(e))
+                    .map(|e| self.elaborate_expression(e))
                     .collect::<Result<Vec<_>>>()?;
 
                 typed_ast::Statement::ProcedureCall(kind.clone(), checked_args)
@@ -1549,7 +1554,7 @@ impl TypeChecker {
 
                 let checked_args = args
                     .iter()
-                    .map(|e| self.check_expression(e))
+                    .map(|e| self.elaborate_expression(e))
                     .collect::<Result<Vec<_>>>()?;
 
                 match kind {
@@ -1637,12 +1642,18 @@ impl TypeChecker {
         &mut self,
         statements: impl IntoIterator<Item = ast::Statement>,
     ) -> Result<Vec<typed_ast::Statement>> {
-        let mut statements_checked = vec![];
+        // Elaborate the program: turn the AST into a typed AST, possibly
+        // with "holes" inside, i.e. type variables that will only later
+        // be filled in (after constraint solving).
+        let mut statements_elaborated = vec![];
 
         for statement in statements.into_iter() {
-            statements_checked.push(self.check_statement(&statement)?);
+            statements_elaborated.push(self.elaborate_statement(&statement)?);
         }
-        Ok(statements_checked)
+
+        // Solve constraints
+
+        Ok(statements_elaborated)
     }
 
     pub(crate) fn registry(&self) -> &DimensionRegistry {
