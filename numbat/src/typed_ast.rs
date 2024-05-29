@@ -5,6 +5,7 @@ use crate::arithmetic::{Exponent, Rational};
 use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
 use crate::dimension::DimensionRegistry;
+use crate::type_variable::TypeVariable;
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, registry::BaseRepresentation,
@@ -64,6 +65,7 @@ pub struct StructInfo {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
+    TVar(TypeVariable),
     Never,
     Dimension(DType),
     Boolean,
@@ -77,6 +79,7 @@ pub enum Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Type::TVar(v) => write!(f, "{}", v.name()),
             Type::Never => write!(f, "!"),
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
@@ -107,6 +110,7 @@ impl std::fmt::Display for Type {
 impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
+            Type::TVar(v) => m::type_identifier(&v.name()),
             Type::Never => m::type_identifier("!"),
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::type_identifier("Bool"),
