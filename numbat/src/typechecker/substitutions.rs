@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{DType, Type};
 
@@ -33,8 +35,9 @@ impl Substitution {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum SubstitutionError {
+    #[error("Used non-dimension type in a dimension expression: {0}")]
     SubstitutedNonDTypeWithinDType(Type),
 }
 
