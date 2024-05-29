@@ -7,6 +7,7 @@ use crate::{NameResolutionError, Type};
 use thiserror::Error;
 
 use super::constraints::ConstraintSolverError;
+use super::substitutions::SubstitutionError;
 use super::IncompatibleDimensionsError;
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
@@ -136,6 +137,9 @@ pub enum TypeCheckError {
 
     #[error(transparent)]
     ConstraintSolverError(#[from] ConstraintSolverError),
+
+    #[error(transparent)]
+    SubstitutionError(#[from] SubstitutionError),
 }
 
 pub type Result<T> = std::result::Result<T, TypeCheckError>;

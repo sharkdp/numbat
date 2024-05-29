@@ -1421,9 +1421,7 @@ impl<'a> Parser<'a> {
     }
 
     fn type_annotation(&mut self) -> Result<TypeAnnotation> {
-        if let Some(token) = self.match_exact(TokenKind::ExclamationMark) {
-            Ok(TypeAnnotation::Never(token.span))
-        } else if let Some(token) = self.match_exact(TokenKind::Bool) {
+        if let Some(token) = self.match_exact(TokenKind::Bool) {
             Ok(TypeAnnotation::Bool(token.span))
         } else if let Some(token) = self.match_exact(TokenKind::String) {
             Ok(TypeAnnotation::String(token.span))

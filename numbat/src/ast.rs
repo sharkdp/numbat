@@ -256,7 +256,6 @@ pub(crate) use struct_;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeAnnotation {
-    Never(Span),
     TypeExpression(TypeExpression),
     Bool(Span),
     String(Span),
@@ -268,7 +267,6 @@ pub enum TypeAnnotation {
 impl TypeAnnotation {
     pub fn full_span(&self) -> Span {
         match self {
-            TypeAnnotation::Never(span) => *span,
             TypeAnnotation::TypeExpression(d) => d.full_span(),
             TypeAnnotation::Bool(span) => *span,
             TypeAnnotation::String(span) => *span,
@@ -282,7 +280,6 @@ impl TypeAnnotation {
 impl PrettyPrint for TypeAnnotation {
     fn pretty_print(&self) -> Markup {
         match self {
-            TypeAnnotation::Never(_) => m::type_identifier("!"),
             TypeAnnotation::TypeExpression(d) => d.pretty_print(),
             TypeAnnotation::Bool(_) => m::type_identifier("Bool"),
             TypeAnnotation::String(_) => m::type_identifier("String"),
@@ -440,7 +437,6 @@ pub trait ReplaceSpans {
 impl ReplaceSpans for TypeAnnotation {
     fn replace_spans(&self) -> Self {
         match self {
-            TypeAnnotation::Never(_) => TypeAnnotation::Never(Span::dummy()),
             TypeAnnotation::TypeExpression(d) => TypeAnnotation::TypeExpression(d.replace_spans()),
             TypeAnnotation::Bool(_) => TypeAnnotation::Bool(Span::dummy()),
             TypeAnnotation::String(_) => TypeAnnotation::String(Span::dummy()),

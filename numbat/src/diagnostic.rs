@@ -259,7 +259,7 @@ impl ErrorDiagnostic for TypeCheckError {
                     .with_message(rhs_type.to_string()),
                 op_span
                     .diagnostic_label(LabelStyle::Primary)
-                    .with_message("Incompatible types comparison operator"),
+                    .with_message("Incompatible types in comparison operator"),
             ]),
             TypeCheckError::IncompatibleTypeInAssert(procedure_span, type_, type_span) => d
                 .with_labels(vec![
@@ -479,7 +479,9 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::NameResolutionError(inner) => {
                 return inner.diagnostics();
             }
-            TypeCheckError::ConstraintSolverError(_) => d.with_message(inner_error),
+            TypeCheckError::ConstraintSolverError(_) | TypeCheckError::SubstitutionError(_) => {
+                d.with_message(inner_error) // TODO
+            }
         };
         vec![d]
     }
