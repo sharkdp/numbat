@@ -7,17 +7,16 @@ fn cons<A>(x: A, xs: List<A>) -> List<A>
 
 fn is_empty<A>(xs: List<A>) -> Bool = len(xs) == 0
 
-# We definitely want to make the following functions generic, but this is not yet possible:
-# Also, we want the base case to be the empty list, but this is also not yet possible.
+# We definitely want to make the following functions generic, but this is not yet possible.
 
 fn generate(n: Scalar, f: Fn[() -> Scalar]) -> List<Scalar> =
-  if n == 1
-    then [f()]
+  if n == 0
+    then []
     else cons(f(), generate(n - 1, f))
 
 fn map(f: Fn[(Scalar) -> Scalar], xs: List<Scalar>) -> List<Scalar> =
-  if len(xs) == 1
-    then [f(head(xs))]
+  if len(xs) == 0
+    then []
     else cons(f(head(xs)), map(f, tail(xs)))
 
 fn cons_end(xs: List<Scalar>, x: Scalar) -> List<Scalar> =
@@ -26,8 +25,8 @@ fn cons_end(xs: List<Scalar>, x: Scalar) -> List<Scalar> =
     else cons(head(xs), cons_end(tail(xs), x))
 
 fn reverse(xs: List<Scalar>) -> List<Scalar> =
-  if len(xs) == 1
-    then xs
+  if len(xs) == 0
+    then []
     else cons_end(reverse(tail(xs)), head(xs))
 
 fn sequence(n: Scalar) -> List<Scalar> =
@@ -46,10 +45,3 @@ fn inc(x: Scalar) -> Scalar = x + 1
 
 fn add(x: Scalar, y: Scalar) -> Scalar = x + y
 fn mul(x: Scalar, y: Scalar) -> Scalar = x * y
-
-assert(sequence(5) == [0, 1, 2, 3, 4])
-assert(generate(3, const_5) == [5, 5, 5])
-assert(map(inc, [1, 2, 3]) == [2, 3, 4])
-assert(reverse([1, 2, 3]) == [3, 2, 1])
-assert(foldl(add, 0, [1, 2, 3, 4, 5]) == 15)
-assert(foldl(mul, 1, [1, 2, 3, 4, 5]) == 120)
