@@ -174,6 +174,14 @@ impl Type {
             (t1, t2) => t1 == t2,
         }
     }
+
+    pub(crate) fn type_variables(&self) -> Vec<TypeVariable> {
+        todo!()
+    }
+
+    pub(crate) fn instantiate(&self, type_variables: &[TypeVariable]) -> Type {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
