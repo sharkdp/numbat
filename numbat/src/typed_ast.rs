@@ -66,7 +66,6 @@ pub struct StructInfo {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     TVar(TypeVariable),
-    Never,
     Dimension(DType),
     Boolean,
     String,
@@ -80,7 +79,6 @@ impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Type::TVar(v) => write!(f, "{}", v.name()),
-            Type::Never => write!(f, "!"),
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
@@ -111,7 +109,6 @@ impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
             Type::TVar(v) => m::type_identifier(&v.name()),
-            Type::Never => m::type_identifier("!"),
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::type_identifier("Bool"),
             Type::String => m::type_identifier("String"),
@@ -154,10 +151,6 @@ impl Type {
         Type::Dimension(DType::unity())
     }
 
-    pub fn is_never(&self) -> bool {
-        matches!(self, Type::Never)
-    }
-
     pub fn is_dtype(&self) -> bool {
         matches!(self, Type::Dimension(..))
     }
@@ -166,21 +159,16 @@ impl Type {
         matches!(self, Type::Fn(..))
     }
 
-    pub fn is_subtype_of(&self, other: &Type) -> bool {
-        match (self, other) {
-            (Type::Never, _) => true,
-            (_, Type::Never) => false,
-            (Type::List(el1), Type::List(el2)) => el1.is_subtype_of(el2),
-            (t1, t2) => t1 == t2,
-        }
-    }
-
     pub(crate) fn type_variables(&self) -> Vec<TypeVariable> {
         todo!()
     }
 
     pub(crate) fn instantiate(&self, type_variables: &[TypeVariable]) -> Type {
         todo!()
+    }
+
+    pub(crate) fn contains(&self, x: &TypeVariable) -> bool {
+        false // TODO!
     }
 }
 
@@ -225,7 +213,7 @@ impl PrettyPrint for &Vec<StringPart> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Scalar(Span, Number),
+    Scalar(Span, Number, Type),
     Identifier(Span, String, Type),
     UnitIdentifier(Span, Prefix, String, String, Type),
     UnaryOperator(Span, UnaryOperator, Box<Expression>, Type),
@@ -296,7 +284,7 @@ impl Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DefineVariable(String, Vec<Decorator>, Expression, Markup, Type),
+    DefineVariable(String, Vec<Decorator>, Expression, Type),
     DefineFunction(
         String,
         Vec<Decorator>, // decorators
@@ -306,16 +294,14 @@ pub enum Statement {
             Span,   // span of the parameter
             String, // parameter name
             bool,   // whether or not it is variadic
-            Markup, // readable parameter type
             Type,   // parameter type
         )>,
         Option<Expression>, // function body
-        Markup,             // readable return type
         Type,               // return type
     ),
     DefineDimension(String, Vec<TypeExpression>),
-    DefineBaseUnit(String, Vec<Decorator>, Markup, Type),
-    DefineDerivedUnit(String, Expression, Vec<Decorator>, Markup, Type),
+    DefineBaseUnit(String, Vec<Decorator>, Type),
+    DefineDerivedUnit(String, Expression, Vec<Decorator>, Type),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
     DefineStruct(StructInfo),
 }
@@ -333,7 +319,7 @@ impl Statement {
 impl Expression {
     pub fn get_type(&self) -> Type {
         match self {
-            Expression::Scalar(_, _) => Type::Dimension(DType::unity()),
+            Expression::Scalar(_, _, type_) => type_.clone(),
             Expression::Identifier(_, _, type_) => type_.clone(),
             Expression::UnitIdentifier(_, _, _, _, _type) => _type.clone(),
             Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
@@ -342,13 +328,7 @@ impl Expression {
             Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
             Expression::CallableCall(_, _, _, type_) => type_.clone(),
             Expression::Boolean(_, _) => Type::Boolean,
-            Expression::Condition(_, _, then_, else_) => {
-                if then_.get_type().is_never() {
-                    else_.get_type()
-                } else {
-                    then_.get_type()
-                }
-            }
+            Expression::Condition(_, _, then_, _) => then_.get_type(),
             Expression::String(_, _) => Type::String,
             Expression::InstantiateStruct(_, _, type_) => Type::Struct(type_.clone()),
             Expression::AccessField(_, _, _, _, _, type_) => type_.clone(),
@@ -424,13 +404,13 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DefineVariable(identifier, _decs, expr, readable_type, _type) => {
+            Statement::DefineVariable(identifier, _decs, expr, type_) => {
                 m::keyword("let")
                     + m::space()
                     + m::identifier(identifier)
                     + m::operator(":")
                     + m::space()
-                    + readable_type.clone()
+                    + type_.pretty_print()
                     + m::space()
                     + m::operator("=")
                     + m::space()
@@ -442,8 +422,7 @@ impl PrettyPrint for Statement {
                 type_parameters,
                 parameters,
                 body,
-                readable_return_type,
-                _return_type,
+                return_type,
             ) => {
                 let markup_type_parameters = if type_parameters.is_empty() {
                     m::empty()
@@ -460,11 +439,11 @@ impl PrettyPrint for Statement {
                 let markup_parameters = Itertools::intersperse(
                     parameters
                         .iter()
-                        .map(|(_span, name, is_variadic, readable_type, _type)| {
+                        .map(|(_span, name, is_variadic, parameter_type)| {
                             m::identifier(name)
                                 + m::operator(":")
                                 + m::space()
-                                + readable_type.clone()
+                                + parameter_type.pretty_print()
                                 + if *is_variadic {
                                     m::operator("…")
                                 } else {
@@ -476,7 +455,7 @@ impl PrettyPrint for Statement {
                 .sum();
 
                 let markup_return_type =
-                    m::space() + m::operator("->") + m::space() + readable_return_type.clone();
+                    m::space() + m::operator("->") + m::space() + return_type.pretty_print();
 
                 m::keyword("fn")
                     + m::space()
@@ -508,23 +487,23 @@ impl PrettyPrint for Statement {
                     )
                     .sum()
             }
-            Statement::DefineBaseUnit(identifier, decorators, readable_type, _type) => {
+            Statement::DefineBaseUnit(identifier, decorators, type_) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
                     + m::space()
-                    + readable_type.clone()
+                    + type_.pretty_print()
             }
-            Statement::DefineDerivedUnit(identifier, expr, decorators, readable_type, _type) => {
+            Statement::DefineDerivedUnit(identifier, expr, decorators, type_) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
                     + m::space()
-                    + readable_type.clone()
+                    + type_.pretty_print()
                     + m::space()
                     + m::operator("=")
                     + m::space()
@@ -618,7 +597,7 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
         }
         BinaryOperator::Mul => match (lhs, rhs) {
             (
-                Expression::Scalar(_, s),
+                Expression::Scalar(_, s, _type_scalar),
                 Expression::UnitIdentifier(_, prefix, _name, full_name, _type),
             ) => {
                 // Fuse multiplication of a scalar and a unit to a quantity
@@ -626,7 +605,7 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
                     + m::space()
                     + m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
-            (Expression::Scalar(_, s), Expression::Identifier(_, name, _type)) => {
+            (Expression::Scalar(_, s, _), Expression::Identifier(_, name, _type)) => {
                 // Fuse multiplication of a scalar and identifier
                 pretty_scalar(*s) + m::space() + m::identifier(name)
             }
@@ -702,10 +681,10 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
 
             add_parens_if_needed(lhs) + op.pretty_print() + add_parens_if_needed(rhs)
         }
-        BinaryOperator::Power if matches!(rhs, Expression::Scalar(_, n) if n.to_f64() == 2.0) => {
+        BinaryOperator::Power if matches!(rhs, Expression::Scalar(_, n, _type) if n.to_f64() == 2.0) => {
             with_parens(lhs) + m::operator("²")
         }
-        BinaryOperator::Power if matches!(rhs, Expression::Scalar(_, n) if n.to_f64() == 3.0) => {
+        BinaryOperator::Power if matches!(rhs, Expression::Scalar(_, n, _type) if n.to_f64() == 3.0) => {
             with_parens(lhs) + m::operator("³")
         }
         _ => with_parens(lhs) + op.pretty_print() + with_parens(rhs),
@@ -717,7 +696,7 @@ impl PrettyPrint for Expression {
         use Expression::*;
 
         match self {
-            Scalar(_, n) => pretty_scalar(*n),
+            Scalar(_, n, _) => pretty_scalar(*n),
             Identifier(_, name, _type) => m::identifier(name),
             UnitIdentifier(_, prefix, _name, full_name, _type) => {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))

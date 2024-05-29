@@ -47,7 +47,7 @@ pub struct BytecodeInterpreter {
 impl BytecodeInterpreter {
     fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
         match expr {
-            Expression::Scalar(_span, n) => {
+            Expression::Scalar(_span, n, _type) => {
                 let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
@@ -295,7 +295,7 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DefineVariable(identifier, decorators, expr, _type_annotation, _type) => {
+            Statement::DefineVariable(identifier, decorators, expr, _type) => {
                 let current_depth = self.current_depth();
 
                 // For variables, we ignore the prefix info and only use the names
@@ -326,7 +326,6 @@ impl BytecodeInterpreter {
                 _type_parameters,
                 parameters,
                 Some(expr),
-                _return_type_annotation,
                 _return_type,
             ) => {
                 self.vm.begin_function(name);
@@ -357,7 +356,6 @@ impl BytecodeInterpreter {
                 _type_parameters,
                 parameters,
                 None,
-                _return_type_annotation,
                 _return_type,
             ) => {
                 // Declaring a foreign function does not generate any bytecode. But we register
@@ -380,7 +378,7 @@ impl BytecodeInterpreter {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DefineBaseUnit(unit_name, decorators, readable_type, type_) => {
+            Statement::DefineBaseUnit(unit_name, decorators, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.clone(), ap))
                     .collect();
@@ -391,7 +389,7 @@ impl BytecodeInterpreter {
                         unit_name,
                         UnitMetadata {
                             type_: type_.clone(),
-                            readable_type: readable_type.clone(),
+                            readable_type: crate::markup::empty(), // TODO: type_.to_readable_type(registry)
                             aliases,
                             name: decorator::name(decorators),
                             canonical_name: decorator::get_canonical_unit_name(
@@ -414,7 +412,7 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::DefineDerivedUnit(unit_name, expr, decorators, readable_type, type_) => {
+            Statement::DefineDerivedUnit(unit_name, expr, decorators, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.clone(), ap))
                     .collect();
@@ -437,7 +435,7 @@ impl BytecodeInterpreter {
                     ),
                     UnitMetadata {
                         type_: type_.clone(),
-                        readable_type: readable_type.clone(),
+                        readable_type: crate::markup::empty(), // TODO
                         aliases,
                         name: decorator::name(decorators),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
