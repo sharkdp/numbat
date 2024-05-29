@@ -6,25 +6,17 @@ mod incompatible_dimensions;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::typed_ast::Expression;
-use crate::{
-    arithmetic::{Exponent, Power, Rational},
-    ast::ProcedureKind,
-};
-use crate::{ast, decorator, ffi, suggestion};
-use crate::{ast::StringPart, span::Span};
-use crate::{
-    ast::TypeAnnotation,
-    registry::{BaseRepresentationFactor, RegistryError},
-};
-use crate::{dimension::DimensionRegistry, typed_ast::DType};
-use crate::{
-    name_resolution::Namespace,
-    typed_ast::{self, StructInfo, Type},
-};
-use crate::{name_resolution::LAST_RESULT_IDENTIFIERS, pretty_print::PrettyPrint};
+use crate::arithmetic::{Exponent, Power, Rational};
+use crate::ast::{self, BinaryOperator, ProcedureKind, StringPart, TypeAnnotation, TypeExpression};
+use crate::dimension::DimensionRegistry;
+use crate::name_resolution::Namespace;
+use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
+use crate::pretty_print::PrettyPrint;
+use crate::registry::{BaseRepresentationFactor, RegistryError};
+use crate::span::Span;
+use crate::typed_ast::{self, DType, Expression, StructInfo, Type};
+use crate::{decorator, ffi, suggestion};
 
-use ast::{BinaryOperator, TypeExpression};
 use itertools::Itertools;
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
 
