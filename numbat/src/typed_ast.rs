@@ -869,7 +869,7 @@ mod tests {
         let transformed_statements = transformer.transform(statements).unwrap().replace_spans();
 
         crate::typechecker::TypeChecker::default()
-            .check_statements(transformed_statements)
+            .check(transformed_statements)
             .unwrap()
             .last()
             .unwrap()

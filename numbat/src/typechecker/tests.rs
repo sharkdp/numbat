@@ -52,7 +52,7 @@ fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
     let transformed_statements = Transformer::new().transform(statements)?;
 
     TypeChecker::default()
-        .check_statements(transformed_statements)
+        .check(transformed_statements)
         .map(|mut statements_checked| statements_checked.pop().unwrap())
 }
 
