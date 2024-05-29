@@ -45,7 +45,6 @@ pub struct FunctionSignature {
     definition_span: Span,
     pub type_parameters: Vec<(Span, String)>,
     pub parameter_types: Vec<(Span, String, Type)>,
-    pub is_variadic: bool,
     pub return_type: Type,
 }
 
@@ -184,15 +183,10 @@ impl TypeChecker {
             definition_span,
             type_parameters,
             parameter_types,
-            is_variadic,
             return_type,
         } = signature;
 
-        let arity_range = if *is_variadic {
-            1..=usize::MAX
-        } else {
-            parameter_types.len()..=parameter_types.len()
-        };
+        let arity_range = parameter_types.len()..=parameter_types.len();
 
         if !arity_range.contains(&arguments.len()) {
             return Err(TypeCheckError::WrongArity {
@@ -220,18 +214,6 @@ impl TypeChecker {
             }
             result_type
         };
-
-        let mut parameter_types = parameter_types.clone();
-
-        if *is_variadic {
-            // For a variadic function, we simply duplicate the parameter type
-            // N times, where N is the number of arguments given.
-            debug_assert!(parameter_types.len() == 1);
-
-            for _ in 1..argument_types.len() {
-                parameter_types.push(parameter_types[0].clone());
-            }
-        }
 
         for (idx, ((parameter_span, _, parameter_type), argument_type)) in
             parameter_types.iter().zip(argument_types).enumerate()
@@ -1228,9 +1210,8 @@ impl TypeChecker {
                 }
 
                 let mut typed_parameters = vec![];
-                let mut is_variadic = false;
                 let mut free_type_parameters = vec![];
-                for (parameter_span, parameter, type_annotation, p_is_variadic) in parameters {
+                for (parameter_span, parameter, type_annotation) in parameters {
                     let parameter_type = if let Some(type_annotation) = type_annotation {
                         typechecker_fn.type_from_annotation(type_annotation)?
                     } else if is_ffi_function {
@@ -1269,14 +1250,7 @@ impl TypeChecker {
                         parameter.clone(),
                         (parameter_type.clone(), Some(*parameter_span)),
                     );
-                    typed_parameters.push((
-                        *parameter_span,
-                        parameter.clone(),
-                        *p_is_variadic,
-                        parameter_type,
-                    ));
-
-                    is_variadic |= p_is_variadic;
+                    typed_parameters.push((*parameter_span, parameter.clone(), parameter_type));
                 }
 
                 if !free_type_parameters.is_empty() {
@@ -1291,7 +1265,7 @@ impl TypeChecker {
                 let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
                     let parameter_types = typed_parameters
                         .iter()
-                        .map(|(span, name, _, t)| (*span, name.clone(), t.clone()))
+                        .map(|(span, name, t)| (*span, name.clone(), t.clone()))
                         .collect();
                     tc.functions.insert(
                         function_name.clone(),
@@ -1300,7 +1274,6 @@ impl TypeChecker {
                                 definition_span: *function_name_span,
                                 type_parameters: type_parameters.clone(),
                                 parameter_types,
-                                is_variadic,
                                 return_type,
                             },
                             FunctionMetadata {

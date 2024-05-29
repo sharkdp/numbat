@@ -190,10 +190,7 @@ mod tests {
         unit hertz: Frequency = 1 / second
 
         fn sin(x: Scalar) -> Scalar
-        fn atan2<D>(y: D, x: D) -> Scalar
-        fn mean<D>(xs: D…) -> D
-        fn maximum<D>(xs: D…) -> D
-        fn minimum<D>(xs: D…) -> D";
+        fn atan2<D>(y: D, x: D) -> Scalar";
 
     #[track_caller]
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {

@@ -361,28 +361,7 @@ fn wrong_arity() {
             "),
         TypeCheckError::WrongArity{callable_span:_, callable_name, callable_definition_span: _,  arity, num_args: 2} if arity == (1..=1) && callable_name == "f"
     ));
-
-    assert!(matches!(
-        get_typecheck_error("
-                fn mean<D>(xs: D…) -> D
-                mean()
-            "),
-        TypeCheckError::WrongArity{callable_span:_, callable_name, callable_definition_span: _,  arity, num_args: 0} if arity == (1..=usize::MAX) && callable_name == "mean"
-    ));
 }
-
-// #[test]
-// fn variadic_functions() {
-//     assert!(matches!(
-//         get_typecheck_error(
-//             "
-//                 fn mean<D>(xs: D…) -> D
-//                 mean(1 a, 1 b)
-//             "
-//         ),
-//         TypeCheckError::IncompatibleDimensions { .. }
-//     ));
-// }
 
 #[test]
 fn foreign_function_with_missing_return_type() {

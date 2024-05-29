@@ -311,7 +311,6 @@ pub enum Statement {
             // parameter:
             Span,   // span of the parameter
             String, // parameter name
-            bool,   // whether or not it is variadic
             Type,   // parameter type
         )>,
         Option<Expression>, // function body
@@ -455,19 +454,12 @@ impl PrettyPrint for Statement {
                 };
 
                 let markup_parameters = Itertools::intersperse(
-                    parameters
-                        .iter()
-                        .map(|(_span, name, is_variadic, parameter_type)| {
-                            m::identifier(name)
-                                + m::operator(":")
-                                + m::space()
-                                + parameter_type.pretty_print()
-                                + if *is_variadic {
-                                    m::operator("…")
-                                } else {
-                                    m::empty()
-                                }
-                        }),
+                    parameters.iter().map(|(_span, name, parameter_type)| {
+                        m::identifier(name)
+                            + m::operator(":")
+                            + m::space()
+                            + parameter_type.pretty_print()
+                    }),
                     m::operator(", "),
                 )
                 .sum();

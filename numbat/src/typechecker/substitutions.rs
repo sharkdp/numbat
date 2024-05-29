@@ -162,7 +162,7 @@ impl ApplySubstitution for Statement {
                 type_.apply(s)
             }
             Statement::DefineFunction(_, _, _, parameters, body, return_type) => {
-                for (_, _, _, parameter_type) in parameters {
+                for (_, _, parameter_type) in parameters {
                     parameter_type.apply(s)?;
                 }
                 if let Some(body) = body {
