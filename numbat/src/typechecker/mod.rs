@@ -18,7 +18,8 @@ use crate::ast::{self, BinaryOperator, ProcedureKind, StringPart, TypeAnnotation
 use crate::dimension::DimensionRegistry;
 use crate::name_resolution::Namespace;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
-use crate::registry::{BaseRepresentationFactor, RegistryError};
+use crate::pretty_print::PrettyPrint;
+use crate::registry::BaseRepresentationFactor;
 use crate::span::Span;
 use crate::typed_ast::{self, DType, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
@@ -398,9 +399,7 @@ impl TypeChecker {
         Ok(match ast {
             ast::Expression::Scalar(span, n) if n.to_f64().is_zero() => {
                 let polymorphic_zero_type = self.fresh_type_variable();
-                self.constraints
-                    .add(Constraint::IsDType(polymorphic_zero_type.clone()))
-                    .ok();
+                self.add_dtype_constraint(&polymorphic_zero_type).ok();
                 typed_ast::Expression::Scalar(*span, *n, polymorphic_zero_type)
             }
             ast::Expression::Scalar(span, n) => {
@@ -697,9 +696,16 @@ impl TypeChecker {
                         }
                         typed_ast::BinaryOperator::LogicalAnd
                         | typed_ast::BinaryOperator::LogicalOr => {
-                            if lhs_type != Type::Boolean {
+                            if self
+                                .add_equal_constraint(&lhs_type, &Type::Boolean)
+                                .is_trivially_violated()
+                            {
                                 return Err(TypeCheckError::ExpectedBool(lhs.full_span()));
-                            } else if rhs_type != Type::Boolean {
+                            }
+                            if self
+                                .add_equal_constraint(&rhs_type, &Type::Boolean)
+                                .is_trivially_violated()
+                            {
                                 return Err(TypeCheckError::ExpectedBool(rhs.full_span()));
                             }
 
@@ -1190,61 +1196,47 @@ impl TypeChecker {
 
                 let mut typechecker_fn = self.clone();
                 let is_ffi_function = body.is_none();
-                let mut type_parameters = type_parameters.clone();
 
-                for (span, type_parameter) in &type_parameters {
-                    if typechecker_fn.type_namespace.has_identifier(type_parameter) {
-                        return Err(TypeCheckError::TypeParameterNameClash(
-                            *span,
-                            type_parameter.clone(),
-                        ));
-                    }
+                assert!(type_parameters.is_empty()); // TODO
 
-                    match typechecker_fn.registry.add_base_dimension(type_parameter) {
-                        Err(RegistryError::EntryExists(name)) => {
-                            return Err(TypeCheckError::TypeParameterNameClash(*span, name))
-                        }
-                        Err(err) => return Err(TypeCheckError::RegistryError(err)),
-                        _ => {}
-                    }
-                }
+                // for (span, type_parameter) in &type_parameters {
+                //     if typechecker_fn.type_namespace.has_identifier(type_parameter) {
+                //         return Err(TypeCheckError::TypeParameterNameClash(
+                //             *span,
+                //             type_parameter.clone(),
+                //         ));
+                //     }
+
+                //     match typechecker_fn.registry.add_base_dimension(type_parameter) {
+                //         Err(RegistryError::EntryExists(name)) => {
+                //             return Err(TypeCheckError::TypeParameterNameClash(*span, name))
+                //         }
+                //         Err(err) => return Err(TypeCheckError::RegistryError(err)),
+                //         _ => {}
+                //     }
+                // }
 
                 let mut typed_parameters = vec![];
-                let mut free_type_parameters = vec![];
                 for (parameter_span, parameter, type_annotation) in parameters {
-                    let parameter_type = if let Some(type_annotation) = type_annotation {
-                        typechecker_fn.type_from_annotation(type_annotation)?
-                    } else if is_ffi_function {
+                    let parameter_type = typechecker_fn.fresh_type_variable();
+
+                    let annotated_type = type_annotation
+                        .as_ref()
+                        .map(|a| typechecker_fn.type_from_annotation(a))
+                        .transpose()?;
+
+                    if is_ffi_function && annotated_type.is_none() {
                         return Err(TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
-                            *function_name_span,
-                            function_name.clone(),
+                            *parameter_span,
+                            parameter.clone(),
                         ));
-                    } else {
-                        let mut free_type_parameter = "".into();
-                        for i in 0.. {
-                            free_type_parameter = format!("T{i}");
-                            if !typechecker_fn.registry.contains(&free_type_parameter) {
-                                break;
-                            }
-                        }
+                    }
 
-                        free_type_parameters.push((parameter.clone(), free_type_parameter.clone()));
-
+                    if let Some(annotated_type) = annotated_type {
                         typechecker_fn
-                            .registry
-                            .add_base_dimension(&free_type_parameter)
-                            .expect("we selected a name that is free");
-                        type_parameters.push((*parameter_span, free_type_parameter.clone()));
-                        Type::Dimension(
-                            typechecker_fn
-                                .registry
-                                .get_base_representation(&TypeExpression::TypeIdentifier(
-                                    *parameter_span,
-                                    free_type_parameter,
-                                ))
-                                .map_err(TypeCheckError::RegistryError)?,
-                        )
-                    };
+                            .add_equal_constraint(&parameter_type, &annotated_type)
+                            .ok();
+                    }
 
                     typechecker_fn.identifiers.insert(
                         parameter.clone(),
@@ -1253,58 +1245,60 @@ impl TypeChecker {
                     typed_parameters.push((*parameter_span, parameter.clone(), parameter_type));
                 }
 
-                if !free_type_parameters.is_empty() {
-                    // TODO: Perform type inference
-                }
-
-                let return_type_specified = return_type_annotation
+                let annotated_return_type = return_type_annotation
                     .as_ref()
                     .map(|annotation| typechecker_fn.type_from_annotation(annotation))
                     .transpose()?;
 
-                let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
-                    let parameter_types = typed_parameters
-                        .iter()
-                        .map(|(span, name, t)| (*span, name.clone(), t.clone()))
-                        .collect();
-                    tc.functions.insert(
-                        function_name.clone(),
-                        (
-                            FunctionSignature {
-                                definition_span: *function_name_span,
-                                type_parameters: type_parameters.clone(),
-                                parameter_types,
-                                return_type,
-                            },
-                            FunctionMetadata {
-                                name: crate::decorator::name(decorators),
-                                url: crate::decorator::url(decorators),
-                                description: crate::decorator::description(decorators),
-                            },
-                        ),
-                    );
-                };
+                // let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
+                //     let parameter_types = typed_parameters
+                //         .iter()
+                //         .map(|(span, name, t)| (*span, name.clone(), t.clone()))
+                //         .collect();
+                //     tc.functions.insert(
+                //         function_name.clone(),
+                //         (
+                //             FunctionSignature {
+                //                 definition_span: *function_name_span,
+                //                 type_parameters: type_parameters.clone(),
+                //                 parameter_types,
+                //                 return_type,
+                //             },
+                //             FunctionMetadata {
+                //                 name: crate::decorator::name(decorators),
+                //                 url: crate::decorator::url(decorators),
+                //                 description: crate::decorator::description(decorators),
+                //             },
+                //         ),
+                //     );
+                // };
 
-                if let Some(ref return_type_specified) = return_type_specified {
-                    // This is needed for recursive functions. If the return type
-                    // has been specified, we can already provide a function
-                    // signature before we check the body of the function. This
-                    // way, the 'typechecker_fn' can resolve the recursive call.
-                    add_function_signature(&mut typechecker_fn, return_type_specified.clone());
-                }
+                // if let Some(ref annotated_return_type) = annotated_return_type {
+                //     // This is needed for recursive functions. If the return type
+                //     // has been specified, we can already provide a function
+                //     // signature before we check the body of the function. This
+                //     // way, the 'typechecker_fn' can resolve the recursive call.
+                //     add_function_signature(&mut typechecker_fn, annotated_return_type.clone());
+                // }
 
                 let body_checked = body
-                    .clone()
+                    .as_ref()
                     .map(|expr| typechecker_fn.elaborate_expression(&expr))
                     .transpose()?;
 
                 let return_type = if let Some(ref expr) = body_checked {
-                    let type_deduced = expr.get_type();
+                    let return_type = expr.get_type();
 
-                    if let Some(return_type_specified) = return_type_specified {
-                        match (type_deduced, return_type_specified) {
-                            (Type::Dimension(dtype_deduced), Type::Dimension(dtype_specified)) => {
-                                if dtype_deduced != dtype_specified {
+                    if let Some(annotated_return_type) = annotated_return_type {
+                        if typechecker_fn
+                            .add_equal_constraint(&return_type, &annotated_return_type)
+                            .is_trivially_violated()
+                        {
+                            match (&return_type, annotated_return_type) {
+                                (
+                                    Type::Dimension(dtype_deduced),
+                                    Type::Dimension(dtype_specified),
+                                ) => {
                                     return Err(TypeCheckError::IncompatibleDimensions(
                                         IncompatibleDimensionsError {
                                             span_operation: *function_name_span,
@@ -1324,33 +1318,25 @@ impl TypeChecker {
                                             actual_dimensions: self
                                                 .registry
                                                 .get_derived_entry_names_for(&dtype_deduced),
-                                            actual_type: dtype_deduced,
+                                            actual_type: dtype_deduced.clone(),
                                         },
                                     ));
                                 }
-
-                                Type::Dimension(dtype_deduced)
-                            }
-                            (type_deduced, type_specified) => {
-                                if self
-                                    .add_equal_constraint(&type_deduced, &type_specified)
-                                    .is_trivially_violated()
-                                {
+                                (return_type, type_specified) => {
                                     return Err(TypeCheckError::IncompatibleTypesInAnnotation(
                                         "function definition".into(),
                                         *function_name_span,
                                         type_specified,
                                         return_type_annotation_span.unwrap(),
-                                        type_deduced,
+                                        return_type.clone(),
                                         body.as_ref().map(|b| b.full_span()).unwrap(),
                                     ));
                                 }
-
-                                type_specified
                             }
                         }
+                        return_type
                     } else {
-                        type_deduced
+                        return_type
                     }
                 } else {
                     if !ffi::functions().contains_key(function_name.as_str()) {
@@ -1360,7 +1346,7 @@ impl TypeChecker {
                         ));
                     }
 
-                    return_type_specified.ok_or_else(|| {
+                    annotated_return_type.ok_or_else(|| {
                         TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
                             *function_name_span,
                             function_name.clone(),
@@ -1368,7 +1354,10 @@ impl TypeChecker {
                     })?
                 };
 
-                add_function_signature(self, return_type.clone());
+                // add_function_signature(self, return_type.clone());
+
+                self.constraints = typechecker_fn.constraints;
+                self.name_generator = typechecker_fn.name_generator;
 
                 typed_ast::Statement::DefineFunction(
                     function_name.clone(),
@@ -1539,18 +1528,20 @@ impl TypeChecker {
         })
     }
 
-    pub fn check(
-        &mut self,
-        statements: impl IntoIterator<Item = ast::Statement>,
-    ) -> Result<Vec<typed_ast::Statement>> {
-        // Elaborate the program: turn the AST into a typed AST, possibly
-        // with "holes" inside, i.e. type variables that will only later
-        // be filled in (after constraint solving).
-        let mut statements_elaborated = vec![];
+    fn check_statement(&mut self, statement: &ast::Statement) -> Result<typed_ast::Statement> {
+        // Elaborate the program/statement: turn the AST into a typed AST, possibly
+        // with "holes" inside, i.e. type variables that will only later be filled
+        // in (after constraint solving).
+        let mut elaborated_statement = self.elaborate_statement(&statement)?;
 
-        for statement in statements.into_iter() {
-            statements_elaborated.push(self.elaborate_statement(&statement)?);
-        }
+        println!("=========================================");
+        println!("Elaborated statements:");
+        println!("{}", elaborated_statement.pretty_print());
+        println!();
+
+        println!("Constraints:");
+        println!("{}", self.constraints.pretty_print(2));
+        println!();
 
         // Solve constraints
         let (substitution, _dtype_variables) = self
@@ -1558,13 +1549,27 @@ impl TypeChecker {
             .solve()
             .map_err(TypeCheckError::ConstraintSolverError)?;
 
-        for statement in &mut statements_elaborated {
-            statement
-                .apply(&substitution)
-                .map_err(TypeCheckError::SubstitutionError)?;
+        elaborated_statement
+            .apply(&substitution)
+            .map_err(TypeCheckError::SubstitutionError)?;
+
+        println!("Final statement:");
+        println!("{}", elaborated_statement.pretty_print());
+
+        Ok(elaborated_statement)
+    }
+
+    pub fn check(
+        &mut self,
+        statements: impl IntoIterator<Item = ast::Statement>,
+    ) -> Result<Vec<typed_ast::Statement>> {
+        let mut checked_statements = vec![];
+
+        for statement in statements.into_iter() {
+            checked_statements.push(self.check_statement(&statement)?);
         }
 
-        Ok(statements_elaborated)
+        Ok(checked_statements)
     }
 
     pub(crate) fn registry(&self) -> &DimensionRegistry {
