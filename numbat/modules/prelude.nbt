@@ -5,7 +5,7 @@ use core::functions
 use core::lists
 use core::strings
 use core::error
-use core::random
+#use core::random
 
 use math::constants
 use math::functions

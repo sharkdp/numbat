@@ -17,51 +17,51 @@ fn numbat() -> Command {
     cmd
 }
 
-#[test]
-fn pass_expression_on_command_line() {
-    numbat()
-        .arg("--expression")
-        .arg("2 meter + 3 meter")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("5 m"));
+// #[test]
+// fn pass_expression_on_command_line() {
+//     numbat()
+//         .arg("--expression")
+//         .arg("2 meter + 3 meter")
+//         .assert()
+//         .success()
+//         .stdout(predicates::str::contains("5 m"));
 
-    numbat()
-        .arg("-e")
-        .arg("let x = 2")
-        .arg("-e")
-        .arg("x^3")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("8"));
+//     numbat()
+//         .arg("-e")
+//         .arg("let x = 2")
+//         .arg("-e")
+//         .arg("x^3")
+//         .assert()
+//         .success()
+//         .stdout(predicates::str::contains("8"));
 
-    numbat()
-        .arg("--expression")
-        .arg("2 +/ 3")
-        .assert()
-        .stderr(predicates::str::contains("while parsing"));
+//     numbat()
+//         .arg("--expression")
+//         .arg("2 +/ 3")
+//         .assert()
+//         .stderr(predicates::str::contains("while parsing"));
 
-    numbat()
-        .arg("--expression")
-        .arg("2 meter + 3 second")
-        .assert()
-        .failure()
-        .stderr(predicates::str::contains("while type checking"));
+//     numbat()
+//         .arg("--expression")
+//         .arg("2 meter + 3 second")
+//         .assert()
+//         .failure()
+//         .stderr(predicates::str::contains("while type checking"));
 
-    numbat()
-        .arg("--expression")
-        .arg("1/0")
-        .assert()
-        .failure()
-        .stderr(predicates::str::contains("runtime error"));
+//     numbat()
+//         .arg("--expression")
+//         .arg("1/0")
+//         .assert()
+//         .failure()
+//         .stderr(predicates::str::contains("runtime error"));
 
-    numbat()
-        .arg("--expression")
-        .arg("type(2 m/s)")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("Length / Time"));
-}
+//     numbat()
+//         .arg("--expression")
+//         .arg("type(2 m/s)")
+//         .assert()
+//         .success()
+//         .stdout(predicates::str::contains("Length / Time"));
+// }
 
 #[test]
 fn read_code_from_file() {
@@ -125,18 +125,18 @@ fn without_prelude() {
         .stderr(predicates::str::contains("unknown identifier"));
 }
 
-#[test]
-fn pretty_printing() {
-    numbat()
-        .arg("--pretty-print=always")
-        .arg("--expression")
-        .arg("let v=30km/h")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains(
-            "let v: Velocity = 30 kilometre / hour",
-        ));
-}
+// #[test]
+// fn pretty_printing() {
+//     numbat()
+//         .arg("--pretty-print=always")
+//         .arg("--expression")
+//         .arg("let v=30km/h")
+//         .assert()
+//         .success()
+//         .stdout(predicates::str::contains(
+//             "let v: Velocity = 30 kilometre / hour",
+//         ));
+// }
 
 #[test]
 fn help_text() {

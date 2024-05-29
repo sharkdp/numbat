@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
 
+mod const_evaluation;
 mod constraints;
 mod environment;
 mod error;
@@ -12,150 +13,30 @@ mod type_scheme;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::arithmetic::{Exponent, Power, Rational};
+use crate::arithmetic::{Power, Rational};
 use crate::ast::{self, BinaryOperator, ProcedureKind, StringPart, TypeAnnotation, TypeExpression};
 use crate::dimension::DimensionRegistry;
 use crate::name_resolution::Namespace;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
-use crate::pretty_print::PrettyPrint;
 use crate::registry::{BaseRepresentationFactor, RegistryError};
 use crate::span::Span;
 use crate::typed_ast::{self, DType, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
 
+use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet};
 use itertools::Itertools;
 use name_generator::NameGenerator;
-use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
+use num_traits::Zero;
 
 pub use error::{Result, TypeCheckError};
 pub use incompatible_dimensions::IncompatibleDimensionsError;
 use substitutions::ApplySubstitution;
 
-fn to_rational_exponent(exponent_f64: f64) -> Option<Exponent> {
-    Rational::from_f64(exponent_f64)
-}
-
 fn dtype(e: &Expression) -> Result<DType> {
     match e.get_type() {
         Type::Dimension(dtype) => Ok(dtype),
         t => Err(TypeCheckError::ExpectedDimensionType(e.full_span(), t)),
-    }
-}
-
-/// Evaluates a limited set of expressions *at compile time*. This is needed to
-/// support type checking of expressions like `(2 * meter)^(2*3 - 4)` where we
-/// need to know not just the *type* but also the *value* of the exponent.
-fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
-    match expr {
-        typed_ast::Expression::Scalar(span, n, _type) => {
-            Ok(to_rational_exponent(n.to_f64())
-                .ok_or(TypeCheckError::NonRationalExponent(*span))?)
-        }
-        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Negate, ref expr, _) => {
-            Ok(-evaluate_const_expr(expr)?)
-        }
-        e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "factorial"),
-        ),
-        e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::LogicalNeg, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "logical"),
-        ),
-        e @ typed_ast::Expression::BinaryOperator(_span_op, op, lhs_expr, rhs_expr, _) => {
-            let lhs = evaluate_const_expr(lhs_expr)?;
-            let rhs = evaluate_const_expr(rhs_expr)?;
-            match op {
-                typed_ast::BinaryOperator::Add => Ok(lhs
-                    .checked_add(&rhs)
-                    .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?),
-                typed_ast::BinaryOperator::Sub => Ok(lhs
-                    .checked_sub(&rhs)
-                    .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?),
-                typed_ast::BinaryOperator::Mul => Ok(lhs
-                    .checked_mul(&rhs)
-                    .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?),
-                typed_ast::BinaryOperator::Div => {
-                    if rhs == Rational::zero() {
-                        Err(TypeCheckError::DivisionByZeroInConstEvalExpression(
-                            e.full_span(),
-                        ))
-                    } else {
-                        Ok(lhs
-                            .checked_div(&rhs)
-                            .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?)
-                    }
-                }
-                typed_ast::BinaryOperator::Power => {
-                    if rhs.is_integer() {
-                        Ok(num_traits::checked_pow(
-                            lhs,
-                            rhs.to_integer().try_into().map_err(|_| {
-                                TypeCheckError::OverflowInConstExpr(expr.full_span())
-                            })?,
-                        )
-                        .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?)
-                    } else {
-                        Err(TypeCheckError::UnsupportedConstEvalExpression(
-                            e.full_span(),
-                            "exponentiation with non-integer exponent",
-                        ))
-                    }
-                }
-                typed_ast::BinaryOperator::ConvertTo => Err(
-                    TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "conversion"),
-                ),
-                typed_ast::BinaryOperator::LessThan
-                | typed_ast::BinaryOperator::GreaterThan
-                | typed_ast::BinaryOperator::LessOrEqual
-                | typed_ast::BinaryOperator::GreaterOrEqual
-                | typed_ast::BinaryOperator::Equal
-                | typed_ast::BinaryOperator::NotEqual => Err(
-                    TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "comparison"),
-                ),
-                typed_ast::BinaryOperator::LogicalAnd | typed_ast::BinaryOperator::LogicalOr => {
-                    Err(TypeCheckError::UnsupportedConstEvalExpression(
-                        e.full_span(),
-                        "logical",
-                    ))
-                }
-            }
-        }
-        e @ typed_ast::Expression::Identifier(..) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "variable"),
-        ),
-        e @ typed_ast::Expression::UnitIdentifier(..) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "unit identifier"),
-        ),
-        e @ typed_ast::Expression::FunctionCall(_, _, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
-        ),
-        e @ &typed_ast::Expression::CallableCall(_, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
-        ),
-        e @ typed_ast::Expression::Boolean(_, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Boolean value"),
-        ),
-        e @ typed_ast::Expression::String(_, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "String"),
-        ),
-        e @ typed_ast::Expression::Condition(..) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Conditional"),
-        ),
-        e @ Expression::BinaryOperatorForDate(..) => {
-            Err(TypeCheckError::UnsupportedConstEvalExpression(
-                e.full_span(),
-                "binary operator for datetimes",
-            ))
-        }
-        e @ typed_ast::Expression::InstantiateStruct(_, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "instantiate struct"),
-        ),
-        e @ typed_ast::Expression::AccessField(_, _, _, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "access field of struct"),
-        ),
-        e @ typed_ast::Expression::List(_, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "lists"),
-        ),
     }
 }
 
@@ -190,8 +71,8 @@ pub struct TypeChecker {
 }
 
 impl TypeChecker {
-    fn fresh_type_variable(&mut self) -> crate::type_variable::TypeVariable {
-        self.name_generator.fresh_type_variable()
+    fn fresh_type_variable(&mut self) -> Type {
+        Type::TVar(self.name_generator.fresh_type_variable())
     }
 
     fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
@@ -522,8 +403,11 @@ impl TypeChecker {
     fn elaborate_expression(&mut self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
             ast::Expression::Scalar(span, n) if n.to_f64().is_zero() => {
-                let tv = self.fresh_type_variable();
-                typed_ast::Expression::Scalar(*span, *n, Type::TVar(tv))
+                let polymorphic_zero_type = self.fresh_type_variable();
+                self.constraints
+                    .add(Constraint::IsDType(polymorphic_zero_type.clone()))
+                    .ok();
+                typed_ast::Expression::Scalar(*span, *n, polymorphic_zero_type)
             }
             ast::Expression::Scalar(span, n) => {
                 typed_ast::Expression::Scalar(*span, *n, Type::scalar())
@@ -562,10 +446,10 @@ impl TypeChecker {
                         return Err(TypeCheckError::ExpectedBool(expr.full_span()))
                     }
                     _ => {
-                        return Err(TypeCheckError::ExpectedDimensionType(
-                            checked_expr.full_span(),
-                            type_.clone(),
-                        ));
+                        // return Err(TypeCheckError::ExpectedDimensionType(
+                        //     checked_expr.full_span(),
+                        //     type_.clone(),
+                        // ));
                     }
                 };
 
@@ -674,60 +558,61 @@ impl TypeChecker {
                         let lhs_type = lhs_checked.get_type();
                         let rhs_type = rhs_checked.get_type();
 
-                        self.constraints
-                            .add(Constraint::Equal(lhs_type.clone(), rhs_type));
+                        if self
+                            .constraints
+                            .add(Constraint::Equal(lhs_type.clone(), rhs_type))
+                            .is_violated()
+                        {
+                            let lhs_dtype = dtype(&lhs_checked)?;
+                            let rhs_dtype = dtype(&rhs_checked)?;
+                            let full_span = ast::Expression::BinaryOperator {
+                                op: *op,
+                                lhs: lhs.clone(),
+                                rhs: rhs.clone(),
+                                span_op: *span_op,
+                            }
+                            .full_span();
+                            return Err(TypeCheckError::IncompatibleDimensions(
+                                IncompatibleDimensionsError {
+                                    span_operation: span_op.unwrap_or(full_span),
+                                    operation: match op {
+                                        typed_ast::BinaryOperator::Add => "addition".into(),
+                                        typed_ast::BinaryOperator::Sub => "subtraction".into(),
+                                        typed_ast::BinaryOperator::Mul => "multiplication".into(),
+                                        typed_ast::BinaryOperator::Div => "division".into(),
+                                        typed_ast::BinaryOperator::Power => "exponentiation".into(),
+                                        typed_ast::BinaryOperator::ConvertTo => {
+                                            "unit conversion".into()
+                                        }
+                                        typed_ast::BinaryOperator::LessThan
+                                        | typed_ast::BinaryOperator::GreaterThan
+                                        | typed_ast::BinaryOperator::LessOrEqual
+                                        | typed_ast::BinaryOperator::GreaterOrEqual
+                                        | typed_ast::BinaryOperator::Equal
+                                        | typed_ast::BinaryOperator::NotEqual => {
+                                            "comparison".into()
+                                        }
+                                        typed_ast::BinaryOperator::LogicalAnd => "and".into(),
+                                        typed_ast::BinaryOperator::LogicalOr => "or".into(),
+                                    },
+                                    span_expected: lhs.full_span(),
+                                    expected_name: " left hand side",
+                                    expected_dimensions: self
+                                        .registry
+                                        .get_derived_entry_names_for(&lhs_dtype),
+                                    expected_type: lhs_dtype,
+                                    span_actual: rhs.full_span(),
+                                    actual_name: "right hand side",
+                                    actual_name_for_fix: "expression on the right hand side",
+                                    actual_dimensions: self
+                                        .registry
+                                        .get_derived_entry_names_for(&rhs_dtype),
+                                    actual_type: rhs_dtype,
+                                },
+                            ));
+                        }
 
                         Ok(lhs_type)
-
-                        // if lhs_type != rhs_type {
-                        //     let full_span = ast::Expression::BinaryOperator {
-                        //         op: *op,
-                        //         lhs: lhs.clone(),
-                        //         rhs: rhs.clone(),
-                        //         span_op: *span_op,
-                        //     }
-                        //     .full_span();
-                        //     Err(TypeCheckError::IncompatibleDimensions(
-                        //         IncompatibleDimensionsError {
-                        //             span_operation: span_op.unwrap_or(full_span),
-                        //             operation: match op {
-                        //                 typed_ast::BinaryOperator::Add => "addition".into(),
-                        //                 typed_ast::BinaryOperator::Sub => "subtraction".into(),
-                        //                 typed_ast::BinaryOperator::Mul => "multiplication".into(),
-                        //                 typed_ast::BinaryOperator::Div => "division".into(),
-                        //                 typed_ast::BinaryOperator::Power => "exponentiation".into(),
-                        //                 typed_ast::BinaryOperator::ConvertTo => {
-                        //                     "unit conversion".into()
-                        //                 }
-                        //                 typed_ast::BinaryOperator::LessThan
-                        //                 | typed_ast::BinaryOperator::GreaterThan
-                        //                 | typed_ast::BinaryOperator::LessOrEqual
-                        //                 | typed_ast::BinaryOperator::GreaterOrEqual
-                        //                 | typed_ast::BinaryOperator::Equal
-                        //                 | typed_ast::BinaryOperator::NotEqual => {
-                        //                     "comparison".into()
-                        //                 }
-                        //                 typed_ast::BinaryOperator::LogicalAnd => "and".into(),
-                        //                 typed_ast::BinaryOperator::LogicalOr => "or".into(),
-                        //             },
-                        //             span_expected: lhs.full_span(),
-                        //             expected_name: " left hand side",
-                        //             expected_dimensions: self
-                        //                 .registry
-                        //                 .get_derived_entry_names_for(&lhs_type),
-                        //             expected_type: lhs_type,
-                        //             span_actual: rhs.full_span(),
-                        //             actual_name: "right hand side",
-                        //             actual_name_for_fix: "expression on the right hand side",
-                        //             actual_dimensions: self
-                        //                 .registry
-                        //                 .get_derived_entry_names_for(&rhs_type),
-                        //             actual_type: rhs_type,
-                        //         },
-                        //     ))
-                        // } else {
-
-                        // }
                     };
 
                     let type_ = match op {
@@ -897,9 +782,14 @@ impl TypeChecker {
             ),
             ast::Expression::Condition(span, condition, then, else_) => {
                 let condition = self.elaborate_expression(condition)?;
-                // if condition.get_type() != Type::Boolean {
-                //     return Err(TypeCheckError::ExpectedBool(condition.full_span()));
-                // }
+
+                if self
+                    .constraints
+                    .add(Constraint::Equal(condition.get_type(), Type::Boolean))
+                    .is_violated()
+                {
+                    return Err(TypeCheckError::ExpectedBool(condition.full_span()));
+                }
 
                 let then = self.elaborate_expression(then)?;
                 let else_ = self.elaborate_expression(else_)?;
@@ -907,15 +797,19 @@ impl TypeChecker {
                 let then_type = then.get_type();
                 let else_type = else_.get_type();
 
-                // if then_type != else_type {
-                //     return Err(TypeCheckError::IncompatibleTypesInCondition(
-                //         *span,
-                //         then_type,
-                //         then.full_span(),
-                //         else_type,
-                //         else_.full_span(),
-                //     ));
-                // }
+                if self
+                    .constraints
+                    .add(Constraint::Equal(then_type.clone(), else_type.clone()))
+                    .is_violated()
+                {
+                    return Err(TypeCheckError::IncompatibleTypesInCondition(
+                        *span,
+                        then_type,
+                        then.full_span(),
+                        else_type,
+                        else_.full_span(),
+                    ));
+                }
 
                 typed_ast::Expression::Condition(
                     *span,
@@ -1038,27 +932,39 @@ impl TypeChecker {
                 let element_types: Vec<Type> =
                     elements_checked.iter().map(|e| e.get_type()).collect();
 
-                let element_type = if element_types.is_empty() {
-                    let tv = self.fresh_type_variable();
-                    Type::List(Box::new(Type::TVar(tv)))
-                } else {
+                let result_element_type = self.fresh_type_variable();
+
+                if !element_types.is_empty() {
                     let type_of_first_element = element_types[0].clone();
+                    self.constraints
+                        .add(Constraint::Equal(
+                            result_element_type.clone(),
+                            type_of_first_element.clone(),
+                        ))
+                        .ok(); // This can never be satisfied trivially, so ignore the result
+
                     for (subsequent_element, type_of_subsequent_element) in
                         elements_checked.iter().zip(element_types.iter()).skip(1)
                     {
-                        // if type_of_first_element != *type_of_subsequent_element {
-                        //     return Err(TypeCheckError::IncompatibleTypesInList(
-                        //         elements_checked[0].full_span(),
-                        //         type_of_first_element.clone(),
-                        //         subsequent_element.full_span(),
-                        //         type_of_subsequent_element.clone(),
-                        //     ));
-                        // }
+                        if self
+                            .constraints
+                            .add(Constraint::Equal(
+                                type_of_subsequent_element.clone(),
+                                type_of_first_element.clone(),
+                            ))
+                            .is_violated()
+                        {
+                            return Err(TypeCheckError::IncompatibleTypesInList(
+                                elements_checked[0].full_span(),
+                                type_of_first_element.clone(),
+                                subsequent_element.full_span(),
+                                type_of_subsequent_element.clone(),
+                            ));
+                        }
                     }
-                    type_of_first_element
-                };
+                }
 
-                typed_ast::Expression::List(*span, elements_checked, element_type)
+                typed_ast::Expression::List(*span, elements_checked, result_element_type)
             }
         })
     }
@@ -1111,15 +1017,19 @@ impl TypeChecker {
                             }
                         }
                         (deduced, annotated) => {
-                            if deduced != &annotated {
-                                // return Err(TypeCheckError::IncompatibleTypesInAnnotation(
-                                //     "definition".into(),
-                                //     *identifier_span,
-                                //     annotated,
-                                //     type_annotation.full_span(),
-                                //     deduced.clone(),
-                                //     expr_checked.full_span(),
-                                // ));
+                            if self
+                                .constraints
+                                .add(Constraint::Equal(deduced.clone(), annotated.clone()))
+                                .is_violated()
+                            {
+                                return Err(TypeCheckError::IncompatibleTypesInAnnotation(
+                                    "definition".into(),
+                                    *identifier_span,
+                                    annotated,
+                                    type_annotation.full_span(),
+                                    deduced.clone(),
+                                    expr_checked.full_span(),
+                                ));
                             }
                         }
                     }

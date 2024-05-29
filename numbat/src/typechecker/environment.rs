@@ -9,17 +9,17 @@ type Identifier = String; // TODO ?
 pub struct Environment(HashMap<Identifier, TypeScheme>);
 
 impl Environment {
-    pub fn new() -> Environment {
-        Environment(HashMap::new())
-    }
+    // pub fn new() -> Environment {
+    //     Environment(HashMap::new())
+    // }
 
-    pub fn add(&mut self, v: Identifier, t: TypeScheme) {
-        self.0.insert(v, t);
-    }
+    // pub fn add(&mut self, v: Identifier, t: TypeScheme) {
+    //     self.0.insert(v, t);
+    // }
 
-    pub(crate) fn lookup(&self, v: &Identifier) -> Option<&TypeScheme> {
-        self.0.get(v)
-    }
+    // pub(crate) fn lookup(&self, v: &Identifier) -> Option<&TypeScheme> {
+    //     self.0.get(v)
+    // }
 }
 
 impl ApplySubstitution for Environment {

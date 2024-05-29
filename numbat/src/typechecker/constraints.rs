@@ -1,9 +1,8 @@
 use thiserror::Error;
 
-use super::error;
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{DType, Type};
+use crate::typed_ast::Type;
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum ConstraintSolverError {
@@ -55,19 +54,25 @@ pub struct ConstraintSet {
 }
 
 impl ConstraintSet {
-    pub fn new() -> Self {
-        ConstraintSet {
-            constraints: Vec::new(),
+    pub fn add(&mut self, constraint: Constraint) -> TrivialResultion {
+        let result = constraint.try_trivial_resolution();
+
+        match result {
+            TrivialResultion::Satisfied => {}
+            TrivialResultion::Violated => {
+                self.constraints.push(constraint);
+            }
+            TrivialResultion::Unknown => {
+                self.constraints.push(constraint);
+            }
         }
+
+        result
     }
 
-    pub fn add(&mut self, constraint: Constraint) {
-        self.constraints.push(constraint);
-    }
-
-    pub fn extend(&mut self, other: ConstraintSet) {
-        self.constraints.extend(other.constraints);
-    }
+    // pub fn extend(&mut self, other: ConstraintSet) {
+    //     self.constraints.extend(other.constraints);
+    // }
 
     pub fn solve(&mut self) -> Result<(Substitution, Vec<TypeVariable>), ConstraintSolverError> {
         let mut substitution = Substitution::empty();
@@ -163,6 +168,26 @@ impl ApplySubstitution for ConstraintSet {
     }
 }
 
+/// When we add new constraints, we check whether they can be trivially resolved to
+/// either true or false
+#[derive(Debug, Clone, PartialEq)]
+#[must_use]
+pub enum TrivialResultion {
+    Satisfied,
+    Violated,
+    Unknown,
+}
+
+impl TrivialResultion {
+    pub fn is_violated(self) -> bool {
+        matches!(self, TrivialResultion::Violated)
+    }
+
+    /// Ignore the result of the trivial resolution. This is a helper to prevent the
+    /// `must_use` attribute from being triggered.
+    pub(crate) fn ok(&self) -> () {}
+}
+
 /// A type checker constraint can be one of three things:
 /// - A unification constraint `Type1 ~ Type2` which constrains two types to be equal
 /// - A 'type class' constraint `Type: DType` which constrains `Type` to be a dimension type (like `Scalar`, `Length`, or `Length × Mass / Time²`).
@@ -175,6 +200,26 @@ pub enum Constraint {
 }
 
 impl Constraint {
+    fn try_trivial_resolution(&self) -> TrivialResultion {
+        match self {
+            Constraint::Equal(t1, t2)
+                if t1.type_variables().is_empty() && t2.type_variables().is_empty() =>
+            {
+                if t1 == t2 {
+                    TrivialResultion::Satisfied
+                } else {
+                    TrivialResultion::Violated
+                }
+            }
+            Constraint::Equal(_, _) => TrivialResultion::Unknown,
+            Constraint::IsDType(t) if t.type_variables().is_empty() => match t {
+                Type::Dimension(_) => TrivialResultion::Satisfied,
+                _ => TrivialResultion::Violated,
+            },
+            Constraint::IsDType(_) => TrivialResultion::Unknown,
+        }
+    }
+
     /// Try to solve a constraint. Returns `None` if the constaint can not (yet) be solved.
     fn try_satisfy(&self) -> Option<Satisfied> {
         match self {
@@ -257,20 +302,22 @@ impl Constraint {
             //     ]))
             // }
             Constraint::Equal(_, _) => None,
-            // Constraint::IsDType(Type::Dimension(inner)) => {
-            //     let new_constraints = inner
-            //         .type_variables()
-            //         .iter()
-            //         .map(|tv| Constraint::IsDType(Type::TVar(tv.clone())))
-            //         .collect();
-            //     println!(
-            //         "  (8) SOLVING: {} : DType through new constraints: {:?}",
-            //         inner.pretty_print(),
-            //         new_constraints
-            //     );
-            //     Some(Satisfied::with_new_constraints(new_constraints))
-            // }
-            // Constraint::IsDType(_) => None,
+            Constraint::IsDType(Type::Dimension(inner)) => {
+                Some(Satisfied::trivially()) // TODO: this is not correct, see below
+
+                // let new_constraints = inner
+                //     .type_variables()
+                //     .iter()
+                //     .map(|tv| Constraint::IsDType(Type::TVar(tv.clone())))
+                //     .collect();
+                // println!(
+                //     "  (8) SOLVING: {} : DType through new constraints: {:?}",
+                //     inner.pretty_print(),
+                //     new_constraints
+                // );
+                // Some(Satisfied::with_new_constraints(new_constraints))
+            }
+            Constraint::IsDType(_) => None,
             // Constraint::EqualScalar(d) if d == &DType::scalar() => {
             //     println!("  (9) SOLVING: Scalar = Scalar trivially");
             //     Some(Satisfied::trivially())
