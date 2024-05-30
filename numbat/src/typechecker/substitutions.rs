@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{DType, Expression, StructInfo, Type};
+use crate::typed_ast::{DType, DTypeFactor, Expression, StructInfo, Type};
 use crate::Statement;
 
 #[derive(Debug, Clone)]
@@ -77,8 +77,32 @@ impl ApplySubstitution for Type {
 }
 
 impl ApplySubstitution for DType {
-    fn apply(&mut self, _s: &Substitution) -> Result<(), SubstitutionError> {
-        // TODO
+    fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
+        let mut new_dtype = self.clone();
+        for (f, power) in &self.factors {
+            match f {
+                DTypeFactor::TVar(tv) => {
+                    if let Some(type_) = substitution.lookup(&tv) {
+                        let dtype = match type_ {
+                            Type::Dimension(dt) => dt.clone(),
+                            Type::TVar(tv) => DType::from_type_variable(tv.clone()),
+                            t => {
+                                return Err(SubstitutionError::SubstitutedNonDTypeWithinDType(
+                                    t.clone(),
+                                ));
+                            }
+                        };
+
+                        new_dtype =
+                            new_dtype.divide(&DType::from_type_variable(tv.clone()).power(*power));
+                        new_dtype = new_dtype.multiply(&dtype.power(*power));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        *self = new_dtype;
         Ok(())
     }
 }
