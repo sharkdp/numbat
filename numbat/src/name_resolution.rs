@@ -45,9 +45,9 @@ impl Namespace {
         self.add_impl(name, span, item_type, false)
     }
 
-    // pub fn has_identifier(&self, name: &str) -> bool {
-    //     self.seen.contains_key(name)
-    // }
+    pub fn has_identifier(&self, name: &str) -> bool {
+        self.seen.contains_key(name)
+    }
 
     fn add_impl(
         &mut self,

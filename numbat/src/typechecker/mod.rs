@@ -19,7 +19,7 @@ use crate::dimension::DimensionRegistry;
 use crate::name_resolution::Namespace;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::pretty_print::PrettyPrint;
-use crate::registry::BaseRepresentationFactor;
+use crate::registry::{BaseRepresentationFactor, RegistryError};
 use crate::span::Span;
 use crate::typed_ast::{self, DType, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
@@ -1122,7 +1122,7 @@ impl TypeChecker {
 
                 assert!(type_parameters.is_empty()); // TODO
 
-                // for (span, type_parameter) in &type_parameters {
+                // for (span, type_parameter) in type_parameters {
                 //     if typechecker_fn.type_namespace.has_identifier(type_parameter) {
                 //         return Err(TypeCheckError::TypeParameterNameClash(
                 //             *span,
