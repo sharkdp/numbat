@@ -494,14 +494,14 @@ impl TypeChecker {
                     let type_ = match op {
                         typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
                         typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
-                        typed_ast::BinaryOperator::Mul => {
+                        typed_ast::BinaryOperator::Mul | typed_ast::BinaryOperator::Div => {
                             let type_lhs = lhs_checked.get_type();
                             let type_rhs = rhs_checked.get_type();
 
                             self.add_dtype_constraint(&type_lhs).ok(); // TODO: here we can fail immediately, if this constraint is trivially violated
                             self.add_dtype_constraint(&type_rhs).ok();
 
-                            // We first introduce a fresh type variable for the result (type_result = type_lhs * type_rhs)
+                            // We first introduce a fresh type variable for the result
                             let tv_result = self.name_generator.fresh_type_variable();
                             let type_result = Type::TVar(tv_result.clone());
 
@@ -533,23 +533,36 @@ impl TypeChecker {
                             //
                             //     dtype_lhs × dtype_rhs × dtype_result^-1 ~ Scalar
                             //
+                            // Or for division:
+                            //
+                            //     dtype_lhs × dtype_rhs^-1 × dtype_result ~ Scalar
+                            //
                             let dtype_lhs = DType::from_type_variable(tv_lhs);
                             let dtype_rhs = DType::from_type_variable(tv_rhs);
                             let dtype_result = DType::from_type_variable(tv_result);
 
-                            self.constraints
-                                .add(Constraint::EqualScalar(
-                                    dtype_lhs
-                                        .multiply(&dtype_rhs)
-                                        .multiply(&dtype_result.inverse()),
-                                ))
-                                .ok();
+                            match op {
+                                typed_ast::BinaryOperator::Mul => {
+                                    self.constraints
+                                        .add(Constraint::EqualScalar(
+                                            dtype_lhs
+                                                .multiply(&dtype_rhs)
+                                                .multiply(&dtype_result.inverse()),
+                                        ))
+                                        .ok();
+                                }
+                                typed_ast::BinaryOperator::Div => {
+                                    self.constraints
+                                        .add(Constraint::EqualScalar(
+                                            (dtype_lhs.divide(&dtype_rhs))
+                                                .multiply(&dtype_result.inverse()),
+                                        ))
+                                        .ok();
+                                }
+                                _ => unreachable!(),
+                            }
 
                             type_result
-                        }
-                        typed_ast::BinaryOperator::Div => {
-                            //Type::Dimension(dtype(&lhs_checked)? / dtype(&rhs_checked)?)
-                            todo!("Merge code with multiplication")
                         }
                         typed_ast::BinaryOperator::Power => {
                             let exponent_type = dtype(&rhs_checked)?;
