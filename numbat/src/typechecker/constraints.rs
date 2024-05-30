@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::Type;
+use crate::typed_ast::{DType, DTypeFactor, Type};
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum ConstraintSolverError {
@@ -196,7 +196,7 @@ impl TrivialResultion {
 pub enum Constraint {
     Equal(Type, Type),
     IsDType(Type),
-    // EqualScalar(DType),
+    EqualScalar(DType),
 }
 
 impl Constraint {
@@ -217,6 +217,11 @@ impl Constraint {
                 _ => TrivialResultion::Violated,
             },
             Constraint::IsDType(_) => TrivialResultion::Unknown,
+            Constraint::EqualScalar(d) if d.is_scalar() => TrivialResultion::Satisfied,
+            Constraint::EqualScalar(d) if d.type_variables().is_empty() => {
+                TrivialResultion::Violated
+            }
+            Constraint::EqualScalar(_) => TrivialResultion::Unknown,
         }
     }
 
@@ -277,72 +282,70 @@ impl Constraint {
                     t1.as_ref().clone(),
                 )]))
             }
-            // Constraint::Equal(Type::TVar(tv), Type::Dimension(d))
-            // | Constraint::Equal(Type::Dimension(d), Type::TVar(tv)) => {
-            //     println!(
-            //         "  (6) SOLVING: {tv} ~ {d} by lifting the type variable to a DType",
-            //         tv = tv.name(),
-            //         d = d
-            //     );
+            Constraint::Equal(Type::TVar(tv), Type::Dimension(d))
+            | Constraint::Equal(Type::Dimension(d), Type::TVar(tv)) => {
+                println!(
+                    "  (6) SOLVING: {tv} ~ {d} by lifting the type variable to a DType",
+                    tv = tv.name(),
+                    d = d
+                );
 
-            //     Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
-            //         Type::Dimension(DType::from_type_variable(tv.clone())),
-            //         Type::Dimension(d.clone()),
-            //     )]))
-            // }
-            // Constraint::Equal(Type::Dimension(d1), Type::Dimension(d2)) => {
-            //     let d_result = d1.divide(d2);
-            //     println!(
-            //         "  (7) SOLVING: {} ~ {} with new constraint d_result = Scalar",
-            //         d1.pretty_print(),
-            //         d2.pretty_print()
-            //     );
-            //     Some(Satisfied::with_new_constraints(vec![
-            //         Constraint::EqualScalar(d_result),
-            //     ]))
-            // }
+                Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
+                    Type::Dimension(DType::from_type_variable(tv.clone())),
+                    Type::Dimension(d.clone()),
+                )]))
+            }
+            Constraint::Equal(Type::Dimension(d1), Type::Dimension(d2)) => {
+                let d_result = d1.divide(d2);
+                println!(
+                    "  (7) SOLVING: {} ~ {} with new constraint d_result = Scalar",
+                    d1.pretty_print(),
+                    d2.pretty_print()
+                );
+                Some(Satisfied::with_new_constraints(vec![
+                    Constraint::EqualScalar(d_result),
+                ]))
+            }
             Constraint::Equal(_, _) => None,
-            Constraint::IsDType(Type::Dimension(_inner)) => {
-                Some(Satisfied::trivially()) // TODO: this is not correct, see below
-
-                // let new_constraints = inner
-                //     .type_variables()
-                //     .iter()
-                //     .map(|tv| Constraint::IsDType(Type::TVar(tv.clone())))
-                //     .collect();
-                // println!(
-                //     "  (8) SOLVING: {} : DType through new constraints: {:?}",
-                //     inner.pretty_print(),
-                //     new_constraints
-                // );
-                // Some(Satisfied::with_new_constraints(new_constraints))
+            Constraint::IsDType(Type::Dimension(inner)) => {
+                let new_constraints = inner
+                    .type_variables()
+                    .iter()
+                    .map(|tv| Constraint::IsDType(Type::TVar(tv.clone())))
+                    .collect();
+                println!(
+                    "  (8) SOLVING: {} : DType through new constraints: {:?}",
+                    inner.pretty_print(),
+                    new_constraints
+                );
+                Some(Satisfied::with_new_constraints(new_constraints))
             }
             Constraint::IsDType(_) => None,
-            // Constraint::EqualScalar(d) if d == &DType::scalar() => {
-            //     println!("  (9) SOLVING: Scalar = Scalar trivially");
-            //     Some(Satisfied::trivially())
-            // }
-            // Constraint::EqualScalar(dtype) => match dtype.split_first_factor() {
-            //     Some(((DTypeFactor::TVar(tv), k), rest)) => {
-            //         let result = DType::from_factors(
-            //             &rest
-            //                 .iter()
-            //                 .map(|(f, j)| (f.clone(), -j / k))
-            //                 .collect::<Vec<_>>(),
-            //         );
-            //         println!(
-            //             "  (10) SOLVING: {dtype} = Scalar with substitution {tv} := {result}",
-            //             dtype = dtype.pretty_print(),
-            //             tv = tv,
-            //             result = result.pretty_print()
-            //         );
-            //         Some(Satisfied::with_substitution(Substitution::single(
-            //             tv.clone(),
-            //             Type::Dimension(result),
-            //         )))
-            //     }
-            // _ => None,
-            // },
+            Constraint::EqualScalar(d) if d == &DType::scalar() => {
+                println!("  (9) SOLVING: Scalar = Scalar trivially");
+                Some(Satisfied::trivially())
+            }
+            Constraint::EqualScalar(dtype) => match dtype.split_first_factor() {
+                Some(((DTypeFactor::TVar(tv), k), rest)) => {
+                    let result = DType::from_factors(
+                        &rest
+                            .iter()
+                            .map(|(f, j)| (f.clone(), -j / k))
+                            .collect::<Vec<_>>(),
+                    );
+                    println!(
+                        "  (10) SOLVING: {dtype} = Scalar with substitution {tv} := {result}",
+                        dtype = dtype.pretty_print(),
+                        tv = tv.name(),
+                        result = result.pretty_print()
+                    );
+                    Some(Satisfied::with_substitution(Substitution::single(
+                        tv.clone(),
+                        Type::Dimension(result),
+                    )))
+                }
+                _ => None,
+            },
         }
     }
 
@@ -352,7 +355,7 @@ impl Constraint {
                 format!("  {} ~ {}", t1, t2)
             }
             Constraint::IsDType(t) => format!("  {}: DType", t),
-            // Constraint::EqualScalar(d) => format!("  {} = Scalar", d),
+            Constraint::EqualScalar(d) => format!("  {} = Scalar", d),
         }
     }
 
@@ -374,7 +377,8 @@ impl ApplySubstitution for Constraint {
             }
             Constraint::IsDType(t) => {
                 t.apply(substitution)?;
-            } // Constraint::EqualScalar(d) => d.apply(substitution)?,
+            }
+            Constraint::EqualScalar(d) => d.apply(substitution)?,
         }
         Ok(())
     }

@@ -32,7 +32,7 @@ use num_traits::Zero;
 
 pub use error::{Result, TypeCheckError};
 pub use incompatible_dimensions::IncompatibleDimensionsError;
-use substitutions::ApplySubstitution;
+use substitutions::{ApplySubstitution, Substitution};
 
 fn dtype(e: &Expression) -> Result<DType> {
     match e.get_type() {
@@ -98,7 +98,7 @@ impl TypeChecker {
 
                 self.registry
                     .get_base_representation(dexpr)
-                    .map(Type::Dimension)
+                    .map(|br| Type::Dimension(br.into()))
                     .map_err(TypeCheckError::RegistryError)
             }
             TypeAnnotation::Bool(_) => Ok(Type::Boolean),
@@ -199,93 +199,15 @@ impl TypeChecker {
             });
         }
 
-        let mut substitutions: Vec<(String, DType)> = vec![];
-
-        let substitute = |substitutions: &[(String, DType)], type_: &DType| -> DType {
-            let mut result_type = type_.clone();
-            for (name, substituted_type) in substitutions {
-                if let Some(factor @ BaseRepresentationFactor(_, exp)) = type_
-                    .clone() // TODO: remove this .clone() somehow?
-                    .iter()
-                    .find(|BaseRepresentationFactor(n, _)| n == name)
-                {
-                    result_type = result_type / DType::from_factor((*factor).clone())
-                        * substituted_type.clone().power(*exp);
-                }
-            }
-            result_type
-        };
-
         for (idx, ((parameter_span, _, parameter_type), argument_type)) in
             parameter_types.iter().zip(argument_types).enumerate()
         {
-            match (parameter_type, argument_type) {
-                (parameter_type, argument_type)
-                    if (parameter_type.is_dtype() && argument_type.is_dtype())
-                        || (matches!(parameter_type, Type::List(inner) if inner.is_dtype())
-                            && matches!(&argument_type, Type::List(inner) if inner.is_dtype())) =>
-                {
-                    // What we have above and below is horrible, but unfortunately, we do not
-                    // have box patterns on stable Rust, so we need to do this in two steps.
-                    let parameter_type = match parameter_type {
-                        Type::List(element_type) => match element_type.as_ref() {
-                            Type::Dimension(inner) => inner.clone(),
-                            _ => unreachable!(),
-                        },
-                        Type::Dimension(inner) => inner.clone(),
-                        _ => unreachable!(),
-                    };
-                    let argument_type = match argument_type {
-                        Type::List(element_type) => match *element_type {
-                            Type::Dimension(inner) => inner.clone(),
-                            _ => unreachable!(),
-                        },
-                        Type::Dimension(inner) => inner.clone(),
-                        _ => unreachable!(),
-                    };
-
-                    let mut parameter_type = substitute(&substitutions, &parameter_type);
-
-                    let remaining_generic_subtypes: Vec<_> = parameter_type
-                        .iter()
-                        .filter(|BaseRepresentationFactor(name, _)| {
-                            type_parameters.iter().any(|(_, n)| name == n)
-                        })
-                        .collect();
-
-                    if remaining_generic_subtypes.len() > 1 {
-                        return Err(TypeCheckError::MultipleUnresolvedTypeParameters(
-                            *span,
-                            *parameter_span,
-                        ));
-                    }
-
-                    if let Some(&generic_subtype_factor) = remaining_generic_subtypes.first() {
-                        let generic_subtype = DType::from_factor(generic_subtype_factor.clone());
-
-                        // The type of the idx-th parameter of the called function has a generic type
-                        // parameter inside. We can now instantiate that generic parameter by solving
-                        // the equation "parameter_type == argument_type" for the generic parameter.
-                        // In order to do this, let's assume `generic_subtype = D^alpha`, then we have
-                        //
-                        //                                parameter_type == argument_type
-                        //    parameter_type / generic_subtype * D^alpha == argument_type
-                        //                                       D^alpha == argument_type / (parameter_type / generic_subtype)
-                        //                                             D == [argument_type / (parameter_type / generic_subtype)]^(1/alpha)
-                        //
-
-                        let alpha = Rational::from_integer(1) / generic_subtype_factor.1;
-                        let d = (argument_type.clone()
-                            / (parameter_type.clone() / generic_subtype))
-                            .power(alpha);
-
-                        // We can now substitute that generic parameter in all subsequent expressions
-                        substitutions.push((generic_subtype_factor.0.clone(), d));
-
-                        parameter_type = substitute(&substitutions, &parameter_type);
-                    }
-
-                    if parameter_type != argument_type {
+            if self
+                .add_equal_constraint(parameter_type, &argument_type)
+                .is_trivially_violated()
+            {
+                match (parameter_type, &argument_type) {
+                    (Type::Dimension(parameter_dtype), Type::Dimension(argument_dtype)) => {
                         return Err(TypeCheckError::IncompatibleDimensions(
                             IncompatibleDimensionsError {
                                 span_operation: *span,
@@ -296,26 +218,21 @@ impl TypeChecker {
                                 ),
                                 span_expected: parameter_types[idx].0,
                                 expected_name: "parameter type",
-                                expected_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&parameter_type),
-                                expected_type: parameter_type,
+                                expected_dimensions: self.registry.get_derived_entry_names_for(
+                                    &parameter_dtype.to_base_representation(),
+                                ),
+                                expected_type: parameter_dtype.to_base_representation(),
                                 span_actual: arguments[idx].full_span(),
                                 actual_name: " argument type",
                                 actual_name_for_fix: "function argument",
-                                actual_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&argument_type),
-                                actual_type: argument_type,
+                                actual_dimensions: self.registry.get_derived_entry_names_for(
+                                    &argument_dtype.to_base_representation(),
+                                ),
+                                actual_type: argument_dtype.to_base_representation(),
                             },
                         ));
                     }
-                }
-                (parameter_type, argument_type) => {
-                    if self
-                        .add_equal_constraint(parameter_type, &argument_type)
-                        .is_trivially_violated()
-                    {
+                    _ => {
                         return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
                             Some(*parameter_span),
                             parameter_type.clone(),
@@ -327,71 +244,12 @@ impl TypeChecker {
             }
         }
 
-        if substitutions.len() != type_parameters.len() {
-            let parameters: HashSet<String> = type_parameters
-                .iter()
-                .map(|(_, name)| name)
-                .cloned()
-                .collect();
-            let inferred_parameters: HashSet<String> =
-                substitutions.iter().map(|t| t.0.clone()).collect();
-
-            let remaining: Vec<_> = (&parameters - &inferred_parameters)
-                .iter()
-                .cloned()
-                .collect();
-
-            return Err(TypeCheckError::CanNotInferTypeParameters(
-                *span,
-                *definition_span,
-                function_name.into(),
-                remaining.join(", "),
-            ));
-        }
-
-        fn apply_substitutions(
-            t: &Type,
-            substitute: impl Fn(&[(String, DType)], &DType) -> DType + Copy,
-            substitutions: &[(String, DType)],
-        ) -> Type {
-            match t {
-                Type::Dimension(d) => Type::Dimension(substitute(&substitutions, d)),
-                // The following case is not needed at the moment, but might be interesting
-                // in the future if we add support for generic structs.
-                Type::Struct(StructInfo {
-                    definition_span,
-                    name,
-                    fields,
-                }) => Type::Struct(StructInfo {
-                    definition_span: *definition_span,
-                    name: name.clone(),
-                    fields: fields
-                        .into_iter()
-                        .map(|(n, (s, t))| {
-                            (
-                                n.to_owned(),
-                                (s.clone(), apply_substitutions(t, substitute, substitutions)),
-                            )
-                        })
-                        .collect(),
-                }),
-                Type::List(element_type) => Type::List(Box::new(apply_substitutions(
-                    element_type,
-                    substitute,
-                    substitutions,
-                ))),
-                type_ => type_.clone(),
-            }
-        }
-
-        let return_type = apply_substitutions(return_type, substitute, &substitutions);
-
         Ok(typed_ast::Expression::FunctionCall(
             *span,
             *full_span,
             function_name.into(),
             arguments,
-            return_type,
+            return_type.clone(),
         ))
     }
 
@@ -534,14 +392,8 @@ impl TypeChecker {
                     let rhs_is_datetime = rhs_type == Type::DateTime;
 
                     if *op == BinaryOperator::Sub && rhs_is_datetime {
-                        let time = self
-                            .registry
-                            .get_base_representation_for_name("Time")
-                            .map_err(|_| {
-                                TypeCheckError::MissingDimension(ast.full_span(), "Time".into())
-                            })?;
-
-                        // TODO make sure the "second" unit exists
+                        let time = DType::base_dimension("Time"); // TODO: error handling
+                                                                  // TODO make sure the "second" unit exists
 
                         typed_ast::Expression::BinaryOperatorForDate(
                             *span_op,
@@ -621,17 +473,17 @@ impl TypeChecker {
                                     },
                                     span_expected: lhs.full_span(),
                                     expected_name: " left hand side",
-                                    expected_dimensions: self
-                                        .registry
-                                        .get_derived_entry_names_for(&lhs_dtype),
-                                    expected_type: lhs_dtype,
+                                    expected_dimensions: self.registry.get_derived_entry_names_for(
+                                        &lhs_dtype.to_base_representation(),
+                                    ),
+                                    expected_type: lhs_dtype.to_base_representation(),
                                     span_actual: rhs.full_span(),
                                     actual_name: "right hand side",
                                     actual_name_for_fix: "expression on the right hand side",
-                                    actual_dimensions: self
-                                        .registry
-                                        .get_derived_entry_names_for(&rhs_dtype),
-                                    actual_type: rhs_dtype,
+                                    actual_dimensions: self.registry.get_derived_entry_names_for(
+                                        &rhs_dtype.to_base_representation(),
+                                    ),
+                                    actual_type: rhs_dtype.to_base_representation(),
                                 },
                             ));
                         }
@@ -643,10 +495,61 @@ impl TypeChecker {
                         typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
                         typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
                         typed_ast::BinaryOperator::Mul => {
-                            Type::Dimension(dtype(&lhs_checked)? * dtype(&rhs_checked)?)
+                            let type_lhs = lhs_checked.get_type();
+                            let type_rhs = rhs_checked.get_type();
+
+                            self.add_dtype_constraint(&type_lhs).ok(); // TODO: here we can fail immediately, if this constraint is trivially violated
+                            self.add_dtype_constraint(&type_rhs).ok();
+
+                            // We first introduce a fresh type variable for the result (type_result = type_lhs * type_rhs)
+                            let tv_result = self.name_generator.fresh_type_variable();
+                            let type_result = Type::TVar(tv_result.clone());
+
+                            // … and make sure that it is a dimension type
+                            self.add_dtype_constraint(&type_result).ok();
+
+                            // We can't use type_lhs/type_rhs directly in a dimension expression, because
+                            // only DTypes can be used there. But we don't know if type_lhs/type_rhs are
+                            // indeed dimension types. So we make up new type variables tv_lhs/tv_rhs, and
+                            // add contraints type_lhs ~ type(tv_lhs), type_rhs ~ type(tv_rhs). We can then
+                            // use those type variables inside the dimension expression constraint.
+
+                            let tv_lhs = self.name_generator.fresh_type_variable();
+                            let tv_rhs = self.name_generator.fresh_type_variable();
+
+                            self.constraints
+                                .add(Constraint::Equal(type_lhs, Type::TVar(tv_lhs.clone())))
+                                .ok();
+                            self.constraints
+                                .add(Constraint::Equal(type_rhs, Type::TVar(tv_rhs.clone())))
+                                .ok();
+
+                            // we also need dtype constraints for those new type variables
+                            self.add_dtype_constraint(&Type::TVar(tv_lhs.clone())).ok();
+                            self.add_dtype_constraint(&Type::TVar(tv_rhs.clone())).ok();
+
+                            // Finally, we add the constraint that the result is the product of the two,
+                            // which we write as
+                            //
+                            //     dtype_lhs × dtype_rhs × dtype_result^-1 ~ Scalar
+                            //
+                            let dtype_lhs = DType::from_type_variable(tv_lhs);
+                            let dtype_rhs = DType::from_type_variable(tv_rhs);
+                            let dtype_result = DType::from_type_variable(tv_result);
+
+                            self.constraints
+                                .add(Constraint::EqualScalar(
+                                    dtype_lhs
+                                        .multiply(&dtype_rhs)
+                                        .multiply(&dtype_result.inverse()),
+                                ))
+                                .ok();
+
+                            type_result
                         }
                         typed_ast::BinaryOperator::Div => {
-                            Type::Dimension(dtype(&lhs_checked)? / dtype(&rhs_checked)?)
+                            //Type::Dimension(dtype(&lhs_checked)? / dtype(&rhs_checked)?)
+                            todo!("Merge code with multiplication")
                         }
                         typed_ast::BinaryOperator::Power => {
                             let exponent_type = dtype(&rhs_checked)?;
@@ -1029,15 +932,19 @@ impl TypeChecker {
                                         expected_name: "specified dimension",
                                         expected_dimensions: self
                                             .registry
-                                            .get_derived_entry_names_for(&dexpr_specified),
-                                        expected_type: dexpr_specified,
+                                            .get_derived_entry_names_for(
+                                                &dexpr_specified.to_base_representation(),
+                                            ),
+                                        expected_type: dexpr_specified.to_base_representation(),
                                         span_actual: expr.full_span(),
                                         actual_name: "   actual dimension",
                                         actual_name_for_fix: "right hand side expression",
                                         actual_dimensions: self
                                             .registry
-                                            .get_derived_entry_names_for(dexpr_deduced),
-                                        actual_type: dexpr_deduced.clone(),
+                                            .get_derived_entry_names_for(
+                                                &dexpr_deduced.to_base_representation(),
+                                            ),
+                                        actual_type: dexpr_deduced.to_base_representation(),
                                     },
                                 ));
                             }
@@ -1080,19 +987,20 @@ impl TypeChecker {
             }
             ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
                 let type_specified = if let Some(dexpr) = type_annotation {
-                    let base_representation = self
+                    let dtype: DType = self
                         .registry
                         .get_base_representation(dexpr)
-                        .map_err(TypeCheckError::RegistryError)?;
+                        .map_err(TypeCheckError::RegistryError)?
+                        .into();
 
-                    if base_representation.is_scalar() {
+                    if dtype.is_scalar() {
                         return Err(TypeCheckError::NoDimensionlessBaseUnit(
                             *span,
                             unit_name.into(),
                         ));
                     }
 
-                    base_representation
+                    dtype
                 } else {
                     use heck::ToUpperCamelCase;
                     // In a unit definition like 'unit pixel' without a specified type,
@@ -1101,6 +1009,7 @@ impl TypeChecker {
                     self.registry
                         .add_base_dimension(&type_name)
                         .map_err(TypeCheckError::RegistryError)?
+                        .into()
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.identifiers.insert(
@@ -1131,7 +1040,8 @@ impl TypeChecker {
                     let type_specified = self
                         .registry
                         .get_base_representation(dexpr)
-                        .map_err(TypeCheckError::RegistryError)?;
+                        .map_err(TypeCheckError::RegistryError)?
+                        .into();
                     if type_deduced != type_specified {
                         return Err(TypeCheckError::IncompatibleDimensions(
                             IncompatibleDimensionsError {
@@ -1139,17 +1049,17 @@ impl TypeChecker {
                                 operation: "unit definition".into(),
                                 span_expected: type_annotation_span.unwrap(),
                                 expected_name: "specified dimension",
-                                expected_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&type_specified),
-                                expected_type: type_specified,
+                                expected_dimensions: self.registry.get_derived_entry_names_for(
+                                    &type_specified.to_base_representation(),
+                                ),
+                                expected_type: type_specified.to_base_representation(),
                                 span_actual: expr.full_span(),
                                 actual_name: "   actual dimension",
                                 actual_name_for_fix: "right hand side expression",
-                                actual_dimensions: self
-                                    .registry
-                                    .get_derived_entry_names_for(&type_deduced),
-                                actual_type: type_deduced,
+                                actual_dimensions: self.registry.get_derived_entry_names_for(
+                                    &type_deduced.to_base_representation(),
+                                ),
+                                actual_type: type_deduced.to_base_representation(),
                             },
                         ));
                     }
@@ -1307,8 +1217,10 @@ impl TypeChecker {
                                             expected_name: "specified return type",
                                             expected_dimensions: self
                                                 .registry
-                                                .get_derived_entry_names_for(&dtype_specified),
-                                            expected_type: dtype_specified,
+                                                .get_derived_entry_names_for(
+                                                    &dtype_specified.to_base_representation(),
+                                                ),
+                                            expected_type: dtype_specified.to_base_representation(),
                                             span_actual: body
                                                 .as_ref()
                                                 .map(|b| b.full_span())
@@ -1317,8 +1229,10 @@ impl TypeChecker {
                                             actual_name_for_fix: "expression in the function body",
                                             actual_dimensions: self
                                                 .registry
-                                                .get_derived_entry_names_for(&dtype_deduced),
-                                            actual_type: dtype_deduced.clone(),
+                                                .get_derived_entry_names_for(
+                                                    &dtype_deduced.to_base_representation(),
+                                                ),
+                                            actual_type: dtype_deduced.to_base_representation(),
                                         },
                                     ));
                                 }
@@ -1544,7 +1458,7 @@ impl TypeChecker {
         println!();
 
         // Solve constraints
-        let (substitution, _dtype_variables) = self
+        let (substitution, dtype_variables) = self
             .constraints
             .solve()
             .map_err(TypeCheckError::ConstraintSolverError)?;
@@ -1552,6 +1466,28 @@ impl TypeChecker {
         elaborated_statement
             .apply(&substitution)
             .map_err(TypeCheckError::SubstitutionError)?;
+
+        // For all dimension type variables that are still free, check all of their occurences
+        // within type_, and then multiply the corresponding exponents with the least common
+        // multiple of the denominators of the exponents. For example, this will turn
+        // T0^(1/3) -> T0^(1/5) -> T0 into T0^5 -> T0^3 -> T0^15.
+        // for tv in &dtype_variables {
+        //     let exponents = elaborated_statement.exponents_for(&tv);
+        //     let lcm = exponents
+        //         .iter()
+        //         .fold(1, |acc, e| num_integer::lcm(acc, *e.denom()));
+
+        //     if lcm != 1 {
+        //         let s = Substitution::single(
+        //             tv.clone(),
+        //             Type::Dimension(
+        //                 DType::from_type_variable(tv.clone()).power(Exponent::from_integer(lcm)),
+        //             ),
+        //         );
+
+        //         elaborated_statement.apply(&s).unwrap();
+        //     }
+        // }
 
         println!("Final statement:");
         println!("{}", elaborated_statement.pretty_print());

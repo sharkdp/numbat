@@ -2,7 +2,7 @@ use crate::ffi::ArityRange;
 use crate::registry::RegistryError;
 use crate::span::Span;
 use crate::typed_ast::{BinaryOperator, DType};
-use crate::{NameResolutionError, Type};
+use crate::{BaseRepresentation, NameResolutionError, Type};
 
 use thiserror::Error;
 
@@ -34,7 +34,13 @@ pub enum TypeCheckError {
     RegistryError(RegistryError),
 
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
-    IncompatibleAlternativeDimensionExpression(String, Span, DType, Span, DType),
+    IncompatibleAlternativeDimensionExpression(
+        String,
+        Span,
+        BaseRepresentation,
+        Span,
+        BaseRepresentation,
+    ),
 
     #[error("Function or procedure '{callable_name}' called with {num_args} arguments(s), but needs {}..{}", arity.start(), arity.end())]
     WrongArity {

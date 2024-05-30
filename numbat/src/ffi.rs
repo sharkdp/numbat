@@ -7,6 +7,7 @@ use crate::currency::ExchangeRatesCache;
 use crate::datetime;
 use crate::interpreter::RuntimeError;
 use crate::pretty_print::PrettyPrint;
+use crate::typed_ast::DType;
 use crate::value::{FunctionReference, Value};
 use crate::vm::ExecutionContext;
 use crate::{ast::ProcedureKind, quantity::Quantity};
@@ -1035,7 +1036,6 @@ fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
     use crate::span::{SourceCodePositition, Span};
     use crate::typed_ast::StructInfo;
     use crate::typed_ast::Type;
-    use crate::BaseRepresentation;
     use indexmap::IndexMap;
     use mendeleev::{Electronvolt, GramPerCubicCentimeter, Kelvin, KiloJoulePerMole};
     use std::sync::Arc;
@@ -1054,7 +1054,7 @@ fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
             code_source_id: 0,
         };
 
-        let type_scalar = Type::Dimension(BaseRepresentation::unity());
+        let type_scalar = Type::Dimension(DType::scalar());
 
         let mut fields: IndexMap<String, (Span, Type)> = IndexMap::new();
         fields.insert("symbol".to_string(), (unknown_span, Type::String));

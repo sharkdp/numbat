@@ -30,16 +30,16 @@ fn base_type(name: &str) -> BaseRepresentation {
     ))
 }
 
-fn type_a() -> BaseRepresentation {
-    base_type("A")
+fn type_a() -> DType {
+    DType::base_dimension("A")
 }
 
-fn type_b() -> BaseRepresentation {
-    base_type("B")
+fn type_b() -> DType {
+    DType::base_dimension("B")
 }
 
-fn type_c() -> BaseRepresentation {
-    type_a() * type_b()
+fn type_c() -> DType {
+    DType::base_dimension("A").multiply(&DType::base_dimension("B"))
 }
 
 fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
@@ -80,7 +80,7 @@ fn basic_arithmetic() {
 
     assert!(matches!(
         get_typecheck_error("a + b"),
-        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a() && actual_type == type_b()
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a().to_base_representation() && actual_type == type_b().to_base_representation()
     ));
 }
 
@@ -154,7 +154,7 @@ fn variable_definitions() {
 
     assert!(matches!(
         get_typecheck_error("let x: A = b"),
-        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a() && actual_type == type_b()
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a().to_base_representation() && actual_type == type_b().to_base_representation()
     ));
     assert!(matches!(
         get_typecheck_error("let x: A = true"),
@@ -181,7 +181,7 @@ fn unit_definitions() {
 
     assert!(matches!(
         get_typecheck_error("unit my_c: C = a"),
-        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c() && actual_type == type_a()
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c().to_base_representation() && actual_type == type_a().to_base_representation()
     ));
 }
 
@@ -195,13 +195,13 @@ fn function_definitions() {
 
     assert!(matches!(
         get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
-        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c() && actual_type == type_a() / type_b()
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c().to_base_representation() && actual_type == type_a().divide(&type_b()).to_base_representation()
     ));
 
     assert!(matches!(
         get_typecheck_error("fn f(x: A) -> A = a\n\
                              f(b)"),
-        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a() && actual_type == type_b()
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a().to_base_representation() && actual_type == type_b().to_base_representation()
     ));
 }
 
@@ -413,12 +413,12 @@ fn conditionals() {
 
     assert!(matches!(
         get_typecheck_error("if true then a else b"),
-        TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Dimension(base_type("A")) && t2 == Type::Dimension(base_type("B"))
+        TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Dimension(DType::base_dimension("A")) && t2 == Type::Dimension(DType::base_dimension("B"))
     ));
 
     assert!(matches!(
         get_typecheck_error("if true then true else a"),
-        TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Boolean && t2 == Type::Dimension(base_type("A"))
+        TypeCheckError::IncompatibleTypesInCondition(_, t1, _, t2, _) if t1 == Type::Boolean && t2 == Type::Dimension(DType::base_dimension("A"))
     ));
 }
 

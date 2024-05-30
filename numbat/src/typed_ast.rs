@@ -1,3 +1,5 @@
+use std::path::Display;
+
 use indexmap::IndexMap;
 use itertools::Itertools;
 
@@ -8,51 +10,243 @@ use crate::dimension::DimensionRegistry;
 use crate::type_variable::TypeVariable;
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
-    prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, registry::BaseRepresentation,
-    span::Span,
+    prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, span::Span,
 };
-use crate::{markup as m, BaseRepresentationFactor};
+use crate::{markup as m, BaseRepresentation, BaseRepresentationFactor};
 
 /// Dimension type
-pub type DType = BaseRepresentation;
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DTypeFactor {
+    TVar(TypeVariable),
+    BaseDimension(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DType {
+    // Always in canonical form
+    pub factors: Vec<(DTypeFactor, Exponent)>, // TODO make private
+}
 
 impl DType {
+    pub fn from_factors(factors: &[(DTypeFactor, Exponent)]) -> DType {
+        let mut dtype = DType {
+            factors: factors.into(),
+        };
+        dtype.canonicalize();
+        dtype
+    }
+
+    pub fn scalar() -> DType {
+        DType::from_factors(&[])
+    }
+
     pub fn is_scalar(&self) -> bool {
-        self == &DType::unity()
+        self == &Self::scalar()
     }
 
     pub fn to_readable_type(&self, registry: &DimensionRegistry) -> m::Markup {
-        if self.is_scalar() {
-            return m::type_identifier("Scalar");
-        }
+        // if self.is_scalar() {
+        //     return m::type_identifier("Scalar");
+        // }
 
-        let mut names = vec![];
+        // let mut names = vec![];
 
-        let factors: Vec<_> = self.iter().collect();
-        if factors.len() == 1 && factors[0].1 == Exponent::from_integer(1) {
-            names.push(factors[0].0.clone());
-        }
+        // let factors: Vec<_> = self.iter().collect();
+        // if factors.len() == 1 && factors[0].1 == Exponent::from_integer(1) {
+        //     names.push(factors[0].0.clone());
+        // }
 
-        names.extend(registry.get_derived_entry_names_for(self));
-        match &names[..] {
-            [] => self.pretty_print(),
-            [single] => m::type_identifier(single),
-            multiple => {
-                Itertools::intersperse(multiple.iter().map(m::type_identifier), m::dimmed(" or "))
-                    .sum()
-            }
-        }
+        // names.extend(registry.get_derived_entry_names_for(self));
+        // match &names[..] {
+        //     [] => self.pretty_print(),
+        //     [single] => m::type_identifier(single),
+        //     multiple => {
+        //         Itertools::intersperse(multiple.iter().map(m::type_identifier), m::dimmed(" or "))
+        //             .sum()
+        //     }
+        // }
+        m::empty() // TODO
     }
 
     /// Is the current dimension type the Time dimension?
     ///
     /// This is special helper that's useful when dealing with DateTimes
     pub fn is_time_dimension(&self) -> bool {
-        *self
-            == BaseRepresentation::from_factor(BaseRepresentationFactor(
-                "Time".into(),
-                Rational::from_integer(1),
-            ))
+        false // TOOD
+              // *self
+              //     == BaseRepresentation::from_factor(BaseRepresentationFactor(
+              //         "Time".into(),
+              //         Rational::from_integer(1),
+              //     ))
+    }
+
+    pub fn from_type_variable(v: TypeVariable) -> DType {
+        DType::from_factors(&[(DTypeFactor::TVar(v), Exponent::from_integer(1))])
+    }
+
+    pub fn from_tgen(i: usize) -> DType {
+        DType::from_factors(&[(
+            DTypeFactor::TVar(TypeVariable::Quantified(i)),
+            Exponent::from_integer(1),
+        )])
+    }
+
+    pub fn base_dimension(name: &str) -> DType {
+        DType::from_factors(&[(
+            DTypeFactor::BaseDimension(name.into()),
+            Exponent::from_integer(1),
+        )])
+    }
+
+    pub fn pretty_print(&self) -> String {
+        if self == &DType::scalar() {
+            return "Scalar".to_string();
+        }
+
+        let parts = self
+            .factors
+            .iter()
+            .map(|(f, n)| match f {
+                DTypeFactor::BaseDimension(d) => {
+                    if *n == Exponent::from_integer(1) {
+                        d.clone()
+                    } else {
+                        format!("{}^{}", d, n)
+                    }
+                }
+                DTypeFactor::TVar(tv) => {
+                    let name = tv.name();
+                    if *n == Exponent::from_integer(1) {
+                        name
+                    } else {
+                        format!("{}^{}", name, n)
+                    }
+                }
+            })
+            .collect::<Vec<String>>()
+            .join(" × ");
+        parts
+    }
+
+    fn canonicalize(&mut self) {
+        // Move all type-variable and tgen factors to the front, sort by name
+        self.factors.sort_by(|(f1, _), (f2, _)| match (f1, f2) {
+            (DTypeFactor::TVar(v1), DTypeFactor::TVar(v2)) => v1.cmp(v2),
+            (DTypeFactor::TVar(_), _) => std::cmp::Ordering::Less,
+            (DTypeFactor::BaseDimension(d1), DTypeFactor::BaseDimension(d2)) => d1.cmp(d2),
+            (DTypeFactor::BaseDimension(_), _) => std::cmp::Ordering::Greater,
+        });
+
+        // Merge powers of equal factors:
+        let mut new_factors = Vec::new();
+        for (f, n) in &self.factors {
+            if let Some((last_f, last_n)) = new_factors.last_mut() {
+                if f == last_f {
+                    *last_n += n;
+                    continue;
+                }
+            }
+            new_factors.push((f.clone(), *n));
+        }
+        self.factors = new_factors;
+
+        // Remove factors with zero exponent:
+        self.factors
+            .retain(|(_, n)| *n != Exponent::from_integer(0));
+    }
+
+    pub fn multiply(&self, other: &DType) -> DType {
+        let mut factors = self.factors.clone();
+        factors.extend(other.factors.clone());
+        DType::from_factors(&factors)
+    }
+
+    pub fn power(&self, n: Exponent) -> DType {
+        let factors: Vec<_> = self
+            .factors
+            .iter()
+            .map(|(f, m)| (f.clone(), n * m))
+            .collect();
+        DType::from_factors(&factors)
+    }
+
+    pub fn inverse(&self) -> DType {
+        self.power(-Exponent::from_integer(1))
+    }
+
+    pub fn divide(&self, other: &DType) -> DType {
+        self.multiply(&other.inverse())
+    }
+
+    pub fn type_variables(&self) -> Vec<TypeVariable> {
+        let mut vars: Vec<_> = self
+            .factors
+            .iter()
+            .filter_map(|(f, _)| match f {
+                DTypeFactor::TVar(v) => Some(v.clone()),
+                _ => None,
+            })
+            .collect();
+        vars.sort();
+        vars.dedup();
+        vars
+    }
+
+    pub fn contains(&self, name: &TypeVariable) -> bool {
+        self.type_variables().contains(name)
+    }
+
+    pub fn split_first_factor(
+        &self,
+    ) -> Option<(&(DTypeFactor, Exponent), &[(DTypeFactor, Exponent)])> {
+        self.factors.split_first()
+    }
+
+    fn instantiate(&self, type_variables: &[TypeVariable]) -> DType {
+        let mut factors = Vec::new();
+
+        for (f, n) in &self.factors {
+            match f {
+                DTypeFactor::TVar(TypeVariable::Quantified(i)) => {
+                    factors.push((DTypeFactor::TVar(type_variables[*i].clone()), *n));
+                }
+                _ => {
+                    factors.push((f.clone(), *n));
+                }
+            }
+        }
+        Self::from_factors(&factors)
+    }
+
+    pub fn to_base_representation(&self) -> BaseRepresentation {
+        let mut factors = vec![];
+        for (f, n) in &self.factors {
+            match f {
+                DTypeFactor::BaseDimension(name) => {
+                    factors.push(BaseRepresentationFactor(name.clone(), n.clone()));
+                }
+                DTypeFactor::TVar(_) => {
+                    todo!()
+                }
+            }
+        }
+        BaseRepresentation::from_factors(factors)
+    }
+}
+
+impl std::fmt::Display for DType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.pretty_print())
+    }
+}
+
+impl From<BaseRepresentation> for DType {
+    fn from(base_representation: BaseRepresentation) -> Self {
+        let factors: Vec<_> = base_representation
+            .into_iter()
+            .map(|BaseRepresentationFactor(name, exp)| (DTypeFactor::BaseDimension(name), exp))
+            .collect();
+        DType::from_factors(&factors)
     }
 }
 
@@ -109,7 +303,7 @@ impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
             Type::TVar(v) => m::type_identifier(&v.name()),
-            Type::Dimension(d) => d.pretty_print(),
+            Type::Dimension(d) => m::text(d.pretty_print()), // TODO
             Type::Boolean => m::type_identifier("Bool"),
             Type::String => m::type_identifier("String"),
             Type::DateTime => m::type_identifier("DateTime"),
@@ -148,7 +342,7 @@ impl Type {
     }
 
     pub fn scalar() -> Type {
-        Type::Dimension(DType::unity())
+        Type::Dimension(DType::scalar())
     }
 
     pub fn is_dtype(&self) -> bool {
@@ -162,7 +356,8 @@ impl Type {
     pub(crate) fn type_variables(&self) -> Vec<TypeVariable> {
         match self {
             Type::TVar(v) => vec![v.clone()],
-            Type::Dimension(_) | Type::Boolean | Type::String | Type::DateTime => vec![],
+            Type::Dimension(d) => d.type_variables(),
+            Type::Boolean | Type::String | Type::DateTime => vec![],
             Type::Fn(param_types, return_type) => {
                 let mut vars = return_type.type_variables();
                 for param_type in param_types {
@@ -185,8 +380,8 @@ impl Type {
         todo!()
     }
 
-    pub(crate) fn contains(&self, _x: &TypeVariable) -> bool {
-        false // TODO!
+    pub(crate) fn contains(&self, x: &TypeVariable) -> bool {
+        self.type_variables().contains(x)
     }
 }
 
