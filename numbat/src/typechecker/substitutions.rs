@@ -185,14 +185,11 @@ impl ApplySubstitution for Statement {
                 e.apply(s)?;
                 type_.apply(s)
             }
-            Statement::DefineFunction(_, _, _, parameters, body, return_type) => {
-                for (_, _, parameter_type) in parameters {
-                    parameter_type.apply(s)?;
-                }
+            Statement::DefineFunction(_, _, _, _, body, fn_type) => {
                 if let Some(body) = body {
                     body.apply(s)?;
                 }
-                return_type.apply(s)
+                fn_type.apply(s)
             }
             Statement::DefineDimension(_, _) => Ok(()),
             Statement::DefineBaseUnit(_, _, type_) => type_.apply(s),
