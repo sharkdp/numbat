@@ -10,6 +10,7 @@ use core::random
 use math::constants
 use math::functions
 use math::trigonometry_extra
+use math::statistics
 
 use units::si
 use units::time
