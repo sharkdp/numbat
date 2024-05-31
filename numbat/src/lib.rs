@@ -450,7 +450,7 @@ impl Context {
             if !type_parameters.is_empty() {
                 help += m::operator("<");
                 help += Itertools::intersperse(
-                    type_parameters.iter().map(m::type_identifier),
+                    type_parameters.iter().map(|t| m::type_identifier(t)),
                     m::operator(",") + m::space(),
                 )
                 .sum();
