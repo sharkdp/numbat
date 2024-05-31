@@ -67,7 +67,11 @@ impl TypeScheme {
         &self,
         registry: &crate::dimension::DimensionRegistry,
     ) -> crate::markup::Markup {
-        todo!()
+        //TODO
+        match self {
+            TypeScheme::Concrete(t) => t.to_readable_type(registry),
+            TypeScheme::Quantified(_, qt) => qt.inner.to_readable_type(registry),
+        }
     }
 
     #[track_caller]

@@ -557,6 +557,7 @@ impl Statement {
 }
 
 impl Expression {
+    // TODO: make sure that we can't call this on a AST which has all type schemes generalized already
     pub fn get_type(&self) -> Type {
         match self {
             Expression::Scalar(_, _, type_) => type_.unsafe_as_concrete(),
@@ -574,6 +575,29 @@ impl Expression {
             Expression::AccessField(_, _, _, _, _, type_) => type_.unsafe_as_concrete(),
             Expression::List(_, _, element_type) => {
                 Type::List(Box::new(element_type.unsafe_as_concrete()))
+            }
+        }
+    }
+
+    pub fn get_type_scheme(&self) -> TypeScheme {
+        match self {
+            Expression::Scalar(_, _, type_) => type_.clone(),
+            Expression::Identifier(_, _, type_) => type_.clone(),
+            Expression::UnitIdentifier(_, _, _, _, type_) => type_.clone(),
+            Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
+            Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
+            Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.clone(),
+            Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
+            Expression::CallableCall(_, _, _, type_) => type_.clone(),
+            Expression::Boolean(_, _) => TypeScheme::make_quantified(Type::Boolean),
+            Expression::Condition(_, _, then_, _) => then_.get_type_scheme(),
+            Expression::String(_, _) => TypeScheme::make_quantified(Type::String),
+            Expression::InstantiateStruct(_, _, info_) => {
+                TypeScheme::make_quantified(Type::Struct(info_.clone()))
+            }
+            Expression::AccessField(_, _, _, _, _, type_) => type_.clone(),
+            Expression::List(_, _, element_type) => {
+                todo!()
             }
         }
     }

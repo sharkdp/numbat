@@ -147,9 +147,14 @@ impl TypeChecker {
             fn_type,
         } = signature;
 
-        let Type::Fn(parameter_types, return_type) = fn_type.unsafe_as_concrete() else {
-            unreachable!();
+        let qt = fn_type.instantiate(&mut self.name_generator);
+        let fn_type = qt.inner;
+
+        let Type::Fn(parameter_types, return_type) = fn_type else {
+            unreachable!("Expected function type, got {:#?}", fn_type);
         };
+
+        // TODO: what about the bounds on qt?
 
         let arity_range = parameters.len()..=parameters.len();
 
@@ -1156,9 +1161,9 @@ impl TypeChecker {
                             .ok();
                     }
 
-                    typechecker_fn.env.add(
+                    typechecker_fn.env.add_scheme(
                         parameter.clone(),
-                        parameter_type.clone(),
+                        TypeScheme::make_quantified(parameter_type.clone()),
                         *parameter_span,
                     );
                     typed_parameters.push((*parameter_span, parameter.clone(), parameter_type));
