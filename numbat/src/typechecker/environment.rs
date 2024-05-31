@@ -55,9 +55,19 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn add(&mut self, v: Identifier, type_: Type, span: Span) {
+    pub fn add(&mut self, i: Identifier, type_: Type, span: Span) {
         self.identifiers
-            .insert(v, IdentifierKind::Normal(type_, span));
+            .insert(i, IdentifierKind::Normal(type_, span));
+    }
+
+    pub(crate) fn add_function(
+        &mut self,
+        v: String,
+        signature: FunctionSignature,
+        metadata: FunctionMetadata,
+    ) {
+        self.identifiers
+            .insert(v, IdentifierKind::Function(signature, metadata));
     }
 
     pub fn add_predefined(&mut self, v: Identifier, type_: Type) {
@@ -84,11 +94,24 @@ impl Environment {
     }
 }
 
-// impl ApplySubstitution for Environment {
-//     fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
-//         for (_, t) in &mut self.0 {
-//             t.apply(substitution)?;
-//         }
-//         Ok(())
-//     }
-// }
+impl ApplySubstitution for Environment {
+    fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
+        for (_, kind) in self.identifiers.iter_mut() {
+            match kind {
+                IdentifierKind::Normal(t, _) => {
+                    t.apply(substitution)?;
+                }
+                IdentifierKind::Function(signature, _) => {
+                    for (_, _, t) in signature.parameter_types.iter_mut() {
+                        t.apply(substitution)?;
+                    }
+                    signature.return_type.apply(substitution)?;
+                }
+                IdentifierKind::Predefined(t) => {
+                    t.apply(substitution)?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
