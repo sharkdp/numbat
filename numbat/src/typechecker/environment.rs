@@ -55,6 +55,11 @@ impl Environment {
             .insert(i, IdentifierKind::Normal(TypeScheme::Concrete(type_), span));
     }
 
+    pub fn add_scheme(&mut self, i: Identifier, scheme: TypeScheme, span: Span) {
+        self.identifiers
+            .insert(i, IdentifierKind::Normal(scheme, span));
+    }
+
     pub(crate) fn add_function(
         &mut self,
         v: String,

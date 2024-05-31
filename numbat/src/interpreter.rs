@@ -87,10 +87,10 @@ impl InterpreterResult {
                     evaluated_statement
                         .and_then(Statement::as_expression)
                         .and_then(|e| {
-                            if e.get_type().is_scalar() {
+                            if e.get_type_scheme().is_scalar() {
                                 None
                             } else {
-                                let ty = e.get_type().to_readable_type(registry);
+                                let ty = e.get_type_scheme().to_readable_type(registry);
                                 Some(m::dimmed("    [") + ty + m::dimmed("]"))
                             }
                         })
