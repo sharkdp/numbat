@@ -1,14 +1,25 @@
 let xs = [1, 2, 3]
 
-#assert(len([]) == 0)
-# assert(len(xs) == 3)
+assert(len([]) == 0)
+assert(len(xs) == 3)
 
-# assert(head(xs) == 1)
-# assert(tail(xs) == [2, 3])
+assert(head(xs) == 1)
+assert(tail(xs) == [2, 3])
 
+assert(sequence(0) == [])
 assert(sequence(5) == [0, 1, 2, 3, 4])
+
+fn const_5(x) = 5
 assert(generate(3, const_5) == [5, 5, 5])
-assert(map(inc, [1, 2, 3]) == [2, 3, 4])
-assert(reverse([1, 2, 3]) == [3, 2, 1])
-assert(foldl(add, 0, [1, 2, 3, 4, 5]) == 15)
+
+
+fn inc(x) = x + 1
+assert(map(inc, xs) == [2, 3, 4])
+
+assert(reverse([]) == [])
+assert(reverse(xs) == [3, 2, 1])
+
+assert(sum([1, 2, 3, 4, 5]) == 15)
+
+fn mul(x, y) = x * y
 assert(foldl(mul, 1, [1, 2, 3, 4, 5]) == 120)
