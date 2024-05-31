@@ -26,6 +26,7 @@ use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, TrivialResultion};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
+use log::info;
 use name_generator::NameGenerator;
 use num_traits::Zero;
 
@@ -1415,14 +1416,14 @@ impl TypeChecker {
         // in (after constraint solving).
         let mut elaborated_statement = self.elaborate_statement(&statement)?;
 
-        println!("=========================================");
-        println!("Elaborated statements:");
-        println!("{}", elaborated_statement.pretty_print());
-        println!();
+        info!("=========================================");
+        info!("Elaborated statements:");
+        info!("{}", elaborated_statement.pretty_print());
+        info!("");
 
-        println!("Constraints:");
-        println!("{}", self.constraints.pretty_print(2));
-        println!();
+        info!("Constraints:");
+        info!("{}", self.constraints.pretty_print(2));
+        info!("");
 
         // Solve constraints
         let (substitution, dtype_variables) = self
@@ -1456,8 +1457,8 @@ impl TypeChecker {
         //     }
         // }
 
-        println!("Final statement:");
-        println!("{}", elaborated_statement.pretty_print());
+        info!("Final statement:");
+        info!("{}", elaborated_statement.pretty_print());
 
         Ok(elaborated_statement)
     }
