@@ -9,7 +9,7 @@ mod incompatible_dimensions;
 mod name_generator;
 mod qualified_type;
 mod substitutions;
-mod type_scheme;
+pub mod type_scheme;
 
 use std::collections::HashMap;
 
@@ -33,6 +33,7 @@ use num_traits::Zero;
 pub use error::{Result, TypeCheckError};
 pub use incompatible_dimensions::IncompatibleDimensionsError;
 use substitutions::ApplySubstitution;
+use type_scheme::TypeScheme;
 
 fn dtype(e: &Expression) -> Result<DType> {
     // TODO: This function should probably be removed. But we can think about adding something similar that adds a DType constraint and checks a trivial violation
@@ -102,7 +103,7 @@ impl TypeChecker {
         }
     }
 
-    fn identifier_type(&self, span: Span, name: &str) -> Result<Type> {
+    fn identifier_type(&self, span: Span, name: &str) -> Result<TypeScheme> {
         self.env.get_identifier_type(name).ok_or_else(|| {
             let suggestion = suggestion::did_you_mean(
                 self.env
@@ -145,7 +146,7 @@ impl TypeChecker {
             fn_type,
         } = signature;
 
-        let Type::Fn(parameter_types, return_type) = fn_type else {
+        let Type::Fn(parameter_types, return_type) = fn_type.unsafe_as_concrete() else {
             unreachable!();
         };
 
@@ -215,7 +216,7 @@ impl TypeChecker {
             *full_span,
             function_name.into(),
             arguments,
-            return_type.as_ref().clone(),
+            TypeScheme::concrete(return_type.as_ref().clone()),
         ))
     }
 
@@ -224,10 +225,14 @@ impl TypeChecker {
             ast::Expression::Scalar(span, n) if n.to_f64().is_zero() => {
                 let polymorphic_zero_type = self.fresh_type_variable();
                 self.add_dtype_constraint(&polymorphic_zero_type).ok();
-                typed_ast::Expression::Scalar(*span, *n, polymorphic_zero_type)
+                typed_ast::Expression::Scalar(
+                    *span,
+                    *n,
+                    TypeScheme::concrete(polymorphic_zero_type),
+                )
             }
             ast::Expression::Scalar(span, n) => {
-                typed_ast::Expression::Scalar(*span, *n, Type::scalar())
+                typed_ast::Expression::Scalar(*span, *n, TypeScheme::concrete(Type::scalar()))
             }
             ast::Expression::Identifier(span, name) => {
                 let type_ = self.identifier_type(*span, name)?.clone();
@@ -299,7 +304,12 @@ impl TypeChecker {
                     }
                 }
 
-                typed_ast::Expression::UnaryOperator(*span_op, *op, Box::new(checked_expr), type_)
+                typed_ast::Expression::UnaryOperator(
+                    *span_op,
+                    *op,
+                    Box::new(checked_expr),
+                    TypeScheme::concrete(type_),
+                )
             }
             ast::Expression::BinaryOperator {
                 op,
@@ -345,7 +355,7 @@ impl TypeChecker {
                         lhs.full_span(),
                         Box::new(rhs_checked),
                         vec![lhs_checked],
-                        *return_type,
+                        TypeScheme::concrete(*return_type),
                     )
                 } else if lhs_type == Type::DateTime {
                     // DateTime types need special handling here, since they're not scalars with dimensions,
@@ -366,7 +376,7 @@ impl TypeChecker {
                             *op,
                             Box::new(lhs_checked),
                             Box::new(rhs_checked),
-                            Type::Dimension(time),
+                            TypeScheme::concrete(Type::Dimension(time)),
                         )
                     } else if (*op == BinaryOperator::Add || *op == BinaryOperator::Sub)
                         && rhs_is_time
@@ -376,7 +386,7 @@ impl TypeChecker {
                             *op,
                             Box::new(lhs_checked),
                             Box::new(rhs_checked),
-                            Type::DateTime,
+                            TypeScheme::concrete(Type::DateTime),
                         )
                     } else {
                         return Err(TypeCheckError::IncompatibleTypesInOperator(
@@ -600,7 +610,7 @@ impl TypeChecker {
                         *op,
                         Box::new(lhs_checked),
                         Box::new(rhs_checked),
-                        type_,
+                        TypeScheme::concrete(type_),
                     )
                 }
             }
@@ -665,7 +675,7 @@ impl TypeChecker {
                                 *full_span,
                                 Box::new(callable_checked),
                                 arguments_checked,
-                                *return_type,
+                                TypeScheme::concrete(*return_type),
                             )
                         }
                         _ => {
@@ -816,7 +826,7 @@ impl TypeChecker {
                     ));
                 };
 
-                let Some((_, ret_ty)) = struct_info.fields.get(attr) else {
+                let Some((_, result_type)) = struct_info.fields.get(attr) else {
                     return Err(TypeCheckError::UnknownFieldAccess(
                         *ident_span,
                         expr.full_span(),
@@ -825,7 +835,7 @@ impl TypeChecker {
                     ));
                 };
 
-                let ret_ty = ret_ty.to_owned();
+                let result_type = result_type.to_owned();
 
                 Expression::AccessField(
                     *ident_span,
@@ -833,7 +843,7 @@ impl TypeChecker {
                     Box::new(expr_checked),
                     attr.to_owned(),
                     struct_info,
-                    ret_ty,
+                    TypeScheme::concrete(result_type),
                 )
             }
             ast::Expression::List(span, elements) => {
@@ -872,7 +882,11 @@ impl TypeChecker {
                     }
                 }
 
-                typed_ast::Expression::List(*span, elements_checked, result_element_type)
+                typed_ast::Expression::List(
+                    *span,
+                    elements_checked,
+                    TypeScheme::concrete(result_element_type),
+                )
             }
         })
     }
@@ -882,8 +896,10 @@ impl TypeChecker {
             ast::Statement::Expression(expr) => {
                 let checked_expr = self.elaborate_expression(expr)?;
                 for &identifier in LAST_RESULT_IDENTIFIERS {
-                    self.env
-                        .add_predefined(identifier.into(), checked_expr.get_type());
+                    self.env.add_predefined(
+                        identifier.into(),
+                        TypeScheme::concrete(checked_expr.get_type()),
+                    );
                 }
                 typed_ast::Statement::Expression(checked_expr)
             }
@@ -1230,7 +1246,10 @@ impl TypeChecker {
                         definition_span: *function_name_span,
                         type_parameters: type_parameters.clone(),
                         parameters,
-                        fn_type: Type::Fn(parameter_types, Box::new(return_type.clone())),
+                        fn_type: TypeScheme::Concrete(Type::Fn(
+                            parameter_types,
+                            Box::new(return_type.clone()),
+                        )),
                     },
                     FunctionMetadata {
                         name: crate::decorator::name(decorators),
