@@ -84,7 +84,7 @@ impl QualifiedType {
             .unwrap();
         }
 
-        TypeScheme::new(variables.len(), qt)
+        TypeScheme::new_quantified(variables.len(), qt)
     }
 
     pub fn type_variables(&self) -> Vec<TypeVariable> {
