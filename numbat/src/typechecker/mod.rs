@@ -1128,37 +1128,6 @@ impl TypeChecker {
                     .map(|annotation| typechecker_fn.type_from_annotation(annotation))
                     .transpose()?;
 
-                // let add_function_signature = |tc: &mut TypeChecker, return_type: Type| {
-                //     let parameter_types = typed_parameters
-                //         .iter()
-                //         .map(|(span, name, t)| (*span, name.clone(), t.clone()))
-                //         .collect();
-                //     tc.functions.insert(
-                //         function_name.clone(),
-                //         (
-                //             FunctionSignature {
-                //                 definition_span: *function_name_span,
-                //                 type_parameters: type_parameters.clone(),
-                //                 parameter_types,
-                //                 return_type,
-                //             },
-                //             FunctionMetadata {
-                //                 name: crate::decorator::name(decorators),
-                //                 url: crate::decorator::url(decorators),
-                //                 description: crate::decorator::description(decorators),
-                //             },
-                //         ),
-                //     );
-                // };
-
-                // if let Some(ref annotated_return_type) = annotated_return_type {
-                //     // This is needed for recursive functions. If the return type
-                //     // has been specified, we can already provide a function
-                //     // signature before we check the body of the function. This
-                //     // way, the 'typechecker_fn' can resolve the recursive call.
-                //     add_function_signature(&mut typechecker_fn, annotated_return_type.clone());
-                // }
-
                 let body_checked = body
                     .as_ref()
                     .map(|expr| typechecker_fn.elaborate_expression(&expr))
@@ -1236,10 +1205,27 @@ impl TypeChecker {
                     })?
                 };
 
-                // add_function_signature(self, return_type.clone());
-
                 self.constraints = typechecker_fn.constraints;
                 self.name_generator = typechecker_fn.name_generator;
+
+                let parameter_types = typed_parameters
+                    .iter()
+                    .map(|(span, name, t)| (*span, name.clone(), t.clone()))
+                    .collect();
+                self.env.add_function(
+                    function_name.clone(),
+                    FunctionSignature {
+                        definition_span: *function_name_span,
+                        type_parameters: type_parameters.clone(),
+                        parameter_types,
+                        return_type: return_type.clone(),
+                    },
+                    FunctionMetadata {
+                        name: crate::decorator::name(decorators),
+                        url: crate::decorator::url(decorators),
+                        description: crate::decorator::description(decorators),
+                    },
+                );
 
                 typed_ast::Statement::DefineFunction(
                     function_name.clone(),
@@ -1434,6 +1420,8 @@ impl TypeChecker {
         elaborated_statement
             .apply(&substitution)
             .map_err(TypeCheckError::SubstitutionError)?;
+
+        self.env.apply(&substitution)?;
 
         // For all dimension type variables that are still free, check all of their occurences
         // within type_, and then multiply the corresponding exponents with the least common
