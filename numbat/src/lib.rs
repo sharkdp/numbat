@@ -422,19 +422,19 @@ impl Context {
 
         if let Some((fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
             let metadata = fn_metadata.clone();
-            let parameters = fn_signature
-                .parameter_types
-                .iter()
-                .map(|(_, name, typ)| (name, typ.to_readable_type(self.dimension_registry())))
-                .collect_vec();
-            let type_parameters = fn_signature
-                .type_parameters
-                .iter()
-                .map(|(_, s)| s)
-                .collect_vec();
-            let return_type = fn_signature
-                .return_type
-                .to_readable_type(self.dimension_registry());
+            // let parameters = fn_signature
+            //     .parameter_types
+            //     .iter()
+            //     .map(|(_, name, typ)| (name, typ.to_readable_type(self.dimension_registry())))
+            //     .collect_vec();
+            // let type_parameters = fn_signature
+            //     .type_parameters
+            //     .iter()
+            //     .map(|(_, s)| s)
+            //     .collect_vec();
+            // let return_type = fn_signature
+            //     .return_type
+            //     .to_readable_type(self.dimension_registry());
 
             let mut help = m::text("Function: ");
             if let Some(name) = &metadata.name {
@@ -447,26 +447,26 @@ impl Context {
             }
             help += m::nl();
 
-            help += m::text("Signature:") + m::space() + m::identifier(keyword);
-            if !type_parameters.is_empty() {
-                help += m::operator("<");
-                help += Itertools::intersperse(
-                    type_parameters.iter().map(|t| m::type_identifier(t)),
-                    m::operator(",") + m::space(),
-                )
-                .sum();
-                help += m::operator(">");
-            }
-            help += m::operator("(");
-            help += Itertools::intersperse(
-                parameters
-                    .iter()
-                    .map(|(p, t)| m::identifier(p) + m::text(":") + m::space() + t.clone()),
-                m::operator(",") + m::space(),
-            )
-            .sum();
-            help += m::operator(")");
-            help += m::space() + m::operator("->") + m::space() + return_type + m::nl();
+            // help += m::text("Signature:") + m::space() + m::identifier(keyword);
+            // if !type_parameters.is_empty() {
+            //     help += m::operator("<");
+            //     help += Itertools::intersperse(
+            //         type_parameters.iter().map(|t| m::type_identifier(t)),
+            //         m::operator(",") + m::space(),
+            //     )
+            //     .sum();
+            //     help += m::operator(">");
+            // }
+            // help += m::operator("(");
+            // help += Itertools::intersperse(
+            //     parameters
+            //         .iter()
+            //         .map(|(p, t)| m::identifier(p) + m::text(":") + m::space() + t.clone()),
+            //     m::operator(",") + m::space(),
+            // )
+            // .sum();
+            // help += m::operator(")");
+            // help += m::space() + m::operator("->") + m::space() + return_type + m::nl();
 
             if let Some(description) = &metadata.description {
                 let desc = "Description: ";
