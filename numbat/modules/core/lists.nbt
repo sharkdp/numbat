@@ -5,7 +5,7 @@ fn head<A>(xs: List<A>) -> A
 fn tail<A>(xs: List<A>) -> List<A>
 fn cons<A>(x: A, xs: List<A>) -> List<A>
 
-fn is_empty<A>(xs: List<A>) -> Bool = len(xs) == 0
+fn is_empty<A>(xs: List<A>) -> Bool = xs == []
 
 # We definitely want to make the following functions generic, but this is not yet possible.
 

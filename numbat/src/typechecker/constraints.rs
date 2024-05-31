@@ -72,6 +72,14 @@ impl ConstraintSet {
         result
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.constraints.is_empty()
+    }
+
+    pub fn clear(&mut self) {
+        self.constraints.clear();
+    }
+
     // pub fn extend(&mut self, other: ConstraintSet) {
     //     self.constraints.extend(other.constraints);
     // }
@@ -256,21 +264,23 @@ impl Constraint {
                     s.clone(),
                 )))
             }
-            // Constraint::Equal(t @ Type::TArr(s1, s2), s @ Type::TArr(t1, t2)) => {
-            //     debug!(
-            //         "  (4) SOLVING: {t} ~ {s} with new constraints {s1} ~ {t1} and {s2} ~ {t2}",
-            //         t = t,
-            //         s = s,
-            //         s1 = s1,
-            //         s2 = s2,
-            //         t1 = t1,
-            //         t2 = t2
-            //     );
-            //     Some(Satisfied::with_new_constraints(vec![
-            //         Constraint::Equal(s1.as_ref().clone(), t1.as_ref().clone()),
-            //         Constraint::Equal(s2.as_ref().clone(), t2.as_ref().clone()),
-            //     ]))
-            // }
+            Constraint::Equal(t @ Type::Fn(params1, return1), s @ Type::Fn(params2, return2)) => {
+                debug!(
+                    "  (4) SOLVING: {t} ~ {s} with new constraints for all parameters and return types",
+                    t = t,
+                    s = s,
+                );
+
+                let mut new_constraints = vec![Constraint::Equal(
+                    return1.as_ref().clone(),
+                    return2.as_ref().clone(),
+                )];
+                for (p1, p2) in params1.iter().zip(params2.iter()) {
+                    new_constraints.push(Constraint::Equal(p1.clone(), p2.clone()));
+                }
+
+                Some(Satisfied::with_new_constraints(new_constraints))
+            }
             Constraint::Equal(s @ Type::List(s1), t @ Type::List(t1)) => {
                 debug!(
                     "  (5) SOLVING: {s} ~ {t} with new constraint {s1} ~ {t1}",
