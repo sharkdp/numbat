@@ -1,54 +1,54 @@
 use units::si
 
-struct _ChemicalElementRaw {
-    symbol: String,
-    name: String,
-    atomic_number: Scalar,
-    group: Scalar,
-    group_name: String,
-    period: Scalar,
-    melting_point_kelvin: Scalar,
-    boiling_point_kelvin: Scalar,
-    density_gram_per_cm3: Scalar,
-    electron_affinity_electronvolt: Scalar,
-    ionization_energy_electronvolt: Scalar,
-    vaporization_heat_kilojoule_per_mole: Scalar,
-}
+# struct _ChemicalElementRaw {
+#     symbol: String,
+#     name: String,
+#     atomic_number: Scalar,
+#     group: Scalar,
+#     group_name: String,
+#     period: Scalar,
+#     melting_point_kelvin: Scalar,
+#     boiling_point_kelvin: Scalar,
+#     density_gram_per_cm3: Scalar,
+#     electron_affinity_electronvolt: Scalar,
+#     ionization_energy_electronvolt: Scalar,
+#     vaporization_heat_kilojoule_per_mole: Scalar,
+# }
 
-fn _get_chemical_element_data_raw(pattern: String) -> _ChemicalElementRaw
+# fn _get_chemical_element_data_raw(pattern: String) -> _ChemicalElementRaw
 
-struct ChemicalElement {
-    symbol: String,
-    name: String,
-    atomic_number: Scalar,
-    group: Scalar,
-    group_name: String,
-    period: Scalar,
-    melting_point: Temperature,
-    boiling_point: Temperature,
-    density: MassDensity,
-    electron_affinity: Energy,
-    ionization_energy: Energy,
-    vaporization_heat: MolarEnthalpyOfVaporization,
-}
+# struct ChemicalElement {
+#     symbol: String,
+#     name: String,
+#     atomic_number: Scalar,
+#     group: Scalar,
+#     group_name: String,
+#     period: Scalar,
+#     melting_point: Temperature,
+#     boiling_point: Temperature,
+#     density: MassDensity,
+#     electron_affinity: Energy,
+#     ionization_energy: Energy,
+#     vaporization_heat: MolarEnthalpyOfVaporization,
+# }
 
-fn _convert_from_raw(raw: _ChemicalElementRaw) -> ChemicalElement =
-    ChemicalElement {
-        symbol: raw.symbol,
-        name: raw.name,
-        atomic_number: raw.atomic_number,
-        group: raw.group,
-        group_name: raw.group_name,
-        period: raw.period,
-        melting_point: raw.melting_point_kelvin * K,
-        boiling_point: raw.boiling_point_kelvin * K,
-        density: raw.density_gram_per_cm3 * g/cm³,
-        electron_affinity: raw.electron_affinity_electronvolt * eV,
-        ionization_energy: raw.ionization_energy_electronvolt * eV,
-        vaporization_heat: raw.vaporization_heat_kilojoule_per_mole * kJ/mol,
-    }
+# fn _convert_from_raw(raw: _ChemicalElementRaw) -> ChemicalElement =
+#     ChemicalElement {
+#         symbol: raw.symbol,
+#         name: raw.name,
+#         atomic_number: raw.atomic_number,
+#         group: raw.group,
+#         group_name: raw.group_name,
+#         period: raw.period,
+#         melting_point: raw.melting_point_kelvin * K,
+#         boiling_point: raw.boiling_point_kelvin * K,
+#         density: raw.density_gram_per_cm3 * g/cm³,
+#         electron_affinity: raw.electron_affinity_electronvolt * eV,
+#         ionization_energy: raw.ionization_energy_electronvolt * eV,
+#         vaporization_heat: raw.vaporization_heat_kilojoule_per_mole * kJ/mol,
+#     }
 
-@name("Chemical element")
-@description("Get properties of a chemical element by its symbol or name (case-insensitive).")
-fn element(pattern: String) -> ChemicalElement =
-    _convert_from_raw(_get_chemical_element_data_raw(pattern))
+# @name("Chemical element")
+# @description("Get properties of a chemical element by its symbol or name (case-insensitive).")
+# fn element(pattern: String) -> ChemicalElement =
+#     _convert_from_raw(_get_chemical_element_data_raw(pattern))

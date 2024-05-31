@@ -454,7 +454,9 @@ impl BytecodeInterpreter {
 
                 use crate::markup as m;
                 let idx = self.vm.add_string(
-                    m::dimmed("=") + m::whitespace(" ") + arg.get_type().pretty_print(),
+                    m::dimmed("=")
+                        + m::whitespace(" ")
+                        + arg.get_type_scheme().to_concrete_type().pretty_print(), // TODO
                 );
                 self.vm.add_op1(Op::PrintString, idx);
             }

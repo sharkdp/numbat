@@ -1164,49 +1164,100 @@ impl TypeChecker {
             } => {
                 // TODO: this is the *exact same code* that we have above for
                 // variable definitions => deduplicate this somehow
-                let expr_checked = self.elaborate_expression(expr)?;
-                let type_deduced = dtype(&expr_checked)?;
 
-                if let Some(ref dexpr) = type_annotation {
-                    let type_specified = self
-                        .registry
-                        .get_base_representation(dexpr)
-                        .map_err(TypeCheckError::RegistryError)?
-                        .into();
-                    if type_deduced != type_specified {
-                        return Err(TypeCheckError::IncompatibleDimensions(
-                            IncompatibleDimensionsError {
-                                span_operation: *identifier_span,
-                                operation: "unit definition".into(),
-                                span_expected: type_annotation_span.unwrap(),
-                                expected_name: "specified dimension",
-                                expected_dimensions: self.registry.get_derived_entry_names_for(
-                                    &type_specified.to_base_representation(),
-                                ),
-                                expected_type: type_specified.to_base_representation(),
-                                span_actual: expr.full_span(),
-                                actual_name: "   actual dimension",
-                                actual_name_for_fix: "right hand side expression",
-                                actual_dimensions: self.registry.get_derived_entry_names_for(
-                                    &type_deduced.to_base_representation(),
-                                ),
-                                actual_type: type_deduced.to_base_representation(),
-                            },
-                        ));
+                // let expr_checked = self.elaborate_expression(expr)?;
+                // let type_deduced = dtype(&expr_checked)?;
+
+                // if let Some(ref dexpr) = type_annotation {
+                //     let type_specified = self
+                //         .registry
+                //         .get_base_representation(dexpr)
+                //         .map_err(TypeCheckError::RegistryError)?
+                //         .into();
+                //     if type_deduced != type_specified {
+                //         return Err(TypeCheckError::IncompatibleDimensions(
+                //             IncompatibleDimensionsError {
+                //                 span_operation: *identifier_span,
+                //                 operation: "unit definition".into(),
+                //                 span_expected: type_annotation_span.unwrap(),
+                //                 expected_name: "specified dimension",
+                //                 expected_dimensions: self.registry.get_derived_entry_names_for(
+                //                     &type_specified.to_base_representation(),
+                //                 ),
+                //                 expected_type: type_specified.to_base_representation(),
+                //                 span_actual: expr.full_span(),
+                //                 actual_name: "   actual dimension",
+                //                 actual_name_for_fix: "right hand side expression",
+                //                 actual_dimensions: self.registry.get_derived_entry_names_for(
+                //                     &type_deduced.to_base_representation(),
+                //                 ),
+                //                 actual_type: type_deduced.to_base_representation(),
+                //             },
+                //         ));
+                //     }
+                // }
+
+                let expr_checked = self.elaborate_expression(expr)?;
+                let type_deduced = expr_checked.get_type();
+
+                if let Some(ref type_annotation) = type_annotation {
+                    let type_annotated = self.type_from_annotation(type_annotation)?;
+
+                    match (&type_deduced, type_annotated) {
+                        (Type::Dimension(dexpr_deduced), Type::Dimension(dexpr_specified)) => {
+                            if dexpr_deduced != &dexpr_specified {
+                                return Err(TypeCheckError::IncompatibleDimensions(
+                                    IncompatibleDimensionsError {
+                                        span_operation: *identifier_span,
+                                        operation: "unit definition".into(),
+                                        span_expected: type_annotation.full_span(),
+                                        expected_name: "specified dimension",
+                                        expected_dimensions: self
+                                            .registry
+                                            .get_derived_entry_names_for(
+                                                &dexpr_specified.to_base_representation(),
+                                            ),
+                                        expected_type: dexpr_specified.to_base_representation(),
+                                        span_actual: expr.full_span(),
+                                        actual_name: "   actual dimension",
+                                        actual_name_for_fix: "right hand side expression",
+                                        actual_dimensions: self
+                                            .registry
+                                            .get_derived_entry_names_for(
+                                                &dexpr_deduced.to_base_representation(),
+                                            ),
+                                        actual_type: dexpr_deduced.to_base_representation(),
+                                    },
+                                ));
+                            }
+                        }
+                        (deduced, annotated) => {
+                            if self
+                                .add_equal_constraint(&deduced, &annotated)
+                                .is_trivially_violated()
+                            {
+                                return Err(TypeCheckError::IncompatibleTypesInAnnotation(
+                                    "unit definition".into(),
+                                    *identifier_span,
+                                    annotated,
+                                    type_annotation.full_span(),
+                                    deduced.clone(),
+                                    expr_checked.full_span(),
+                                ));
+                            }
+                        }
                     }
                 }
+
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-                    self.env.add(
-                        name.clone(),
-                        Type::Dimension(type_deduced.clone()),
-                        *identifier_span,
-                    );
+                    self.env
+                        .add(name.clone(), type_deduced.clone(), *identifier_span);
                 }
                 typed_ast::Statement::DefineDerivedUnit(
                     identifier.clone(),
                     expr_checked,
                     decorators.clone(),
-                    TypeScheme::Concrete(Type::Dimension(type_deduced)),
+                    TypeScheme::Concrete(type_deduced),
                 )
             }
             ast::Statement::DefineFunction {
