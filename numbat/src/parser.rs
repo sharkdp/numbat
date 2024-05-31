@@ -662,7 +662,7 @@ impl<'a> Parser<'a> {
                         identifier: unit_name,
                         expr,
                         type_annotation_span,
-                        type_annotation: dexpr,
+                        type_annotation: dexpr.map(TypeAnnotation::TypeExpression),
                         decorators,
                     })
                 } else if dexpr.is_some() {

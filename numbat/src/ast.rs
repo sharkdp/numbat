@@ -416,7 +416,7 @@ pub enum Statement {
         identifier: String,
         expr: Expression,
         type_annotation_span: Option<Span>,
-        type_annotation: Option<TypeExpression>,
+        type_annotation: Option<TypeAnnotation>,
         decorators: Vec<Decorator>,
     },
     ProcedureCall(Span, ProcedureKind, Vec<Expression>),
