@@ -11,32 +11,30 @@ mod qualified_type;
 mod substitutions;
 mod type_scheme;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use crate::arithmetic::{Power, Rational};
 use crate::ast::{self, BinaryOperator, ProcedureKind, StringPart, TypeAnnotation, TypeExpression};
 use crate::dimension::DimensionRegistry;
 use crate::name_resolution::Namespace;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::pretty_print::PrettyPrint;
-use crate::registry::{BaseRepresentationFactor, RegistryError};
 use crate::span::Span;
 use crate::typed_ast::{self, DType, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
 
 use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, TrivialResultion};
-use environment::{FunctionMetadata, FunctionSignature};
+use environment::{Environment, FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
 use name_generator::NameGenerator;
 use num_traits::Zero;
 
 pub use error::{Result, TypeCheckError};
 pub use incompatible_dimensions::IncompatibleDimensionsError;
-use substitutions::{ApplySubstitution, Substitution};
+use substitutions::ApplySubstitution;
 
 fn dtype(e: &Expression) -> Result<DType> {
-    // TODO: This function should probably be removed. But we can think about adding somthing similar that adds a DType constraint and checks a trivial violation
+    // TODO: This function should probably be removed. But we can think about adding something similar that adds a DType constraint and checks a trivial violation
     match e.get_type() {
         Type::Dimension(dtype) => Ok(dtype),
         t => Err(TypeCheckError::ExpectedDimensionType(e.full_span(), t)),
@@ -45,14 +43,13 @@ fn dtype(e: &Expression) -> Result<DType> {
 
 #[derive(Clone, Default)]
 pub struct TypeChecker {
-    identifiers: HashMap<String, (Type, Option<Span>)>,
-    functions: HashMap<String, (FunctionSignature, FunctionMetadata)>,
     structs: HashMap<String, StructInfo>,
     registry: DimensionRegistry,
 
     type_namespace: Namespace,
     value_namespace: Namespace,
 
+    env: Environment,
     name_generator: NameGenerator,
     constraints: ConstraintSet,
 }
@@ -105,44 +102,17 @@ impl TypeChecker {
     }
 
     fn identifier_type(&self, span: Span, name: &str) -> Result<Type> {
-        let id = self
-            .identifiers
-            .get(name)
-            .ok_or_else(|| {
-                let suggestion = suggestion::did_you_mean(
-                    self.identifiers
-                        .keys()
-                        .map(|k| k.to_string())
-                        .chain(["true".into(), "false".into()]) // These are parsed as keywords, but can act like identifiers
-                        .chain(self.functions.keys().cloned())
-                        .chain(ffi::procedures().values().map(|p| p.name.clone())),
-                    name,
-                );
-                TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
-            })
-            .map(|(type_, _)| type_)
-            .cloned();
-
-        if id.is_err() {
-            if let Some((signature, _)) = self.functions.get(name) {
-                if !signature.type_parameters.is_empty() {
-                    return Err(TypeCheckError::NoFunctionReferenceToGenericFunction(span));
-                }
-
-                Ok(Type::Fn(
-                    signature
-                        .parameter_types
-                        .iter()
-                        .map(|(_, _, t)| t.clone())
-                        .collect(),
-                    Box::new(signature.return_type.clone()),
-                ))
-            } else {
-                id
-            }
-        } else {
-            id
-        }
+        self.env.get_identifier_type(name).ok_or_else(|| {
+            let suggestion = suggestion::did_you_mean(
+                self.env
+                    .iter_identifiers()
+                    .map(|k| k.to_string())
+                    .chain(["true".into(), "false".into()]) // These are parsed as keywords, but can act like identifiers
+                    .chain(ffi::procedures().values().map(|p| p.name.clone())),
+                name,
+            );
+            TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
+        })
     }
 
     fn get_proper_function_reference(
@@ -151,8 +121,8 @@ impl TypeChecker {
     ) -> Option<(String, &FunctionSignature)> {
         match expr {
             ast::Expression::Identifier(_, name) => self
-                .functions
-                .get(name)
+                .env
+                .get_function_info(name)
                 .map(|(signature, _)| (name.clone(), signature)),
             _ => None,
         }
@@ -903,8 +873,8 @@ impl TypeChecker {
             ast::Statement::Expression(expr) => {
                 let checked_expr = self.elaborate_expression(expr)?;
                 for &identifier in LAST_RESULT_IDENTIFIERS {
-                    self.identifiers
-                        .insert(identifier.into(), (checked_expr.get_type(), None));
+                    self.env
+                        .add_predefined(identifier.into(), checked_expr.get_type());
                 }
                 typed_ast::Statement::Expression(checked_expr)
             }
@@ -968,8 +938,8 @@ impl TypeChecker {
                 }
 
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-                    self.identifiers
-                        .insert(name.clone(), (type_deduced.clone(), Some(*identifier_span)));
+                    self.env
+                        .add(name.clone(), type_deduced.clone(), *identifier_span);
 
                     self.value_namespace.add_identifier_allow_override(
                         name.clone(),
@@ -1012,10 +982,8 @@ impl TypeChecker {
                         .into()
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
-                    self.identifiers.insert(
-                        name.clone(),
-                        (Type::Dimension(type_specified.clone()), Some(*span)),
-                    );
+                    self.env
+                        .add(name.clone(), Type::Dimension(type_specified.clone()), *span);
                 }
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
@@ -1065,12 +1033,10 @@ impl TypeChecker {
                     }
                 }
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-                    self.identifiers.insert(
+                    self.env.add(
                         name.clone(),
-                        (
-                            Type::Dimension(type_deduced.clone()),
-                            Some(*identifier_span),
-                        ),
+                        Type::Dimension(type_deduced.clone()),
+                        *identifier_span,
                     );
                 }
                 typed_ast::Statement::DefineDerivedUnit(
@@ -1148,9 +1114,10 @@ impl TypeChecker {
                             .ok();
                     }
 
-                    typechecker_fn.identifiers.insert(
+                    typechecker_fn.env.add(
                         parameter.clone(),
-                        (parameter_type.clone(), Some(*parameter_span)),
+                        parameter_type.clone(),
+                        *parameter_span,
                     );
                     typed_parameters.push((*parameter_span, parameter.clone(), parameter_type));
                 }
@@ -1512,7 +1479,7 @@ impl TypeChecker {
         &self.registry
     }
 
-    pub fn lookup_function(&self, name: &str) -> Option<&(FunctionSignature, FunctionMetadata)> {
-        self.functions.get(name)
+    pub fn lookup_function(&self, name: &str) -> Option<(&FunctionSignature, &FunctionMetadata)> {
+        self.env.get_function_info(name)
     }
 }

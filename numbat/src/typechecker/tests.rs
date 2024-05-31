@@ -1,6 +1,7 @@
+use crate::arithmetic::Rational;
 use crate::parser::parse;
 use crate::prefix_transformer::Transformer;
-use crate::{BaseRepresentation, NameResolutionError};
+use crate::{BaseRepresentation, BaseRepresentationFactor, NameResolutionError};
 
 use super::*;
 
