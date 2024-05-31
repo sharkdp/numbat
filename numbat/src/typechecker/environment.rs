@@ -1,4 +1,5 @@
 use crate::span::Span;
+use crate::type_variable::TypeVariable;
 use crate::Type;
 
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
@@ -84,6 +85,22 @@ impl Environment {
         match self.identifiers.get(name) {
             Some(IdentifierKind::Function(signature, metadata)) => Some((signature, &metadata)),
             _ => None,
+        }
+    }
+
+    pub(crate) fn generalize_types(&mut self, dtype_variables: &[TypeVariable]) {
+        for (_, kind) in self.identifiers.iter_mut() {
+            match kind {
+                IdentifierKind::Normal(t, _) => {
+                    t.generalize(dtype_variables);
+                }
+                IdentifierKind::Function(signature, _) => {
+                    signature.fn_type.generalize(dtype_variables);
+                }
+                IdentifierKind::Predefined(t) => {
+                    t.generalize(dtype_variables);
+                }
+            }
         }
     }
 }

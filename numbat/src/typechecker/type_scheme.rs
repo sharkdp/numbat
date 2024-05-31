@@ -1,7 +1,10 @@
+use log::debug;
+
 use super::name_generator::NameGenerator;
-use super::qualified_type::{Bounds, QualifiedType};
+use super::qualified_type::{Bound, Bounds, QualifiedType};
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::pretty_print::PrettyPrint;
+use crate::type_variable::TypeVariable;
 use crate::typed_ast::Type;
 
 /// A type *scheme* (the `Quantified` part below) is a type with a
@@ -38,7 +41,7 @@ impl TypeScheme {
 
             qt.instantiate(&new_type_variables)
         } else {
-            unreachable!("Tried to instantiate concrete type")
+            unreachable!("Tried to instantiate concrete type: {:#?}", self);
         }
     }
 
@@ -67,10 +70,53 @@ impl TypeScheme {
         todo!()
     }
 
+    #[track_caller]
     pub(crate) fn unsafe_as_concrete(&self) -> Type {
         match self {
             TypeScheme::Concrete(t) => t.clone(),
-            _ => unreachable!("Expected concrete type"),
+            _ => unreachable!("Expected concrete type: {:#?}", self),
+        }
+    }
+
+    pub(crate) fn generalize(&mut self, dtype_variables: &[TypeVariable]) {
+        debug!("Generalizing type: {:#?}", self);
+
+        let free_variables = self.type_variables();
+
+        let TypeScheme::Concrete(type_) = self else {
+            // TODO: we currently don't report and error here because we run generalization
+            // again and again on the environment, so it has a few concrete types in it. But
+            // maybe it would be better to model this explicitly and report an error here.
+            return;
+        };
+
+        // Generate qualified type
+        let bounds = dtype_variables
+            .iter()
+            .map(|v| Bound::IsDim(Type::TVar(v.clone())))
+            .collect();
+        let qualified_type = QualifiedType::new(type_.clone(), bounds);
+
+        // Generalization: quantify over all free type variables
+        let type_scheme = qualified_type.quantify(&free_variables);
+
+        debug!("… to type scheme: {:#?}", type_scheme);
+
+        *self = type_scheme;
+    }
+
+    fn type_variables(&self) -> Vec<TypeVariable> {
+        match self {
+            TypeScheme::Concrete(t) => t.type_variables(),
+            TypeScheme::Quantified(_, qt) => qt.type_variables(),
+        }
+    }
+
+    pub(crate) fn to_concrete_type(&self) -> Type {
+        // TODO: make sure there are no type variables / $tget nodes left over
+        match self {
+            TypeScheme::Concrete(t) => t.clone(),
+            TypeScheme::Quantified(_, qt) => qt.inner.clone(),
         }
     }
 }

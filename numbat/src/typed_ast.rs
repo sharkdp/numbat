@@ -7,6 +7,7 @@ use crate::arithmetic::{Exponent, Rational};
 use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
 use crate::dimension::DimensionRegistry;
+use crate::traversal::ForAllTypeSchemes;
 use crate::type_variable::TypeVariable;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::{
@@ -377,8 +378,24 @@ impl Type {
         }
     }
 
-    pub(crate) fn instantiate(&self, _type_variables: &[TypeVariable]) -> Type {
-        todo!()
+    pub(crate) fn instantiate(&self, type_variables: &[TypeVariable]) -> Type {
+        match self {
+            Type::TVar(TypeVariable::Quantified(i)) => Type::TVar(type_variables[*i].clone()),
+            Type::TVar(v) => Type::TVar(v.clone()),
+            Type::Dimension(d) => Type::Dimension(d.instantiate(type_variables)),
+            Type::Boolean | Type::String | Type::DateTime => self.clone(),
+            Type::Fn(param_types, return_type) => Type::Fn(
+                param_types
+                    .iter()
+                    .map(|t| t.instantiate(type_variables))
+                    .collect(),
+                Box::new(return_type.instantiate(type_variables)),
+            ),
+            info @ Type::Struct(_) => info.clone(),
+            Type::List(element_type) => {
+                Type::List(Box::new(element_type.instantiate(type_variables)))
+            }
+        }
     }
 
     pub(crate) fn contains(&self, x: &TypeVariable) -> bool {
@@ -505,23 +522,22 @@ impl Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DefineVariable(String, Vec<Decorator>, Expression, Type),
+    DefineVariable(String, Vec<Decorator>, Expression, TypeScheme),
     DefineFunction(
         String,
         Vec<Decorator>, // decorators
         Vec<String>,    // type parameters
         Vec<(
-            // parameter:
+            // parameters:
             Span,   // span of the parameter
             String, // parameter name
-            Type,   // parameter type
         )>,
         Option<Expression>, // function body
-        Type,               // return type
+        TypeScheme,         // function type
     ),
     DefineDimension(String, Vec<TypeExpression>),
-    DefineBaseUnit(String, Vec<Decorator>, Type),
-    DefineDerivedUnit(String, Expression, Vec<Decorator>, Type),
+    DefineBaseUnit(String, Vec<Decorator>, TypeScheme),
+    DefineDerivedUnit(String, Expression, Vec<Decorator>, TypeScheme),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
     DefineStruct(StructInfo),
 }
@@ -533,6 +549,10 @@ impl Statement {
         } else {
             None
         }
+    }
+
+    pub(crate) fn generalize_types(&mut self, dtype_variables: &[TypeVariable]) {
+        self.for_all_type_schemes(&mut |type_: &mut TypeScheme| type_.generalize(dtype_variables));
     }
 }
 
@@ -659,11 +679,12 @@ impl PrettyPrint for Statement {
                 };
 
                 let markup_parameters = Itertools::intersperse(
-                    parameters.iter().map(|(_span, name, parameter_type)| {
+                    parameters.iter().map(|(_span, name)| {
                         m::identifier(name)
-                            + m::operator(":")
-                            + m::space()
-                            + parameter_type.pretty_print()
+                        // TODO
+                        // + m::operator(":")
+                        // + m::space()
+                        // + parameter_type.pretty_print()
                     }),
                     m::operator(", "),
                 )

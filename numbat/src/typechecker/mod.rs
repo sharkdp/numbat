@@ -32,6 +32,7 @@ use num_traits::Zero;
 
 pub use error::{Result, TypeCheckError};
 pub use incompatible_dimensions::IncompatibleDimensionsError;
+use qualified_type::{Bound, QualifiedType};
 use substitutions::ApplySubstitution;
 use type_scheme::TypeScheme;
 
@@ -235,19 +236,35 @@ impl TypeChecker {
                 typed_ast::Expression::Scalar(*span, *n, TypeScheme::concrete(Type::scalar()))
             }
             ast::Expression::Identifier(span, name) => {
-                let type_ = self.identifier_type(*span, name)?.clone();
+                let type_scheme = self.identifier_type(*span, name)?.clone();
 
-                typed_ast::Expression::Identifier(*span, name.clone(), type_)
+                let qt = type_scheme.instantiate(&mut self.name_generator);
+
+                for Bound::IsDim(t) in qt.bounds.iter() {
+                    self.constraints.add(Constraint::IsDType(t.clone())).ok();
+                }
+
+                typed_ast::Expression::Identifier(
+                    *span,
+                    name.clone(),
+                    TypeScheme::concrete(qt.inner),
+                )
             }
             ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
-                let type_ = self.identifier_type(*span, name)?.clone();
+                let type_scheme = self.identifier_type(*span, name)?.clone();
+
+                let qt = type_scheme.instantiate(&mut self.name_generator);
+
+                for Bound::IsDim(t) in qt.bounds.iter() {
+                    self.constraints.add(Constraint::IsDType(t.clone())).ok();
+                }
 
                 typed_ast::Expression::UnitIdentifier(
                     *span,
                     *prefix,
                     name.clone(),
                     full_name.clone(),
-                    type_,
+                    TypeScheme::concrete(qt.inner),
                 )
             }
             ast::Expression::UnaryOperator { op, expr, span_op } => {
@@ -977,7 +994,7 @@ impl TypeChecker {
                     identifier.clone(),
                     decorators.clone(),
                     expr_checked,
-                    type_deduced,
+                    TypeScheme::concrete(type_deduced),
                 )
             }
             ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
@@ -1013,7 +1030,7 @@ impl TypeChecker {
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
                     decorators.clone(),
-                    Type::Dimension(type_specified),
+                    TypeScheme::concrete(Type::Dimension(type_specified)),
                 )
             }
             ast::Statement::DefineDerivedUnit {
@@ -1068,7 +1085,7 @@ impl TypeChecker {
                     identifier.clone(),
                     expr_checked,
                     decorators.clone(),
-                    Type::Dimension(type_deduced),
+                    TypeScheme::Concrete(Type::Dimension(type_deduced)),
                 )
             }
             ast::Statement::DefineFunction {
@@ -1240,16 +1257,17 @@ impl TypeChecker {
                     .iter()
                     .map(|(_, _, type_)| type_.clone())
                     .collect();
+
+                let fn_type =
+                    TypeScheme::Concrete(Type::Fn(parameter_types, Box::new(return_type.clone())));
+
                 self.env.add_function(
                     function_name.clone(),
                     FunctionSignature {
                         definition_span: *function_name_span,
                         type_parameters: type_parameters.clone(),
                         parameters,
-                        fn_type: TypeScheme::Concrete(Type::Fn(
-                            parameter_types,
-                            Box::new(return_type.clone()),
-                        )),
+                        fn_type: fn_type.clone(),
                     },
                     FunctionMetadata {
                         name: crate::decorator::name(decorators),
@@ -1265,9 +1283,12 @@ impl TypeChecker {
                         .iter()
                         .map(|(_, name)| name.clone())
                         .collect(),
-                    typed_parameters,
+                    typed_parameters
+                        .iter()
+                        .map(|(span, name, _)| (*span, name.clone()))
+                        .collect(),
                     body_checked,
-                    return_type,
+                    fn_type,
                 )
             }
             ast::Statement::DefineDimension(name_span, name, dexprs) => {
@@ -1475,6 +1496,9 @@ impl TypeChecker {
         //         elaborated_statement.apply(&s).unwrap();
         //     }
         // }
+
+        elaborated_statement.generalize_types(&dtype_variables);
+        self.env.generalize_types(&dtype_variables);
 
         info!("Final statement:");
         info!("{}", elaborated_statement.pretty_print());
