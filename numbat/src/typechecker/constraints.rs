@@ -254,6 +254,7 @@ impl Constraint {
                 )))
             }
             Constraint::Equal(s, Type::TVar(x)) if !s.contains(x) => {
+                // TODO: merge with branch above
                 debug!(
                     "  (3) SOLVING: {s} ~ {x} with substitution {x} := {s}",
                     s = s,
@@ -310,9 +311,10 @@ impl Constraint {
             Constraint::Equal(Type::Dimension(d1), Type::Dimension(d2)) => {
                 let d_result = d1.divide(d2);
                 debug!(
-                    "  (7) SOLVING: {} ~ {} with new constraint d_result = Scalar",
+                    "  (7) SOLVING: {} ~ {} with new constraint {} = Scalar",
                     d1.pretty_print(),
-                    d2.pretty_print()
+                    d2.pretty_print(),
+                    d_result.pretty_print()
                 );
                 Some(Satisfied::with_new_constraints(vec![
                     Constraint::EqualScalar(d_result),
