@@ -8,6 +8,7 @@ use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
 use crate::dimension::DimensionRegistry;
 use crate::type_variable::TypeVariable;
+use crate::typechecker::type_scheme::TypeScheme;
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, span::Span,
@@ -383,6 +384,13 @@ impl Type {
     pub(crate) fn contains(&self, x: &TypeVariable) -> bool {
         self.type_variables().contains(x)
     }
+
+    pub(crate) fn is_scalar(&self) -> bool {
+        match self {
+            Type::Dimension(d) => d.is_scalar(),
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -426,16 +434,16 @@ impl PrettyPrint for &Vec<StringPart> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Scalar(Span, Number, Type),
-    Identifier(Span, String, Type),
-    UnitIdentifier(Span, Prefix, String, String, Type),
-    UnaryOperator(Span, UnaryOperator, Box<Expression>, Type),
+    Scalar(Span, Number, TypeScheme),
+    Identifier(Span, String, TypeScheme),
+    UnitIdentifier(Span, Prefix, String, String, TypeScheme),
+    UnaryOperator(Span, UnaryOperator, Box<Expression>, TypeScheme),
     BinaryOperator(
         Option<Span>,
         BinaryOperator,
         Box<Expression>,
         Box<Expression>,
-        Type,
+        TypeScheme,
     ),
     /// A special binary operator that has a DateTime as one (or both) of the operands
     BinaryOperatorForDate(
@@ -445,18 +453,18 @@ pub enum Expression {
         Box<Expression>,
         /// RHS can evaluate to a DateTime or a quantity of type Time
         Box<Expression>,
-        Type,
+        TypeScheme,
     ),
     // A 'proper' function call
-    FunctionCall(Span, Span, String, Vec<Expression>, Type),
+    FunctionCall(Span, Span, String, Vec<Expression>, TypeScheme),
     // A call via a function object
-    CallableCall(Span, Box<Expression>, Vec<Expression>, Type),
+    CallableCall(Span, Box<Expression>, Vec<Expression>, TypeScheme),
     Boolean(Span, bool),
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
     InstantiateStruct(Span, Vec<(String, Expression)>, StructInfo),
-    AccessField(Span, Span, Box<Expression>, String, StructInfo, Type),
-    List(Span, Vec<Expression>, Type),
+    AccessField(Span, Span, Box<Expression>, String, StructInfo, TypeScheme),
+    List(Span, Vec<Expression>, TypeScheme),
 }
 
 impl Expression {
@@ -531,20 +539,22 @@ impl Statement {
 impl Expression {
     pub fn get_type(&self) -> Type {
         match self {
-            Expression::Scalar(_, _, type_) => type_.clone(),
-            Expression::Identifier(_, _, type_) => type_.clone(),
-            Expression::UnitIdentifier(_, _, _, _, _type) => _type.clone(),
-            Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
-            Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
-            Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.clone(),
-            Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
-            Expression::CallableCall(_, _, _, type_) => type_.clone(),
+            Expression::Scalar(_, _, type_) => type_.unsafe_as_concrete(),
+            Expression::Identifier(_, _, type_) => type_.unsafe_as_concrete(),
+            Expression::UnitIdentifier(_, _, _, _, _type) => _type.unsafe_as_concrete(),
+            Expression::UnaryOperator(_, _, _, type_) => type_.unsafe_as_concrete(),
+            Expression::BinaryOperator(_, _, _, _, type_) => type_.unsafe_as_concrete(),
+            Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.unsafe_as_concrete(),
+            Expression::FunctionCall(_, _, _, _, type_) => type_.unsafe_as_concrete(),
+            Expression::CallableCall(_, _, _, type_) => type_.unsafe_as_concrete(),
             Expression::Boolean(_, _) => Type::Boolean,
             Expression::Condition(_, _, then_, _) => then_.get_type(),
             Expression::String(_, _) => Type::String,
-            Expression::InstantiateStruct(_, _, type_) => Type::Struct(type_.clone()),
-            Expression::AccessField(_, _, _, _, _, type_) => type_.clone(),
-            Expression::List(_, _, element_type) => Type::List(Box::new(element_type.clone())),
+            Expression::InstantiateStruct(_, _, info_) => Type::Struct(info_.clone()),
+            Expression::AccessField(_, _, _, _, _, type_) => type_.unsafe_as_concrete(),
+            Expression::List(_, _, element_type) => {
+                Type::List(Box::new(element_type.unsafe_as_concrete()))
+            }
         }
     }
 }

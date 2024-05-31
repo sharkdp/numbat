@@ -20,6 +20,10 @@ impl Bounds {
         Bounds(vec![])
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn iter(&self) -> std::slice::Iter<Bound> {
         self.0.iter()
     }
@@ -84,7 +88,7 @@ impl QualifiedType {
             .unwrap();
         }
 
-        TypeScheme::new_quantified(variables.len(), qt)
+        TypeScheme::quantified(variables.len(), qt)
     }
 
     pub fn type_variables(&self) -> Vec<TypeVariable> {

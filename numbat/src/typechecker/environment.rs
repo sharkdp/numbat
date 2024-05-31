@@ -13,7 +13,7 @@ pub struct FunctionSignature {
     pub definition_span: Span,
     pub type_parameters: Vec<(Span, String)>,
     pub parameters: Vec<(Span, String)>,
-    pub fn_type: Type,
+    pub fn_type: TypeScheme,
 }
 
 #[derive(Clone, Debug)]
@@ -26,15 +26,15 @@ pub struct FunctionMetadata {
 #[derive(Clone, Debug)]
 pub enum IdentifierKind {
     /// A normal identifier (variable, unit) with the place where it has been defined
-    Normal(Type, Span),
+    Normal(TypeScheme, Span),
     /// A function
     Function(FunctionSignature, FunctionMetadata),
     /// Identifiers that are defined by the language: `_` and `ans` (see LAST_RESULT_IDENTIFIERS)
-    Predefined(Type),
+    Predefined(TypeScheme),
 }
 
 impl IdentifierKind {
-    fn get_type(&self) -> Type {
+    fn get_type(&self) -> TypeScheme {
         match self {
             IdentifierKind::Predefined(t) => t.clone(),
             IdentifierKind::Normal(t, _) => t.clone(),
@@ -51,7 +51,7 @@ pub struct Environment {
 impl Environment {
     pub fn add(&mut self, i: Identifier, type_: Type, span: Span) {
         self.identifiers
-            .insert(i, IdentifierKind::Normal(type_, span));
+            .insert(i, IdentifierKind::Normal(TypeScheme::Concrete(type_), span));
     }
 
     pub(crate) fn add_function(
@@ -64,12 +64,12 @@ impl Environment {
             .insert(v, IdentifierKind::Function(signature, metadata));
     }
 
-    pub fn add_predefined(&mut self, v: Identifier, type_: Type) {
+    pub fn add_predefined(&mut self, v: Identifier, type_: TypeScheme) {
         self.identifiers
             .insert(v, IdentifierKind::Predefined(type_));
     }
 
-    pub(crate) fn get_identifier_type(&self, v: &str) -> Option<Type> {
+    pub(crate) fn get_identifier_type(&self, v: &str) -> Option<TypeScheme> {
         self.identifiers.get(v).map(|k| k.get_type())
     }
 
