@@ -26,6 +26,7 @@ use crate::{decorator, ffi, suggestion};
 
 use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, TrivialResultion};
+use environment::{FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
 use name_generator::NameGenerator;
 use num_traits::Zero;
@@ -35,25 +36,11 @@ pub use incompatible_dimensions::IncompatibleDimensionsError;
 use substitutions::{ApplySubstitution, Substitution};
 
 fn dtype(e: &Expression) -> Result<DType> {
+    // TODO: This function should probably be removed. But we can think about adding somthing similar that adds a DType constraint and checks a trivial violation
     match e.get_type() {
         Type::Dimension(dtype) => Ok(dtype),
         t => Err(TypeCheckError::ExpectedDimensionType(e.full_span(), t)),
     }
-}
-
-#[derive(Clone)]
-pub struct FunctionSignature {
-    definition_span: Span,
-    pub type_parameters: Vec<(Span, String)>,
-    pub parameter_types: Vec<(Span, String, Type)>,
-    pub return_type: Type,
-}
-
-#[derive(Clone, Debug)]
-pub struct FunctionMetadata {
-    pub name: Option<String>,
-    pub url: Option<String>,
-    pub description: Option<String>,
 }
 
 #[derive(Clone, Default)]
