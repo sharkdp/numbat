@@ -603,6 +603,8 @@ fn generate_config() -> Result<()> {
 }
 
 fn main() {
+    pretty_env_logger::init();
+
     let args = Args::parse();
 
     if args.generate_config {
