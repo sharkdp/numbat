@@ -426,7 +426,7 @@ impl BytecodeInterpreter {
                         .name,
                     ),
                     UnitMetadata {
-                        type_: type_.unsafe_as_concrete(),
+                        type_: type_.to_concrete_type(),
                         readable_type: crate::markup::empty(), // TODO
                         aliases,
                         name: decorator::name(decorators),
