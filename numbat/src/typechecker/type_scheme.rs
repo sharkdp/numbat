@@ -13,30 +13,40 @@ use crate::typed_ast::Type;
 /// Type schemes can be created by calling .quantify() on a qualified
 /// type.
 #[derive(Clone, Debug, PartialEq)]
-pub struct TypeScheme(usize, QualifiedType);
+pub enum TypeScheme {
+    Concrete(Type),
+    Quantified(usize, QualifiedType),
+}
 
 impl TypeScheme {
-    pub fn new(num_quantified: usize, qt: QualifiedType) -> TypeScheme {
-        TypeScheme(num_quantified, qt)
+    pub fn new_quantified(num_quantified: usize, qt: QualifiedType) -> TypeScheme {
+        TypeScheme::Quantified(num_quantified, qt)
     }
 
     pub fn instantiate(&self, name_generator: &mut NameGenerator) -> QualifiedType {
-        // Replace $gen_i by fresh type variables
+        if let TypeScheme::Quantified(n_gen, qt) = &self {
+            // Replace $gen_i by fresh type variables
 
-        let new_type_variables = (0..self.0)
-            .map(|_| name_generator.fresh_type_variable())
-            .collect::<Vec<_>>();
+            let new_type_variables = (0..*n_gen)
+                .map(|_| name_generator.fresh_type_variable())
+                .collect::<Vec<_>>();
 
-        self.1.instantiate(&new_type_variables)
+            qt.instantiate(&new_type_variables)
+        } else {
+            unreachable!("Tried to instantiate concrete type")
+        }
     }
 
-    pub fn from_type(type_: Type) -> TypeScheme {
-        TypeScheme(0, QualifiedType::new(type_, Bounds::none()))
+    pub fn make_quantified(type_: Type) -> TypeScheme {
+        TypeScheme::Quantified(0, QualifiedType::new(type_, Bounds::none()))
     }
 }
 
 impl ApplySubstitution for TypeScheme {
     fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
-        self.1.apply(substitution)
+        match self {
+            TypeScheme::Concrete(t) => t.apply(substitution),
+            TypeScheme::Quantified(_, qt) => qt.apply(substitution),
+        }
     }
 }
