@@ -12,8 +12,8 @@ type Identifier = String; // TODO ?
 pub struct FunctionSignature {
     pub definition_span: Span,
     pub type_parameters: Vec<(Span, String)>,
-    pub parameter_types: Vec<(Span, String, Type)>,
-    pub return_type: Type,
+    pub parameters: Vec<(Span, String)>,
+    pub fn_type: Type,
 }
 
 #[derive(Clone, Debug)]
@@ -38,13 +38,7 @@ impl IdentifierKind {
         match self {
             IdentifierKind::Predefined(t) => t.clone(),
             IdentifierKind::Normal(t, _) => t.clone(),
-            IdentifierKind::Function(f, _) => Type::Fn(
-                f.parameter_types
-                    .iter()
-                    .map(|(_, _, t)| t.clone())
-                    .collect(),
-                Box::new(f.return_type.clone()),
-            ),
+            IdentifierKind::Function(s, _) => s.fn_type.clone(),
         }
     }
 }
@@ -102,10 +96,7 @@ impl ApplySubstitution for Environment {
                     t.apply(substitution)?;
                 }
                 IdentifierKind::Function(signature, _) => {
-                    for (_, _, t) in signature.parameter_types.iter_mut() {
-                        t.apply(substitution)?;
-                    }
-                    signature.return_type.apply(substitution)?;
+                    signature.fn_type.apply(substitution)?;
                 }
                 IdentifierKind::Predefined(t) => {
                     t.apply(substitution)?;

@@ -141,11 +141,15 @@ impl TypeChecker {
         let FunctionSignature {
             definition_span,
             type_parameters,
-            parameter_types,
-            return_type,
+            parameters,
+            fn_type,
         } = signature;
 
-        let arity_range = parameter_types.len()..=parameter_types.len();
+        let Type::Fn(parameter_types, return_type) = fn_type else {
+            unreachable!();
+        };
+
+        let arity_range = parameters.len()..=parameters.len();
 
         if !arity_range.contains(&arguments.len()) {
             return Err(TypeCheckError::WrongArity {
@@ -157,8 +161,12 @@ impl TypeChecker {
             });
         }
 
-        for (idx, ((parameter_span, _, parameter_type), argument_type)) in
-            parameter_types.iter().zip(argument_types).enumerate()
+        for (idx, ((parameter_span, parameter_type), argument_type)) in parameters
+            .iter()
+            .map(|p| p.0)
+            .zip(parameter_types.iter())
+            .zip(argument_types)
+            .enumerate()
         {
             if self
                 .add_equal_constraint(parameter_type, &argument_type)
@@ -174,7 +182,7 @@ impl TypeChecker {
                                     num = idx + 1,
                                     name = function_name
                                 ),
-                                span_expected: parameter_types[idx].0,
+                                span_expected: parameter_span, // TODO: is this correct?
                                 expected_name: "parameter type",
                                 expected_dimensions: self.registry.get_derived_entry_names_for(
                                     &parameter_dtype.to_base_representation(),
@@ -192,7 +200,7 @@ impl TypeChecker {
                     }
                     _ => {
                         return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
-                            Some(*parameter_span),
+                            Some(parameter_span),
                             parameter_type.clone(),
                             arguments[idx].full_span(),
                             argument_type.clone(),
@@ -207,7 +215,7 @@ impl TypeChecker {
             *full_span,
             function_name.into(),
             arguments,
-            return_type.clone(),
+            return_type.as_ref().clone(),
         ))
     }
 
@@ -1208,17 +1216,21 @@ impl TypeChecker {
                 self.constraints = typechecker_fn.constraints;
                 self.name_generator = typechecker_fn.name_generator;
 
+                let parameters = typed_parameters
+                    .iter()
+                    .map(|(span, name, _)| (*span, name.clone()))
+                    .collect();
                 let parameter_types = typed_parameters
                     .iter()
-                    .map(|(span, name, t)| (*span, name.clone(), t.clone()))
+                    .map(|(_, _, type_)| type_.clone())
                     .collect();
                 self.env.add_function(
                     function_name.clone(),
                     FunctionSignature {
                         definition_span: *function_name_span,
                         type_parameters: type_parameters.clone(),
-                        parameter_types,
-                        return_type: return_type.clone(),
+                        parameters,
+                        fn_type: Type::Fn(parameter_types, Box::new(return_type.clone())),
                     },
                     FunctionMetadata {
                         name: crate::decorator::name(decorators),
