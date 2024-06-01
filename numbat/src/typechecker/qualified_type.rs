@@ -37,6 +37,13 @@ impl Bounds {
         bounds.0.extend(other.0);
         bounds
     }
+
+    pub fn is_dtype_bound(&self, tv: &TypeVariable) -> bool {
+        self.0.iter().any(|b| match b {
+            Bound::IsDim(Type::TVar(v)) => v == tv,
+            _ => false,
+        })
+    }
 }
 
 impl FromIterator<Bound> for Bounds {
@@ -60,22 +67,6 @@ pub struct QualifiedType {
 impl QualifiedType {
     pub fn new(inner: Type, bounds: Bounds) -> QualifiedType {
         QualifiedType { inner, bounds }
-    }
-
-    pub fn pretty_print(&self) -> String {
-        let bounds = self
-            .bounds
-            .iter()
-            .map(|b| match b {
-                Bound::IsDim(t) => format!("Dim({t})", t = t),
-            })
-            .collect::<Vec<String>>()
-            .join(", ");
-        if bounds.is_empty() {
-            self.inner.to_string()
-        } else {
-            format!("{} where {}", self.inner.to_string(), bounds)
-        }
     }
 
     pub fn quantify(&self, variables: &[TypeVariable]) -> TypeScheme {

@@ -1,6 +1,7 @@
 use super::name_generator::NameGenerator;
 use super::qualified_type::{Bound, Bounds, QualifiedType};
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
+use crate::markup as m;
 use crate::pretty_print::PrettyPrint;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::Type;
@@ -29,12 +30,35 @@ impl TypeScheme {
         TypeScheme::Quantified(num_quantified, qt)
     }
 
-    pub fn instantiate_with(&self, new_type_variables: &[TypeVariable]) -> QualifiedType {
+    fn instantiate_with(&self, new_type_variables: &[TypeVariable]) -> QualifiedType {
         if let TypeScheme::Quantified(n_gen, qt) = &self {
             assert!(n_gen == &new_type_variables.len());
             qt.instantiate(&new_type_variables)
         } else {
             unreachable!("Tried to instantiate concrete type: {:#?}", self);
+        }
+    }
+
+    pub fn instantiate_for_printing(&self) -> (QualifiedType, Vec<TypeVariable>) {
+        match self {
+            TypeScheme::Concrete(t) => {
+                // TODO: we shouldn't print concrete types, but we do it for now in the logging
+                (QualifiedType::new(t.clone(), Bounds::none()), vec![])
+            }
+            TypeScheme::Quantified(n_gen, _) => {
+                // TODO: is this a good idea? we don't take care of name clashes here
+                let type_parameters = if *n_gen <= 26 {
+                    (0..*n_gen)
+                        .map(|n| TypeVariable::new(format!("{}", (b'A' + n as u8) as char)))
+                        .collect::<Vec<_>>()
+                } else {
+                    (0..*n_gen)
+                        .map(|n| TypeVariable::new(format!("T{n}")))
+                        .collect::<Vec<_>>()
+                };
+
+                (self.instantiate_with(&type_parameters), type_parameters)
+            }
         }
     }
 
@@ -72,13 +96,10 @@ impl TypeScheme {
 
     pub(crate) fn to_readable_type(
         &self,
-        registry: &crate::dimension::DimensionRegistry,
+        _registry: &crate::dimension::DimensionRegistry,
     ) -> crate::markup::Markup {
-        //TODO
-        match self {
-            TypeScheme::Concrete(t) => t.to_readable_type(registry),
-            TypeScheme::Quantified(_, qt) => qt.inner.to_readable_type(registry),
-        }
+        // TODO: Bring back "readable type" functionality, to turn e.g. `Length / Time` into `Velocity`
+        self.pretty_print()
     }
 
     #[track_caller]
@@ -139,10 +160,39 @@ impl ApplySubstitution for TypeScheme {
 
 impl PrettyPrint for TypeScheme {
     fn pretty_print(&self) -> crate::markup::Markup {
-        // TODO
         match self {
             TypeScheme::Concrete(t) => t.pretty_print(),
-            TypeScheme::Quantified(_, qt) => qt.inner.pretty_print(),
+            ts @ TypeScheme::Quantified(n_gen, _) => {
+                // TODO: is this a good idea? we don't take care of name clashes here
+                let type_parameters = if *n_gen <= 26 {
+                    (0..*n_gen)
+                        .map(|n| TypeVariable::new(format!("{}", (b'A' + n as u8) as char)))
+                        .collect::<Vec<_>>()
+                } else {
+                    (0..*n_gen)
+                        .map(|n| TypeVariable::new(format!("T{n}")))
+                        .collect::<Vec<_>>()
+                };
+                let instantiated_type = ts.instantiate_with(&type_parameters);
+
+                let mut markup = m::empty();
+
+                for type_parameter in &type_parameters {
+                    markup += m::keyword("forall");
+                    markup += m::space();
+                    markup += m::type_identifier(type_parameter.unsafe_name());
+
+                    if instantiated_type.bounds.is_dtype_bound(type_parameter) {
+                        markup += m::operator(":");
+                        markup += m::space();
+                        markup += m::type_identifier("Dim");
+                    }
+                    markup += m::operator(".");
+                    markup += m::space();
+                }
+
+                markup + instantiated_type.inner.pretty_print()
+            }
         }
     }
 }
