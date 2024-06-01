@@ -22,14 +22,9 @@ const TEST_PRELUDE: &str = "
     struct SomeStruct { a: A, b: B }
 
     let callable = takes_a_returns_b
-    ";
 
-fn base_type(name: &str) -> BaseRepresentation {
-    BaseRepresentation::from_factor(BaseRepresentationFactor(
-        name.into(),
-        Rational::from_integer(1),
-    ))
-}
+    fn atan2<T>(x: T, y: T) -> Scalar
+    ";
 
 fn type_a() -> DType {
     DType::base_dimension("A")
@@ -253,6 +248,11 @@ fn generics_basic() {
             f(2, 3)
             f(2 a, 2 b)
             ",
+    );
+    assert_successful_typecheck(
+        "
+        fn f3<T>(y: T, x: T) = atan2(y, x)
+        ",
     );
 
     // assert!(matches!(
