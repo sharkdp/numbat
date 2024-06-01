@@ -1,7 +1,7 @@
 use crate::ffi::ArityRange;
 use crate::registry::RegistryError;
 use crate::span::Span;
-use crate::typed_ast::{BinaryOperator, DType};
+use crate::typed_ast::BinaryOperator;
 use crate::{BaseRepresentation, NameResolutionError, Type};
 
 use thiserror::Error;

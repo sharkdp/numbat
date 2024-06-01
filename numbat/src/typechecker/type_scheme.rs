@@ -1,5 +1,3 @@
-use log::debug;
-
 use super::name_generator::NameGenerator;
 use super::qualified_type::{Bound, Bounds, QualifiedType};
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};

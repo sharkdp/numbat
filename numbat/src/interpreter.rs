@@ -3,7 +3,7 @@ use crate::{
     markup::Markup,
     pretty_print::PrettyPrint,
     quantity::{Quantity, QuantityError},
-    typed_ast::{Statement, Type},
+    typed_ast::Statement,
     unit_registry::{UnitRegistry, UnitRegistryError},
 };
 
