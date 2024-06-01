@@ -417,7 +417,7 @@ impl Type {
                     .collect(),
                 Box::new(return_type.instantiate(type_variables)),
             ),
-            info @ Type::Struct(_) => info.clone(),
+            t @ Type::Struct(_) => t.clone(),
             Type::List(element_type) => {
                 Type::List(Box::new(element_type.instantiate(type_variables)))
             }
@@ -641,10 +641,16 @@ impl Expression {
                 TypeScheme::make_quantified(Type::Struct(info_.clone()))
             }
             Expression::AccessField(_, _, _, _, _, type_) => type_.clone(),
-            Expression::List(_, _, element_type) => {
-                TypeScheme::make_quantified(Type::List(Box::new(element_type.to_concrete_type())))
-                // TODO: avoid to_concrete_type
-            }
+            Expression::List(_, _, inner) => match inner {
+                TypeScheme::Concrete(t) => TypeScheme::Concrete(Type::List(Box::new(t.clone()))),
+                TypeScheme::Quantified(ngen, qt) => TypeScheme::Quantified(
+                    *ngen,
+                    crate::typechecker::qualified_type::QualifiedType {
+                        inner: Type::List(Box::new(qt.inner.clone())),
+                        bounds: qt.bounds.clone(),
+                    },
+                ),
+            },
         }
     }
 }
