@@ -54,12 +54,6 @@ pub enum TypeCheckError {
     #[error("'{1}' can not be used as a type parameter because it is also an existing dimension identifier.")]
     TypeParameterNameClash(Span, String),
 
-    #[error("Could not infer the type parameters {3} in the function call '{2}'.")]
-    CanNotInferTypeParameters(Span, Span, String, String),
-
-    #[error("Multiple unresolved generic parameters in a single function parameter type are not (yet) supported. Consider reordering the function parameters")]
-    MultipleUnresolvedTypeParameters(Span, Span),
-
     #[error("Foreign function definition (without body) '{1}' needs parameter and return type annotations.")]
     ForeignFunctionNeedsTypeAnnotations(Span, String),
 

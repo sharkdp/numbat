@@ -1,2 +1,0 @@
-fn foo<D0, D1>(x: D0, y: D0) -> Scalar = 1
-foo(2, 3)

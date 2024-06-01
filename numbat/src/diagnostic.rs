@@ -205,28 +205,6 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::TypeParameterNameClash(span, _) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
-            TypeCheckError::CanNotInferTypeParameters(
-                span,
-                callable_definition_span,
-                _,
-                params,
-            ) => d.with_labels(vec![
-                callable_definition_span
-                    .diagnostic_label(LabelStyle::Secondary)
-                    .with_message(format!(
-                        "The type parameter(s) {params} in this generic function"
-                    )),
-                span.diagnostic_label(LabelStyle::Primary)
-                    .with_message("… could not be inferred for this function call"),
-            ]),
-            TypeCheckError::MultipleUnresolvedTypeParameters(span, parameter_span) => d
-                .with_labels(vec![
-                    span.diagnostic_label(LabelStyle::Secondary)
-                        .with_message("In this function call"),
-                    parameter_span
-                        .diagnostic_label(LabelStyle::Primary)
-                        .with_message(inner_error),
-                ]),
             TypeCheckError::IncompatibleTypesInCondition(
                 if_span,
                 then_type,
