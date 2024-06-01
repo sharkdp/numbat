@@ -1558,12 +1558,19 @@ impl TypeChecker {
                         }
                     }
                     ProcedureKind::AssertEq => {
+                        // The three-argument version of assert_eq requires dtypes as inputs:
+                        let needs_dtypes = checked_args.len() == 3;
+
                         let type_first = &checked_args[0].get_type();
-                        self.enforce_dtype(type_first, checked_args[0].full_span())?;
+                        if needs_dtypes {
+                            self.enforce_dtype(type_first, checked_args[0].full_span())?;
+                        }
 
                         for arg in &checked_args[1..] {
                             let type_arg = arg.get_type();
-                            self.enforce_dtype(&type_arg, arg.full_span())?;
+                            if needs_dtypes {
+                                self.enforce_dtype(&type_arg, arg.full_span())?;
+                            }
 
                             if self
                                 .add_equal_constraint(type_first, &type_arg)

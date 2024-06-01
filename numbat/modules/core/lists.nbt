@@ -1,41 +1,65 @@
 use core::scalar
 
+@description("Get the length of a list")
 fn len<A>(xs: List<A>) -> Scalar
+
+@description("Get the first element of a list. Yields a runtime error if the list is empty.")
 fn head<A>(xs: List<A>) -> A
+
+@description("Get everything but the first element of a list. Yields a runtime error if the list is empty.")
 fn tail<A>(xs: List<A>) -> List<A>
+
+@description("Prepend an element to a list")
 fn cons<A>(x: A, xs: List<A>) -> List<A>
 
+@description("Check if a list is empty")
 fn is_empty<A>(xs: List<A>) -> Bool = xs == []
 
-fn generate<A>(n: Scalar, f: Fn[() -> A]) -> List<A> =
-  if n == 0
-    then []
-    else cons(f(), generate(n - 1, f))
-
-fn map<A, B>(f: Fn[(A) -> B], xs: List<A>) -> List<B> =
+@description("Concatenate two lists")
+fn concat<A>(xs: List<A>, ys: List<A>) -> List<A> =
   if is_empty(xs)
-    then []
-    else cons(f(head(xs)), map(f, tail(xs)))
+    then ys
+    else cons(head(xs), concat(tail(xs), ys))
 
+@description("Generate a range of integer numbers from `start` to `end` (inclusive)")
+fn range(start: Scalar, end: Scalar) -> List<Scalar> =
+  if start > end
+    then []
+    else cons(start, range(start + 1, end))
+
+@description("Append an element to the end of a list")
 fn cons_end<A>(xs: List<A>, x: A) -> List<A> =
   if is_empty(xs)
     then [x]
     else cons(head(xs), cons_end(tail(xs), x))
 
+@description("Reverse the order of a list")
 fn reverse<A>(xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
     else cons_end(reverse(tail(xs)), head(xs))
 
-fn sequence(n: Scalar) -> List<Scalar> =
-  if n == 0
+@description("Generate a new list by applying a function to each element of the input list")
+fn map<A, B>(f: Fn[(A) -> B], xs: List<A>) -> List<B> =
+  if is_empty(xs)
     then []
-    else cons_end(sequence(n - 1), n - 1)
+    else cons(f(head(xs)), map(f, tail(xs)))
 
+@description("Filter a list by a predicate")
+fn filter<A>(p: Fn[(A) -> Bool], xs: List<A>) -> List<A> =
+  if is_empty(xs)
+    then []
+    else if p(head(xs))
+      then cons(head(xs), filter(p, tail(xs)))
+      else filter(p, tail(xs))
+
+@description("Fold a function over a list")
 fn foldl<A, B>(f: Fn[(A, B) -> A], acc: A, xs: List<B>) -> A =
   if is_empty(xs)
     then acc
     else foldl(f, f(acc, head(xs)), tail(xs))
 
-fn add(x, y) = x + y # TODO
-fn sum<A>(xs: List<A>) -> A = foldl(add, 0, xs)
+fn _add(x, y) = x + y # TODO: replace this with a local function once we support them
+
+@description("Sum all elements of a list")
+fn sum<A>(xs: List<A>) -> A = foldl(_add, 0, xs)

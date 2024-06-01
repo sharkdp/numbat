@@ -1,25 +1,40 @@
 let xs = [1, 2, 3]
 
-assert(len([]) == 0)
-assert(len(xs) == 3)
+assert_eq(len([]), 0)
+assert_eq(len(xs), 3)
 
-assert(head(xs) == 1)
-assert(tail(xs) == [2, 3])
+assert_eq(head(xs), 1)
+assert_eq(head(tail(xs)), 2)
 
-assert(sequence(0) == [])
-assert(sequence(5) == [0, 1, 2, 3, 4])
+assert_eq(tail(xs), [2, 3])
 
-fn const_5(x) = 5
-assert(generate(3, const_5) == [5, 5, 5])
+assert_eq(cons(0, xs), [0, 1, 2, 3])
 
+assert(is_empty([]))
+assert(!is_empty(xs))
+
+assert_eq(concat([], []), [])
+assert_eq(concat([], xs), xs)
+assert_eq(concat(xs, []), xs)
+assert_eq(concat(xs, xs), [1, 2, 3, 1, 2, 3])
+
+assert_eq(range(0, 0), [0])
+assert_eq(range(0, 5), [0, 1, 2, 3, 4, 5])
+
+assert_eq(reverse([]), [])
+assert_eq(reverse(xs), [3, 2, 1])
 
 fn inc(x) = x + 1
-assert(map(inc, xs) == [2, 3, 4])
+assert_eq(map(inc, xs), [2, 3, 4])
+# fn gen_range(n) = range(1, n)
+# assert_eq(map(gen_range, xs), [[1], [1, 2], [1, 2, 3]])
+# fn to_string(x) = "{x}"
+# assert_eq(map(to_string, xs), ["1", "2", "3"])
 
-assert(reverse([]) == [])
-assert(reverse(xs) == [3, 2, 1])
+fn is_even(x) = mod(x, 2) == 0
+assert_eq(filter(is_even, range(1, 10)), [2, 4, 6, 8, 10])
 
-assert(sum([1, 2, 3, 4, 5]) == 15)
+assert_eq(sum([1, 2, 3, 4, 5]), 15)
 
 fn mul(x, y) = x * y
-assert(foldl(mul, 1, [1, 2, 3, 4, 5]) == 120)
+assert_eq(foldl(mul, 1, [1, 2, 3, 4, 5]), 120)

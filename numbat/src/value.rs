@@ -100,6 +100,10 @@ impl Value {
             panic!("Expected value to be a list");
         }
     }
+
+    pub(crate) fn is_quantity(&self) -> bool {
+        matches!(self, Value::Quantity(_))
+    }
 }
 
 impl std::fmt::Display for Value {
