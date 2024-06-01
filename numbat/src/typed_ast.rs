@@ -616,7 +616,8 @@ impl Expression {
             }
             Expression::AccessField(_, _, _, _, _, type_) => type_.clone(),
             Expression::List(_, _, element_type) => {
-                todo!()
+                TypeScheme::make_quantified(Type::List(Box::new(element_type.to_concrete_type())))
+                // TODO: avoid to_concrete_type
             }
         }
     }

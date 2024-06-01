@@ -34,7 +34,12 @@ assert_eq(map(inc, xs), [2, 3, 4])
 fn is_even(x) = mod(x, 2) == 0
 assert_eq(filter(is_even, range(1, 10)), [2, 4, 6, 8, 10])
 
-assert_eq(sum([1, 2, 3, 4, 5]), 15)
-
 fn mul(x, y) = x * y
 assert_eq(foldl(mul, 1, [1, 2, 3, 4, 5]), 120)
+
+assert_eq(intersperse(0, []), [])
+assert_eq(intersperse(0, [1]), [1])
+assert_eq(intersperse(0, [1, 2, 3]), [1, 0, 2, 0, 3])
+
+assert_eq(sum([1, 2, 3, 4, 5]), 15)
+assert_eq(sum([1 m, 200 cm, 3 m]), 6 m)

@@ -59,7 +59,14 @@ fn foldl<A, B>(f: Fn[(A, B) -> A], acc: A, xs: List<B>) -> A =
     then acc
     else foldl(f, f(acc, head(xs)), tail(xs))
 
-fn _add(x, y) = x + y # TODO: replace this with a local function once we support them
+@description("Add an element between each pair of elements in a list")
+fn intersperse<A>(sep: A, xs: List<A>) -> List<A> =
+  if is_empty(xs)
+    then []
+    else if is_empty(tail(xs))
+      then xs
+      else cons(head(xs), cons(sep, intersperse(sep, tail(xs))))
 
+fn _add(x, y) = x + y # TODO: replace this with a local function once we support them
 @description("Sum all elements of a list")
 fn sum<A>(xs: List<A>) -> A = foldl(_add, 0, xs)
