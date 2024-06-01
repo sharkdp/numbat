@@ -23,6 +23,16 @@ pub enum DTypeFactor {
     BaseDimension(String),
 }
 
+impl DTypeFactor {
+    pub fn name(&self) -> &str {
+        match self {
+            DTypeFactor::TVar(TypeVariable::Named(name)) => name,
+            DTypeFactor::TVar(TypeVariable::Quantified(_)) => unreachable!(),
+            DTypeFactor::BaseDimension(name) => name,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DType {
     // Always in canonical form
@@ -47,39 +57,33 @@ impl DType {
     }
 
     pub fn to_readable_type(&self, registry: &DimensionRegistry) -> m::Markup {
-        // if self.is_scalar() {
-        //     return m::type_identifier("Scalar");
-        // }
+        if self.is_scalar() {
+            return m::type_identifier("Scalar");
+        }
 
-        // let mut names = vec![];
+        let mut names = vec![];
 
-        // let factors: Vec<_> = self.iter().collect();
-        // if factors.len() == 1 && factors[0].1 == Exponent::from_integer(1) {
-        //     names.push(factors[0].0.clone());
-        // }
+        if self.factors.len() == 1 && self.factors[0].1 == Exponent::from_integer(1) {
+            names.push(self.factors[0].0.name().to_string());
+        }
 
-        // names.extend(registry.get_derived_entry_names_for(self));
-        // match &names[..] {
-        //     [] => self.pretty_print(),
-        //     [single] => m::type_identifier(single),
-        //     multiple => {
-        //         Itertools::intersperse(multiple.iter().map(m::type_identifier), m::dimmed(" or "))
-        //             .sum()
-        //     }
-        // }
-        m::empty() // TODO
+        let base_representation = self.to_base_representation();
+        names.extend(registry.get_derived_entry_names_for(&base_representation));
+        match &names[..] {
+            [] => self.pretty_print(),
+            [single] => m::type_identifier(single),
+            multiple => {
+                Itertools::intersperse(multiple.iter().map(m::type_identifier), m::dimmed(" or "))
+                    .sum()
+            }
+        }
     }
 
     /// Is the current dimension type the Time dimension?
     ///
     /// This is special helper that's useful when dealing with DateTimes
     pub fn is_time_dimension(&self) -> bool {
-        false // TOOD
-              // *self
-              //     == BaseRepresentation::from_factor(BaseRepresentationFactor(
-              //         "Time".into(),
-              //         Rational::from_integer(1),
-              //     ))
+        *self == DType::base_dimension("Time")
     }
 
     pub fn from_type_variable(v: TypeVariable) -> DType {
@@ -100,7 +104,8 @@ impl DType {
         )])
     }
 
-    pub fn pretty_print(&self) -> String {
+    // TODO: remove this function
+    pub fn debug_print(&self) -> String {
         if self == &DType::scalar() {
             return "Scalar".to_string();
         }
@@ -116,12 +121,18 @@ impl DType {
                         format!("{}^{}", d, n)
                     }
                 }
-                DTypeFactor::TVar(tv) => {
-                    let name = tv.name();
+                DTypeFactor::TVar(TypeVariable::Named(name)) => {
                     if *n == Exponent::from_integer(1) {
-                        name
+                        name.to_owned()
                     } else {
                         format!("{}^{}", name, n)
+                    }
+                }
+                DTypeFactor::TVar(TypeVariable::Quantified(i)) => {
+                    if *n == Exponent::from_integer(1) {
+                        format!("$tgen{}", i)
+                    } else {
+                        format!("$tgen{}^{}", i, n)
                     }
                 }
             })
@@ -236,9 +247,47 @@ impl DType {
     }
 }
 
+impl PrettyPrint for DType {
+    fn pretty_print(&self) -> Markup {
+        if self.is_scalar() {
+            return m::type_identifier("Scalar");
+        }
+
+        Itertools::intersperse(
+            self.factors.iter().map(|(f, n)| match f {
+                DTypeFactor::BaseDimension(d) => {
+                    if *n == Exponent::from_integer(1) {
+                        m::type_identifier(d)
+                    } else {
+                        m::type_identifier(d) + m::operator("^") + m::value(n.to_string())
+                    }
+                }
+                DTypeFactor::TVar(TypeVariable::Named(name)) => {
+                    if *n == Exponent::from_integer(1) {
+                        m::type_identifier(name)
+                    } else {
+                        m::type_identifier(name) + m::operator("^") + m::value(n.to_string())
+                    }
+                }
+                DTypeFactor::TVar(TypeVariable::Quantified(i)) => {
+                    if *n == Exponent::from_integer(1) {
+                        m::type_identifier(format!("$tgen{}", i))
+                    } else {
+                        m::type_identifier(format!("$tgen{}", i))
+                            + m::operator("^")
+                            + m::value(n.to_string())
+                    }
+                }
+            }),
+            m::operator(" × "),
+        )
+        .sum()
+    }
+}
+
 impl std::fmt::Display for DType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.pretty_print())
+        write!(f, "{}", self.debug_print())
     }
 }
 
@@ -274,7 +323,10 @@ pub enum Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::TVar(v) => write!(f, "{}", v.name()),
+            Type::TVar(TypeVariable::Named(name)) => write!(f, "{}", name),
+            Type::TVar(TypeVariable::Quantified(i)) => {
+                unreachable!("Quantified types should not be printed")
+            }
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
@@ -304,8 +356,11 @@ impl std::fmt::Display for Type {
 impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
-            Type::TVar(v) => m::type_identifier(&v.name()),
-            Type::Dimension(d) => m::text(d.pretty_print()), // TODO
+            Type::TVar(TypeVariable::Named(name)) => m::type_identifier(name),
+            Type::TVar(TypeVariable::Quantified(_)) => {
+                unreachable!("Quantified types should not be printed")
+            }
+            Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::type_identifier("Bool"),
             Type::String => m::type_identifier("String"),
             Type::DateTime => m::type_identifier("DateTime"),
@@ -365,6 +420,8 @@ impl Type {
                 for param_type in param_types {
                     vars.extend(param_type.type_variables());
                 }
+                vars.sort();
+                vars.dedup();
                 vars
             }
             Type::Struct(StructInfo { fields, .. }) => {
@@ -705,17 +762,42 @@ impl PrettyPrint for Statement {
             Statement::DefineFunction(
                 function_name,
                 _decorators,
-                type_parameters,
+                _type_parameters, // TODO
                 parameters,
                 body,
-                return_type,
+                fn_type,
             ) => {
+                let (type_parameters, concrete_fn_type) = match fn_type {
+                    TypeScheme::Concrete(fn_type) => (vec![], fn_type.clone()),
+                    TypeScheme::Quantified(n_gen, _) => {
+                        // TODO: is this a good idea? we don't take care of name clashes here
+                        let type_parameters = if *n_gen <= 26 {
+                            (0..*n_gen)
+                                .map(|n| TypeVariable::new(format!("{}", (b'A' + n as u8) as char)))
+                                .collect::<Vec<_>>()
+                        } else {
+                            (0..*n_gen)
+                                .map(|n| TypeVariable::new(format!("T{n}")))
+                                .collect::<Vec<_>>()
+                        };
+                        let instantiated_type = fn_type.instantiate_with(&type_parameters);
+
+                        (type_parameters, instantiated_type.inner)
+                    }
+                };
+
+                let Type::Fn(parameter_types, return_type) = concrete_fn_type else {
+                    unreachable!("Expected a function type")
+                };
+
                 let markup_type_parameters = if type_parameters.is_empty() {
                     m::empty()
                 } else {
                     m::operator("<")
                         + Itertools::intersperse(
-                            type_parameters.iter().map(m::type_identifier),
+                            type_parameters
+                                .iter()
+                                .map(|tv| m::type_identifier(tv.unsafe_name())),
                             m::operator(", "),
                         )
                         .sum()
@@ -723,13 +805,14 @@ impl PrettyPrint for Statement {
                 };
 
                 let markup_parameters = Itertools::intersperse(
-                    parameters.iter().map(|(_span, name)| {
-                        m::identifier(name)
-                        // TODO
-                        // + m::operator(":")
-                        // + m::space()
-                        // + parameter_type.pretty_print()
-                    }),
+                    parameters.iter().zip(parameter_types.iter()).map(
+                        |((_span, name), parameter_type)| {
+                            m::identifier(name)
+                                + m::operator(":")
+                                + m::space()
+                                + parameter_type.pretty_print()
+                        },
+                    ),
                     m::operator(", "),
                 )
                 .sum();

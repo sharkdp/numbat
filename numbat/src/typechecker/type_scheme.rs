@@ -31,6 +31,15 @@ impl TypeScheme {
         TypeScheme::Quantified(num_quantified, qt)
     }
 
+    pub fn instantiate_with(&self, new_type_variables: &[TypeVariable]) -> QualifiedType {
+        if let TypeScheme::Quantified(n_gen, qt) = &self {
+            assert!(n_gen == &new_type_variables.len());
+            qt.instantiate(&new_type_variables)
+        } else {
+            unreachable!("Tried to instantiate concrete type: {:#?}", self);
+        }
+    }
+
     pub fn instantiate(&self, name_generator: &mut NameGenerator) -> QualifiedType {
         if let TypeScheme::Quantified(n_gen, qt) = &self {
             // Replace $gen_i by fresh type variables

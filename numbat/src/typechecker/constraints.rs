@@ -247,7 +247,7 @@ impl Constraint {
             Constraint::Equal(Type::TVar(x), t) if !t.contains(x) => {
                 debug!(
                     "  (2) SOLVING: {x} ~ {t} with substitution {x} := {t}",
-                    x = x.name(),
+                    x = x.unsafe_name(),
                     t = t
                 );
                 Some(Satisfied::with_substitution(Substitution::single(
@@ -260,7 +260,7 @@ impl Constraint {
                 debug!(
                     "  (3) SOLVING: {s} ~ {x} with substitution {x} := {s}",
                     s = s,
-                    x = x.name()
+                    x = x.unsafe_name()
                 );
                 Some(Satisfied::with_substitution(Substitution::single(
                     x.clone(),
@@ -301,7 +301,7 @@ impl Constraint {
             | Constraint::Equal(Type::Dimension(d), Type::TVar(tv)) => {
                 debug!(
                     "  (6) SOLVING: {tv} ~ {d} by lifting the type variable to a DType",
-                    tv = tv.name(),
+                    tv = tv.unsafe_name(),
                     d = d
                 );
 
@@ -314,9 +314,9 @@ impl Constraint {
                 let d_result = d1.divide(d2);
                 debug!(
                     "  (7) SOLVING: {} ~ {} with new constraint {} = Scalar",
-                    d1.pretty_print(),
-                    d2.pretty_print(),
-                    d_result.pretty_print()
+                    d1.debug_print(),
+                    d2.debug_print(),
+                    d_result.debug_print()
                 );
                 Some(Satisfied::with_new_constraints(vec![
                     Constraint::EqualScalar(d_result),
@@ -331,7 +331,7 @@ impl Constraint {
                     .collect();
                 debug!(
                     "  (8) SOLVING: {} : DType through new constraints: {:?}",
-                    inner.pretty_print(),
+                    inner.debug_print(),
                     new_constraints
                 );
                 Some(Satisfied::with_new_constraints(new_constraints))
@@ -351,9 +351,9 @@ impl Constraint {
                     );
                     debug!(
                         "  (10) SOLVING: {dtype} = Scalar with substitution {tv} := {result}",
-                        dtype = dtype.pretty_print(),
-                        tv = tv.name(),
-                        result = result.pretty_print()
+                        dtype = dtype.debug_print(),
+                        tv = tv.unsafe_name(),
+                        result = result.debug_print()
                     );
                     Some(Satisfied::with_substitution(Substitution::single(
                         tv.clone(),
