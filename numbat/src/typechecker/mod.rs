@@ -609,6 +609,19 @@ impl TypeChecker {
                                     // Skip evaluating the exponent if the lhs is a scalar. This allows
                                     // for arbitrary (decimal) exponents, if the base is a scalar.
 
+                                    if self
+                                        .add_equal_constraint(
+                                            &type_exponent_inferred,
+                                            &Type::scalar(),
+                                        )
+                                        .is_trivially_violated()
+                                    {
+                                        return Err(TypeCheckError::NonScalarExponent(
+                                            rhs.full_span(),
+                                            type_exponent_inferred,
+                                        ));
+                                    }
+
                                     Type::Dimension(base_dtype)
                                 }
                                 Type::Dimension(base_dtype) => {
@@ -880,7 +893,7 @@ impl TypeChecker {
                     .map(|(_, n, v)| Ok((n.to_string(), self.elaborate_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
-                let Some(struct_info) = self.structs.get(name) else {
+                let Some(struct_info) = self.structs.get(name).cloned() else {
                     return Err(TypeCheckError::UnknownStruct(*ident_span, name.clone()));
                 };
 
@@ -908,7 +921,10 @@ impl TypeChecker {
                     };
 
                     let found_type = &expr.get_type();
-                    if found_type != expected_type {
+                    if self
+                        .add_equal_constraint(&found_type, &expected_type)
+                        .is_trivially_violated()
+                    {
                         return Err(TypeCheckError::IncompatibleTypesForStructField(
                             *expected_field_span,
                             expected_type.clone(),
