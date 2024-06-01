@@ -236,8 +236,11 @@ impl DType {
                 DTypeFactor::BaseDimension(name) => {
                     factors.push(BaseRepresentationFactor(name.clone(), n.clone()));
                 }
-                DTypeFactor::TVar(_) => {
-                    todo!()
+                DTypeFactor::TVar(TypeVariable::Named(name)) => {
+                    factors.push(BaseRepresentationFactor(name.clone(), n.clone()));
+                }
+                DTypeFactor::TVar(TypeVariable::Quantified(_)) => {
+                    unreachable!("Unexpected quantified type")
                 }
             }
         }
@@ -247,39 +250,7 @@ impl DType {
 
 impl PrettyPrint for DType {
     fn pretty_print(&self) -> Markup {
-        if self.is_scalar() {
-            return m::type_identifier("Scalar");
-        }
-
-        Itertools::intersperse(
-            self.factors.iter().map(|(f, n)| match f {
-                DTypeFactor::BaseDimension(d) => {
-                    if *n == Exponent::from_integer(1) {
-                        m::type_identifier(d)
-                    } else {
-                        m::type_identifier(d) + m::operator("^") + m::value(n.to_string())
-                    }
-                }
-                DTypeFactor::TVar(TypeVariable::Named(name)) => {
-                    if *n == Exponent::from_integer(1) {
-                        m::type_identifier(name)
-                    } else {
-                        m::type_identifier(name) + m::operator("^") + m::value(n.to_string())
-                    }
-                }
-                DTypeFactor::TVar(TypeVariable::Quantified(i)) => {
-                    if *n == Exponent::from_integer(1) {
-                        m::type_identifier(format!("$tgen{}", i))
-                    } else {
-                        m::type_identifier(format!("$tgen{}", i))
-                            + m::operator("^")
-                            + m::value(n.to_string())
-                    }
-                }
-            }),
-            m::operator(" × "),
-        )
-        .sum()
+        self.to_base_representation().pretty_print()
     }
 }
 
@@ -760,31 +731,14 @@ impl PrettyPrint for Statement {
             Statement::DefineFunction(
                 function_name,
                 _decorators,
-                _type_parameters, // TODO
+                _type_parameters, // TODO: we ignore user-supplied type parameters here
                 parameters,
                 body,
                 fn_type,
             ) => {
-                let (type_parameters, concrete_fn_type) = match fn_type {
-                    TypeScheme::Concrete(fn_type) => (vec![], fn_type.clone()),
-                    TypeScheme::Quantified(n_gen, _) => {
-                        // TODO: is this a good idea? we don't take care of name clashes here
-                        let type_parameters = if *n_gen <= 26 {
-                            (0..*n_gen)
-                                .map(|n| TypeVariable::new(format!("{}", (b'A' + n as u8) as char)))
-                                .collect::<Vec<_>>()
-                        } else {
-                            (0..*n_gen)
-                                .map(|n| TypeVariable::new(format!("T{n}")))
-                                .collect::<Vec<_>>()
-                        };
-                        let instantiated_type = fn_type.instantiate_with(&type_parameters);
+                let (fn_type, type_parameters) = fn_type.instantiate_for_printing();
 
-                        (type_parameters, instantiated_type.inner)
-                    }
-                };
-
-                let Type::Fn(parameter_types, return_type) = concrete_fn_type else {
+                let Type::Fn(parameter_types, return_type) = fn_type.inner else {
                     unreachable!("Expected a function type")
                 };
 
@@ -793,9 +747,14 @@ impl PrettyPrint for Statement {
                 } else {
                     m::operator("<")
                         + Itertools::intersperse(
-                            type_parameters
-                                .iter()
-                                .map(|tv| m::type_identifier(tv.unsafe_name())),
+                            type_parameters.iter().map(|tv| {
+                                m::type_identifier(tv.unsafe_name())
+                                    + if fn_type.bounds.is_dtype_bound(tv) {
+                                        m::operator(":") + m::space() + m::type_identifier("Dim")
+                                    } else {
+                                        m::empty()
+                                    }
+                            }),
                             m::operator(", "),
                         )
                         .sum()
