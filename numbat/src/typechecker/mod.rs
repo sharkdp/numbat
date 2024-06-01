@@ -1561,10 +1561,17 @@ impl TypeChecker {
                         }
                     }
                     ProcedureKind::AssertEq => {
-                        let type_first = dtype(&checked_args[0])?;
+                        let type_first = &checked_args[0].get_type();
+                        self.enforce_dtype(type_first, checked_args[0].full_span())?;
+
                         for arg in &checked_args[1..] {
-                            let type_arg = dtype(arg)?;
-                            if type_arg != type_first {
+                            let type_arg = arg.get_type();
+                            self.enforce_dtype(&type_arg, arg.full_span())?;
+
+                            if self
+                                .add_equal_constraint(type_first, &type_arg)
+                                .is_trivially_violated()
+                            {
                                 return Err(TypeCheckError::IncompatibleTypesInAssertEq(
                                     *span,
                                     checked_args[0].get_type(),
