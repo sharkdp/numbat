@@ -13,10 +13,11 @@ impl TypeVariable {
         TypeVariable::Quantified(i)
     }
 
-    pub fn name(&self) -> String {
-        match &self {
-            TypeVariable::Named(name) => name.into(),
-            TypeVariable::Quantified(i) => format!("$tgen_{}", i),
+    pub fn unsafe_name(&self) -> &str {
+        if let TypeVariable::Named(name) = self {
+            name
+        } else {
+            unreachable!("Expected type variable to be named");
         }
     }
 }
