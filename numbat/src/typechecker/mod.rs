@@ -7,7 +7,7 @@ mod environment;
 mod error;
 mod incompatible_dimensions;
 mod name_generator;
-mod qualified_type;
+pub mod qualified_type;
 mod substitutions;
 pub mod type_scheme;
 
@@ -1694,6 +1694,11 @@ impl TypeChecker {
 
         info!("Final statement:");
         info!("{}", elaborated_statement.pretty_print());
+
+        if let typed_ast::Statement::Expression(expr) = &elaborated_statement {
+            info!("Generalized type:");
+            info!("{}", expr.get_type_scheme().pretty_print());
+        }
 
         Ok(elaborated_statement)
     }

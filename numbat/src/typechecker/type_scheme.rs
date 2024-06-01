@@ -1,3 +1,5 @@
+use log::info;
+
 use super::name_generator::NameGenerator;
 use super::qualified_type::{Bound, Bounds, QualifiedType};
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
@@ -33,6 +35,7 @@ impl TypeScheme {
     fn instantiate_with(&self, new_type_variables: &[TypeVariable]) -> QualifiedType {
         if let TypeScheme::Quantified(n_gen, qt) = &self {
             assert!(n_gen == &new_type_variables.len());
+
             qt.instantiate(&new_type_variables)
         } else {
             unreachable!("Tried to instantiate concrete type: {:#?}", self);
@@ -129,6 +132,9 @@ impl TypeScheme {
 
         // Generalization: quantify over all free type variables
         let type_scheme = qualified_type.quantify(&free_variables);
+
+        info!("Generalizing type …\n{:#?}", self);
+        info!("To type scheme …\n{:#?}", type_scheme);
 
         *self = type_scheme;
     }
