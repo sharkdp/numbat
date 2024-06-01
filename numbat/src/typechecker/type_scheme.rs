@@ -1,5 +1,3 @@
-use log::info;
-
 use super::name_generator::NameGenerator;
 use super::qualified_type::{Bound, Bounds, QualifiedType};
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
@@ -132,9 +130,6 @@ impl TypeScheme {
 
         // Generalization: quantify over all free type variables
         let type_scheme = qualified_type.quantify(&free_variables);
-
-        info!("Generalizing type …\n{:#?}", self);
-        info!("To type scheme …\n{:#?}", type_scheme);
 
         *self = type_scheme;
     }
