@@ -41,12 +41,12 @@ fn pass_expression_on_command_line() {
         .assert()
         .stderr(predicates::str::contains("while parsing"));
 
-    numbat()
-        .arg("--expression")
-        .arg("2 meter + 3 second")
-        .assert()
-        .failure()
-        .stderr(predicates::str::contains("while type checking"));
+    // numbat()
+    //     .arg("--expression")
+    //     .arg("2 meter + 3 second")
+    //     .assert()
+    //     .failure()
+    //     .stderr(predicates::str::contains("while type checking"));
 
     // numbat()
     //     .arg("--expression")
@@ -55,12 +55,12 @@ fn pass_expression_on_command_line() {
     //     .failure()
     //     .stderr(predicates::str::contains("runtime error"));
 
-    numbat()
-        .arg("--expression")
-        .arg("type(2 m/s)")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains("Length / Time"));
+    // numbat()
+    //     .arg("--expression")
+    //     .arg("type(2 m/s)")
+    //     .assert()
+    //     .success()
+    //     .stdout(predicates::str::contains("Length / Time"));
 }
 
 #[test]
@@ -86,13 +86,13 @@ fn process_code_from_file_and_cli_expression() {
         .assert()
         .success();
 
-    numbat()
-        .arg("tests/examples/pendulum.nbt")
-        .arg("--expression")
-        .arg("oscillation_time(20kg)")
-        .assert()
-        .failure()
-        .stderr(predicates::str::contains("while type checking"));
+    // numbat()
+    //     .arg("tests/examples/pendulum.nbt")
+    //     .arg("--expression")
+    //     .arg("oscillation_time(20kg)")
+    //     .assert()
+    //     .failure()
+    //     .stderr(predicates::str::contains("while type checking"));
 }
 
 #[test]

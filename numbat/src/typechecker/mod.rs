@@ -315,27 +315,7 @@ impl TypeChecker {
             ast::Expression::UnaryOperator { op, expr, span_op } => {
                 let checked_expr = self.elaborate_expression(expr)?;
                 let type_ = checked_expr.get_type();
-                // match (&type_, op) {
-                //     (Type::Dimension(dtype), ast::UnaryOperator::Factorial) => {
-                //         if !dtype.is_scalar() {
-                //             return Err(TypeCheckError::NonScalarFactorialArgument(
-                //                 expr.full_span(),
-                //                 dtype.clone(),
-                //             ));
-                //         }
-                //     }
-                //     (Type::Dimension(_), ast::UnaryOperator::Negate) => (),
-                //     (Type::Boolean, ast::UnaryOperator::LogicalNeg) => (),
-                //     (_, ast::UnaryOperator::LogicalNeg) => {
-                //         return Err(TypeCheckError::ExpectedBool(expr.full_span()))
-                //     }
-                //     _ => {
-                //         // return Err(TypeCheckError::ExpectedDimensionType(
-                //         //     checked_expr.full_span(),
-                //         //     type_.clone(),
-                //         // ));
-                //     }
-                // };
+
                 match op {
                     ast::UnaryOperator::Factorial => {
                         if self
