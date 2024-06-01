@@ -511,21 +511,35 @@ fn assert(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
 fn assert_eq(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
     assert!(args.len() == 2 || args.len() == 3);
 
-    let lhs = args[0].unsafe_as_quantity();
-    let rhs = args[1].unsafe_as_quantity();
-
     if args.len() == 2 {
+        let lhs = &args[0];
+        let rhs = &args[1];
+
         let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(lhs.clone(), rhs.clone()));
-        if let Ok(args1_converted) = rhs.convert_to(lhs.unit()) {
-            if lhs == &args1_converted {
-                ControlFlow::Continue(())
+
+        if lhs.is_quantity() {
+            let lhs = lhs.unsafe_as_quantity();
+            let rhs = rhs.unsafe_as_quantity();
+
+            if let Ok(args1_converted) = rhs.convert_to(lhs.unit()) {
+                if lhs == &args1_converted {
+                    ControlFlow::Continue(())
+                } else {
+                    error
+                }
             } else {
                 error
             }
         } else {
-            error
+            if lhs == rhs {
+                ControlFlow::Continue(())
+            } else {
+                error
+            }
         }
     } else {
+        let lhs = args[0].unsafe_as_quantity();
+        let rhs = args[1].unsafe_as_quantity();
         let result = lhs - rhs;
         let eps = args[2].unsafe_as_quantity();
 

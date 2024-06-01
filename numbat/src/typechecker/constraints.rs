@@ -226,7 +226,9 @@ impl Constraint {
                 Type::Dimension(_) => TrivialResultion::Satisfied,
                 _ => TrivialResultion::Violated,
             },
-            Constraint::IsDType(_) => TrivialResultion::Unknown,
+            Constraint::IsDType(Type::Dimension(_)) => TrivialResultion::Satisfied,
+            Constraint::IsDType(Type::TVar(_)) => TrivialResultion::Unknown,
+            Constraint::IsDType(_) => TrivialResultion::Violated,
             Constraint::EqualScalar(d) if d.is_scalar() => TrivialResultion::Satisfied,
             Constraint::EqualScalar(d) if d.type_variables().is_empty() => {
                 TrivialResultion::Violated

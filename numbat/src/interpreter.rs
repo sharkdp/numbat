@@ -27,10 +27,8 @@ pub enum RuntimeError {
     QuantityError(QuantityError),
     #[error("Assertion failed")]
     AssertFailed,
-    #[error(
-        "Assertion failed because the following two quantities are not the same:\n  {0}\n  {1}"
-    )]
-    AssertEq2Failed(Quantity, Quantity),
+    #[error("Assertion failed because the following two values are not the same:\n  {0}\n  {1}")]
+    AssertEq2Failed(Value, Value),
     #[error("Assertion failed because the following two quantities differ by more than {2}:\n  {0}\n  {1}")]
     AssertEq3Failed(Quantity, Quantity, Quantity),
     #[error("Could not load exchange rates from European Central Bank.")]
