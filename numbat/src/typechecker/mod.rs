@@ -14,6 +14,7 @@ pub mod type_scheme;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+use crate::arithmetic::Exponent;
 use crate::ast::{self, BinaryOperator, ProcedureKind, StringPart, TypeAnnotation, TypeExpression};
 use crate::dimension::DimensionRegistry;
 use crate::name_resolution::Namespace;
@@ -36,7 +37,7 @@ use num_traits::Zero;
 pub use error::{Result, TypeCheckError};
 pub use incompatible_dimensions::IncompatibleDimensionsError;
 use qualified_type::{Bound, QualifiedType};
-use substitutions::ApplySubstitution;
+use substitutions::{ApplySubstitution, Substitution};
 use type_scheme::TypeScheme;
 
 fn dtype(e: &Expression) -> Result<DType> {
@@ -1664,23 +1665,23 @@ impl TypeChecker {
         // within type_, and then multiply the corresponding exponents with the least common
         // multiple of the denominators of the exponents. For example, this will turn
         // T0^(1/3) -> T0^(1/5) -> T0 into T0^5 -> T0^3 -> T0^15.
-        // for tv in &dtype_variables {
-        //     let exponents = elaborated_statement.exponents_for(&tv);
-        //     let lcm = exponents
-        //         .iter()
-        //         .fold(1, |acc, e| num_integer::lcm(acc, *e.denom()));
+        for tv in &dtype_variables {
+            let exponents = elaborated_statement.exponents_for(&tv);
+            let lcm = exponents
+                .iter()
+                .fold(1, |acc, e| num_integer::lcm(acc, *e.denom()));
 
-        //     if lcm != 1 {
-        //         let s = Substitution::single(
-        //             tv.clone(),
-        //             Type::Dimension(
-        //                 DType::from_type_variable(tv.clone()).power(Exponent::from_integer(lcm)),
-        //             ),
-        //         );
+            if lcm != 1 {
+                let s = Substitution::single(
+                    tv.clone(),
+                    Type::Dimension(
+                        DType::from_type_variable(tv.clone()).power(Exponent::from_integer(lcm)),
+                    ),
+                );
 
-        //         elaborated_statement.apply(&s).unwrap();
-        //     }
-        // }
+                elaborated_statement.apply(&s).unwrap();
+            }
+        }
 
         elaborated_statement.generalize_types(&dtype_variables);
         self.env.generalize_types(&dtype_variables);
