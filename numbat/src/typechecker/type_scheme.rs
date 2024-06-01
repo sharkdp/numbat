@@ -83,8 +83,6 @@ impl TypeScheme {
     }
 
     pub(crate) fn generalize(&mut self, dtype_variables: &[TypeVariable]) {
-        debug!("Generalizing type: {:#?}", self);
-
         let free_variables = self.type_variables();
 
         let TypeScheme::Concrete(type_) = self else {
@@ -103,8 +101,6 @@ impl TypeScheme {
 
         // Generalization: quantify over all free type variables
         let type_scheme = qualified_type.quantify(&free_variables);
-
-        debug!("… to type scheme: {:#?}", type_scheme);
 
         *self = type_scheme;
     }

@@ -765,13 +765,31 @@ impl TypeChecker {
                     if self
                         .add_equal_constraint(
                             &callable_type,
-                            &Type::Fn(parameter_types, Box::new(return_type.clone())),
+                            &Type::Fn(parameter_types.clone(), Box::new(return_type.clone())),
                         )
                         .is_trivially_violated()
                     {
                         return Err(TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
                             callable.full_span(),
                         ));
+                    }
+
+                    for ((argument_type, arguments_checked), parameter_type) in argument_types
+                        .iter()
+                        .zip(&arguments_checked)
+                        .zip(&parameter_types)
+                    {
+                        if self
+                            .add_equal_constraint(argument_type, parameter_type)
+                            .is_trivially_violated()
+                        {
+                            return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                                Some(arguments_checked.full_span()),
+                                argument_type.clone(),
+                                callable.full_span(),
+                                parameter_type.clone(),
+                            ));
+                        }
                     }
 
                     typed_ast::Expression::CallableCall(
