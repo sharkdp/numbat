@@ -16,5 +16,3 @@ fn dist(t: Time) -> Length = 0.5 g0 t^2
 fn velocity(t: Time) -> Velocity = diff(dist, t)
 
 assert_eq(velocity(2.0 s), 2.0 s × g0, 1e-3 m/s)
-
-diff
