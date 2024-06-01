@@ -268,7 +268,9 @@ impl TypeChecker {
 
     fn elaborate_expression(&mut self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
         Ok(match ast {
-            ast::Expression::Scalar(span, n) if n.to_f64().is_zero() => {
+            ast::Expression::Scalar(span, n)
+                if n.to_f64().is_zero() || n.to_f64().is_infinite() || n.to_f64().is_nan() =>
+            {
                 let polymorphic_zero_type = self.fresh_type_variable();
                 self.add_dtype_constraint(&polymorphic_zero_type).ok();
                 typed_ast::Expression::Scalar(
