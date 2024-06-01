@@ -1,9 +1,7 @@
-use std::path::Display;
-
 use indexmap::IndexMap;
 use itertools::Itertools;
 
-use crate::arithmetic::{Exponent, Rational};
+use crate::arithmetic::Exponent;
 use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
 use crate::dimension::DimensionRegistry;
@@ -324,7 +322,7 @@ impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Type::TVar(TypeVariable::Named(name)) => write!(f, "{}", name),
-            Type::TVar(TypeVariable::Quantified(i)) => {
+            Type::TVar(TypeVariable::Quantified(_)) => {
                 unreachable!("Quantified types should not be printed")
             }
             Type::Dimension(d) => d.fmt(f),

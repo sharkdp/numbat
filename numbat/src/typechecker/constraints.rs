@@ -72,17 +72,9 @@ impl ConstraintSet {
         result
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.constraints.is_empty()
-    }
-
     pub fn clear(&mut self) {
         self.constraints.clear();
     }
-
-    // pub fn extend(&mut self, other: ConstraintSet) {
-    //     self.constraints.extend(other.constraints);
-    // }
 
     pub fn solve(&mut self) -> Result<(Substitution, Vec<TypeVariable>), ConstraintSolverError> {
         let mut substitution = Substitution::empty();

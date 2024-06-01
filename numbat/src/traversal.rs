@@ -6,7 +6,7 @@ pub trait ForAllTypeSchemes {
 }
 
 impl ForAllTypeSchemes for StructInfo {
-    fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
+    fn for_all_type_schemes(&mut self, _f: &mut dyn FnMut(&mut TypeScheme)) {
         // TODO: once we have generic structs, we also need to traverse into the field types
     }
 }

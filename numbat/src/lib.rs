@@ -49,7 +49,6 @@ use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
 use interpreter::Interpreter;
-use itertools::Itertools;
 use keywords::KEYWORDS;
 use markup as m;
 use markup::FormatType;
@@ -421,7 +420,7 @@ impl Context {
             return help;
         }
 
-        if let Some((fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
+        if let Some((_fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
             let metadata = fn_metadata.clone();
             // let parameters = fn_signature
             //     .parameter_types

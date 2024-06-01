@@ -20,7 +20,6 @@ use crate::dimension::DimensionRegistry;
 use crate::name_resolution::Namespace;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::pretty_print::PrettyPrint;
-use crate::registry::RegistryError;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, Type};
@@ -36,7 +35,7 @@ use num_traits::Zero;
 
 pub use error::{Result, TypeCheckError};
 pub use incompatible_dimensions::IncompatibleDimensionsError;
-use qualified_type::{Bound, QualifiedType};
+use qualified_type::Bound;
 use substitutions::{ApplySubstitution, Substitution};
 use type_scheme::TypeScheme;
 
@@ -1197,7 +1196,7 @@ impl TypeChecker {
                                     IncompatibleDimensionsError {
                                         span_operation: *identifier_span,
                                         operation: "unit definition".into(),
-                                        span_expected: type_annotation.full_span(),
+                                        span_expected: type_annotation_span.unwrap(),
                                         expected_name: "specified dimension",
                                         expected_dimensions: self
                                             .registry
