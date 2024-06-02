@@ -88,14 +88,9 @@ fn power_operator_with_scalar_base() {
         get_typecheck_error("2^a"),
         TypeCheckError::NonScalarExponent(_, t) if t == Type::Dimension(type_a())
     ));
-    // TODO
-    // assert!(matches!(
-    //     get_typecheck_error("2^(c/b)"),
-    //     TypeCheckError::NonScalarExponent(_, t) if t == Type::Dimension(type_a())
-    // ));
     assert!(matches!(
         get_typecheck_error("2^(c/b)"),
-        TypeCheckError::ConstraintSolverError(..)
+        TypeCheckError::NonScalarExponent(_, t) if t == Type::Dimension(type_a())
     ));
 }
 
@@ -407,10 +402,10 @@ fn arity_checks_in_procedure_calls() {
 
 #[test]
 fn boolean_values() {
-    // assert!(matches!(
-    //     get_typecheck_error("-true"),
-    //     TypeCheckError::ExpectedDimensionType(_, _)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("-true"),
+        TypeCheckError::ExpectedDimensionType(_, _)
+    ));
 }
 
 #[test]
@@ -680,10 +675,10 @@ fn lists() {
 
     assert_successful_typecheck("[[1 a, 2 a], [3 a]]");
 
-    // assert!(matches!(
-    //     get_typecheck_error("[1, a]"),
-    //     TypeCheckError::IncompatibleTypesInList(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("[1, a]"),
+        TypeCheckError::IncompatibleTypesInList(..)
+    ));
     // assert!(matches!(
     //     get_typecheck_error("[[1 a], 2 a]"),
     //     TypeCheckError::IncompatibleTypesInList(..)

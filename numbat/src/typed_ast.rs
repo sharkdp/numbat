@@ -404,6 +404,15 @@ impl Type {
         }
     }
 
+    pub(crate) fn contains(&self, x: &TypeVariable) -> bool {
+        self.type_variables().contains(x)
+    }
+
+    /// A type is called 'closed' if it does not change under substitutions (contains no unification variables)
+    pub(crate) fn is_closed(&self) -> bool {
+        self.type_variables().is_empty()
+    }
+
     pub(crate) fn instantiate(&self, type_variables: &[TypeVariable]) -> Type {
         match self {
             Type::TVar(TypeVariable::Quantified(i)) => Type::TVar(type_variables[*i].clone()),
@@ -422,10 +431,6 @@ impl Type {
                 Type::List(Box::new(element_type.instantiate(type_variables)))
             }
         }
-    }
-
-    pub(crate) fn contains(&self, x: &TypeVariable) -> bool {
-        self.type_variables().contains(x)
     }
 
     pub(crate) fn is_scalar(&self) -> bool {
