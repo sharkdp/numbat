@@ -513,71 +513,86 @@ impl TypeChecker {
                             let type_lhs = lhs_checked.get_type();
                             let type_rhs = rhs_checked.get_type();
 
-                            self.enforce_dtype(&type_lhs, lhs_checked.full_span())?;
-                            self.enforce_dtype(&type_rhs, rhs_checked.full_span())?;
+                            if type_lhs.is_closed() && type_rhs.is_closed() {
+                                let lhs_dtype = dtype(&lhs_checked)?;
+                                let rhs_dtype = dtype(&rhs_checked)?;
 
-                            // We first introduce a fresh type variable for the result
-                            let tv_result = self.name_generator.fresh_type_variable();
-                            let type_result = Type::TVar(tv_result.clone());
-
-                            // … and make sure that it is a dimension type
-                            self.add_dtype_constraint(&type_result).ok();
-
-                            // We can't use type_lhs/type_rhs directly in a dimension expression, because
-                            // only DTypes can be used there. But we don't know if type_lhs/type_rhs are
-                            // indeed dimension types. So we make up new type variables tv_lhs/tv_rhs, and
-                            // add contraints type_lhs ~ type(tv_lhs), type_rhs ~ type(tv_rhs). We can then
-                            // use those type variables inside the dimension expression constraint.
-
-                            let tv_lhs = self.name_generator.fresh_type_variable();
-                            let tv_rhs = self.name_generator.fresh_type_variable();
-
-                            self.constraints
-                                .add(Constraint::Equal(type_lhs, Type::TVar(tv_lhs.clone())))
-                                .ok();
-                            self.constraints
-                                .add(Constraint::Equal(type_rhs, Type::TVar(tv_rhs.clone())))
-                                .ok();
-
-                            // we also need dtype constraints for those new type variables
-                            self.add_dtype_constraint(&Type::TVar(tv_lhs.clone())).ok();
-                            self.add_dtype_constraint(&Type::TVar(tv_rhs.clone())).ok();
-
-                            // Finally, we add the constraint that the result is the product of the two,
-                            // which we write as
-                            //
-                            //     dtype_lhs × dtype_rhs × dtype_result^-1 ~ Scalar
-                            //
-                            // Or for division:
-                            //
-                            //     dtype_lhs × dtype_rhs^-1 × dtype_result ~ Scalar
-                            //
-                            let dtype_lhs = DType::from_type_variable(tv_lhs);
-                            let dtype_rhs = DType::from_type_variable(tv_rhs);
-                            let dtype_result = DType::from_type_variable(tv_result);
-
-                            match op {
-                                typed_ast::BinaryOperator::Mul => {
-                                    self.constraints
-                                        .add(Constraint::EqualScalar(
-                                            dtype_lhs
-                                                .multiply(&dtype_rhs)
-                                                .multiply(&dtype_result.inverse()),
-                                        ))
-                                        .ok();
+                                match op {
+                                    typed_ast::BinaryOperator::Mul => {
+                                        Type::Dimension(lhs_dtype.multiply(&rhs_dtype))
+                                    }
+                                    typed_ast::BinaryOperator::Div => {
+                                        Type::Dimension(lhs_dtype.divide(&rhs_dtype))
+                                    }
+                                    _ => unreachable!(),
                                 }
-                                typed_ast::BinaryOperator::Div => {
-                                    self.constraints
-                                        .add(Constraint::EqualScalar(
-                                            (dtype_lhs.divide(&dtype_rhs))
-                                                .multiply(&dtype_result.inverse()),
-                                        ))
-                                        .ok();
+                            } else {
+                                self.enforce_dtype(&type_lhs, lhs_checked.full_span())?;
+                                self.enforce_dtype(&type_rhs, rhs_checked.full_span())?;
+
+                                // We first introduce a fresh type variable for the result
+                                let tv_result = self.name_generator.fresh_type_variable();
+                                let type_result = Type::TVar(tv_result.clone());
+
+                                // … and make sure that it is a dimension type
+                                self.add_dtype_constraint(&type_result).ok();
+
+                                // We can't use type_lhs/type_rhs directly in a dimension expression, because
+                                // only DTypes can be used there. But we don't know if type_lhs/type_rhs are
+                                // indeed dimension types. So we make up new type variables tv_lhs/tv_rhs, and
+                                // add contraints type_lhs ~ type(tv_lhs), type_rhs ~ type(tv_rhs). We can then
+                                // use those type variables inside the dimension expression constraint.
+
+                                let tv_lhs = self.name_generator.fresh_type_variable();
+                                let tv_rhs = self.name_generator.fresh_type_variable();
+
+                                self.constraints
+                                    .add(Constraint::Equal(type_lhs, Type::TVar(tv_lhs.clone())))
+                                    .ok();
+                                self.constraints
+                                    .add(Constraint::Equal(type_rhs, Type::TVar(tv_rhs.clone())))
+                                    .ok();
+
+                                // we also need dtype constraints for those new type variables
+                                self.add_dtype_constraint(&Type::TVar(tv_lhs.clone())).ok();
+                                self.add_dtype_constraint(&Type::TVar(tv_rhs.clone())).ok();
+
+                                // Finally, we add the constraint that the result is the product of the two,
+                                // which we write as
+                                //
+                                //     dtype_lhs × dtype_rhs × dtype_result^-1 ~ Scalar
+                                //
+                                // Or for division:
+                                //
+                                //     dtype_lhs × dtype_rhs^-1 × dtype_result ~ Scalar
+                                //
+                                let dtype_lhs = DType::from_type_variable(tv_lhs);
+                                let dtype_rhs = DType::from_type_variable(tv_rhs);
+                                let dtype_result = DType::from_type_variable(tv_result);
+
+                                match op {
+                                    typed_ast::BinaryOperator::Mul => {
+                                        self.constraints
+                                            .add(Constraint::EqualScalar(
+                                                dtype_lhs
+                                                    .multiply(&dtype_rhs)
+                                                    .multiply(&dtype_result.inverse()),
+                                            ))
+                                            .ok();
+                                    }
+                                    typed_ast::BinaryOperator::Div => {
+                                        self.constraints
+                                            .add(Constraint::EqualScalar(
+                                                (dtype_lhs.divide(&dtype_rhs))
+                                                    .multiply(&dtype_result.inverse()),
+                                            ))
+                                            .ok();
+                                    }
+                                    _ => unreachable!(),
                                 }
-                                _ => unreachable!(),
+
+                                type_result
                             }
-
-                            type_result
                         }
                         typed_ast::BinaryOperator::Power => {
                             let type_base_inferred = lhs_type;
@@ -1152,38 +1167,6 @@ impl TypeChecker {
             } => {
                 // TODO: this is the *exact same code* that we have above for
                 // variable definitions => deduplicate this somehow
-
-                // let expr_checked = self.elaborate_expression(expr)?;
-                // let type_deduced = dtype(&expr_checked)?;
-
-                // if let Some(ref dexpr) = type_annotation {
-                //     let type_specified = self
-                //         .registry
-                //         .get_base_representation(dexpr)
-                //         .map_err(TypeCheckError::RegistryError)?
-                //         .into();
-                //     if type_deduced != type_specified {
-                //         return Err(TypeCheckError::IncompatibleDimensions(
-                //             IncompatibleDimensionsError {
-                //                 span_operation: *identifier_span,
-                //                 operation: "unit definition".into(),
-                //                 span_expected: type_annotation_span.unwrap(),
-                //                 expected_name: "specified dimension",
-                //                 expected_dimensions: self.registry.get_derived_entry_names_for(
-                //                     &type_specified.to_base_representation(),
-                //                 ),
-                //                 expected_type: type_specified.to_base_representation(),
-                //                 span_actual: expr.full_span(),
-                //                 actual_name: "   actual dimension",
-                //                 actual_name_for_fix: "right hand side expression",
-                //                 actual_dimensions: self.registry.get_derived_entry_names_for(
-                //                     &type_deduced.to_base_representation(),
-                //                 ),
-                //                 actual_type: type_deduced.to_base_representation(),
-                //             },
-                //         ));
-                //     }
-                // }
 
                 let expr_checked = self.elaborate_expression(expr)?;
                 let type_deduced = expr_checked.get_type();

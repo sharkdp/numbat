@@ -144,13 +144,9 @@ fn test_factorial() {
         "(-1.5)!",
         "Expected factorial argument to be a non-negative integer",
     );
-    // expect_failure(
-    //     "(2m)!",
-    //     "Argument of factorial needs to be dimensionless (got Length).",
-    // );
     expect_failure(
         "(2m)!",
-        "Could not solve the following constraints:\n  Length = Scalar",
+        "Argument of factorial needs to be dimensionless (got Length).",
     );
 }
 
