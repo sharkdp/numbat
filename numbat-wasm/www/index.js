@@ -95,6 +95,10 @@ function setup() {
         }
       });
 
+    // Swap out the skeleton loader with the terminal, preventing a layout shift.
+    document.getElementById("skeleton-loader").classList.add("hidden");
+    document.getElementById("terminal").classList.remove("hidden");
+
     // evaluate expression in query string if supplied (via opensearch)
     if (location.search) {
       var queryParams = new URLSearchParams(location.search);
