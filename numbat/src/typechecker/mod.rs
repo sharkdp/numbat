@@ -1289,7 +1289,7 @@ impl TypeChecker {
                             annotated_type.clone()
                         }
                         Some(annotated_type) => {
-                            // TODO: can we do better than this?
+                            // TODO: is this the right way to handle type annotations with generics?
                             let parameter_type = typechecker_fn.fresh_type_variable();
                             typechecker_fn
                                 .add_equal_constraint(&parameter_type, &annotated_type)
