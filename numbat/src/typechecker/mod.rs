@@ -1057,9 +1057,11 @@ impl TypeChecker {
                 if let Some(ref type_annotation) = type_annotation {
                     let type_annotated = self.type_from_annotation(type_annotation)?;
 
-                    match (&type_deduced, type_annotated) {
-                        (Type::Dimension(dexpr_deduced), Type::Dimension(dexpr_specified)) => {
-                            if dexpr_deduced != &dexpr_specified {
+                    match (&type_deduced, &type_annotated) {
+                        (Type::Dimension(dexpr_deduced), Type::Dimension(dexpr_specified))
+                            if type_deduced.is_closed() && type_annotated.is_closed() =>
+                        {
+                            if dexpr_deduced != dexpr_specified {
                                 return Err(TypeCheckError::IncompatibleDimensions(
                                     IncompatibleDimensionsError {
                                         span_operation: *identifier_span,
@@ -1093,7 +1095,7 @@ impl TypeChecker {
                                 return Err(TypeCheckError::IncompatibleTypesInAnnotation(
                                     "definition".into(),
                                     *identifier_span,
-                                    annotated,
+                                    annotated.clone(),
                                     type_annotation.full_span(),
                                     deduced.clone(),
                                     expr_checked.full_span(),
@@ -1174,9 +1176,11 @@ impl TypeChecker {
                 if let Some(ref type_annotation) = type_annotation {
                     let type_annotated = self.type_from_annotation(type_annotation)?;
 
-                    match (&type_deduced, type_annotated) {
-                        (Type::Dimension(dexpr_deduced), Type::Dimension(dexpr_specified)) => {
-                            if dexpr_deduced != &dexpr_specified {
+                    match (&type_deduced, &type_annotated) {
+                        (Type::Dimension(dexpr_deduced), Type::Dimension(dexpr_specified))
+                            if type_deduced.is_closed() && type_annotated.is_closed() =>
+                        {
+                            if dexpr_deduced != dexpr_specified {
                                 return Err(TypeCheckError::IncompatibleDimensions(
                                     IncompatibleDimensionsError {
                                         span_operation: *identifier_span,
@@ -1210,7 +1214,7 @@ impl TypeChecker {
                                 return Err(TypeCheckError::IncompatibleTypesInAnnotation(
                                     "unit definition".into(),
                                     *identifier_span,
-                                    annotated,
+                                    annotated.clone(),
                                     type_annotation.full_span(),
                                     deduced.clone(),
                                     expr_checked.full_span(),
@@ -1319,6 +1323,21 @@ impl TypeChecker {
                     .map(|annotation| typechecker_fn.type_from_annotation(annotation))
                     .transpose()?;
 
+                let return_type = match &annotated_return_type {
+                    Some(annotated_return_type) if annotated_return_type.is_closed() => {
+                        annotated_return_type.clone()
+                    }
+                    Some(annotated_return_type) => {
+                        // TODO: is this the right way to handle type annotations with generics?
+                        let return_type = typechecker_fn.fresh_type_variable();
+                        typechecker_fn
+                            .add_equal_constraint(&return_type, &annotated_return_type)
+                            .ok();
+                        return_type
+                    }
+                    None => typechecker_fn.fresh_type_variable(),
+                };
+
                 // Add the function to the environment, so it can be called recursively
 
                 let parameters = typed_parameters
@@ -1329,12 +1348,7 @@ impl TypeChecker {
                     .iter()
                     .map(|(_, _, type_)| type_.clone())
                     .collect();
-                let return_type = typechecker_fn.fresh_type_variable();
-
-                info!(
-                    "Adding function with name {} and parameter types {:?} and return type {:?}",
-                    function_name, parameter_types, return_type
-                );
+                // let return_type = typechecker_fn.fresh_type_variable();
 
                 let fn_type =
                     TypeScheme::Concrete(Type::Fn(parameter_types, Box::new(return_type.clone())));
