@@ -2,27 +2,27 @@
 #
 # https://en.wikipedia.org/wiki/ISO_216
 
-# struct PaperSize {
-#     width: Length,
-#     height: Length,
-# }
+struct PaperSize {
+    width: Length,
+    height: Length,
+}
 
-# let size_A0 = PaperSize { width: 841 mm, height: 1189 mm }
+let size_A0 = PaperSize { width: 841 mm, height: 1189 mm }
 
-# fn paper_size_A(n: Scalar) -> PaperSize =
-#     PaperSize {
-#         width: floor(size_A0.width / 2^(n / 2)),
-#         height: floor(size_A0.height / 2^(n / 2)),
-#     }
+fn paper_size_A(n: Scalar) -> PaperSize =
+    PaperSize {
+        width: floor(size_A0.width / 2^(n / 2)),
+        height: floor(size_A0.height / 2^(n / 2)),
+    }
 
-# fn paper_area(size: PaperSize) -> Area =
-#     size.width * size.height
+fn paper_area(size: PaperSize) -> Area =
+    size.width * size.height
 
-# assert_eq(paper_size_A(3).width,  297 mm)
-# assert_eq(paper_size_A(3).height, 420 mm)
+assert_eq(paper_size_A(3).width,  297 mm)
+assert_eq(paper_size_A(3).height, 420 mm)
 
-# assert_eq(paper_size_A(4).width,  210 mm)
-# assert_eq(paper_size_A(4).height, 297 mm)
+assert_eq(paper_size_A(4).width,  210 mm)
+assert_eq(paper_size_A(4).height, 297 mm)
 
-# assert_eq(paper_size_A(5).width,  148 mm)
-# assert_eq(paper_size_A(5).height, 210 mm)
+assert_eq(paper_size_A(5).width,  148 mm)
+assert_eq(paper_size_A(5).height, 210 mm)
