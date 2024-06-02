@@ -188,10 +188,10 @@ fn function_definitions() {
 
     assert_successful_typecheck("fn f(x: A) = x");
 
-    // assert!(matches!(
-    //     get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
-    //     TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c().to_base_representation() && actual_type == type_a().divide(&type_b()).to_base_representation()
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn f(x: A, y: B) -> C = x / y"),
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_c().to_base_representation() && actual_type == type_a().divide(&type_b()).to_base_representation()
+    ));
 
     assert!(matches!(
         get_typecheck_error("fn f(x: A) -> A = a\n\
@@ -209,14 +209,9 @@ fn recursive_functions() {
     );
     assert_successful_typecheck("fn factorial(n) = if n < 0 then 1 else factorial(n - 1) * n");
 
-    // TODO
-    // assert!(matches!(
-    //     get_typecheck_error("fn f(x: Scalar) -> A = if x < 0 then f(-x) else 2 b"),
-    //     TypeCheckError::IncompatibleTypesInCondition(_, lhs, _, rhs, _) if lhs == Type::Dimension(type_a()) && rhs == Type::Dimension(type_b())
-    // ));
     assert!(matches!(
         get_typecheck_error("fn f(x: Scalar) -> A = if x < 0 then f(-x) else 2 b"),
-        TypeCheckError::ConstraintSolverError(..)
+        TypeCheckError::IncompatibleTypesInCondition(_, lhs, _, rhs, _) if lhs == Type::Dimension(type_a()) && rhs == Type::Dimension(type_b())
     ));
 }
 
@@ -249,6 +244,7 @@ fn generics_basic() {
         ",
     );
 
+    // TODO
     // assert!(matches!(
     //     get_typecheck_error("fn f<T1, T2>(x: T1, y: T2) -> T2/T1 = x/y"),
     //     TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..})
@@ -478,20 +474,20 @@ fn function_types_basic() {
             ",
     );
 
-    // assert!(matches!(
-    //     get_typecheck_error("let wrong_return_type: Fn[() -> B] = returns_a"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("let wrong_return_type: Fn[() -> B] = returns_a"),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("let wrong_argument_type: Fn[(B) -> A] = takes_a_returns_a"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("let wrong_argument_type: Fn[(B) -> A] = takes_a_returns_a"),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("let wrong_argument_count: Fn[(A, B) -> C] = takes_a_returns_a"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("let wrong_argument_count: Fn[(A, B) -> C] = takes_a_returns_a"),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
 }
 
 #[test]
@@ -505,10 +501,10 @@ fn function_types_in_return_position() {
             ",
     );
 
-    // assert!(matches!(
-    //     get_typecheck_error("fn returns_fn5() -> Fn[() -> B] = returns_a"),
-    //     TypeCheckError::IncompatibleTypesInAnnotation(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("fn returns_fn5() -> Fn[() -> B] = returns_a"),
+        TypeCheckError::IncompatibleTypesInAnnotation(..)
+    ));
 }
 
 #[test]
@@ -623,50 +619,50 @@ fn structs() {
           ",
     );
 
-    // assert!(matches!(
-    //     get_typecheck_error("SomeStruct {a: 1, b: 1b}"),
-    //     TypeCheckError::IncompatibleTypesForStructField(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("SomeStruct {a: 1, b: 1b}"),
+        TypeCheckError::IncompatibleTypesForStructField(..)
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("NotAStruct {}"),
-    //     TypeCheckError::UnknownStruct(_, name) if name == "NotAStruct"
-    // ));
+    assert!(matches!(
+        get_typecheck_error("NotAStruct {}"),
+        TypeCheckError::UnknownStruct(_, name) if name == "NotAStruct"
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("SomeStruct {not_a_field: 1}"),
-    //     TypeCheckError::UnknownFieldInStructInstantiation(_, _, field, _) if field == "not_a_field"
-    // ));
+    assert!(matches!(
+        get_typecheck_error("SomeStruct {not_a_field: 1}"),
+        TypeCheckError::UnknownFieldInStructInstantiation(_, _, field, _) if field == "not_a_field"
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("struct Foo { foo: A, foo: A }"),
-    //     TypeCheckError::DuplicateFieldInStructDefinition(_, _, field) if field == "foo"
-    // ));
+    assert!(matches!(
+        get_typecheck_error("struct Foo { foo: A, foo: A }"),
+        TypeCheckError::DuplicateFieldInStructDefinition(_, _, field) if field == "foo"
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("SomeStruct {a: 1a, a: 1a, b: 2b}"),
-    //     TypeCheckError::DuplicateFieldInStructInstantiation(_, _, field) if field == "a"
-    // ));
+    assert!(matches!(
+        get_typecheck_error("SomeStruct {a: 1a, a: 1a, b: 2b}"),
+        TypeCheckError::DuplicateFieldInStructInstantiation(_, _, field) if field == "a"
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("SomeStruct {a: 1a, b: 1b}.foo"),
-    //     TypeCheckError::UnknownFieldAccess(_, _, field, _) if field == "foo"
-    // ));
+    assert!(matches!(
+        get_typecheck_error("SomeStruct {a: 1a, b: 1b}.foo"),
+        TypeCheckError::UnknownFieldAccess(_, _, field, _) if field == "foo"
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("(1).foo"),
-    //     TypeCheckError::FieldAccessOfNonStructType(_, _, field, _) if field == "foo"
-    // ));
+    assert!(matches!(
+        get_typecheck_error("(1).foo"),
+        TypeCheckError::FieldAccessOfNonStructType(_, _, field, _) if field == "foo"
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("SomeStruct {}"),
-    //     TypeCheckError::MissingFieldsInStructInstantiation(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("SomeStruct {}"),
+        TypeCheckError::MissingFieldsInStructInstantiation(..)
+    ));
 }
 
 #[test]
 fn lists() {
-    // assert_successful_typecheck("[]");
+    assert_successful_typecheck("[]");
     assert_successful_typecheck("[1]");
     assert_successful_typecheck("[1, 2]");
 
