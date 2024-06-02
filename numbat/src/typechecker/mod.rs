@@ -1279,24 +1279,31 @@ impl TypeChecker {
 
                 let mut typed_parameters = vec![];
                 for (parameter_span, parameter, type_annotation) in parameters {
-                    let parameter_type = typechecker_fn.fresh_type_variable();
-
                     let annotated_type = type_annotation
                         .as_ref()
                         .map(|a| typechecker_fn.type_from_annotation(a))
                         .transpose()?;
+
+                    let parameter_type = match &annotated_type {
+                        Some(annotated_type) if annotated_type.is_closed() => {
+                            annotated_type.clone()
+                        }
+                        Some(annotated_type) => {
+                            // TODO: can we do better than this?
+                            let parameter_type = typechecker_fn.fresh_type_variable();
+                            typechecker_fn
+                                .add_equal_constraint(&parameter_type, &annotated_type)
+                                .ok();
+                            parameter_type
+                        }
+                        None => typechecker_fn.fresh_type_variable(),
+                    };
 
                     if is_ffi_function && annotated_type.is_none() {
                         return Err(TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
                             *parameter_span,
                             parameter.clone(),
                         ));
-                    }
-
-                    if let Some(annotated_type) = annotated_type {
-                        typechecker_fn
-                            .add_equal_constraint(&parameter_type, &annotated_type)
-                            .ok();
                     }
 
                     typechecker_fn.env.add_scheme(
