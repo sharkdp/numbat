@@ -204,9 +204,7 @@ pub enum Constraint {
 impl Constraint {
     fn try_trivial_resolution(&self) -> TrivialResultion {
         match self {
-            Constraint::Equal(t1, t2)
-                if t1.type_variables().is_empty() && t2.type_variables().is_empty() =>
-            {
+            Constraint::Equal(t1, t2) if t1.is_closed() && t2.is_closed() => {
                 if t1 == t2 {
                     TrivialResultion::Satisfied
                 } else {
@@ -214,7 +212,7 @@ impl Constraint {
                 }
             }
             Constraint::Equal(_, _) => TrivialResultion::Unknown,
-            Constraint::IsDType(t) if t.type_variables().is_empty() => match t {
+            Constraint::IsDType(t) if t.is_closed() => match t {
                 Type::Dimension(_) => TrivialResultion::Satisfied,
                 _ => TrivialResultion::Violated,
             },
