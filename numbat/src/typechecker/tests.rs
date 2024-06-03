@@ -601,10 +601,10 @@ fn callables() {
     //     TypeCheckError::WrongArity { .. }
     // ));
 
-    // assert!(matches!(
-    //     get_typecheck_error("a + callable"),
-    //     TypeCheckError::ExpectedDimensionType { .. }
-    // ));
+    assert!(matches!(
+        get_typecheck_error("a + callable"),
+        TypeCheckError::ExpectedDimensionType { .. }
+    ));
 }
 
 #[test]
