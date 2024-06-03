@@ -665,19 +665,23 @@ impl TypeChecker {
                             Type::Boolean
                         }
                         typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
-                            if lhs_type.is_dtype() || rhs_type.is_dtype() {
-                                let _ = get_type_and_assert_equality()?;
-                            } else if lhs_type != rhs_type
-                                || lhs_type.is_fn_type()
-                                || rhs_type.is_fn_type()
-                            {
-                                // return Err(TypeCheckError::IncompatibleTypesInComparison(
-                                //     span_op.unwrap(),
-                                //     lhs_type,
-                                //     lhs.full_span(),
-                                //     rhs_type,
-                                //     rhs.full_span(),
-                                // ));
+                            if lhs_type.is_closed() && rhs_type.is_closed() {
+                                if lhs_type.is_dtype() && rhs_type.is_dtype() {
+                                    let _ = get_type_and_assert_equality()?;
+                                } else if lhs_type != rhs_type
+                                    || lhs_type.is_fn_type()
+                                    || rhs_type.is_fn_type()
+                                {
+                                    return Err(TypeCheckError::IncompatibleTypesInComparison(
+                                        span_op.unwrap(),
+                                        lhs_type,
+                                        lhs.full_span(),
+                                        rhs_type,
+                                        rhs.full_span(),
+                                    ));
+                                }
+                            } else {
+                                self.add_equal_constraint(&lhs_type, &rhs_type).ok();
                             }
 
                             Type::Boolean
@@ -996,26 +1000,27 @@ impl TypeChecker {
                 let element_types: Vec<Type> =
                     elements_checked.iter().map(|e| e.get_type()).collect();
 
-                let result_element_type = self.fresh_type_variable();
+                let result_element_type = if element_types.is_empty() {
+                    self.fresh_type_variable()
+                } else {
+                    if element_types[0].is_closed() {
+                        element_types[0].clone()
+                    } else {
+                        self.fresh_type_variable()
+                    }
+                };
 
                 if !element_types.is_empty() {
-                    let type_of_first_element = element_types[0].clone();
-                    self.add_equal_constraint(&result_element_type, &type_of_first_element)
-                        .ok(); // This can never be satisfied trivially, so ignore the result
-
                     for (subsequent_element, type_of_subsequent_element) in
                         elements_checked.iter().zip(element_types.iter()).skip(1)
                     {
                         if self
-                            .add_equal_constraint(
-                                &type_of_subsequent_element,
-                                &type_of_first_element,
-                            )
+                            .add_equal_constraint(&result_element_type, &type_of_subsequent_element)
                             .is_trivially_violated()
                         {
                             return Err(TypeCheckError::IncompatibleTypesInList(
                                 elements_checked[0].full_span(),
-                                type_of_first_element.clone(),
+                                result_element_type.clone(),
                                 subsequent_element.full_span(),
                                 type_of_subsequent_element.clone(),
                             ));
