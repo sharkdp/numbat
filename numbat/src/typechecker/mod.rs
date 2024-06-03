@@ -193,6 +193,11 @@ impl TypeChecker {
             }
             TypeScheme::Quantified(_, _) => {
                 let qt = fn_type.instantiate(&mut self.name_generator);
+
+                for Bound::IsDim(t) in qt.bounds.iter() {
+                    self.add_dtype_constraint(t).ok();
+                }
+
                 qt.inner
             }
         };
@@ -200,8 +205,6 @@ impl TypeChecker {
         let Type::Fn(parameter_types, return_type) = fn_type else {
             unreachable!("Expected function type, got {:#?}", fn_type);
         };
-
-        // TODO: what about the bounds on qt?
 
         let arity_range = parameters.len()..=parameters.len();
 
