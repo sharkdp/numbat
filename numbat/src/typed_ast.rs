@@ -18,6 +18,7 @@ use crate::{markup as m, BaseRepresentation, BaseRepresentationFactor};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DTypeFactor {
     TVar(TypeVariable),
+    TPar(String),
     BaseDimension(String),
 }
 
@@ -26,6 +27,7 @@ impl DTypeFactor {
         match self {
             DTypeFactor::TVar(TypeVariable::Named(name)) => name,
             DTypeFactor::TVar(TypeVariable::Quantified(_)) => unreachable!(),
+            DTypeFactor::TPar(name) => name,
             DTypeFactor::BaseDimension(name) => name,
         }
     }
@@ -88,6 +90,10 @@ impl DType {
         DType::from_factors(&[(DTypeFactor::TVar(v), Exponent::from_integer(1))])
     }
 
+    pub fn from_type_parameter(name: String) -> DType {
+        DType::from_factors(&[(DTypeFactor::TPar(name), Exponent::from_integer(1))])
+    }
+
     pub fn from_tgen(i: usize) -> DType {
         DType::from_factors(&[(
             DTypeFactor::TVar(TypeVariable::Quantified(i)),
@@ -133,6 +139,13 @@ impl DType {
                         format!("$tgen{}^{}", i, n)
                     }
                 }
+                DTypeFactor::TPar(name) => {
+                    if *n == Exponent::from_integer(1) {
+                        name.to_owned()
+                    } else {
+                        format!("{}^{}", name, n)
+                    }
+                }
             })
             .collect::<Vec<String>>()
             .join(" × ");
@@ -144,8 +157,13 @@ impl DType {
         self.factors.sort_by(|(f1, _), (f2, _)| match (f1, f2) {
             (DTypeFactor::TVar(v1), DTypeFactor::TVar(v2)) => v1.cmp(v2),
             (DTypeFactor::TVar(_), _) => std::cmp::Ordering::Less,
+
             (DTypeFactor::BaseDimension(d1), DTypeFactor::BaseDimension(d2)) => d1.cmp(d2),
-            (DTypeFactor::BaseDimension(_), _) => std::cmp::Ordering::Greater,
+            (DTypeFactor::BaseDimension(_), DTypeFactor::TVar(_)) => std::cmp::Ordering::Greater,
+            (DTypeFactor::BaseDimension(_), DTypeFactor::TPar(_)) => std::cmp::Ordering::Less,
+
+            (DTypeFactor::TPar(p1), DTypeFactor::TPar(p2)) => p1.cmp(p2),
+            (DTypeFactor::TPar(_), _) => std::cmp::Ordering::Greater,
         });
 
         // Merge powers of equal factors:
@@ -195,7 +213,8 @@ impl DType {
             .iter()
             .filter_map(|(f, _)| match f {
                 DTypeFactor::TVar(v) => Some(v.clone()),
-                _ => None,
+                DTypeFactor::TPar(v) => Some(TypeVariable::new(v)),
+                DTypeFactor::BaseDimension(_) => None,
             })
             .collect();
         vars.sort();
@@ -242,6 +261,9 @@ impl DType {
                 DTypeFactor::TVar(TypeVariable::Quantified(_)) => {
                     unreachable!("Unexpected quantified type")
                 }
+                DTypeFactor::TPar(name) => {
+                    factors.push(BaseRepresentationFactor(name.clone(), n.clone()));
+                }
             }
         }
         BaseRepresentation::from_factors(factors)
@@ -280,6 +302,7 @@ pub struct StructInfo {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     TVar(TypeVariable),
+    TPar(String),
     Dimension(DType),
     Boolean,
     String,
@@ -296,6 +319,7 @@ impl std::fmt::Display for Type {
             Type::TVar(TypeVariable::Quantified(_)) => {
                 unreachable!("Quantified types should not be printed")
             }
+            Type::TPar(name) => write!(f, "{}", name),
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
@@ -329,6 +353,7 @@ impl PrettyPrint for Type {
             Type::TVar(TypeVariable::Quantified(_)) => {
                 unreachable!("Quantified types should not be printed")
             }
+            Type::TPar(name) => m::type_identifier(name),
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::type_identifier("Bool"),
             Type::String => m::type_identifier("String"),
@@ -382,6 +407,7 @@ impl Type {
     pub(crate) fn type_variables(&self) -> Vec<TypeVariable> {
         match self {
             Type::TVar(v) => vec![v.clone()],
+            Type::TPar(n) => vec![TypeVariable::new(n)],
             Type::Dimension(d) => d.type_variables(),
             Type::Boolean | Type::String | Type::DateTime => vec![],
             Type::Fn(param_types, return_type) => {
@@ -417,6 +443,7 @@ impl Type {
         match self {
             Type::TVar(TypeVariable::Quantified(i)) => Type::TVar(type_variables[*i].clone()),
             Type::TVar(v) => Type::TVar(v.clone()),
+            Type::TPar(n) => Type::TPar(n.clone()),
             Type::Dimension(d) => Type::Dimension(d.instantiate(type_variables)),
             Type::Boolean | Type::String | Type::DateTime => self.clone(),
             Type::Fn(param_types, return_type) => Type::Fn(

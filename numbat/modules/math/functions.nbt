@@ -5,10 +5,10 @@ use math::constants
 
 @name("Square root")
 @url("https://en.wikipedia.org/wiki/Square_root")
-fn sqrt<D>(x: D^2) -> D = x^(1/2)
+fn sqrt<D: Dim>(x: D^2) -> D = x^(1/2)
 
 @name("Square function")
-fn sqr<D>(x: D) -> D^2 = x^2
+fn sqr<D: Dim>(x: D) -> D^2 = x^2
 
 ## Exponential and logarithm
 
@@ -59,7 +59,7 @@ fn acos(x: Scalar) -> Scalar
 fn atan(x: Scalar) -> Scalar
 
 @url("https://en.wikipedia.org/wiki/Atan2")
-fn atan2<T>(y: T, x: T) -> Scalar
+fn atan2<T: Dim>(y: T, x: T) -> Scalar
 
 @name("Hyperbolic sine")
 @url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
@@ -104,14 +104,14 @@ fn gamma(x: Scalar) -> Scalar
 
 ### Geometry
 
-fn hypot2<T>(x: T, y: T) -> T = sqrt(x^2 + y^2)
-fn hypot3<T>(x: T, y: T, z: T) -> T = sqrt(x^2 + y^2 + z^2)
+fn hypot2<T: Dim>(x: T, y: T) -> T = sqrt(x^2 + y^2)
+fn hypot3<T: Dim>(x: T, y: T, z: T) -> T = sqrt(x^2 + y^2 + z^2)
 
 # The following functions use a generic dimension instead of
 # 'Length' in order to allow for computations in pixels, for
 # example
 
-fn circle_area<L>(radius: L) -> L^2 = π × radius^2
-fn circle_circumference<L>(radius: L) -> L = 2 π × radius
-fn sphere_area<L>(radius: L) -> L^2 = 4 π × radius^2
-fn sphere_volume<L>(radius: L) -> L^3 = 4/3 × π × radius^3
+fn circle_area<L: Dim>(radius: L) -> L^2 = π × radius^2
+fn circle_circumference<L: Dim>(radius: L) -> L = 2 π × radius
+fn sphere_area<L: Dim>(radius: L) -> L^2 = 4 π × radius^2
+fn sphere_volume<L: Dim>(radius: L) -> L^3 = 4/3 × π × radius^3

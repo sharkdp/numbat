@@ -69,4 +69,4 @@ fn intersperse<A>(sep: A, xs: List<A>) -> List<A> =
 
 fn _add(x, y) = x + y # TODO: replace this with a local function once we support them
 @description("Sum all elements of a list")
-fn sum<A>(xs: List<A>) -> A = foldl(_add, 0, xs)
+fn sum<D: Dim>(xs: List<D>) -> D = foldl(_add, 0, xs)

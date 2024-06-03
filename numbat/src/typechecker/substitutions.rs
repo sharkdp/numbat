@@ -55,6 +55,12 @@ impl ApplySubstitution for Type {
                 }
                 Ok(())
             }
+            Type::TPar(n) => {
+                if let Some(type_) = s.lookup(&TypeVariable::new(n)) {
+                    *self = type_.clone();
+                }
+                Ok(())
+            }
             Type::Dimension(dtype) => dtype.apply(s),
             Type::Boolean => Ok(()),
             Type::String => Ok(()),
@@ -98,7 +104,26 @@ impl ApplySubstitution for DType {
                         new_dtype = new_dtype.multiply(&dtype.power(*power));
                     }
                 }
-                _ => {}
+                DTypeFactor::TPar(name) => {
+                    let tv = TypeVariable::new(name);
+
+                    if let Some(type_) = substitution.lookup(&tv) {
+                        let dtype = match type_ {
+                            Type::Dimension(dt) => dt.clone(),
+                            Type::TVar(tv) => DType::from_type_variable(tv.clone()),
+                            t => {
+                                return Err(SubstitutionError::SubstitutedNonDTypeWithinDType(
+                                    t.clone(),
+                                ));
+                            }
+                        };
+
+                        new_dtype = new_dtype
+                            .divide(&DType::from_type_parameter(name.clone()).power(*power));
+                        new_dtype = new_dtype.multiply(&dtype.power(*power));
+                    }
+                }
+                DTypeFactor::BaseDimension(_) => {}
             }
         }
 
