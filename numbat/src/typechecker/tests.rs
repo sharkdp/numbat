@@ -122,6 +122,30 @@ fn power_operator_with_dimensionful_base() {
 }
 
 #[test]
+fn equality() {
+    assert_successful_typecheck("2 a == a");
+    assert_successful_typecheck("2 a / (3 a) == 2 / 3");
+
+    assert!(matches!(
+        get_typecheck_error("a == b"),
+        TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError { .. })
+    ));
+    assert!(matches!(
+        get_typecheck_error("a == true"),
+        TypeCheckError::IncompatibleTypesInComparison(..)
+    ));
+    assert!(matches!(
+        get_typecheck_error("true == \"foo\""),
+        TypeCheckError::IncompatibleTypesInComparison(..)
+    ));
+
+    // assert!(matches!(
+    //     get_typecheck_error("callable == callable"),
+    //     TypeCheckError::IncompatibleTypesInComparison { .. }
+    // ));
+}
+
+#[test]
 fn comparisons() {
     assert_successful_typecheck("2 a > a");
     assert_successful_typecheck("2 a / (3 a) > 3");
@@ -594,10 +618,6 @@ fn callables() {
     //     get_typecheck_error("a + callable"),
     //     TypeCheckError::ExpectedDimensionType { .. }
     // ));
-    // assert!(matches!(
-    //     get_typecheck_error("callable == callable"),
-    //     TypeCheckError::IncompatibleTypesInComparison { .. }
-    // ));
 }
 
 #[test]
@@ -675,14 +695,14 @@ fn lists() {
         get_typecheck_error("[1, a]"),
         TypeCheckError::IncompatibleTypesInList(..)
     ));
-    // assert!(matches!(
-    //     get_typecheck_error("[[1 a], 2 a]"),
-    //     TypeCheckError::IncompatibleTypesInList(..)
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("[[1 a], [1 b]]"),
-    //     TypeCheckError::IncompatibleTypesInList(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("[[1 a], 2 a]"),
+        TypeCheckError::IncompatibleTypesInList(..)
+    ));
+    assert!(matches!(
+        get_typecheck_error("[[1 a], [1 b]]"),
+        TypeCheckError::IncompatibleTypesInList(..)
+    ));
 }
 
 #[test]
