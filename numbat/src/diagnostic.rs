@@ -314,10 +314,10 @@ impl ErrorDiagnostic for TypeCheckError {
             ) => d
                 .with_labels(vec![
                     span_first
-                        .diagnostic_label(LabelStyle::Primary)
+                        .diagnostic_label(LabelStyle::Secondary)
                         .with_message(type_first.to_string()),
                     span_subsequent
-                        .diagnostic_label(LabelStyle::Secondary)
+                        .diagnostic_label(LabelStyle::Primary)
                         .with_message(type_subsequent.to_string()),
                 ])
                 .with_notes(vec![inner_error]),
