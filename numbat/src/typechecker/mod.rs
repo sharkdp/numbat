@@ -1326,17 +1326,7 @@ impl TypeChecker {
                     .transpose()?;
 
                 let return_type = match &annotated_return_type {
-                    Some(annotated_return_type) if annotated_return_type.is_closed() => {
-                        annotated_return_type.clone()
-                    }
-                    Some(annotated_return_type) => {
-                        // TODO: is this the right way to handle type annotations with generics?
-                        let return_type = typechecker_fn.fresh_type_variable();
-                        typechecker_fn
-                            .add_equal_constraint(&return_type, &annotated_return_type)
-                            .ok();
-                        return_type
-                    }
+                    Some(annotated_return_type) => annotated_return_type.clone(),
                     None => typechecker_fn.fresh_type_variable(),
                 };
 
@@ -1426,10 +1416,8 @@ impl TypeChecker {
                                 }
                             }
                         }
-                        return_type
-                    } else {
-                        return_type
                     }
+                    return_type
                 } else {
                     if !ffi::functions().contains_key(function_name.as_str()) {
                         return Err(TypeCheckError::UnknownForeignFunction(
