@@ -768,9 +768,42 @@ impl TypeChecker {
                         )
                         .is_trivially_violated()
                     {
-                        return Err(TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
-                            callable.full_span(),
-                        ));
+                        match callable_type {
+                            Type::Fn(concrete_parameter_types, _) => {
+                                let num_parameters = concrete_parameter_types.len();
+                                let num_arguments = arguments_checked.len();
+
+                                if num_parameters != num_arguments {
+                                    return Err(TypeCheckError::WrongArity {
+                                        callable_span: *span,
+                                        callable_name: "function".into(),
+                                        callable_definition_span: None,
+                                        arity: num_parameters..=num_parameters,
+                                        num_args: num_arguments,
+                                    });
+                                }
+
+                                // for (param_type, arg_checked) in
+                                //     concrete_parameter_types.iter().zip(&arguments_checked)
+                                // {
+                                //     if &arg_checked.get_type() != param_type {
+                                //         return Err(
+                                //             TypeCheckError::IncompatibleTypesInFunctionCall(
+                                //                 None,
+                                //                 param_type.clone(),
+                                //                 arg_checked.full_span(),
+                                //                 arg_checked.get_type(),
+                                //             ),
+                                //         );
+                                //     }
+                                // }
+                            }
+                            _ => {
+                                return Err(TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
+                                    callable.full_span(),
+                                ));
+                            }
+                        }
                     }
 
                     for ((argument_type, arguments_checked), parameter_type) in argument_types
@@ -797,48 +830,6 @@ impl TypeChecker {
                         arguments_checked,
                         TypeScheme::concrete(return_type),
                     )
-
-                    // match callable_type {
-                    //     Type::Fn(parameters_types, return_type) => {
-                    //         let num_parameters = parameters_types.len();
-                    //         let num_arguments = arguments_checked.len();
-
-                    //         if num_parameters != num_arguments {
-                    //             return Err(TypeCheckError::WrongArity {
-                    //                 callable_span: *span,
-                    //                 callable_name: "function".into(),
-                    //                 callable_definition_span: None,
-                    //                 arity: num_parameters..=num_parameters,
-                    //                 num_args: num_arguments,
-                    //             });
-                    //         }
-
-                    //         for (param_type, arg_checked) in
-                    //             parameters_types.iter().zip(&arguments_checked)
-                    //         {
-                    //             if &arg_checked.get_type() != param_type {
-                    //                 // return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
-                    //                 //     None,
-                    //                 //     param_type.clone(),
-                    //                 //     arg_checked.full_span(),
-                    //                 //     arg_checked.get_type(),
-                    //                 // ));
-                    //             }
-                    //         }
-
-                    //         typed_ast::Expression::CallableCall(
-                    //             *full_span,
-                    //             Box::new(callable_checked),
-                    //             arguments_checked,
-                    //             TypeScheme::concrete(*return_type),
-                    //         )
-                    //     }
-                    //     _ => {
-                    //         return Err(TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
-                    //             callable.full_span(),
-                    //         ));
-                    //     }
-                    // }
                 }
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
