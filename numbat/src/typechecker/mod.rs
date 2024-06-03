@@ -456,7 +456,7 @@ impl TypeChecker {
                         ));
                     }
                 } else {
-                    let mut get_type_and_assert_equality = || -> Result<Type> {
+                    let mut get_type_and_assert_equal_dtypes = || -> Result<Type> {
                         let lhs_type = lhs_checked.get_type();
                         let rhs_type = rhs_checked.get_type();
 
@@ -513,12 +513,15 @@ impl TypeChecker {
                             ));
                         }
 
+                        self.enforce_dtype(&lhs_type, lhs.full_span())?;
+                        self.enforce_dtype(&rhs_type, rhs.full_span())?;
+
                         Ok(lhs_type)
                     };
 
                     let type_ = match op {
-                        typed_ast::BinaryOperator::Add => get_type_and_assert_equality()?,
-                        typed_ast::BinaryOperator::Sub => get_type_and_assert_equality()?,
+                        typed_ast::BinaryOperator::Add => get_type_and_assert_equal_dtypes()?,
+                        typed_ast::BinaryOperator::Sub => get_type_and_assert_equal_dtypes()?,
                         typed_ast::BinaryOperator::Mul | typed_ast::BinaryOperator::Div => {
                             let type_lhs = lhs_checked.get_type();
                             let type_rhs = rhs_checked.get_type();
@@ -666,18 +669,18 @@ impl TypeChecker {
                                 }
                             }
                         }
-                        typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equality()?,
+                        typed_ast::BinaryOperator::ConvertTo => get_type_and_assert_equal_dtypes()?,
                         typed_ast::BinaryOperator::LessThan
                         | typed_ast::BinaryOperator::GreaterThan
                         | typed_ast::BinaryOperator::LessOrEqual
                         | typed_ast::BinaryOperator::GreaterOrEqual => {
-                            let _ = get_type_and_assert_equality()?;
+                            let _ = get_type_and_assert_equal_dtypes()?;
                             Type::Boolean
                         }
                         typed_ast::BinaryOperator::Equal | typed_ast::BinaryOperator::NotEqual => {
                             if lhs_type.is_closed() && rhs_type.is_closed() {
                                 if lhs_type.is_dtype() && rhs_type.is_dtype() {
-                                    let _ = get_type_and_assert_equality()?;
+                                    let _ = get_type_and_assert_equal_dtypes()?;
                                 } else if lhs_type != rhs_type
                                     || lhs_type.is_fn_type()
                                     || rhs_type.is_fn_type()
