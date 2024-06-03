@@ -270,10 +270,8 @@ fn generics_basic() {
 
     // TODO
     // assert!(matches!(
-    //     get_typecheck_error("fn f<T1, T2>(x: T1, y: T2) -> T2/T1 = x/y"),
-    //     TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..})
-    //         if expected_type == base_type("T2") / base_type("T1") &&
-    //         actual_type == base_type("T1") / base_type("T2")
+    //     get_typecheck_error("fn f<T1: Dim, T2: Dim>(x: T1, y: T2) -> T2/T1 = x/y"),
+    //     TypeCheckError::IncompatibleDimensions(..)
     // ));
 }
 
