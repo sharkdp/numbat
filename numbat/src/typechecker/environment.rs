@@ -1,3 +1,4 @@
+use crate::ast::TypeParameterBound;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
 use crate::Type;
@@ -12,7 +13,7 @@ type Identifier = String; // TODO ?
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
     pub definition_span: Span,
-    pub type_parameters: Vec<(Span, String)>,
+    pub type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
     pub parameters: Vec<(Span, String)>,
     pub fn_type: TypeScheme,
 }

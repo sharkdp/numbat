@@ -2,8 +2,8 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 
 use crate::arithmetic::Exponent;
-use crate::ast::ProcedureKind;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
+use crate::ast::{ProcedureKind, TypeParameterBound};
 use crate::dimension::DimensionRegistry;
 use crate::traversal::ForAllTypeSchemes;
 use crate::type_variable::TypeVariable;
@@ -556,8 +556,8 @@ pub enum Statement {
     DefineVariable(String, Vec<Decorator>, Expression, TypeScheme),
     DefineFunction(
         String,
-        Vec<Decorator>, // decorators
-        Vec<String>,    // type parameters
+        Vec<Decorator>,                            // decorators
+        Vec<(String, Option<TypeParameterBound>)>, // type parameters
         Vec<(
             // parameters:
             Span,   // span of the parameter
