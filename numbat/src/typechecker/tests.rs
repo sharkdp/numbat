@@ -592,14 +592,14 @@ fn callables() {
     //     get_typecheck_error("callable(b)"),
     //     TypeCheckError::IncompatibleTypesInFunctionCall(..)
     // ));
-    // assert!(matches!(
-    //     get_typecheck_error("callable()"),
-    //     TypeCheckError::WrongArity { .. }
-    // ));
-    // assert!(matches!(
-    //     get_typecheck_error("callable(a, a)"),
-    //     TypeCheckError::WrongArity { .. }
-    // ));
+    assert!(matches!(
+        get_typecheck_error("callable()"),
+        TypeCheckError::WrongArity { .. }
+    ));
+    assert!(matches!(
+        get_typecheck_error("callable(a, a)"),
+        TypeCheckError::WrongArity { .. }
+    ));
 
     assert!(matches!(
         get_typecheck_error("a + callable"),

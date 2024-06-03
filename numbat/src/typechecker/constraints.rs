@@ -211,6 +211,11 @@ impl Constraint {
                     TrivialResultion::Violated
                 }
             }
+            Constraint::Equal(Type::Fn(params1, _), Type::Fn(params2, _))
+                if params1.len() != params2.len() =>
+            {
+                TrivialResultion::Violated
+            }
             Constraint::Equal(_, _) => TrivialResultion::Unknown,
             Constraint::IsDType(t) if t.is_closed() => match t {
                 Type::Dimension(_) => TrivialResultion::Satisfied,
