@@ -278,19 +278,6 @@ fn generics_basic() {
 }
 
 // #[test]
-// fn generics_multiple_unresolved_type_parameters() {
-//     assert!(matches!(
-//         get_typecheck_error(
-//             "
-//                 fn foo<D1, D2>(x: D1*D2) = 1
-//                 foo(2)
-//             "
-//         ),
-//         TypeCheckError::MultipleUnresolvedTypeParameters(..)
-//     ));
-// }
-
-// #[test]
 // fn generics_unused_type_parameter() {
 //     assert!(matches!(
 //         get_typecheck_error("
