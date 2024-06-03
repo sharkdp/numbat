@@ -703,6 +703,11 @@ fn lists() {
         get_typecheck_error("[[1 a], [1 b]]"),
         TypeCheckError::IncompatibleTypesInList(..)
     ));
+
+    assert!(matches!(
+        get_typecheck_error("fn f(x) = [[x], x]"),
+        TypeCheckError::ConstraintSolverError(..)
+    ));
 }
 
 #[test]

@@ -1006,7 +1006,9 @@ impl TypeChecker {
                     if element_types[0].is_closed() {
                         element_types[0].clone()
                     } else {
-                        self.fresh_type_variable()
+                        let type_ = self.fresh_type_variable();
+                        self.add_equal_constraint(&element_types[0], &type_).ok();
+                        type_
                     }
                 };
 
