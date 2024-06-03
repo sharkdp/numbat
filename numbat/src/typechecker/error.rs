@@ -140,6 +140,9 @@ pub enum TypeCheckError {
 
     #[error(transparent)]
     SubstitutionError(#[from] SubstitutionError),
+
+    #[error("Missing dimension bound for type parameter")]
+    MissingDimBound(Span),
 }
 
 pub type Result<T> = std::result::Result<T, TypeCheckError>;

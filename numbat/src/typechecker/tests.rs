@@ -250,21 +250,21 @@ fn generics_basic() {
     );
     assert_successful_typecheck(
         "
-            fn f<D>(x: D) -> D^2 = x*x
+            fn f<D: Dim>(x: D) -> D^2 = x*x
             f(2)
             f(2 a)
             ",
     );
     assert_successful_typecheck(
         "
-            fn f<D0, D1>(x: D0, y: D1) -> D0/D1^2 = x/y^2
+            fn f<D0: Dim, D1: Dim>(x: D0, y: D1) -> D0/D1^2 = x/y^2
             f(2, 3)
             f(2 a, 2 b)
             ",
     );
     assert_successful_typecheck(
         "
-        fn f3<T>(y: T, x: T) = atan2(y, x)
+        fn f3<T: Dim>(y: T, x: T) = atan2(y, x)
         ",
     );
 

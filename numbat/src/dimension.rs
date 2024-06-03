@@ -1,12 +1,13 @@
 use crate::arithmetic::{Exponent, Power};
-use crate::ast::TypeExpression;
+use crate::ast::{TypeExpression, TypeParameterBound};
 use crate::registry::{BaseRepresentation, Registry, Result};
+use crate::span::Span;
 use crate::BaseRepresentationFactor;
 
 #[derive(Default, Clone)]
 pub struct DimensionRegistry {
     registry: Registry<()>,
-    pub introduced_type_parameters: Vec<String>,
+    pub introduced_type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
 }
 
 impl DimensionRegistry {
@@ -17,7 +18,11 @@ impl DimensionRegistry {
         match expression {
             TypeExpression::Unity(_) => Ok(BaseRepresentation::unity()),
             TypeExpression::TypeIdentifier(_, name) => {
-                if self.introduced_type_parameters.contains(name) {
+                if self
+                    .introduced_type_parameters
+                    .iter()
+                    .any(|(_, n, _)| n == name)
+                {
                     Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
                         name.clone(),
                         Exponent::from_integer(1),

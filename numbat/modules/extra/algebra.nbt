@@ -1,9 +1,9 @@
 use math::functions
 
-fn _qe_solution<A, B>(a: A, b: B, c: B²/A, sign: Scalar) -> B/A =
+fn _qe_solution<A: Dim, B: Dim>(a: A, b: B, c: B²/A, sign: Scalar) -> B/A =
   (-b + sign × sqrt(b² - 4 a c)) / 2 a
 
-fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String =
+fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B²/A) -> String =
   if a == 0
     then if b == 0 then if c == 0 then "infinitely many solutions" else "no solution" else "x = {-c / b}"
     else if b² < 4 a c then "no real-valued solution" else if b² == 4 a c then "x = {-b / 2 a}" else "x₁ = {_qe_solution(a, b, c, 1)}; x₂ = {_qe_solution(a, b, c, -1)}"

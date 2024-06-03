@@ -1,20 +1,20 @@
 @name("Absolute value")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.abs")
-fn abs<T>(x: T) -> T
+fn abs<T: Dim>(x: T) -> T
 
 @name("Round")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.round")
 @description("Round to the nearest integer.")
-fn round<T>(x: T) -> T
+fn round<T: Dim>(x: T) -> T
 
 @name("Floor function")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.floor")
-fn floor<T>(x: T) -> T
+fn floor<T: Dim>(x: T) -> T
 
 @name("Ceil function")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.ceil")
-fn ceil<T>(x: T) -> T
+fn ceil<T: Dim>(x: T) -> T
 
 @name("Modulo")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid")
-fn mod<T>(a: T, b: T) -> T
+fn mod<T: Dim>(a: T, b: T) -> T

@@ -8,7 +8,7 @@ use math::functions
 @name("Continuous uniform distribution sampling")
 @url("https://en.wikipedia.org/wiki/Continuous_uniform_distribution")
 @description("Uniformly samples the interval [a,b) if a<=b or [b,a) if b<a using inversion sampling.")
-fn rand_uniform<T>(a: T, b: T) -> T =
+fn rand_uniform<T: Dim>(a: T, b: T) -> T =
     if a <= b
     then random() * (b - a) + a
     else random() * (a - b) + b
@@ -46,7 +46,7 @@ fn rand_binom(n: Scalar, p: Scalar) -> Scalar =
 @name("Normal distribution sampling")
 @url("https://en.wikipedia.org/wiki/Normal_distribution")
 @description("Samples a normal distribution with mean μ and standard deviation σ using the Box-Muller transform.")
-fn rand_norm<T>(μ: T, σ: T) -> T =
+fn rand_norm<T: Dim>(μ: T, σ: T) -> T =
     μ + sqrt(-2 σ² × ln(random())) × sin(2π × random())
 
 @name("Geometric distribution sampling")
@@ -78,7 +78,7 @@ fn rand_poisson(λ: Scalar) -> Scalar =
 @url("https://en.wikipedia.org/wiki/Exponential_distribution")
 @description("Sampling an exponential distribution (the distribution of the distance between events in a Poisson process with rate λ) using inversion sampling.
               The rate parameter λ must be positive.")
-fn rand_expon<T>(λ: T) -> 1/T =
+fn rand_expon<T: Dim>(λ: T) -> 1/T =
     if value_of(λ) > 0
     then - ln(1-random()) / λ
     else error("Argument λ must be positive.")
@@ -93,7 +93,7 @@ fn rand_lognorm(μ: Scalar, σ: Scalar) -> Scalar =
 @url("https://en.wikipedia.org/wiki/Pareto_distribution")
 @description("Sampling a Pareto distribution with minimum value min and shape parameter α using inversion sampling.
               Both parameters α and min must be positive.")
-fn rand_pareto<T>(α: Scalar, min: T) -> T =
+fn rand_pareto<T: Dim>(α: Scalar, min: T) -> T =
     if value_of(min) > 0 && α > 0
     then min / ((1-random())^(1/α))
     else error("Both arguments α and min must be positive.")

@@ -15,7 +15,10 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 use crate::arithmetic::Exponent;
-use crate::ast::{self, BinaryOperator, ProcedureKind, StringPart, TypeAnnotation, TypeExpression};
+use crate::ast::{
+    self, BinaryOperator, ProcedureKind, StringPart, TypeAnnotation, TypeExpression,
+    TypeParameterBound,
+};
 use crate::dimension::DimensionRegistry;
 use crate::name_resolution::Namespace;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
@@ -108,9 +111,13 @@ impl TypeChecker {
                 for (factor, _) in dtype.factors.iter_mut() {
                     *factor = match factor {
                         DTypeFactor::BaseDimension(ref n)
-                            if self.registry.introduced_type_parameters.contains(n) =>
+                            if self
+                                .registry
+                                .introduced_type_parameters
+                                .iter()
+                                .any(|(_, name, _)| name == n) =>
                         {
-                            DTypeFactor::TVar(TypeVariable::new(n))
+                            DTypeFactor::TPar(n.clone())
                         }
                         ref f => f.deref().clone(),
                     }
@@ -1269,7 +1276,7 @@ impl TypeChecker {
                 let mut typechecker_fn = self.clone(); // TODO: is this even needed?
                 let is_ffi_function = body.is_none();
 
-                for (span, type_parameter, _bound) in type_parameters {
+                for (span, type_parameter, bound) in type_parameters {
                     if typechecker_fn.type_namespace.has_identifier(type_parameter) {
                         return Err(TypeCheckError::TypeParameterNameClash(
                             *span,
@@ -1282,10 +1289,11 @@ impl TypeChecker {
                         .add_identifier(type_parameter.clone(), *span, "type parameter".to_owned())
                         .ok(); // TODO: is this call even correct?
 
-                    typechecker_fn
-                        .registry
-                        .introduced_type_parameters
-                        .push(type_parameter.clone());
+                    typechecker_fn.registry.introduced_type_parameters.push((
+                        *span,
+                        type_parameter.clone(),
+                        bound.clone(),
+                    ));
                 }
 
                 let mut typed_parameters = vec![];
@@ -1296,17 +1304,7 @@ impl TypeChecker {
                         .transpose()?;
 
                     let parameter_type = match &annotated_type {
-                        Some(annotated_type) if annotated_type.is_closed() => {
-                            annotated_type.clone()
-                        }
-                        Some(annotated_type) => {
-                            // TODO: is this the right way to handle type annotations with generics?
-                            let parameter_type = typechecker_fn.fresh_type_variable();
-                            typechecker_fn
-                                .add_equal_constraint(&parameter_type, &annotated_type)
-                                .ok();
-                            parameter_type
-                        }
+                        Some(annotated_type) => annotated_type.clone(),
                         None => typechecker_fn.fresh_type_variable(),
                     };
 
@@ -1355,7 +1353,6 @@ impl TypeChecker {
                     .iter()
                     .map(|(_, _, type_)| type_.clone())
                     .collect();
-                // let return_type = typechecker_fn.fresh_type_variable();
 
                 let fn_type =
                     TypeScheme::Concrete(Type::Fn(parameter_types, Box::new(return_type.clone())));
@@ -1459,6 +1456,7 @@ impl TypeChecker {
                 self.constraints = typechecker_fn.constraints;
                 self.name_generator = typechecker_fn.name_generator;
                 self.env = typechecker_fn.env;
+                self.registry = typechecker_fn.registry;
                 // self.type_namespace = typechecker_fn.type_namespace;
                 // self.value_namespace = typechecker_fn.value_namespace;
 
@@ -1653,6 +1651,7 @@ impl TypeChecker {
 
     fn check_statement(&mut self, statement: &ast::Statement) -> Result<typed_ast::Statement> {
         self.constraints.clear();
+        self.registry.introduced_type_parameters.clear();
 
         // Elaborate the program/statement: turn the AST into a typed AST, possibly
         // with "holes" inside, i.e. type variables that will only later be filled
@@ -1679,6 +1678,25 @@ impl TypeChecker {
             .map_err(TypeCheckError::SubstitutionError)?;
 
         self.env.apply(&substitution)?;
+
+        // Make sure that the user-specified type parameter bounds are properly reflected:
+        for (span, type_parameter, bound) in &self.registry.introduced_type_parameters {
+            match bound {
+                Some(TypeParameterBound::Dim) => {
+                    // The type parameter might be over-constrained, but that's okay
+                }
+                None => {
+                    // Make sure that the type parameter is not part of dtype_variables.
+                    // Otherwise, a `Dim` bound is missing.
+                    if dtype_variables.iter().any(|tv| match tv {
+                        TypeVariable::Named(name) => name == type_parameter,
+                        _ => false,
+                    }) {
+                        return Err(TypeCheckError::MissingDimBound(*span));
+                    }
+                }
+            }
+        }
 
         // For all dimension type variables that are still free, check all of their occurences
         // within type_, and then multiply the corresponding exponents with the least common

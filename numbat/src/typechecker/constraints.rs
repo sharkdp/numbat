@@ -216,9 +216,7 @@ impl Constraint {
                 Type::Dimension(_) => TrivialResultion::Satisfied,
                 _ => TrivialResultion::Violated,
             },
-            Constraint::IsDType(Type::Dimension(_)) => TrivialResultion::Satisfied,
-            Constraint::IsDType(Type::TVar(_)) => TrivialResultion::Unknown,
-            Constraint::IsDType(_) => TrivialResultion::Violated,
+            Constraint::IsDType(_) => TrivialResultion::Unknown,
             Constraint::EqualScalar(d) if d.is_scalar() => TrivialResultion::Satisfied,
             Constraint::EqualScalar(d) if d.type_variables().is_empty() => {
                 TrivialResultion::Violated
@@ -234,7 +232,9 @@ impl Constraint {
                 debug!("  (1) SOLVING: {} ~ {} trivially ", t1, t2);
                 Some(Satisfied::trivially())
             }
-            Constraint::Equal(Type::TVar(x), t) if !t.contains(x) => {
+            Constraint::Equal(Type::TVar(x), t) | Constraint::Equal(t, Type::TVar(x))
+                if !t.contains(x) =>
+            {
                 debug!(
                     "  (2) SOLVING: {x} ~ {t} with substitution {x} := {t}",
                     x = x.unsafe_name(),
@@ -243,18 +243,6 @@ impl Constraint {
                 Some(Satisfied::with_substitution(Substitution::single(
                     x.clone(),
                     t.clone(),
-                )))
-            }
-            Constraint::Equal(s, Type::TVar(x)) if !s.contains(x) => {
-                // TODO: merge with branch above
-                debug!(
-                    "  (3) SOLVING: {s} ~ {x} with substitution {x} := {s}",
-                    s = s,
-                    x = x.unsafe_name()
-                );
-                Some(Satisfied::with_substitution(Substitution::single(
-                    x.clone(),
-                    s.clone(),
                 )))
             }
             Constraint::Equal(t @ Type::Fn(params1, return1), s @ Type::Fn(params2, return2)) => {

@@ -460,6 +460,13 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::ConstraintSolverError(_) | TypeCheckError::SubstitutionError(_) => {
                 d.with_message(inner_error) // TODO
             }
+            TypeCheckError::MissingDimBound(span) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error)])
+                .with_notes(vec![
+                    "Consider adding `: Dim` after the type parameter".to_owned()
+                ]),
         };
         vec![d]
     }
