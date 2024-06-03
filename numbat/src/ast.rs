@@ -387,6 +387,11 @@ pub enum ProcedureKind {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum TypeParameterBound {
+    Dim,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
     DefineVariable {
@@ -399,7 +404,7 @@ pub enum Statement {
     DefineFunction {
         function_name_span: Span,
         function_name: String,
-        type_parameters: Vec<(Span, String)>,
+        type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
         /// Parameters, optionally with type annotations.
         parameters: Vec<(Span, String, Option<TypeAnnotation>)>,
         /// Function body. If it is absent, the function is implemented via FFI
@@ -598,7 +603,7 @@ impl ReplaceSpans for Statement {
                 function_name: function_name.clone(),
                 type_parameters: type_parameters
                     .iter()
-                    .map(|(_, name)| (Span::dummy(), name.clone()))
+                    .map(|(_, name, bound)| (Span::dummy(), name.clone(), bound.clone()))
                     .collect(),
                 parameters: parameters
                     .iter()

@@ -64,7 +64,7 @@
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{
     BinaryOperator, Expression, ProcedureKind, Statement, StringPart, TypeAnnotation,
-    TypeExpression, UnaryOperator,
+    TypeExpression, TypeParameterBound, UnaryOperator,
 };
 use crate::decorator::{self, Decorator};
 use crate::number::Number;
@@ -220,6 +220,12 @@ pub enum ParseErrorKind {
 
     #[error("Expected ',' or ']' in list expression")]
     ExpectedCommaOrRightBracketInList,
+
+    #[error("Unknown bound '{0}' in type parameter definition")]
+    UnknownBound(String),
+
+    #[error("Expected bound in type parameter definition")]
+    ExpectedBoundInTypeParameterDefinition,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -431,8 +437,36 @@ impl<'a> Parser<'a> {
                 if self.match_exact(TokenKind::LessThan).is_some() {
                     while self.match_exact(TokenKind::GreaterThan).is_none() {
                         if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
+                            let bound = if self.match_exact(TokenKind::Colon).is_some() {
+                                match self.match_exact(TokenKind::Identifier) {
+                                    Some(token) if token.lexeme == "Dim" => {
+                                        Some(TypeParameterBound::Dim)
+                                    }
+                                    Some(token) => {
+                                        return Err(ParseError {
+                                            kind: ParseErrorKind::UnknownBound(
+                                                token.lexeme.clone(),
+                                            ),
+                                            span: token.span,
+                                        });
+                                    }
+                                    None => {
+                                        return Err(ParseError {
+                                            kind: ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
+                                            span: self.peek().span,
+                                        });
+                                    }
+                                }
+                            } else {
+                                None
+                            };
+
                             let span = self.last().unwrap().span;
-                            type_parameters.push((span, type_parameter_name.lexeme.to_string()));
+                            type_parameters.push((
+                                span,
+                                type_parameter_name.lexeme.to_string(),
+                                bound,
+                            ));
 
                             if self.match_exact(TokenKind::Comma).is_none()
                                 && self.peek().kind != TokenKind::GreaterThan
@@ -2418,7 +2452,27 @@ mod tests {
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "foo".into(),
-                type_parameters: vec![(Span::dummy(), "X".into())],
+                type_parameters: vec![(Span::dummy(), "X".into(), None)],
+                parameters: vec![(
+                    Span::dummy(),
+                    "x".into(),
+                    Some(TypeAnnotation::TypeExpression(
+                        TypeExpression::TypeIdentifier(Span::dummy(), "X".into()),
+                    )),
+                )],
+                body: Some(scalar!(1.0)),
+                return_type_annotation_span: None,
+                return_type_annotation: None,
+                decorators: vec![],
+            },
+        );
+
+        parse_as(
+            &["fn foo<X: Dim>(x: X) = 1"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![(Span::dummy(), "X".into(), Some(TypeParameterBound::Dim))],
                 parameters: vec![(
                     Span::dummy(),
                     "x".into(),

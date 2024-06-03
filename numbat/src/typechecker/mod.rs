@@ -1269,7 +1269,7 @@ impl TypeChecker {
                 let mut typechecker_fn = self.clone(); // TODO: is this even needed?
                 let is_ffi_function = body.is_none();
 
-                for (span, type_parameter) in type_parameters {
+                for (span, type_parameter, _bound) in type_parameters {
                     if typechecker_fn.type_namespace.has_identifier(type_parameter) {
                         return Err(TypeCheckError::TypeParameterNameClash(
                             *span,
@@ -1467,7 +1467,7 @@ impl TypeChecker {
                     decorators.clone(),
                     type_parameters
                         .iter()
-                        .map(|(_, name)| name.clone())
+                        .map(|(_, name, bound)| (name.clone(), bound.clone()))
                         .collect(),
                     typed_parameters
                         .iter()
