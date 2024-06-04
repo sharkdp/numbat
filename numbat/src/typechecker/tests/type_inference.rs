@@ -117,6 +117,71 @@ fn if_then_else() {
 }
 
 #[test]
+fn equality() {
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = x == a"),
+        fn_type!(a() => Type::Boolean)
+    );
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = x == \"foo\""),
+        fn_type!(Type::String => Type::Boolean)
+    );
+    // Ideally, this should be restricted by an `Eq` bound:
+    assert_eq!(
+        get_inferred_fn_type("fn f(x, y) = x == y"),
+        fn_type!(forall t(); t(), t() => Type::Boolean)
+    );
+}
+
+#[test]
+fn comparisons() {
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = x > a"),
+        fn_type!(a() => Type::Boolean)
+    );
+    assert_eq!(
+        get_inferred_fn_type("fn f(x, y) = x > y"),
+        fn_type!(forall t(); dim t(); t(), t() => Type::Boolean)
+    );
+}
+
+#[test]
+fn unary_minus() {
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = -x"),
+        fn_type!(forall t(); dim t(); t() => t())
+    );
+}
+
+#[test]
+fn logical_operators() {
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = x && true"),
+        fn_type!(Type::Boolean => Type::Boolean)
+    );
+}
+
+#[test]
+fn structs() {
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = (SomeStruct { a: x, b: b }).a"),
+        fn_type!(a() => a())
+    );
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = (SomeStruct { a: a, b: x }).a"),
+        fn_type!(b() => a())
+    );
+}
+
+#[test]
+fn factorial() {
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = x!"),
+        fn_type!(scalar() => scalar())
+    );
+}
+
+#[test]
 fn lists() {
     assert_eq!(
         get_inferred_fn_type("fn f(x) = [x]"),
