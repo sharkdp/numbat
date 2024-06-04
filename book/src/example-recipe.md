@@ -11,7 +11,7 @@ unit serving
 let original_recipe_servings = 2 servings
 let desired_servings = 3 servings
 
-fn scale<D>(quantity: D) -> D =
+fn scale(quantity) =
     quantity × desired_servings / original_recipe_servings
 
 print("Milk:          {scale(500 ml)}")
