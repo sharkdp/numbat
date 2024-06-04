@@ -234,10 +234,3 @@ fn function_types() {
     // λf. λx. f (f x)  :  (T0 -> T0) -> T0 -> T0
     // λf. λx. (f (1 m)) + x  :  Dim(T0) => (Length -> T0) -> T0 -> T0
 }
-
-#[test]
-fn instantiation() {
-    // TODO
-    // make sure that e.g. `id` can be used twice in the same expression,
-    // but with different types
-}

@@ -1297,6 +1297,15 @@ impl TypeChecker {
                         type_parameter.clone(),
                         bound.clone(),
                     ));
+
+                    match bound {
+                        Some(TypeParameterBound::Dim) => {
+                            typechecker_fn
+                                .add_dtype_constraint(&Type::TPar(type_parameter.clone()))
+                                .ok();
+                        }
+                        None => {}
+                    }
                 }
 
                 let mut typed_parameters = vec![];
