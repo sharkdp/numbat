@@ -94,6 +94,16 @@ impl DType {
         DType::from_factors(&[(DTypeFactor::TPar(name), Exponent::from_integer(1))])
     }
 
+    pub fn deconstruct_as_single_type_variable(&self) -> Option<TypeVariable> {
+        match &self.factors[..] {
+            [(factor, exponent)] if exponent == &Exponent::from_integer(1) => match factor {
+                DTypeFactor::TVar(v) => Some(v.clone()),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     pub fn from_tgen(i: usize) -> DType {
         DType::from_factors(&[(
             DTypeFactor::TVar(TypeVariable::Quantified(i)),

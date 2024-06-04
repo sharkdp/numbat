@@ -43,3 +43,16 @@ assert_eq(intersperse(0, [1, 2, 3]), [1, 0, 2, 0, 3])
 
 assert_eq(sum([1, 2, 3, 4, 5]), 15)
 assert_eq(sum([1 m, 200 cm, 3 m]), 6 m)
+
+# Non-dtype lists
+let words = ["hello", "world"]
+assert_eq(head(words), "hello")
+
+fn join(xs: List<String>, sep: String) =
+  if is_empty(xs)
+    then ""
+    else if len(xs) == 1
+      then head(xs)
+      else "{head(xs)}{sep}{join(tail(xs), sep)}"
+
+assert_eq(join(words, " "), "hello world")

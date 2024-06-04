@@ -638,6 +638,9 @@ fn lists() {
 
     assert_successful_typecheck("[[1 a, 2 a], [3 a]]");
 
+    assert_successful_typecheck("[true]");
+    assert_successful_typecheck("head([true, false])");
+
     assert!(matches!(
         get_typecheck_error("[1, a]"),
         TypeCheckError::IncompatibleTypesInList(..)

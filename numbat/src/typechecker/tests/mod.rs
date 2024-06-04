@@ -31,6 +31,9 @@ const TEST_PRELUDE: &str = "
     fn atan2<T>(x: T, y: T) -> Scalar
 
     fn len<T>(x: List<T>) -> Scalar
+    fn head<T>(x: List<T>) -> T
+
+    fn id<T>(x: T) -> T = x
     ";
 
 fn type_a() -> DType {

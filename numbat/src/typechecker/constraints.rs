@@ -250,6 +250,20 @@ impl Constraint {
                     t.clone(),
                 )))
             }
+            Constraint::Equal(Type::Dimension(dtype_x), t)
+                if dtype_x.deconstruct_as_single_type_variable().is_some() =>
+            {
+                let x = dtype_x.deconstruct_as_single_type_variable().unwrap();
+                debug!(
+                    "  (3) SOLVING: {x} ~ {t} with substitution {x} := {t}",
+                    x = x.unsafe_name(),
+                    t = t
+                );
+                Some(Satisfied::with_substitution(Substitution::single(
+                    x.clone(),
+                    t.clone(),
+                )))
+            }
             Constraint::Equal(t @ Type::Fn(params1, return1), s @ Type::Fn(params2, return2)) => {
                 debug!(
                     "  (4) SOLVING: {t} ~ {s} with new constraints for all parameters and return types",
