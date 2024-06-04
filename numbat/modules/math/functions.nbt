@@ -1,4 +1,5 @@
 use core::scalar
+use core::lists
 use math::constants
 
 ## Basics
@@ -96,11 +97,27 @@ fn gamma(x: Scalar) -> Scalar
 
 ### Statistics
 
-#@name("Arithmetic mean")
-#@url("https://en.wikipedia.org/wiki/Arithmetic_mean")
-#fn mean<D>(xs: D…) -> D
-#fn maximum<D>(xs: D…) -> D
-#fn minimum<D>(xs: D…) -> D
+@name("Arithmetic mean")
+@url("https://en.wikipedia.org/wiki/Arithmetic_mean")
+fn mean<D: Dim>(xs: List<D>) -> D = if is_empty(xs) then 0 else sum(xs) / len(xs)
+
+# TODO: remove these helpers once we support local definitions
+fn _max<D: Dim>(x: D, y: D) -> D = if x > y then x else y
+fn _min<D: Dim>(x: D, y: D) -> D = if x < y then x else y
+
+@name("Maxmimum")
+@description("Get the largest element of a list")
+fn maximum<D: Dim>(xs: List<D>) -> D =
+  if len(xs) == 1
+    then head(xs)
+    else _max(head(xs), maximum(tail(xs)))
+
+@name("Minimum")
+@description("Get the smallest element of a list")
+fn minimum<D: Dim>(xs: List<D>) -> D =
+  if len(xs) == 1
+    then head(xs)
+    else _min(head(xs), minimum(tail(xs)))
 
 ### Geometry
 
