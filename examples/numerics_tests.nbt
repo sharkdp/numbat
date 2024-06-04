@@ -1,0 +1,27 @@
+use numerics::solve
+use numerics::diff
+
+# Root finding
+
+fn f1(x) = x³ - x - 2
+assert_eq(root_bisect(f1, 1, 2, 1e-10, 1e-10), 1.52137970680, 1e-8)
+
+fn f1_prime(x) = 3 x² - 1
+assert_eq(root_newton(f1, f1_prime, 1, 1e-10), 1.52137970680, 1e-8)
+assert_eq(root_newton(f1, f1_prime, 2, 1e-10), 1.52137970680, 1e-8)
+
+# Differentiation
+
+assert_eq(diff(log, 2.0), 0.5, 1e-5)
+assert_eq(diff(sin, 0.0), 1.0, 1e-5)
+
+assert_eq(diff(sqrt, 1.0), 0.5, 1e-5)
+
+fn f2(x: Scalar) -> Scalar = x² + 4 x + 1
+
+assert_eq(diff(f2, 2.0), 8.0, 1e-5)
+
+fn dist(t: Time) -> Length = 0.5 g0 t^2
+fn velocity(t: Time) -> Velocity = diff(dist, t)
+
+assert_eq(velocity(2.0 s), 2.0 s × g0, 1e-3 m/s)
