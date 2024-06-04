@@ -42,7 +42,6 @@ use substitutions::{ApplySubstitution, Substitution};
 use type_scheme::TypeScheme;
 
 fn dtype(e: &Expression) -> Result<DType> {
-    // TODO: This function should probably be removed. But we can think about adding something similar that adds a DType constraint and checks a trivial violation
     match e.get_type() {
         Type::Dimension(dtype) => Ok(dtype),
         t => Err(TypeCheckError::ExpectedDimensionType(e.full_span(), t)),
@@ -185,9 +184,8 @@ impl TypeChecker {
 
         let fn_type = match fn_type {
             TypeScheme::Concrete(t) => {
-                // TODO: we take this branch for recursive functions,
-                // because then we haven't yet generalized the function type.
-                // Make sure that this doesn't cause any problems.
+                // This branch is needed for recursive functions, where the type of the function
+                // is not yet known (and not yet quantified).
                 t.clone()
             }
             TypeScheme::Quantified(_, _) => {
@@ -238,7 +236,7 @@ impl TypeChecker {
                                     num = idx + 1,
                                     name = function_name
                                 ),
-                                span_expected: parameter_span, // TODO: is this correct?
+                                span_expected: parameter_span,
                                 expected_name: "parameter type",
                                 expected_dimensions: self.registry.get_derived_entry_names_for(
                                     &parameter_dtype.to_base_representation(),
@@ -747,7 +745,7 @@ impl TypeChecker {
                 // that evaluates to a function "pointer".
 
                 if let Some((name, signature)) = self.get_proper_function_reference(callable) {
-                    let name = name.clone(); // TODO: this is just a hack for now to get around a borrowing issue. not fixed properly since this will probably be removed anyways
+                    let name = name.clone(); // TODO: there is probably a better way to get around borrowing issues here
                     let signature = signature.clone(); // TODO: same
                     self.proper_function_call(
                         span,
@@ -1275,7 +1273,7 @@ impl TypeChecker {
                     )?;
                 }
 
-                let mut typechecker_fn = self.clone(); // TODO: is this even needed?
+                let mut typechecker_fn = self.clone();
                 let is_ffi_function = body.is_none();
 
                 for (span, type_parameter, bound) in type_parameters {

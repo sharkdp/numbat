@@ -613,7 +613,6 @@ impl Statement {
 }
 
 impl Expression {
-    // TODO: make sure that we can't call this on a AST which has all type schemes generalized already
     pub fn get_type(&self) -> Type {
         match self {
             Expression::Scalar(_, _, type_) => type_.unsafe_as_concrete(),

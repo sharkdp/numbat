@@ -115,7 +115,7 @@ impl TypeScheme {
         let free_variables = self.type_variables(true);
 
         let TypeScheme::Concrete(type_) = self else {
-            // TODO: we currently don't report and error here because we run generalization
+            // TODO: we currently don't report an error here because we run generalization
             // again and again on the environment, so it has a few concrete types in it. But
             // maybe it would be better to model this explicitly and report an error here.
             return;
@@ -141,8 +141,8 @@ impl TypeScheme {
         }
     }
 
+    // TODO: remove
     pub(crate) fn to_concrete_type(&self) -> Type {
-        // TODO: make sure there are no type variables / $tget nodes left over
         match self {
             TypeScheme::Concrete(t) => t.clone(),
             TypeScheme::Quantified(_, qt) => qt.inner.clone(),
