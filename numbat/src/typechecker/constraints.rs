@@ -251,7 +251,10 @@ impl Constraint {
                 )))
             }
             Constraint::Equal(Type::Dimension(dtype_x), t)
-                if dtype_x.deconstruct_as_single_type_variable().is_some() =>
+                if dtype_x
+                    .deconstruct_as_single_type_variable()
+                    .map(|tv| !dtype_x.contains(&tv, false))
+                    .unwrap_or(false) =>
             {
                 let x = dtype_x.deconstruct_as_single_type_variable().unwrap();
                 debug!(
@@ -264,7 +267,9 @@ impl Constraint {
                     t.clone(),
                 )))
             }
-            Constraint::Equal(t @ Type::Fn(params1, return1), s @ Type::Fn(params2, return2)) => {
+            Constraint::Equal(t @ Type::Fn(params1, return1), s @ Type::Fn(params2, return2))
+                if params1.len() == params2.len() =>
+            {
                 debug!(
                     "  (4) SOLVING: {t} ~ {s} with new constraints for all parameters and return types",
                     t = t,
