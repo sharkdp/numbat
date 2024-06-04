@@ -112,7 +112,7 @@ impl TypeScheme {
     }
 
     pub(crate) fn generalize(&mut self, dtype_variables: &[TypeVariable]) {
-        let free_variables = self.type_variables();
+        let free_variables = self.type_variables(true);
 
         let TypeScheme::Concrete(type_) = self else {
             // TODO: we currently don't report and error here because we run generalization
@@ -134,10 +134,10 @@ impl TypeScheme {
         *self = type_scheme;
     }
 
-    fn type_variables(&self) -> Vec<TypeVariable> {
+    fn type_variables(&self, including_type_parameters: bool) -> Vec<TypeVariable> {
         match self {
-            TypeScheme::Concrete(t) => t.type_variables(),
-            TypeScheme::Quantified(_, qt) => qt.type_variables(),
+            TypeScheme::Concrete(t) => t.type_variables(including_type_parameters),
+            TypeScheme::Quantified(_, qt) => qt.type_variables(including_type_parameters),
         }
     }
 

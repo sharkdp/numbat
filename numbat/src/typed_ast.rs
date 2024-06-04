@@ -207,13 +207,19 @@ impl DType {
         self.multiply(&other.inverse())
     }
 
-    pub fn type_variables(&self) -> Vec<TypeVariable> {
+    pub fn type_variables(&self, including_type_parameters: bool) -> Vec<TypeVariable> {
         let mut vars: Vec<_> = self
             .factors
             .iter()
             .filter_map(|(f, _)| match f {
                 DTypeFactor::TVar(v) => Some(v.clone()),
-                DTypeFactor::TPar(v) => Some(TypeVariable::new(v)),
+                DTypeFactor::TPar(v) => {
+                    if including_type_parameters {
+                        Some(TypeVariable::new(v))
+                    } else {
+                        None
+                    }
+                }
                 DTypeFactor::BaseDimension(_) => None,
             })
             .collect();
@@ -222,8 +228,9 @@ impl DType {
         vars
     }
 
-    pub fn contains(&self, name: &TypeVariable) -> bool {
-        self.type_variables().contains(name)
+    pub fn contains(&self, name: &TypeVariable, including_type_parameters: bool) -> bool {
+        self.type_variables(including_type_parameters)
+            .contains(name)
     }
 
     pub fn split_first_factor(
@@ -404,16 +411,22 @@ impl Type {
         matches!(self, Type::Fn(..))
     }
 
-    pub(crate) fn type_variables(&self) -> Vec<TypeVariable> {
+    pub(crate) fn type_variables(&self, including_type_parameters: bool) -> Vec<TypeVariable> {
         match self {
             Type::TVar(v) => vec![v.clone()],
-            Type::TPar(n) => vec![TypeVariable::new(n)],
-            Type::Dimension(d) => d.type_variables(),
+            Type::TPar(n) => {
+                if including_type_parameters {
+                    vec![TypeVariable::new(n)]
+                } else {
+                    vec![]
+                }
+            }
+            Type::Dimension(d) => d.type_variables(including_type_parameters),
             Type::Boolean | Type::String | Type::DateTime => vec![],
             Type::Fn(param_types, return_type) => {
-                let mut vars = return_type.type_variables();
+                let mut vars = return_type.type_variables(including_type_parameters);
                 for param_type in param_types {
-                    vars.extend(param_type.type_variables());
+                    vars.extend(param_type.type_variables(including_type_parameters));
                 }
                 vars.sort();
                 vars.dedup();
@@ -422,21 +435,21 @@ impl Type {
             Type::Struct(StructInfo { fields, .. }) => {
                 let mut vars = vec![];
                 for (_, (_, t)) in fields {
-                    vars.extend(t.type_variables());
+                    vars.extend(t.type_variables(including_type_parameters));
                 }
                 vars
             }
-            Type::List(element_type) => element_type.type_variables(),
+            Type::List(element_type) => element_type.type_variables(including_type_parameters),
         }
     }
 
-    pub(crate) fn contains(&self, x: &TypeVariable) -> bool {
-        self.type_variables().contains(x)
+    pub(crate) fn contains(&self, x: &TypeVariable, including_type_parameters: bool) -> bool {
+        self.type_variables(including_type_parameters).contains(x)
     }
 
     /// A type is called 'closed' if it does not change under substitutions (contains no unification variables)
     pub(crate) fn is_closed(&self) -> bool {
-        self.type_variables().is_empty()
+        self.type_variables(false).is_empty()
     }
 
     pub(crate) fn instantiate(&self, type_variables: &[TypeVariable]) -> Type {

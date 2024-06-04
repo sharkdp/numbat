@@ -1365,14 +1365,14 @@ impl TypeChecker {
                     .transpose()?;
 
                 let return_type_inferred = if let Some(ref expr) = body_checked {
-                    let return_type = expr.get_type();
+                    let return_type_inferred = expr.get_type();
 
-                    if let Some(annotated_return_type) = annotated_return_type {
-                        if typechecker_fn
-                            .add_equal_constraint(&return_type, &annotated_return_type)
-                            .is_trivially_violated()
-                        {
-                            match (&return_type, annotated_return_type) {
+                    if typechecker_fn
+                        .add_equal_constraint(&return_type_inferred, &return_type)
+                        .is_trivially_violated()
+                    {
+                        if let Some(annotated_return_type) = annotated_return_type {
+                            match (&return_type_inferred, annotated_return_type) {
                                 (
                                     Type::Dimension(dtype_deduced),
                                     Type::Dimension(dtype_specified),
@@ -1404,20 +1404,20 @@ impl TypeChecker {
                                         },
                                     ));
                                 }
-                                (return_type, type_specified) => {
+                                (return_type_inferred, type_specified) => {
                                     return Err(TypeCheckError::IncompatibleTypesInAnnotation(
                                         "function definition".into(),
                                         *function_name_span,
                                         type_specified,
                                         return_type_annotation_span.unwrap(),
-                                        return_type.clone(),
+                                        return_type_inferred.clone(),
                                         body.as_ref().map(|b| b.full_span()).unwrap(),
                                     ));
                                 }
                             }
                         }
                     }
-                    return_type
+                    return_type_inferred
                 } else {
                     if !ffi::functions().contains_key(function_name.as_str()) {
                         return Err(TypeCheckError::UnknownForeignFunction(

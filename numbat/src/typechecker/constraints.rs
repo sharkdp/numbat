@@ -223,7 +223,7 @@ impl Constraint {
             },
             Constraint::IsDType(_) => TrivialResultion::Unknown,
             Constraint::EqualScalar(d) if d.is_scalar() => TrivialResultion::Satisfied,
-            Constraint::EqualScalar(d) if d.type_variables().is_empty() => {
+            Constraint::EqualScalar(d) if d.type_variables(false).is_empty() => {
                 TrivialResultion::Violated
             }
             Constraint::EqualScalar(_) => TrivialResultion::Unknown,
@@ -238,7 +238,7 @@ impl Constraint {
                 Some(Satisfied::trivially())
             }
             Constraint::Equal(Type::TVar(x), t) | Constraint::Equal(t, Type::TVar(x))
-                if !t.contains(x) =>
+                if !t.contains(x, false) =>
             {
                 debug!(
                     "  (2) SOLVING: {x} ~ {t} with substitution {x} := {t}",
@@ -308,7 +308,7 @@ impl Constraint {
             Constraint::Equal(_, _) => None,
             Constraint::IsDType(Type::Dimension(inner)) => {
                 let new_constraints = inner
-                    .type_variables()
+                    .type_variables(true)
                     .iter()
                     .map(|tv| Constraint::IsDType(Type::TVar(tv.clone())))
                     .collect();

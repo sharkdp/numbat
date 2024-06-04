@@ -82,8 +82,8 @@ impl QualifiedType {
         TypeScheme::quantified(variables.len(), qt)
     }
 
-    pub fn type_variables(&self) -> Vec<TypeVariable> {
-        self.inner.type_variables()
+    pub fn type_variables(&self, including_type_parameters: bool) -> Vec<TypeVariable> {
+        self.inner.type_variables(including_type_parameters)
     }
 
     pub(crate) fn instantiate(&self, type_variables: &[TypeVariable]) -> QualifiedType {
