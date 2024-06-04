@@ -1,66 +1,8 @@
-use crate::parser::parse;
-use crate::prefix_transformer::Transformer;
 use crate::NameResolutionError;
 
-use super::*;
+use super::super::*;
 
-const TEST_PRELUDE: &str = "
-    dimension Scalar = 1
-    dimension A
-    dimension B
-    dimension C = A * B
-    unit a: A
-    unit b: B
-    unit c: C = a * b
-
-    fn returns_a() -> A = a
-    fn takes_a_returns_a(x: A) -> A = x
-    fn takes_a_returns_b(x: A) -> B = b
-    fn takes_a_and_b_returns_c(x: A, y: B) -> C = x * y
-
-    struct SomeStruct { a: A, b: B }
-
-    let callable = takes_a_returns_b
-
-    fn atan2<T>(x: T, y: T) -> Scalar
-    ";
-
-fn type_a() -> DType {
-    DType::base_dimension("A")
-}
-
-fn type_b() -> DType {
-    DType::base_dimension("B")
-}
-
-fn type_c() -> DType {
-    DType::base_dimension("A").multiply(&DType::base_dimension("B"))
-}
-
-fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
-    let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
-    let statements = parse(code, 0).expect("No parse errors for inputs in this test suite");
-    let transformed_statements = Transformer::new().transform(statements)?;
-
-    TypeChecker::default()
-        .check(transformed_statements)
-        .map(|mut statements_checked| statements_checked.pop().unwrap())
-}
-
-fn assert_successful_typecheck(input: &str) {
-    if let Err(err) = dbg!(run_typecheck(input)) {
-        panic!("Input was expected to typecheck successfully, but failed with: {err:?}")
-    }
-}
-
-#[track_caller]
-fn get_typecheck_error(input: &str) -> TypeCheckError {
-    if let Err(err) = dbg!(run_typecheck(input)) {
-        err
-    } else {
-        panic!("Input was expected to yield a type check error");
-    }
-}
+use super::{assert_successful_typecheck, get_typecheck_error, type_a, type_b, type_c};
 
 #[test]
 fn basic_arithmetic() {
@@ -77,6 +19,15 @@ fn basic_arithmetic() {
         get_typecheck_error("a + b"),
         TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {expected_type, actual_type, ..}) if expected_type == type_a().to_base_representation() && actual_type == type_b().to_base_representation()
     ));
+}
+
+#[test]
+fn polymorphic_zero() {
+    assert_successful_typecheck("1 a + 0");
+    assert_successful_typecheck("0 + 1 a");
+    assert_successful_typecheck("1 b + 0");
+
+    assert_successful_typecheck("1 a + 0 * b");
 }
 
 #[test]
