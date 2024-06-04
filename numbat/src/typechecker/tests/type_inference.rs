@@ -1,4 +1,3 @@
-use ast::scalar;
 use qualified_type::Bounds;
 use qualified_type::QualifiedType;
 use tests::get_typecheck_error;

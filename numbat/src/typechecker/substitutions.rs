@@ -38,7 +38,7 @@ impl Substitution {
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum SubstitutionError {
-    #[error("Used non-dimension type in a dimension expression: {0}")]
+    #[error("Used non-dimension type '{0}' in a dimension expression")]
     SubstitutedNonDTypeWithinDType(Type),
 }
 
@@ -57,6 +57,13 @@ impl ApplySubstitution for Type {
             }
             Type::TPar(n) => {
                 if let Some(type_) = s.lookup(&TypeVariable::new(n)) {
+                    *self = type_.clone();
+                }
+                Ok(())
+            }
+            Type::Dimension(dtype) if dtype.deconstruct_as_single_type_variable().is_some() => {
+                let v = dtype.deconstruct_as_single_type_variable().unwrap();
+                if let Some(type_) = s.lookup(&v) {
                     *self = type_.clone();
                 }
                 Ok(())
