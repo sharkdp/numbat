@@ -76,7 +76,7 @@ impl ForAllTypeSchemes for Statement {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
         match self {
             Statement::Expression(expr) => expr.for_all_type_schemes(f),
-            Statement::DefineVariable(_, _, expr, type_) => {
+            Statement::DefineVariable(_, _, expr, _annotation, type_) => {
                 expr.for_all_type_schemes(f);
                 f(type_);
             }

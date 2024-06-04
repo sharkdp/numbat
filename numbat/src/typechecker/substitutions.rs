@@ -213,7 +213,7 @@ impl ApplySubstitution for Statement {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
             Statement::Expression(e) => e.apply(s),
-            Statement::DefineVariable(_, _, e, type_) => {
+            Statement::DefineVariable(_, _, e, _annotation, type_) => {
                 e.apply(s)?;
                 type_.apply(s)
             }
