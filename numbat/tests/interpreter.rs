@@ -267,21 +267,17 @@ fn test_math() {
 
     expect_output("atan2(10, 0) / (pi / 2)", "1");
     expect_output("atan2(100 cm, 1 m) / (pi / 4)", "1");
-    // TODO
-    // expect_failure(
-    //     "atan2(100 cm, 1 m²)",
-    //     "parameter type: Length\n argument type: Length²",
-    // );
+    expect_failure(
+        "atan2(100 cm, 1 m²)",
+        "Could not solve the following constraints",
+    );
 
     expect_output("mod(5, 3)", "2");
     expect_output("mod(-1, 4)", "3");
     expect_output("mod(8 cm, 5 cm)", "3 cm");
     expect_output("mod(235 cm, 1 m)", "35 cm");
     expect_output("mod(2 m, 7 cm)", "0.04 m");
-    // expect_failure(
-    //     "mod(8 m, 5 s)",
-    //     "parameter type: Length\n argument type: Time",
-    // )
+    expect_failure("mod(8 m, 5 s)", "Could not solve the following constraints")
 }
 
 #[test]
@@ -721,9 +717,8 @@ fn test_user_errors() {
     expect_failure("1 + error(\"test\")", "User error: test");
     expect_failure("1 m + error(\"test\")", "User error: test");
     expect_failure("if 3 < 2 then 2 m else error(\"test\")", "User error: test");
-    // TODO
-    // expect_failure(
-    //     "if true then error(\"test\") else \"foo\"",
-    //     "User error: test",
-    // );
+    expect_failure(
+        "if true then error(\"test\") else \"foo\"",
+        "User error: test",
+    );
 }
