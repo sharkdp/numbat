@@ -467,6 +467,9 @@ impl ErrorDiagnostic for TypeCheckError {
                 .with_notes(vec![
                     "Consider adding `: Dim` after the type parameter".to_owned()
                 ]),
+            TypeCheckError::ExponentiationNeedsTypeAnnotation(span) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
         };
         vec![d]
     }

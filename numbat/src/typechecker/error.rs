@@ -143,6 +143,9 @@ pub enum TypeCheckError {
 
     #[error("Missing dimension bound for type parameter")]
     MissingDimBound(Span),
+
+    #[error("Type for exponentiation operation can not be inferred for this case, consider adding a type annotation for the base")]
+    ExponentiationNeedsTypeAnnotation(Span),
 }
 
 pub type Result<T> = std::result::Result<T, TypeCheckError>;
