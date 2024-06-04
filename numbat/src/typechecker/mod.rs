@@ -664,7 +664,13 @@ impl TypeChecker {
 
                                         type_result
                                     } else {
-                                        todo!("This case needs a type annotation?")
+                                        return Err(
+                                            TypeCheckError::ExponentiationNeedsTypeAnnotation(
+                                                lhs_checked
+                                                    .full_span()
+                                                    .extend(&rhs_checked.full_span()),
+                                            ),
+                                        );
                                     }
                                 }
                             }
