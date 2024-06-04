@@ -26,10 +26,6 @@ assert_eq(reverse(xs), [3, 2, 1])
 
 fn inc(x) = x + 1
 assert_eq(map(inc, xs), [2, 3, 4])
-# fn gen_range(n) = range(1, n)
-# assert_eq(map(gen_range, xs), [[1], [1, 2], [1, 2, 3]])
-# fn to_string(x) = "{x}"
-# assert_eq(map(to_string, xs), ["1", "2", "3"])
 
 fn is_even(x) = mod(x, 2) == 0
 assert_eq(filter(is_even, range(1, 10)), [2, 4, 6, 8, 10])
@@ -56,3 +52,8 @@ fn join(xs: List<String>, sep: String) =
       else "{head(xs)}{sep}{join(tail(xs), sep)}"
 
 assert_eq(join(words, " "), "hello world")
+
+fn gen_range(n) = range(1, n)
+assert_eq(map(gen_range, xs), [[1], [1, 2], [1, 2, 3]])
+fn to_string(x) = "{x}"
+assert_eq(map(to_string, xs), ["1", "2", "3"])
