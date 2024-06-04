@@ -1347,7 +1347,7 @@ impl TypeChecker {
 
                 // Add the function to the environment, so it can be called recursively
 
-                let parameters = typed_parameters
+                let parameters: Vec<_> = typed_parameters
                     .iter()
                     .map(|(span, name, _)| (*span, name.clone()))
                     .collect();
@@ -1455,10 +1455,12 @@ impl TypeChecker {
 
                 self.constraints = typechecker_fn.constraints;
                 self.name_generator = typechecker_fn.name_generator;
-                self.env = typechecker_fn.env;
                 self.registry = typechecker_fn.registry;
-                // self.type_namespace = typechecker_fn.type_namespace;
-                // self.value_namespace = typechecker_fn.value_namespace;
+                // Copy identifier for the new function into local env:
+                let (signature, metadata) =
+                    typechecker_fn.env.get_function_info(function_name).unwrap();
+                self.env
+                    .add_function(function_name.clone(), signature.clone(), metadata.clone());
 
                 typed_ast::Statement::DefineFunction(
                     function_name.clone(),
