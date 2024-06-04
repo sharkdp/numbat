@@ -375,7 +375,7 @@ impl BytecodeInterpreter {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DefineBaseUnit(unit_name, decorators, type_) => {
+            Statement::DefineBaseUnit(unit_name, decorators, annotation, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.clone(), ap))
                     .collect();
@@ -386,7 +386,10 @@ impl BytecodeInterpreter {
                         unit_name,
                         UnitMetadata {
                             type_: type_.to_concrete_type(), // Base unit types can never be generic
-                            readable_type: type_.to_readable_type(dimension_registry),
+                            readable_type: annotation
+                                .as_ref()
+                                .map(|a| a.pretty_print())
+                                .unwrap_or(type_.to_readable_type(dimension_registry)),
                             aliases,
                             name: decorator::name(decorators),
                             canonical_name: decorator::get_canonical_unit_name(
@@ -409,7 +412,7 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::DefineDerivedUnit(unit_name, expr, decorators, type_) => {
+            Statement::DefineDerivedUnit(unit_name, expr, decorators, annotation, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.clone(), ap))
                     .collect();
@@ -432,7 +435,10 @@ impl BytecodeInterpreter {
                     ),
                     UnitMetadata {
                         type_: type_.to_concrete_type(), // We guarantee that derived-unit definitions do not contain generics, so no TGen(..)s can escape
-                        readable_type: type_.to_readable_type(dimension_registry),
+                        readable_type: annotation
+                            .as_ref()
+                            .map(|a| a.pretty_print())
+                            .unwrap_or(type_.to_readable_type(dimension_registry)),
                         aliases,
                         name: decorator::name(decorators),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),

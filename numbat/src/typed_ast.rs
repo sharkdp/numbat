@@ -3,7 +3,7 @@ use itertools::Itertools;
 
 use crate::arithmetic::Exponent;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
-use crate::ast::{ProcedureKind, TypeParameterBound};
+use crate::ast::{ProcedureKind, TypeAnnotation, TypeParameterBound};
 use crate::dimension::DimensionRegistry;
 use crate::traversal::ForAllTypeSchemes;
 use crate::type_variable::TypeVariable;
@@ -573,8 +573,14 @@ pub enum Statement {
         TypeScheme,         // function type
     ),
     DefineDimension(String, Vec<TypeExpression>),
-    DefineBaseUnit(String, Vec<Decorator>, TypeScheme),
-    DefineDerivedUnit(String, Expression, Vec<Decorator>, TypeScheme),
+    DefineBaseUnit(String, Vec<Decorator>, Option<TypeAnnotation>, TypeScheme),
+    DefineDerivedUnit(
+        String,
+        Expression,
+        Vec<Decorator>,
+        Option<TypeAnnotation>,
+        TypeScheme,
+    ),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
     DefineStruct(StructInfo),
 }
@@ -822,23 +828,29 @@ impl PrettyPrint for Statement {
                     )
                     .sum()
             }
-            Statement::DefineBaseUnit(identifier, decorators, type_) => {
+            Statement::DefineBaseUnit(identifier, decorators, annotation, type_) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
                     + m::space()
-                    + type_.pretty_print()
+                    + annotation
+                        .as_ref()
+                        .map(|a| a.pretty_print())
+                        .unwrap_or(type_.pretty_print())
             }
-            Statement::DefineDerivedUnit(identifier, expr, decorators, type_) => {
+            Statement::DefineDerivedUnit(identifier, expr, decorators, annotation, type_) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
                     + m::space()
-                    + type_.pretty_print()
+                    + annotation
+                        .as_ref()
+                        .map(|a| a.pretty_print())
+                        .unwrap_or(type_.pretty_print())
                     + m::space()
                     + m::operator("=")
                     + m::space()
