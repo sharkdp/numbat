@@ -1167,6 +1167,7 @@ impl TypeChecker {
                     self.env
                         .add(name.clone(), Type::Dimension(type_specified.clone()), *span);
                 }
+
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
                     decorators.clone(),
@@ -1681,6 +1682,14 @@ impl TypeChecker {
         self.env.apply(&substitution).map_err(|e| {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
+
+        if let typed_ast::Statement::DefineDerivedUnit(_, expr, _, type_) = &elaborated_statement {
+            if !type_.unsafe_as_concrete().is_closed() {
+                return Err(TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(
+                    expr.full_span(),
+                ));
+            }
+        }
 
         // Make sure that the user-specified type parameter bounds are properly reflected:
         for (span, type_parameter, bound) in &self.registry.introduced_type_parameters {

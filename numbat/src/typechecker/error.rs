@@ -145,6 +145,9 @@ pub enum TypeCheckError {
 
     #[error("Type for exponentiation operation can not be inferred for this case, consider adding a type annotation for the base")]
     ExponentiationNeedsTypeAnnotation(Span),
+
+    #[error("Derived unit definitions may not contain generic types. Use a variable instead")]
+    DerivedUnitDefinitionMustNotBeGeneric(Span),
 }
 
 pub type Result<T> = std::result::Result<T, TypeCheckError>;

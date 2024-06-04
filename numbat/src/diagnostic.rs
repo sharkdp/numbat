@@ -336,7 +336,8 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::ExpectedDimensionType(span, _)
             | TypeCheckError::ExpectedBool(span)
             | TypeCheckError::NoFunctionReferenceToGenericFunction(span)
-            | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span) => d
+            | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span)
+            | TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(span) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message(inner_error)]),

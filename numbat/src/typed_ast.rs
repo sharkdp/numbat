@@ -595,9 +595,8 @@ impl Statement {
     pub(crate) fn exponents_for(&mut self, tv: &TypeVariable) -> Vec<Exponent> {
         // TODO: things to not need to be mutable in this function
         let mut exponents = vec![];
-        self.for_all_type_schemes(&mut |type_: &mut TypeScheme| {
-            match type_.to_concrete_type() {
-                // TODO: do not use to_concrete_type here
+        self.for_all_type_schemes(
+            &mut |type_: &mut TypeScheme| match type_.unsafe_as_concrete() {
                 Type::Dimension(dtype) => {
                     for (factor, exp) in dtype.factors {
                         if factor == DTypeFactor::TVar(tv.clone()) {
@@ -606,8 +605,8 @@ impl Statement {
                     }
                 }
                 _ => {}
-            }
-        });
+            },
+        );
         exponents
     }
 }
