@@ -380,7 +380,7 @@ impl BytecodeInterpreter {
                     .add_base_unit(
                         unit_name,
                         UnitMetadata {
-                            type_: type_.to_concrete_type(),
+                            type_: type_.to_concrete_type(), // Base unit types can never be generic
                             readable_type: crate::markup::empty(), // TODO: type_.to_readable_type(registry)
                             aliases,
                             name: decorator::name(decorators),
@@ -426,7 +426,7 @@ impl BytecodeInterpreter {
                         .name,
                     ),
                     UnitMetadata {
-                        type_: type_.to_concrete_type(),
+                        type_: type_.to_concrete_type(), // We guarantee that derived-unit definitions do not contain generics, so no TGen(..)s can escape
                         readable_type: crate::markup::empty(), // TODO
                         aliases,
                         name: decorator::name(decorators),

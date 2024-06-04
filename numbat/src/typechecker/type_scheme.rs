@@ -43,7 +43,8 @@ impl TypeScheme {
     pub fn instantiate_for_printing(&self) -> (QualifiedType, Vec<TypeVariable>) {
         match self {
             TypeScheme::Concrete(t) => {
-                // TODO: we shouldn't print concrete types, but we do it for now in the logging
+                // We take this branch when we report errors during constraint solving, where the
+                // elaborated statement has not been generalized yet.
                 (QualifiedType::new(t.clone(), Bounds::none()), vec![])
             }
             TypeScheme::Quantified(n_gen, _) => {
@@ -141,7 +142,6 @@ impl TypeScheme {
         }
     }
 
-    // TODO: remove
     pub(crate) fn to_concrete_type(&self) -> Type {
         match self {
             TypeScheme::Concrete(t) => t.clone(),
