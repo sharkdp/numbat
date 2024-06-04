@@ -29,6 +29,8 @@ const TEST_PRELUDE: &str = "
     let callable = takes_a_returns_b
 
     fn atan2<T>(x: T, y: T) -> Scalar
+
+    fn len<T>(x: List<T>) -> Scalar
     ";
 
 fn type_a() -> DType {
