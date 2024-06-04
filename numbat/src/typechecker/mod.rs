@@ -29,7 +29,7 @@ use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
 
 use const_evaluation::evaluate_const_expr;
-use constraints::{Constraint, ConstraintSet, TrivialResultion};
+use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResultion};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
 use log::info;
@@ -1670,16 +1670,29 @@ impl TypeChecker {
         info!("");
 
         // Solve constraints
-        let (substitution, dtype_variables) = self
-            .constraints
-            .solve()
-            .map_err(TypeCheckError::ConstraintSolverError)?;
+        let (substitution, dtype_variables) =
+            self.constraints.solve().map_err(|inner| match inner {
+                ConstraintSolverError::CouldNotSolve(constraints) => {
+                    TypeCheckError::ConstraintSolverError(
+                        constraints,
+                        elaborated_statement.pretty_print().to_string(),
+                    )
+                }
+                ConstraintSolverError::SubstitutionError(inner) => {
+                    TypeCheckError::SubstitutionError(
+                        elaborated_statement.pretty_print().to_string(),
+                        inner,
+                    )
+                }
+            })?;
 
-        elaborated_statement
-            .apply(&substitution)
-            .map_err(TypeCheckError::SubstitutionError)?;
+        elaborated_statement.apply(&substitution).map_err(|e| {
+            TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
+        })?;
 
-        self.env.apply(&substitution)?;
+        self.env.apply(&substitution).map_err(|e| {
+            TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
+        })?;
 
         // Make sure that the user-specified type parameter bounds are properly reflected:
         for (span, type_parameter, bound) in &self.registry.introduced_type_parameters {

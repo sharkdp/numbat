@@ -1,16 +1,12 @@
-use thiserror::Error;
-
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{DType, DTypeFactor, Type};
 
 use log::debug;
 
-#[derive(Debug, Clone, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintSolverError {
-    #[error("Could not solve the following constraints:\n{0}")]
     CouldNotSolve(String),
-    #[error(transparent)]
     SubstitutionError(SubstitutionError),
 }
 

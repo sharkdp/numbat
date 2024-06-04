@@ -6,7 +6,6 @@ use crate::{BaseRepresentation, NameResolutionError, Type};
 
 use thiserror::Error;
 
-use super::constraints::ConstraintSolverError;
 use super::substitutions::SubstitutionError;
 use super::IncompatibleDimensionsError;
 
@@ -135,11 +134,11 @@ pub enum TypeCheckError {
     #[error(transparent)]
     NameResolutionError(#[from] NameResolutionError),
 
-    #[error(transparent)]
-    ConstraintSolverError(#[from] ConstraintSolverError),
+    #[error("Could not solve the following constraints:\n{0}\n.. while trying to infer types in the (elaborated) statement:\n  {1}\n")]
+    ConstraintSolverError(String, String),
 
-    #[error(transparent)]
-    SubstitutionError(#[from] SubstitutionError),
+    #[error("{1}\nThis error occured while trying to infer types in the (elaborated) statement:\n  {0}\n")]
+    SubstitutionError(String, SubstitutionError),
 
     #[error("Missing dimension bound for type parameter")]
     MissingDimBound(Span),
