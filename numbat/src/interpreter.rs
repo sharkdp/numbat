@@ -85,10 +85,11 @@ impl InterpreterResult {
                     evaluated_statement
                         .and_then(Statement::as_expression)
                         .and_then(|e| {
-                            if e.get_type_scheme().is_scalar() {
+                            let type_ = e.get_type_scheme();
+                            if type_.is_scalar() {
                                 None
                             } else {
-                                let ty = e.get_type_scheme().to_readable_type(registry);
+                                let ty = type_.to_readable_type(registry);
                                 Some(m::dimmed("    [") + ty + m::dimmed("]"))
                             }
                         })
@@ -152,6 +153,7 @@ pub trait Interpreter {
         &mut self,
         settings: &mut InterpreterSettings,
         statements: &[Statement],
+        dimension_registry: &DimensionRegistry,
     ) -> Result<InterpreterResult>;
     fn get_unit_registry(&self) -> &UnitRegistry;
 }
@@ -198,11 +200,15 @@ mod tests {
         let statements_transformed = Transformer::new()
             .transform(statements)
             .expect("No name resolution errors for inputs in this test suite");
-        let statements_typechecked = crate::typechecker::TypeChecker::default()
+        let mut typechecker = crate::typechecker::TypeChecker::default();
+        let statements_typechecked = typechecker
             .check(statements_transformed)
             .expect("No type check errors for inputs in this test suite");
-        BytecodeInterpreter::new()
-            .interpret_statements(&mut InterpreterSettings::default(), &statements_typechecked)
+        BytecodeInterpreter::new().interpret_statements(
+            &mut InterpreterSettings::default(),
+            &statements_typechecked,
+            typechecker.registry(),
+        )
     }
 
     #[track_caller]

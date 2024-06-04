@@ -4,6 +4,7 @@ use itertools::Itertools;
 
 use crate::ast::ProcedureKind;
 use crate::decorator::Decorator;
+use crate::dimension::DimensionRegistry;
 use crate::interpreter::{
     Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
 };
@@ -289,7 +290,11 @@ impl BytecodeInterpreter {
         Ok(())
     }
 
-    fn compile_statement(&mut self, stmt: &Statement) -> Result<()> {
+    fn compile_statement(
+        &mut self,
+        stmt: &Statement,
+        dimension_registry: &DimensionRegistry,
+    ) -> Result<()> {
         match stmt {
             Statement::Expression(expr) => {
                 self.compile_expression_with_simplify(expr)?;
@@ -381,7 +386,7 @@ impl BytecodeInterpreter {
                         unit_name,
                         UnitMetadata {
                             type_: type_.to_concrete_type(), // Base unit types can never be generic
-                            readable_type: crate::markup::empty(), // TODO: type_.to_readable_type(registry)
+                            readable_type: type_.to_readable_type(dimension_registry),
                             aliases,
                             name: decorator::name(decorators),
                             canonical_name: decorator::get_canonical_unit_name(
@@ -427,7 +432,7 @@ impl BytecodeInterpreter {
                     ),
                     UnitMetadata {
                         type_: type_.to_concrete_type(), // We guarantee that derived-unit definitions do not contain generics, so no TGen(..)s can escape
-                        readable_type: crate::markup::empty(), // TODO
+                        readable_type: type_.to_readable_type(dimension_registry),
                         aliases,
                         name: decorator::name(decorators),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
@@ -529,9 +534,10 @@ impl Interpreter for BytecodeInterpreter {
         &mut self,
         settings: &mut InterpreterSettings,
         statements: &[Statement],
+        dimension_registry: &DimensionRegistry,
     ) -> Result<InterpreterResult> {
         for statement in statements {
-            self.compile_statement(statement)?;
+            self.compile_statement(statement, dimension_registry)?;
         }
 
         self.run(settings)

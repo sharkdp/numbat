@@ -333,7 +333,7 @@ impl Context {
                         + m::text("])")
                         + m::nl();
                 } else {
-                    help += m::text("A unit of [") + md.readable_type + m::text("]") + m::nl();
+                    help += m::text("A unit of: ") + md.readable_type + m::nl();
                 }
 
                 if let Some(defining_info) = self.interpreter.get_defining_unit(&full_name) {
@@ -724,9 +724,11 @@ impl Context {
 
         let typed_statements = result?;
 
-        let result = self
-            .interpreter
-            .interpret_statements(settings, &typed_statements);
+        let result = self.interpreter.interpret_statements(
+            settings,
+            &typed_statements,
+            self.typechecker.registry(),
+        );
 
         if result.is_err() {
             // Similar to above: we need to reset the state of the typechecker and the prefix transformer

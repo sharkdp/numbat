@@ -98,10 +98,26 @@ impl TypeScheme {
 
     pub(crate) fn to_readable_type(
         &self,
-        _registry: &crate::dimension::DimensionRegistry,
+        registry: &crate::dimension::DimensionRegistry,
     ) -> crate::markup::Markup {
-        // TODO: Bring back "readable type" functionality, to turn e.g. `Length / Time` into `Velocity`
-        self.pretty_print()
+        let (instantiated_type, type_parameters) = self.instantiate_for_printing();
+
+        let mut markup = m::empty();
+        for type_parameter in &type_parameters {
+            markup += m::keyword("forall");
+            markup += m::space();
+            markup += m::type_identifier(type_parameter.unsafe_name());
+
+            if instantiated_type.bounds.is_dtype_bound(type_parameter) {
+                markup += m::operator(":");
+                markup += m::space();
+                markup += m::type_identifier("Dim");
+            }
+            markup += m::operator(".");
+            markup += m::space();
+        }
+
+        markup + instantiated_type.inner.to_readable_type(registry)
     }
 
     #[track_caller]
