@@ -73,18 +73,6 @@ fn exponentiation_with_dimensionful_base() {
 }
 
 #[test]
-fn exponentiation_type_inference() {
-    assert_successful_typecheck("fn f(x: Scalar, y) = x^y");
-    assert_successful_typecheck("fn f(x) = x^2");
-    assert_successful_typecheck("fn f(x) = 2^x");
-
-    assert!(matches!(
-        get_typecheck_error("fn f(x, y) = x^y"),
-        TypeCheckError::ExponentiationNeedsTypeAnnotation(..)
-    ));
-}
-
-#[test]
 fn equality() {
     assert_successful_typecheck("2 a == a");
     assert_successful_typecheck("2 a / (3 a) == 2 / 3");
