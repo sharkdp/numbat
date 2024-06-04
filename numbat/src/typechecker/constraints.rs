@@ -376,6 +376,7 @@ impl Constraint {
     fn get_dtype_constraint_type_variable(&self) -> Option<TypeVariable> {
         match self {
             Constraint::IsDType(Type::TVar(tvar)) => Some(tvar.clone()),
+            Constraint::IsDType(Type::TPar(name)) => Some(TypeVariable::new(name.clone())),
             _ => None,
         }
     }

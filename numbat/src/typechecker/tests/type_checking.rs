@@ -730,3 +730,17 @@ fn name_resolution() {
             ",
     );
 }
+
+#[test]
+fn instantiation() {
+    assert_successful_typecheck("id(1)");
+    assert_successful_typecheck("id(1 a) / id(1 b)");
+    assert_successful_typecheck("if id(true) then id(1) else id(2)");
+
+    assert_successful_typecheck("id_for_dim(1)");
+    assert_successful_typecheck("id(1 a) / id(1 b)");
+    assert!(matches!(
+        get_typecheck_error("id_for_dim(true)"),
+        TypeCheckError::ConstraintSolverError(..)
+    ));
+}

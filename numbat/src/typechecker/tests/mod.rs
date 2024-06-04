@@ -34,6 +34,7 @@ const TEST_PRELUDE: &str = "
     fn head<T>(x: List<T>) -> T
 
     fn id<T>(x: T) -> T = x
+    fn id_for_dim<T: Dim>(x: T) -> T = x
     ";
 
 fn type_a() -> DType {
