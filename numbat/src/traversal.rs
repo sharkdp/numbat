@@ -87,10 +87,10 @@ impl ForAllTypeSchemes for Statement {
                 f(fn_type);
             }
             Statement::DefineDimension(_, _) => {}
-            Statement::DefineBaseUnit(_, _, type_) => {
+            Statement::DefineBaseUnit(_, _, _annotation, type_) => {
                 f(type_);
             }
-            Statement::DefineDerivedUnit(_, expr, _, type_) => {
+            Statement::DefineDerivedUnit(_, expr, _, _annotation, type_) => {
                 expr.for_all_type_schemes(f);
                 f(type_);
             }

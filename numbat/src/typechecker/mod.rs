@@ -1171,6 +1171,7 @@ impl TypeChecker {
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name.clone(),
                     decorators.clone(),
+                    type_annotation.clone().map(TypeAnnotation::TypeExpression),
                     TypeScheme::concrete(Type::Dimension(type_specified)),
                 )
             }
@@ -1247,6 +1248,7 @@ impl TypeChecker {
                     identifier.clone(),
                     expr_checked,
                     decorators.clone(),
+                    type_annotation.clone(),
                     TypeScheme::Concrete(type_deduced),
                 )
             }
@@ -1683,7 +1685,9 @@ impl TypeChecker {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
 
-        if let typed_ast::Statement::DefineDerivedUnit(_, expr, _, type_) = &elaborated_statement {
+        if let typed_ast::Statement::DefineDerivedUnit(_, expr, _, _annotation, type_) =
+            &elaborated_statement
+        {
             if !type_.unsafe_as_concrete().is_closed() {
                 return Err(TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(
                     expr.full_span(),
