@@ -16,10 +16,10 @@ fn cons<A>(x: A, xs: List<A>) -> List<A>
 fn is_empty<A>(xs: List<A>) -> Bool = xs == []
 
 @description("Concatenate two lists")
-fn concat<A>(xs: List<A>, ys: List<A>) -> List<A> =
-  if is_empty(xs)
-    then ys
-    else cons(head(xs), concat(tail(xs), ys))
+fn concat<A>(xs1: List<A>, xs2: List<A>) -> List<A> =
+  if is_empty(xs1)
+    then xs2
+    else cons(head(xs1), concat(tail(xs1), xs2))
 
 @description("Generate a range of integer numbers from `start` to `end` (inclusive)")
 fn range(start: Scalar, end: Scalar) -> List<Scalar> =
