@@ -559,7 +559,13 @@ impl Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DefineVariable(String, Vec<Decorator>, Expression, TypeScheme),
+    DefineVariable(
+        String,
+        Vec<Decorator>,
+        Expression,
+        Option<TypeAnnotation>,
+        TypeScheme,
+    ),
     DefineFunction(
         String,
         Vec<Decorator>,                            // decorators
@@ -737,13 +743,16 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DefineVariable(identifier, _decs, expr, type_) => {
+            Statement::DefineVariable(identifier, _decs, expr, annotation, type_) => {
                 m::keyword("let")
                     + m::space()
                     + m::identifier(identifier)
                     + m::operator(":")
                     + m::space()
-                    + type_.pretty_print()
+                    + annotation
+                        .as_ref()
+                        .map(|a| a.pretty_print())
+                        .unwrap_or(type_.pretty_print())
                     + m::space()
                     + m::operator("=")
                     + m::space()

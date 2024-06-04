@@ -1134,6 +1134,7 @@ impl TypeChecker {
                     identifier.clone(),
                     decorators.clone(),
                     expr_checked,
+                    type_annotation.clone(),
                     TypeScheme::concrete(type_deduced),
                 )
             }

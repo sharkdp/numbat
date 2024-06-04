@@ -300,7 +300,7 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DefineVariable(identifier, decorators, expr, _type) => {
+            Statement::DefineVariable(identifier, decorators, expr, _annotation, _type) => {
                 let current_depth = self.current_depth();
 
                 // For variables, we ignore the prefix info and only use the names
