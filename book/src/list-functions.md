@@ -117,10 +117,11 @@ fn rand_lognormal(μ: Scalar, σ: Scalar) -> Scalar
 fn rand_pareto<T>(α: Scalar, min: T) -> T
 ```
 
-### Algebra (experimental)
+### Algebra
 
 ```nbt
-fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
+# Returns the solutions of the equation a x² + b x + c = 0
+quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A>
 ```
 
 ## Date and time

@@ -47,8 +47,7 @@ fn expect_output(code: &str, expected_output: impl AsRef<str>) {
 }
 
 #[track_caller]
-fn expect_failure(code: &str, msg_part: &str) {
-    let mut ctx = get_test_context();
+fn expect_failure_with_context(ctx: &mut Context, code: &str, msg_part: &str) {
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         let error_message = e.to_string();
         println!("{}", error_message);
@@ -59,6 +58,12 @@ fn expect_failure(code: &str, msg_part: &str) {
     } else {
         panic!("Expected an error but the code '{code}' did not fail");
     }
+}
+
+#[track_caller]
+fn expect_failure(code: &str, msg_part: &str) {
+    let mut ctx = get_test_context();
+    expect_failure_with_context(&mut ctx, code, msg_part)
 }
 
 #[track_caller]
@@ -236,27 +241,19 @@ fn test_algebra() {
     let _ = ctx
         .interpret("use extra::algebra", CodeSource::Internal)
         .unwrap();
-    expect_output_with_context(
-        &mut ctx,
-        "quadratic_equation(1, 0, -1)",
-        "\"x₁ = 1; x₂ = -1\"",
-    );
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "\"x = -0.333333\"");
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 0, 1)", "\"no solution\"");
-    expect_output_with_context(&mut ctx, "quadratic_equation(9, -126, 441)", "\"x = 7\"");
-    expect_output_with_context(&mut ctx, "quadratic_equation(1, -2, 1)", "\"x = 1\"");
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 1, 1)", "\"x = -1\"");
-    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, 0)", "\"x = 0\"");
-    expect_output_with_context(
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, -1)", "[1, -1]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "[-0.333333]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 0, 1)", "[]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(9, -126, 441)", "[7]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, -2, 1)", "[1]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 1, 1)", "[-1]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, 0)", "[0]");
+    expect_failure_with_context(
         &mut ctx,
         "quadratic_equation(0, 0, 0)",
-        "\"infinitely many solutions\"",
+        "infinitely many solutions",
     );
-    expect_output_with_context(
-        &mut ctx,
-        "quadratic_equation(1, 1, 1)",
-        "\"no real-valued solution\"",
-    );
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 1, 1)", "[]");
 }
 
 #[test]

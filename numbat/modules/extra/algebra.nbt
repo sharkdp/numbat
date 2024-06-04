@@ -1,9 +1,21 @@
+use core::error
 use math::functions
 
-fn _qe_solution<A: Dim, B: Dim>(a: A, b: B, c: B²/A, sign: Scalar) -> B/A =
+fn _qe_solution<A: Dim, B: Dim>(a: A, b: B, c: B² / A, sign: Scalar) -> B / A =
   (-b + sign × sqrt(b² - 4 a c)) / 2 a
 
-fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B²/A) -> String =
+@name("Solve quadratic equations")
+@url("https://en.wikipedia.org/wiki/Quadratic_equation")
+@description("Returns the solutions of the equation a x² + b x + c = 0")
+fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A> =
   if a == 0
-    then if b == 0 then if c == 0 then "infinitely many solutions" else "no solution" else "x = {-c / b}"
-    else if b² < 4 a c then "no real-valued solution" else if b² == 4 a c then "x = {-b / 2 a}" else "x₁ = {_qe_solution(a, b, c, 1)}; x₂ = {_qe_solution(a, b, c, -1)}"
+    then if b == 0
+      then if c == 0
+        then error("infinitely many solutions")
+        else []
+      else [-c / b]
+    else if b² < 4 a c
+      then []
+      else if b² == 4 a c
+        then [-b / 2 a]
+        else [_qe_solution(a, b, c, 1), _qe_solution(a, b, c, -1)]
