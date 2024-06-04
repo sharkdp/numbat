@@ -411,7 +411,6 @@ dependencies = [
  "indexmap",
  "itertools",
  "libc",
- "log",
  "mendeleev",
  "num-format",
  "num-integer",
