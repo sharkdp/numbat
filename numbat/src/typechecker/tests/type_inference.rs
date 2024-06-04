@@ -1,3 +1,4 @@
+use ast::scalar;
 use qualified_type::Bounds;
 use qualified_type::QualifiedType;
 use tests::get_typecheck_error;
@@ -6,6 +7,10 @@ use tests::{type_a, type_b, type_c};
 use super::super::*;
 
 use super::get_inferred_fn_type;
+
+fn scalar() -> Type {
+    Type::Dimension(DType::scalar())
+}
 
 // Concrete types A, B and C = A×B (see TEST_PRELUDE)
 fn a() -> Type {
@@ -20,6 +25,11 @@ fn c() -> Type {
     Type::Dimension(type_c())
 }
 
+// List<A>
+fn list_a() -> Type {
+    Type::List(Box::new(a()))
+}
+
 // Type variables S and T
 fn s() -> Type {
     Type::TVar(TypeVariable::new("S"))
@@ -27,6 +37,11 @@ fn s() -> Type {
 
 fn t() -> Type {
     Type::TVar(TypeVariable::new("T"))
+}
+
+// List<T>
+fn list_t() -> Type {
+    Type::List(Box::new(t()))
 }
 
 // Dimension type variable D and E
@@ -46,6 +61,11 @@ fn d_times_e() -> Type {
     let d = DType::from_type_variable(TypeVariable::new("D"));
     let e = DType::from_type_variable(TypeVariable::new("E"));
     Type::Dimension(d.multiply(&e))
+}
+
+// List<D>
+fn list_d() -> Type {
+    Type::List(Box::new(d_dtype()))
 }
 
 fn generalize(t: Type, variables: &[Type], dvariables: &[Type]) -> TypeScheme {
@@ -74,8 +94,7 @@ macro_rules! fn_type {
 }
 
 #[test]
-fn basic() {
-    // if-then-else
+fn if_then_else() {
     assert_eq!(
         get_inferred_fn_type("fn f(x) = if true then x else a"),
         fn_type!(a() => a())
@@ -91,6 +110,30 @@ fn basic() {
     assert_eq!(
         get_inferred_fn_type("fn f(x) = if x then 0 else a"),
         fn_type!(Type::Boolean => a())
+    );
+}
+
+#[test]
+fn lists() {
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = [x]"),
+        fn_type!(forall t(); t() => list_t())
+    );
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = [a, x]"),
+        fn_type!(a() => list_a())
+    );
+    assert_eq!(
+        get_inferred_fn_type("fn f(x) = [x, a]"),
+        fn_type!(a() => list_a())
+    );
+    assert_eq!(
+        get_inferred_fn_type("fn f(xs) = [a] == xs"),
+        fn_type!(list_a() => Type::Boolean)
+    );
+    assert_eq!(
+        get_inferred_fn_type("fn f(xs) = len(xs)"),
+        fn_type!(forall d_type(); list_d() => scalar())
     );
 }
 
@@ -179,6 +222,11 @@ fn dimension_types_combinations() {
         get_inferred_fn_type("fn f(x) = (x * b) + c"),
         fn_type!(a() => c())
     );
+
+    assert!(matches!(
+        get_typecheck_error("fn f(x) = (x + a) * (x + b)"),
+        TypeCheckError::ConstraintSolverError(..)
+    ));
 }
 
 #[test]
