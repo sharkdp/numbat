@@ -253,7 +253,7 @@ impl Constraint {
             Constraint::Equal(Type::Dimension(dtype_x), t)
                 if dtype_x
                     .deconstruct_as_single_type_variable()
-                    .map(|tv| !dtype_x.contains(&tv, false))
+                    .map(|tv| !t.contains(&tv, false))
                     .unwrap_or(false) =>
             {
                 let x = dtype_x.deconstruct_as_single_type_variable().unwrap();
