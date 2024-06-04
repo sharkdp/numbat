@@ -56,6 +56,7 @@ use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
 
+use pretty_print::PrettyPrint;
 use resolver::CodeSource;
 use resolver::Resolver;
 use resolver::ResolverError;
@@ -420,23 +421,10 @@ impl Context {
             return help;
         }
 
-        if let Some((_fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
+        if let Some((fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
             let metadata = fn_metadata.clone();
-            // let parameters = fn_signature
-            //     .parameter_types
-            //     .iter()
-            //     .map(|(_, name, typ)| (name, typ.to_readable_type(self.dimension_registry())))
-            //     .collect_vec();
-            // let type_parameters = fn_signature
-            //     .type_parameters
-            //     .iter()
-            //     .map(|(_, s)| s)
-            //     .collect_vec();
-            // let return_type = fn_signature
-            //     .return_type
-            //     .to_readable_type(self.dimension_registry());
 
-            let mut help = m::text("Function: ");
+            let mut help = m::text("Function:    ");
             if let Some(name) = &metadata.name {
                 help += m::text(name);
             } else {
@@ -447,26 +435,10 @@ impl Context {
             }
             help += m::nl();
 
-            // help += m::text("Signature:") + m::space() + m::identifier(keyword);
-            // if !type_parameters.is_empty() {
-            //     help += m::operator("<");
-            //     help += Itertools::intersperse(
-            //         type_parameters.iter().map(m::type_identifier),
-            //         m::operator(",") + m::space(),
-            //     )
-            //     .sum();
-            //     help += m::operator(">");
-            // }
-            // help += m::operator("(");
-            // help += Itertools::intersperse(
-            //     parameters
-            //         .iter()
-            //         .map(|(p, t)| m::identifier(p) + m::text(":") + m::space() + t.clone()),
-            //     m::operator(",") + m::space(),
-            // )
-            // .sum();
-            // help += m::operator(")");
-            // help += m::space() + m::operator("->") + m::space() + return_type + m::nl();
+            help += m::text("Signature:  ")
+                + m::space()
+                + fn_signature.fn_type.pretty_print()
+                + m::nl();
 
             if let Some(description) = &metadata.description {
                 let desc = "Description: ";
