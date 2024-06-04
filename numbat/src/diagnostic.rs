@@ -458,11 +458,9 @@ impl ErrorDiagnostic for TypeCheckError {
                 return inner.diagnostics();
             }
             TypeCheckError::ConstraintSolverError(..) | TypeCheckError::SubstitutionError(..) => {
-                d.with_message(inner_error) // TODO
-                    .with_notes(vec![
-                        "Consider adding type annotations to get more precise error messages."
-                            .into(),
-                    ])
+                d.with_message(inner_error).with_notes(vec![
+                    "Consider adding type annotations to get more precise error messages.".into(),
+                ])
             }
             TypeCheckError::MissingDimBound(span) => d
                 .with_labels(vec![span

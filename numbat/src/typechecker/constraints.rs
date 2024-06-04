@@ -2,8 +2,6 @@ use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{DType, DTypeFactor, Type};
 
-use log::debug;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintSolverError {
     CouldNotSolve(String),
@@ -95,11 +93,6 @@ impl ConstraintSet {
 
                         substitution.extend(new_substitution);
 
-                        debug!(
-                            "    New constraints:\n{}",
-                            new_constraint_set.pretty_print(6)
-                        );
-
                         made_progress = true;
                         break;
                     }
@@ -146,14 +139,6 @@ impl ConstraintSet {
 
     pub fn iter(&self) -> impl Iterator<Item = &Constraint> {
         self.constraints.iter()
-    }
-
-    pub fn pretty_print(&self, indent: usize) -> String {
-        self.constraints
-            .iter()
-            .map(|c| format!("{:indent$}{}", "", c.pretty_print(), indent = indent))
-            .collect::<Vec<String>>()
-            .join("\n")
     }
 }
 
@@ -229,18 +214,10 @@ impl Constraint {
     /// Try to solve a constraint. Returns `None` if the constaint can not (yet) be solved.
     fn try_satisfy(&self) -> Option<Satisfied> {
         match self {
-            Constraint::Equal(t1, t2) if t1 == t2 => {
-                debug!("  (1) SOLVING: {} ~ {} trivially ", t1, t2);
-                Some(Satisfied::trivially())
-            }
+            Constraint::Equal(t1, t2) if t1 == t2 => Some(Satisfied::trivially()),
             Constraint::Equal(Type::TVar(x), t) | Constraint::Equal(t, Type::TVar(x))
                 if !t.contains(x, false) =>
             {
-                debug!(
-                    "  (2) SOLVING: {x} ~ {t} with substitution {x} := {t}",
-                    x = x.unsafe_name(),
-                    t = t
-                );
                 Some(Satisfied::with_substitution(Substitution::single(
                     x.clone(),
                     t.clone(),
@@ -253,25 +230,14 @@ impl Constraint {
                     .unwrap_or(false) =>
             {
                 let x = dtype_x.deconstruct_as_single_type_variable().unwrap();
-                debug!(
-                    "  (3) SOLVING: {x} ~ {t} with substitution {x} := {t}",
-                    x = x.unsafe_name(),
-                    t = t
-                );
                 Some(Satisfied::with_substitution(Substitution::single(
                     x.clone(),
                     t.clone(),
                 )))
             }
-            Constraint::Equal(t @ Type::Fn(params1, return1), s @ Type::Fn(params2, return2))
+            Constraint::Equal(Type::Fn(params1, return1), Type::Fn(params2, return2))
                 if params1.len() == params2.len() =>
             {
-                debug!(
-                    "  (4) SOLVING: {t} ~ {s} with new constraints for all parameters and return types",
-                    t = t,
-                    s = s,
-                );
-
                 let mut new_constraints = vec![Constraint::Equal(
                     return1.as_ref().clone(),
                     return2.as_ref().clone(),
@@ -282,14 +248,7 @@ impl Constraint {
 
                 Some(Satisfied::with_new_constraints(new_constraints))
             }
-            Constraint::Equal(s @ Type::List(s1), t @ Type::List(t1)) => {
-                debug!(
-                    "  (5) SOLVING: {s} ~ {t} with new constraint {s1} ~ {t1}",
-                    s = s,
-                    t = t,
-                    s1 = s1,
-                    t1 = t1
-                );
+            Constraint::Equal(Type::List(s1), Type::List(t1)) => {
                 Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
                     s1.as_ref().clone(),
                     t1.as_ref().clone(),
@@ -297,12 +256,6 @@ impl Constraint {
             }
             Constraint::Equal(Type::TVar(tv), Type::Dimension(d))
             | Constraint::Equal(Type::Dimension(d), Type::TVar(tv)) => {
-                debug!(
-                    "  (6) SOLVING: {tv} ~ {d} by lifting the type variable to a DType",
-                    tv = tv.unsafe_name(),
-                    d = d
-                );
-
                 Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
                     Type::Dimension(DType::from_type_variable(tv.clone())),
                     Type::Dimension(d.clone()),
@@ -310,12 +263,6 @@ impl Constraint {
             }
             Constraint::Equal(Type::Dimension(d1), Type::Dimension(d2)) => {
                 let d_result = d1.divide(d2);
-                debug!(
-                    "  (7) SOLVING: {} ~ {} with new constraint {} = Scalar",
-                    d1.debug_print(),
-                    d2.debug_print(),
-                    d_result.debug_print()
-                );
                 Some(Satisfied::with_new_constraints(vec![
                     Constraint::EqualScalar(d_result),
                 ]))
@@ -327,18 +274,10 @@ impl Constraint {
                     .iter()
                     .map(|tv| Constraint::IsDType(Type::TVar(tv.clone())))
                     .collect();
-                debug!(
-                    "  (8) SOLVING: {} : DType through new constraints: {:?}",
-                    inner.debug_print(),
-                    new_constraints
-                );
                 Some(Satisfied::with_new_constraints(new_constraints))
             }
             Constraint::IsDType(_) => None,
-            Constraint::EqualScalar(d) if d == &DType::scalar() => {
-                debug!("  (9) SOLVING: Scalar = Scalar trivially");
-                Some(Satisfied::trivially())
-            }
+            Constraint::EqualScalar(d) if d == &DType::scalar() => Some(Satisfied::trivially()),
             Constraint::EqualScalar(dtype) => match dtype.split_first_factor() {
                 Some(((DTypeFactor::TVar(tv), k), rest)) => {
                     let result = DType::from_factors(
@@ -346,12 +285,6 @@ impl Constraint {
                             .iter()
                             .map(|(f, j)| (f.clone(), -j / k))
                             .collect::<Vec<_>>(),
-                    );
-                    debug!(
-                        "  (10) SOLVING: {dtype} = Scalar with substitution {tv} := {result}",
-                        dtype = dtype.debug_print(),
-                        tv = tv.unsafe_name(),
-                        result = result.debug_print()
                     );
                     Some(Satisfied::with_substitution(Substitution::single(
                         tv.clone(),

@@ -36,7 +36,7 @@ impl DTypeFactor {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DType {
     // Always in canonical form
-    pub factors: Vec<(DTypeFactor, Exponent)>, // TODO make private
+    pub factors: Vec<(DTypeFactor, Exponent)>, // TODO make this private
 }
 
 impl DType {
@@ -116,50 +116,6 @@ impl DType {
             DTypeFactor::BaseDimension(name.into()),
             Exponent::from_integer(1),
         )])
-    }
-
-    // TODO: remove this function
-    pub fn debug_print(&self) -> String {
-        if self == &DType::scalar() {
-            return "Scalar".to_string();
-        }
-
-        let parts = self
-            .factors
-            .iter()
-            .map(|(f, n)| match f {
-                DTypeFactor::BaseDimension(d) => {
-                    if *n == Exponent::from_integer(1) {
-                        d.clone()
-                    } else {
-                        format!("{}^{}", d, n)
-                    }
-                }
-                DTypeFactor::TVar(TypeVariable::Named(name)) => {
-                    if *n == Exponent::from_integer(1) {
-                        name.to_owned()
-                    } else {
-                        format!("{}^{}", name, n)
-                    }
-                }
-                DTypeFactor::TVar(TypeVariable::Quantified(i)) => {
-                    if *n == Exponent::from_integer(1) {
-                        format!("$tgen{}", i)
-                    } else {
-                        format!("$tgen{}^{}", i, n)
-                    }
-                }
-                DTypeFactor::TPar(name) => {
-                    if *n == Exponent::from_integer(1) {
-                        name.to_owned()
-                    } else {
-                        format!("{}^{}", name, n)
-                    }
-                }
-            })
-            .collect::<Vec<String>>()
-            .join(" × ");
-        parts
     }
 
     fn canonicalize(&mut self) {
@@ -295,7 +251,7 @@ impl PrettyPrint for DType {
 
 impl std::fmt::Display for DType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.debug_print())
+        write!(f, "{}", self.pretty_print().to_string())
     }
 }
 

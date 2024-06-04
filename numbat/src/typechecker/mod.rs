@@ -32,7 +32,6 @@ use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResultion};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
-use log::info;
 use name_generator::NameGenerator;
 use num_traits::Zero;
 
@@ -1660,15 +1659,6 @@ impl TypeChecker {
         // in (after constraint solving).
         let mut elaborated_statement = self.elaborate_statement(&statement)?;
 
-        info!("=========================================");
-        info!("Elaborated statements:");
-        info!("{}", elaborated_statement.pretty_print());
-        info!("");
-
-        info!("Constraints:");
-        info!("{}", self.constraints.pretty_print(2));
-        info!("");
-
         // Solve constraints
         let (substitution, dtype_variables) =
             self.constraints.solve().map_err(|inner| match inner {
@@ -1737,14 +1727,6 @@ impl TypeChecker {
 
         elaborated_statement.generalize_types(&dtype_variables);
         self.env.generalize_types(&dtype_variables);
-
-        info!("Final statement:");
-        info!("{}", elaborated_statement.pretty_print());
-
-        if let typed_ast::Statement::Expression(expr) = &elaborated_statement {
-            info!("Generalized type:");
-            info!("{}", expr.get_type_scheme().pretty_print());
-        }
 
         Ok(elaborated_statement)
     }
