@@ -482,42 +482,42 @@ fn function_types_in_argument_position() {
             ",
     );
 
-    // assert!(matches!(
-    //     get_typecheck_error(
-    //         "
-    //             fn wrong_arity(f: Fn[(A) -> B]) -> B = f()
-    //             "
-    //     ),
-    //     TypeCheckError::WrongArity { .. }
-    // ));
+    assert!(matches!(
+        get_typecheck_error(
+            "
+                fn wrong_arity(f: Fn[(A) -> B]) -> B = f()
+                "
+        ),
+        TypeCheckError::WrongArity { .. }
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error(
-    //         "
-    //             fn wrong_argument_type(f: Fn[(A) -> B]) -> B = f(b)
-    //             "
-    //     ),
-    //     TypeCheckError::IncompatibleTypesInFunctionCall(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error(
+            "
+                fn wrong_argument_type(f: Fn[(A) -> B]) -> B = f(b)
+                "
+        ),
+        TypeCheckError::ConstraintSolverError(..)
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error(
-    //         "
-    //             fn wrong_return_type(f: Fn[() -> A]) -> B = f()
-    //             "
-    //     ),
-    //     TypeCheckError::IncompatibleDimensions(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error(
+            "
+                fn wrong_return_type(f: Fn[() -> A]) -> B = f()
+                "
+        ),
+        TypeCheckError::ConstraintSolverError(..)
+    ));
 
-    // assert!(matches!(
-    //     get_typecheck_error(
-    //         "
-    //             fn argument_mismatch(f: Fn[() -> A]) -> A = f()
-    //             argument_mismatch(takes_a_returns_a)
-    //             "
-    //     ),
-    //     TypeCheckError::IncompatibleTypesInFunctionCall(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error(
+            "
+                fn argument_mismatch(f: Fn[() -> A]) -> A = f()
+                argument_mismatch(takes_a_returns_a)
+                "
+        ),
+        TypeCheckError::IncompatibleTypesInFunctionCall(..)
+    ));
 }
 
 #[test]
@@ -536,10 +536,10 @@ fn no_dimensionless_base_units() {
 fn callables() {
     assert_successful_typecheck("callable(a)");
     assert_successful_typecheck("a -> callable");
-    // assert!(matches!(
-    //     get_typecheck_error("callable(b)"),
-    //     TypeCheckError::IncompatibleTypesInFunctionCall(..)
-    // ));
+    assert!(matches!(
+        get_typecheck_error("callable(b)"),
+        TypeCheckError::ConstraintSolverError(..)
+    ));
     assert!(matches!(
         get_typecheck_error("callable()"),
         TypeCheckError::WrongArity { .. }
