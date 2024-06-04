@@ -8,7 +8,6 @@ use super::{
 /// A predicate on type variables.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Bound {
-    // TODO: At the moment, this can only be IsDim(Type::TVar(_)). Maybe we can find a better representation.
     IsDim(Type),
 }
 

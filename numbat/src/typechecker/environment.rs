@@ -8,7 +8,7 @@ use super::type_scheme::TypeScheme;
 
 use std::collections::HashMap;
 
-type Identifier = String; // TODO ?
+type Identifier = String;
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
