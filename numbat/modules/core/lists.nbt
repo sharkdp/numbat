@@ -1,4 +1,5 @@
 use core::scalar
+use core::error
 
 @description("Get the length of a list")
 fn len<A>(xs: List<A>) -> Scalar
@@ -70,3 +71,15 @@ fn intersperse<A>(sep: A, xs: List<A>) -> List<A> =
 fn _add(x, y) = x + y # TODO: replace this with a local function once we support them
 @description("Sum all elements of a list")
 fn sum<D: Dim>(xs: List<D>) -> D = foldl(_add, 0, xs)
+
+# TODO: implement linspace using `map` or similar once we have closures. This is ugly.
+fn _linspace_helper(start, end, n_steps, i) =
+  if i == n_steps
+    then []
+    else cons(start + (end - start) * i / (n_steps - 1), _linspace_helper(start, end, n_steps, i + 1))
+
+@description("Generate a list of `n_steps` evenly spaced numbers from `start` to `end` (inclusive)")
+fn linspace<D: Dim>(start: D, end: D, n_steps: Scalar) -> List<D> =
+  if n_steps <= 1
+    then error("Number of steps must be larger than 1")
+    else _linspace_helper(start, end, n_steps, 0)

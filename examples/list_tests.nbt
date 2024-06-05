@@ -40,6 +40,10 @@ assert_eq(intersperse(0, [1, 2, 3]), [1, 0, 2, 0, 3])
 assert_eq(sum([1, 2, 3, 4, 5]), 15)
 assert_eq(sum([1 m, 200 cm, 3 m]), 6 m)
 
+assert_eq(linspace(0, 1, 2), [0, 1])
+assert_eq(linspace(0, 1, 5), [0, 0.25, 0.5, 0.75, 1])
+assert_eq(linspace(0, 2 m, 5), [0 m, 0.5 m, 1 m, 1.5 m, 2 m])
+
 # Non-dtype lists
 let words = ["hello", "world"]
 assert_eq(head(words), "hello")
