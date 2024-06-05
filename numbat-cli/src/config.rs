@@ -39,12 +39,22 @@ pub struct ExchangeRateConfig {
     pub fetching_policy: ExchangeRateFetchingPolicy,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Eq, Default, Debug, Clone, ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+pub enum ColorMode {
+    Always,
+    Never,
+    #[default]
+    Auto,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct Config {
     pub intro_banner: IntroBanner,
     pub prompt: String,
     pub pretty_print: PrettyPrintMode,
+    pub color: ColorMode,
 
     #[serde(skip)]
     pub enter_repl: bool,
@@ -63,6 +73,7 @@ impl Default for Config {
             prompt: ">>> ".to_owned(),
             intro_banner: IntroBanner::default(),
             pretty_print: PrettyPrintMode::Auto,
+            color: ColorMode::default(),
             load_prelude: true,
             load_user_init: true,
             exchange_rates: Default::default(),

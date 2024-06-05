@@ -4,8 +4,9 @@ mod config;
 mod highlighter;
 
 use ansi_formatter::ansi_format;
+use colored::control::SHOULD_COLORIZE;
 use completer::NumbatCompleter;
-use config::{Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode};
+use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode};
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
@@ -75,6 +76,10 @@ struct Args {
     #[arg(long, value_name = "WHEN")]
     pretty_print: Option<PrettyPrintMode>,
 
+    /// Whether or not coloring should occur.
+    #[arg(long, value_name = "WHEN")]
+    color: Option<ColorMode>,
+
     /// What kind of intro banner to show (if any).
     #[arg(long, value_name = "MODE")]
     intro_banner: Option<IntroBanner>,
@@ -139,6 +144,7 @@ impl Cli {
 
         config.intro_banner = args.intro_banner.unwrap_or(config.intro_banner);
         config.pretty_print = args.pretty_print.unwrap_or(config.pretty_print);
+        config.color = args.color.unwrap_or(config.color);
 
         config.enter_repl =
             (args.file.is_none() && args.expression.is_none()) || args.inspect_interactively;
@@ -169,6 +175,12 @@ impl Cli {
     }
 
     fn run(&mut self) -> Result<()> {
+        match self.config.color {
+            ColorMode::Never => SHOULD_COLORIZE.set_override(false),
+            ColorMode::Always => SHOULD_COLORIZE.set_override(true),
+            ColorMode::Auto => (), // Let colored itself decide whether coloring should occur or not
+        }
+
         if self.config.load_prelude {
             let result = self.parse_and_evaluate(
                 "use prelude",
