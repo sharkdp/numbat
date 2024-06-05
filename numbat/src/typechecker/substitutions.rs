@@ -205,6 +205,7 @@ impl ApplySubstitution for Expression {
                 }
                 element_type.apply(s)
             }
+            Expression::TypedHole(_, type_) => type_.apply(s),
         }
     }
 }

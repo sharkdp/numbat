@@ -70,6 +70,7 @@ pub enum Expression {
     Scalar(Span, Number),
     Identifier(Span, String),
     UnitIdentifier(Span, Prefix, String, String),
+    TypedHole(Span),
     UnaryOperator {
         op: UnaryOperator,
         expr: Box<Expression>,
@@ -127,6 +128,7 @@ impl Expression {
             Expression::InstantiateStruct { full_span, .. } => *full_span,
             Expression::AccessField(full_span, _ident_span, _, _) => *full_span,
             Expression::List(span, _) => *span,
+            Expression::TypedHole(span) => *span,
         }
     }
 }
@@ -567,6 +569,7 @@ impl ReplaceSpans for Expression {
                 Span::dummy(),
                 elements.iter().map(|e| e.replace_spans()).collect(),
             ),
+            Expression::TypedHole(_) => Expression::TypedHole(Span::dummy()),
         }
     }
 }

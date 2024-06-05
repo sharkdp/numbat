@@ -148,6 +148,12 @@ pub enum TypeCheckError {
 
     #[error("Derived unit definitions may not contain generic types. Use a variable instead")]
     DerivedUnitDefinitionMustNotBeGeneric(Span),
+
+    #[error("Typed hole")]
+    TypedHoleInStatement(Span, String, String),
+
+    #[error("Multiple typed holes in statement")]
+    MultipleTypedHoles(Span),
 }
 
 pub type Result<T> = std::result::Result<T, TypeCheckError>;

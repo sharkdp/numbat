@@ -1043,6 +1043,10 @@ impl TypeChecker {
                     TypeScheme::concrete(result_element_type),
                 )
             }
+            ast::Expression::TypedHole(span) => {
+                let type_ = self.fresh_type_variable();
+                typed_ast::Expression::TypedHole(*span, TypeScheme::concrete(type_))
+            }
         })
     }
 
@@ -1657,8 +1661,8 @@ impl TypeChecker {
         self.registry.introduced_type_parameters.clear();
 
         // Elaborate the program/statement: turn the AST into a typed AST, possibly
-        // with "holes" inside, i.e. type variables that will only later be filled
-        // in (after constraint solving).
+        // with unification variables, i.e. type variables that will only later be
+        // filled in after the constraints have been solved.
         let mut elaborated_statement = self.elaborate_statement(&statement)?;
 
         // Solve constraints
@@ -1739,6 +1743,15 @@ impl TypeChecker {
 
         elaborated_statement.generalize_types(&dtype_variables);
         self.env.generalize_types(&dtype_variables);
+
+        // Check if there is a typed hole in the statement
+        if let Some((span, type_of_hole)) = elaborated_statement.find_typed_hole()? {
+            return Err(TypeCheckError::TypedHoleInStatement(
+                span,
+                type_of_hole.to_readable_type(&self.registry).to_string(),
+                elaborated_statement.pretty_print().to_string(),
+            ));
+        }
 
         Ok(elaborated_statement)
     }

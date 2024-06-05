@@ -337,10 +337,10 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::ExpectedBool(span)
             | TypeCheckError::NoFunctionReferenceToGenericFunction(span)
             | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span)
-            | TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(span) => d
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error)]),
+            | TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(span)
+            | TypeCheckError::MultipleTypedHoles(span) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
             TypeCheckError::MissingDimension(span, dim) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
@@ -473,6 +473,15 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::ExponentiationNeedsTypeAnnotation(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
+            TypeCheckError::TypedHoleInStatement(span, type_, statement) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(type_)])
+                .with_message("Found typed hole")
+                .with_notes(vec![
+                    format!("Found a hole of type '{type_}' in the statement:"),
+                    format!("  {statement}"),
+                ]),
         };
         vec![d]
     }

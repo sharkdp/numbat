@@ -260,6 +260,9 @@ impl BytecodeInterpreter {
 
                 self.vm.add_op1(Op::BuildList, elements.len() as u16);
             }
+            Expression::TypedHole(_, _) => {
+                unreachable!("Typed holes cause type inference errors")
+            }
         };
 
         Ok(())
@@ -285,6 +288,7 @@ impl BytecodeInterpreter {
             Expression::BinaryOperator(..) | Expression::BinaryOperatorForDate(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }
+            Expression::TypedHole(_, _) => unreachable!("Typed holes cause type inference errors"),
         }
 
         Ok(())

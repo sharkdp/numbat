@@ -122,5 +122,8 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         e @ typed_ast::Expression::List(_, _, _) => Err(
             TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "lists"),
         ),
+        e @ typed_ast::Expression::TypedHole(_, _) => Err(
+            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "typed hole"),
+        ),
     }
 }

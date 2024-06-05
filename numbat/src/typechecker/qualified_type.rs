@@ -6,12 +6,12 @@ use super::{
 };
 
 /// A predicate on type variables.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Bound {
     IsDim(Type),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Bounds(Vec<Bound>);
 
 impl Bounds {
@@ -57,7 +57,7 @@ impl FromIterator<Bound> for Bounds {
 /// For example, the type of the square-function (D -> D^2), needs an
 /// additional `D: Dim` bound, as arbitrary types (like Bool) can not
 /// be squared.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QualifiedType {
     pub inner: Type,
     pub bounds: Bounds,
