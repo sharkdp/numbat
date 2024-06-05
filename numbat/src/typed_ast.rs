@@ -5,9 +5,10 @@ use crate::arithmetic::Exponent;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
 use crate::ast::{ProcedureKind, TypeAnnotation, TypeParameterBound};
 use crate::dimension::DimensionRegistry;
-use crate::traversal::ForAllTypeSchemes;
+use crate::traversal::{ForAllExpressions, ForAllTypeSchemes};
 use crate::type_variable::TypeVariable;
 use crate::typechecker::type_scheme::TypeScheme;
+use crate::typechecker::TypeCheckError;
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, span::Span,
@@ -519,6 +520,7 @@ pub enum Expression {
     InstantiateStruct(Span, Vec<(String, Expression)>, StructInfo),
     AccessField(Span, Span, Box<Expression>, String, StructInfo, TypeScheme),
     List(Span, Vec<Expression>, TypeScheme),
+    TypedHole(Span, TypeScheme),
 }
 
 impl Expression {
@@ -552,6 +554,7 @@ impl Expression {
             Expression::InstantiateStruct(span, _, _) => *span,
             Expression::AccessField(_span, full_span, _, _, _, _) => *full_span,
             Expression::List(full_span, _, _) => *full_span,
+            Expression::TypedHole(span, _) => *span,
         }
     }
 }
@@ -621,6 +624,26 @@ impl Statement {
         );
         exponents
     }
+
+    pub(crate) fn find_typed_hole(&self) -> Result<Option<(Span, TypeScheme)>, TypeCheckError> {
+        let mut hole = None;
+        let mut found_multiple_holes = false;
+        self.for_all_expressions(&mut |expr| match expr {
+            Expression::TypedHole(span, type_) => {
+                if hole.is_some() {
+                    found_multiple_holes = true;
+                }
+                hole = Some((*span, type_.clone()))
+            }
+            _ => {}
+        });
+
+        if found_multiple_holes {
+            return Err(TypeCheckError::MultipleTypedHoles(hole.unwrap().0));
+        } else {
+            Ok(hole)
+        }
+    }
 }
 
 impl Expression {
@@ -642,6 +665,7 @@ impl Expression {
             Expression::List(_, _, element_type) => {
                 Type::List(Box::new(element_type.unsafe_as_concrete()))
             }
+            Expression::TypedHole(_, type_) => type_.unsafe_as_concrete(),
         }
     }
 
@@ -672,6 +696,7 @@ impl Expression {
                     },
                 ),
             },
+            Expression::TypedHole(_, type_) => type_.clone(),
         }
     }
 }
@@ -924,7 +949,8 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::String(..)
         | Expression::InstantiateStruct(..)
         | Expression::AccessField(..)
-        | Expression::List(..) => expr.pretty_print(),
+        | Expression::List(..)
+        | Expression::TypedHole(_, _) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::BinaryOperatorForDate { .. }
@@ -1137,6 +1163,7 @@ impl PrettyPrint for Expression {
                     .sum()
                     + m::operator("]")
             }
+            TypedHole(_, _) => m::operator("?"),
         }
     }
 }

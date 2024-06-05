@@ -82,6 +82,7 @@ pub enum TokenKind {
     LogicalAnd,
     LogicalOr,
     Period,
+    QuestionMark,
 
     // Keywords
     Per,
@@ -420,6 +421,7 @@ impl Tokenizer {
             '≥' => TokenKind::GreaterOrEqual,
             '>' if self.match_char('=') => TokenKind::GreaterOrEqual,
             '>' => TokenKind::GreaterThan,
+            '?' => TokenKind::QuestionMark,
             '0' if self
                 .peek()
                 .map(|c| c == 'x' || c == 'o' || c == 'b')

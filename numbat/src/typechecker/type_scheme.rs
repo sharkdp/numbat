@@ -15,7 +15,7 @@ use crate::typed_ast::Type;
 ///
 /// Type schemes can be created by calling .quantify() on a qualified
 /// type.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TypeScheme {
     Concrete(Type),
     Quantified(usize, QualifiedType),

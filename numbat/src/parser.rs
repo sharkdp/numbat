@@ -41,7 +41,7 @@
 //! unicode_power   ::=   call ( "⁻" ? ( "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ) ) ?
 //! call            ::=   primary ( ( "(" arguments? ")" ) | "." identifier ) *
 //! arguments       ::=   expression ( "," expression ) *
-//! primary         ::=   boolean | string | hex_number | oct_number | bin_number | number | identifier ( struct_expr ? ) | list_expr | "(" expression ")"
+//! primary         ::=   boolean | string | hex_number | oct_number | bin_number | number | identifier ( struct_expr ? ) | typed_hole | list_expr | "(" expression ")"
 //! struct_expr     ::=   "{" ( identifier ":" type_annotation "," )* ( identifier ":" expression "," ? ) ? "}"
 //! list_expr       ::=   "[]" | "[" expression ( "," expression ) * "]"
 //!
@@ -53,6 +53,7 @@
 //! identifier      ::=   identifier_s identifier_c*
 //! identifier_s    ::=   Unicode_XID_Start | Unicode_Currency | "%" | "°" | "_"
 //! identifier_c    ::=   Unicode_XID_Continue | Unicode_Currency  | "%"
+//! typed_hole      ::=   "?"
 //! boolean         ::=   "true" | "false"
 //! plus            ::=   "+"
 //! minus           ::=   "-"
@@ -1199,7 +1200,7 @@ impl<'a> Parser<'a> {
     }
 
     fn primary(&mut self) -> Result<Expression> {
-        // This function needs to be kept in sync with `next_token_could_start_primary` below.
+        // This function needs to be kept in sync with `next_token_could_start_power_expression` below.
 
         let overflow_error = |span| {
             Err(ParseError::new(
@@ -1241,13 +1242,13 @@ impl<'a> Parser<'a> {
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
-        } else if let Some(_) = self.match_exact(TokenKind::NaN) {
+        } else if self.match_exact(TokenKind::NaN).is_some() {
             let span = self.last().unwrap().span;
             Ok(Expression::Scalar(span, Number::from_f64(f64::NAN)))
-        } else if let Some(_) = self.match_exact(TokenKind::Inf) {
+        } else if self.match_exact(TokenKind::Inf).is_some() {
             let span = self.last().unwrap().span;
             Ok(Expression::Scalar(span, Number::from_f64(f64::INFINITY)))
-        } else if let Some(_) = self.match_exact(TokenKind::LeftBracket) {
+        } else if self.match_exact(TokenKind::LeftBracket).is_some() {
             let span = self.last().unwrap().span;
 
             let mut elements = vec![];
@@ -1267,6 +1268,9 @@ impl<'a> Parser<'a> {
             }
 
             Ok(Expression::List(span, elements))
+        } else if self.match_exact(TokenKind::QuestionMark).is_some() {
+            let span = self.last().unwrap().span;
+            Ok(Expression::TypedHole(span))
         } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             let span = self.last().unwrap().span;
 
@@ -1422,7 +1426,10 @@ impl<'a> Parser<'a> {
 
         matches!(
             self.peek().kind,
-            TokenKind::Number | TokenKind::Identifier | TokenKind::LeftParen
+            TokenKind::Number
+                | TokenKind::Identifier
+                | TokenKind::LeftParen
+                | TokenKind::QuestionMark
         )
     }
 

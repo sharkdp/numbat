@@ -124,6 +124,7 @@ impl Transformer {
                     .map(|e| self.transform_expression(e))
                     .collect(),
             ),
+            hole @ Expression::TypedHole(_) => hole,
         }
     }
 

@@ -68,6 +68,9 @@ impl ForAllTypeSchemes for Expression {
                 }
                 f(type_);
             }
+            Expression::TypedHole(_, type_) => {
+                f(type_);
+            }
         }
     }
 }
@@ -100,6 +103,85 @@ impl ForAllTypeSchemes for Statement {
                 }
             }
             Statement::DefineStruct(info) => info.for_all_type_schemes(f),
+        }
+    }
+}
+
+pub trait ForAllExpressions {
+    fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression));
+}
+
+impl ForAllExpressions for Statement {
+    fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
+        match self {
+            Statement::Expression(expr) => expr.for_all_expressions(f),
+            Statement::DefineVariable(_, _, expr, _, _) => expr.for_all_expressions(f),
+            Statement::DefineFunction(_, _, _, _, body, _) => {
+                if let Some(body) = body {
+                    body.for_all_expressions(f);
+                }
+            }
+            Statement::DefineDimension(_, _) => {}
+            Statement::DefineBaseUnit(_, _, _, _) => {}
+            Statement::DefineDerivedUnit(_, expr, _, _, _) => expr.for_all_expressions(f),
+            Statement::ProcedureCall(_, args) => {
+                for arg in args {
+                    arg.for_all_expressions(f);
+                }
+            }
+            Statement::DefineStruct(_) => {}
+        }
+    }
+}
+
+impl ForAllExpressions for Expression {
+    fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
+        f(self);
+        match self {
+            Expression::Scalar(_, _, _) => {}
+            Expression::Identifier(_, _, _) => {}
+            Expression::UnitIdentifier(_, _, _, _, _) => {}
+            Expression::UnaryOperator(_, _, expr, _) => expr.for_all_expressions(f),
+            Expression::BinaryOperator(_, _, lhs, rhs, _) => {
+                lhs.for_all_expressions(f);
+                rhs.for_all_expressions(f);
+            }
+            Expression::BinaryOperatorForDate(_, _, lhs, rhs, _) => {
+                lhs.for_all_expressions(f);
+                rhs.for_all_expressions(f);
+            }
+            Expression::FunctionCall(_, _, _, args, _) => {
+                for arg in args {
+                    arg.for_all_expressions(f);
+                }
+            }
+            Expression::CallableCall(_, callable, args, _) => {
+                callable.for_all_expressions(f);
+                for arg in args {
+                    arg.for_all_expressions(f);
+                }
+            }
+            Expression::Boolean(_, _) => {}
+            Expression::Condition(_, if_, then_, else_) => {
+                if_.for_all_expressions(f);
+                then_.for_all_expressions(f);
+                else_.for_all_expressions(f);
+            }
+            Expression::String(_, _) => {}
+            Expression::InstantiateStruct(_, initializers, _) => {
+                for (_, expr) in initializers {
+                    expr.for_all_expressions(f);
+                }
+            }
+            Expression::AccessField(_, _, expr, _, _, _) => {
+                expr.for_all_expressions(f);
+            }
+            Expression::List(_, elements, _) => {
+                for element in elements {
+                    element.for_all_expressions(f);
+                }
+            }
+            Expression::TypedHole(_, _) => {}
         }
     }
 }
