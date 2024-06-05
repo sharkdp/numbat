@@ -1,0 +1,44 @@
+# How many photons are received per bit transmitted from Voyager 1?
+#
+# This calculation is adapted from a Physics Stack Exchange answer [1].
+#
+# [1] https://physics.stackexchange.com/a/816710
+
+# Voyager radio transmission:
+let datarate = 160 bps
+let f = 8.3 GHz
+let P_transmit = 23 W
+
+let ω = 2π f
+let λ = c / f
+
+@aliases(photon)
+unit photons
+
+let energy_per_photon = ℏ ω / photon
+
+let photon_rate = P_transmit / energy_per_photon -> photons/s
+
+print("Voyager sends data at a rate of {datarate} with {P_transmit}.")
+print("At a frequency of {f}, this amounts to {photon_rate:.0e}.")
+
+# Voyager dish antenna:
+let d_voyager = 3.7 m
+
+# Voyagers distance to Earth:
+let R = 23.5 billion kilometers  # as of 2024
+
+# Diameter of receiver dish:
+let d_receiver = 70 m
+
+let irradiance = P_transmit / (4π R²)
+let P_received: Power = irradiance × (π d_voyager / λ)² × (π d_receiver² / 4)
+
+print("A {d_receiver} dish on Earth will receive {P_received -> aW:.1f} of power.")
+
+let photon_rate_receiver = P_received / energy_per_photon -> photons/s
+let photons_per_bit = photon_rate_receiver / datarate -> photons/bit
+
+print()
+print("This corresponds to {photon_rate_receiver}.")
+print("Which means {photons_per_bit:.0}.")
