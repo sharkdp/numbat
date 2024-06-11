@@ -22,6 +22,7 @@ pub mod module_importer;
 mod name_resolution;
 mod number;
 mod parser;
+mod plot;
 mod prefix;
 mod prefix_parser;
 mod prefix_transformer;

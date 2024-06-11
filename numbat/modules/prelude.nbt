@@ -36,3 +36,5 @@ use chemistry::elements
 
 use datetime::functions
 use datetime::human
+
+use plotting::basic

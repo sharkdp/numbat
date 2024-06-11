@@ -12,6 +12,8 @@ use crate::value::{FunctionReference, Value};
 use crate::vm::ExecutionContext;
 use crate::{ast::ProcedureKind, quantity::Quantity};
 
+use indexmap::IndexMap;
+
 type ControlFlow = std::ops::ControlFlow<RuntimeError>;
 
 pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
@@ -467,6 +469,15 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 name: "random".into(),
                 arity: 0..=0,
                 callable: Callable::Function(Box::new(random)),
+            },
+        );
+
+        m.insert(
+            "_create_line_plot".to_string(),
+            ForeignFunction {
+                name: "_create_line_plot".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(_create_line_plot)),
             },
         );
 
@@ -1046,11 +1057,32 @@ fn random(args: &[Value]) -> Result<Value> {
     Ok(Value::Quantity(Quantity::from_scalar(output)))
 }
 
+fn _create_line_plot(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let fields = args[0].clone().unsafe_as_struct_fields();
+    let x_label = fields[0].unsafe_as_string();
+    let y_label = fields[1].unsafe_as_string();
+    let xs = fields[2]
+        .unsafe_as_list()
+        .iter()
+        .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
+        .collect();
+    let ys = fields[3]
+        .unsafe_as_list()
+        .iter()
+        .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
+        .collect();
+
+    let filename = crate::plot::line_plot(xs, ys, x_label, y_label);
+
+    Ok(Value::String(filename))
+}
+
 fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
     use crate::span::{SourceCodePositition, Span};
     use crate::typed_ast::StructInfo;
     use crate::typed_ast::Type;
-    use indexmap::IndexMap;
     use mendeleev::{Electronvolt, GramPerCubicCentimeter, Kelvin, KiloJoulePerMole};
     use std::sync::Arc;
 
