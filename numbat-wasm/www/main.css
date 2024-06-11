@@ -1,3 +1,7 @@
+:root {
+  --terminal-height: 550px;
+}
+
 html {
     font-family: 'Exo 2', sans-serif;
     background-color: #f7f7f7;
@@ -33,11 +37,31 @@ p.desc {
 
 p.links {
     font-size: 0.8em;
+    margin-top: 36px;
     text-align: center;
 }
 
 p.links a {
     color: #666;
+}
+
+#skeleton-loader {
+  animation: skeleton-loading 1.5s infinite;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  height: var(--terminal-height);
+  width: 100%;
+}
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.hidden {
+  display: none;
 }
 
 #terminal {
@@ -59,7 +83,6 @@ p.links a {
 .terminal,
 .terminal .terminal-fill {
     padding: 1.2em;
-    margin-bottom: 2em;
 }
 
 .terminal,

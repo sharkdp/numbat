@@ -78,12 +78,19 @@ function interpret(input) {
   return output;
 }
 
+const parsedTerminalHeightInPixels = parseInt(
+  getComputedStyle(document.documentElement).getPropertyValue(
+    "--terminal-height"
+  ),
+  10
+);
+
 function setup() {
   $(document).ready(function() {
     var term = $('#terminal').terminal(interpret, {
         greetings: false,
         name: "terminal",
-        height: 550,
+        height: parsedTerminalHeightInPixels,
         prompt: "[[;;;prompt]>>> ]",
         checkArity: false,
         historySize: 200,
@@ -94,6 +101,10 @@ function setup() {
           cb(numbat.get_completions_for(inp));
         }
       });
+
+    // Swap out the skeleton loader with the terminal to prevent layout shifting.
+    document.getElementById("skeleton-loader").classList.add("hidden");
+    document.getElementById("terminal").classList.remove("hidden");
 
     // evaluate expression in query string if supplied (via opensearch)
     if (location.search) {

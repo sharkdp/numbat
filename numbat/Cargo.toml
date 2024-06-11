@@ -6,7 +6,7 @@ categories = ["science", "mathematics", "compilers"]
 keywords = ["language", "compiler", "physics", "units", "calculation"]
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
-version = "1.11.0"
+version = "1.12.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -36,6 +36,8 @@ termcolor = { version = "1.4.1", optional = true }
 html-escape = { version = "0.2.13", optional = true }
 rand = "0.8.5"
 strfmt = "0.2.4"
+indexmap = "2.2.6"
+mendeleev = "0.8.0"
 
 [features]
 default = ["fetch-exchangerates"]

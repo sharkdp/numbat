@@ -1,2 +1,4 @@
-# Throw a user-defined error
-fn error(message: String) -> !
+use core::scalar
+
+@description("Throw a user-defined error.")
+fn error<T>(message: String) -> T

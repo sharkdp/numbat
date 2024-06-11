@@ -54,13 +54,15 @@ pub enum TokenKind {
     LeftBracket,
     RightBracket,
 
+    LeftCurly,
+    RightCurly,
+
     // Operators and special signs
     Plus,
     Minus,
     Multiply,
     Power,
     Divide,
-    Per,
     Comma,
     Arrow,
     Equal,
@@ -79,35 +81,39 @@ pub enum TokenKind {
     GreaterOrEqual,
     LogicalAnd,
     LogicalOr,
+    Period,
+    QuestionMark,
 
     // Keywords
+    Per,
+    To,
     Let,
     Fn, // 'fn'
     Dimension,
     Unit,
     Use,
-
-    To,
-
-    Bool,
-    True,
-    False,
-    If,
-    Then,
-    Else,
-
-    String,
-    DateTime,
-
-    NaN,
-    Inf,
-
-    CapitalFn, // 'Fn'
+    Struct,
 
     Long,
     Short,
     Both,
     None,
+
+    If,
+    Then,
+    Else,
+    True,
+    False,
+
+    NaN,
+    Inf,
+
+    // Type names
+    Bool,
+    String,
+    DateTime,
+    CapitalFn, // 'Fn'
+    List,
 
     // Procedure calls
     ProcedurePrint,
@@ -178,7 +184,7 @@ fn is_currency_char(c: char) -> bool {
 }
 
 fn is_other_allowed_identifier_char(c: char) -> bool {
-    c == '%'
+    matches!(c, '%' | '‰')
 }
 
 fn is_subscript_char(c: char) -> bool {
@@ -341,6 +347,7 @@ impl Tokenizer {
         static KEYWORDS: OnceLock<HashMap<&'static str, TokenKind>> = OnceLock::new();
         let keywords = KEYWORDS.get_or_init(|| {
             let mut m = HashMap::new();
+            // keywords
             m.insert("per", TokenKind::Per);
             m.insert("to", TokenKind::To);
             m.insert("let", TokenKind::Let);
@@ -348,25 +355,32 @@ impl Tokenizer {
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
             m.insert("use", TokenKind::Use);
+            m.insert("struct", TokenKind::Struct);
             m.insert("long", TokenKind::Long);
             m.insert("short", TokenKind::Short);
             m.insert("both", TokenKind::Both);
             m.insert("none", TokenKind::None);
+            m.insert("if", TokenKind::If);
+            m.insert("then", TokenKind::Then);
+            m.insert("else", TokenKind::Else);
+            m.insert("true", TokenKind::True);
+            m.insert("false", TokenKind::False);
+            m.insert("NaN", TokenKind::NaN);
+            m.insert("inf", TokenKind::Inf);
+
+            // procedures
             m.insert("print", TokenKind::ProcedurePrint);
             m.insert("assert", TokenKind::ProcedureAssert);
             m.insert("assert_eq", TokenKind::ProcedureAssertEq);
             m.insert("type", TokenKind::ProcedureType);
+
+            // type names
             m.insert("Bool", TokenKind::Bool);
-            m.insert("true", TokenKind::True);
-            m.insert("false", TokenKind::False);
-            m.insert("if", TokenKind::If);
-            m.insert("then", TokenKind::Then);
-            m.insert("else", TokenKind::Else);
             m.insert("String", TokenKind::String);
             m.insert("DateTime", TokenKind::DateTime);
             m.insert("Fn", TokenKind::CapitalFn);
-            m.insert("NaN", TokenKind::NaN);
-            m.insert("inf", TokenKind::Inf);
+            m.insert("List", TokenKind::List);
+
             // Keep this list in sync with keywords::KEYWORDS!
             m
         });
@@ -399,12 +413,15 @@ impl Tokenizer {
             ')' => TokenKind::RightParen,
             '[' => TokenKind::LeftBracket,
             ']' => TokenKind::RightBracket,
+            '{' if !self.interpolation_state.is_inside() => TokenKind::LeftCurly,
+            '}' if !self.interpolation_state.is_inside() => TokenKind::RightCurly,
             '≤' => TokenKind::LessOrEqual,
             '<' if self.match_char('=') => TokenKind::LessOrEqual,
             '<' => TokenKind::LessThan,
             '≥' => TokenKind::GreaterOrEqual,
             '>' if self.match_char('=') => TokenKind::GreaterOrEqual,
             '>' => TokenKind::GreaterThan,
+            '?' => TokenKind::QuestionMark,
             '0' if self
                 .peek()
                 .map(|c| c == 'x' || c == 'o' || c == 'b')
@@ -478,6 +495,7 @@ impl Tokenizer {
 
                 TokenKind::Ellipsis
             }
+            '.' if self.peek().map_or(false, is_identifier_start) => TokenKind::Period,
             '.' => {
                 self.consume_stream_of_digits(true, true, true)?;
                 self.scientific_notation()?;
@@ -492,7 +510,7 @@ impl Tokenizer {
             '|' if self.match_char('|') => TokenKind::LogicalOr,
             '*' if self.match_char('*') => TokenKind::Power,
             '+' => TokenKind::Plus,
-            '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
+            '*' | '·' | '×' => TokenKind::Multiply,
             '/' if self.match_char('/') => TokenKind::PostfixApply,
             '/' => TokenKind::Divide,
             '÷' => TokenKind::Divide,
@@ -621,7 +639,12 @@ impl Tokenizer {
                     self.advance();
                 }
 
-                if self.peek().map(|c| c == '.').unwrap_or(false) {
+                if self.peek().map(|c| c == '.').unwrap_or(false)
+                    && self
+                        .peek2()
+                        .map(|c| !is_identifier_start(c))
+                        .unwrap_or(true)
+                {
                     return tokenizer_error(
                         &self.current,
                         TokenizerErrorKind::UnexpectedCharacterInIdentifier(self.peek().unwrap()),
@@ -1131,4 +1154,61 @@ fn test_is_subscript_char() {
     assert!(is_subscript_char('ₓ'));
     assert!(is_subscript_char('ₘ'));
     assert!(is_subscript_char('₎'));
+}
+
+#[test]
+fn test_field_access() {
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("instance2.field").unwrap(),
+        @r###"
+    "instance2", Identifier, (1, 1)
+    ".", Period, (1, 10)
+    "field", Identifier, (1, 11)
+    "", Eof, (1, 16)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("function().field").unwrap(),
+        @r###"
+    "function", Identifier, (1, 1)
+    "(", LeftParen, (1, 9)
+    ")", RightParen, (1, 10)
+    ".", Period, (1, 11)
+    "field", Identifier, (1, 12)
+    "", Eof, (1, 17)
+    "###
+    );
+
+    insta::assert_snapshot!(
+    tokenize_reduced_pretty("instance.0").unwrap_err(),
+        @"Error at (1, 9): `Unexpected character in identifier: '.'`"
+    );
+
+    insta::assert_snapshot!(
+    tokenize_reduced_pretty("instance..field").unwrap_err(),
+        @"Error at (1, 9): `Unexpected character in identifier: '.'`"
+    );
+
+    insta::assert_snapshot!(
+    tokenize_reduced_pretty("instance . field").unwrap_err(),
+        @"Error at (1, 11): `Expected digit`"
+    );
+}
+
+#[test]
+fn test_lists() {
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty("[1, 2.3, 4]").unwrap(),
+        @r###"
+    "[", LeftBracket, (1, 1)
+    "1", Number, (1, 2)
+    ",", Comma, (1, 3)
+    "2.3", Number, (1, 5)
+    ",", Comma, (1, 8)
+    "4", Number, (1, 10)
+    "]", RightBracket, (1, 11)
+    "", Eof, (1, 12)
+    "###
+    );
 }

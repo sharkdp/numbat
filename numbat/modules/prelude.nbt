@@ -25,6 +25,7 @@ use core::scalar
 use core::quantities
 use core::dimensions
 use core::functions
+use core::lists
 use core::strings
 use core::error
 use core::random
@@ -32,6 +33,7 @@ use core::random
 use math::constants
 use math::functions
 use math::trigonometry_extra
+use math::statistics
 
 use units::si
 use units::time
@@ -53,6 +55,8 @@ use units::placeholder
 use physics::constants
 use physics::temperature_conversion
 
+use chemistry::elements
+
 use datetime::functions
 use datetime::human
 
@@ -62,4 +66,4 @@ fn Tan(θ: Angle) -> Scalar = tan(θ / θC)
 fn ASin(x: Scalar) -> Angle = asin(x) × θC
 fn ACos(x: Scalar) -> Angle = acos(x) × θC
 fn ATan(x: Scalar) -> Angle = atan(x) × θC
-fn ATan2<Q>(y: Q, x: Q) -> Angle = atan2(y, x) × θC
+fn ATan2<Q: Dim>(y: Q, x: Q) -> Angle = atan2(y, x) × θC

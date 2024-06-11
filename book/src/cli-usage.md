@@ -37,7 +37,7 @@ There is a set of special commands that only work in interactive mode:
 |---------|--------|
 | `list`, `ls` | List all functions, dimensions, variables and units |
 | `list <what>` | Where `<what>` can be `functions`, `dimensions`, `variables`, `units` |
-| `info <identifier>` | Get more information about units and variables |
+| `info <identifier>` | Get more information about units, variables and functions |
 | `clear` | Clear screen |
 | `help`, `?` | View short help text |
 | `quit`, `exit` | Quit the session |

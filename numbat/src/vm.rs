@@ -1,6 +1,10 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::{cmp::Ordering, fmt::Display};
 
+use indexmap::IndexMap;
+
+use crate::typed_ast::StructInfo;
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
@@ -103,6 +107,14 @@ pub enum Op {
     /// Perform a simplification operation to the current value on the stack
     FullSimplify,
 
+    /// Build a struct from the field values on the stack
+    BuildStructInstance,
+    /// Access a single field of a struct
+    AccessStructField,
+
+    /// Build a list from the elements on the stack
+    BuildList,
+
     /// Return from the current function
     Return,
 }
@@ -110,7 +122,11 @@ pub enum Op {
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::SetUnitConstant | Op::Call | Op::FFICallFunction | Op::FFICallProcedure => 2,
+            Op::SetUnitConstant
+            | Op::Call
+            | Op::FFICallFunction
+            | Op::FFICallProcedure
+            | Op::BuildStructInstance => 2,
             Op::LoadConstant
             | Op::ApplyPrefix
             | Op::GetLocal
@@ -119,7 +135,9 @@ impl Op {
             | Op::JoinString
             | Op::JumpIfFalse
             | Op::Jump
-            | Op::CallCallable => 1,
+            | Op::CallCallable
+            | Op::AccessStructField
+            | Op::BuildList => 1,
             Op::Negate
             | Op::Factorial
             | Op::Add
@@ -184,6 +202,9 @@ impl Op {
             Op::JoinString => "JoinString",
             Op::FullSimplify => "FullSimplify",
             Op::Return => "Return",
+            Op::BuildStructInstance => "BuildStructInstance",
+            Op::AccessStructField => "AccessStructField",
+            Op::BuildList => "BuildList",
         }
     }
 }
@@ -265,6 +286,9 @@ pub struct Vm {
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
     pub constants: Vec<Constant>,
 
+    /// struct metadata, used so we can display struct fields at runtime
+    struct_infos: IndexMap<String, Arc<StructInfo>>,
+
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
 
@@ -301,6 +325,7 @@ impl Vm {
             bytecode: vec![("<main>".into(), vec![])],
             current_chunk_index: 0,
             constants: vec![],
+            struct_infos: IndexMap::new(),
             prefixes: vec![],
             strings: vec![],
             unit_information: vec![],
@@ -312,7 +337,6 @@ impl Vm {
             unit_registry: UnitRegistry::new(),
         }
     }
-
     pub fn set_debug(&mut self, activate: bool) {
         self.debug = activate;
     }
@@ -361,6 +385,18 @@ impl Vm {
         self.constants.push(constant);
         assert!(self.constants.len() <= u16::MAX as usize);
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
+    }
+
+    pub fn add_struct_info(&mut self, struct_info: &StructInfo) -> usize {
+        let e = self.struct_infos.entry(struct_info.name.clone());
+        let idx = e.index();
+        e.or_insert_with(|| Arc::new(struct_info.clone()));
+
+        idx
+    }
+
+    pub fn get_structinfo_idx(&self, name: &str) -> Option<usize> {
+        self.struct_infos.get_index_of(name)
     }
 
     pub fn add_prefix(&mut self, prefix: Prefix) -> u16 {
@@ -871,6 +907,8 @@ impl Vm {
                         Value::String(s) => s,
                         Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
                         Value::FunctionReference(r) => r.to_string(),
+                        s @ Value::StructInstance(..) => s.to_string(),
+                        l @ Value::List(_) => l.to_string(),
                         Value::FormatSpecifiers(_) => unreachable!(),
                     };
 
@@ -945,6 +983,42 @@ impl Vm {
                         // Push the return value back on top of the stack
                         self.stack.push(return_value);
                     }
+                }
+                Op::BuildStructInstance => {
+                    let info_idx = self.read_u16();
+                    let (_, struct_info) = self
+                        .struct_infos
+                        .get_index(info_idx as usize)
+                        .expect("Missing struct metadata");
+                    let struct_info = Arc::clone(struct_info);
+                    let num_args = self.read_u16();
+
+                    let mut content = Vec::with_capacity(num_args as usize);
+
+                    for _ in 0..num_args {
+                        content.push(self.pop());
+                    }
+
+                    self.stack.push(Value::StructInstance(struct_info, content));
+                }
+                Op::AccessStructField => {
+                    let field_idx = self.read_u16();
+
+                    let mut fields = self.pop().unsafe_as_struct_fields();
+
+                    let value = fields.swap_remove(field_idx as usize);
+                    self.stack.push(value);
+                }
+                Op::BuildList => {
+                    let length = self.read_u16();
+                    let mut list = Vec::with_capacity(length as usize);
+
+                    for _ in 0..length {
+                        list.push(self.pop());
+                    }
+                    list.reverse();
+
+                    self.stack.push(Value::List(list));
                 }
             }
         }

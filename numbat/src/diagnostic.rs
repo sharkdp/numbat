@@ -46,6 +46,7 @@ impl ErrorDiagnostic for NameResolutionError {
         match self {
             NameResolutionError::IdentifierClash {
                 conflicting_identifier: _,
+                original_item_type,
                 conflict_span,
                 original_span,
             } => vec![Diagnostic::error()
@@ -53,7 +54,11 @@ impl ErrorDiagnostic for NameResolutionError {
                 .with_labels(vec![
                     original_span
                         .diagnostic_label(LabelStyle::Secondary)
-                        .with_message("Previously defined here"),
+                        .with_message(if let Some(t) = original_item_type.as_ref() {
+                            format!("Previously defined {t} here")
+                        } else {
+                            "Previously defined here".to_owned()
+                        }),
                     conflict_span
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message("identifier is already in use"),
@@ -200,28 +205,6 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::TypeParameterNameClash(span, _) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
-            TypeCheckError::CanNotInferTypeParameters(
-                span,
-                callable_definition_span,
-                _,
-                params,
-            ) => d.with_labels(vec![
-                callable_definition_span
-                    .diagnostic_label(LabelStyle::Secondary)
-                    .with_message(format!(
-                        "The type parameter(s) {params} in this generic function"
-                    )),
-                span.diagnostic_label(LabelStyle::Primary)
-                    .with_message("… could not be inferred for this function call"),
-            ]),
-            TypeCheckError::MultipleUnresolvedTypeParameters(span, parameter_span) => d
-                .with_labels(vec![
-                    span.diagnostic_label(LabelStyle::Secondary)
-                        .with_message("In this function call"),
-                    parameter_span
-                        .diagnostic_label(LabelStyle::Primary)
-                        .with_message(inner_error),
-                ]),
             TypeCheckError::IncompatibleTypesInCondition(
                 if_span,
                 then_type,
@@ -254,7 +237,7 @@ impl ErrorDiagnostic for TypeCheckError {
                     .with_message(rhs_type.to_string()),
                 op_span
                     .diagnostic_label(LabelStyle::Primary)
-                    .with_message("Incompatible types comparison operator"),
+                    .with_message("Incompatible types in comparison operator"),
             ]),
             TypeCheckError::IncompatibleTypeInAssert(procedure_span, type_, type_span) => d
                 .with_labels(vec![
@@ -323,23 +306,21 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_notes(vec![inner_error])
                 }
             }
-            TypeCheckError::NameAlreadyUsedBy(_, definition_span, previous_definition_span) => {
-                let mut labels = vec![];
-
-                if let Some(span) = previous_definition_span {
-                    labels.push(
-                        span.diagnostic_label(LabelStyle::Secondary)
-                            .with_message("Previously defined here"),
-                    );
-                }
-
-                labels.push(
-                    definition_span
+            TypeCheckError::IncompatibleTypesInList(
+                span_first,
+                type_first,
+                span_subsequent,
+                type_subsequent,
+            ) => d
+                .with_labels(vec![
+                    span_first
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(type_first.to_string()),
+                    span_subsequent
                         .diagnostic_label(LabelStyle::Primary)
-                        .with_message(inner_error),
-                );
-                d.with_labels(labels)
-            }
+                        .with_message(type_subsequent.to_string()),
+                ])
+                .with_notes(vec![inner_error]),
             TypeCheckError::NoDimensionlessBaseUnit(span, unit_name) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
@@ -355,10 +336,11 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::ExpectedDimensionType(span, _)
             | TypeCheckError::ExpectedBool(span)
             | TypeCheckError::NoFunctionReferenceToGenericFunction(span)
-            | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span) => d
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error)]),
+            | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span)
+            | TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(span)
+            | TypeCheckError::MultipleTypedHoles(span) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
             TypeCheckError::MissingDimension(span, dim) => d
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
@@ -386,6 +368,120 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message(rhs_type.to_string()),
             ]),
+            TypeCheckError::DuplicateFieldInStructInstantiation(
+                this_field_span,
+                that_field_span,
+                _attr_name,
+            ) => d.with_labels(vec![
+                this_field_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                that_field_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("Already defined here"),
+            ]),
+            TypeCheckError::FieldAccessOfNonStructType(ident_span, expr_span, _attr, type_) => d
+                .with_labels(vec![
+                    ident_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    expr_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(type_.to_string()),
+                ]),
+            TypeCheckError::UnknownFieldAccess(ident_span, expr_span, _attr, type_) => d
+                .with_labels(vec![
+                    ident_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    expr_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(type_.to_string()),
+                ]),
+            TypeCheckError::IncompatibleTypesForStructField(
+                expected_field_span,
+                _expected_type,
+                expr_span,
+                _found_type,
+            ) => d.with_labels(vec![
+                expr_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                expected_field_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("Defined here"),
+            ]),
+            TypeCheckError::UnknownStruct(span, _name) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
+            TypeCheckError::UnknownFieldInStructInstantiation(field_span, defn_span, _, _) => d
+                .with_labels(vec![
+                    field_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    defn_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message("Struct defined here"),
+                ]),
+            TypeCheckError::DuplicateFieldInStructDefinition(
+                this_field_span,
+                that_field_span,
+                _attr_name,
+            ) => d.with_labels(vec![
+                this_field_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                that_field_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("Already defined here"),
+            ]),
+            TypeCheckError::MissingFieldsInStructInstantiation(
+                construction_span,
+                defn_span,
+                missing,
+            ) => d
+                .with_labels(vec![
+                    construction_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    defn_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message("Struct defined here"),
+                ])
+                .with_notes(vec!["Missing fields: ".to_owned()])
+                .with_notes(
+                    missing
+                        .iter()
+                        .map(|(n, t)| n.to_owned() + ": " + &t.to_string())
+                        .collect(),
+                ),
+            TypeCheckError::NameResolutionError(inner) => {
+                return inner.diagnostics();
+            }
+            TypeCheckError::ConstraintSolverError(..) | TypeCheckError::SubstitutionError(..) => {
+                d.with_message(inner_error).with_notes(vec![
+                    "Consider adding type annotations to get more precise error messages.".into(),
+                ])
+            }
+            TypeCheckError::MissingDimBound(span) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error)])
+                .with_notes(vec![
+                    "Consider adding `: Dim` after the type parameter".to_owned()
+                ]),
+            TypeCheckError::ExponentiationNeedsTypeAnnotation(span) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
+            TypeCheckError::TypedHoleInStatement(span, type_, statement) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(type_)])
+                .with_message("Found typed hole")
+                .with_notes(vec![
+                    format!("Found a hole of type '{type_}' in the statement:"),
+                    format!("  {statement}"),
+                ]),
         };
         vec![d]
     }

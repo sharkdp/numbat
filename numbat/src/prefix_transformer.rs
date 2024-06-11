@@ -97,6 +97,34 @@ impl Transformer {
                     })
                     .collect(),
             ),
+            Expression::InstantiateStruct {
+                full_span,
+                ident_span,
+                name,
+                fields,
+            } => Expression::InstantiateStruct {
+                full_span,
+                ident_span,
+                name,
+                fields: fields
+                    .into_iter()
+                    .map(|(span, attr, arg)| (span, attr, self.transform_expression(arg)))
+                    .collect(),
+            },
+            Expression::AccessField(full_span, ident_span, expr, attr) => Expression::AccessField(
+                full_span,
+                ident_span,
+                Box::new(self.transform_expression(*expr)),
+                attr,
+            ),
+            Expression::List(span, elements) => Expression::List(
+                span,
+                elements
+                    .into_iter()
+                    .map(|e| self.transform_expression(e))
+                    .collect(),
+            ),
+            hole @ Expression::TypedHole(_) => hole,
         }
     }
 
@@ -184,6 +212,7 @@ impl Transformer {
                 body,
                 return_type_annotation_span: return_type_span,
                 return_type_annotation,
+                decorators,
             } => {
                 self.function_names.push(function_name.clone());
                 self.prefix_parser
@@ -198,7 +227,7 @@ impl Transformer {
                 //   fn foo(t: Time) -> Time = t    # not okay: shadows 't' for ton
                 //
                 let mut fn_body_transformer = self.clone();
-                for (param_span, param, _, _) in &parameters {
+                for (param_span, param, _) in &parameters {
                     fn_body_transformer
                         .prefix_parser
                         .add_other_identifier(param, *param_span)?;
@@ -212,11 +241,21 @@ impl Transformer {
                     body: body.map(|expr| self.transform_expression(expr)),
                     return_type_annotation_span: return_type_span,
                     return_type_annotation,
+                    decorators,
                 }
             }
-            Statement::DefineDimension(name, dexprs) => {
+            Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                fields,
+            } => Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                fields,
+            },
+            Statement::DefineDimension(name_span, name, dexprs) => {
                 self.dimension_names.push(name.clone());
-                Statement::DefineDimension(name, dexprs)
+                Statement::DefineDimension(name_span, name, dexprs)
             }
             Statement::ProcedureCall(span, procedure, args) => Statement::ProcedureCall(
                 span,

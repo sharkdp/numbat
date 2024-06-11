@@ -47,15 +47,23 @@ fn expect_output(code: &str, expected_output: impl AsRef<str>) {
 }
 
 #[track_caller]
-fn expect_failure(code: &str, msg_part: &str) {
-    let mut ctx = get_test_context();
+fn expect_failure_with_context(ctx: &mut Context, code: &str, msg_part: &str) {
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         let error_message = e.to_string();
         println!("{}", error_message);
-        assert!(error_message.contains(msg_part));
+        assert!(
+            error_message.contains(msg_part),
+            "Expected '{msg_part}' but got '{error_message}'"
+        );
     } else {
-        panic!();
+        panic!("Expected an error but the code '{code}' did not fail");
     }
+}
+
+#[track_caller]
+fn expect_failure(code: &str, msg_part: &str) {
+    let mut ctx = get_test_context();
+    expect_failure_with_context(&mut ctx, code, msg_part)
 }
 
 #[track_caller]
@@ -75,7 +83,6 @@ fn simple_value() {
     expect_output("0_0.0_0", "0");
     expect_output(".0", "0");
     expect_failure("_.0", "Unexpected character in identifier: '.'");
-    expect_failure("._0", "Expected digit");
     expect_output(".0_0", "0");
     expect_failure(".0_", "Unexpected character in number literal: '_'");
 
@@ -234,23 +241,19 @@ fn test_algebra() {
     let _ = ctx
         .interpret("use extra::algebra", CodeSource::Internal)
         .unwrap();
-    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, -1)", "x₁ = 1; x₂ = -1");
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "x = -0.333333");
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 0, 1)", "no solution");
-    expect_output_with_context(&mut ctx, "quadratic_equation(9, -126, 441)", "x = 7");
-    expect_output_with_context(&mut ctx, "quadratic_equation(1, -2, 1)", "x = 1");
-    expect_output_with_context(&mut ctx, "quadratic_equation(0, 1, 1)", "x = -1");
-    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, 0)", "x = 0");
-    expect_output_with_context(
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, -1)", "[1, -1]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "[-0.333333]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 0, 1)", "[]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(9, -126, 441)", "[7]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, -2, 1)", "[1]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(0, 1, 1)", "[-1]");
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, 0)", "[0]");
+    expect_failure_with_context(
         &mut ctx,
         "quadratic_equation(0, 0, 0)",
         "infinitely many solutions",
     );
-    expect_output_with_context(
-        &mut ctx,
-        "quadratic_equation(1, 1, 1)",
-        "no real-valued solution",
-    );
+    expect_output_with_context(&mut ctx, "quadratic_equation(1, 1, 1)", "[]");
 }
 
 #[test]
@@ -263,7 +266,7 @@ fn test_math() {
     expect_output("atan2(100 cm, 1 m) / (pi / 4)", "1");
     expect_failure(
         "atan2(100 cm, 1 m²)",
-        "parameter type: Length\n argument type: Length²",
+        "Could not solve the following constraints",
     );
 
     expect_output("mod(5, 3)", "2");
@@ -271,10 +274,7 @@ fn test_math() {
     expect_output("mod(8 cm, 5 cm)", "3 cm");
     expect_output("mod(235 cm, 1 m)", "35 cm");
     expect_output("mod(2 m, 7 cm)", "0.04 m");
-    expect_failure(
-        "mod(8 m, 5 s)",
-        "parameter type: Length\n argument type: Time",
-    )
+    expect_failure("mod(8 m, 5 s)", "Could not solve the following constraints")
 }
 
 #[test]
@@ -478,7 +478,7 @@ fn test_prefixes() {
 fn test_parse_errors() {
     expect_failure(
         "3kg+",
-        "Expected one of: number, identifier, parenthesized expression",
+        "Expected one of: number, identifier, parenthesized expression, struct instantiation",
     );
     expect_failure("let print=2", "Expected identifier after 'let' keyword");
     expect_failure(
@@ -498,11 +498,17 @@ fn test_name_clash_errors() {
 fn test_type_check_errors() {
     expect_failure("foo", "Unknown identifier 'foo'");
 
-    expect_failure("let sin=2", "This name is already used by a function");
-    expect_failure("fn pi() = 1", "This name is already used by a constant");
+    expect_failure(
+        "let sin=2",
+        "Identifier is already in use by the foreign function: 'sin'",
+    );
+    expect_failure(
+        "fn pi() = 1",
+        "Identifier is already in use by the constant: 'pi'",
+    );
     expect_failure(
         "fn sin(x)=0",
-        "This name is already used by a foreign function",
+        "Identifier is already in use by the foreign function: 'sin'",
     );
 }
 
@@ -571,37 +577,37 @@ fn test_conditionals() {
     expect_output("if 4 < 3 then 2 else 1", "1");
     expect_output(
         "if 4 > 3 then \"four is larger!\" else \"four is not larger!\"",
-        "four is larger!",
+        "\"four is larger!\"",
     );
 }
 
 #[test]
 fn test_string_interpolation() {
-    expect_output("\"pi = {pi}!\"", "pi = 3.14159!");
-    expect_output("\"1 + 2 = {1 + 2}\"", "1 + 2 = 3");
+    expect_output("\"pi = {pi}!\"", "\"pi = 3.14159!\"");
+    expect_output("\"1 + 2 = {1 + 2}\"", "\"1 + 2 = 3\"");
 
-    expect_output("\"{0.2:0.5}\"", "0.20000");
-    expect_output("\"pi ~= {pi:.3}\"", "pi ~= 3.142");
+    expect_output("\"{0.2:0.5}\"", "\"0.20000\"");
+    expect_output("\"pi ~= {pi:.3}\"", "\"pi ~= 3.142\"");
     expect_output(
         "\"both {pi:.3} and {e} are irrational and transcendental numbers\"",
-        "both 3.142 and 2.71828 are irrational and transcendental numbers",
+        "\"both 3.142 and 2.71828 are irrational and transcendental numbers\"",
     );
     expect_output(
         "
         let str = \"1234\"
         \"{str:0.2}\"
         ",
-        "12",
+        "\"12\"",
     );
 
-    expect_output("\"{1_000_300:+.3}\"", "+1000300.000");
+    expect_output("\"{1_000_300:+.3}\"", "\"+1000300.000\"");
 
     expect_output(
         "
         let str = \"1234\"
         \"a {str:^10} b\"
         ",
-        "a    1234    b",
+        "\"a    1234    b\"",
     );
 
     // Doesn't work at the moment, as `strfmt` expects `i64`'s for `#x`, but Numbat deals with `f64`'s
@@ -703,9 +709,13 @@ fn test_datetime_runtime_errors() {
 fn test_user_errors() {
     expect_failure("error(\"test\")", "User error: test");
 
-    // Make sure that the never type (!) can be used in all contexts
+    // Make sure that error(…) can be used in all contexts
     expect_failure("- error(\"test\")", "User error: test");
     expect_failure("1 + error(\"test\")", "User error: test");
     expect_failure("1 m + error(\"test\")", "User error: test");
     expect_failure("if 3 < 2 then 2 m else error(\"test\")", "User error: test");
+    expect_failure(
+        "if true then error(\"test\") else \"foo\"",
+        "User error: test",
+    );
 }

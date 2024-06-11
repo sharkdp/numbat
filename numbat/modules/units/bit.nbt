@@ -1,6 +1,7 @@
 use units::si
 
 dimension DigitalInformation
+dimension DataRate = DigitalInformation / Time
 
 @name("Bit")
 @url("https://en.wikipedia.org/wiki/Bit")
@@ -20,4 +21,4 @@ unit byte: DigitalInformation = 8 bit
 @url("https://en.wikipedia.org/wiki/Bit_per_second")
 @metric_prefixes
 @aliases(bps: short)
-unit bps: DigitalInformation / Time = bit / second
+unit bps: DataRate = bit / second

@@ -1,36 +1,51 @@
-use crate::arithmetic::Power;
-use crate::ast::DimensionExpression;
+use crate::arithmetic::{Exponent, Power};
+use crate::ast::{TypeExpression, TypeParameterBound};
 use crate::registry::{BaseRepresentation, Registry, Result};
+use crate::span::Span;
+use crate::BaseRepresentationFactor;
 
 #[derive(Default, Clone)]
 pub struct DimensionRegistry {
     registry: Registry<()>,
+    pub introduced_type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
 }
 
 impl DimensionRegistry {
     pub fn get_base_representation(
         &self,
-        expression: &DimensionExpression,
+        expression: &TypeExpression,
     ) -> Result<BaseRepresentation> {
         match expression {
-            DimensionExpression::Unity(_) => Ok(BaseRepresentation::unity()),
-            DimensionExpression::Dimension(_, name) => self
-                .registry
-                .get_base_representation_for_name(name)
-                .map(|r| r.0),
-            DimensionExpression::Multiply(_, lhs, rhs) => {
+            TypeExpression::Unity(_) => Ok(BaseRepresentation::unity()),
+            TypeExpression::TypeIdentifier(_, name) => {
+                if self
+                    .introduced_type_parameters
+                    .iter()
+                    .any(|(_, n, _)| n == name)
+                {
+                    Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
+                        name.clone(),
+                        Exponent::from_integer(1),
+                    )))
+                } else {
+                    self.registry
+                        .get_base_representation_for_name(name)
+                        .map(|r| r.0)
+                }
+            }
+            TypeExpression::Multiply(_, lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
                 Ok(lhs * rhs)
             }
-            DimensionExpression::Divide(_, lhs, rhs) => {
+            TypeExpression::Divide(_, lhs, rhs) => {
                 let lhs = self.get_base_representation(lhs)?;
                 let rhs = self.get_base_representation(rhs)?;
 
                 Ok(lhs / rhs)
             }
-            DimensionExpression::Power(_, expr, _, outer_exponent) => {
+            TypeExpression::Power(_, expr, _, outer_exponent) => {
                 Ok(self.get_base_representation(expr)?.power(*outer_exponent))
             }
         }
@@ -62,7 +77,7 @@ impl DimensionRegistry {
     pub fn add_derived_dimension(
         &mut self,
         name: &str,
-        expression: &DimensionExpression,
+        expression: &TypeExpression,
     ) -> Result<BaseRepresentation> {
         let base_representation = self.get_base_representation(expression)?;
         self.registry

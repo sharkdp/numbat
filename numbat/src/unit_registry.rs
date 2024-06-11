@@ -22,6 +22,7 @@ pub struct UnitMetadata {
     pub name: Option<String>,
     pub canonical_name: CanonicalName,
     pub url: Option<String>,
+    pub description: Option<String>,
     pub binary_prefixes: bool,
     pub metric_prefixes: bool,
 }

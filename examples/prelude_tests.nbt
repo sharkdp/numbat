@@ -96,3 +96,24 @@ assert((0xa -> hex) == "0xa")
 assert((0xf -> hex) == "0xf")
 assert((0xabc1234567890 -> hex) == "0xabc1234567890")
 assert((-0xc0ffee -> hex) == "-0xc0ffee")
+
+# mean
+
+assert_eq(mean([]), 0)
+assert_eq(mean([1]), 1)
+assert_eq(mean([1, 3]), 2)
+assert_eq(mean([1 m, 300 cm]), 2 m)
+
+# maximum
+
+assert_eq(maximum([1]), 1)
+assert_eq(maximum([1, 3]), 3)
+assert_eq(maximum([3, 1]), 3)
+assert_eq(maximum([100 cm, 3 m]), 3 m)
+
+# minimum
+
+assert_eq(minimum([1]), 1)
+assert_eq(minimum([1, 3]), 1)
+assert_eq(minimum([3, 1]), 1)
+assert_eq(minimum([100 cm, 3 m]), 100 cm)

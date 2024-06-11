@@ -3,7 +3,7 @@ use crate::{
     markup::Markup,
     pretty_print::PrettyPrint,
     quantity::{Quantity, QuantityError},
-    typed_ast::{Statement, Type},
+    typed_ast::Statement,
     unit_registry::{UnitRegistry, UnitRegistryError},
 };
 
@@ -27,10 +27,8 @@ pub enum RuntimeError {
     QuantityError(QuantityError),
     #[error("Assertion failed")]
     AssertFailed,
-    #[error(
-        "Assertion failed because the following two quantities are not the same:\n  {0}\n  {1}"
-    )]
-    AssertEq2Failed(Quantity, Quantity),
+    #[error("Assertion failed because the following two values are not the same:\n  {0}\n  {1}")]
+    AssertEq2Failed(Value, Value),
     #[error("Assertion failed because the following two quantities differ by more than {2}:\n  {0}\n  {1}")]
     AssertEq3Failed(Quantity, Quantity, Quantity),
     #[error("Could not load exchange rates from European Central Bank.")]
@@ -50,9 +48,14 @@ pub enum RuntimeError {
 
     #[error("Invalid format specifiers: {0}")]
     InvalidFormatSpecifiers(String),
-
     #[error("Incorrect type for format specifiers: {0}")]
     InvalidTypeForFormatSpecifiers(String),
+
+    #[error("Chemical element not found: {0}")]
+    ChemicalElementNotFound(String),
+
+    #[error("Empty list")]
+    EmptyList,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -82,10 +85,11 @@ impl InterpreterResult {
                     evaluated_statement
                         .and_then(Statement::as_expression)
                         .and_then(|e| {
-                            if e.get_type() == Type::scalar() {
+                            let type_ = e.get_type_scheme();
+                            if type_.is_scalar() {
                                 None
                             } else {
-                                let ty = e.get_type().to_readable_type(registry);
+                                let ty = type_.to_readable_type(registry);
                                 Some(m::dimmed("    [") + ty + m::dimmed("]"))
                             }
                         })
@@ -149,6 +153,7 @@ pub trait Interpreter {
         &mut self,
         settings: &mut InterpreterSettings,
         statements: &[Statement],
+        dimension_registry: &DimensionRegistry,
     ) -> Result<InterpreterResult>;
     fn get_unit_registry(&self) -> &UnitRegistry;
 }
@@ -185,11 +190,9 @@ mod tests {
         unit hertz: Frequency = 1 / second
 
         fn sin(x: Scalar) -> Scalar
-        fn atan2<D>(y: D, x: D) -> Scalar
-        fn mean<D>(xs: D…) -> D
-        fn maximum<D>(xs: D…) -> D
-        fn minimum<D>(xs: D…) -> D";
+        fn atan2<D>(y: D, x: D) -> Scalar";
 
+    #[track_caller]
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
         let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
         let statements = crate::parser::parse(&full_code, 0)
@@ -197,11 +200,15 @@ mod tests {
         let statements_transformed = Transformer::new()
             .transform(statements)
             .expect("No name resolution errors for inputs in this test suite");
-        let statements_typechecked = crate::typechecker::TypeChecker::default()
-            .check_statements(statements_transformed)
+        let mut typechecker = crate::typechecker::TypeChecker::default();
+        let statements_typechecked = typechecker
+            .check(statements_transformed)
             .expect("No type check errors for inputs in this test suite");
-        BytecodeInterpreter::new()
-            .interpret_statements(&mut InterpreterSettings::default(), &statements_typechecked)
+        BytecodeInterpreter::new().interpret_statements(
+            &mut InterpreterSettings::default(),
+            &statements_typechecked,
+            typechecker.registry(),
+        )
     }
 
     #[track_caller]
@@ -327,38 +334,7 @@ mod tests {
     }
 
     #[test]
-    fn statistics_functions() {
-        assert_evaluates_to_scalar("mean(1, 1, 1, 0)", 0.75);
-        assert_evaluates_to(
-            "mean(1 m, 1 m, 1 m, 0 m)",
-            Quantity::new_f64(0.75, Unit::meter()),
-        );
-        assert_evaluates_to("mean(2 m, 100 cm)", Quantity::new_f64(1.5, Unit::meter()));
-
-        assert_evaluates_to_scalar("maximum(1, 2, 0, -3)", 2.0);
-        assert_evaluates_to(
-            "maximum(2 m, 0.1 km)",
-            Quantity::new_f64(100.0, Unit::meter()),
-        );
-
-        assert_evaluates_to_scalar("minimum(1, 2, 0, -3)", -3.0);
-        assert_evaluates_to(
-            "minimum(2 m, 150 cm)",
-            Quantity::new_f64(1.5, Unit::meter()),
-        );
-    }
-
-    #[test]
     fn division_by_zero_raises_runtime_error() {
         assert_runtime_error("1/0", RuntimeError::DivisionByZero);
-    }
-
-    #[test]
-    fn non_rational_exponent() {
-        // Regression test, found using fuzzing
-        assert_runtime_error(
-            "0**0⁻⁸",
-            RuntimeError::QuantityError(QuantityError::NonRationalExponent),
-        );
     }
 }

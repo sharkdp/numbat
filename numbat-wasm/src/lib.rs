@@ -79,7 +79,7 @@ impl Numbat {
             FormatType::JqueryTerminal => Box::new(JqueryTerminalFormatter {}),
             FormatType::Html => Box::new(HtmlFormatter {}),
         };
-        fmt.format(&markup, indent).into()
+        fmt.format(markup, indent)
     }
 
     pub fn interpret(&mut self, code: &str) -> InterpreterOutput {
@@ -102,7 +102,7 @@ impl Numbat {
 
         match self
             .ctx
-            .interpret_with_settings(&mut settings, &code, CodeSource::Text)
+            .interpret_with_settings(&mut settings, code, CodeSource::Text)
         {
             Ok((statements, result)) => {
                 // Pretty print

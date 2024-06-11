@@ -101,7 +101,7 @@ fn sphere_area<L>(radius: L) -> L^2
 fn sphere_volume<L>(radius: L) -> L^3
 ```
 
-### Random sampling 
+### Random sampling
 
 ```nbt
 fn random() -> Scalar
@@ -115,11 +115,13 @@ fn rand_poisson<T>(λ: T) -> T
 fn rand_exponential<T>(λ: T) -> 1/T
 fn rand_lognormal(μ: Scalar, σ: Scalar) -> Scalar
 fn rand_pareto<T>(α: Scalar, min: T) -> T
+```
 
-### Algebra (experimental)
+### Algebra
 
 ```nbt
-fn quadratic_equation<A2, B2>(a: A2, b: B2, c: B2²/A2) -> String
+# Returns the solutions of the equation a x² + b x + c = 0
+quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A>
 ```
 
 ## Date and time
@@ -135,6 +137,13 @@ fn from_celsius(t_celsius: Scalar) -> Temperature
 fn celsius(t_kelvin: Temperature) -> Scalar
 fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature
 fn fahrenheit(t_kelvin: Temperature) -> Scalar
+```
+
+## Chemistry
+
+```nbt
+# Get properties of a chemical element by its symbol or name (case-insensitive).
+fn element(pattern: String) -> ChemicalElement
 ```
 
 ## Strings

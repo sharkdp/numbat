@@ -1,0 +1,63 @@
+let xs = [1, 2, 3]
+
+assert_eq(len([]), 0)
+assert_eq(len(xs), 3)
+
+assert_eq(head(xs), 1)
+assert_eq(head(tail(xs)), 2)
+
+assert_eq(tail(xs), [2, 3])
+
+assert_eq(cons(0, xs), [0, 1, 2, 3])
+
+assert(is_empty([]))
+assert(!is_empty(xs))
+
+assert_eq(concat([], []), [])
+assert_eq(concat([], xs), xs)
+assert_eq(concat(xs, []), xs)
+assert_eq(concat(xs, xs), [1, 2, 3, 1, 2, 3])
+
+assert_eq(range(0, 0), [0])
+assert_eq(range(0, 5), [0, 1, 2, 3, 4, 5])
+
+assert_eq(reverse([]), [])
+assert_eq(reverse(xs), [3, 2, 1])
+
+fn inc(x) = x + 1
+assert_eq(map(inc, xs), [2, 3, 4])
+
+fn is_even(x) = mod(x, 2) == 0
+assert_eq(filter(is_even, range(1, 10)), [2, 4, 6, 8, 10])
+
+fn mul(x, y) = x * y
+assert_eq(foldl(mul, 1, [1, 2, 3, 4, 5]), 120)
+
+assert_eq(intersperse(0, []), [])
+assert_eq(intersperse(0, [1]), [1])
+assert_eq(intersperse(0, [1, 2, 3]), [1, 0, 2, 0, 3])
+
+assert_eq(sum([1, 2, 3, 4, 5]), 15)
+assert_eq(sum([1 m, 200 cm, 3 m]), 6 m)
+
+assert_eq(linspace(0, 1, 2), [0, 1])
+assert_eq(linspace(0, 1, 5), [0, 0.25, 0.5, 0.75, 1])
+assert_eq(linspace(0, 2 m, 5), [0 m, 0.5 m, 1 m, 1.5 m, 2 m])
+
+# Non-dtype lists
+let words = ["hello", "world"]
+assert_eq(head(words), "hello")
+
+fn join(xs: List<String>, sep: String) =
+  if is_empty(xs)
+    then ""
+    else if len(xs) == 1
+      then head(xs)
+      else "{head(xs)}{sep}{join(tail(xs), sep)}"
+
+assert_eq(join(words, " "), "hello world")
+
+fn gen_range(n) = range(1, n)
+assert_eq(map(gen_range, xs), [[1], [1, 2], [1, 2, 3]])
+fn to_string(x) = "{x}"
+assert_eq(map(to_string, xs), ["1", "2", "3"])

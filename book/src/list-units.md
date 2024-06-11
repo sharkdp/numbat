@@ -28,9 +28,9 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Capacitance` | [Farad](https://en.wikipedia.org/wiki/Farad) | `F`, `farad`, `farads` |
 | `CatalyticActivity` | [Katal](https://en.wikipedia.org/wiki/Katal) | `kat`, `katal`, `katals` |
 | `Current` | [Ampere](https://en.wikipedia.org/wiki/Ampere) | `A`, `ampere`, `amperes` |
+| `DataRate` | [Bits per second](https://en.wikipedia.org/wiki/Bit_per_second) | `bps` |
 | `DigitalInformation` | [Bit](https://en.wikipedia.org/wiki/Bit) | `bit`, `bits` |
 | `DigitalInformation` | [Byte](https://en.wikipedia.org/wiki/Byte) | `B`, `byte`, `Byte`, `bytes`, `Bytes`, `octet`, `Octet`, `octets`, `Octets` |
-| `DigitalInformation / Time` | [Bits per second](https://en.wikipedia.org/wiki/Bit_per_second) | `bps` |
 | `Dot` | [Dot](https://en.wikipedia.org/wiki/Dots_per_inch) | `dot`, `dots` |
 | `Dot / Length` | [Dots per inch](https://en.wikipedia.org/wiki/Dots_per_inch) | `dpi` |
 | `DynamicViscosity` | [Poise](https://en.wikipedia.org/wiki/Poise_(unit)) | `poise` |
@@ -161,6 +161,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Scalar` | [Parts per quadrillion](https://en.wikipedia.org/wiki/Parts-per_notation) | `partsperquadrillion`, `ppq` |
 | `Scalar` | [Parts per trillion](https://en.wikipedia.org/wiki/Parts-per_notation) | `partspertrillion`, `ppt` |
 | `Scalar` | [Percent](https://en.wikipedia.org/wiki/Percentage) | `%`, `pct`, `percent` |
+| `Scalar` | [Permille](https://en.wikipedia.org/wiki/Per_mille) | `permil`, `permill`, `permille`, `‰` |
 | `Scalar` | [Quadrillion](https://en.wikipedia.org/wiki/Quadrillion) | `quadrillion` |
 | `Scalar` | [Quintillion](https://en.wikipedia.org/wiki/Quintillion) | `quintillion` |
 | `Scalar` | [Thousand](https://en.wikipedia.org/wiki/1000_(number)) | `thousand` |

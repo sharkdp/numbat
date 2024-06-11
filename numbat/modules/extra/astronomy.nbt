@@ -23,3 +23,15 @@ unit solar_radius: Length = 6.957e5 km
 
 dimension RadiantFlux = Power
 unit solar_luminosity: RadiantFlux = 3.828e26 W
+
+dimension SpectralFluxDensity = RadiantFlux / Area / Frequency
+
+@name("Jansky")
+@url("https://en.wikipedia.org/wiki/Jansky")
+@aliases(janskys, Jy: short)
+unit jansky: SpectralFluxDensity = 1e-26 W / m^2 / Hz
+
+@name("Solar flux unit")
+@url("https://en.wikipedia.org/wiki/Solar_flux_unit")
+@aliases(solarfluxunits, sfu: short)
+unit solarfluxunit: SpectralFluxDensity = 1e4 Jy

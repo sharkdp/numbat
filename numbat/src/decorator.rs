@@ -7,6 +7,7 @@ pub enum Decorator {
     Aliases(Vec<(String, Option<AcceptsPrefix>)>),
     Url(String),
     Name(String),
+    Description(String),
 }
 
 pub fn name_and_aliases<'a>(
@@ -73,12 +74,37 @@ pub fn url(decorators: &[Decorator]) -> Option<String> {
     None
 }
 
+pub fn description(decorators: &[Decorator]) -> Option<String> {
+    let mut description = String::new();
+    for decorator in decorators {
+        if let Decorator::Description(d) = decorator {
+            description += d;
+            description += "\n";
+        }
+    }
+    if !description.is_empty() {
+        Some(description)
+    } else {
+        None
+    }
+}
+
 pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
     for decorator in decorates {
         if let Decorator::Aliases(aliases) = decorator {
             if aliases.iter().any(|(_, prefixes)| prefixes.is_some()) {
                 return true;
             }
+        }
+    }
+
+    false
+}
+
+pub fn contains_aliases(decorators: &[Decorator]) -> bool {
+    for decorator in decorators {
+        if let Decorator::Aliases(_) = decorator {
+            return true;
         }
     }
 

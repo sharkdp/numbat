@@ -59,7 +59,7 @@ impl Quantity {
     }
 
     pub fn convert_to(&self, target_unit: &Unit) -> Result<Quantity> {
-        if &self.unit == target_unit {
+        if &self.unit == target_unit || self.unsafe_value().to_f64().is_zero() {
             Ok(Quantity::new(self.value, target_unit.clone()))
         } else {
             // Remove common unit factors to reduce unnecessary conversion procedures
@@ -246,10 +246,16 @@ impl std::ops::Add for &Quantity {
     type Output = Result<Quantity>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Ok(Quantity {
-            value: self.value + rhs.convert_to(&self.unit)?.value,
-            unit: self.unit.clone(),
-        })
+        if self.is_zero() {
+            Ok(rhs.clone())
+        } else if rhs.is_zero() {
+            Ok(self.clone())
+        } else {
+            Ok(Quantity {
+                value: self.value + rhs.convert_to(&self.unit)?.value,
+                unit: self.unit.clone(),
+            })
+        }
     }
 }
 
@@ -257,10 +263,16 @@ impl std::ops::Sub for &Quantity {
     type Output = Result<Quantity>;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Ok(Quantity {
-            value: self.value - rhs.convert_to(&self.unit)?.value,
-            unit: self.unit.clone(),
-        })
+        if self.is_zero() {
+            Ok(-rhs.clone())
+        } else if rhs.is_zero() {
+            Ok(self.clone())
+        } else {
+            Ok(Quantity {
+                value: self.value - rhs.convert_to(&self.unit)?.value,
+                unit: self.unit.clone(),
+            })
+        }
     }
 }
 
@@ -325,7 +337,7 @@ impl PrettyPrint for Quantity {
         let unit_str = format!("{}", self.unit());
 
         markup::value(formatted_number)
-            + if unit_str == "°" {
+            + if unit_str == "°" || unit_str.is_empty() {
                 markup::empty()
             } else {
                 markup::space()

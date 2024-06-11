@@ -1,0 +1,22 @@
+use core::functions
+
+@name("Bisection method")
+@url("https://en.wikipedia.org/wiki/Bisection_method")
+@description("Find the root of the function f in the interval [x1, x2] using the bisection method. The function f must be continuous and f(x1) × f(x2) < 0.")
+fn root_bisect<A: Dim, B: Dim>(f: Fn[(A) -> B], x1: A, x2: A, x_tolerance: A, y_tolerance: B) -> A =
+  if abs(x1 - x2) < x_tolerance
+    then (x1 + x2) / 2
+    else if abs(f((x1 + x2) / 2)) < y_tolerance
+      then (x1 + x2) / 2
+      else if f((x1 + x2) / 2) * f(x1) < 0
+        then root_bisect(f, x1, (x1 + x2) / 2, x_tolerance, y_tolerance)
+        else root_bisect(f, (x1 + x2) / 2, x2, x_tolerance, y_tolerance)
+  # TODO: move (x1 + x2) / 2 to a local variable once we support them
+
+@name("Newton's method")
+@url("https://en.wikipedia.org/wiki/Newton%27s_method") 
+@description("Find the root of the function f(x) and its derivative f'(x) using Newton's method.")
+fn root_newton<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B/A], x0: A, y_tolerance: B) -> A =
+    if abs(f(x0)) < y_tolerance
+      then x0
+      else root_newton(f, f_prime, x0 - f(x0) / f_prime(x0), y_tolerance)

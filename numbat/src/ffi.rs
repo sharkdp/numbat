@@ -7,6 +7,7 @@ use crate::currency::ExchangeRatesCache;
 use crate::datetime;
 use crate::interpreter::RuntimeError;
 use crate::pretty_print::PrettyPrint;
+use crate::typed_ast::DType;
 use crate::value::{FunctionReference, Value};
 use crate::vm::ExecutionContext;
 use crate::{ast::ProcedureKind, quantity::Quantity};
@@ -326,6 +327,39 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         );
 
         m.insert(
+            "len".to_string(),
+            ForeignFunction {
+                name: "len".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(len)),
+            },
+        );
+        m.insert(
+            "head".to_string(),
+            ForeignFunction {
+                name: "head".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(head)),
+            },
+        );
+        m.insert(
+            "tail".to_string(),
+            ForeignFunction {
+                name: "tail".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(tail)),
+            },
+        );
+        m.insert(
+            "cons".to_string(),
+            ForeignFunction {
+                name: "cons".into(),
+                arity: 2..=2,
+                callable: Callable::Function(Box::new(cons)),
+            },
+        );
+
+        m.insert(
             "str_length".to_string(),
             ForeignFunction {
                 name: "str_length".into(),
@@ -436,6 +470,15 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
             },
         );
 
+        m.insert(
+            "_get_chemical_element_data_raw".to_string(),
+            ForeignFunction {
+                name: "_get_chemical_element_data_raw".into(),
+                arity: 1..=1,
+                callable: Callable::Function(Box::new(_get_chemical_element_data_raw)),
+            },
+        );
+
         m
     })
 }
@@ -468,21 +511,35 @@ fn assert(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
 fn assert_eq(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
     assert!(args.len() == 2 || args.len() == 3);
 
-    let lhs = args[0].unsafe_as_quantity();
-    let rhs = args[1].unsafe_as_quantity();
-
     if args.len() == 2 {
+        let lhs = &args[0];
+        let rhs = &args[1];
+
         let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(lhs.clone(), rhs.clone()));
-        if let Ok(args1_converted) = rhs.convert_to(lhs.unit()) {
-            if lhs == &args1_converted {
-                ControlFlow::Continue(())
+
+        if lhs.is_quantity() {
+            let lhs = lhs.unsafe_as_quantity();
+            let rhs = rhs.unsafe_as_quantity();
+
+            if let Ok(args1_converted) = rhs.convert_to(lhs.unit()) {
+                if lhs == &args1_converted {
+                    ControlFlow::Continue(())
+                } else {
+                    error
+                }
             } else {
                 error
             }
         } else {
-            error
+            if lhs == rhs {
+                ControlFlow::Continue(())
+            } else {
+                error
+            }
         }
     } else {
+        let lhs = args[0].unsafe_as_quantity();
+        let rhs = args[1].unsafe_as_quantity();
         let result = lhs - rhs;
         let eps = args[2].unsafe_as_quantity();
 
@@ -830,6 +887,44 @@ fn exchange_rate(args: &[Value]) -> Result<Value> {
     )))
 }
 
+fn len(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let list = args[0].unsafe_as_list();
+
+    Ok(Value::Quantity(Quantity::from_scalar(list.len() as f64)))
+}
+
+fn head(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let list = args[0].unsafe_as_list();
+
+    if let Some(first) = list.first() {
+        Ok(first.clone())
+    } else {
+        Err(RuntimeError::EmptyList)
+    }
+}
+
+fn tail(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 1);
+
+    let mut list = args[0].unsafe_as_list();
+    list.remove(0);
+
+    Ok(Value::List(list))
+}
+
+fn cons(args: &[Value]) -> Result<Value> {
+    assert!(args.len() == 2);
+
+    let mut list = args[1].unsafe_as_list().clone();
+    list.insert(0, args[0].clone());
+
+    Ok(Value::List(list))
+}
+
 fn str_length(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
@@ -944,9 +1039,134 @@ fn from_unixtime(args: &[Value]) -> Result<Value> {
 }
 
 fn random(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 0);
+    assert!(args.is_empty());
 
     let output = rand::random::<f64>();
 
     Ok(Value::Quantity(Quantity::from_scalar(output)))
+}
+
+fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
+    use crate::span::{SourceCodePositition, Span};
+    use crate::typed_ast::StructInfo;
+    use crate::typed_ast::Type;
+    use indexmap::IndexMap;
+    use mendeleev::{Electronvolt, GramPerCubicCentimeter, Kelvin, KiloJoulePerMole};
+    use std::sync::Arc;
+
+    assert!(args.len() == 1);
+
+    let pattern = args[0].unsafe_as_string().to_lowercase();
+
+    if let Some(element) = mendeleev::Element::list()
+        .iter()
+        .find(|e| e.name().to_lowercase() == pattern || e.symbol().to_lowercase() == pattern)
+    {
+        let unknown_span = Span {
+            start: SourceCodePositition::start(),
+            end: SourceCodePositition::start(),
+            code_source_id: 0,
+        };
+
+        let type_scalar = Type::Dimension(DType::scalar());
+
+        let mut fields: IndexMap<String, (Span, Type)> = IndexMap::new();
+        fields.insert("symbol".to_string(), (unknown_span, Type::String));
+        fields.insert("name".to_string(), (unknown_span, Type::String));
+        fields.insert(
+            "atomic_number".to_string(),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert("group".to_string(), (unknown_span, type_scalar.clone()));
+        fields.insert("group_name".to_string(), (unknown_span, Type::String));
+        fields.insert("period".to_string(), (unknown_span, type_scalar.clone()));
+        fields.insert(
+            "melting_point_kelvin".to_string(),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            "boiling_point_kelvin".to_string(),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            "density_gram_per_cm3".to_string(),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            "electron_affinity_electronvolt".to_string(),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            "ionization_energy_electronvolt".to_string(),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            "vaporization_heat_kilojoule_per_mole".to_string(),
+            (unknown_span, type_scalar.clone()),
+        );
+
+        let info = StructInfo {
+            name: "_ChemicalElementRaw".to_string(),
+            definition_span: unknown_span,
+            fields,
+        };
+        Ok(Value::StructInstance(
+            Arc::new(info),
+            vec![
+                Value::String(element.symbol().into()),
+                Value::String(element.name().into()),
+                Value::Quantity(Quantity::from_scalar(element.atomic_number() as f64)),
+                Value::Quantity(Quantity::from_scalar(
+                    element
+                        .group()
+                        .map_or(f64::NAN, |g| g.group_number() as f64),
+                )),
+                Value::String(
+                    element
+                        .group()
+                        .map(|g| g.group_name().unwrap_or("unknown").into())
+                        .unwrap_or("unknown".into()),
+                ),
+                Value::Quantity(Quantity::from_scalar(element.period() as f64)),
+                Value::Quantity(Quantity::from_scalar(
+                    element
+                        .melting_point()
+                        .map(|Kelvin(k)| k)
+                        .unwrap_or(f64::NAN),
+                )),
+                Value::Quantity(Quantity::from_scalar(
+                    element
+                        .boiling_point()
+                        .map(|Kelvin(k)| k)
+                        .unwrap_or(f64::NAN),
+                )),
+                Value::Quantity(Quantity::from_scalar(
+                    element
+                        .density()
+                        .map(|GramPerCubicCentimeter(d)| d)
+                        .unwrap_or(f64::NAN),
+                )),
+                Value::Quantity(Quantity::from_scalar(
+                    element
+                        .electron_affinity()
+                        .map(|Electronvolt(e)| e)
+                        .unwrap_or(f64::NAN),
+                )),
+                Value::Quantity(Quantity::from_scalar(
+                    element
+                        .ionization_energy()
+                        .map(|Electronvolt(e)| e)
+                        .unwrap_or(f64::NAN),
+                )),
+                Value::Quantity(Quantity::from_scalar(
+                    element
+                        .evaporation_heat()
+                        .map(|KiloJoulePerMole(e)| e)
+                        .unwrap_or(f64::NAN),
+                )),
+            ],
+        ))
+    } else {
+        Err(RuntimeError::ChemicalElementNotFound(pattern))
+    }
 }

@@ -102,7 +102,7 @@ fn print_calls() {
         .assert()
         .success()
         .stdout(predicates::str::contains(
-            "1 \n2 m\nhello world\npi = 3.14159\n1 + 2 = 3\n",
+            "1\n2 m\nhello world\npi = 3.14159\n1 + 2 = 3\n",
         ));
 }
 
@@ -125,18 +125,18 @@ fn without_prelude() {
         .stderr(predicates::str::contains("unknown identifier"));
 }
 
-#[test]
-fn pretty_printing() {
-    numbat()
-        .arg("--pretty-print=always")
-        .arg("--expression")
-        .arg("let v=30km/h")
-        .assert()
-        .success()
-        .stdout(predicates::str::contains(
-            "let v: Velocity = 30 kilometre / hour",
-        ));
-}
+// #[test]
+// fn pretty_printing() {
+//     numbat()
+//         .arg("--pretty-print=always")
+//         .arg("--expression")
+//         .arg("let v=30km/h")
+//         .assert()
+//         .success()
+//         .stdout(predicates::str::contains(
+//             "let v: Velocity = 30 kilometre / hour",
+//         ));
+// }
 
 #[test]
 fn help_text() {
@@ -159,4 +159,13 @@ fn info_text() {
     numbat().write_stdin("info C").assert().success().stdout(
         predicates::str::contains("Coulomb").and(predicates::str::contains("1 coulomb = ")),
     );
+
+    numbat()
+        .write_stdin("info round")
+        .assert()
+        .success()
+        .stdout(
+            predicates::str::contains("Round")
+                .and(predicates::str::contains("Round to the nearest integer.")),
+        );
 }

@@ -33,6 +33,8 @@ pub mod resolver;
 mod span;
 mod suggestion;
 mod tokenizer;
+mod traversal;
+mod type_variable;
 mod typechecker;
 mod typed_ast;
 pub mod unicode_input;
@@ -54,6 +56,7 @@ use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
 
+use pretty_print::PrettyPrint;
 use resolver::CodeSource;
 use resolver::Resolver;
 use resolver::ResolverError;
@@ -101,7 +104,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(module_importer: impl ModuleImporter + Send + Sync + 'static) -> Self {
+    pub fn new(module_importer: impl ModuleImporter + 'static) -> Self {
         Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
@@ -311,13 +314,26 @@ impl Context {
                         + m::nl();
                 }
 
+                if let Some(description) = &md.description {
+                    let desc = "Description: ";
+                    let mut lines = description.lines();
+                    help += m::text(desc)
+                        + m::text(lines.by_ref().next().unwrap_or("").trim())
+                        + m::nl();
+
+                    for line in lines {
+                        help +=
+                            m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                    }
+                }
+
                 if matches!(md.type_, Type::Dimension(d) if d.is_scalar()) {
                     help += m::text("A dimensionless unit ([")
                         + md.readable_type
                         + m::text("])")
                         + m::nl();
                 } else {
-                    help += m::text("A unit of [") + md.readable_type + m::text("]") + m::nl();
+                    help += m::text("A unit of: ") + md.readable_type + m::nl();
                 }
 
                 if let Some(defining_info) = self.interpreter.get_defining_unit(&full_name) {
@@ -374,6 +390,17 @@ impl Context {
             }
             help += m::nl();
 
+            if let Some(description) = &l.metadata.description {
+                let desc = "Description: ";
+                let mut lines = description.lines();
+                help +=
+                    m::text(desc) + m::text(lines.by_ref().next().unwrap_or("").trim()) + m::nl();
+
+                for line in lines {
+                    help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                }
+            }
+
             if l.metadata.aliases.len() > 1 {
                 help += m::text("Aliases: ")
                     + m::text(
@@ -389,6 +416,39 @@ impl Context {
 
             if let Ok((_, results)) = self.interpret(keyword, CodeSource::Internal) {
                 help += m::nl() + results.to_markup(None, self.dimension_registry(), true, true);
+            }
+
+            return help;
+        }
+
+        if let Some((fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
+            let metadata = fn_metadata.clone();
+
+            let mut help = m::text("Function:    ");
+            if let Some(name) = &metadata.name {
+                help += m::text(name);
+            } else {
+                help += m::identifier(keyword);
+            }
+            if let Some(url) = &metadata.url {
+                help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
+            }
+            help += m::nl();
+
+            help += m::text("Signature:  ")
+                + m::space()
+                + fn_signature.fn_type.pretty_print()
+                + m::nl();
+
+            if let Some(description) = &metadata.description {
+                let desc = "Description: ";
+                let mut lines = description.lines();
+                help +=
+                    m::text(desc) + m::text(lines.by_ref().next().unwrap_or("").trim()) + m::nl();
+
+                for line in lines {
+                    help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                }
             }
 
             return help;
@@ -481,7 +541,7 @@ impl Context {
 
         let result = self
             .typechecker
-            .check_statements(transformed_statements)
+            .check(transformed_statements)
             .map_err(NumbatError::TypeCheckError);
 
         if result.is_err() {
@@ -664,9 +724,11 @@ impl Context {
 
         let typed_statements = result?;
 
-        let result = self
-            .interpreter
-            .interpret_statements(settings, &typed_statements);
+        let result = self.interpreter.interpret_statements(
+            settings,
+            &typed_statements,
+            self.typechecker.registry(),
+        );
 
         if result.is_err() {
             // Similar to above: we need to reset the state of the typechecker and the prefix transformer

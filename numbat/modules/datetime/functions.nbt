@@ -1,26 +1,56 @@
 use core::strings
 use units::si
 
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Returns the current date and time.")
 fn now() -> DateTime
 
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Parses a string (date and time) into a DateTime object. See https://numbat.dev/doc/date-and-time.html#date-time-formats for an overview of the supported formats.")
 fn datetime(input: String) -> DateTime
+
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Formats a DateTime object as a string.")
 fn format_datetime(format: String, input: DateTime) -> String
 
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Returns the users local timezone.")
 fn get_local_timezone() -> String
+
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Returns a timezone conversion function, typically used with the conversion operator.")
 fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
+
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Timezone conversion function targeting the users local timezone (datetime -> local).")
 let local: Fn[(DateTime) -> DateTime] = tz(get_local_timezone())
+
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Timezone conversion function to UTC.")
 let UTC: Fn[(DateTime) -> DateTime] = tz("UTC")
 
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Converts a DateTime to a UNIX timestamp.")
 fn unixtime(input: DateTime) -> Scalar
+
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Converts a UNIX timestamp to a DateTime object.")
 fn from_unixtime(input: Scalar) -> DateTime
 
 fn _today_str() = format_datetime("%Y-%m-%d", now())
+
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Returns the current date at midnight (in the local time).")
 fn today() -> DateTime = datetime("{_today_str()} 00:00:00")
 
+@url("https://numbat.dev/doc/date-and-time.html")
+@description("Parses a string (only date) into a DateTime object.")
 fn date(input: String) -> DateTime =
   if str_contains(input, " ")
     then datetime(str_replace(input, " ", " 00:00:00 "))
     else datetime("{input} 00:00:00")
 
+@url("https://numbat.dev/doc/date-and-time.html")
+@description(" Parses a string (only time) into a DateTime object.")
 fn time(input: String) -> DateTime =
   datetime("{_today_str()} {input}")
