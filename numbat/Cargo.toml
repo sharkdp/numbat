@@ -31,7 +31,7 @@ num-format = "0.4.4"
 walkdir = "2"
 chrono = "0.4.31"
 chrono-tz = "0.8.5"
-iana-time-zone = "0.1"
+iana-time-zone = { version = "0.1", optional = true }
 termcolor = { version = "1.4.1", optional = true }
 html-escape = { version = "0.2.13", optional = true }
 rand = "0.8.5"
@@ -40,9 +40,10 @@ indexmap = "2.2.6"
 mendeleev = "0.8.0"
 
 [features]
-default = ["fetch-exchangerates"]
+default = ["fetch-exchangerates", "local-timezone"]
 fetch-exchangerates = ["numbat-exchange-rates/fetch-exchangerates"]
 html-formatter = ["termcolor", "html-escape"]
+local-timezone = ["iana-time-zone"]
 
 [dev-dependencies]
 approx = "0.5"
