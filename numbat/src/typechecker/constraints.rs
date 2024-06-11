@@ -180,6 +180,7 @@ pub enum Constraint {
     Equal(Type, Type),
     IsDType(Type),
     EqualScalar(DType),
+    HasField(Type, String, Type),
 }
 
 impl Constraint {
@@ -208,6 +209,10 @@ impl Constraint {
                 TrivialResultion::Violated
             }
             Constraint::EqualScalar(_) => TrivialResultion::Unknown,
+            Constraint::HasField(_, _, _) => {
+                // Trivial resolution handling for structs is done directly in the type checker
+                TrivialResultion::Unknown
+            }
         }
     }
 
@@ -293,6 +298,23 @@ impl Constraint {
                 }
                 _ => None,
             },
+            Constraint::HasField(struct_type, field_name, field_type)
+                if struct_type.is_closed() =>
+            {
+                if let Type::Struct(info) = struct_type {
+                    if let Some((_, actual_field_type)) = info.fields.get(field_name) {
+                        Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
+                            actual_field_type.clone(),
+                            field_type.clone(),
+                        )]))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+            Constraint::HasField(_, _, _) => None,
         }
     }
 
@@ -303,6 +325,12 @@ impl Constraint {
             }
             Constraint::IsDType(t) => format!("  {}: DType", t),
             Constraint::EqualScalar(d) => format!("  {} = Scalar", d),
+            Constraint::HasField(struct_type, field_name, field_type) => {
+                format!(
+                    "HasField({}, \"{}\", {})",
+                    struct_type, field_name, field_type
+                )
+            }
         }
     }
 
@@ -327,6 +355,10 @@ impl ApplySubstitution for Constraint {
                 t.apply(substitution)?;
             }
             Constraint::EqualScalar(d) => d.apply(substitution)?,
+            Constraint::HasField(struct_type, _, field_type) => {
+                struct_type.apply(substitution)?;
+                field_type.apply(substitution)?;
+            }
         }
         Ok(())
     }

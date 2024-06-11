@@ -964,36 +964,50 @@ impl TypeChecker {
                     struct_info.clone(),
                 )
             }
-            ast::Expression::AccessField(full_span, ident_span, expr, attr) => {
+            ast::Expression::AccessField(full_span, ident_span, expr, field_name) => {
                 let expr_checked = self.elaborate_expression(expr)?;
 
                 let type_ = expr_checked.get_type();
 
-                let Type::Struct(ref struct_info) = type_ else {
-                    return Err(TypeCheckError::FieldAccessOfNonStructType(
-                        *ident_span,
-                        expr.full_span(),
-                        attr.to_string(),
-                        type_.clone(),
-                    ));
-                };
+                let field_type = if type_.is_closed() {
+                    let Type::Struct(ref struct_info) = type_ else {
+                        return Err(TypeCheckError::FieldAccessOfNonStructType(
+                            *ident_span,
+                            expr.full_span(),
+                            field_name.to_string(),
+                            type_.clone(),
+                        ));
+                    };
 
-                let Some((_, field_type)) = struct_info.fields.get(attr) else {
-                    return Err(TypeCheckError::UnknownFieldAccess(
-                        *ident_span,
-                        expr.full_span(),
-                        attr.to_string(),
-                        type_.clone(),
-                    ));
-                };
+                    let Some((_, field_type)) = struct_info.fields.get(field_name) else {
+                        return Err(TypeCheckError::UnknownFieldAccess(
+                            *ident_span,
+                            expr.full_span(),
+                            field_name.to_string(),
+                            type_.clone(),
+                        ));
+                    };
 
-                let field_type = field_type.to_owned();
+                    field_type.clone()
+                } else {
+                    let field_type = self.fresh_type_variable();
+
+                    self.constraints
+                        .add(Constraint::HasField(
+                            type_.clone(),
+                            field_name.clone(),
+                            field_type.clone(),
+                        ))
+                        .ok();
+
+                    field_type
+                };
 
                 Expression::AccessField(
                     *ident_span,
                     *full_span,
                     Box::new(expr_checked),
-                    attr.to_owned(),
+                    field_name.to_owned(),
                     TypeScheme::concrete(type_),
                     TypeScheme::concrete(field_type),
                 )
