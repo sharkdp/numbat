@@ -1,13 +1,20 @@
 use chrono::{DateTime, Datelike, FixedOffset, LocalResult};
 use chrono_tz::Tz;
 
+#[cfg(feature = "local-timezone")]
 pub fn get_local_timezone() -> Option<Tz> {
     let tz_str = iana_time_zone::get_timezone().ok()?;
     tz_str.parse().ok()
 }
 
+#[cfg(feature = "local-timezone")]
 pub fn get_local_timezone_or_utc() -> Tz {
     get_local_timezone().unwrap_or(chrono_tz::UTC)
+}
+
+#[cfg(not(feature = "local-timezone"))]
+pub fn get_local_timezone_or_utc() -> Tz {
+    chrono_tz::UTC
 }
 
 pub fn parse_datetime(input: &str) -> Option<DateTime<FixedOffset>> {
