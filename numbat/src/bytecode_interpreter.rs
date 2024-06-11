@@ -17,7 +17,7 @@ use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::FunctionReference;
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
-use crate::{decorator, ffi};
+use crate::{decorator, ffi, Type};
 
 #[derive(Debug, Clone, Default)]
 pub struct LocalMetadata {
@@ -187,8 +187,14 @@ impl BytecodeInterpreter {
                 self.vm
                     .add_op2(Op::BuildStructInstance, struct_info_idx, exprs.len() as u16);
             }
-            Expression::AccessField(_span, _full_span, expr, attr, struct_info, _result_type) => {
+            Expression::AccessField(_span, _full_span, expr, attr, struct_type, _result_type) => {
                 self.compile_expression_with_simplify(expr)?;
+
+                let Type::Struct(ref struct_info) = struct_type.to_concrete_type() else {
+                    unreachable!(
+                        "Field access of non-struct type should be prevented by the type checker"
+                    );
+                };
 
                 let idx = struct_info.fields.get_index_of(attr).unwrap();
 

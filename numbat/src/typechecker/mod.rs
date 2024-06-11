@@ -969,7 +969,7 @@ impl TypeChecker {
 
                 let type_ = expr_checked.get_type();
 
-                let Type::Struct(struct_info) = type_.clone() else {
+                let Type::Struct(ref struct_info) = type_ else {
                     return Err(TypeCheckError::FieldAccessOfNonStructType(
                         *ident_span,
                         expr.full_span(),
@@ -978,7 +978,7 @@ impl TypeChecker {
                     ));
                 };
 
-                let Some((_, result_type)) = struct_info.fields.get(attr) else {
+                let Some((_, field_type)) = struct_info.fields.get(attr) else {
                     return Err(TypeCheckError::UnknownFieldAccess(
                         *ident_span,
                         expr.full_span(),
@@ -987,15 +987,15 @@ impl TypeChecker {
                     ));
                 };
 
-                let result_type = result_type.to_owned();
+                let field_type = field_type.to_owned();
 
                 Expression::AccessField(
                     *ident_span,
                     *full_span,
                     Box::new(expr_checked),
                     attr.to_owned(),
-                    struct_info,
-                    TypeScheme::concrete(result_type),
+                    TypeScheme::concrete(type_),
+                    TypeScheme::concrete(field_type),
                 )
             }
             ast::Expression::List(span, elements) => {
