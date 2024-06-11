@@ -613,6 +613,15 @@ fn structs() {
         get_typecheck_error("SomeStruct {}"),
         TypeCheckError::MissingFieldsInStructInstantiation(..)
     ));
+
+    // Regression test for https://github.com/sharkdp/numbat/issues/459
+    assert_successful_typecheck("id(SomeStruct { a: 1a, b: 1b }).a");
+
+    // Make sure that we still get nice error messages for concrete types (not some constraint solver error)
+    assert!(matches!(
+        get_typecheck_error("(SomeStruct {a: 1a, b: 1b}).a + 2b"),
+        TypeCheckError::IncompatibleDimensions(..)
+    ));
 }
 
 #[test]
