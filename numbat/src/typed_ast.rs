@@ -518,7 +518,14 @@ pub enum Expression {
     Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
     String(Span, Vec<StringPart>),
     InstantiateStruct(Span, Vec<(String, Expression)>, StructInfo),
-    AccessField(Span, Span, Box<Expression>, String, StructInfo, TypeScheme),
+    AccessField(
+        Span,
+        Span,
+        Box<Expression>,
+        String,     // field name
+        TypeScheme, // struct type
+        TypeScheme, // resulting field type
+    ),
     List(Span, Vec<Expression>, TypeScheme),
     TypedHole(Span, TypeScheme),
 }
@@ -661,7 +668,9 @@ impl Expression {
             Expression::Condition(_, _, then_, _) => then_.get_type(),
             Expression::String(_, _) => Type::String,
             Expression::InstantiateStruct(_, _, info_) => Type::Struct(info_.clone()),
-            Expression::AccessField(_, _, _, _, _, type_) => type_.unsafe_as_concrete(),
+            Expression::AccessField(_, _, _, _, _struct_type, field_type) => {
+                field_type.unsafe_as_concrete()
+            }
             Expression::List(_, _, element_type) => {
                 Type::List(Box::new(element_type.unsafe_as_concrete()))
             }
@@ -685,7 +694,7 @@ impl Expression {
             Expression::InstantiateStruct(_, _, info_) => {
                 TypeScheme::make_quantified(Type::Struct(info_.clone()))
             }
-            Expression::AccessField(_, _, _, _, _, type_) => type_.clone(),
+            Expression::AccessField(_, _, _, _, _struct_type, field_type) => field_type.clone(),
             Expression::List(_, _, inner) => match inner {
                 TypeScheme::Concrete(t) => TypeScheme::Concrete(Type::List(Box::new(t.clone()))),
                 TypeScheme::Quantified(ngen, qt) => TypeScheme::Quantified(

@@ -57,10 +57,10 @@ impl ForAllTypeSchemes for Expression {
                 }
                 info.for_all_type_schemes(f);
             }
-            Expression::AccessField(_, _, expr, _, info, type_) => {
+            Expression::AccessField(_, _, expr, _, struct_type, field_type) => {
                 expr.for_all_type_schemes(f);
-                info.for_all_type_schemes(f);
-                f(type_);
+                f(struct_type);
+                f(field_type);
             }
             Expression::List(_, elements, type_) => {
                 for element in elements {

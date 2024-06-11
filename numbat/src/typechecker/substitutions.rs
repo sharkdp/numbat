@@ -194,10 +194,10 @@ impl ApplySubstitution for Expression {
                 }
                 info.apply(s)
             }
-            Expression::AccessField(_, _, instance, _, info, type_) => {
+            Expression::AccessField(_, _, instance, _, struct_type, field_type) => {
                 instance.apply(s)?;
-                info.apply(s)?;
-                type_.apply(s)
+                struct_type.apply(s)?;
+                field_type.apply(s)
             }
             Expression::List(_, elements, element_type) => {
                 for element in elements {
