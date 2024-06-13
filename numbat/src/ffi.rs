@@ -911,9 +911,13 @@ fn tail(args: &[Value]) -> Result<Value> {
     assert!(args.len() == 1);
 
     let mut list = args[0].unsafe_as_list();
-    list.remove(0);
+    if list.is_empty() {
+        Err(RuntimeError::EmptyList)
+    } else {
+        list.remove(0);
 
-    Ok(Value::List(list))
+        Ok(Value::List(list))
+    }
 }
 
 fn cons(args: &[Value]) -> Result<Value> {
