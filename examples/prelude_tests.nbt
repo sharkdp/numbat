@@ -120,6 +120,7 @@ assert_eq(mean([1 m, 300 cm]), 2 m)
 
 # variance
 
+assert_eq(variance([]), 0)
 assert_eq(variance([1]), 0)
 assert_eq(variance([1, 1, 1, 1]), 0)
 assert_eq(variance([1, 2, 3, 4, 5]), 2.0)
@@ -128,6 +129,15 @@ assert_eq(variance([-2, -4, -6, -8]), 5.0)
 
 # standard deviation
 
-assert_eq(std([1]), 0)
-assert_eq(std([1, 1, 1, 1]), 0)
-assert_eq(std([1, 2, 3, 4, 5]), sqrt(2.0))
+assert_eq(stdev([]), 0)
+assert_eq(stdev([1]), 0)
+assert_eq(stdev([1, 1, 1, 1]), 0)
+assert_eq(stdev([1, 2, 3, 4, 5]), sqrt(2.0))
+
+# median
+
+assert_eq(median([1]), 1)
+assert_eq(median([1, 2]), 1.5)
+assert_eq(median([1, 2, 3]), 2)
+assert_eq(median([1, 2, 3, 4]), 2.5)
+assert_eq(median([1, 2, 3, 4, 5]), 3)

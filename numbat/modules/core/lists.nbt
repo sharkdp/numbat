@@ -35,6 +35,11 @@ fn drop<A>(n: Scalar, xs: List<A>) -> List<A> =
     then xs
     else drop(n - 1, tail(xs))
 
+fn element_at<A>(i: Scalar, xs: List<A>) -> A =
+  if i == 0
+    then head(xs)
+    else element_at(i - 1, tail(xs))
+
 @description("Generate a range of integer numbers from `start` to `end` (inclusive)")
 fn range(start: Scalar, end: Scalar) -> List<Scalar> =
   if start > end
