@@ -17,7 +17,7 @@ let _num_points_for_line_plot = 800
 
 fn _is_scalar<A: Dim>(x: A) -> Bool = "{unit_of(x)}" == "1"
 
-fn plot<A: Dim, B: Dim>(f: Fn[(A) -> B], x_start: A, x_end: A, x_label: String, y_label: String) =
+fn plot<A: Dim, B: Dim>(f: Fn[(A) -> B], x_start: A, x_end: A, x_label: String, y_label: String) -> String =
   _create_line_plot(_PlotData {
     x_label: if _is_scalar(x_end) then x_label else "{x_label} [{_unit_name(x_end)}]",
     y_label: if _is_scalar(f(x_end)) then y_label else "{y_label} [{_unit_name(f(x_end))}]",
