@@ -97,10 +97,6 @@ fn gamma(x: Scalar) -> Scalar
 
 ### Statistics
 
-@name("Arithmetic mean")
-@url("https://en.wikipedia.org/wiki/Arithmetic_mean")
-fn mean<D: Dim>(xs: List<D>) -> D = if is_empty(xs) then 0 else sum(xs) / len(xs)
-
 # TODO: remove these helpers once we support local definitions
 fn _max<D: Dim>(x: D, y: D) -> D = if x > y then x else y
 fn _min<D: Dim>(x: D, y: D) -> D = if x < y then x else y
@@ -118,6 +114,23 @@ fn minimum<D: Dim>(xs: List<D>) -> D =
   if len(xs) == 1
     then head(xs)
     else _min(head(xs), minimum(tail(xs)))
+
+
+@name("Arithmetic mean")
+@url("https://en.wikipedia.org/wiki/Arithmetic_mean")
+fn mean<D: Dim>(xs: List<D>) -> D = if is_empty(xs) then 0 else sum(xs) / len(xs)
+
+@name("Variance")
+@url("https://en.wikipedia.org/wiki/Variance")
+@description("Calculate the population variance of a list of quantities")
+fn variance<D: Dim>(xs: List<D>) -> D^2 =
+  mean(map(sqr, xs)) - sqr(mean(xs))
+
+@name("Standard deviation")
+@url("https://en.wikipedia.org/wiki/Standard_deviation")
+@description("Calculate the population standard deviation of a list of quantities")
+fn std<D: Dim>(xs: List<D>) -> D = sqrt(variance(xs))
+
 
 ### Geometry
 
