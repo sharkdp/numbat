@@ -23,6 +23,18 @@ fn concat<A>(xs1: List<A>, xs2: List<A>) -> List<A> =
     then xs2
     else cons(head(xs1), concat(tail(xs1), xs2))
 
+@description("Get the first `n` elements of a list")
+fn take<A>(n: Scalar, xs: List<A>) -> List<A> =
+  if n == 0 || is_empty(xs)
+    then []
+    else cons(head(xs), take(n - 1, tail(xs)))
+
+@description("Get everything but the first `n` elements of a list")
+fn drop<A>(n: Scalar, xs: List<A>) -> List<A> =
+  if n == 0 || is_empty(xs)
+    then xs
+    else drop(n - 1, tail(xs))
+
 @description("Generate a range of integer numbers from `start` to `end` (inclusive)")
 fn range(start: Scalar, end: Scalar) -> List<Scalar> =
   if start > end

@@ -18,6 +18,20 @@ assert_eq(concat([], xs), xs)
 assert_eq(concat(xs, []), xs)
 assert_eq(concat(xs, xs), [1, 2, 3, 1, 2, 3])
 
+assert_eq(take(0, xs), [])
+assert_eq(take(1, xs), [1])
+assert_eq(take(2, xs), [1, 2])
+assert_eq(take(3, xs), [1, 2, 3])
+assert_eq(take(4, xs), [1, 2, 3])
+assert_eq(take(0, []), [])
+
+assert_eq(drop(0, xs), [1, 2, 3])
+assert_eq(drop(1, xs), [2, 3])
+assert_eq(drop(2, xs), [3])
+assert_eq(drop(3, xs), [])
+assert_eq(drop(4, xs), [])
+assert_eq(drop(0, []), [])
+
 assert_eq(range(0, 0), [0])
 assert_eq(range(0, 5), [0, 1, 2, 3, 4, 5])
 
