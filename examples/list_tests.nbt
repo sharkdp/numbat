@@ -44,18 +44,19 @@ assert_eq(linspace(0, 1, 2), [0, 1])
 assert_eq(linspace(0, 1, 5), [0, 0.25, 0.5, 0.75, 1])
 assert_eq(linspace(0, 2 m, 5), [0 m, 0.5 m, 1 m, 1.5 m, 2 m])
 
+assert_eq(split("", ","), [])
+assert_eq(split("a", ","), ["a"])
+assert_eq(split("a,b,c", ","), ["a", "b", "c"])
+assert_eq(split("foo,bar,baz", ","), ["foo", "bar", "baz"])
+
+assert_eq(join([], ","), "")
+assert_eq(join(["a"], ","), "a")
+assert_eq(join(["a", "b", "c"], ","), "a,b,c")
+assert_eq(join(["foo", "bar", "baz"], ","), "foo,bar,baz")
+
 # Non-dtype lists
 let words = ["hello", "world"]
 assert_eq(head(words), "hello")
-
-fn join(xs: List<String>, sep: String) =
-  if is_empty(xs)
-    then ""
-    else if len(xs) == 1
-      then head(xs)
-      else "{head(xs)}{sep}{join(tail(xs), sep)}"
-
-assert_eq(join(words, " "), "hello world")
 
 fn gen_range(n) = range(1, n)
 assert_eq(map(gen_range, xs), [[1], [1, 2], [1, 2, 3]])

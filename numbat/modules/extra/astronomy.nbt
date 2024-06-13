@@ -1,6 +1,6 @@
+use physics::constants
 use units::si
 use units::astronomical
-use physics::constants
 
 unit lyr: Length = lightyear
 
