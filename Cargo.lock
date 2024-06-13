@@ -787,9 +787,9 @@ checksum = "523dc4f511e55ab87b694dc30d0f820d60906ef06413f93d4d7a1385599cc149"
 
 [[package]]
 name = "mendeleev"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b27414e33dd1f1d774e1a134bca391b5bbd58c60810253e0a6bea7258064dcf"
+checksum = "8312069eadd5b2cb9ff1bbd3874927d0cc60007ef608507cf8a59920b8a140fd"
 dependencies = [
  "serde",
 ]

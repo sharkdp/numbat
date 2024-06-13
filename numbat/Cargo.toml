@@ -37,7 +37,7 @@ html-escape = { version = "0.2.13", optional = true }
 rand = "0.8.5"
 strfmt = "0.2.4"
 indexmap = "2.2.6"
-mendeleev = "0.8.0"
+mendeleev = "0.8.1"
 
 [features]
 default = ["fetch-exchangerates", "local-timezone"]

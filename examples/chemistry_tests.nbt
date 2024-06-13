@@ -13,7 +13,7 @@ assert_eq(w.atomic_number, 74)
 assert_eq(w.group, 6)
 assert_eq(w.period, 6)
 assert_eq(w.melting_point, 3695 K, 20 K)
-# assert_eq(w.boiling_point, 6203 K, 20 K)     # <-- this seems to be wrong in the `mendeleev` crate
+assert_eq(w.boiling_point, 5828 K, 20 K)     # https://pubchem.ncbi.nlm.nih.gov/element/74#section=Boiling-Point
 assert_eq(w.density, 19.25 g/cm³, 0.1 g/cm³)
 assert_eq(w.electron_affinity, 0.816 eV, 0.01 eV)
 assert_eq(w.ionization_energy, 7.8640 eV, 0.2 eV)
