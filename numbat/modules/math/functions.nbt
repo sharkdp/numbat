@@ -115,7 +115,6 @@ fn minimum<D: Dim>(xs: List<D>) -> D =
     then head(xs)
     else _min(head(xs), minimum(tail(xs)))
 
-
 @name("Arithmetic mean")
 @url("https://en.wikipedia.org/wiki/Arithmetic_mean")
 fn mean<D: Dim>(xs: List<D>) -> D = if is_empty(xs) then 0 else sum(xs) / len(xs)
@@ -129,7 +128,15 @@ fn variance<D: Dim>(xs: List<D>) -> D^2 =
 @name("Standard deviation")
 @url("https://en.wikipedia.org/wiki/Standard_deviation")
 @description("Calculate the population standard deviation of a list of quantities")
-fn std<D: Dim>(xs: List<D>) -> D = sqrt(variance(xs))
+fn stdev<D: Dim>(xs: List<D>) -> D = sqrt(variance(xs))
+
+@name("Median")
+@url("https://en.wikipedia.org/wiki/Median")
+@description("Calculate the median of a list of quantities")
+fn median<D: Dim>(xs: List<D>) -> D =  # TODO: this is extremely inefficient
+  if mod(len(xs), 2) == 1
+    then element_at((len(xs) - 1) / 2, sort(xs))
+    else mean([element_at(len(xs) / 2 - 1, sort(xs)), element_at(len(xs) / 2, sort(xs))])
 
 
 ### Geometry
