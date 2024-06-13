@@ -141,6 +141,7 @@ impl TypeScheme {
         // Generate qualified type
         let bounds = dtype_variables
             .iter()
+            .filter(|v| type_.contains(v, true))
             .map(|v| Bound::IsDim(Type::TVar(v.clone())))
             .collect();
         let qualified_type = QualifiedType::new(type_.clone(), bounds);
