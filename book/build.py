@@ -25,7 +25,9 @@ def generate_example(filename, title, strip_asserts=True, insert_run_link=True):
         fout.write("\n")
         fout.write(f"# {title}\n")
         if insert_run_link:
-            fout.write(f'<a href="{url}"><i class="fa fa-play"></i> Run this example</a>\n')
+            fout.write(
+                f'<a href="{url}"><i class="fa fa-play"></i> Run this example</a>\n'
+            )
         fout.write("\n")
         fout.write("``` numbat\n")
         fout.writelines(code)
@@ -48,10 +50,18 @@ generate_example("xkcd_687", "XKCD 687")
 generate_example("xkcd_2585", "XKCD 2585")
 generate_example("xkcd_2812", "XKCD 2812")
 
-generate_example("numbat_syntax", "Syntax overview", strip_asserts=False, insert_run_link=False)
+generate_example(
+    "numbat_syntax", "Syntax overview", strip_asserts=False, insert_run_link=False
+)
 
 path_units = SCRIPT_DIR / "src" / "list-units.md"
 with open(path_units, "w") as f:
-    subprocess.run(["cargo", "run", "--example=inspect"], stdout=f, text=True)
+    subprocess.run(["cargo", "run", "--example=inspect", "units"], stdout=f, text=True)
+
+path_functions = SCRIPT_DIR / "src" / "list-functions.md"
+with open(path_functions, "w") as f:
+    subprocess.run(
+        ["cargo", "run", "--example=inspect", "functions"], stdout=f, text=True
+    )
 
 subprocess.run(["mdbook", "build"], text=True)
