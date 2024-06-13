@@ -2,15 +2,10 @@ use itertools::Itertools;
 use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context};
 use std::path::Path;
 
-fn main() {
-    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
+const AUTO_GENERATED_HINT: &'static str = "<!-- NOTE! This file is auto-generated -->";
 
-    let mut importer = FileSystemImporter::default();
-    importer.add_path(module_path);
-    let mut ctx = Context::new(importer);
-    let _result = ctx.interpret("use all", CodeSource::Internal).unwrap();
-
-    println!("<!-- NOTE! This file is auto-generated -->
+fn inspect_units(ctx: &Context) {
+    println!("{AUTO_GENERATED_HINT}
 # List of supported units
 
 See also: [Unit notation](./unit-notation.md).
@@ -41,5 +36,54 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
         let readable_type = unit_metadata.readable_type;
 
         println!("| `{readable_type}` | {name_with_url} | `{names}` |");
+    }
+}
+
+fn inspect_functions(ctx: &Context) {
+    println!(
+        "{AUTO_GENERATED_HINT}
+# List of functions
+
+"
+    );
+
+    for (fn_name, name, signature, description, url) in ctx.functions() {
+        if let Some(name) = name {
+            println!("## {name} (`{fn_name}`)");
+        } else {
+            println!("## `{fn_name}`");
+        }
+
+        if let Some(ref description) = description {
+            println!("{}", description.trim());
+            println!();
+        }
+
+        println!("```nbt");
+        println!("{}", signature);
+        println!("```");
+
+        if let Some(url) = url {
+            println!("[Further information]({url})");
+        }
+    }
+}
+
+fn main() {
+    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
+
+    let mut importer = FileSystemImporter::default();
+    importer.add_path(module_path);
+    let mut ctx = Context::new(importer);
+    let _result = ctx.interpret("use all", CodeSource::Internal).unwrap();
+
+    let mut args = std::env::args();
+    args.next();
+    if let Some(arg) = args.next() {
+        match arg.as_str() {
+            "units" => inspect_units(&ctx),
+            "functions" => inspect_functions(&ctx),
+            _ => eprintln!("USAGE: inspect [units|functions]"),
+        }
     }
 }

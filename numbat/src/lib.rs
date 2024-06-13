@@ -151,6 +151,35 @@ impl Context {
             .cloned()
     }
 
+    pub fn functions(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            String,
+            Option<String>,
+            String,
+            Option<String>,
+            Option<String>,
+        ),
+    > + '_ {
+        self.prefix_transformer
+            .function_names
+            .iter()
+            .filter(|name| !name.starts_with('_'))
+            .map(move |name| {
+                let (signature, meta) = self.typechecker.lookup_function(name).unwrap();
+                (
+                    name.clone(),
+                    meta.name.clone(),
+                    signature
+                        .pretty_print(self.dimension_registry())
+                        .to_string(),
+                    meta.description.clone(),
+                    meta.url.clone(),
+                )
+            })
+    }
+
     pub fn unit_names(&self) -> &[Vec<String>] {
         &self.prefix_transformer.unit_names
     }
