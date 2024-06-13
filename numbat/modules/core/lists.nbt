@@ -35,6 +35,7 @@ fn drop<A>(n: Scalar, xs: List<A>) -> List<A> =
     then xs
     else drop(n - 1, tail(xs))
 
+@description("Get the element at index `i` in a list")
 fn element_at<A>(i: Scalar, xs: List<A>) -> A =
   if i == 0
     then head(xs)
