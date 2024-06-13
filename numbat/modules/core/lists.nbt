@@ -1,5 +1,6 @@
 use core::scalar
 use core::error
+use core::strings
 
 @description("Get the length of a list")
 fn len<A>(xs: List<A>) -> Scalar
@@ -83,3 +84,20 @@ fn linspace<D: Dim>(start: D, end: D, n_steps: Scalar) -> List<D> =
   if n_steps <= 1
     then error("Number of steps must be larger than 1")
     else _linspace_helper(start, end, n_steps, 0)
+
+@description("Convert a list of strings into a single string by concatenating them with a separator")
+fn join(xs: List<String>, sep: String) =
+  if is_empty(xs)
+    then ""
+    else if len(xs) == 1
+      then head(xs)
+      else "{head(xs)}{sep}{join(tail(xs), sep)}"
+
+@description("Split a string into a list of strings using a separator")
+fn split(input: String, separator: String) -> List<String> =
+  if input == ""
+    then []
+    else if !str_contains(input, separator)
+      then [input]
+      else cons(str_slice(input, 0, str_find(input, separator)),  # TODO: avoid duplication
+                split(str_slice(input, str_find(input, separator) + str_length(separator), str_length(input)), separator))
