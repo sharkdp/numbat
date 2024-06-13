@@ -473,15 +473,23 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::ExponentiationNeedsTypeAnnotation(span) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),
-            TypeCheckError::TypedHoleInStatement(span, type_, statement) => d
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(type_)])
-                .with_message("Found typed hole")
-                .with_notes(vec![
+            TypeCheckError::TypedHoleInStatement(span, type_, statement, matches) => {
+                let mut notes = vec![
                     format!("Found a hole of type '{type_}' in the statement:"),
                     format!("  {statement}"),
-                ]),
+                ];
+
+                if !matches.is_empty() {
+                    notes.push("Relevant matches for this hole include:".into());
+                    notes.push(format!("  {}", matches.join(", ")));
+                }
+
+                d.with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(type_)])
+                    .with_message("Found typed hole")
+                    .with_notes(notes)
+            }
         };
         vec![d]
     }

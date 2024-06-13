@@ -1139,7 +1139,7 @@ impl TypeChecker {
 
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
                     self.env
-                        .add(name.clone(), type_deduced.clone(), *identifier_span);
+                        .add(name.clone(), type_deduced.clone(), *identifier_span, false);
 
                     self.value_namespace.add_identifier_allow_override(
                         name.clone(),
@@ -1183,8 +1183,12 @@ impl TypeChecker {
                         .into()
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
-                    self.env
-                        .add(name.clone(), Type::Dimension(type_specified.clone()), *span);
+                    self.env.add(
+                        name.clone(),
+                        Type::Dimension(type_specified.clone()),
+                        *span,
+                        true,
+                    );
                 }
 
                 typed_ast::Statement::DefineBaseUnit(
@@ -1261,7 +1265,7 @@ impl TypeChecker {
 
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
                     self.env
-                        .add(name.clone(), type_deduced.clone(), *identifier_span);
+                        .add(name.clone(), type_deduced.clone(), *identifier_span, true);
                 }
                 typed_ast::Statement::DefineDerivedUnit(
                     identifier.clone(),
@@ -1350,6 +1354,7 @@ impl TypeChecker {
                         parameter.clone(),
                         TypeScheme::make_quantified(parameter_type.clone()),
                         *parameter_span,
+                        false,
                     );
                     typed_parameters.push((*parameter_span, parameter.clone(), parameter_type));
                 }
@@ -1764,6 +1769,13 @@ impl TypeChecker {
                 span,
                 type_of_hole.to_readable_type(&self.registry).to_string(),
                 elaborated_statement.pretty_print().to_string(),
+                self.env
+                    .iter_relevant_matches()
+                    .filter(|(_, t)| t == &type_of_hole)
+                    .take(10)
+                    .map(|(n, _)| n)
+                    .cloned()
+                    .collect(),
             ));
         }
 

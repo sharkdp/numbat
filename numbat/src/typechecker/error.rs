@@ -150,7 +150,7 @@ pub enum TypeCheckError {
     DerivedUnitDefinitionMustNotBeGeneric(Span),
 
     #[error("Typed hole")]
-    TypedHoleInStatement(Span, String, String),
+    TypedHoleInStatement(Span, String, String, Vec<String>),
 
     #[error("Multiple typed holes in statement")]
     MultipleTypedHoles(Span),
