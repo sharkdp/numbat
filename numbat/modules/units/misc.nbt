@@ -58,7 +58,7 @@ unit revolution: Angle = 360°
 @name("Revolutions per minute")
 @url("https://en.wikipedia.org/wiki/Revolutions_per_minute")
 @aliases(RPM: short)
-unit rpm: Frequency = 1 / minute
+unit rpm: AngularFrequency = revolutions per minute
 
 @name("Millimeter of mercury")
 @url("https://en.wikipedia.org/wiki/Millimeter_of_mercury")

@@ -24,7 +24,9 @@ let planck_constant: Action = 6.626_070_15e-34 J / Hz
 @name("Reduced Planck constant")
 @url("https://en.wikipedia.org/wiki/Planck_constant#Reduced_Planck_constant_%E2%84%8F")
 @aliases(h_bar)
-let ℏ: AngularMomentum = planck_constant / 2π
+let ℏ: AngularMomentum = planck_constant / 2π θC
+let h_bar = ℏ
+let ȟ: Action = planck_constant / 2π
 
 @name("Electron mass")
 @url("https://en.wikipedia.org/wiki/Electron_mass")
@@ -38,22 +40,22 @@ let elementary_charge: ElectricCharge =  1.602_176_634e-19 C
 @name("Vacuum permeability / magnetic constant")
 @url("https://en.wikipedia.org/wiki/Vacuum_permeability")
 @aliases(µ0,μ0,mu0)
-let magnetic_constant: MagneticPermeability =  1.256_637_062_12e-6 N / A²
+let magnetic_constant: MagneticPermeability =  1.256_637_062_12e-6 N / A² / rad
 
 @name("Vacuum electric permittivity / electric constant")
 @url("https://en.wikipedia.org/wiki/Vacuum_permittivity")
 @aliases(ε0,eps0)
-let electric_constant: ElectricPermittivity = 1 / (µ0 c²) -> F/m
+let electric_constant: ElectricPermittivity = 1 / (µ0 c²) -> F/m × rad
 
-@name("Bohr magneton")
-@aliases(µ_B,μ_B)
-@url("https://en.wikipedia.org/wiki/Bohr_magneton")
-let bohr_magneton: Energy / MagneticFluxDensity = electron_charge ℏ / 2 electron_mass -> J/T
+#@name("Bohr magneton")
+#@aliases(µ_B,μ_B)
+#@url("https://en.wikipedia.org/wiki/Bohr_magneton")
+#let bohr_magneton: Energy / MagneticFluxDensity = electron_charge ℏ / 2 electron_mass -> J/T
 
-@name("Fine structure constant")
-@url("https://en.wikipedia.org/wiki/Fine-structure_constant")
-@aliases(α, alpha)
-let fine_structure_constant: Scalar = electron_charge^2 / (2 eps0 ℎ c)
+#@name("Fine structure constant")
+#@url("https://en.wikipedia.org/wiki/Fine-structure_constant")
+#@aliases(α, alpha)
+#let fine_structure_constant: Scalar = electron_charge^2 / (2 eps0 ȟ c)
 
 @name("Proton mass")
 @url("https://en.wikipedia.org/wiki/Proton")
@@ -85,15 +87,15 @@ let gas_constant: Energy / (AmountOfSubstance × Temperature) = k_B × N_A
 @name("Bohr radius")
 @url("https://en.wikipedia.org/wiki/Bohr_radius")
 @aliases(a0)
-let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
+let bohr_radius: Length / Angle = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass) -> m/rad
 
-@name("Rydberg constant")
-@url("https://en.wikipedia.org/wiki/Rydberg_constant")
-let rydberg_constant: Wavenumber = (electron_mass electron_charge^4) / (8 ε0^2 ℎ^3 c)
+#@name("Rydberg constant")
+#@url("https://en.wikipedia.org/wiki/Rydberg_constant")
+#let rydberg_constant: Wavenumber = (electron_mass electron_charge^4) / (8 ε0^2 ℎ^3 c)
 
-@name("Rydberg unit of energy")
-@url("https://en.wikipedia.org/wiki/Rydberg_constant")
-unit Ry: Energy = ℎ c × rydberg_constant
+#@name("Rydberg unit of energy")
+#@url("https://en.wikipedia.org/wiki/Rydberg_constant")
+#unit Ry: Energy = ℎ c × rydberg_constant
 
 @name("Atomic Mass constant")
 @url("https://en.wikipedia.org/wiki/Atomic_mass_constant")

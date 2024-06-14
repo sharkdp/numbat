@@ -258,8 +258,8 @@ fn test_algebra() {
 
 #[test]
 fn test_math() {
-    expect_output("sin(90°)", "1");
-    expect_output("sin(30°)", "0.5");
+    expect_output("Sin(90°)", "1");
+    expect_output("Sin(30°)", "0.5");
     expect_output("sin(pi/2)", "1");
 
     expect_output("atan2(10, 0) / (pi / 2)", "1");
@@ -283,7 +283,7 @@ fn test_incompatible_dimension_errors() {
         get_error_message("kg m / s^2 + kg m^2"),
         @r###"
      left hand side: Length  × Mass × Time⁻²    [= Force]
-    right hand side: Length² × Mass             [= MomentOfInertia]
+    right hand side: Length² × Mass
     "###
     );
 
@@ -420,14 +420,14 @@ fn test_misc_examples() {
     expect_output("2min + 30s -> sec", "150 s");
     expect_output("4/3 * pi * (6000km)³", "9.04779e+11 km³");
     expect_output("40kg * 9.8m/s^2 * 150cm", "588 kg·m²/s²");
-    expect_output("sin(30°)", "0.5");
+    expect_output("Sin(30°)", "0.5");
 
     expect_output("60mph -> m/s", "26.8224 m/s");
     expect_output("240km/day -> km/h", "10 km/h");
     expect_output("1mrad -> °", "0.0572958°");
     expect_output("52weeks -> days", "364 day");
     expect_output("5in + 2ft -> cm", "73.66 cm");
-    expect_output("atan(30cm / 2m) -> deg", "8.53077°");
+    expect_output("ATan(30cm / 2m) -> deg", "8.53077°");
     expect_output("6Mbit/s * 1.5h -> GB", "4.05 GB");
     expect_output("6Mbit/s * 1.5h -> GiB", "3.77186 GiB");
 
@@ -439,7 +439,7 @@ fn test_misc_examples() {
 #[test]
 fn test_bohr_radius_regression() {
     // Make sure that the unit is 'm', and not 'F·J²/(C²·kg·m·Hz²)', like we had before
-    expect_output("bohr_radius", "5.29177e-11 m");
+    expect_output("bohr_radius", "5.29177e-11 m/rad");
 }
 
 #[test]
