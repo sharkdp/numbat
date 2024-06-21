@@ -30,7 +30,7 @@ conversion operator `->`/`to`, so you can write expressions like:
 Examples:
 ```nbt
 0xffee to bin
-42 ot oct
+42 to oct
 2^16 - 1 to hex
 ```
 
