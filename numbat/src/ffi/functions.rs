@@ -16,15 +16,18 @@ pub fn functions() -> &'static HashMap<String, ForeignFunction> {
         let mut m = HashMap::new();
 
         macro_rules! insert_function {
-            ($callable:expr, $arity:expr) => {
+            ($fn_name:expr, $callable:expr, $arity:expr) => {
                 m.insert(
-                    stringify!($callable).to_string(),
+                    $fn_name.to_string(),
                     ForeignFunction {
-                        name: stringify!($callable).to_string(),
+                        name: $fn_name.to_string(),
                         arity: $arity,
                         callable: Callable::Function(Box::new($callable)),
                     },
                 );
+            };
+            ($callable:expr, $arity:expr) => {
+                insert_function!(stringify!($callable), $callable, $arity);
             };
         }
 
@@ -49,14 +52,7 @@ pub fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(asinh, 1..=1);
         insert_function!(acosh, 1..=1);
         insert_function!(atanh, 1..=1);
-        m.insert(
-            "mod".to_string(),
-            ForeignFunction {
-                name: "mod".into(),
-                arity: 2..=2,
-                callable: Callable::Function(Box::new(mod_)),
-            },
-        );
+        insert_function!("mod", mod_, 2..=2);
         insert_function!(exp, 1..=1);
         insert_function!(ln, 1..=1);
         insert_function!(log10, 1..=1);
@@ -87,14 +83,10 @@ pub fn functions() -> &'static HashMap<String, ForeignFunction> {
 }
 
 fn error(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     Err(RuntimeError::UserError(args[0].unsafe_as_string().into()))
 }
 
 fn unit_of(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     Ok(Value::Quantity(Quantity::new_f64(
         1.0,
         args[0].unsafe_as_quantity().unit().clone(),
@@ -102,8 +94,6 @@ fn unit_of(args: &[Value]) -> Result<Value> {
 }
 
 fn abs(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let value = arg.unsafe_value().to_f64();
@@ -114,8 +104,6 @@ fn abs(args: &[Value]) -> Result<Value> {
 }
 
 fn round(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let value = arg.unsafe_value().to_f64();
@@ -126,8 +114,6 @@ fn round(args: &[Value]) -> Result<Value> {
 }
 
 fn floor(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let value = arg.unsafe_value().to_f64();
@@ -138,8 +124,6 @@ fn floor(args: &[Value]) -> Result<Value> {
 }
 
 fn ceil(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let value = arg.unsafe_value().to_f64();
@@ -150,22 +134,18 @@ fn ceil(args: &[Value]) -> Result<Value> {
 }
 
 fn is_nan(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
     let arg = args[0].unsafe_as_quantity();
     let isnan = arg.unsafe_value().to_f64().is_nan();
     Ok(Value::Boolean(isnan))
 }
 
 fn is_infinite(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
     let arg = args[0].unsafe_as_quantity();
     let isnan = arg.unsafe_value().to_f64().is_infinite();
     Ok(Value::Boolean(isnan))
 }
 
 fn sin(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -173,8 +153,6 @@ fn sin(args: &[Value]) -> Result<Value> {
 }
 
 fn cos(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -182,8 +160,6 @@ fn cos(args: &[Value]) -> Result<Value> {
 }
 
 fn tan(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -191,8 +167,6 @@ fn tan(args: &[Value]) -> Result<Value> {
 }
 
 fn asin(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -200,8 +174,6 @@ fn asin(args: &[Value]) -> Result<Value> {
 }
 
 fn acos(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -209,8 +181,6 @@ fn acos(args: &[Value]) -> Result<Value> {
 }
 
 fn atan(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -218,8 +188,6 @@ fn atan(args: &[Value]) -> Result<Value> {
 }
 
 fn atan2(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 2);
-
     let y = args[0].unsafe_as_quantity();
     let x = args[1].unsafe_as_quantity();
 
@@ -229,8 +197,6 @@ fn atan2(args: &[Value]) -> Result<Value> {
 }
 
 fn sinh(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -238,8 +204,6 @@ fn sinh(args: &[Value]) -> Result<Value> {
 }
 
 fn cosh(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -247,8 +211,6 @@ fn cosh(args: &[Value]) -> Result<Value> {
 }
 
 fn tanh(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -256,8 +218,6 @@ fn tanh(args: &[Value]) -> Result<Value> {
 }
 
 fn asinh(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -265,8 +225,6 @@ fn asinh(args: &[Value]) -> Result<Value> {
 }
 
 fn acosh(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -274,8 +232,6 @@ fn acosh(args: &[Value]) -> Result<Value> {
 }
 
 fn atanh(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -283,8 +239,6 @@ fn atanh(args: &[Value]) -> Result<Value> {
 }
 
 fn mod_(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 2);
-
     let x = args[0].unsafe_as_quantity();
     let y = args[1].unsafe_as_quantity();
 
@@ -297,8 +251,6 @@ fn mod_(args: &[Value]) -> Result<Value> {
 }
 
 fn exp(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -306,8 +258,6 @@ fn exp(args: &[Value]) -> Result<Value> {
 }
 
 fn ln(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -315,8 +265,6 @@ fn ln(args: &[Value]) -> Result<Value> {
 }
 
 fn log10(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -324,8 +272,6 @@ fn log10(args: &[Value]) -> Result<Value> {
 }
 
 fn log2(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -333,8 +279,6 @@ fn log2(args: &[Value]) -> Result<Value> {
 }
 
 fn gamma(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let arg = args[0].unsafe_as_quantity();
 
     let input = arg.as_scalar().unwrap().to_f64();
@@ -344,8 +288,6 @@ fn gamma(args: &[Value]) -> Result<Value> {
 }
 
 fn exchange_rate(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let rate = args[0].unsafe_as_string();
 
     let exchange_rates = ExchangeRatesCache::new();
@@ -356,16 +298,12 @@ fn exchange_rate(args: &[Value]) -> Result<Value> {
 }
 
 fn len(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let list = args[0].unsafe_as_list();
 
     Ok(Value::Quantity(Quantity::from_scalar(list.len() as f64)))
 }
 
 fn head(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let list = args[0].unsafe_as_list();
 
     if let Some(first) = list.first() {
@@ -376,8 +314,6 @@ fn head(args: &[Value]) -> Result<Value> {
 }
 
 fn tail(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let mut list = args[0].unsafe_as_list();
     if list.is_empty() {
         Err(RuntimeError::EmptyList)
@@ -389,8 +325,6 @@ fn tail(args: &[Value]) -> Result<Value> {
 }
 
 fn cons(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 2);
-
     let mut list = args[1].unsafe_as_list().clone();
     list.insert(0, args[0].clone());
 
@@ -398,27 +332,19 @@ fn cons(args: &[Value]) -> Result<Value> {
 }
 
 fn str_length(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let len = args[0].unsafe_as_string().len();
     Ok(Value::Quantity(Quantity::from_scalar(len as f64)))
 }
 
 fn lowercase(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     Ok(Value::String(args[0].unsafe_as_string().to_lowercase()))
 }
 
 fn uppercase(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     Ok(Value::String(args[0].unsafe_as_string().to_uppercase()))
 }
 
 fn str_slice(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 3);
-
     let input = args[0].unsafe_as_string();
     let start = args[1].unsafe_as_quantity().unsafe_value().to_f64() as usize;
     let end = args[2].unsafe_as_quantity().unsafe_value().to_f64() as usize;
@@ -429,8 +355,6 @@ fn str_slice(args: &[Value]) -> Result<Value> {
 }
 
 fn chr(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let idx = args[0].unsafe_as_quantity().unsafe_value().to_f64() as u32;
 
     let output = char::from_u32(idx).unwrap_or('�');
@@ -446,8 +370,6 @@ fn now(args: &[Value]) -> Result<Value> {
 }
 
 fn datetime(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let input = args[0].unsafe_as_string();
 
     let output = datetime::parse_datetime(input)
@@ -458,8 +380,6 @@ fn datetime(args: &[Value]) -> Result<Value> {
 }
 
 fn format_datetime(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 2);
-
     let format = args[0].unsafe_as_string();
     let dt = args[1].unsafe_as_datetime();
 
@@ -478,8 +398,6 @@ fn get_local_timezone(args: &[Value]) -> Result<Value> {
 }
 
 fn tz(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let tz = args[0].unsafe_as_string();
 
     Ok(Value::FunctionReference(FunctionReference::TzConversion(
@@ -488,8 +406,6 @@ fn tz(args: &[Value]) -> Result<Value> {
 }
 
 fn unixtime(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let input = args[0].unsafe_as_datetime();
 
     let output = input.timestamp();
@@ -498,8 +414,6 @@ fn unixtime(args: &[Value]) -> Result<Value> {
 }
 
 fn from_unixtime(args: &[Value]) -> Result<Value> {
-    assert!(args.len() == 1);
-
     let timestamp = args[0].unsafe_as_quantity().unsafe_value().to_f64() as i64;
 
     let dt = chrono::DateTime::from_timestamp(timestamp, 0)
@@ -525,8 +439,6 @@ fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
     use indexmap::IndexMap;
     use mendeleev::{Electronvolt, GramPerCubicCentimeter, Kelvin, KiloJoulePerMole};
     use std::sync::Arc;
-
-    assert!(args.len() == 1);
 
     let pattern = args[0].unsafe_as_string().to_lowercase();
 
