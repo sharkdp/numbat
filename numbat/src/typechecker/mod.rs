@@ -1419,7 +1419,10 @@ impl TypeChecker {
                                         IncompatibleDimensionsError {
                                             span_operation: *function_name_span,
                                             operation: "function return type".into(),
-                                            span_expected: return_type_annotation.as_ref().unwrap().full_span(),
+                                            span_expected: return_type_annotation
+                                                .as_ref()
+                                                .unwrap()
+                                                .full_span(),
                                             expected_name: "specified return type",
                                             expected_dimensions: typechecker_fn
                                                 .registry
