@@ -95,7 +95,7 @@ impl ApplySubstitution for DType {
         for (f, power) in &self.factors {
             match f {
                 DTypeFactor::TVar(tv) => {
-                    if let Some(type_) = substitution.lookup(&tv) {
+                    if let Some(type_) = substitution.lookup(tv) {
                         let dtype = match type_ {
                             Type::Dimension(dt) => dt.clone(),
                             Type::TVar(tv) => DType::from_type_variable(tv.clone()),

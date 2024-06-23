@@ -34,7 +34,7 @@ impl TypeScheme {
         if let TypeScheme::Quantified(n_gen, qt) = &self {
             assert!(n_gen == &new_type_variables.len());
 
-            qt.instantiate(&new_type_variables)
+            qt.instantiate(new_type_variables)
         } else {
             unreachable!("Tried to instantiate concrete type: {:#?}", self);
         }
