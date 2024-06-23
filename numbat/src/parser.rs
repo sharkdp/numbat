@@ -227,6 +227,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected bound in type parameter definition")]
     ExpectedBoundInTypeParameterDefinition,
+
+    #[error("Empty string interpolation")]
+    EmptyStringInterpolation,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -1389,10 +1392,31 @@ impl<'a> Parser<'a> {
                 self.peek().span,
             ))
         } else {
-            Err(ParseError::new(
-                ParseErrorKind::ExpectedPrimary,
-                self.peek().span,
-            ))
+            if self
+                .last()
+                .map(|t| {
+                    matches!(
+                        t.kind,
+                        TokenKind::StringInterpolationStart | TokenKind::StringInterpolationMiddle
+                    )
+                })
+                .unwrap_or(false)
+            {
+                let full_interpolation_end_span = self.peek().span;
+                let closing_brace_span = full_interpolation_end_span
+                    .start
+                    .single_character_span(full_interpolation_end_span.code_source_id);
+
+                Err(ParseError::new(
+                    ParseErrorKind::EmptyStringInterpolation,
+                    closing_brace_span,
+                ))
+            } else {
+                Err(ParseError::new(
+                    ParseErrorKind::ExpectedPrimary,
+                    self.peek().span,
+                ))
+            }
         }
     }
 
@@ -1685,7 +1709,11 @@ impl<'a> Parser<'a> {
     }
 
     fn last(&self) -> Option<&'a Token> {
-        self.tokens.get(self.current - 1)
+        if self.current == 0 {
+            None
+        } else {
+            self.tokens.get(self.current - 1)
+        }
     }
 
     pub fn is_end_of_statement(&self) -> bool {
@@ -2802,6 +2830,14 @@ mod tests {
         );
 
         should_fail_with(&["\"test {1"], ParseErrorKind::UnterminatedString);
+        should_fail_with(
+            &[
+                "\"foo {} bar\"",
+                "\"foo {1} bar {} baz\"",
+                "\"foo {   } bar\"",
+            ],
+            ParseErrorKind::EmptyStringInterpolation,
+        );
     }
 
     #[test]
