@@ -86,3 +86,7 @@ pub fn is_infinite(args: &[Value]) -> Result<Value> {
 
     return_boolean!(arg.unsafe_value().to_f64().is_infinite())
 }
+
+pub fn random(_args: &[Value]) -> Result<Value> {
+    return_scalar!(rand::random::<f64>())
+}

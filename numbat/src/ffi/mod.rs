@@ -1,6 +1,8 @@
+mod currency;
 mod datetime;
 mod functions;
 mod lists;
+mod lookup;
 mod macros;
 mod math;
 mod procedures;
