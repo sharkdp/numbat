@@ -47,6 +47,12 @@ pub struct HtmlWriter {
     color: Option<termcolor::ColorSpec>,
 }
 
+impl Default for HtmlWriter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HtmlWriter {
     pub fn new() -> Self {
         HtmlWriter {

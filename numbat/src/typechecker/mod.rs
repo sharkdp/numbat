@@ -930,7 +930,7 @@ impl TypeChecker {
 
                     let found_type = &expr.get_type();
                     if self
-                        .add_equal_constraint(&found_type, &expected_type)
+                        .add_equal_constraint(found_type, expected_type)
                         .is_trivially_violated()
                     {
                         return Err(TypeCheckError::IncompatibleTypesForStructField(
@@ -1023,14 +1023,12 @@ impl TypeChecker {
 
                 let result_element_type = if element_types.is_empty() {
                     self.fresh_type_variable()
+                } else if element_types[0].is_closed() {
+                    element_types[0].clone()
                 } else {
-                    if element_types[0].is_closed() {
-                        element_types[0].clone()
-                    } else {
-                        let type_ = self.fresh_type_variable();
-                        self.add_equal_constraint(&element_types[0], &type_).ok();
-                        type_
-                    }
+                    let type_ = self.fresh_type_variable();
+                    self.add_equal_constraint(&element_types[0], &type_).ok();
+                    type_
                 };
 
                 if !element_types.is_empty() {
@@ -1038,7 +1036,7 @@ impl TypeChecker {
                         elements_checked.iter().zip(element_types.iter()).skip(1)
                     {
                         if self
-                            .add_equal_constraint(&result_element_type, &type_of_subsequent_element)
+                            .add_equal_constraint(&result_element_type, type_of_subsequent_element)
                             .is_trivially_violated()
                         {
                             return Err(TypeCheckError::IncompatibleTypesInList(
@@ -1121,7 +1119,7 @@ impl TypeChecker {
                         }
                         (deduced, annotated) => {
                             if self
-                                .add_equal_constraint(&deduced, &annotated)
+                                .add_equal_constraint(deduced, annotated)
                                 .is_trivially_violated()
                             {
                                 return Err(TypeCheckError::IncompatibleTypesInAnnotation(
@@ -1247,7 +1245,7 @@ impl TypeChecker {
                         }
                         (deduced, annotated) => {
                             if self
-                                .add_equal_constraint(&deduced, &annotated)
+                                .add_equal_constraint(deduced, annotated)
                                 .is_trivially_violated()
                             {
                                 return Err(TypeCheckError::IncompatibleTypesInAnnotation(
@@ -1399,7 +1397,7 @@ impl TypeChecker {
 
                 let body_checked = body
                     .as_ref()
-                    .map(|expr| typechecker_fn.elaborate_expression(&expr))
+                    .map(|expr| typechecker_fn.elaborate_expression(expr))
                     .transpose()?;
 
                 let return_type_inferred = if let Some(ref expr) = body_checked {
@@ -1684,7 +1682,7 @@ impl TypeChecker {
         // Elaborate the program/statement: turn the AST into a typed AST, possibly
         // with unification variables, i.e. type variables that will only later be
         // filled in after the constraints have been solved.
-        let mut elaborated_statement = self.elaborate_statement(&statement)?;
+        let mut elaborated_statement = self.elaborate_statement(statement)?;
 
         // Solve constraints
         let (substitution, dtype_variables) =
@@ -1745,7 +1743,7 @@ impl TypeChecker {
         // multiple of the denominators of the exponents. For example, this will turn
         // T0^(1/3) -> T0^(1/5) -> T0 into T0^5 -> T0^3 -> T0^15.
         for tv in &dtype_variables {
-            let exponents = elaborated_statement.exponents_for(&tv);
+            let exponents = elaborated_statement.exponents_for(tv);
             let lcm = exponents
                 .iter()
                 .fold(1, |acc, e| num_integer::lcm(acc, *e.denom()));

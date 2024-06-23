@@ -1391,32 +1391,30 @@ impl<'a> Parser<'a> {
                 ParseErrorKind::InlineProcedureUsage,
                 self.peek().span,
             ))
-        } else {
-            if self
-                .last()
-                .map(|t| {
-                    matches!(
-                        t.kind,
-                        TokenKind::StringInterpolationStart | TokenKind::StringInterpolationMiddle
-                    )
-                })
-                .unwrap_or(false)
-            {
-                let full_interpolation_end_span = self.peek().span;
-                let closing_brace_span = full_interpolation_end_span
-                    .start
-                    .single_character_span(full_interpolation_end_span.code_source_id);
+        } else if self
+            .last()
+            .map(|t| {
+                matches!(
+                    t.kind,
+                    TokenKind::StringInterpolationStart | TokenKind::StringInterpolationMiddle
+                )
+            })
+            .unwrap_or(false)
+        {
+            let full_interpolation_end_span = self.peek().span;
+            let closing_brace_span = full_interpolation_end_span
+                .start
+                .single_character_span(full_interpolation_end_span.code_source_id);
 
-                Err(ParseError::new(
-                    ParseErrorKind::EmptyStringInterpolation,
-                    closing_brace_span,
-                ))
-            } else {
-                Err(ParseError::new(
-                    ParseErrorKind::ExpectedPrimary,
-                    self.peek().span,
-                ))
-            }
+            Err(ParseError::new(
+                ParseErrorKind::EmptyStringInterpolation,
+                closing_brace_span,
+            ))
+        } else {
+            Err(ParseError::new(
+                ParseErrorKind::ExpectedPrimary,
+                self.peek().span,
+            ))
         }
     }
 

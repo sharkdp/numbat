@@ -92,12 +92,10 @@ fn assert_eq(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
             } else {
                 error
             }
+        } else if lhs == rhs {
+            ControlFlow::Continue(())
         } else {
-            if lhs == rhs {
-                ControlFlow::Continue(())
-            } else {
-                error
-            }
+            error
         }
     } else {
         let lhs = args[0].unsafe_as_quantity();

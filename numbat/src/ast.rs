@@ -662,7 +662,7 @@ impl ReplaceSpans for Statement {
                 struct_name_span: Span::dummy(),
                 struct_name: struct_name.clone(),
                 fields: fields
-                    .into_iter()
+                    .iter()
                     .map(|(_span, name, type_)| {
                         (Span::dummy(), name.clone(), type_.replace_spans())
                     })

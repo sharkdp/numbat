@@ -91,10 +91,11 @@ impl Environment {
     pub fn iter_relevant_matches(&self) -> impl Iterator<Item = (&Identifier, TypeScheme)> {
         self.identifiers
             .iter()
-            .filter(|(_, kind)| match kind {
-                IdentifierKind::Normal(_, _, true) => false,
-                IdentifierKind::Predefined(..) => false,
-                _ => true,
+            .filter(|(_, kind)| {
+                !matches!(
+                    kind,
+                    IdentifierKind::Normal(_, _, true) | IdentifierKind::Predefined(..)
+                )
             })
             .map(|(id, kind)| (id, kind.get_type()))
     }
@@ -104,7 +105,7 @@ impl Environment {
         name: &str,
     ) -> Option<(&FunctionSignature, &FunctionMetadata)> {
         match self.identifiers.get(name) {
-            Some(IdentifierKind::Function(signature, metadata)) => Some((signature, &metadata)),
+            Some(IdentifierKind::Function(signature, metadata)) => Some((signature, metadata)),
             _ => None,
         }
     }
