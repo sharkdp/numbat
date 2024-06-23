@@ -3,46 +3,46 @@
 }
 
 html {
-    font-family: 'Exo 2', sans-serif;
-    background-color: #f7f7f7;
+  font-family: "Exo 2", sans-serif;
+  background-color: #f7f7f7;
 }
 
 .github-corner svg {
-    fill: #272822;
-    color: #ECF0F1;
+  fill: #272822;
+  color: #ecf0f1;
 }
 
 body {
-    font-size: 1.2em;
-    margin: 0px;
-    margin-top: 18px;
+  font-size: 1.2em;
+  margin: 0px;
+  margin-top: 18px;
 }
 
 #container {
-    text-align: center;
+  text-align: center;
 }
 
 #content {
-    max-width: 90%;
-    width: 1000px;
-    padding-left: 20px;
-    padding-right: 20px;
-    margin: 0 auto;
+  max-width: 90%;
+  width: 1000px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 0 auto;
 }
 
 p.desc {
-    margin-top: 0.6em;
-    margin-bottom: 1.8em;
+  margin-top: 0.6em;
+  margin-bottom: 1.8em;
 }
 
 p.links {
-    font-size: 0.8em;
-    margin-top: 36px;
-    text-align: center;
+  font-size: 0.8em;
+  margin-top: 36px;
+  text-align: center;
 }
 
 p.links a {
-    color: #666;
+  color: #666;
 }
 
 #skeleton-loader {
@@ -65,196 +65,196 @@ p.links a {
 }
 
 #terminal {
-    border-radius: 4px;
-    box-shadow: 0px 3px 8px #1a1a1a;
+  border-radius: 4px;
+  box-shadow: 0px 3px 8px #1a1a1a;
 }
 
 /* jQuery Terminal */
 
 .terminal {
-    --color: #f1f1f0;
-    --background: #282a36;
-    --size: 1.5;
-    --font: 'Fira Mono', monospace;
-    --link-color: #59f78d;
-    font-family: 'Fira Mono', monospace;
+  --color: #f1f1f0;
+  --background: #282a36;
+  --size: 1.5;
+  --font: "Fira Mono", monospace;
+  --link-color: #59f78d;
+  font-family: "Fira Mono", monospace;
 }
 
 .terminal,
 .terminal .terminal-fill {
-    padding: 1.2em;
+  padding: 1.2em;
 }
 
 .terminal,
-.terminal-output> :not(.raw) span,
-.terminal-output> :not(.raw) a,
-.terminal-output> :not(.raw) div,
+.terminal-output > :not(.raw) span,
+.terminal-output > :not(.raw) a,
+.terminal-output > :not(.raw) div,
 .cmd,
 .cmd span,
 .cmd div {
-    font-family: 'Fira Mono', monospace;
+  font-family: "Fira Mono", monospace;
 }
 
-.terminal-output>div {
-    padding-bottom: 1em;
+.terminal-output > div {
+  padding-bottom: 1em;
 }
 
-.terminal-output>div.terminal-command {
-    padding-bottom: 0em;
+.terminal-output > div.terminal-command {
+  padding-bottom: 0em;
 }
 
 .prompt {
-    font-weight: bold;
+  font-weight: bold;
 }
 
 /* syntax highlighting */
 /* snazzy color scheme (https://github.com/sindresorhus/hyper-snazzy) */
 
 .hl-dimmed {
-    color: #888 !important;
+  color: #888 !important;
 }
 
 .hl-emphasized {
-    font-weight: bold;
+  font-weight: bold;
 }
 
 .hl-string {
-    color: #59f78d !important;
+  color: #59f78d !important;
 }
 
 .hl-keyword {
-    font-weight: 700 !important;
-    color: #ff69c0 !important;
+  font-weight: 700 !important;
+  color: #ff69c0 !important;
 }
 
 .hl-value {
-    color: #f3f99d !important;
+  color: #f3f99d !important;
 }
 
 .hl-unit {
-    color: #99ecfe !important;
+  color: #99ecfe !important;
 }
 
-.hl-identifier {}
+.hl-identifier {
+}
 
 .hl-type-identifier {
-    color: #57c7ff !important;
-    font-style: italic !important;
+  color: #57c7ff !important;
+  font-style: italic !important;
 }
 
 .hl-operator {
-    font-weight: 700 !important;
+  font-weight: 700 !important;
 }
 
 .hl-decorator {
-    color: #59f78d !important;
+  color: #59f78d !important;
 }
 
 .hl-diagnostic-red {
-    color: #ff5b56 !important;
+  color: #ff5b56 !important;
 }
 
 .hl-diagnostic-blue {
-    color: #56c7ff !important;
+  color: #56c7ff !important;
 }
 
 .hl-diagnostic-bold {
-    font-weight: 700 !important;
+  font-weight: 700 !important;
 }
 
 /* Github Badge */
 
 .github-corner:hover .octo-arm {
-    animation: octocat-wave 560ms ease-in-out
+  animation: octocat-wave 560ms ease-in-out;
 }
 
 @keyframes octocat-wave {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
 
-    0%,
-    100% {
-        transform: rotate(0)
-    }
+  20%,
+  60% {
+    transform: rotate(-25deg);
+  }
 
-    20%,
-    60% {
-        transform: rotate(-25deg)
-    }
-
-    40%,
-    80% {
-        transform: rotate(10deg)
-    }
+  40%,
+  80% {
+    transform: rotate(10deg);
+  }
 }
 
-@media (max-width:600px) {
-    html {
-        height: 100%;
-    }
+@media (max-width: 600px) {
+  html {
+    height: 100%;
+  }
 
-    body {
-        margin: 0px;
-        height: 100%;
-    }
+  body {
+    margin: 0px;
+    height: 100%;
+  }
 
-    .github-corner {
-        display: none;
-    }
+  .github-corner {
+    display: none;
+  }
 
-    #logo {
-        display: none;
-    }
+  #logo {
+    display: none;
+  }
 
-    .desc {
-        display: none;
-    }
+  .desc {
+    display: none;
+  }
 
-    .links {
-        display: none;
-    }
+  .links {
+    display: none;
+  }
 
-    #container {
-        display: none;
-    }
+  #container {
+    display: none;
+  }
 
-    #content {
-        max-width: 100%;
-        height: 100%;
-        padding-top: 0px;
-        padding-left: 0px;
-        padding-right: 0px;
-        margin: 0 auto;
-    }
+  #content {
+    max-width: 100%;
+    height: 100%;
+    padding-top: 0px;
+    padding-left: 0px;
+    padding-right: 0px;
+    margin: 0 auto;
+  }
 
-    .terminal,
-    .terminal .terminal-fill {
-        padding: 0.2em;
-        margin-bottom: 2em;
-    }
+  .terminal,
+  .terminal .terminal-fill {
+    padding: 0.2em;
+    margin-bottom: 2em;
+  }
 
-    .terminal {
-        --size: 1.2;
-    }
+  .terminal {
+    --size: 1.2;
+  }
 
-    #terminal {
-        height: 100% !important;
-        border-radius: 0px;
-        box-shadow: none;
-        margin: 0px;
-    }
+  #terminal {
+    height: 100% !important;
+    border-radius: 0px;
+    box-shadow: none;
+    margin: 0px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
-    html {
-        background: #121319;
-        color: #ECF0F1;
-    }
+  html {
+    background: #121319;
+    color: #ecf0f1;
+  }
 
-    .github-corner svg {
-        fill: #3e4153;
-        color: #1A1A1A;
-    }
+  .github-corner svg {
+    fill: #3e4153;
+    color: #1a1a1a;
+  }
 
-    #terminal {
-        box-shadow: 0px 3px 8px #121212;
-    }
+  #terminal {
+    box-shadow: 0px 3px 8px #121212;
+  }
 }

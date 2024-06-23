@@ -1,31 +1,37 @@
-import init, { setup_panic_hook, Numbat, FormatType } from "./pkg/numbat_wasm.js";
+import init, {
+  FormatType,
+  Numbat,
+  setup_panic_hook,
+} from "./pkg/numbat_wasm.js";
 
 async function fetch_exchange_rates() {
   try {
-      const response = await fetch("https://numbat.dev/ecb-exchange-rates.php");
+    const response = await fetch("https://numbat.dev/ecb-exchange-rates.php");
 
-      if (!response.ok) {
-          return;
-      }
-
-      const xml_content = await response.text();
-      numbat.set_exchange_rates(xml_content);
-  } catch (error) {
-      console.error("Failed to load currency exchange rates from the European Central Bank");
+    if (!response.ok) {
       return;
+    }
+
+    const xml_content = await response.text();
+    numbat.set_exchange_rates(xml_content);
+  } catch (error) {
+    console.error(
+      "Failed to load currency exchange rates from the European Central Bank"
+    );
+    return;
   }
 }
 
 function create_numbat_instance() {
-    return Numbat.new(true, true, FormatType.JqueryTerminal);
+  return Numbat.new(true, true, FormatType.JqueryTerminal);
 }
 
 function updateUrlQuery(query) {
   let url = new URL(window.location);
   if (query == null) {
-    url.searchParams.delete('q');
+    url.searchParams.delete("q");
   } else {
-    url.searchParams.set('q', query);
+    url.searchParams.set("q", query);
   }
 
   history.replaceState(null, null, url);
@@ -34,7 +40,10 @@ function updateUrlQuery(query) {
 function interpret(input) {
   // Skip empty lines or comments
   var input_trimmed = input.trim();
-  if (input_trimmed === "" || (input_trimmed[0] === "#" && input_trimmed.indexOf("\n") == -1)) {
+  if (
+    input_trimmed === "" ||
+    (input_trimmed[0] === "#" && input_trimmed.indexOf("\n") == -1)
+  ) {
     return;
   }
 
@@ -49,18 +58,27 @@ function interpret(input) {
     this.clear();
   } else if (input_trimmed == "list" || input_trimmed == "ls") {
     output = numbat.print_environment();
-  } else if (input_trimmed == "list functions" || input_trimmed == "ls functions") {
+  } else if (
+    input_trimmed == "list functions" ||
+    input_trimmed == "ls functions"
+  ) {
     output = numbat.print_functions();
-  } else if (input_trimmed == "list dimensions" || input_trimmed == "ls dimensions") {
+  } else if (
+    input_trimmed == "list dimensions" ||
+    input_trimmed == "ls dimensions"
+  ) {
     output = numbat.print_dimensions();
-} else if (input_trimmed == "list variables" || input_trimmed == "ls variables") {
+  } else if (
+    input_trimmed == "list variables" ||
+    input_trimmed == "ls variables"
+  ) {
     output = numbat.print_variables();
-} else if (input_trimmed == "list units" || input_trimmed == "ls units") {
+  } else if (input_trimmed == "list units" || input_trimmed == "ls units") {
     output = numbat.print_units();
   } else if (input_trimmed == "help" || input_trimmed == "?") {
     output = numbat.help();
   } else {
-    var result = {is_error: false};
+    var result = { is_error: false };
     if (input_trimmed.startsWith("info ")) {
       var keyword = input_trimmed.substring(4).trim();
       output = numbat.print_info(keyword);
@@ -70,8 +88,8 @@ function interpret(input) {
     }
 
     if (!result.is_error) {
-        combined_input += input.trim() + "⏎";
-        updateUrlQuery(combined_input);
+      combined_input += input.trim() + "⏎";
+      updateUrlQuery(combined_input);
     }
   }
 
@@ -86,21 +104,21 @@ const parsedTerminalHeightInPixels = parseInt(
 );
 
 function setup() {
-  $(document).ready(function() {
-    var term = $('#terminal').terminal(interpret, {
-        greetings: false,
-        name: "terminal",
-        height: parsedTerminalHeightInPixels,
-        prompt: "[[;;;prompt]>>> ]",
-        checkArity: false,
-        historySize: 200,
-        historyFilter(line) {
-          return line.trim() !== "";
-        },
-        completion(inp, cb) {
-          cb(numbat.get_completions_for(inp));
-        }
-      });
+  $(document).ready(function () {
+    var term = $("#terminal").terminal(interpret, {
+      greetings: false,
+      name: "terminal",
+      height: parsedTerminalHeightInPixels,
+      prompt: "[[;;;prompt]>>> ]",
+      checkArity: false,
+      historySize: 200,
+      historyFilter(line) {
+        return line.trim() !== "";
+      },
+      completion(inp, cb) {
+        cb(numbat.get_completions_for(inp));
+      },
+    });
 
     // Swap out the skeleton loader with the terminal to prevent layout shifting.
     document.getElementById("skeleton-loader").classList.add("hidden");
