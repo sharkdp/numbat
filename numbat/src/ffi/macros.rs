@@ -14,6 +14,13 @@ macro_rules! scalar_arg {
 }
 pub(crate) use scalar_arg;
 
+macro_rules! list_arg {
+    ($args:ident, $index:expr) => {
+        $args[$index].unsafe_as_list()
+    };
+}
+pub(crate) use list_arg;
+
 macro_rules! string_arg {
     ($args:ident, $index:expr) => {
         $args[$index].unsafe_as_string()
