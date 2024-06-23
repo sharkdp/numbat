@@ -46,13 +46,13 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
     })
 }
 
-fn print(ctx: &mut ExecutionContext, args: Args) -> ControlFlow {
+fn print(ctx: &mut ExecutionContext, mut args: Args) -> ControlFlow {
     assert!(args.len() <= 1);
 
     if args.is_empty() {
         (ctx.print_fn)(&crate::markup::text(""))
     } else {
-        match &args[0] {
+        match arg!(args) {
             Value::String(string) => (ctx.print_fn)(&crate::markup::text(string)), // print string without quotes
             arg => (ctx.print_fn)(&arg.pretty_print()),
         }
