@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
 
 use itertools::Itertools;
 
@@ -24,6 +24,8 @@ impl std::fmt::Display for FunctionReference {
     }
 }
 
+pub type NumbatList<T> = VecDeque<T>;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Quantity(Quantity),
@@ -34,12 +36,12 @@ pub enum Value {
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<String>),
     StructInstance(Arc<StructInfo>, Vec<Value>),
-    List(Vec<Value>),
+    List(NumbatList<Value>),
 }
 
 impl Value {
     #[track_caller]
-    pub fn unsafe_as_quantity(&self) -> &Quantity {
+    pub fn unsafe_as_quantity(self) -> Quantity {
         if let Value::Quantity(q) = self {
             q
         } else {
@@ -48,16 +50,16 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_bool(&self) -> bool {
+    pub fn unsafe_as_bool(self) -> bool {
         if let Value::Boolean(b) = self {
-            *b
+            b
         } else {
             panic!("Expected value to be a bool");
         }
     }
 
     #[track_caller]
-    pub fn unsafe_as_string(&self) -> &str {
+    pub fn unsafe_as_string(self) -> String {
         if let Value::String(s) = self {
             s
         } else {
@@ -66,7 +68,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_datetime(&self) -> &chrono::DateTime<chrono::FixedOffset> {
+    pub fn unsafe_as_datetime(self) -> chrono::DateTime<chrono::FixedOffset> {
         if let Value::DateTime(dt) = self {
             dt
         } else {
@@ -75,7 +77,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_function_reference(&self) -> &FunctionReference {
+    pub fn unsafe_as_function_reference(self) -> FunctionReference {
         if let Value::FunctionReference(inner) = self {
             inner
         } else {
@@ -93,9 +95,9 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_list(&self) -> Vec<Value> {
+    pub fn unsafe_as_list(self) -> NumbatList<Value> {
         if let Value::List(values) = self {
-            values.clone()
+            values
         } else {
             panic!("Expected value to be a list");
         }

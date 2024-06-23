@@ -1,10 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::{cmp::Ordering, fmt::Display};
 
 use indexmap::IndexMap;
 
 use crate::typed_ast::StructInfo;
+use crate::value::NumbatList;
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
@@ -820,19 +821,18 @@ impl Vm {
 
                     debug_assert!(foreign_function.arity.contains(&num_args));
 
-                    let mut args = vec![];
+                    let mut args = VecDeque::new();
                     for _ in 0..num_args {
-                        args.push(self.pop());
+                        args.push_front(self.pop());
                     }
-                    args.reverse(); // TODO: use a deque?
 
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
-                            let result = (function)(&args[..]);
+                            let result = (function)(args);
                             self.push(result?);
                         }
                         Callable::Procedure(procedure) => {
-                            let result = (procedure)(ctx, &args[..]);
+                            let result = (procedure)(ctx, args);
 
                             match result {
                                 std::ops::ControlFlow::Continue(()) => {}
@@ -848,7 +848,7 @@ impl Vm {
 
                     let callable = self.pop();
                     match callable.unsafe_as_function_reference() {
-                        FunctionReference::Normal(name) => {
+                        FunctionReference::Normal(ref name) => {
                             let function_idx = self.get_function_idx(name) as usize;
 
                             // TODO: unify code with 'Op::Call'?
@@ -858,21 +858,20 @@ impl Vm {
                                 fp: self.stack.len() - num_args,
                             })
                         }
-                        FunctionReference::Foreign(name) => {
+                        FunctionReference::Foreign(ref name) => {
                             let function_idx = self
                                 .get_ffi_callable_idx(name)
                                 .expect("Foreign function exists")
                                 as usize;
 
-                            let mut args = vec![];
+                            let mut args = VecDeque::new();
                             for _ in 0..num_args {
-                                args.push(self.pop());
+                                args.push_front(self.pop());
                             }
-                            args.reverse();
 
                             match &self.ffi_callables[function_idx].callable {
                                 Callable::Function(function) => {
-                                    let result = (function)(&args[..]);
+                                    let result = (function)(args);
                                     self.push(result?);
                                 }
                                 Callable::Procedure(..) => unreachable!("Foreign procedures can not be targeted by a function reference"),
@@ -1011,12 +1010,11 @@ impl Vm {
                 }
                 Op::BuildList => {
                     let length = self.read_u16();
-                    let mut list = Vec::with_capacity(length as usize);
+                    let mut list = NumbatList::with_capacity(length as usize);
 
                     for _ in 0..length {
-                        list.push(self.pop());
+                        list.push_front(self.pop());
                     }
-                    list.reverse();
 
                     self.stack.push(Value::List(list));
                 }
