@@ -1,8 +1,10 @@
+mod datetime;
 mod functions;
 mod lists;
 mod macros;
 mod math;
 mod procedures;
+mod strings;
 
 use crate::interpreter::RuntimeError;
 use crate::value::Value;

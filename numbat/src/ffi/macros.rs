@@ -14,6 +14,20 @@ macro_rules! scalar_arg {
 }
 pub(crate) use scalar_arg;
 
+macro_rules! string_arg {
+    ($args:ident, $index:expr) => {
+        $args[$index].unsafe_as_string()
+    };
+}
+pub(crate) use string_arg;
+
+macro_rules! datetime_arg {
+    ($args:ident, $index:expr) => {
+        $args[$index].unsafe_as_datetime()
+    };
+}
+pub(crate) use datetime_arg;
+
 macro_rules! return_scalar {
     ( $value:expr) => {
         Ok(Value::Quantity(Quantity::from_scalar($value)))
@@ -34,3 +48,24 @@ macro_rules! return_boolean {
     };
 }
 pub(crate) use return_boolean;
+
+macro_rules! return_list {
+    ($value:expr) => {
+        Ok(Value::List($value.into()))
+    };
+}
+pub(crate) use return_list;
+
+macro_rules! return_string {
+    ($value:expr) => {
+        Ok(Value::String($value.into()))
+    };
+}
+pub(crate) use return_string;
+
+macro_rules! return_datetime {
+    ($value:expr) => {
+        Ok(Value::DateTime($value))
+    };
+}
+pub(crate) use return_datetime;
