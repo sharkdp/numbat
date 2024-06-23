@@ -3,7 +3,6 @@ use std::fmt::Write;
 use std::sync::OnceLock;
 
 use super::macros::*;
-use super::math::*;
 use crate::{
     currency::ExchangeRatesCache, datetime, quantity::Quantity, typed_ast::DType,
     value::FunctionReference, value::Value, RuntimeError,
@@ -14,6 +13,9 @@ use super::{Callable, ForeignFunction, Result};
 static FFI_FUNCTIONS: OnceLock<HashMap<String, ForeignFunction>> = OnceLock::new();
 
 pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
+    use super::lists::*;
+    use super::math::*;
+
     FFI_FUNCTIONS.get_or_init(|| {
         let mut m = HashMap::new();
 
@@ -38,6 +40,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(random, 0..=0);
         insert_function!("mod", mod_, 2..=2);
 
+        // Math
         insert_function!(abs, 1..=1);
         insert_function!(round, 1..=1);
         insert_function!(floor, 1..=1);
@@ -65,17 +68,20 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(is_nan, 1..=1);
         insert_function!(is_infinite, 1..=1);
 
+        // Lists
         insert_function!(len, 1..=1);
         insert_function!(head, 1..=1);
         insert_function!(tail, 1..=1);
         insert_function!(cons, 2..=2);
 
+        // Strings
         insert_function!(str_length, 1..=1);
         insert_function!(lowercase, 1..=1);
         insert_function!(uppercase, 1..=1);
         insert_function!(str_slice, 3..=3);
         insert_function!(chr, 1..=1);
 
+        // DateTime
         insert_function!(now, 0..=0);
         insert_function!(datetime, 1..=1);
         insert_function!(format_datetime, 2..=2);
@@ -84,8 +90,10 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(unixtime, 1..=1);
         insert_function!(from_unixtime, 1..=1);
 
+        // Currency
         insert_function!(exchange_rate, 1..=1);
 
+        // Database lookup
         insert_function!(_get_chemical_element_data_raw, 1..=1);
 
         m
@@ -103,40 +111,6 @@ fn unit_of(args: &[Value]) -> Result<Value> {
 
 fn random(_args: &[Value]) -> Result<Value> {
     return_scalar!(rand::random::<f64>())
-}
-
-fn len(args: &[Value]) -> Result<Value> {
-    let list = args[0].unsafe_as_list();
-
-    Ok(Value::Quantity(Quantity::from_scalar(list.len() as f64)))
-}
-
-fn head(args: &[Value]) -> Result<Value> {
-    let list = args[0].unsafe_as_list();
-
-    if let Some(first) = list.first() {
-        Ok(first.clone())
-    } else {
-        Err(RuntimeError::EmptyList)
-    }
-}
-
-fn tail(args: &[Value]) -> Result<Value> {
-    let mut list = args[0].unsafe_as_list();
-    if list.is_empty() {
-        Err(RuntimeError::EmptyList)
-    } else {
-        list.remove(0);
-
-        Ok(Value::List(list))
-    }
-}
-
-fn cons(args: &[Value]) -> Result<Value> {
-    let mut list = args[1].unsafe_as_list().clone();
-    list.insert(0, args[0].clone());
-
-    Ok(Value::List(list))
 }
 
 fn str_length(args: &[Value]) -> Result<Value> {

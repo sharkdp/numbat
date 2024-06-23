@@ -1,4 +1,5 @@
 mod functions;
+mod lists;
 mod macros;
 mod math;
 mod procedures;
