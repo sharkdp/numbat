@@ -210,7 +210,6 @@ impl Transformer {
                 type_parameters,
                 parameters,
                 body,
-                return_type_annotation_span: return_type_span,
                 return_type_annotation,
                 decorators,
             } => {
@@ -239,7 +238,6 @@ impl Transformer {
                     type_parameters,
                     parameters,
                     body: body.map(|expr| self.transform_expression(expr)),
-                    return_type_annotation_span: return_type_span,
                     return_type_annotation,
                     decorators,
                 }

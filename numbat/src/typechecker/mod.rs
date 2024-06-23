@@ -1281,7 +1281,6 @@ impl TypeChecker {
                 type_parameters,
                 parameters,
                 body,
-                return_type_annotation_span,
                 return_type_annotation,
                 decorators,
             } => {
@@ -1420,7 +1419,7 @@ impl TypeChecker {
                                         IncompatibleDimensionsError {
                                             span_operation: *function_name_span,
                                             operation: "function return type".into(),
-                                            span_expected: return_type_annotation_span.unwrap(),
+                                            span_expected: return_type_annotation.as_ref().unwrap().full_span(),
                                             expected_name: "specified return type",
                                             expected_dimensions: typechecker_fn
                                                 .registry
@@ -1448,7 +1447,7 @@ impl TypeChecker {
                                         "function definition".into(),
                                         *function_name_span,
                                         type_specified,
-                                        return_type_annotation_span.unwrap(),
+                                        return_type_annotation.as_ref().unwrap().full_span(),
                                         return_type_inferred.clone(),
                                         body.as_ref().map(|b| b.full_span()).unwrap(),
                                     ));

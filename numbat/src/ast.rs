@@ -411,7 +411,6 @@ pub enum Statement {
         parameters: Vec<(Span, String, Option<TypeAnnotation>)>,
         /// Function body. If it is absent, the function is implemented via FFI
         body: Option<Expression>,
-        return_type_annotation_span: Option<Span>,
         /// Optional annotated return type
         return_type_annotation: Option<TypeAnnotation>,
         decorators: Vec<Decorator>,
@@ -598,7 +597,6 @@ impl ReplaceSpans for Statement {
                 type_parameters,
                 parameters,
                 body,
-                return_type_annotation_span: return_type_span,
                 return_type_annotation,
                 decorators,
             } => Statement::DefineFunction {
@@ -619,7 +617,6 @@ impl ReplaceSpans for Statement {
                     })
                     .collect(),
                 body: body.clone().map(|b| b.replace_spans()),
-                return_type_annotation_span: return_type_span.map(|_| Span::dummy()),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
                 decorators: decorators.clone(),
             },
