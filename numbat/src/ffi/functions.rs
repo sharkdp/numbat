@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fmt::Write;
 use std::sync::OnceLock;
 
+use super::macros::*;
+use super::math::*;
 use crate::{
     currency::ExchangeRatesCache, datetime, quantity::Quantity, typed_ast::DType,
     value::FunctionReference, value::Value, RuntimeError,
@@ -11,7 +13,7 @@ use super::{Callable, ForeignFunction, Result};
 
 static FFI_FUNCTIONS: OnceLock<HashMap<String, ForeignFunction>> = OnceLock::new();
 
-pub fn functions() -> &'static HashMap<String, ForeignFunction> {
+pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
     FFI_FUNCTIONS.get_or_init(|| {
         let mut m = HashMap::new();
 
@@ -33,12 +35,14 @@ pub fn functions() -> &'static HashMap<String, ForeignFunction> {
 
         insert_function!(error, 1..=1);
         insert_function!(unit_of, 1..=1);
+        insert_function!(random, 0..=0);
+        insert_function!("mod", mod_, 2..=2);
+
         insert_function!(abs, 1..=1);
         insert_function!(round, 1..=1);
         insert_function!(floor, 1..=1);
         insert_function!(ceil, 1..=1);
-        insert_function!(is_nan, 1..=1);
-        insert_function!(is_infinite, 1..=1);
+
         insert_function!(sin, 1..=1);
         insert_function!(cos, 1..=1);
         insert_function!(tan, 1..=1);
@@ -52,22 +56,26 @@ pub fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(asinh, 1..=1);
         insert_function!(acosh, 1..=1);
         insert_function!(atanh, 1..=1);
-        insert_function!("mod", mod_, 2..=2);
         insert_function!(exp, 1..=1);
         insert_function!(ln, 1..=1);
         insert_function!(log10, 1..=1);
         insert_function!(log2, 1..=1);
         insert_function!(gamma, 1..=1);
-        insert_function!(exchange_rate, 1..=1);
+
+        insert_function!(is_nan, 1..=1);
+        insert_function!(is_infinite, 1..=1);
+
         insert_function!(len, 1..=1);
         insert_function!(head, 1..=1);
         insert_function!(tail, 1..=1);
         insert_function!(cons, 2..=2);
+
         insert_function!(str_length, 1..=1);
         insert_function!(lowercase, 1..=1);
         insert_function!(uppercase, 1..=1);
         insert_function!(str_slice, 3..=3);
         insert_function!(chr, 1..=1);
+
         insert_function!(now, 0..=0);
         insert_function!(datetime, 1..=1);
         insert_function!(format_datetime, 2..=2);
@@ -75,7 +83,9 @@ pub fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(tz, 1..=1);
         insert_function!(unixtime, 1..=1);
         insert_function!(from_unixtime, 1..=1);
-        insert_function!(random, 0..=0);
+
+        insert_function!(exchange_rate, 1..=1);
+
         insert_function!(_get_chemical_element_data_raw, 1..=1);
 
         m
@@ -87,214 +97,12 @@ fn error(args: &[Value]) -> Result<Value> {
 }
 
 fn unit_of(args: &[Value]) -> Result<Value> {
-    Ok(Value::Quantity(Quantity::new_f64(
-        1.0,
-        args[0].unsafe_as_quantity().unit().clone(),
-    )))
+    let input_unit = quantity_arg!(args, 0).unit().clone();
+    return_quantity!(1.0, input_unit)
 }
 
-fn abs(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let value = arg.unsafe_value().to_f64();
-    Ok(Value::Quantity(Quantity::new_f64(
-        value.abs(),
-        arg.unit().clone(),
-    )))
-}
-
-fn round(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let value = arg.unsafe_value().to_f64();
-    Ok(Value::Quantity(Quantity::new_f64(
-        value.round(),
-        arg.unit().clone(),
-    )))
-}
-
-fn floor(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let value = arg.unsafe_value().to_f64();
-    Ok(Value::Quantity(Quantity::new_f64(
-        value.floor(),
-        arg.unit().clone(),
-    )))
-}
-
-fn ceil(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let value = arg.unsafe_value().to_f64();
-    Ok(Value::Quantity(Quantity::new_f64(
-        value.ceil(),
-        arg.unit().clone(),
-    )))
-}
-
-fn is_nan(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-    let isnan = arg.unsafe_value().to_f64().is_nan();
-    Ok(Value::Boolean(isnan))
-}
-
-fn is_infinite(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-    let isnan = arg.unsafe_value().to_f64().is_infinite();
-    Ok(Value::Boolean(isnan))
-}
-
-fn sin(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.sin())))
-}
-
-fn cos(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.cos())))
-}
-
-fn tan(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.tan())))
-}
-
-fn asin(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.asin())))
-}
-
-fn acos(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.acos())))
-}
-
-fn atan(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.atan())))
-}
-
-fn atan2(args: &[Value]) -> Result<Value> {
-    let y = args[0].unsafe_as_quantity();
-    let x = args[1].unsafe_as_quantity();
-
-    let input0 = y.unsafe_value().to_f64();
-    let input1 = x.convert_to(y.unit()).unwrap().unsafe_value().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input0.atan2(input1))))
-}
-
-fn sinh(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.sinh())))
-}
-
-fn cosh(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.cosh())))
-}
-
-fn tanh(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.tanh())))
-}
-
-fn asinh(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.asinh())))
-}
-
-fn acosh(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.acosh())))
-}
-
-fn atanh(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.atanh())))
-}
-
-fn mod_(args: &[Value]) -> Result<Value> {
-    let x = args[0].unsafe_as_quantity();
-    let y = args[1].unsafe_as_quantity();
-
-    let input0 = x.unsafe_value().to_f64();
-    let input1 = y.convert_to(x.unit()).unwrap().unsafe_value().to_f64();
-    Ok(Value::Quantity(Quantity::new_f64(
-        input0.rem_euclid(input1),
-        x.unit().clone(),
-    )))
-}
-
-fn exp(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.exp())))
-}
-
-fn ln(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.ln())))
-}
-
-fn log10(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.log10())))
-}
-
-fn log2(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(input.log2())))
-}
-
-fn gamma(args: &[Value]) -> Result<Value> {
-    let arg = args[0].unsafe_as_quantity();
-
-    let input = arg.as_scalar().unwrap().to_f64();
-    Ok(Value::Quantity(Quantity::from_scalar(crate::gamma::gamma(
-        input,
-    ))))
-}
-
-fn exchange_rate(args: &[Value]) -> Result<Value> {
-    let rate = args[0].unsafe_as_string();
-
-    let exchange_rates = ExchangeRatesCache::new();
-
-    Ok(Value::Quantity(Quantity::from_scalar(
-        exchange_rates.get_rate(rate).unwrap_or(f64::NAN),
-    )))
+fn random(_args: &[Value]) -> Result<Value> {
+    return_scalar!(rand::random::<f64>())
 }
 
 fn len(args: &[Value]) -> Result<Value> {
@@ -424,12 +232,14 @@ fn from_unixtime(args: &[Value]) -> Result<Value> {
     Ok(Value::DateTime(dt))
 }
 
-fn random(args: &[Value]) -> Result<Value> {
-    assert!(args.is_empty());
+fn exchange_rate(args: &[Value]) -> Result<Value> {
+    let rate = args[0].unsafe_as_string();
 
-    let output = rand::random::<f64>();
+    let exchange_rates = ExchangeRatesCache::new();
 
-    Ok(Value::Quantity(Quantity::from_scalar(output)))
+    Ok(Value::Quantity(Quantity::from_scalar(
+        exchange_rates.get_rate(rate).unwrap_or(f64::NAN),
+    )))
 }
 
 fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
