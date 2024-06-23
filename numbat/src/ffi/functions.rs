@@ -15,177 +15,40 @@ pub fn functions() -> &'static HashMap<String, ForeignFunction> {
     FFI_FUNCTIONS.get_or_init(|| {
         let mut m = HashMap::new();
 
-        m.insert(
-            "error".to_string(),
-            ForeignFunction {
-                name: "error".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(error)),
-            },
-        );
-        m.insert(
-            "unit_of".to_string(),
-            ForeignFunction {
-                name: "unit_of".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(unit_of)),
-            },
-        );
-        m.insert(
-            "abs".to_string(),
-            ForeignFunction {
-                name: "abs".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(abs)),
-            },
-        );
-        m.insert(
-            "round".to_string(),
-            ForeignFunction {
-                name: "round".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(round)),
-            },
-        );
-        m.insert(
-            "floor".to_string(),
-            ForeignFunction {
-                name: "floor".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(floor)),
-            },
-        );
-        m.insert(
-            "ceil".to_string(),
-            ForeignFunction {
-                name: "ceil".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(ceil)),
-            },
-        );
-        m.insert(
-            "is_nan".to_string(),
-            ForeignFunction {
-                name: "is_nan".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(is_nan)),
-            },
-        );
-        m.insert(
-            "is_infinite".to_string(),
-            ForeignFunction {
-                name: "is_infinite".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(is_infinite)),
-            },
-        );
+        macro_rules! insert_function {
+            ($callable:expr, $arity:expr) => {
+                m.insert(
+                    stringify!($callable).to_string(),
+                    ForeignFunction {
+                        name: stringify!($callable).to_string(),
+                        arity: $arity,
+                        callable: Callable::Function(Box::new($callable)),
+                    },
+                );
+            };
+        }
 
-        m.insert(
-            "sin".to_string(),
-            ForeignFunction {
-                name: "sin".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(sin)),
-            },
-        );
-        m.insert(
-            "cos".to_string(),
-            ForeignFunction {
-                name: "cos".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(cos)),
-            },
-        );
-        m.insert(
-            "tan".to_string(),
-            ForeignFunction {
-                name: "tan".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(tan)),
-            },
-        );
-        m.insert(
-            "asin".to_string(),
-            ForeignFunction {
-                name: "asin".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(asin)),
-            },
-        );
-        m.insert(
-            "acos".to_string(),
-            ForeignFunction {
-                name: "acos".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(acos)),
-            },
-        );
-        m.insert(
-            "atan".to_string(),
-            ForeignFunction {
-                name: "atan".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(atan)),
-            },
-        );
-        m.insert(
-            "atan2".to_string(),
-            ForeignFunction {
-                name: "atan2".into(),
-                arity: 2..=2,
-                callable: Callable::Function(Box::new(atan2)),
-            },
-        );
-
-        m.insert(
-            "sinh".to_string(),
-            ForeignFunction {
-                name: "sinh".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(sinh)),
-            },
-        );
-        m.insert(
-            "cosh".to_string(),
-            ForeignFunction {
-                name: "cosh".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(cosh)),
-            },
-        );
-        m.insert(
-            "tanh".to_string(),
-            ForeignFunction {
-                name: "tanh".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(tanh)),
-            },
-        );
-        m.insert(
-            "asinh".to_string(),
-            ForeignFunction {
-                name: "asinh".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(asinh)),
-            },
-        );
-        m.insert(
-            "acosh".to_string(),
-            ForeignFunction {
-                name: "acosh".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(acosh)),
-            },
-        );
-        m.insert(
-            "atanh".to_string(),
-            ForeignFunction {
-                name: "atanh".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(atanh)),
-            },
-        );
-
+        insert_function!(error, 1..=1);
+        insert_function!(unit_of, 1..=1);
+        insert_function!(abs, 1..=1);
+        insert_function!(round, 1..=1);
+        insert_function!(floor, 1..=1);
+        insert_function!(ceil, 1..=1);
+        insert_function!(is_nan, 1..=1);
+        insert_function!(is_infinite, 1..=1);
+        insert_function!(sin, 1..=1);
+        insert_function!(cos, 1..=1);
+        insert_function!(tan, 1..=1);
+        insert_function!(asin, 1..=1);
+        insert_function!(acos, 1..=1);
+        insert_function!(atan, 1..=1);
+        insert_function!(atan2, 2..=2);
+        insert_function!(sinh, 1..=1);
+        insert_function!(cosh, 1..=1);
+        insert_function!(tanh, 1..=1);
+        insert_function!(asinh, 1..=1);
+        insert_function!(acosh, 1..=1);
+        insert_function!(atanh, 1..=1);
         m.insert(
             "mod".to_string(),
             ForeignFunction {
@@ -194,233 +57,30 @@ pub fn functions() -> &'static HashMap<String, ForeignFunction> {
                 callable: Callable::Function(Box::new(mod_)),
             },
         );
-        m.insert(
-            "exp".to_string(),
-            ForeignFunction {
-                name: "exp".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(exp)),
-            },
-        );
-        m.insert(
-            "ln".to_string(),
-            ForeignFunction {
-                name: "ln".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(ln)),
-            },
-        );
-        m.insert(
-            "log10".to_string(),
-            ForeignFunction {
-                name: "log10".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(log10)),
-            },
-        );
-        m.insert(
-            "log2".to_string(),
-            ForeignFunction {
-                name: "log2".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(log2)),
-            },
-        );
-        m.insert(
-            "gamma".to_string(),
-            ForeignFunction {
-                name: "gamma".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(gamma)),
-            },
-        );
-
-        m.insert(
-            "mean".to_string(),
-            ForeignFunction {
-                name: "mean".into(),
-                arity: 1..=usize::MAX,
-                callable: Callable::Function(Box::new(mean)),
-            },
-        );
-        m.insert(
-            "maximum".to_string(),
-            ForeignFunction {
-                name: "maximum".into(),
-                arity: 1..=usize::MAX,
-                callable: Callable::Function(Box::new(maximum)),
-            },
-        );
-        m.insert(
-            "minimum".to_string(),
-            ForeignFunction {
-                name: "minimum".into(),
-                arity: 1..=usize::MAX,
-                callable: Callable::Function(Box::new(minimum)),
-            },
-        );
-
-        m.insert(
-            "exchange_rate".to_string(),
-            ForeignFunction {
-                name: "exchange_rate".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(exchange_rate)),
-            },
-        );
-
-        m.insert(
-            "len".to_string(),
-            ForeignFunction {
-                name: "len".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(len)),
-            },
-        );
-        m.insert(
-            "head".to_string(),
-            ForeignFunction {
-                name: "head".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(head)),
-            },
-        );
-        m.insert(
-            "tail".to_string(),
-            ForeignFunction {
-                name: "tail".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(tail)),
-            },
-        );
-        m.insert(
-            "cons".to_string(),
-            ForeignFunction {
-                name: "cons".into(),
-                arity: 2..=2,
-                callable: Callable::Function(Box::new(cons)),
-            },
-        );
-
-        m.insert(
-            "str_length".to_string(),
-            ForeignFunction {
-                name: "str_length".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(str_length)),
-            },
-        );
-        m.insert(
-            "lowercase".to_string(),
-            ForeignFunction {
-                name: "lowercase".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(lowercase)),
-            },
-        );
-        m.insert(
-            "uppercase".to_string(),
-            ForeignFunction {
-                name: "uppercase".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(uppercase)),
-            },
-        );
-        m.insert(
-            "str_slice".to_string(),
-            ForeignFunction {
-                name: "str_slice".into(),
-                arity: 3..=3,
-                callable: Callable::Function(Box::new(str_slice)),
-            },
-        );
-        m.insert(
-            "chr".to_string(),
-            ForeignFunction {
-                name: "chr".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(chr)),
-            },
-        );
-        m.insert(
-            "now".to_string(),
-            ForeignFunction {
-                name: "now".into(),
-                arity: 0..=0,
-                callable: Callable::Function(Box::new(now)),
-            },
-        );
-        m.insert(
-            "datetime".to_string(),
-            ForeignFunction {
-                name: "datetime".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(datetime)),
-            },
-        );
-
-        m.insert(
-            "format_datetime".to_string(),
-            ForeignFunction {
-                name: "format_datetime".into(),
-                arity: 2..=2,
-                callable: Callable::Function(Box::new(format_datetime)),
-            },
-        );
-
-        m.insert(
-            "get_local_timezone".to_string(),
-            ForeignFunction {
-                name: "get_local_timezone".into(),
-                arity: 0..=0,
-                callable: Callable::Function(Box::new(get_local_timezone)),
-            },
-        );
-
-        m.insert(
-            "tz".to_string(),
-            ForeignFunction {
-                name: "tz".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(tz)),
-            },
-        );
-
-        m.insert(
-            "unixtime".to_string(),
-            ForeignFunction {
-                name: "unixtime".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(unixtime)),
-            },
-        );
-
-        m.insert(
-            "from_unixtime".to_string(),
-            ForeignFunction {
-                name: "from_unixtime".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(from_unixtime)),
-            },
-        );
-
-        m.insert(
-            "random".to_string(),
-            ForeignFunction {
-                name: "random".into(),
-                arity: 0..=0,
-                callable: Callable::Function(Box::new(random)),
-            },
-        );
-
-        m.insert(
-            "_get_chemical_element_data_raw".to_string(),
-            ForeignFunction {
-                name: "_get_chemical_element_data_raw".into(),
-                arity: 1..=1,
-                callable: Callable::Function(Box::new(_get_chemical_element_data_raw)),
-            },
-        );
+        insert_function!(exp, 1..=1);
+        insert_function!(ln, 1..=1);
+        insert_function!(log10, 1..=1);
+        insert_function!(log2, 1..=1);
+        insert_function!(gamma, 1..=1);
+        insert_function!(exchange_rate, 1..=1);
+        insert_function!(len, 1..=1);
+        insert_function!(head, 1..=1);
+        insert_function!(tail, 1..=1);
+        insert_function!(cons, 2..=2);
+        insert_function!(str_length, 1..=1);
+        insert_function!(lowercase, 1..=1);
+        insert_function!(uppercase, 1..=1);
+        insert_function!(str_slice, 3..=3);
+        insert_function!(chr, 1..=1);
+        insert_function!(now, 0..=0);
+        insert_function!(datetime, 1..=1);
+        insert_function!(format_datetime, 2..=2);
+        insert_function!(get_local_timezone, 0..=0);
+        insert_function!(tz, 1..=1);
+        insert_function!(unixtime, 1..=1);
+        insert_function!(from_unixtime, 1..=1);
+        insert_function!(random, 0..=0);
+        insert_function!(_get_chemical_element_data_raw, 1..=1);
 
         m
     })
@@ -681,61 +341,6 @@ fn gamma(args: &[Value]) -> Result<Value> {
     Ok(Value::Quantity(Quantity::from_scalar(crate::gamma::gamma(
         input,
     ))))
-}
-
-fn mean(args: &[Value]) -> Result<Value> {
-    assert!(!args.is_empty());
-
-    let output_unit = args[0].unsafe_as_quantity().unit();
-    Ok(Value::Quantity(Quantity::new_f64(
-        args.iter()
-            .map(|q| {
-                q.unsafe_as_quantity()
-                    .convert_to(output_unit)
-                    .unwrap()
-                    .unsafe_value()
-                    .to_f64()
-            })
-            .sum::<f64>()
-            / (args.len() as f64),
-        output_unit.clone(),
-    )))
-}
-
-fn maximum(args: &[Value]) -> Result<Value> {
-    assert!(!args.is_empty());
-
-    let output_unit = args[0].unsafe_as_quantity().unit();
-    Ok(Value::Quantity(Quantity::new(
-        args.iter()
-            .map(|q| {
-                *q.unsafe_as_quantity()
-                    .convert_to(output_unit)
-                    .unwrap()
-                    .unsafe_value()
-            })
-            .max_by(|l, r| l.partial_cmp(r).unwrap())
-            .unwrap(),
-        output_unit.clone(),
-    )))
-}
-
-fn minimum(args: &[Value]) -> Result<Value> {
-    assert!(!args.is_empty());
-
-    let output_unit = args[0].unsafe_as_quantity().unit();
-    Ok(Value::Quantity(Quantity::new(
-        args.iter()
-            .map(|q| {
-                *q.unsafe_as_quantity()
-                    .convert_to(output_unit)
-                    .unwrap()
-                    .unsafe_value()
-            })
-            .min_by(|l, r| l.partial_cmp(r).unwrap())
-            .unwrap(),
-        output_unit.clone(),
-    )))
 }
 
 fn exchange_rate(args: &[Value]) -> Result<Value> {
