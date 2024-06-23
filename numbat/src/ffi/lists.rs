@@ -23,12 +23,10 @@ pub fn head(mut args: Args) -> Result<Value> {
 pub fn tail(mut args: Args) -> Result<Value> {
     let mut list = list_arg!(args);
 
-    if list.is_empty() {
-        Err(RuntimeError::EmptyList)
-    } else {
-        list.remove(0);
-
+    if list.remove(0).is_some() {
         return_list!(list)
+    } else {
+        Err(RuntimeError::EmptyList)
     }
 }
 
