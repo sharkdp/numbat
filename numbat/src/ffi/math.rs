@@ -18,7 +18,7 @@ pub fn mod_(args: &[Value]) -> Result<Value> {
 macro_rules! simple_polymorphic_math_function {
     ($name:ident, $op:ident) => {
         pub fn $name(args: &[Value]) -> Result<Value> {
-            let arg = args[0].unsafe_as_quantity();
+            let arg = quantity_arg!(args, 0);
 
             let value = arg.unsafe_value().to_f64();
             return_quantity!(value.$op(), arg.unit().clone())
