@@ -28,7 +28,7 @@ pub fn tail(args: &[Value]) -> Result<Value> {
     } else {
         list.remove(0);
 
-        Ok(Value::List(list))
+        return_list!(list)
     }
 }
 
@@ -36,5 +36,5 @@ pub fn cons(args: &[Value]) -> Result<Value> {
     let mut list = args[1].unsafe_as_list().clone();
     list.insert(0, args[0].clone());
 
-    Ok(Value::List(list))
+    return_list!(list)
 }

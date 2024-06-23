@@ -21,10 +21,7 @@ macro_rules! simple_polymorphic_math_function {
             let arg = args[0].unsafe_as_quantity();
 
             let value = arg.unsafe_value().to_f64();
-            Ok(Value::Quantity(Quantity::new_f64(
-                value.$op(),
-                arg.unit().clone(),
-            )))
+            return_quantity!(value.$op(), arg.unit().clone())
         }
     };
 }

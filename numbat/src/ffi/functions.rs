@@ -1,11 +1,9 @@
 use std::collections::HashMap;
-use std::fmt::Write;
 use std::sync::OnceLock;
 
 use super::macros::*;
 use crate::{
-    currency::ExchangeRatesCache, datetime, quantity::Quantity, typed_ast::DType,
-    value::FunctionReference, value::Value, RuntimeError,
+    currency::ExchangeRatesCache, quantity::Quantity, typed_ast::DType, value::Value, RuntimeError,
 };
 
 use super::{Callable, ForeignFunction, Result};
@@ -13,8 +11,10 @@ use super::{Callable, ForeignFunction, Result};
 static FFI_FUNCTIONS: OnceLock<HashMap<String, ForeignFunction>> = OnceLock::new();
 
 pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
+    use super::datetime::*;
     use super::lists::*;
     use super::math::*;
+    use super::strings::*;
 
     FFI_FUNCTIONS.get_or_init(|| {
         let mut m = HashMap::new();
@@ -113,107 +113,12 @@ fn random(_args: &[Value]) -> Result<Value> {
     return_scalar!(rand::random::<f64>())
 }
 
-fn str_length(args: &[Value]) -> Result<Value> {
-    let len = args[0].unsafe_as_string().len();
-    Ok(Value::Quantity(Quantity::from_scalar(len as f64)))
-}
-
-fn lowercase(args: &[Value]) -> Result<Value> {
-    Ok(Value::String(args[0].unsafe_as_string().to_lowercase()))
-}
-
-fn uppercase(args: &[Value]) -> Result<Value> {
-    Ok(Value::String(args[0].unsafe_as_string().to_uppercase()))
-}
-
-fn str_slice(args: &[Value]) -> Result<Value> {
-    let input = args[0].unsafe_as_string();
-    let start = args[1].unsafe_as_quantity().unsafe_value().to_f64() as usize;
-    let end = args[2].unsafe_as_quantity().unsafe_value().to_f64() as usize;
-
-    let output = input.get(start..end).unwrap_or_default();
-
-    Ok(Value::String(output.into()))
-}
-
-fn chr(args: &[Value]) -> Result<Value> {
-    let idx = args[0].unsafe_as_quantity().unsafe_value().to_f64() as u32;
-
-    let output = char::from_u32(idx).unwrap_or('�');
-
-    Ok(Value::String(output.to_string()))
-}
-
-fn now(args: &[Value]) -> Result<Value> {
-    assert!(args.is_empty());
-    let now = chrono::Local::now().fixed_offset();
-
-    Ok(Value::DateTime(now))
-}
-
-fn datetime(args: &[Value]) -> Result<Value> {
-    let input = args[0].unsafe_as_string();
-
-    let output = datetime::parse_datetime(input)
-        .ok_or(RuntimeError::DateParsingErrorUnknown)?
-        .fixed_offset();
-
-    Ok(Value::DateTime(output))
-}
-
-fn format_datetime(args: &[Value]) -> Result<Value> {
-    let format = args[0].unsafe_as_string();
-    let dt = args[1].unsafe_as_datetime();
-
-    let mut output = String::new();
-    write!(output, "{}", dt.format(format)).map_err(|_| RuntimeError::DateFormattingError)?;
-
-    Ok(Value::String(output))
-}
-
-fn get_local_timezone(args: &[Value]) -> Result<Value> {
-    assert!(args.is_empty());
-
-    let local_tz = datetime::get_local_timezone_or_utc().to_string();
-
-    Ok(Value::String(local_tz))
-}
-
-fn tz(args: &[Value]) -> Result<Value> {
-    let tz = args[0].unsafe_as_string();
-
-    Ok(Value::FunctionReference(FunctionReference::TzConversion(
-        tz.into(),
-    )))
-}
-
-fn unixtime(args: &[Value]) -> Result<Value> {
-    let input = args[0].unsafe_as_datetime();
-
-    let output = input.timestamp();
-
-    Ok(Value::Quantity(Quantity::from_scalar(output as f64)))
-}
-
-fn from_unixtime(args: &[Value]) -> Result<Value> {
-    let timestamp = args[0].unsafe_as_quantity().unsafe_value().to_f64() as i64;
-
-    let dt = chrono::DateTime::from_timestamp(timestamp, 0)
-        .ok_or(RuntimeError::DateTimeOutOfRange)?
-        .with_timezone(&datetime::get_local_timezone_or_utc())
-        .fixed_offset();
-
-    Ok(Value::DateTime(dt))
-}
-
 fn exchange_rate(args: &[Value]) -> Result<Value> {
     let rate = args[0].unsafe_as_string();
 
     let exchange_rates = ExchangeRatesCache::new();
 
-    Ok(Value::Quantity(Quantity::from_scalar(
-        exchange_rates.get_rate(rate).unwrap_or(f64::NAN),
-    )))
+    return_scalar!(exchange_rates.get_rate(rate).unwrap_or(f64::NAN))
 }
 
 fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
