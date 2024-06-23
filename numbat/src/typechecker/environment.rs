@@ -13,6 +13,7 @@ type Identifier = String;
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
     pub definition_span: Span,
+    #[allow(dead_code)]
     pub type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
     pub parameters: Vec<(Span, String)>,
     pub fn_type: TypeScheme,
@@ -29,7 +30,7 @@ pub struct FunctionMetadata {
 pub enum IdentifierKind {
     /// A normal identifier (variable, unit) with the place where it has been defined.
     /// The boolean flag signifies whether the identifier is a unit or not
-    Normal(TypeScheme, Span, bool),
+    Normal(TypeScheme, #[allow(dead_code)] Span, bool),
     /// A function
     Function(FunctionSignature, FunctionMetadata),
     /// Identifiers that are defined by the language: `_` and `ans` (see LAST_RESULT_IDENTIFIERS)
