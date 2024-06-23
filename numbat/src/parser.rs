@@ -527,15 +527,11 @@ impl<'a> Parser<'a> {
                     }
                 }
 
-                let (return_type_span, return_type_annotation) =
+                let return_type_annotation =
                     if self.match_exact(TokenKind::Arrow).is_some() {
-                        let return_type_annotation = self.type_annotation()?;
-                        (
-                            Some(self.last().unwrap().span),
-                            Some(return_type_annotation),
-                        )
+                        Some(self.type_annotation()?)
                     } else {
-                        (None, None)
+                        None
                     };
 
                 let body = if self.match_exact(TokenKind::Equal).is_none() {
@@ -561,7 +557,6 @@ impl<'a> Parser<'a> {
                     type_parameters,
                     parameters,
                     body,
-                    return_type_annotation_span: return_type_span,
                     return_type_annotation,
                     decorators,
                 })
@@ -2344,7 +2339,6 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2358,7 +2352,6 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: Some(Span::dummy()),
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
@@ -2374,7 +2367,6 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2392,7 +2384,6 @@ mod tests {
                     (Span::dummy(), "z".into(), None),
                 ],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2446,7 +2437,6 @@ mod tests {
                     ),
                 ],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: Some(Span::dummy()),
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
@@ -2468,7 +2458,6 @@ mod tests {
                     )),
                 )],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2488,7 +2477,6 @@ mod tests {
                     )),
                 )],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2502,7 +2490,6 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![
                     decorator::Decorator::Name("Some function".into()),
