@@ -8,6 +8,8 @@ mod math;
 mod procedures;
 mod strings;
 
+use std::collections::VecDeque;
+
 use crate::interpreter::RuntimeError;
 use crate::value::Value;
 use crate::vm::ExecutionContext;
@@ -18,11 +20,13 @@ pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 
-type BoxedFunction = Box<dyn Fn(&[Value]) -> Result<Value> + Send + Sync>;
+pub(crate) type Args = VecDeque<Value>;
+
+type BoxedFunction = Box<dyn Fn(Args) -> Result<Value> + Send + Sync>;
 
 pub(crate) enum Callable {
     Function(BoxedFunction),
-    Procedure(fn(&mut ExecutionContext, &[Value]) -> ControlFlow),
+    Procedure(fn(&mut ExecutionContext, Args) -> ControlFlow),
 }
 
 pub(crate) struct ForeignFunction {

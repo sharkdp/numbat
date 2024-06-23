@@ -2,12 +2,13 @@ use std::collections::HashMap;
 
 use std::sync::OnceLock;
 
+use super::macros::*;
 use crate::{
     ast::ProcedureKind, ffi::ControlFlow, pretty_print::PrettyPrint, value::Value,
     vm::ExecutionContext, RuntimeError,
 };
 
-use super::{Callable, ForeignFunction};
+use super::{Args, Callable, ForeignFunction};
 
 static FFI_PROCEDURES: OnceLock<HashMap<ProcedureKind, ForeignFunction>> = OnceLock::new();
 
@@ -45,7 +46,7 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
     })
 }
 
-fn print(ctx: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
+fn print(ctx: &mut ExecutionContext, args: Args) -> ControlFlow {
     assert!(args.len() <= 1);
 
     if args.is_empty() {
@@ -60,22 +61,22 @@ fn print(ctx: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
     ControlFlow::Continue(())
 }
 
-fn assert(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
+fn assert(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
     assert!(args.len() == 1);
 
-    if args[0].unsafe_as_bool() {
+    if arg!(args).unsafe_as_bool() {
         ControlFlow::Continue(())
     } else {
         ControlFlow::Break(RuntimeError::AssertFailed)
     }
 }
 
-fn assert_eq(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
+fn assert_eq(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
     assert!(args.len() == 2 || args.len() == 3);
 
     if args.len() == 2 {
-        let lhs = &args[0];
-        let rhs = &args[1];
+        let lhs = arg!(args);
+        let rhs = arg!(args);
 
         let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(lhs.clone(), rhs.clone()));
 
@@ -84,7 +85,7 @@ fn assert_eq(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
             let rhs = rhs.unsafe_as_quantity();
 
             if let Ok(args1_converted) = rhs.convert_to(lhs.unit()) {
-                if lhs == &args1_converted {
+                if lhs == args1_converted {
                     ControlFlow::Continue(())
                 } else {
                     error
@@ -98,10 +99,10 @@ fn assert_eq(_: &mut ExecutionContext, args: &[Value]) -> ControlFlow {
             error
         }
     } else {
-        let lhs = args[0].unsafe_as_quantity();
-        let rhs = args[1].unsafe_as_quantity();
-        let result = lhs - rhs;
-        let eps = args[2].unsafe_as_quantity();
+        let lhs = quantity_arg!(args);
+        let rhs = quantity_arg!(args);
+        let result = &lhs - &rhs;
+        let eps = quantity_arg!(args);
 
         match result {
             Ok(diff) => match diff.convert_to(eps.unit()) {

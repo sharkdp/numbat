@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use super::macros::*;
+use super::{macros::*, Args};
 use crate::{quantity::Quantity, value::Value, RuntimeError};
 
 use super::{Callable, ForeignFunction, Result};
@@ -103,11 +103,13 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
     })
 }
 
-fn error(args: &[Value]) -> Result<Value> {
-    Err(RuntimeError::UserError(args[0].unsafe_as_string().into()))
+fn error(mut args: Args) -> Result<Value> {
+    Err(RuntimeError::UserError(
+        arg!(args).unsafe_as_string().into(),
+    ))
 }
 
-fn unit_of(args: &[Value]) -> Result<Value> {
-    let input_unit = quantity_arg!(args, 0).unit().clone();
+fn unit_of(mut args: Args) -> Result<Value> {
+    let input_unit = quantity_arg!(args).unit().clone();
     return_quantity!(1.0, input_unit)
 }

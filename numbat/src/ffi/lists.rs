@@ -1,27 +1,27 @@
 use super::macros::*;
-use super::Result;
+use super::{Args, Result};
 use crate::quantity::Quantity;
 use crate::value::Value;
 use crate::RuntimeError;
 
-pub fn len(args: &[Value]) -> Result<Value> {
-    let list = list_arg!(args, 0);
+pub fn len(mut args: Args) -> Result<Value> {
+    let list = list_arg!(args);
 
     return_scalar!(list.len() as f64)
 }
 
-pub fn head(args: &[Value]) -> Result<Value> {
-    let list = list_arg!(args, 0);
+pub fn head(mut args: Args) -> Result<Value> {
+    let mut list = list_arg!(args);
 
-    if let Some(first) = list.first() {
-        Ok(first.clone())
+    if let Some(first) = list.pop_front() {
+        Ok(first)
     } else {
         Err(RuntimeError::EmptyList)
     }
 }
 
-pub fn tail(args: &[Value]) -> Result<Value> {
-    let mut list = list_arg!(args, 0);
+pub fn tail(mut args: Args) -> Result<Value> {
+    let mut list = list_arg!(args);
 
     if list.is_empty() {
         Err(RuntimeError::EmptyList)
@@ -32,9 +32,10 @@ pub fn tail(args: &[Value]) -> Result<Value> {
     }
 }
 
-pub fn cons(args: &[Value]) -> Result<Value> {
-    let mut list = list_arg!(args, 1).clone();
-    list.insert(0, args[0].clone());
+pub fn cons(mut args: Args) -> Result<Value> {
+    let element = arg!(args);
+    let mut list = list_arg!(args);
+    list.insert(0, element);
 
     return_list!(list)
 }

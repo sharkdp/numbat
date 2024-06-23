@@ -1,36 +1,43 @@
 /// Some macros for writing FFI functions
 
+macro_rules! arg {
+    ($args:ident) => {
+        $args.pop_front().unwrap()
+    };
+}
+pub(crate) use arg;
+
 macro_rules! quantity_arg {
-    ($args:ident, $index:expr) => {
-        $args[$index].unsafe_as_quantity()
+    ($args:ident) => {
+        arg!($args).unsafe_as_quantity()
     };
 }
 pub(crate) use quantity_arg;
 
 macro_rules! scalar_arg {
-    ($args:ident, $index:expr) => {
-        quantity_arg!($args, $index).as_scalar().unwrap()
+    ($args:ident) => {
+        quantity_arg!($args).as_scalar().unwrap()
     };
 }
 pub(crate) use scalar_arg;
 
 macro_rules! list_arg {
-    ($args:ident, $index:expr) => {
-        $args[$index].unsafe_as_list()
+    ($args:ident) => {
+        arg!($args).unsafe_as_list()
     };
 }
 pub(crate) use list_arg;
 
 macro_rules! string_arg {
-    ($args:ident, $index:expr) => {
-        $args[$index].unsafe_as_string()
+    ($args:ident) => {
+        arg!($args).unsafe_as_string()
     };
 }
 pub(crate) use string_arg;
 
 macro_rules! datetime_arg {
-    ($args:ident, $index:expr) => {
-        $args[$index].unsafe_as_datetime()
+    ($args:ident) => {
+        arg!($args).unsafe_as_datetime()
     };
 }
 pub(crate) use datetime_arg;

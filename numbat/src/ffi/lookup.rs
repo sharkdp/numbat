@@ -1,11 +1,12 @@
 use super::macros::*;
+use super::Args;
 use super::Result;
 use crate::quantity::Quantity;
 use crate::typed_ast::DType;
 use crate::value::Value;
 use crate::RuntimeError;
 
-pub fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
+pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
     use crate::span::{SourceCodePositition, Span};
     use crate::typed_ast::StructInfo;
     use crate::typed_ast::Type;
@@ -13,7 +14,7 @@ pub fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {
     use mendeleev::{Electronvolt, GramPerCubicCentimeter, Kelvin, KiloJoulePerMole};
     use std::sync::Arc;
 
-    let pattern = string_arg!(args, 0).to_lowercase();
+    let pattern = string_arg!(args).to_lowercase();
 
     if let Some(element) = mendeleev::Element::list()
         .iter()
