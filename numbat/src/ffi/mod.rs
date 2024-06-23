@@ -1,4 +1,6 @@
 mod functions;
+mod macros;
+mod math;
 mod procedures;
 
 use crate::interpreter::RuntimeError;

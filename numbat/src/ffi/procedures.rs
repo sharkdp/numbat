@@ -11,7 +11,7 @@ use super::{Callable, ForeignFunction};
 
 static FFI_PROCEDURES: OnceLock<HashMap<ProcedureKind, ForeignFunction>> = OnceLock::new();
 
-pub fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
+pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
     FFI_PROCEDURES.get_or_init(|| {
         let mut m = HashMap::new();
 
