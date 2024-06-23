@@ -1261,6 +1261,7 @@ impl<'a> Parser<'a> {
                     });
                 }
             }
+            let span = span.extend(&self.last().unwrap().span);
 
             Ok(Expression::List(span, elements))
         } else if self.match_exact(TokenKind::QuestionMark).is_some() {
