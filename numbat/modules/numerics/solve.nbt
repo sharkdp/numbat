@@ -1,4 +1,5 @@
 use core::functions
+use core::error
 
 @name("Bisection method")
 @url("https://en.wikipedia.org/wiki/Bisection_method")
@@ -13,10 +14,15 @@ fn root_bisect<A: Dim, B: Dim>(f: Fn[(A) -> B], x1: A, x2: A, x_tolerance: A, y_
         else root_bisect(f, (x1 + x2) / 2, x2, x_tolerance, y_tolerance)
   # TODO: move (x1 + x2) / 2 to a local variable once we support them
 
+fn _root_newton_helper<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B/A], x0: A, y_tolerance: B, max_iterations: Scalar) -> A =
+  if max_iterations <= 0
+    then error("root_newton: Maximum number of iterations reached. Try another initial guess?")
+    else if abs(f(x0)) < y_tolerance
+      then x0
+      else _root_newton_helper(f, f_prime, x0 - f(x0) / f_prime(x0), y_tolerance, max_iterations - 1)
+
 @name("Newton's method")
 @url("https://en.wikipedia.org/wiki/Newton%27s_method") 
 @description("Find the root of the function f(x) and its derivative f'(x) using Newton's method.")
 fn root_newton<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B/A], x0: A, y_tolerance: B) -> A =
-    if abs(f(x0)) < y_tolerance
-      then x0
-      else root_newton(f, f_prime, x0 - f(x0) / f_prime(x0), y_tolerance)
+  _root_newton_helper(f, f_prime, x0, y_tolerance, 10_000)
