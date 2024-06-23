@@ -527,12 +527,11 @@ impl<'a> Parser<'a> {
                     }
                 }
 
-                let return_type_annotation =
-                    if self.match_exact(TokenKind::Arrow).is_some() {
-                        Some(self.type_annotation()?)
-                    } else {
-                        None
-                    };
+                let return_type_annotation = if self.match_exact(TokenKind::Arrow).is_some() {
+                    Some(self.type_annotation()?)
+                } else {
+                    None
+                };
 
                 let body = if self.match_exact(TokenKind::Equal).is_none() {
                     None
