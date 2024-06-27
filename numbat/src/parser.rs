@@ -2896,8 +2896,20 @@ mod tests {
         parse_as_expression(&["[1]", "[1,]"], list!(scalar!(1.0)));
         parse_as_expression(&["[1, 2]", "[1, 2, ]"], list!(scalar!(1.0), scalar!(2.0)));
 
+        parse_as_expression(&["[\n]"], list!());
+        parse_as_expression(&["[1\n]", "[1,\n]"], list!(scalar!(1.0)));
+        parse_as_expression(
+            &["[1\n,2\n]", "[1,\n2,\n]"],
+            list!(scalar!(1.0), scalar!(2.0)),
+        );
+
         parse_as_expression(
             &["[[1,2], [3]]"],
+            list!(list!(scalar!(1.0), scalar!(2.0)), list!(scalar!(3.0))),
+        );
+
+        parse_as_expression(
+            &["[[1,\n2\n],\n [3\n]\n]"],
             list!(list!(scalar!(1.0), scalar!(2.0)), list!(scalar!(3.0))),
         );
 
@@ -2908,6 +2920,17 @@ mod tests {
         should_fail_with(&["[1, 2, ,"], ParseErrorKind::ExpectedPrimary);
         should_fail_with(
             &["[1, 2]]"],
+            ParseErrorKind::TrailingCharacters("]".to_owned()),
+        );
+
+        should_fail_with(
+            &["[1\n", "[1,\n 2,\n 3\n", "[1,\n 2\n)"],
+            ParseErrorKind::ExpectedCommaOrRightBracketInList,
+        );
+        should_fail_with(&["[1,\n2,\n,\n"], ParseErrorKind::ExpectedPrimary);
+
+        should_fail_with(
+            &["[1\n,2\n]\n]"],
             ParseErrorKind::TrailingCharacters("]".to_owned()),
         );
     }
