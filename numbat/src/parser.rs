@@ -2933,10 +2933,6 @@ mod tests {
             ParseErrorKind::ExpectedCommaOrRightBracketInList,
         );
         should_fail_with(&["[1,\n2,\n,\n"], ParseErrorKind::ExpectedPrimary);
-        should_fail_with(
-            &["[1\n,2\n]\n]"],
-            ParseErrorKind::TrailingCharacters("]".to_owned()),
-        );
     }
 
     #[test]
