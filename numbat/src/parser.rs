@@ -1247,12 +1247,15 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(span, Number::from_f64(f64::INFINITY)))
         } else if self.match_exact(TokenKind::LeftBracket).is_some() {
             let span = self.last().unwrap().span;
+            self.skip_empty_lines();
 
             let mut elements = vec![];
             while self.match_exact(TokenKind::RightBracket).is_none() {
                 self.skip_empty_lines();
 
                 elements.push(self.expression()?);
+
+                self.skip_empty_lines();
 
                 if self.match_exact(TokenKind::Comma).is_none()
                     && self.peek().kind != TokenKind::RightBracket
@@ -1262,6 +1265,8 @@ impl<'a> Parser<'a> {
                         span: self.peek().span,
                     });
                 }
+
+                self.skip_empty_lines();
             }
             let span = span.extend(&self.last().unwrap().span);
 
@@ -2928,7 +2933,6 @@ mod tests {
             ParseErrorKind::ExpectedCommaOrRightBracketInList,
         );
         should_fail_with(&["[1,\n2,\n,\n"], ParseErrorKind::ExpectedPrimary);
-
         should_fail_with(
             &["[1\n,2\n]\n]"],
             ParseErrorKind::TrailingCharacters("]".to_owned()),
