@@ -1339,7 +1339,7 @@ impl<'a> Parser<'a> {
         } else if let Some(token) = self.match_exact(TokenKind::StringFixed) {
             Ok(Expression::String(
                 token.span,
-                vec![StringPart::Fixed(strip_first_and_last(&token.lexeme))],
+                vec![StringPart::Fixed(strip_and_escape(&token.lexeme))],
             ))
         } else if let Some(token) = self.match_exact(TokenKind::StringInterpolationStart) {
             let mut parts = Vec::new();
@@ -1358,7 +1358,7 @@ impl<'a> Parser<'a> {
                         self.interpolation(&mut parts, inner_token)?;
                     }
                     TokenKind::StringInterpolationEnd => {
-                        parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
+                        parts.push(StringPart::Fixed(strip_and_escape(&inner_token.lexeme)));
                         has_end = true;
                         break;
                     }
@@ -1424,7 +1424,7 @@ impl<'a> Parser<'a> {
     }
 
     fn interpolation(&mut self, parts: &mut Vec<StringPart>, token: &Token) -> Result<()> {
-        parts.push(StringPart::Fixed(strip_first_and_last(&token.lexeme)));
+        parts.push(StringPart::Fixed(strip_and_escape(&token.lexeme)));
 
         let expr = self.expression()?;
 
@@ -1728,8 +1728,40 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn strip_first_and_last(s: &str) -> String {
-    s[1..(s.len() - 1)].to_string()
+fn strip_and_escape(s: &str) -> String {
+    let trimmed = &s[1..(s.len() - 1)];
+
+    let mut result = String::with_capacity(trimmed.len());
+    let mut escaped = false;
+    for c in trimmed.chars() {
+        if escaped {
+            // Keep this in sync with 'escape_numbat_string',
+            // where the reverse replacement is needed
+            match c {
+                'n' => result.push('\n'),
+                'r' => result.push('\r'),
+                't' => result.push('\t'),
+                '"' => result.push('"'),
+                '0' => result.push('\0'),
+                '\\' => result.push('\\'),
+                '{' => result.push('{'),
+                '}' => result.push('}'),
+                _ => {
+                    // We follow Python here, where an unknown escape sequence
+                    // does not lead to an error, but is just passed through.
+                    result.push('\\');
+                    result.push(c)
+                }
+            }
+            escaped = false;
+        } else if c == '\\' {
+            escaped = true;
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
 }
 
 /// Parse a string.
@@ -2749,6 +2781,57 @@ mod tests {
         parse_as_expression(
             &["\"hello world\""],
             Expression::String(Span::dummy(), vec![StringPart::Fixed("hello world".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""hello \"world\"!""#],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Fixed("hello \"world\"!".into())],
+            ),
+        );
+
+        parse_as_expression(
+            &[r#""newline: \n, return: \r, tab: \t, quote: \", null: \0, backslash: \\, open_brace: \{, close brace: \}.""#],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Fixed("newline: \n, return: \r, tab: \t, quote: \", null: \0, backslash: \\, open_brace: {, close brace: }.".into())],
+            ),
+        );
+
+        parse_as_expression(
+            &[r#""\"""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\"".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\\""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\\".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\\\"""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\\\"".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\"\\""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\"\\".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\\\n""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\\\n".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\n\\""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\n\\".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\\n""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\\n".into())]),
         );
 
         parse_as_expression(

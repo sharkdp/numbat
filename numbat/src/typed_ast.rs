@@ -5,6 +5,7 @@ use crate::arithmetic::Exponent;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
 use crate::ast::{ProcedureKind, TypeAnnotation, TypeParameterBound};
 use crate::dimension::DimensionRegistry;
+use crate::pretty_print::escape_numbat_string;
 use crate::traversal::{ForAllExpressions, ForAllTypeSchemes};
 use crate::type_variable::TypeVariable;
 use crate::typechecker::type_scheme::TypeScheme;
@@ -460,7 +461,7 @@ pub enum StringPart {
 impl PrettyPrint for StringPart {
     fn pretty_print(&self) -> Markup {
         match self {
-            StringPart::Fixed(s) => m::string(s),
+            StringPart::Fixed(s) => m::string(escape_numbat_string(s)),
             StringPart::Interpolation {
                 span: _,
                 expr,
@@ -1339,6 +1340,8 @@ mod tests {
         roundtrip_check("(-3)!");
         roundtrip_check("megapoints");
         roundtrip_check("Foo { foo: 1 meter, bar: 1 second }");
+        roundtrip_check("\"foo\"");
+        roundtrip_check("\"newline: \\n\"");
     }
 
     #[test]
