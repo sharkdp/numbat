@@ -5,6 +5,7 @@ use crate::arithmetic::Exponent;
 pub use crate::ast::{BinaryOperator, TypeExpression, UnaryOperator};
 use crate::ast::{ProcedureKind, TypeAnnotation, TypeParameterBound};
 use crate::dimension::DimensionRegistry;
+use crate::pretty_print::escape_numbat_string;
 use crate::traversal::{ForAllExpressions, ForAllTypeSchemes};
 use crate::type_variable::TypeVariable;
 use crate::typechecker::type_scheme::TypeScheme;
@@ -97,10 +98,9 @@ impl DType {
 
     pub fn deconstruct_as_single_type_variable(&self) -> Option<TypeVariable> {
         match &self.factors[..] {
-            [(factor, exponent)] if exponent == &Exponent::from_integer(1) => match factor {
-                DTypeFactor::TVar(v) => Some(v.clone()),
-                _ => None,
-            },
+            [(DTypeFactor::TVar(v), exponent)] if exponent == &Exponent::from_integer(1) => {
+                Some(v.clone())
+            }
             _ => None,
         }
     }
@@ -227,16 +227,16 @@ impl DType {
         for (f, n) in &self.factors {
             match f {
                 DTypeFactor::BaseDimension(name) => {
-                    factors.push(BaseRepresentationFactor(name.clone(), n.clone()));
+                    factors.push(BaseRepresentationFactor(name.clone(), *n));
                 }
                 DTypeFactor::TVar(TypeVariable::Named(name)) => {
-                    factors.push(BaseRepresentationFactor(name.clone(), n.clone()));
+                    factors.push(BaseRepresentationFactor(name.clone(), *n));
                 }
                 DTypeFactor::TVar(TypeVariable::Quantified(_)) => {
                     unreachable!("Unexpected quantified type")
                 }
                 DTypeFactor::TPar(name) => {
-                    factors.push(BaseRepresentationFactor(name.clone(), n.clone()));
+                    factors.push(BaseRepresentationFactor(name.clone(), *n));
                 }
             }
         }
@@ -252,7 +252,7 @@ impl PrettyPrint for DType {
 
 impl std::fmt::Display for DType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.pretty_print().to_string())
+        write!(f, "{}", self.pretty_print())
     }
 }
 
@@ -315,7 +315,7 @@ impl std::fmt::Display for Type {
                         .join(", ")
                 )
             }
-            Type::List(element_type) => write!(f, "List<{}>", element_type.to_string()),
+            Type::List(element_type) => write!(f, "List<{}>", element_type),
         }
     }
 }
@@ -461,7 +461,7 @@ pub enum StringPart {
 impl PrettyPrint for StringPart {
     fn pretty_print(&self) -> Markup {
         match self {
-            StringPart::Fixed(s) => m::string(s),
+            StringPart::Fixed(s) => m::string(escape_numbat_string(s)),
             StringPart::Interpolation {
                 span: _,
                 expr,
@@ -617,36 +617,32 @@ impl Statement {
     pub(crate) fn exponents_for(&mut self, tv: &TypeVariable) -> Vec<Exponent> {
         // TODO: things to not need to be mutable in this function
         let mut exponents = vec![];
-        self.for_all_type_schemes(
-            &mut |type_: &mut TypeScheme| match type_.unsafe_as_concrete() {
-                Type::Dimension(dtype) => {
-                    for (factor, exp) in dtype.factors {
-                        if factor == DTypeFactor::TVar(tv.clone()) {
-                            exponents.push(exp)
-                        }
+        self.for_all_type_schemes(&mut |type_: &mut TypeScheme| {
+            if let Type::Dimension(dtype) = type_.unsafe_as_concrete() {
+                for (factor, exp) in dtype.factors {
+                    if factor == DTypeFactor::TVar(tv.clone()) {
+                        exponents.push(exp)
                     }
                 }
-                _ => {}
-            },
-        );
+            }
+        });
         exponents
     }
 
     pub(crate) fn find_typed_hole(&self) -> Result<Option<(Span, TypeScheme)>, TypeCheckError> {
         let mut hole = None;
         let mut found_multiple_holes = false;
-        self.for_all_expressions(&mut |expr| match expr {
-            Expression::TypedHole(span, type_) => {
+        self.for_all_expressions(&mut |expr| {
+            if let Expression::TypedHole(span, type_) = expr {
                 if hole.is_some() {
                     found_multiple_holes = true;
                 }
                 hole = Some((*span, type_.clone()))
             }
-            _ => {}
         });
 
         if found_multiple_holes {
-            return Err(TypeCheckError::MultipleTypedHoles(hole.unwrap().0));
+            Err(TypeCheckError::MultipleTypedHoles(hole.unwrap().0))
         } else {
             Ok(hole)
         }
@@ -1344,6 +1340,8 @@ mod tests {
         roundtrip_check("(-3)!");
         roundtrip_check("megapoints");
         roundtrip_check("Foo { foo: 1 meter, bar: 1 second }");
+        roundtrip_check("\"foo\"");
+        roundtrip_check("\"newline: \\n\"");
     }
 
     #[test]

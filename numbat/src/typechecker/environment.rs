@@ -13,6 +13,7 @@ type Identifier = String;
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
     pub definition_span: Span,
+    #[allow(dead_code)]
     pub type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
     pub parameters: Vec<(Span, String)>,
     pub fn_type: TypeScheme,
@@ -27,8 +28,9 @@ pub struct FunctionMetadata {
 
 #[derive(Clone, Debug)]
 pub enum IdentifierKind {
-    /// A normal identifier (variable, unit) with the place where it has been defined
-    Normal(TypeScheme, Span),
+    /// A normal identifier (variable, unit) with the place where it has been defined.
+    /// The boolean flag signifies whether the identifier is a unit or not
+    Normal(TypeScheme, #[allow(dead_code)] Span, bool),
     /// A function
     Function(FunctionSignature, FunctionMetadata),
     /// Identifiers that are defined by the language: `_` and `ans` (see LAST_RESULT_IDENTIFIERS)
@@ -39,7 +41,7 @@ impl IdentifierKind {
     fn get_type(&self) -> TypeScheme {
         match self {
             IdentifierKind::Predefined(t) => t.clone(),
-            IdentifierKind::Normal(t, _) => t.clone(),
+            IdentifierKind::Normal(t, _, _) => t.clone(),
             IdentifierKind::Function(s, _) => s.fn_type.clone(),
         }
     }
@@ -51,14 +53,16 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn add(&mut self, i: Identifier, type_: Type, span: Span) {
-        self.identifiers
-            .insert(i, IdentifierKind::Normal(TypeScheme::Concrete(type_), span));
+    pub fn add(&mut self, i: Identifier, type_: Type, span: Span, is_unit: bool) {
+        self.identifiers.insert(
+            i,
+            IdentifierKind::Normal(TypeScheme::Concrete(type_), span, is_unit),
+        );
     }
 
-    pub fn add_scheme(&mut self, i: Identifier, scheme: TypeScheme, span: Span) {
+    pub fn add_scheme(&mut self, i: Identifier, scheme: TypeScheme, span: Span, is_unit: bool) {
         self.identifiers
-            .insert(i, IdentifierKind::Normal(scheme, span));
+            .insert(i, IdentifierKind::Normal(scheme, span, is_unit));
     }
 
     pub(crate) fn add_function(
@@ -84,12 +88,24 @@ impl Environment {
         self.identifiers.keys()
     }
 
+    pub fn iter_relevant_matches(&self) -> impl Iterator<Item = (&Identifier, TypeScheme)> {
+        self.identifiers
+            .iter()
+            .filter(|(_, kind)| {
+                !matches!(
+                    kind,
+                    IdentifierKind::Normal(_, _, true) | IdentifierKind::Predefined(..)
+                )
+            })
+            .map(|(id, kind)| (id, kind.get_type()))
+    }
+
     pub(crate) fn get_function_info(
         &self,
         name: &str,
     ) -> Option<(&FunctionSignature, &FunctionMetadata)> {
         match self.identifiers.get(name) {
-            Some(IdentifierKind::Function(signature, metadata)) => Some((signature, &metadata)),
+            Some(IdentifierKind::Function(signature, metadata)) => Some((signature, metadata)),
             _ => None,
         }
     }
@@ -97,7 +113,7 @@ impl Environment {
     pub(crate) fn generalize_types(&mut self, dtype_variables: &[TypeVariable]) {
         for (_, kind) in self.identifiers.iter_mut() {
             match kind {
-                IdentifierKind::Normal(t, _) => {
+                IdentifierKind::Normal(t, _, _) => {
                     t.generalize(dtype_variables);
                 }
                 IdentifierKind::Function(signature, _) => {
@@ -115,7 +131,7 @@ impl ApplySubstitution for Environment {
     fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
         for (_, kind) in self.identifiers.iter_mut() {
             match kind {
-                IdentifierKind::Normal(t, _) => {
+                IdentifierKind::Normal(t, _, _) => {
                     t.apply(substitution)?;
                 }
                 IdentifierKind::Function(signature, _) => {

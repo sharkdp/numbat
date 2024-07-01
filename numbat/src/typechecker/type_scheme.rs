@@ -34,7 +34,7 @@ impl TypeScheme {
         if let TypeScheme::Quantified(n_gen, qt) = &self {
             assert!(n_gen == &new_type_variables.len());
 
-            qt.instantiate(&new_type_variables)
+            qt.instantiate(new_type_variables)
         } else {
             unreachable!("Tried to instantiate concrete type: {:#?}", self);
         }
@@ -141,6 +141,7 @@ impl TypeScheme {
         // Generate qualified type
         let bounds = dtype_variables
             .iter()
+            .filter(|v| type_.contains(v, true))
             .map(|v| Bound::IsDim(Type::TVar(v.clone())))
             .collect();
         let qualified_type = QualifiedType::new(type_.clone(), bounds);

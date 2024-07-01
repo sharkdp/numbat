@@ -227,6 +227,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected bound in type parameter definition")]
     ExpectedBoundInTypeParameterDefinition,
+
+    #[error("Empty string interpolation")]
+    EmptyStringInterpolation,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -527,16 +530,11 @@ impl<'a> Parser<'a> {
                     }
                 }
 
-                let (return_type_span, return_type_annotation) =
-                    if self.match_exact(TokenKind::Arrow).is_some() {
-                        let return_type_annotation = self.type_annotation()?;
-                        (
-                            Some(self.last().unwrap().span),
-                            Some(return_type_annotation),
-                        )
-                    } else {
-                        (None, None)
-                    };
+                let return_type_annotation = if self.match_exact(TokenKind::Arrow).is_some() {
+                    Some(self.type_annotation()?)
+                } else {
+                    None
+                };
 
                 let body = if self.match_exact(TokenKind::Equal).is_none() {
                     None
@@ -561,7 +559,6 @@ impl<'a> Parser<'a> {
                     type_parameters,
                     parameters,
                     body,
-                    return_type_annotation_span: return_type_span,
                     return_type_annotation,
                     decorators,
                 })
@@ -898,7 +895,7 @@ impl<'a> Parser<'a> {
             let span_if = self.last().unwrap().span;
             let condition_expr = self.conversion()?;
 
-            self.match_exact(TokenKind::Newline);
+            self.skip_empty_lines();
 
             if self.match_exact(TokenKind::Then).is_none() {
                 return Err(ParseError::new(
@@ -907,9 +904,11 @@ impl<'a> Parser<'a> {
                 ));
             }
 
+            self.skip_empty_lines();
+
             let then_expr = self.condition()?;
 
-            self.match_exact(TokenKind::Newline);
+            self.skip_empty_lines();
 
             if self.match_exact(TokenKind::Else).is_none() {
                 return Err(ParseError::new(
@@ -917,6 +916,8 @@ impl<'a> Parser<'a> {
                     self.peek().span,
                 ));
             }
+
+            self.skip_empty_lines();
 
             let else_expr = self.condition()?;
 
@@ -1250,12 +1251,15 @@ impl<'a> Parser<'a> {
             Ok(Expression::Scalar(span, Number::from_f64(f64::INFINITY)))
         } else if self.match_exact(TokenKind::LeftBracket).is_some() {
             let span = self.last().unwrap().span;
+            self.skip_empty_lines();
 
             let mut elements = vec![];
             while self.match_exact(TokenKind::RightBracket).is_none() {
                 self.skip_empty_lines();
 
                 elements.push(self.expression()?);
+
+                self.skip_empty_lines();
 
                 if self.match_exact(TokenKind::Comma).is_none()
                     && self.peek().kind != TokenKind::RightBracket
@@ -1265,7 +1269,10 @@ impl<'a> Parser<'a> {
                         span: self.peek().span,
                     });
                 }
+
+                self.skip_empty_lines();
             }
+            let span = span.extend(&self.last().unwrap().span);
 
             Ok(Expression::List(span, elements))
         } else if self.match_exact(TokenKind::QuestionMark).is_some() {
@@ -1336,7 +1343,7 @@ impl<'a> Parser<'a> {
         } else if let Some(token) = self.match_exact(TokenKind::StringFixed) {
             Ok(Expression::String(
                 token.span,
-                vec![StringPart::Fixed(strip_first_and_last(&token.lexeme))],
+                vec![StringPart::Fixed(strip_and_escape(&token.lexeme))],
             ))
         } else if let Some(token) = self.match_exact(TokenKind::StringInterpolationStart) {
             let mut parts = Vec::new();
@@ -1355,7 +1362,7 @@ impl<'a> Parser<'a> {
                         self.interpolation(&mut parts, inner_token)?;
                     }
                     TokenKind::StringInterpolationEnd => {
-                        parts.push(StringPart::Fixed(strip_first_and_last(&inner_token.lexeme)));
+                        parts.push(StringPart::Fixed(strip_and_escape(&inner_token.lexeme)));
                         has_end = true;
                         break;
                     }
@@ -1393,6 +1400,25 @@ impl<'a> Parser<'a> {
                 ParseErrorKind::InlineProcedureUsage,
                 self.peek().span,
             ))
+        } else if self
+            .last()
+            .map(|t| {
+                matches!(
+                    t.kind,
+                    TokenKind::StringInterpolationStart | TokenKind::StringInterpolationMiddle
+                )
+            })
+            .unwrap_or(false)
+        {
+            let full_interpolation_end_span = self.peek().span;
+            let closing_brace_span = full_interpolation_end_span
+                .start
+                .single_character_span(full_interpolation_end_span.code_source_id);
+
+            Err(ParseError::new(
+                ParseErrorKind::EmptyStringInterpolation,
+                closing_brace_span,
+            ))
         } else {
             Err(ParseError::new(
                 ParseErrorKind::ExpectedPrimary,
@@ -1402,7 +1428,7 @@ impl<'a> Parser<'a> {
     }
 
     fn interpolation(&mut self, parts: &mut Vec<StringPart>, token: &Token) -> Result<()> {
-        parts.push(StringPart::Fixed(strip_first_and_last(&token.lexeme)));
+        parts.push(StringPart::Fixed(strip_and_escape(&token.lexeme)));
 
         let expr = self.expression()?;
 
@@ -1690,7 +1716,11 @@ impl<'a> Parser<'a> {
     }
 
     fn last(&self) -> Option<&'a Token> {
-        self.tokens.get(self.current - 1)
+        if self.current == 0 {
+            None
+        } else {
+            self.tokens.get(self.current - 1)
+        }
     }
 
     pub fn is_end_of_statement(&self) -> bool {
@@ -1702,8 +1732,40 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn strip_first_and_last(s: &str) -> String {
-    s[1..(s.len() - 1)].to_string()
+fn strip_and_escape(s: &str) -> String {
+    let trimmed = &s[1..(s.len() - 1)];
+
+    let mut result = String::with_capacity(trimmed.len());
+    let mut escaped = false;
+    for c in trimmed.chars() {
+        if escaped {
+            // Keep this in sync with 'escape_numbat_string',
+            // where the reverse replacement is needed
+            match c {
+                'n' => result.push('\n'),
+                'r' => result.push('\r'),
+                't' => result.push('\t'),
+                '"' => result.push('"'),
+                '0' => result.push('\0'),
+                '\\' => result.push('\\'),
+                '{' => result.push('{'),
+                '}' => result.push('}'),
+                _ => {
+                    // We follow Python here, where an unknown escape sequence
+                    // does not lead to an error, but is just passed through.
+                    result.push('\\');
+                    result.push(c)
+                }
+            }
+            escaped = false;
+        } else if c == '\\' {
+            escaped = true;
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
 }
 
 /// Parse a string.
@@ -2344,7 +2406,6 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2358,7 +2419,6 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: Some(Span::dummy()),
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
@@ -2374,7 +2434,6 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2392,7 +2451,6 @@ mod tests {
                     (Span::dummy(), "z".into(), None),
                 ],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2446,7 +2504,6 @@ mod tests {
                     ),
                 ],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: Some(Span::dummy()),
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
@@ -2468,7 +2525,6 @@ mod tests {
                     )),
                 )],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2488,7 +2544,6 @@ mod tests {
                     )),
                 )],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2502,7 +2557,6 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
-                return_type_annotation_span: None,
                 return_type_annotation: None,
                 decorators: vec![
                     decorator::Decorator::Name("Some function".into()),
@@ -2697,7 +2751,7 @@ mod tests {
             &[
                 "if 1 < 2 then 3 + 4 else 5 * 6",
                 "if (1 < 2) then (3 + 4) else (5 * 6)",
-                "if 1 < 2\n  then 3 + 4\n  else 5 * 6",
+                "if 1 < 2\n  then\n    3 + 4\n  else\n    5 * 6",
             ],
             conditional!(
                 binop!(scalar!(1.0), LessThan, scalar!(2.0)),
@@ -2731,6 +2785,57 @@ mod tests {
         parse_as_expression(
             &["\"hello world\""],
             Expression::String(Span::dummy(), vec![StringPart::Fixed("hello world".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""hello \"world\"!""#],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Fixed("hello \"world\"!".into())],
+            ),
+        );
+
+        parse_as_expression(
+            &[r#""newline: \n, return: \r, tab: \t, quote: \", null: \0, backslash: \\, open_brace: \{, close brace: \}.""#],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Fixed("newline: \n, return: \r, tab: \t, quote: \", null: \0, backslash: \\, open_brace: {, close brace: }.".into())],
+            ),
+        );
+
+        parse_as_expression(
+            &[r#""\"""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\"".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\\""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\\".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\\\"""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\\\"".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\"\\""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\"\\".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\\\n""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\\\n".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\n\\""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\n\\".into())]),
+        );
+
+        parse_as_expression(
+            &[r#""\\n""#],
+            Expression::String(Span::dummy(), vec![StringPart::Fixed("\\n".into())]),
         );
 
         parse_as_expression(
@@ -2815,6 +2920,14 @@ mod tests {
         );
 
         should_fail_with(&["\"test {1"], ParseErrorKind::UnterminatedString);
+        should_fail_with(
+            &[
+                "\"foo {} bar\"",
+                "\"foo {1} bar {} baz\"",
+                "\"foo {   } bar\"",
+            ],
+            ParseErrorKind::EmptyStringInterpolation,
+        );
     }
 
     #[test]
@@ -2875,8 +2988,20 @@ mod tests {
         parse_as_expression(&["[1]", "[1,]"], list!(scalar!(1.0)));
         parse_as_expression(&["[1, 2]", "[1, 2, ]"], list!(scalar!(1.0), scalar!(2.0)));
 
+        parse_as_expression(&["[\n]"], list!());
+        parse_as_expression(&["[1\n]", "[1,\n]"], list!(scalar!(1.0)));
+        parse_as_expression(
+            &["[1\n,2\n]", "[1,\n2,\n]"],
+            list!(scalar!(1.0), scalar!(2.0)),
+        );
+
         parse_as_expression(
             &["[[1,2], [3]]"],
+            list!(list!(scalar!(1.0), scalar!(2.0)), list!(scalar!(3.0))),
+        );
+
+        parse_as_expression(
+            &["[[1,\n2\n],\n [3\n]\n]"],
             list!(list!(scalar!(1.0), scalar!(2.0)), list!(scalar!(3.0))),
         );
 
@@ -2889,6 +3014,12 @@ mod tests {
             &["[1, 2]]"],
             ParseErrorKind::TrailingCharacters("]".to_owned()),
         );
+
+        should_fail_with(
+            &["[1\n", "[1,\n 2,\n 3\n", "[1,\n 2\n)"],
+            ParseErrorKind::ExpectedCommaOrRightBracketInList,
+        );
+        should_fail_with(&["[1,\n2,\n,\n"], ParseErrorKind::ExpectedPrimary);
     }
 
     #[test]

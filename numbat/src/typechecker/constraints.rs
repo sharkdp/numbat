@@ -168,7 +168,7 @@ impl TrivialResultion {
 
     /// Ignore the result of the trivial resolution. This is a helper to prevent the
     /// `must_use` attribute from being triggered.
-    pub(crate) fn ok(&self) -> () {}
+    pub(crate) fn ok(&self) {}
 }
 
 /// A type checker constraint can be one of three things:

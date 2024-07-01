@@ -343,6 +343,26 @@ impl Tokenizer {
         Ok(())
     }
 
+    fn consume_string(&mut self) -> Result<()> {
+        let mut escaped = false;
+        loop {
+            escaped = match self.peek() {
+                None => {
+                    break;
+                }
+                Some('\\') if !escaped => true,
+                Some('"') | Some('{') if !escaped => {
+                    break;
+                }
+                Some(_) => false,
+            };
+
+            self.advance();
+        }
+
+        Ok(())
+    }
+
     fn scan_single_token(&mut self) -> Result<Option<Token>> {
         static KEYWORDS: OnceLock<HashMap<&'static str, TokenKind>> = OnceLock::new();
         let keywords = KEYWORDS.get_or_init(|| {
@@ -545,9 +565,7 @@ impl Tokenizer {
                 InterpolationState::Outside => {
                     self.string_start = self.token_start;
 
-                    while self.peek().map(|c| c != '"' && c != '{').unwrap_or(false) {
-                        self.advance();
-                    }
+                    self.consume_string()?;
 
                     if self.match_char('"') {
                         TokenKind::StringFixed
@@ -606,9 +624,7 @@ impl Tokenizer {
                 }
             }
             '}' if self.interpolation_state.is_inside() => {
-                while self.peek().map(|c| c != '"' && c != '{').unwrap_or(false) {
-                    self.advance();
-                }
+                self.consume_string()?;
 
                 if self.match_char('"') {
                     self.interpolation_state = InterpolationState::Outside;
@@ -1099,6 +1115,32 @@ fn test_tokenize_string() {
     assert_eq!(
         tokenize("\"foo = {foo, bar = {bar}\"", 0).unwrap_err().kind,
         TokenizerErrorKind::UnexpectedCurlyInInterpolation
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty(r#""start \"inner\" end""#).unwrap(),
+        @r###"
+    "\"start \\\"inner\\\" end\"", StringFixed, (1, 1)
+    "", Eof, (1, 22)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty(r#""start \{inner\} end""#).unwrap(),
+        @r###"
+    "\"start \\{inner\\} end\"", StringFixed, (1, 1)
+    "", Eof, (1, 22)
+    "###
+    );
+
+    insta::assert_snapshot!(
+        tokenize_reduced_pretty(r#""start {1} \"inner\" end""#).unwrap(),
+        @r###"
+    "\"start {", StringInterpolationStart, (1, 1)
+    "1", Number, (1, 9)
+    "} \\\"inner\\\" end\"", StringInterpolationEnd, (1, 10)
+    "", Eof, (1, 26)
+    "###
     );
 }
 

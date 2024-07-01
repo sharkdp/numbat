@@ -403,26 +403,26 @@ fn recursive_functions() {
 fn typed_holes() {
     assert!(matches!(
         get_typecheck_error("a + ?"),
-        TypeCheckError::TypedHoleInStatement(_, type_, _) if type_ == "A"
+        TypeCheckError::TypedHoleInStatement(_, type_, _, _) if type_ == "A"
     ));
 
     assert!(matches!(
         get_typecheck_error("c + a × ?"),
-        TypeCheckError::TypedHoleInStatement(_, type_, _) if type_ == "B"
+        TypeCheckError::TypedHoleInStatement(_, type_, _, _) if type_ == "B"
     ));
 
     assert!(matches!(
         get_typecheck_error("let x: B = c / ?"),
-        TypeCheckError::TypedHoleInStatement(_, type_, _) if type_ == "A"
+        TypeCheckError::TypedHoleInStatement(_, type_, _, _) if type_ == "A"
     ));
 
     assert!(matches!(
         get_typecheck_error("if true then a else ?"),
-        TypeCheckError::TypedHoleInStatement(_, type_, _) if type_ == "A"
+        TypeCheckError::TypedHoleInStatement(_, type_, _, _) if type_ == "A"
     ));
 
     assert!(matches!(
         get_typecheck_error("let x: C = ?(a, b)"),
-        TypeCheckError::TypedHoleInStatement(_, type_, _) if type_ == "Fn[(A, B) -> A × B]"
+        TypeCheckError::TypedHoleInStatement(_, type_, _, _) if type_ == "Fn[(A, B) -> A × B]"
     ));
 }

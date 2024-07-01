@@ -13,12 +13,17 @@ fn uppercase(s: String) -> String
 
 fn str_append(a: String, b: String) -> String = "{a}{b}"
 
-fn str_contains(haystack: String, needle: String) -> Bool =
+fn str_find(haystack: String, needle: String) -> Scalar =
   if str_length(haystack) == 0
-    then false
+    then -1
     else if str_slice(haystack, 0, str_length(needle)) == needle
-      then true
-      else str_contains(str_slice(haystack, 1, str_length(haystack)), needle)
+      then 0
+      else if str_find(str_slice(haystack, 1, str_length(haystack)), needle) == -1  # TODO: we need local variables!
+        then -1
+        else 1 + str_find(str_slice(haystack, 1, str_length(haystack)), needle)
+
+fn str_contains(haystack: String, needle: String) -> Bool =
+  str_find(haystack, needle) != -1
 
 fn str_replace(s: String, pattern: String, replacement: String) -> String =
   if pattern == ""

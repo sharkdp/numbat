@@ -930,7 +930,7 @@ impl TypeChecker {
 
                     let found_type = &expr.get_type();
                     if self
-                        .add_equal_constraint(&found_type, &expected_type)
+                        .add_equal_constraint(found_type, expected_type)
                         .is_trivially_violated()
                     {
                         return Err(TypeCheckError::IncompatibleTypesForStructField(
@@ -1023,14 +1023,12 @@ impl TypeChecker {
 
                 let result_element_type = if element_types.is_empty() {
                     self.fresh_type_variable()
+                } else if element_types[0].is_closed() {
+                    element_types[0].clone()
                 } else {
-                    if element_types[0].is_closed() {
-                        element_types[0].clone()
-                    } else {
-                        let type_ = self.fresh_type_variable();
-                        self.add_equal_constraint(&element_types[0], &type_).ok();
-                        type_
-                    }
+                    let type_ = self.fresh_type_variable();
+                    self.add_equal_constraint(&element_types[0], &type_).ok();
+                    type_
                 };
 
                 if !element_types.is_empty() {
@@ -1038,7 +1036,7 @@ impl TypeChecker {
                         elements_checked.iter().zip(element_types.iter()).skip(1)
                     {
                         if self
-                            .add_equal_constraint(&result_element_type, &type_of_subsequent_element)
+                            .add_equal_constraint(&result_element_type, type_of_subsequent_element)
                             .is_trivially_violated()
                         {
                             return Err(TypeCheckError::IncompatibleTypesInList(
@@ -1121,7 +1119,7 @@ impl TypeChecker {
                         }
                         (deduced, annotated) => {
                             if self
-                                .add_equal_constraint(&deduced, &annotated)
+                                .add_equal_constraint(deduced, annotated)
                                 .is_trivially_violated()
                             {
                                 return Err(TypeCheckError::IncompatibleTypesInAnnotation(
@@ -1139,7 +1137,7 @@ impl TypeChecker {
 
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
                     self.env
-                        .add(name.clone(), type_deduced.clone(), *identifier_span);
+                        .add(name.clone(), type_deduced.clone(), *identifier_span, false);
 
                     self.value_namespace.add_identifier_allow_override(
                         name.clone(),
@@ -1183,8 +1181,12 @@ impl TypeChecker {
                         .into()
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
-                    self.env
-                        .add(name.clone(), Type::Dimension(type_specified.clone()), *span);
+                    self.env.add(
+                        name.clone(),
+                        Type::Dimension(type_specified.clone()),
+                        *span,
+                        true,
+                    );
                 }
 
                 typed_ast::Statement::DefineBaseUnit(
@@ -1243,7 +1245,7 @@ impl TypeChecker {
                         }
                         (deduced, annotated) => {
                             if self
-                                .add_equal_constraint(&deduced, &annotated)
+                                .add_equal_constraint(deduced, annotated)
                                 .is_trivially_violated()
                             {
                                 return Err(TypeCheckError::IncompatibleTypesInAnnotation(
@@ -1261,7 +1263,7 @@ impl TypeChecker {
 
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
                     self.env
-                        .add(name.clone(), type_deduced.clone(), *identifier_span);
+                        .add(name.clone(), type_deduced.clone(), *identifier_span, true);
                 }
                 typed_ast::Statement::DefineDerivedUnit(
                     identifier.clone(),
@@ -1277,7 +1279,6 @@ impl TypeChecker {
                 type_parameters,
                 parameters,
                 body,
-                return_type_annotation_span,
                 return_type_annotation,
                 decorators,
             } => {
@@ -1350,6 +1351,7 @@ impl TypeChecker {
                         parameter.clone(),
                         TypeScheme::make_quantified(parameter_type.clone()),
                         *parameter_span,
+                        false,
                     );
                     typed_parameters.push((*parameter_span, parameter.clone(), parameter_type));
                 }
@@ -1395,7 +1397,7 @@ impl TypeChecker {
 
                 let body_checked = body
                     .as_ref()
-                    .map(|expr| typechecker_fn.elaborate_expression(&expr))
+                    .map(|expr| typechecker_fn.elaborate_expression(expr))
                     .transpose()?;
 
                 let return_type_inferred = if let Some(ref expr) = body_checked {
@@ -1415,7 +1417,10 @@ impl TypeChecker {
                                         IncompatibleDimensionsError {
                                             span_operation: *function_name_span,
                                             operation: "function return type".into(),
-                                            span_expected: return_type_annotation_span.unwrap(),
+                                            span_expected: return_type_annotation
+                                                .as_ref()
+                                                .unwrap()
+                                                .full_span(),
                                             expected_name: "specified return type",
                                             expected_dimensions: typechecker_fn
                                                 .registry
@@ -1443,7 +1448,7 @@ impl TypeChecker {
                                         "function definition".into(),
                                         *function_name_span,
                                         type_specified,
-                                        return_type_annotation_span.unwrap(),
+                                        return_type_annotation.as_ref().unwrap().full_span(),
                                         return_type_inferred.clone(),
                                         body.as_ref().map(|b| b.full_span()).unwrap(),
                                     ));
@@ -1677,7 +1682,7 @@ impl TypeChecker {
         // Elaborate the program/statement: turn the AST into a typed AST, possibly
         // with unification variables, i.e. type variables that will only later be
         // filled in after the constraints have been solved.
-        let mut elaborated_statement = self.elaborate_statement(&statement)?;
+        let mut elaborated_statement = self.elaborate_statement(statement)?;
 
         // Solve constraints
         let (substitution, dtype_variables) =
@@ -1738,7 +1743,7 @@ impl TypeChecker {
         // multiple of the denominators of the exponents. For example, this will turn
         // T0^(1/3) -> T0^(1/5) -> T0 into T0^5 -> T0^3 -> T0^15.
         for tv in &dtype_variables {
-            let exponents = elaborated_statement.exponents_for(&tv);
+            let exponents = elaborated_statement.exponents_for(tv);
             let lcm = exponents
                 .iter()
                 .fold(1, |acc, e| num_integer::lcm(acc, *e.denom()));
@@ -1764,6 +1769,13 @@ impl TypeChecker {
                 span,
                 type_of_hole.to_readable_type(&self.registry).to_string(),
                 elaborated_statement.pretty_print().to_string(),
+                self.env
+                    .iter_relevant_matches()
+                    .filter(|(_, t)| t == &type_of_hole)
+                    .take(10)
+                    .map(|(n, _)| n)
+                    .cloned()
+                    .collect(),
             ));
         }
 
