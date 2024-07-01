@@ -62,6 +62,11 @@ assert_eq(sort([2, 3, 1]), [1, 2, 3])
 assert_eq(sort([3, 1, 2]), [1, 2, 3])
 assert_eq(sort([3, 2, 1]), [1, 2, 3])
 
+# sort_by_key:
+fn negate(x) = -x
+assert_eq(sort_by_key(negate, [1, 2, 3]), [3, 2, 1])
+assert_eq(sort_by_key(str_length, ["aa", "", "aaaa", "aaa"]), ["", "aa", "aaa", "aaaa"])
+
 assert_eq(intersperse(0, []), [])
 assert_eq(intersperse(0, [1]), [1])
 assert_eq(intersperse(0, [1, 2, 3]), [1, 0, 2, 0, 3])

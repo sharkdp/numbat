@@ -1,3 +1,6 @@
+@name("Identity function")
+fn id<A>(x: A) -> A = x
+
 @name("Absolute value")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.abs")
 fn abs<T: Dim>(x: T) -> T

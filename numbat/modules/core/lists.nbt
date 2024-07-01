@@ -79,23 +79,28 @@ fn foldl<A, B>(f: Fn[(A, B) -> A], acc: A, xs: List<B>) -> A =
     then acc
     else foldl(f, f(acc, head(xs)), tail(xs))
 
-fn _merge(xs, ys) =
+fn _merge(xs, ys, cmp) =
   if is_empty(xs)
     then ys
     else if is_empty(ys)
       then xs
-      else if head(xs) < head(ys)
-        then cons(head(xs), _merge(tail(xs), ys))
-        else cons(head(ys), _merge(xs, tail(ys)))
+      else if cmp(head(xs)) < cmp(head(ys))
+        then cons(head(xs), _merge(tail(xs), ys, cmp))
+        else cons(head(ys), _merge(xs, tail(ys), cmp))
 
-@description("Sort a list of quantities")
-fn sort<D: Dim>(xs: List<D>) -> List<D> =
+
+@description("Sort a list of elements, using the given key function that maps the element to a quantity")
+fn sort_by_key<A, D: Dim>(key: Fn[(A) -> D], xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
     else if len(xs) == 1
       then xs
-      else _merge(sort(take(floor(len(xs) / 2), xs)),  # This is extremely inefficient
-                  sort(drop(floor(len(xs) / 2), xs)))
+      else _merge(sort_by_key(key, take(floor(len(xs) / 2), xs)),
+                  sort_by_key(key, drop(floor(len(xs) / 2), xs)),
+                  key)
+
+@description("Sort a list of quantities")
+fn sort<D: Dim>(xs: List<D>) -> List<D> = sort_by_key(id, xs)
 
 @description("Add an element between each pair of elements in a list")
 fn intersperse<A>(sep: A, xs: List<A>) -> List<A> =
