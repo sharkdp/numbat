@@ -7,22 +7,29 @@ struct PaperSize {
     height: Length,
 }
 
-let size_A0 = PaperSize { width: 841 mm, height: 1189 mm }
-
 fn paper_size_A(n: Scalar) -> PaperSize =
-    PaperSize {
-        width: floor(size_A0.width / 2^(n / 2)),
-        height: floor(size_A0.height / 2^(n / 2)),
-    }
-
-fn paper_area(size: PaperSize) -> Area =
-    size.width * size.height
-
-assert_eq(paper_size_A(3).width,  297 mm)
-assert_eq(paper_size_A(3).height, 420 mm)
+  if n == 0
+    then
+      PaperSize {
+        width: 841 mm,
+        height: 1189 mm
+      }
+    else
+      PaperSize {
+        width: floor(paper_size_A(n - 1).height / 2),
+        height: paper_size_A(n - 1).width,
+      }
 
 assert_eq(paper_size_A(4).width,  210 mm)
 assert_eq(paper_size_A(4).height, 297 mm)
 
-assert_eq(paper_size_A(5).width,  148 mm)
-assert_eq(paper_size_A(5).height, 210 mm)
+fn paper_area(size: PaperSize) -> Area =
+    size.width * size.height
+
+
+fn size_as_string(size: PaperSize) = "{size.width:>4} × {size.height:>5}   {paper_area(size) -> cm²:>6.1f}"
+fn row(n) = "A{n:<3}   {size_as_string(paper_size_A(n))}"
+
+print("Name    Width     Height        Area  ")
+print("----   -------   --------   ----------")
+print(join(map(row, range(0, 10)), "\n"))
