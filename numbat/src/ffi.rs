@@ -1074,9 +1074,9 @@ fn _create_line_plot(args: &[Value]) -> Result<Value> {
         .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
         .collect();
 
-    let filename = crate::plot::line_plot(xs, ys, x_label, y_label);
+    crate::plot::line_plot(xs, ys, x_label, y_label);
 
-    Ok(Value::String(filename))
+    Ok(Value::String("Plot will be opened in the browser".into()))
 }
 
 fn _get_chemical_element_data_raw(args: &[Value]) -> Result<Value> {

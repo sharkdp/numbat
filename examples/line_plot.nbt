@@ -4,6 +4,4 @@ let λ = 1.5 s
 
 fn amplitude(t) = A0 exp(-t/λ) cos(ω t)
 
-let filename = plot(amplitude, 0 s, 8 s, "Time", "Amplitude")
-
-print("The plot was saved to '{filename}'.")
+plot(amplitude, 0 s, 8 s, "Time", "Amplitude")
