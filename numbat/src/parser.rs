@@ -895,7 +895,7 @@ impl<'a> Parser<'a> {
             let span_if = self.last().unwrap().span;
             let condition_expr = self.conversion()?;
 
-            self.match_exact(TokenKind::Newline);
+            self.skip_empty_lines();
 
             if self.match_exact(TokenKind::Then).is_none() {
                 return Err(ParseError::new(
@@ -904,9 +904,11 @@ impl<'a> Parser<'a> {
                 ));
             }
 
+            self.skip_empty_lines();
+
             let then_expr = self.condition()?;
 
-            self.match_exact(TokenKind::Newline);
+            self.skip_empty_lines();
 
             if self.match_exact(TokenKind::Else).is_none() {
                 return Err(ParseError::new(
@@ -914,6 +916,8 @@ impl<'a> Parser<'a> {
                     self.peek().span,
                 ));
             }
+
+            self.skip_empty_lines();
 
             let else_expr = self.condition()?;
 
@@ -2747,7 +2751,7 @@ mod tests {
             &[
                 "if 1 < 2 then 3 + 4 else 5 * 6",
                 "if (1 < 2) then (3 + 4) else (5 * 6)",
-                "if 1 < 2\n  then 3 + 4\n  else 5 * 6",
+                "if 1 < 2\n  then\n    3 + 4\n  else\n    5 * 6",
             ],
             conditional!(
                 binop!(scalar!(1.0), LessThan, scalar!(2.0)),
