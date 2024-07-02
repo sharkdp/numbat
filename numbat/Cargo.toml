@@ -10,7 +10,7 @@ version = "1.12.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-rust-version = "1.70"
+rust-version = "1.74"
 
 [dependencies]
 thiserror = "1"
