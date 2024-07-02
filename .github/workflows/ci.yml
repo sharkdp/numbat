@@ -50,6 +50,7 @@ jobs:
     steps:
     - uses: dtolnay/rust-toolchain@stable
     - uses: actions/checkout@v3
+    - uses: actions/setup-python@v5
     - name: Install mdbook
       run: |
         cargo install mdbook
@@ -57,10 +58,10 @@ jobs:
     - name: Build documentation
       run: |
         cd book
-        bash build.sh
+        python build.py
         if [ -n "$(git status --porcelain)" ]; then
           echo "Documentation not up to date."
-          echo "Make sure to run 'build.sh' in the book/ folder"
+          echo "Make sure to run 'build.py' in the book/ folder"
           exit 1
         fi
 
