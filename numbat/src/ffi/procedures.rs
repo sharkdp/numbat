@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 
 use super::macros::*;
 use crate::{
-    ast::ProcedureKind, ffi::ControlFlow, pretty_print::PrettyPrint, value::Value,
+    ast::ProcedureKind, ffi::ControlFlow, pretty_print::PrettyPrint, span::Span, value::Value,
     vm::ExecutionContext, RuntimeError,
 };
 
@@ -46,7 +46,7 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
     })
 }
 
-fn print(ctx: &mut ExecutionContext, mut args: Args) -> ControlFlow {
+fn print(ctx: &mut ExecutionContext, mut args: Args, _: Vec<Span>) -> ControlFlow {
     assert!(args.len() <= 1);
 
     if args.is_empty() {
@@ -61,24 +61,32 @@ fn print(ctx: &mut ExecutionContext, mut args: Args) -> ControlFlow {
     ControlFlow::Continue(())
 }
 
-fn assert(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
+fn assert(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> ControlFlow {
     assert!(args.len() == 1);
 
     if arg!(args).unsafe_as_bool() {
         ControlFlow::Continue(())
     } else {
-        ControlFlow::Break(RuntimeError::AssertFailed)
+        ControlFlow::Break(RuntimeError::AssertFailed(arg_spans[0]))
     }
 }
 
-fn assert_eq(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
+fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> ControlFlow {
     assert!(args.len() == 2 || args.len() == 3);
+
+    let span_lhs = arg_spans[0];
+    let span_rhs = arg_spans[1];
 
     if args.len() == 2 {
         let lhs = arg!(args);
         let rhs = arg!(args);
 
-        let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(lhs.clone(), rhs.clone()));
+        let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(
+            span_lhs,
+            lhs.clone(),
+            span_rhs,
+            rhs.clone(),
+        ));
 
         if lhs.is_quantity() {
             let lhs = lhs.unsafe_as_quantity();
@@ -112,7 +120,9 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
                         ControlFlow::Continue(())
                     } else {
                         ControlFlow::Break(RuntimeError::AssertEq3Failed(
+                            span_lhs,
                             lhs.clone(),
+                            span_rhs,
                             rhs.clone(),
                             eps.clone(),
                         ))

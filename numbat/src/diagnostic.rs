@@ -497,8 +497,43 @@ impl ErrorDiagnostic for TypeCheckError {
 
 impl ErrorDiagnostic for RuntimeError {
     fn diagnostics(&self) -> Vec<Diagnostic> {
-        vec![Diagnostic::error()
-            .with_message("runtime error")
-            .with_notes(vec![format!("{self:#}")])]
+        let inner = format!("{self:#}");
+
+        match self {
+            RuntimeError::AssertFailed(span) => vec![Diagnostic::error()
+                .with_message("assertion failed")
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message("assertion failed")])],
+            RuntimeError::AssertEq2Failed(span_lhs, lhs, span_rhs, rhs) => {
+                vec![Diagnostic::error()
+                    .with_message("Assertion failed")
+                    .with_labels(vec![
+                        span_lhs
+                            .diagnostic_label(LabelStyle::Secondary)
+                            .with_message(format!("{lhs}")),
+                        span_rhs
+                            .diagnostic_label(LabelStyle::Primary)
+                            .with_message(format!("{rhs}")),
+                    ])
+                    .with_notes(vec![inner])]
+            }
+            RuntimeError::AssertEq3Failed(span_lhs, lhs, span_rhs, rhs, _) => {
+                vec![Diagnostic::error()
+                    .with_message("Assertion failed")
+                    .with_labels(vec![
+                        span_lhs
+                            .diagnostic_label(LabelStyle::Secondary)
+                            .with_message(format!("{lhs}")),
+                        span_rhs
+                            .diagnostic_label(LabelStyle::Primary)
+                            .with_message(format!("{rhs}")),
+                    ])
+                    .with_notes(vec![format!("{self:#}")])]
+            }
+            _ => vec![Diagnostic::error()
+                .with_message("runtime error")
+                .with_notes(vec![inner])],
+        }
     }
 }

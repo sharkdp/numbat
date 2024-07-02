@@ -4,6 +4,7 @@ use std::{cmp::Ordering, fmt::Display};
 
 use indexmap::IndexMap;
 
+use crate::span::Span;
 use crate::typed_ast::StructInfo;
 use crate::value::NumbatList;
 use crate::{
@@ -94,6 +95,7 @@ pub enum Op {
     /// Same as above, but call a foreign/native function
     FFICallFunction,
     /// Same as above, but call a procedure which does not return anything (does not push a value onto the stack)
+    /// It has a third argument which is an index to retrieve the source-span of the arguments
     FFICallProcedure,
 
     /// Call a callable object
@@ -123,11 +125,8 @@ pub enum Op {
 impl Op {
     fn num_operands(self) -> usize {
         match self {
-            Op::SetUnitConstant
-            | Op::Call
-            | Op::FFICallFunction
-            | Op::FFICallProcedure
-            | Op::BuildStructInstance => 2,
+            Op::FFICallProcedure => 3,
+            Op::SetUnitConstant | Op::Call | Op::FFICallFunction | Op::BuildStructInstance => 2,
             Op::LoadConstant
             | Op::ApplyPrefix
             | Op::GetLocal
@@ -308,6 +307,10 @@ pub struct Vm {
     /// List of registered native/foreign functions
     ffi_callables: Vec<&'static ForeignFunction>,
 
+    /// Spans for arguments of procedure calls. This is used for
+    /// assertion error messages, for example.
+    procedure_arg_spans: Vec<Vec<Span>>,
+
     /// The call stack
     frames: Vec<CallFrame>,
 
@@ -332,6 +335,7 @@ impl Vm {
             unit_information: vec![],
             last_result: None,
             ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
+            procedure_arg_spans: vec![],
             frames: vec![CallFrame::root()],
             stack: vec![],
             debug: false,
@@ -369,6 +373,14 @@ impl Vm {
         current_chunk.push(op as u8);
         Self::push_u16(current_chunk, arg1);
         Self::push_u16(current_chunk, arg2);
+    }
+
+    pub(crate) fn add_op3(&mut self, op: Op, arg1: u16, arg2: u16, arg3: u16) {
+        let current_chunk = self.current_chunk_mut();
+        current_chunk.push(op as u8);
+        Self::push_u16(current_chunk, arg1);
+        Self::push_u16(current_chunk, arg2);
+        Self::push_u16(current_chunk, arg3);
     }
 
     pub fn current_offset(&self) -> u16 {
@@ -464,6 +476,12 @@ impl Vm {
         let position = self.ffi_callables.iter().position(|ff| ff.name == name)?;
         assert!(position <= u16::MAX as usize);
         Some(position as u16)
+    }
+
+    pub(crate) fn add_procedure_arg_span(&mut self, spans: Vec<Span>) -> u16 {
+        self.procedure_arg_spans.push(spans);
+        assert!(self.procedure_arg_spans.len() <= u16::MAX as usize);
+        (self.procedure_arg_spans.len() - 1) as u16
     }
 
     pub fn disassemble(&self) {
@@ -832,7 +850,10 @@ impl Vm {
                             self.push(result?);
                         }
                         Callable::Procedure(procedure) => {
-                            let result = (procedure)(ctx, args);
+                            let span_idx = self.read_u16() as usize;
+                            let spans = &self.procedure_arg_spans[span_idx];
+
+                            let result = (procedure)(ctx, args, spans.clone());
 
                             match result {
                                 std::ops::ControlFlow::Continue(()) => {}
