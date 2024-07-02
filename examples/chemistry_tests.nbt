@@ -7,8 +7,8 @@
 # - https://en.wikipedia.org/wiki/Enthalpy_of_vaporization
 
 let w = element("tungsten")
-assert(w.symbol == "W")
-assert(w.name == "Tungsten")
+assert_eq(w.symbol, "W")
+assert_eq(w.name, "Tungsten")
 assert_eq(w.atomic_number, 74)
 assert_eq(w.group, 6)
 assert_eq(w.period, 6)
@@ -21,8 +21,8 @@ assert_eq(w.vaporization_heat, 807 kJ/mol, 20 kJ/mol)
 
 
 let chl = element("chlorine")
-assert(chl.symbol == "Cl")
-assert(chl.name == "Chlorine")
+assert_eq(chl.symbol, "Cl")
+assert_eq(chl.name, "Chlorine")
 assert_eq(chl.atomic_number, 17)
 assert_eq(chl.group, 17)
 assert_eq(chl.period, 3)
@@ -35,8 +35,8 @@ assert_eq(chl.vaporization_heat, 20.4 kJ/mol, 0.1 kJ/mol)
 
 
 let rb = element("rubidium")
-assert(rb.symbol == "Rb")
-assert(rb.name == "Rubidium")
+assert_eq(rb.symbol, "Rb")
+assert_eq(rb.name, "Rubidium")
 assert_eq(rb.atomic_number, 37)
 assert_eq(rb.group, 1)
 assert_eq(rb.period, 5)
