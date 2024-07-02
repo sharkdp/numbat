@@ -83,6 +83,11 @@ fn examples_can_be_parsed_and_interpreted() {
 }
 
 #[test]
+fn numbat_tests_are_executed_successfully() {
+    run_for_each_file("../examples/tests/*.nbt", assert_runs);
+}
+
+#[test]
 fn parse_error_examples_fail_as_expected() {
     run_for_each_file("../examples/parse_error/*.nbt", assert_parse_error);
 }
