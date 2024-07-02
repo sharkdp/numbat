@@ -139,6 +139,19 @@ fn median<D: Dim>(xs: List<D>) -> D =  # TODO: this is extremely inefficient
     else mean([element_at(len(xs) / 2 - 1, sort(xs)), element_at(len(xs) / 2, sort(xs))])
 
 
+### Number theory
+
+@name("Greatest common divisor")
+@url("https://en.wikipedia.org/wiki/Greatest_common_divisor")
+fn gcd(a: Scalar, b: Scalar) -> Scalar =
+  if b == 0
+    then abs(a)
+    else gcd(b, mod(a, b))
+
+@name("Least common multiple")
+@url("https://en.wikipedia.org/wiki/Least_common_multiple")
+fn lcm(a: Scalar, b: Scalar) -> Scalar = abs(a * b) / gcd(a, b)
+
 ### Geometry
 
 fn hypot2<T: Dim>(x: T, y: T) -> T = sqrt(x^2 + y^2)
