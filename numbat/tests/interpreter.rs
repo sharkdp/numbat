@@ -561,14 +561,14 @@ fn test_logical() {
     expect_output("false || true && !false", "true");
 
     // Errors
-    insta::assert_display_snapshot!(fail("1 || 2"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("true || 2"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("1 || true"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("1 && 2"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("true && 2"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("1 && true"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("!1"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("!1 || true"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("1 || 2"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("true || 2"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("1 || true"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("1 && 2"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("true && 2"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("1 && true"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("!1"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("!1 || true"), @"Expected boolean value");
 }
 
 #[test]
