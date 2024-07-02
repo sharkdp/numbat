@@ -141,3 +141,30 @@ assert_eq(median([1, 2]), 1.5)
 assert_eq(median([1, 2, 3]), 2)
 assert_eq(median([1, 2, 3, 4]), 2.5)
 assert_eq(median([1, 2, 3, 4, 5]), 3)
+
+# gcd
+
+assert_eq(gcd(0, 0), 0)
+assert_eq(gcd(0, 1), 1)
+assert_eq(gcd(1, 0), 1)
+assert_eq(gcd(1, 1), 1)
+assert_eq(gcd(2, 3), 1)
+assert_eq(gcd(2, 4), 2)
+assert_eq(gcd(3, 6), 3)
+assert_eq(gcd(4, 6), 2)
+assert_eq(gcd(4, 8), 4)
+assert_eq(gcd(6, 35), 1)
+assert_eq(gcd(1071, 462), 21)
+assert_eq(gcd(-8, 4), 4)
+assert_eq(gcd(-8, -4), 4)
+assert_eq(gcd(8, -4), 4)
+
+# lcm
+
+assert_eq(lcm(1, 1), 1)
+assert_eq(lcm(2, 3), 6)
+assert_eq(lcm(2, 4), 4)
+assert_eq(lcm(3, 6), 6)
+assert_eq(lcm(21, 6), 42)
+assert_eq(lcm(-8, 4), 8)
+assert_eq(lcm(8, -4), 8)
