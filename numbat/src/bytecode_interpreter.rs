@@ -487,9 +487,18 @@ impl BytecodeInterpreter {
 
                 let name = &ffi::procedures().get(kind).unwrap().name;
 
-                let idx = self.vm.get_ffi_callable_idx(name).unwrap();
-                self.vm
-                    .add_op2(Op::FFICallProcedure, idx, args.len() as u16); // TODO: check overflow
+                let callable_idx = self.vm.get_ffi_callable_idx(name).unwrap();
+
+                let arg_spans = args.iter().map(|a| a.full_span()).collect();
+                let spans_idx = self.vm.add_procedure_arg_span(arg_spans);
+
+                self.vm.add_op3(
+                    Op::FFICallProcedure,
+                    callable_idx,
+                    args.len() as u16,
+                    spans_idx,
+                );
+                // TODO: check overflow
             }
             Statement::DefineStruct(struct_info) => {
                 self.vm.add_struct_info(struct_info);
