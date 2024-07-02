@@ -1,3 +1,5 @@
 let length = 2 m
 assert_eq(length, 1 m + 1 m)
 assert_eq(1.0 m, 1.001 m, 0.01 m)
+
+assert_eq(2 min + 30 s, 2.5 min, 0.01 s)

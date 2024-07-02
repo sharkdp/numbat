@@ -1,0 +1,17 @@
+assert_eq(cot(0.3), 3.2327281, 1e-5)
+assert_eq(acot(0.3), 1.2793395, 1e-5)
+
+assert_eq(coth(0.3), 3.4327384, 1e-5)
+assert_eq(acoth(1.3), 1.018441, 1e-5)
+
+assert_eq(secant(0.3), 1.0467516, 1e-5)
+assert_eq(arcsecant(1.3), 0.693160, 1e-5)
+
+assert_eq(csc(0.3), 3.3838634, 1e-5)
+assert_eq(acsc(1.3), 0.877636, 1e-5)
+
+assert_eq(sech(1.3), 0.507379, 1e-5)
+assert_eq(asech(0.3), 1.873820, 1e-5)
+
+assert_eq(csch(0.3), 3.283853, 1e-5)
+assert_eq(acsch(0.3), 1.918896, 1e-5)
