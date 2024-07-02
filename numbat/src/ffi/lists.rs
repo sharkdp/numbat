@@ -23,7 +23,7 @@ pub fn head(mut args: Args) -> Result<Value> {
 pub fn tail(mut args: Args) -> Result<Value> {
     let mut list = list_arg!(args);
 
-    if list.remove(0).is_some() {
+    if list.pop_front().is_some() {
         return_list!(list)
     } else {
         Err(RuntimeError::EmptyList)
@@ -33,7 +33,7 @@ pub fn tail(mut args: Args) -> Result<Value> {
 pub fn cons(mut args: Args) -> Result<Value> {
     let element = arg!(args);
     let mut list = list_arg!(args);
-    list.insert(0, element);
+    list.push_front(element);
 
     return_list!(list)
 }
