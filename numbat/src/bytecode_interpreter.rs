@@ -349,6 +349,7 @@ impl BytecodeInterpreter {
                 parameters,
                 Some(expr),
                 _return_type,
+                _readable_return_type,
             ) => {
                 self.vm.begin_function(name);
 
@@ -379,6 +380,7 @@ impl BytecodeInterpreter {
                 parameters,
                 None,
                 _return_type,
+                _readable_return_type,
             ) => {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.

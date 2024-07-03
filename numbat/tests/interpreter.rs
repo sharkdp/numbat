@@ -758,4 +758,9 @@ fn test_statement_pretty_printing() {
         "unit my_speed_unit = 10 m/s",
         "unit my_speed_unit: Velocity = 10 metre / second",
     );
+
+    expect_pretty_print(
+        "fn f(v)=(v+1 knot)/1s",
+        "fn f(v: Velocity) -> Acceleration = (v + 1 knot) / 1 second",
+    )
 }
