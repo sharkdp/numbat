@@ -47,6 +47,21 @@ fn expect_output(code: &str, expected_output: impl AsRef<str>) {
 }
 
 #[track_caller]
+fn expect_pretty_print(code: &str, expected_pretty_print_output: impl AsRef<str>) {
+    let mut ctx = get_test_context();
+
+    let (statements, _result) = ctx.interpret(code, CodeSource::Internal).unwrap();
+
+    assert_eq!(statements.len(), 1);
+
+    let statement = &statements[0];
+    assert_eq!(
+        statement.pretty_print().to_string(),
+        expected_pretty_print_output.as_ref()
+    );
+}
+
+#[track_caller]
 fn expect_failure_with_context(ctx: &mut Context, code: &str, msg_part: &str) {
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         let error_message = e.to_string();
@@ -717,5 +732,30 @@ fn test_user_errors() {
     expect_failure(
         "if true then error(\"test\") else \"foo\"",
         "User error: test",
+    );
+}
+
+#[test]
+fn test_statement_pretty_printing() {
+    expect_pretty_print("let v = 10 m/s", "let v: Velocity = 10 metre / second");
+    expect_pretty_print(
+        "let v: Length * Frequency = 10 m/s",
+        "let v: Length × Frequency = 10 metre / second",
+    );
+
+    expect_pretty_print("let x = 0 + 1 m", "let x: Length = 0 + 1 metre");
+
+    expect_pretty_print(
+        "unit my_length_base_unit: Length",
+        "unit my_length_base_unit: Length",
+    );
+    expect_pretty_print(
+        "unit my_custom_base_unit",
+        "unit my_custom_base_unit: MyCustomBaseUnit",
+    );
+
+    expect_pretty_print(
+        "unit my_speed_unit = 10 m/s",
+        "unit my_speed_unit: Velocity = 10 metre / second",
     );
 }

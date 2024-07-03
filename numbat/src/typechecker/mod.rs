@@ -1152,6 +1152,7 @@ impl TypeChecker {
                     expr_checked,
                     type_annotation.clone(),
                     TypeScheme::concrete(type_deduced),
+                    crate::markup::empty(),
                 )
             }
             ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
@@ -1271,6 +1272,7 @@ impl TypeChecker {
                     decorators.clone(),
                     type_annotation.clone(),
                     TypeScheme::Concrete(type_deduced),
+                    crate::markup::empty(),
                 )
             }
             ast::Statement::DefineFunction {
@@ -1709,7 +1711,7 @@ impl TypeChecker {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
 
-        if let typed_ast::Statement::DefineDerivedUnit(_, expr, _, _annotation, type_) =
+        if let typed_ast::Statement::DefineDerivedUnit(_, expr, _, _annotation, type_, _) =
             &elaborated_statement
         {
             if !type_.unsafe_as_concrete().is_closed() {
@@ -1761,6 +1763,9 @@ impl TypeChecker {
         }
 
         elaborated_statement.generalize_types(&dtype_variables);
+
+        elaborated_statement.update_readable_types(&self.registry);
+
         self.env.generalize_types(&dtype_variables);
 
         // Check if there is a typed hole in the statement

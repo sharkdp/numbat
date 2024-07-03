@@ -575,6 +575,7 @@ pub enum Statement {
         Expression,
         Option<TypeAnnotation>,
         TypeScheme,
+        Markup,
     ),
     DefineFunction(
         String,
@@ -596,6 +597,7 @@ pub enum Statement {
         Vec<Decorator>,
         Option<TypeAnnotation>,
         TypeScheme,
+        Markup,
     ),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
     DefineStruct(StructInfo),
@@ -612,6 +614,36 @@ impl Statement {
 
     pub(crate) fn generalize_types(&mut self, dtype_variables: &[TypeVariable]) {
         self.for_all_type_schemes(&mut |type_: &mut TypeScheme| type_.generalize(dtype_variables));
+    }
+
+    fn create_readable_type(
+        registry: &DimensionRegistry,
+        type_: &TypeScheme,
+        annotation: &Option<TypeAnnotation>,
+    ) -> Markup {
+        if let Some(annotation) = annotation {
+            annotation.pretty_print()
+        } else {
+            type_.to_readable_type(registry)
+        }
+    }
+
+    pub(crate) fn update_readable_types(&mut self, registry: &DimensionRegistry) {
+        match self {
+            Statement::Expression(_) => {}
+            Statement::DefineVariable(_, _, _, type_annotation, type_, readable_type) => {
+                *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+            }
+            Statement::DefineFunction(_, _, _, _, _, _) => { //TODO
+            }
+            Statement::DefineDimension(_, _) => {}
+            Statement::DefineBaseUnit(_, _, _, _) => {}
+            Statement::DefineDerivedUnit(_, _, _, type_annotation, type_, readable_type) => {
+                *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+            }
+            Statement::ProcedureCall(_, _) => {}
+            Statement::DefineStruct(_) => {}
+        }
     }
 
     pub(crate) fn exponents_for(&mut self, tv: &TypeVariable) -> Vec<Exponent> {
@@ -773,16 +805,20 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DefineVariable(identifier, _decs, expr, annotation, type_) => {
+            Statement::DefineVariable(
+                identifier,
+                _decs,
+                expr,
+                _annotation,
+                _type,
+                readable_type,
+            ) => {
                 m::keyword("let")
                     + m::space()
                     + m::identifier(identifier)
                     + m::operator(":")
                     + m::space()
-                    + annotation
-                        .as_ref()
-                        .map(|a| a.pretty_print())
-                        .unwrap_or(type_.pretty_print())
+                    + readable_type.clone()
                     + m::space()
                     + m::operator("=")
                     + m::space()
@@ -879,17 +915,21 @@ impl PrettyPrint for Statement {
                         .map(|a| a.pretty_print())
                         .unwrap_or(type_.pretty_print())
             }
-            Statement::DefineDerivedUnit(identifier, expr, decorators, annotation, type_) => {
+            Statement::DefineDerivedUnit(
+                identifier,
+                expr,
+                decorators,
+                _annotation,
+                _type,
+                readable_type,
+            ) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
                     + m::space()
-                    + annotation
-                        .as_ref()
-                        .map(|a| a.pretty_print())
-                        .unwrap_or(type_.pretty_print())
+                    + readable_type.clone()
                     + m::space()
                     + m::operator("=")
                     + m::space()

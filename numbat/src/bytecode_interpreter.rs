@@ -310,7 +310,14 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DefineVariable(identifier, decorators, expr, _annotation, _type) => {
+            Statement::DefineVariable(
+                identifier,
+                decorators,
+                expr,
+                _annotation,
+                _type,
+                _readable_type,
+            ) => {
                 let current_depth = self.current_depth();
 
                 // For variables, we ignore the prefix info and only use the names
@@ -422,7 +429,14 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::DefineDerivedUnit(unit_name, expr, decorators, annotation, type_) => {
+            Statement::DefineDerivedUnit(
+                unit_name,
+                expr,
+                decorators,
+                annotation,
+                type_,
+                _readable_type,
+            ) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.clone(), ap))
                     .collect();

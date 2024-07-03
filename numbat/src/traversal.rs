@@ -79,7 +79,7 @@ impl ForAllTypeSchemes for Statement {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
         match self {
             Statement::Expression(expr) => expr.for_all_type_schemes(f),
-            Statement::DefineVariable(_, _, expr, _annotation, type_) => {
+            Statement::DefineVariable(_, _, expr, _annotation, type_, _) => {
                 expr.for_all_type_schemes(f);
                 f(type_);
             }
@@ -93,7 +93,7 @@ impl ForAllTypeSchemes for Statement {
             Statement::DefineBaseUnit(_, _, _annotation, type_) => {
                 f(type_);
             }
-            Statement::DefineDerivedUnit(_, expr, _, _annotation, type_) => {
+            Statement::DefineDerivedUnit(_, expr, _, _annotation, type_, _) => {
                 expr.for_all_type_schemes(f);
                 f(type_);
             }
@@ -115,7 +115,7 @@ impl ForAllExpressions for Statement {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
         match self {
             Statement::Expression(expr) => expr.for_all_expressions(f),
-            Statement::DefineVariable(_, _, expr, _, _) => expr.for_all_expressions(f),
+            Statement::DefineVariable(_, _, expr, _, _, _) => expr.for_all_expressions(f),
             Statement::DefineFunction(_, _, _, _, body, _) => {
                 if let Some(body) = body {
                     body.for_all_expressions(f);
@@ -123,7 +123,7 @@ impl ForAllExpressions for Statement {
             }
             Statement::DefineDimension(_, _) => {}
             Statement::DefineBaseUnit(_, _, _, _) => {}
-            Statement::DefineDerivedUnit(_, expr, _, _, _) => expr.for_all_expressions(f),
+            Statement::DefineDerivedUnit(_, expr, _, _, _, _) => expr.for_all_expressions(f),
             Statement::ProcedureCall(_, args) => {
                 for arg in args {
                     arg.for_all_expressions(f);
