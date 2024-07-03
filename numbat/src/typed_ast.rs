@@ -585,9 +585,11 @@ pub enum Statement {
             // parameters:
             Span,   // span of the parameter
             String, // parameter name
+            Markup, // readable parameter type
         )>,
         Option<Expression>, // function body
         TypeScheme,         // function type
+        Markup,             // readable return type
     ),
     DefineDimension(String, Vec<TypeExpression>),
     DefineBaseUnit(String, Vec<Decorator>, Option<TypeAnnotation>, TypeScheme),
@@ -634,7 +636,28 @@ impl Statement {
             Statement::DefineVariable(_, _, _, type_annotation, type_, readable_type) => {
                 *readable_type = Self::create_readable_type(registry, type_, type_annotation);
             }
-            Statement::DefineFunction(_, _, _, _, _, _) => { //TODO
+            Statement::DefineFunction(_, _, _, parameters, _, fn_type, readable_return_type) => {
+                let (fn_type, type_parameters) = fn_type.instantiate_for_printing();
+
+                let Type::Fn(parameter_types, return_type) = fn_type.inner else {
+                    unreachable!("Expected a function type")
+                };
+
+                *readable_return_type = Self::create_readable_type(
+                    registry,
+                    &TypeScheme::concrete(*return_type),
+                    &None, // TODO
+                );
+
+                for ((_, _, readable_parameter_type), parameter_type) in
+                    parameters.iter_mut().zip(parameter_types.iter())
+                {
+                    *readable_parameter_type = Self::create_readable_type(
+                        registry,
+                        &TypeScheme::concrete(parameter_type.clone()),
+                        &None, // TODO
+                    );
+                }
             }
             Statement::DefineDimension(_, _) => {}
             Statement::DefineBaseUnit(_, _, _, _) => {}
@@ -831,12 +854,9 @@ impl PrettyPrint for Statement {
                 parameters,
                 body,
                 fn_type,
+                readable_return_type,
             ) => {
                 let (fn_type, type_parameters) = fn_type.instantiate_for_printing();
-
-                let Type::Fn(parameter_types, return_type) = fn_type.inner else {
-                    unreachable!("Expected a function type")
-                };
 
                 let markup_type_parameters = if type_parameters.is_empty() {
                     m::empty()
@@ -858,20 +878,15 @@ impl PrettyPrint for Statement {
                 };
 
                 let markup_parameters = Itertools::intersperse(
-                    parameters.iter().zip(parameter_types.iter()).map(
-                        |((_span, name), parameter_type)| {
-                            m::identifier(name)
-                                + m::operator(":")
-                                + m::space()
-                                + parameter_type.pretty_print()
-                        },
-                    ),
+                    parameters.iter().map(|(_span, name, parameter_type)| {
+                        m::identifier(name) + m::operator(":") + m::space() + parameter_type.clone()
+                    }),
                     m::operator(", "),
                 )
                 .sum();
 
                 let markup_return_type =
-                    m::space() + m::operator("->") + m::space() + return_type.pretty_print();
+                    m::space() + m::operator("->") + m::space() + readable_return_type.clone();
 
                 m::keyword("fn")
                     + m::space()

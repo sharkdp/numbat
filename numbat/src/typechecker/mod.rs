@@ -1497,10 +1497,11 @@ impl TypeChecker {
                         .collect(),
                     typed_parameters
                         .iter()
-                        .map(|(span, name, _)| (*span, name.clone()))
+                        .map(|(span, name, _)| (*span, name.clone(), crate::markup::empty()))
                         .collect(),
                     body_checked,
                     fn_type,
+                    crate::markup::empty(),
                 )
             }
             ast::Statement::DefineDimension(name_span, name, dexprs) => {
