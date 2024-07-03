@@ -47,7 +47,6 @@ generate_example("voyager", "Voyager")
 generate_example("xkcd_687", "XKCD 687")
 generate_example("xkcd_2585", "XKCD 2585")
 generate_example("xkcd_2812", "XKCD 2812")
-generate_example("workhours", "Workhours")
 
 generate_example("numbat_syntax", "Syntax overview", strip_asserts=False, insert_run_link=False)
 
