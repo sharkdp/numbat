@@ -637,7 +637,7 @@ impl Statement {
                 *readable_type = Self::create_readable_type(registry, type_, type_annotation);
             }
             Statement::DefineFunction(_, _, _, parameters, _, fn_type, readable_return_type) => {
-                let (fn_type, type_parameters) = fn_type.instantiate_for_printing();
+                let (fn_type, _) = fn_type.instantiate_for_printing();
 
                 let Type::Fn(parameter_types, return_type) = fn_type.inner else {
                     unreachable!("Expected a function type")

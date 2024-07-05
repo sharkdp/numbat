@@ -125,18 +125,18 @@ fn without_prelude() {
         .stderr(predicates::str::contains("unknown identifier"));
 }
 
-// #[test]
-// fn pretty_printing() {
-//     numbat()
-//         .arg("--pretty-print=always")
-//         .arg("--expression")
-//         .arg("let v=30km/h")
-//         .assert()
-//         .success()
-//         .stdout(predicates::str::contains(
-//             "let v: Velocity = 30 kilometre / hour",
-//         ));
-// }
+#[test]
+fn pretty_printing() {
+    numbat()
+        .arg("--pretty-print=always")
+        .arg("--expression")
+        .arg("let v=30km/h")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "let v: Velocity = 30 kilometre / hour",
+        ));
+}
 
 #[test]
 fn help_text() {
