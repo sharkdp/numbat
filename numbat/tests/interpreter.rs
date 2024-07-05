@@ -736,6 +736,27 @@ fn test_user_errors() {
 }
 
 #[test]
+fn test_recovery_after_runtime_error() {
+    {
+        let mut ctx = get_test_context();
+
+        expect_failure_with_context(&mut ctx, "let x = 1/0", "Division by zero");
+        expect_failure_with_context(&mut ctx, "x", "Unknown identifier 'x'");
+    }
+    {
+        let mut ctx = get_test_context();
+
+        expect_failure_with_context(&mut ctx, "let x = 1/0", "Division by zero");
+        assert!(ctx
+            .interpret("let x = 1", CodeSource::Internal)
+            .unwrap()
+            .1
+            .is_continue());
+        expect_output_with_context(&mut ctx, "x", "1");
+    }
+}
+
+#[test]
 fn test_statement_pretty_printing() {
     expect_pretty_print("let v = 10 m/s", "let v: Velocity = 10 metre / second");
     expect_pretty_print(

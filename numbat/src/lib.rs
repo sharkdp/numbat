@@ -724,6 +724,8 @@ impl Context {
 
         let typed_statements = result?;
 
+        let interpreter_old = self.interpreter.clone();
+
         let result = self.interpreter.interpret_statements(
             settings,
             &typed_statements,
@@ -743,6 +745,7 @@ impl Context {
             //
             self.prefix_transformer = prefix_transformer_old;
             self.typechecker = typechecker_old;
+            self.interpreter = interpreter_old;
         }
 
         let result = result.map_err(NumbatError::RuntimeError)?;
