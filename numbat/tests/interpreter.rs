@@ -767,6 +767,7 @@ fn test_statement_pretty_printing() {
 
     expect_pretty_print("let x = 0 + 1 m", "let x: Length = 0 + 1 metre");
 
+    expect_pretty_print("let x: Length = 0", "let x: Length = 0");
     expect_pretty_print("let x = 0", "let x: forall A: Dim. A = 0"); // TODO: This is not ideal. 'forall' is not valid Numbat syntax.
 
     // Derived unit definitions
@@ -795,4 +796,17 @@ fn test_statement_pretty_printing() {
     expect_pretty_print("fn f(x, y) = x", "fn f<A, B>(x: B, y: A) -> B = x"); // TODO: This is correct, but it would be nice to associate 'x' to 'A', not 'B'.
 
     expect_pretty_print("fn f(x) = 2 x", "fn f<A: Dim>(x: A) -> A = 2 x");
+
+    // Partially annotated functions
+    expect_pretty_print(
+        "fn f() -> Length * Frequency = c",
+        "fn f() -> Length × Frequency = c",
+    );
+    expect_pretty_print(
+        "fn f(v: Length * Frequency) = 1",
+        "fn f(v: Length × Frequency) -> Scalar = 1",
+    );
+
+    expect_pretty_print("fn f(x: Length) = 2 x", "fn f(x: Length) -> Length = 2 x");
+    expect_pretty_print("fn f(x) -> Length = 2 x", "fn f(x: Length) -> Length = 2 x");
 }

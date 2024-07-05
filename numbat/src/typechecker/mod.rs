@@ -1355,7 +1355,12 @@ impl TypeChecker {
                         *parameter_span,
                         false,
                     );
-                    typed_parameters.push((*parameter_span, parameter.clone(), parameter_type));
+                    typed_parameters.push((
+                        *parameter_span,
+                        parameter.clone(),
+                        parameter_type,
+                        type_annotation,
+                    ));
                 }
 
                 let annotated_return_type = return_type_annotation
@@ -1372,11 +1377,11 @@ impl TypeChecker {
 
                 let parameters: Vec<_> = typed_parameters
                     .iter()
-                    .map(|(span, name, _)| (*span, name.clone()))
+                    .map(|(span, name, _, _)| (*span, name.clone()))
                     .collect();
                 let parameter_types = typed_parameters
                     .iter()
-                    .map(|(_, _, type_)| type_.clone())
+                    .map(|(_, _, type_, _)| type_.clone())
                     .collect();
 
                 let fn_type =
@@ -1497,10 +1502,18 @@ impl TypeChecker {
                         .collect(),
                     typed_parameters
                         .iter()
-                        .map(|(span, name, _)| (*span, name.clone(), crate::markup::empty()))
+                        .map(|(span, name, _, ref type_annotation)| {
+                            (
+                                *span,
+                                name.clone(),
+                                (*type_annotation).clone(),
+                                crate::markup::empty(),
+                            )
+                        })
                         .collect(),
                     body_checked,
                     fn_type,
+                    return_type_annotation.clone(),
                     crate::markup::empty(),
                 )
             }

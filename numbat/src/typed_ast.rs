@@ -583,13 +583,15 @@ pub enum Statement {
         Vec<(String, Option<TypeParameterBound>)>, // type parameters
         Vec<(
             // parameters:
-            Span,   // span of the parameter
-            String, // parameter name
-            Markup, // readable parameter type
+            Span,                   // span of the parameter
+            String,                 // parameter name
+            Option<TypeAnnotation>, // parameter type annotation
+            Markup,                 // readable parameter type
         )>,
-        Option<Expression>, // function body
-        TypeScheme,         // function type
-        Markup,             // readable return type
+        Option<Expression>,     // function body
+        TypeScheme,             // function type
+        Option<TypeAnnotation>, // return type annotation
+        Markup,                 // readable return type
     ),
     DefineDimension(String, Vec<TypeExpression>),
     DefineBaseUnit(String, Vec<Decorator>, Option<TypeAnnotation>, TypeScheme),
@@ -636,7 +638,16 @@ impl Statement {
             Statement::DefineVariable(_, _, _, type_annotation, type_, readable_type) => {
                 *readable_type = Self::create_readable_type(registry, type_, type_annotation);
             }
-            Statement::DefineFunction(_, _, _, parameters, _, fn_type, readable_return_type) => {
+            Statement::DefineFunction(
+                _,
+                _,
+                _,
+                parameters,
+                _,
+                fn_type,
+                return_type_annotation,
+                readable_return_type,
+            ) => {
                 let (fn_type, _) = fn_type.instantiate_for_printing();
 
                 let Type::Fn(parameter_types, return_type) = fn_type.inner else {
@@ -646,16 +657,16 @@ impl Statement {
                 *readable_return_type = Self::create_readable_type(
                     registry,
                     &TypeScheme::concrete(*return_type),
-                    &None, // TODO
+                    return_type_annotation,
                 );
 
-                for ((_, _, readable_parameter_type), parameter_type) in
+                for ((_, _, type_annotation, readable_parameter_type), parameter_type) in
                     parameters.iter_mut().zip(parameter_types.iter())
                 {
                     *readable_parameter_type = Self::create_readable_type(
                         registry,
                         &TypeScheme::concrete(parameter_type.clone()),
-                        &None, // TODO
+                        type_annotation,
                     );
                 }
             }
@@ -854,6 +865,7 @@ impl PrettyPrint for Statement {
                 parameters,
                 body,
                 fn_type,
+                _return_type_annotation,
                 readable_return_type,
             ) => {
                 let (fn_type, type_parameters) = fn_type.instantiate_for_printing();
@@ -878,7 +890,7 @@ impl PrettyPrint for Statement {
                 };
 
                 let markup_parameters = Itertools::intersperse(
-                    parameters.iter().map(|(_span, name, parameter_type)| {
+                    parameters.iter().map(|(_span, name, _, parameter_type)| {
                         m::identifier(name) + m::operator(":") + m::space() + parameter_type.clone()
                     }),
                     m::operator(", "),

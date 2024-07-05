@@ -218,7 +218,7 @@ impl ApplySubstitution for Statement {
                 e.apply(s)?;
                 type_.apply(s)
             }
-            Statement::DefineFunction(_, _, _, _, body, fn_type, _) => {
+            Statement::DefineFunction(_, _, _, _, body, fn_type, _, _) => {
                 if let Some(body) = body {
                     body.apply(s)?;
                 }

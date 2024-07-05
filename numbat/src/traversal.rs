@@ -83,7 +83,7 @@ impl ForAllTypeSchemes for Statement {
                 expr.for_all_type_schemes(f);
                 f(type_);
             }
-            Statement::DefineFunction(_, _, _, _, body, fn_type, _) => {
+            Statement::DefineFunction(_, _, _, _, body, fn_type, _, _) => {
                 if let Some(body) = body {
                     body.for_all_type_schemes(f);
                 }
@@ -116,7 +116,7 @@ impl ForAllExpressions for Statement {
         match self {
             Statement::Expression(expr) => expr.for_all_expressions(f),
             Statement::DefineVariable(_, _, expr, _, _, _) => expr.for_all_expressions(f),
-            Statement::DefineFunction(_, _, _, _, body, _, _) => {
+            Statement::DefineFunction(_, _, _, _, body, _, _, _) => {
                 if let Some(body) = body {
                     body.for_all_expressions(f);
                 }
