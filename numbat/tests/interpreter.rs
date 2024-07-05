@@ -758,6 +758,7 @@ fn test_recovery_after_runtime_error() {
 
 #[test]
 fn test_statement_pretty_printing() {
+    // Let definitions
     expect_pretty_print("let v = 10 m/s", "let v: Velocity = 10 metre / second");
     expect_pretty_print(
         "let v: Length * Frequency = 10 m/s",
@@ -766,6 +767,9 @@ fn test_statement_pretty_printing() {
 
     expect_pretty_print("let x = 0 + 1 m", "let x: Length = 0 + 1 metre");
 
+    expect_pretty_print("let x = 0", "let x: forall A: Dim. A = 0"); // TODO: This is not ideal. 'forall' is not valid Numbat syntax.
+
+    // Derived unit definitions
     expect_pretty_print(
         "unit my_length_base_unit: Length",
         "unit my_length_base_unit: Length",
@@ -774,14 +778,21 @@ fn test_statement_pretty_printing() {
         "unit my_custom_base_unit",
         "unit my_custom_base_unit: MyCustomBaseUnit",
     );
-
     expect_pretty_print(
         "unit my_speed_unit = 10 m/s",
         "unit my_speed_unit: Velocity = 10 metre / second",
     );
 
+    // Function definitions
     expect_pretty_print(
         "fn f(v)=(v+1 knot)/1s",
         "fn f(v: Velocity) -> Acceleration = (v + 1 knot) / 1 second",
-    )
+    );
+
+    expect_pretty_print("fn f(x) = x", "fn f<A>(x: A) -> A = x");
+
+    expect_pretty_print("fn f(x, y) = y", "fn f<A, B>(x: A, y: B) -> B = y");
+    expect_pretty_print("fn f(x, y) = x", "fn f<A, B>(x: B, y: A) -> B = x"); // TODO: This is correct, but it would be nice to associate 'x' to 'A', not 'B'.
+
+    expect_pretty_print("fn f(x) = 2 x", "fn f<A: Dim>(x: A) -> A = 2 x");
 }
