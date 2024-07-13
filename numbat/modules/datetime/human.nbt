@@ -19,8 +19,6 @@ fn _human_hours(time: Time)   -> String = "{(time -> hours)   /  hour   // floor
 fn _human_minutes(time: Time) -> String = "{(time -> minutes) /  minute // floor} minutes" -> _prettier
 fn _human_seconds(time: Time) -> String = str_replace("{(time -> seconds) /  second} seconds", ".0 ", " ") -> _prettier
 
-fn _human_manage_past(str: String, time: Time) = str_append(str, if time < 0 s then " ago" else "")
-
 fn _human_recurse(t: Time, result: String, time_unit: String) -> String =
   if time_unit == "year"
     then _human_recurse(t - (t -> year  // floor) -> ms // round, _human_join(result, t -> _human_years),   "month")
@@ -33,13 +31,20 @@ fn _human_recurse(t: Time, result: String, time_unit: String) -> String =
   else if time_unit == "minute"
     then _human_recurse(t - (t -> min   // floor) -> ms // round, _human_join(result, t -> _human_minutes), "second")
   else _human_join(result, (t -> ms // round) -> _human_seconds)
-# The seconds are roundother calculsed for durations larger than 1 month because 
-# we run into floating point precision problems at the nanosecond level at this point
+
+fn _human_manage_past(str: String, time: Time) = str_append(str, if time < 0 s then " ago" else "")
+
+fn _human_with_biggest_unit(time: Time, biggest_unit: String) -> String =
+  _human_manage_past(_human_recurse(abs(time), "", biggest_unit), time)
+
+fn _human_for_long_duration(human_days: String, human_years: String) -> String =
+  "{human_days} (approx. {human_years})"
 
 @name("Human-readable time duration")
 @url("https://numbat.dev/doc/date-and-time.html")
 @description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
 fn human(time: Time) -> String =
   if time == 0 s then "0 seconds"
-  else if abs(time) < 60 s then _human_manage_past(abs(time) -> _human_seconds, time)
-  else _human_manage_past(_human_recurse(abs(time), "", "year"), time)
+  else if abs(time) < 60 seconds then _human_manage_past(abs(time) -> _human_seconds, time)
+  else if abs(time) < 2 months then _human_with_biggest_unit(time,  "day")
+  else _human_for_long_duration(_human_with_biggest_unit(time, "day"), _human_with_biggest_unit(time, "year"))
