@@ -12,7 +12,7 @@ now() -> unixtime
 # Convert a date and time to a different timezone
 now() -> tz("Asia/Kathmandu")
 
-# Convert a duration to days, hours, minutes, seconds
+# Convert a duration to years, months, days, hours, minutes, seconds
 10 million seconds -> human
 
 # Convert a number to its binary representation
