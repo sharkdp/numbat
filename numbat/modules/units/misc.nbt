@@ -30,6 +30,16 @@ unit calorie: Energy = 4.184 joule
 @aliases(Btu)
 unit BTU: Energy = 1055.05585262 joule
 
+@name("Therm")
+@url("https://en.wikipedia.org/wiki/Therm")
+@aliases(therms, thm : short)
+unit therm: Energy = 1.05506e8 joule
+
+@name("Thermie")
+@url("https://en.wikipedia.org/wiki/Thermie")
+@aliases(thermies, th : short)
+unit thermie: Energy = 4.1868e6 joule
+
 @name("Pound-force")
 @url("https://en.wikipedia.org/wiki/Pound_(force)")
 @aliases(lbf: short)
