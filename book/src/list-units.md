@@ -41,6 +41,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `ElectricResistance` | [Ohm](https://en.wikipedia.org/wiki/Ohm) | `ohm`, `ohms`, `Ω`, `Ω` |
 | `Energy` | [British thermal unit](https://en.wikipedia.org/wiki/British_thermal_unit) | `BTU`, `Btu` |
 | `Energy` | [Calorie](https://en.wikipedia.org/wiki/Calorie) | `cal`, `calorie`, `calories` |
+| `Energy` | [Therm](https://en.wikipedia.org/wiki/Therm) | `thm`, `therm`, `therms` |
+| `Energy` | [Thermie](https://en.wikipedia.org/wiki/Thermie) | `th`, `thermie`, `thermies` |
 | `Energy` | [Electron volt](https://en.wikipedia.org/wiki/Electronvolt) | `electronvolt`, `electronvolts`, `eV` |
 | `Energy` | [Erg](https://en.wikipedia.org/wiki/Erg) | `erg`, `ergs` |
 | `Energy` | [Hartree](https://en.wikipedia.org/wiki/Hartree) | `hartree`, `hartrees` |
