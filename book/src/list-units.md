@@ -47,6 +47,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Energy` | [Joule](https://en.wikipedia.org/wiki/Joule) | `J`, `joule`, `joules` |
 | `Energy` | [Planck energy](https://en.wikipedia.org/wiki/Planck_energy) | `planck_energy` |
 | `Energy` | [Rydberg unit of energy](https://en.wikipedia.org/wiki/Rydberg_constant) | `Ry` |
+| `Energy` | [Therm](https://en.wikipedia.org/wiki/Therm) | `therm`, `therms`, `thm` |
+| `Energy` | [Thermie](https://en.wikipedia.org/wiki/Thermie) | `th`, `thermie`, `thermies` |
 | `Energy` | [Watt-hour](https://en.wikipedia.org/wiki/Watt_hour) | `watthour`, `Wh` |
 | `EquivalentDose` | [Sievert](https://en.wikipedia.org/wiki/Sievert) | `sievert`, `sieverts`, `Sv` |
 | `Force` | [Dyne](https://en.wikipedia.org/wiki/Dyne) | `dyn`, `dyne` |
