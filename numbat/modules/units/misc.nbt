@@ -33,12 +33,12 @@ unit BTU: Energy = 1055.05585262 joule
 @name("Therm")
 @url("https://en.wikipedia.org/wiki/Therm")
 @aliases(therms, thm : short)
-unit therm: Energy = 1.05506e8 joule
+unit therm: Energy = 100_000 BTU
 
 @name("Thermie")
 @url("https://en.wikipedia.org/wiki/Thermie")
 @aliases(thermies, th : short)
-unit thermie: Energy = 4.1868e6 joule
+unit thermie: Energy = 1000 kcal
 
 @name("Pound-force")
 @url("https://en.wikipedia.org/wiki/Pound_(force)")
