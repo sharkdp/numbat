@@ -168,7 +168,7 @@ unit watt: Power = joule / second
     saw in the very first example. It can take dimensionful quantities as an argument. And it can be defined in this way:
     </p>
 
-    <div id="editor6" class="code-editor">fn my_sqrt&lt;D&gt(x: D^2) -&gt; D = x^(1/2)
+    <div id="editor6" class="code-editor">fn my_sqrt&lt;D: Dim&gt(x: D^2) -&gt; D = x^(1/2)
 
 my_sqrt(ℏ G / c^5)  # Planck time</div>
     <pre id="output6" class="numbat-output"></pre>
@@ -177,7 +177,7 @@ my_sqrt(ℏ G / c^5)  # Planck time</div>
     Here, <code class="numbat-type-identifier">D</code> is a generic type parameter. The function takes an argument of type
     <code><span class="numbat-type-identifier">D</span>^<span class="numbat-value">2</span></code> and returns a <code class="numbat-type-identifier">D</code>. In the example here, it turns
     <code><span class="numbat-type-identifier">Time</span>^<span class="numbat-value">2</span></code> into <code class="numbat-type-identifier">Time</code>.
-    In general, type inference for functions is <a href="https://github.com/sharkdp/numbat/issues/29">an interesting topic</a> for another day.
+    In general, type inference for functions is <a href="https://github.com/sharkdp/numbat/pull/443">an interesting topic</a> for another day.
     </p>
 
     <p>
