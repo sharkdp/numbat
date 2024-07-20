@@ -40,7 +40,10 @@ impl TypeScheme {
         }
     }
 
-    pub fn instantiate_for_printing(&self) -> (QualifiedType, Vec<TypeVariable>) {
+    pub fn instantiate_for_printing(
+        &self,
+        type_parameters: Option<Vec<String>>,
+    ) -> (QualifiedType, Vec<TypeVariable>) {
         match self {
             TypeScheme::Concrete(t) => {
                 // We take this branch when we report errors during constraint solving, where the
@@ -49,14 +52,21 @@ impl TypeScheme {
             }
             TypeScheme::Quantified(n_gen, _) => {
                 // TODO: is this a good idea? we don't take care of name clashes here
-                let type_parameters = if *n_gen <= 26 {
-                    (0..*n_gen)
-                        .map(|n| TypeVariable::new(format!("{}", (b'A' + n as u8) as char)))
-                        .collect::<Vec<_>>()
-                } else {
-                    (0..*n_gen)
-                        .map(|n| TypeVariable::new(format!("T{n}")))
-                        .collect::<Vec<_>>()
+                let type_parameters = match type_parameters {
+                    Some(tp) if tp.len() == *n_gen => {
+                        tp.iter().map(|s| TypeVariable::new(s.clone())).collect()
+                    }
+                    _ => {
+                        if *n_gen <= 26 {
+                            (0..*n_gen)
+                                .map(|n| TypeVariable::new(format!("{}", (b'A' + n as u8) as char)))
+                                .collect::<Vec<_>>()
+                        } else {
+                            (0..*n_gen)
+                                .map(|n| TypeVariable::new(format!("T{n}")))
+                                .collect::<Vec<_>>()
+                        }
+                    }
                 };
 
                 (self.instantiate_with(&type_parameters), type_parameters)
@@ -100,7 +110,7 @@ impl TypeScheme {
         &self,
         registry: &crate::dimension::DimensionRegistry,
     ) -> crate::markup::Markup {
-        let (instantiated_type, type_parameters) = self.instantiate_for_printing();
+        let (instantiated_type, type_parameters) = self.instantiate_for_printing(None);
 
         let mut markup = m::empty();
         for type_parameter in &type_parameters {

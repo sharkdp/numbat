@@ -56,7 +56,6 @@ use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
 
-use pretty_print::PrettyPrint;
 use resolver::CodeSource;
 use resolver::Resolver;
 use resolver::ResolverError;
@@ -437,7 +436,7 @@ impl Context {
 
             help += m::text("Signature:  ")
                 + m::space()
-                + fn_signature.fn_type.pretty_print()
+                + fn_signature.pretty_print(self.typechecker.registry())
                 + m::nl();
 
             if let Some(description) = &metadata.description {

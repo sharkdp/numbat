@@ -1,6 +1,9 @@
-use crate::ast::TypeParameterBound;
+use crate::ast::{TypeAnnotation, TypeParameterBound};
+use crate::dimension::DimensionRegistry;
+use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
+use crate::typed_ast::pretty_print_function_signature;
 use crate::Type;
 
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
@@ -12,11 +15,53 @@ type Identifier = String;
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
+    pub name: String,
     pub definition_span: Span,
     #[allow(dead_code)]
     pub type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
-    pub parameters: Vec<(Span, String)>,
+    pub parameters: Vec<(Span, String, Option<TypeAnnotation>)>,
+    pub return_type_annotation: Option<TypeAnnotation>,
     pub fn_type: TypeScheme,
+}
+
+impl FunctionSignature {
+    pub fn pretty_print(&self, registry: &DimensionRegistry) -> crate::markup::Markup {
+        let (fn_type, type_parameters) = self.fn_type.instantiate_for_printing(Some(
+            self.type_parameters
+                .iter()
+                .map(|(_, name, _)| name.clone())
+                .collect(),
+        ));
+
+        let Type::Fn(ref parameter_types, ref return_type) = fn_type.inner else {
+            unreachable!()
+        };
+
+        let parameters =
+            self.parameters
+                .iter()
+                .zip(parameter_types)
+                .map(|((_, name, annotation), type_)| {
+                    let readable_type = match annotation {
+                        Some(annotation) => annotation.pretty_print(),
+                        None => type_.to_readable_type(registry),
+                    };
+                    (name.clone(), readable_type)
+                });
+
+        let readable_return_type = match &self.return_type_annotation {
+            Some(annotation) => annotation.pretty_print(),
+            None => return_type.to_readable_type(registry),
+        };
+
+        pretty_print_function_signature(
+            &self.name,
+            &fn_type,
+            &type_parameters,
+            parameters,
+            &readable_return_type,
+        )
+    }
 }
 
 #[derive(Clone, Debug)]
