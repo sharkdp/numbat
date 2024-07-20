@@ -176,9 +176,11 @@ impl TypeChecker {
         argument_types: Vec<Type>,
     ) -> Result<typed_ast::Expression> {
         let FunctionSignature {
+            name: _,
             definition_span,
             type_parameters: _,
             parameters,
+            return_type_annotation: _,
             fn_type,
         } = signature;
 
@@ -1377,7 +1379,7 @@ impl TypeChecker {
 
                 let parameters: Vec<_> = typed_parameters
                     .iter()
-                    .map(|(span, name, _, _)| (*span, name.clone()))
+                    .map(|(span, name, _, annotation)| (*span, name.clone(), (*annotation).clone()))
                     .collect();
                 let parameter_types = typed_parameters
                     .iter()
@@ -1390,9 +1392,11 @@ impl TypeChecker {
                 typechecker_fn.env.add_function(
                     function_name.clone(),
                     FunctionSignature {
+                        name: function_name.clone(),
                         definition_span: *function_name_span,
                         type_parameters: type_parameters.clone(),
                         parameters,
+                        return_type_annotation: return_type_annotation.clone(),
                         fn_type: fn_type.clone(),
                     },
                     FunctionMetadata {

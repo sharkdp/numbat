@@ -8,6 +8,7 @@ use crate::dimension::DimensionRegistry;
 use crate::pretty_print::escape_numbat_string;
 use crate::traversal::{ForAllExpressions, ForAllTypeSchemes};
 use crate::type_variable::TypeVariable;
+use crate::typechecker::qualified_type::QualifiedType;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::typechecker::TypeCheckError;
 use crate::{
@@ -641,14 +642,16 @@ impl Statement {
             Statement::DefineFunction(
                 _,
                 _,
-                _,
+                type_parameters,
                 parameters,
                 _,
                 fn_type,
                 return_type_annotation,
                 readable_return_type,
             ) => {
-                let (fn_type, _) = fn_type.instantiate_for_printing();
+                let (fn_type, _) = fn_type.instantiate_for_printing(Some(
+                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
+                ));
 
                 let Type::Fn(parameter_types, return_type) = fn_type.inner else {
                     unreachable!("Expected a function type")
@@ -836,6 +839,58 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
     markup_decorators
 }
 
+pub fn pretty_print_function_signature(
+    function_name: &str,
+    fn_type: &QualifiedType,
+    type_parameters: &[TypeVariable],
+    parameters: impl Iterator<
+        Item = (
+            String, // parameter name
+            Markup, // readable parameter type
+        ),
+    >,
+    readable_return_type: &Markup,
+) -> Markup {
+    let markup_type_parameters = if type_parameters.is_empty() {
+        m::empty()
+    } else {
+        m::operator("<")
+            + Itertools::intersperse(
+                type_parameters.iter().map(|tv| {
+                    m::type_identifier(tv.unsafe_name())
+                        + if fn_type.bounds.is_dtype_bound(tv) {
+                            m::operator(":") + m::space() + m::type_identifier("Dim")
+                        } else {
+                            m::empty()
+                        }
+                }),
+                m::operator(", "),
+            )
+            .sum()
+            + m::operator(">")
+    };
+
+    let markup_parameters = Itertools::intersperse(
+        parameters.map(|(name, parameter_type)| {
+            m::identifier(name) + m::operator(":") + m::space() + parameter_type.clone()
+        }),
+        m::operator(", "),
+    )
+    .sum();
+
+    let markup_return_type =
+        m::space() + m::operator("->") + m::space() + readable_return_type.clone();
+
+    m::keyword("fn")
+        + m::space()
+        + m::identifier(function_name)
+        + markup_type_parameters
+        + m::operator("(")
+        + markup_parameters
+        + m::operator(")")
+        + markup_return_type
+}
+
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
@@ -861,57 +916,29 @@ impl PrettyPrint for Statement {
             Statement::DefineFunction(
                 function_name,
                 _decorators,
-                _type_parameters, // TODO: we ignore user-supplied type parameters here
+                type_parameters,
                 parameters,
                 body,
                 fn_type,
                 _return_type_annotation,
                 readable_return_type,
             ) => {
-                let (fn_type, type_parameters) = fn_type.instantiate_for_printing();
+                let (fn_type, type_parameters) = fn_type.instantiate_for_printing(Some(
+                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
+                ));
 
-                let markup_type_parameters = if type_parameters.is_empty() {
-                    m::empty()
-                } else {
-                    m::operator("<")
-                        + Itertools::intersperse(
-                            type_parameters.iter().map(|tv| {
-                                m::type_identifier(tv.unsafe_name())
-                                    + if fn_type.bounds.is_dtype_bound(tv) {
-                                        m::operator(":") + m::space() + m::type_identifier("Dim")
-                                    } else {
-                                        m::empty()
-                                    }
-                            }),
-                            m::operator(", "),
-                        )
-                        .sum()
-                        + m::operator(">")
-                };
-
-                let markup_parameters = Itertools::intersperse(
-                    parameters.iter().map(|(_span, name, _, parameter_type)| {
-                        m::identifier(name) + m::operator(":") + m::space() + parameter_type.clone()
-                    }),
-                    m::operator(", "),
-                )
-                .sum();
-
-                let markup_return_type =
-                    m::space() + m::operator("->") + m::space() + readable_return_type.clone();
-
-                m::keyword("fn")
-                    + m::space()
-                    + m::identifier(function_name)
-                    + markup_type_parameters
-                    + m::operator("(")
-                    + markup_parameters
-                    + m::operator(")")
-                    + markup_return_type
-                    + body
-                        .as_ref()
-                        .map(|e| m::space() + m::operator("=") + m::space() + e.pretty_print())
-                        .unwrap_or_default()
+                pretty_print_function_signature(
+                    function_name,
+                    &fn_type,
+                    &type_parameters,
+                    parameters
+                        .iter()
+                        .map(|(_, name, _, type_)| (name.clone(), type_.clone())),
+                    readable_return_type,
+                ) + body
+                    .as_ref()
+                    .map(|e| m::space() + m::operator("=") + m::space() + e.pretty_print())
+                    .unwrap_or_default()
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DefineDimension(identifier, dexprs) if dexprs.is_empty() => {
