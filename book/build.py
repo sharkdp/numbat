@@ -78,7 +78,8 @@ def list_of_functions(file_name, document):
             links = []
             for section in sections:
                 if title := section.get("title"):
-                    links.append(f"[{title}](#{title.lower().replace(' ', '-')})")
+                    link = title.lower().replace(" ", "-").replace(",", "")
+                    links.append(f"[{title}](#{link})")
             print(f"{' · '.join(links)}\n", file=f, flush=True)
 
         for section in sections:
@@ -136,7 +137,7 @@ list_of_functions(
             },
             {
                 "title": "Number theory",
-                "modules": ["core::number_theory"],
+                "modules": ["math::number_theory"],
             },
             {
                 "title": "Numerical methods",

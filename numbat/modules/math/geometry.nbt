@@ -1,14 +1,24 @@
 use core::functions
 use math::constants
 
+@description("The length of the hypotenuse of a right-angled triangle $\\sqrt\{x^2+y^2\}$.")
 fn hypot2<T: Dim>(x: T, y: T) -> T = sqrt(x^2 + y^2)
+
+@description("The Euclidean norm of a 3D vector $\\sqrt\{x^2+y^2+z^2\}$.")
 fn hypot3<T: Dim>(x: T, y: T, z: T) -> T = sqrt(x^2 + y^2 + z^2)
 
 # The following functions use a generic dimension instead of
 # 'Length' in order to allow for computations in pixels, for
 # example
 
+@description("The area of a circle, $\\pi r^2$.")
 fn circle_area<L: Dim>(radius: L) -> L^2 = π × radius^2
+
+@description("The circumference of a circle, $2\\pi r$.")
 fn circle_circumference<L: Dim>(radius: L) -> L = 2 π × radius
+
+@description("The surface area of a sphere, $4\\pi r^2$.")
 fn sphere_area<L: Dim>(radius: L) -> L^2 = 4 π × radius^2
+
+@description("The volume of a sphere, $\\frac\{4\}\{3\}\\pi r^3$.")
 fn sphere_volume<L: Dim>(radius: L) -> L^3 = 4/3 × π × radius^3

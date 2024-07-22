@@ -17,7 +17,7 @@ fn rand_uniform<T: Dim>(a: T, b: T) -> T =
 
 @name("Discrete uniform distribution sampling")
 @url("https://en.wikipedia.org/wiki/Discrete_uniform_distribution")
-@description("Uniformly samples the integers in the interval $[a, b]$.")
+@description("Uniformly samples integers from the interval $[a, b]$.")
 fn rand_int(a: Scalar, b: Scalar) -> Scalar =
     if a <= b
     then floor( random() * (floor(b) - ceil(a) + 1) ) + ceil(a)
@@ -25,7 +25,7 @@ fn rand_int(a: Scalar, b: Scalar) -> Scalar =
 
 @name("Bernoulli distribution sampling")
 @url("https://en.wikipedia.org/wiki/Bernoulli_distribution")
-@description("Samples a Bernoulli random variable, that is, $1$ with probability $p$, $0$ with probability $1-p$. The parameter $p$ must be a probability ($0 \le p \le 1$).")
+@description("Samples a Bernoulli random variable. That is, $1$ with probability $p$ and $0$ with probability $1-p$. The parameter $p$ must be a probability ($0 \le p \le 1$).")
 fn rand_bernoulli(p: Scalar) -> Scalar =
     if p>=0 && p<=1
     then (if random() < p
