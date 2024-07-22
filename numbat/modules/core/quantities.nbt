@@ -1,4 +1,7 @@
 use core::scalar
 
+@description("Extract the unit of a quantity (the `km/h` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise.")
 fn unit_of<T: Dim>(x: T) -> T
+
+@description("Extract the plain value of a quantity (the `20` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise.")
 fn value_of<T: Dim>(x: T) -> Scalar = x / unit_of(x)

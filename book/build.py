@@ -56,51 +56,150 @@ generate_example(
 
 path_units = SCRIPT_DIR / "src" / "list-units.md"
 with open(path_units, "w") as f:
-    subprocess.run(["cargo", "run", "--example=inspect", "units"], stdout=f, text=True)
+    print("Generating list of units...", flush=True)
+    subprocess.run(
+        ["cargo", "run", "--release", "--quiet", "--example=inspect", "units"],
+        stdout=f,
+        text=True,
+    )
 
 
-def list_of_functions(file_name, title, modules):
-    path_functions = SCRIPT_DIR / "src" / f"list-functions-{file_name}.md"
-    with open(path_functions, "w") as f:
-        subprocess.run(
-            ["cargo", "run", "--example=inspect", "--", "functions", title] + modules,
-            stdout=f,
-            text=True,
-        )
+def list_of_functions(file_name, document):
+    path = SCRIPT_DIR / "src" / f"list-functions-{file_name}.md"
+    with open(path, "w") as f:
+        print(f"# {document['title']}\n", file=f, flush=True)
 
+        sections = document["sections"]
 
-list_of_functions("lists", "Lists", ["core::lists"])
+        if len(sections) >= 3:
+            links = []
+            for section in sections:
+                if title := section.get("title"):
+                    links.append(f"[{title}](#{title.lower().replace(' ', '-')})")
+            print(f"{' · '.join(links)}\n", file=f, flush=True)
 
-list_of_functions("strings", "Strings", ["core::strings"])
+        for section in sections:
+            modules = section["modules"]
 
-list_of_functions(
-    "datetime", "Date and time", ["datetime::functions", "datetime::human"]
-)
+            if title := section.get("title"):
+                print(f"## {title}\n", file=f, flush=True)
+
+            print(f"Defined in: `{'`, `'.join(modules)}`\n", file=f, flush=True)
+
+            for module in modules:
+                print(
+                    f"Generating list of functions for module '{module}'...", flush=True
+                )
+                subprocess.run(
+                    [
+                        "cargo",
+                        "run",
+                        "--release",
+                        "--quiet",
+                        "--example=inspect",
+                        "--",
+                        "functions",
+                        module,
+                    ],
+                    stdout=f,
+                    text=True,
+                )
+
 
 list_of_functions(
     "math",
-    "Mathematical functions",
-    [
-        "core::functions",
-        "math::functions",
-        "math::trigonometry_extra",
-        "core::random",
-        "math::statistics",
-        "extra::quadratic_equation",
-        "numerics::diff",
-        "numerics::solve",
-    ],
+    {
+        "title": "Mathematical functions",
+        "sections": [
+            {
+                "title": "Basics",
+                "modules": ["core::functions"],
+            },
+            {
+                "title": "Trigonometry",
+                "modules": ["math::functions", "math::trigonometry_extra"],
+            },
+            {
+                "title": "Random numbers",
+                "modules": ["core::random", "math::statistics"],
+            },
+            {
+                "title": "Numerical methods",
+                "modules": ["numerics::diff", "numerics::solve"],
+            },
+            {
+                "title": "Algebra",
+                "modules": ["extra::algebra"],
+            },
+        ],
+    },
 )
 
 list_of_functions(
+    "lists",
+    {
+        "title": "List-related functions",
+        "sections": [
+            {
+                "modules": ["core::lists"],
+            },
+        ],
+    },
+)
+
+list_of_functions(
+    "strings",
+    {
+        "title": "String-related functions",
+        "sections": [
+            {
+                "modules": ["core::strings"],
+            },
+        ],
+    },
+)
+
+list_of_functions(
+    "datetime",
+    {
+        "title": "Date and time",
+        "sections": [
+            {
+                "title": "Basics",
+                "modules": ["datetime::functions"],
+            },
+            {
+                "title": "Human-readable",
+                "modules": ["datetime::human"],
+            },
+        ],
+    },
+)
+
+
+list_of_functions(
     "other",
-    "Other",
-    [
-        "core::quantities",
-        "core::error",
-        "physics::temperature_conversion",
-        "chemistry::elements",
-    ],
+    {
+        "title": "Other functions",
+        "sections": [
+            {
+                "title": "Error handling",
+                "modules": ["core::error"],
+            },
+            {
+                "title": "Quantities",
+                "modules": ["core::quantities"],
+            },
+            {
+                "title": "Chemical elements",
+                "modules": ["chemistry::elements"],
+            },
+            {
+                "title": "Temperature conversion",
+                "modules": ["physics::temperature_conversion"],
+            },
+        ],
+    },
 )
 
 subprocess.run(["mdbook", "build"], text=True)

@@ -1,70 +1,80 @@
-<!-- NOTE! This file is auto-generated -->
+# Other functions
 
-# Other
+Jump to: [Error handling](#error-handling) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Temperature conversion](#temperature-conversion)
 
-### `unit_of`
+## Error handling
 
-```nbt
-fn unit_of<T: Dim>(x: T) -> T
-```
-(defined in *core::quantities*)
-
-### `value_of`
-
-```nbt
-fn value_of<T: Dim>(x: T) -> Scalar
-```
-(defined in *core::quantities*)
+Defined in: `core::error`
 
 ### `error`
-Throw a user-defined error.
+Throw an error with the specified message. Stops the execution of the program.
 
 ```nbt
 fn error<T>(message: String) -> T
 ```
-(defined in *core::error*)
+
+## Quantities
+
+Defined in: `core::quantities`
+
+### `unit_of`
+Extract the unit of a quantity (the `km/h` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise.
+
+```nbt
+fn unit_of<T: Dim>(x: T) -> T
+```
+
+### `value_of`
+Extract the plain value of a quantity (the `20` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise.
+
+```nbt
+fn value_of<T: Dim>(x: T) -> Scalar
+```
+
+## Chemical elements
+
+Defined in: `chemistry::elements`
+
+### `element` (Chemical element)
+Get properties of a chemical element by its symbol or name (case-insensitive). For example: `element("H")` or `element("hydrogen")`.
+
+```nbt
+fn element(pattern: String) -> ChemicalElement
+```
+
+## Temperature conversion
+
+Defined in: `physics::temperature_conversion`
 
 ### `from_celsius`
-Converts from degree Celsius to Kelvin.
+Converts from degree Celsius (°C) to Kelvin.
 More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
 
 ```nbt
 fn from_celsius(t_celsius: Scalar) -> Temperature
 ```
-(defined in *physics::temperature_conversion*)
 
 ### `celsius`
-Converts from Kelvin to degree Celsius.
+Converts from Kelvin to degree Celcius (°C). This can be used on the right hand side of a conversion operator: `200 K -> celsius`.
 More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
 
 ```nbt
 fn celsius(t_kelvin: Temperature) -> Scalar
 ```
-(defined in *physics::temperature_conversion*)
 
 ### `from_fahrenheit`
-Converts from degree Fahrenheit to Kelvin.
+Converts from degree Fahrenheit (°F) to Kelvin.
 More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
 
 ```nbt
 fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature
 ```
-(defined in *physics::temperature_conversion*)
 
 ### `fahrenheit`
-Converts from Kelvin to degree Fahrenheit.
+Converts from Kelvin to degree Fahrenheit (°F). This can be used on the right hand side of a conversion operator: `200 K -> fahrenheit`.
 More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
 
 ```nbt
 fn fahrenheit(t_kelvin: Temperature) -> Scalar
 ```
-(defined in *physics::temperature_conversion*)
-
-### `element` (Chemical element)
-Get properties of a chemical element by its symbol or name (case-insensitive).
-
-```nbt
-fn element(pattern: String) -> ChemicalElement
-```
-(defined in *chemistry::elements*)
 
