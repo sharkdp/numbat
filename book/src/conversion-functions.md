@@ -27,8 +27,8 @@ now() -> tz("Asia/Kathmandu")
 # Convert a number to a custom base
 42 -> base(16)
 
-# Convert an ASCII code point number to a character
-78 -> chr
+# Convert a code point number to a character
+0x2764 -> chr
 
 # Convert a string to upper/lower case
 "numbat is awesome" -> uppercase

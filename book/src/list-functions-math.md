@@ -1,6 +1,6 @@
 # Mathematical functions
 
-[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Random sampling, distributions](#random-sampling,-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
+[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
 
 ## Basics
 
@@ -14,7 +14,7 @@ fn id<A>(x: A) -> A
 ```
 
 ### `abs` (Absolute value)
-Return the absolute value of the input, \\( |x| \\). This works for quantities, too: `abs(-5 m) = 5 m`.
+Return the absolute value \\( |x| \\) of the input. This works for quantities, too: `abs(-5 m) = 5 m`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.abs).
 
 ```nbt
@@ -22,7 +22,7 @@ fn abs<T: Dim>(x: T) -> T
 ```
 
 ### `sqrt` (Square root)
-Return the square root of the input, \\( \sqrt{x} \\): `sqrt(121 m^2) = 11 m`.
+Return the square root \\( \sqrt{x} \\) of the input: `sqrt(121 m^2) = 11 m`.
 More information [here](https://en.wikipedia.org/wiki/Square_root).
 
 ```nbt
@@ -30,7 +30,7 @@ fn sqrt<D: Dim>(x: D^2) -> D
 ```
 
 ### `cbrt` (Cube root)
-Return the cube root of the input, \\( \sqrt[3]{x} \\): `cbrt(8 m^3) = 2 m`.
+Return the cube root \\( \sqrt[3]{x} \\) of the input: `cbrt(8 m^3) = 2 m`.
 More information [here](https://en.wikipedia.org/wiki/Cube_root).
 
 ```nbt
@@ -45,7 +45,7 @@ fn sqr<D: Dim>(x: D) -> D^2
 ```
 
 ### `round` (Rounding)
-Round to the nearest integer. If the value is half-way between two integers, round away from 0.
+Round to the nearest integer. If the value is half-way between two integers, round away from \\( 0 \\).
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.round).
 
 ```nbt
@@ -53,7 +53,7 @@ fn round<T: Dim>(x: T) -> T
 ```
 
 ### `floor` (Floor function)
-Returns the largest integer less than or equal to `x`.
+Returns the largest integer less than or equal to \\( x \\).
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.floor).
 
 ```nbt
@@ -61,7 +61,7 @@ fn floor<T: Dim>(x: T) -> T
 ```
 
 ### `ceil` (Ceil function)
-Returns the smallest integer greater than or equal to `x`.
+Returns the smallest integer greater than or equal to \\( x \\).
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.ceil).
 
 ```nbt
@@ -69,7 +69,7 @@ fn ceil<T: Dim>(x: T) -> T
 ```
 
 ### `mod` (Modulo)
-Calculates the least nonnegative remainder of `a (mod b)`.
+Calculates the least nonnegative remainder of \\( a (\mod b) \\).
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid).
 
 ```nbt
@@ -293,7 +293,7 @@ fn rand_uniform<T: Dim>(a: T, b: T) -> T
 ```
 
 ### `rand_int` (Discrete uniform distribution sampling)
-Uniformly samples the integers in the interval \\( [a, b] \\).
+Uniformly samples integers from the interval \\( [a, b] \\).
 More information [here](https://en.wikipedia.org/wiki/Discrete_uniform_distribution).
 
 ```nbt
@@ -301,7 +301,7 @@ fn rand_int(a: Scalar, b: Scalar) -> Scalar
 ```
 
 ### `rand_bernoulli` (Bernoulli distribution sampling)
-Samples a Bernoulli random variable, that is, \\( 1 \\) with probability \\( p \\), \\( 0 \\) with probability \\( 1-p \\). The parameter \\( p \\) must be a probability (\\( 0 \le p \le 1 \\)).
+Samples a Bernoulli random variable. That is, \\( 1 \\) with probability \\( p \\) and \\( 0 \\) with probability \\( 1-p \\). The parameter \\( p \\) must be a probability (\\( 0 \le p \le 1 \\)).
 More information [here](https://en.wikipedia.org/wiki/Bernoulli_distribution).
 
 ```nbt
@@ -367,7 +367,23 @@ fn rand_pareto<T: Dim>(α: Scalar, min: T) -> T
 
 ## Number theory
 
-Defined in: `core::number_theory`
+Defined in: `math::number_theory`
+
+### `gcd` (Greatest common divisor)
+The largest positive integer that divides each of the integers \\( a \\) and \\( b \\).
+More information [here](https://en.wikipedia.org/wiki/Greatest_common_divisor).
+
+```nbt
+fn gcd(a: Scalar, b: Scalar) -> Scalar
+```
+
+### `lcm` (Least common multiple)
+The smallest positive integer that is divisible by both \\( a \\) and \\( b \\).
+More information [here](https://en.wikipedia.org/wiki/Least_common_multiple).
+
+```nbt
+fn lcm(a: Scalar, b: Scalar) -> Scalar
+```
 
 ## Numerical methods
 
@@ -386,7 +402,7 @@ Find the root of the function \\( f \\) in the interval \\( [x_1, x_2] \\) using
 More information [here](https://en.wikipedia.org/wiki/Bisection_method).
 
 ```nbt
-fn root_bisect<A: Dim, B: Dim>(f: Fn[(A) -> B], x1: A, x2: A, x_tol: A, y_tol: B) -> A
+fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y) -> X
 ```
 
 ### `root_newton` (Newton's method)
@@ -394,7 +410,7 @@ Find the root of the function \\( f(x) \\) and its derivative \\( f'(x) \\) usin
 More information [here](https://en.wikipedia.org/wiki/Newton%27s_method).
 
 ```nbt
-fn root_newton<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B / A], x0: A, y_tol: B) -> A
+fn root_newton<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y) -> X
 ```
 
 ## Geometry
@@ -402,36 +418,42 @@ fn root_newton<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B / A], x0: A
 Defined in: `math::geometry`
 
 ### `hypot2`
+The length of the hypotenuse of a right-angled triangle \\( \sqrt{x^2+y^2} \\).
 
 ```nbt
 fn hypot2<T: Dim>(x: T, y: T) -> T
 ```
 
 ### `hypot3`
+The Euclidean norm of a 3D vector \\( \sqrt{x^2+y^2+z^2} \\).
 
 ```nbt
 fn hypot3<T: Dim>(x: T, y: T, z: T) -> T
 ```
 
 ### `circle_area`
+The area of a circle, \\( \pi r^2 \\).
 
 ```nbt
 fn circle_area<L: Dim>(radius: L) -> L^2
 ```
 
 ### `circle_circumference`
+The circumference of a circle, \\( 2\pi r \\).
 
 ```nbt
 fn circle_circumference<L: Dim>(radius: L) -> L
 ```
 
 ### `sphere_area`
+The surface area of a sphere, \\( 4\pi r^2 \\).
 
 ```nbt
 fn sphere_area<L: Dim>(radius: L) -> L^2
 ```
 
 ### `sphere_volume`
+The volume of a sphere, \\( \frac{4}{3}\pi r^3 \\).
 
 ```nbt
 fn sphere_volume<L: Dim>(radius: L) -> L^3

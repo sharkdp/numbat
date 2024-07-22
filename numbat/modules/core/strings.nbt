@@ -2,17 +2,25 @@ use core::scalar
 use core::functions
 use core::error
 
+@description("The length of a string")
 fn str_length(s: String) -> Scalar
 
+@description("Subslice of a string")
 fn str_slice(s: String, start: Scalar, end: Scalar) -> String
 
+@description("Get a single-character string from a Unicode code point. Example: `0x2764 -> chr`")
 fn chr(n: Scalar) -> String
 
+@description("Convert a string to lowercase")
 fn lowercase(s: String) -> String
+
+@description("Convert a string to uppercase")
 fn uppercase(s: String) -> String
 
+@description("Concatenate two strings")
 fn str_append(a: String, b: String) -> String = "{a}{b}"
 
+@description("Find the first occurrence of a substring in a string")
 fn str_find(haystack: String, needle: String) -> Scalar =
   if str_length(haystack) == 0
     then -1
@@ -22,9 +30,11 @@ fn str_find(haystack: String, needle: String) -> Scalar =
         then -1
         else 1 + str_find(str_slice(haystack, 1, str_length(haystack)), needle)
 
+@description("Check if a string contains a substring")
 fn str_contains(haystack: String, needle: String) -> Bool =
   str_find(haystack, needle) != -1
 
+@description("Replace all occurrences of a substring in a string")
 fn str_replace(s: String, pattern: String, replacement: String) -> String =
   if pattern == ""
     then s
@@ -34,6 +44,7 @@ fn str_replace(s: String, pattern: String, replacement: String) -> String =
                else str_append(str_slice(s, 0, 1), str_replace(str_slice(s, 1, str_length(s)), pattern, replacement))
            else s
 
+@description("Repeat the input string `n` times")
 fn str_repeat(a: String, n: Scalar) -> String =
   if n > 0
     then str_append(a, str_repeat(a, n - 1))
@@ -60,15 +71,24 @@ fn _number_in_base(x: Scalar, b: Scalar) -> String =
       then _digit_in_base(x, b)
       else str_append(_number_in_base(floor(x / b), b), _digit_in_base(mod(x, b), b))
 
+@description("Get a binary representation of a number. Example: `42 -> bin`")
 fn bin(x: Scalar) -> String = if x < 0 then "-{bin(-x)}" else "0b{_number_in_base(x, 2)}"
+
+@description("Get an octal representation of a number. Example: `42 -> oct`")
 fn oct(x: Scalar) -> String = if x < 0 then "-{oct(-x)}" else "0o{_number_in_base(x, 8)}"
+
+@description("Get a decimal representation of a number.")
 fn dec(x: Scalar) -> String = _number_in_base(x, 10)
+
+@description("Get a hexadecimal representation of a number. Example: `2^31-1 -> hex`")
 fn hex(x: Scalar) -> String = if x < 0 then "-{hex(-x)}" else "0x{_number_in_base(x, 16)}"
 
 # TODO: once we have anonymous functions / closures, we can implement base in a way
 # that it returns a partially-applied version of '_number_in_base'. This would allow
 # arbitrary 'x -> base(b)' conversions.
 fn _not_implemented(unused: Scalar) -> String = error("bases other than 2, 8, 10, and 16 are currently not implemented")
+
+@description("Convert a number to the given base. Example: `42 -> base(16)`")
 fn base(b: Scalar) -> Fn[(Scalar) -> String] =
   if b == 2
     then bin
