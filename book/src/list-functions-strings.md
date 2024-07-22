@@ -23,6 +23,13 @@ Get a single-character string from a Unicode code point. Example: `0x2764 -> chr
 fn chr(n: Scalar) -> String
 ```
 
+### `ord`
+Get the Unicode code point of the first character in a string. Example: `"❤" -> ord`.
+
+```nbt
+fn ord(s: String) -> Scalar
+```
+
 ### `lowercase`
 Convert a string to lowercase.
 

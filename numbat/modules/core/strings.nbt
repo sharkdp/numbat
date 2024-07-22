@@ -11,6 +11,9 @@ fn str_slice(s: String, start: Scalar, end: Scalar) -> String
 @description("Get a single-character string from a Unicode code point. Example: `0x2764 -> chr`")
 fn chr(n: Scalar) -> String
 
+@description("Get the Unicode code point of the first character in a string. Example: `\"❤\" -> ord`")
+fn ord(s: String) -> Scalar
+
 @description("Convert a string to lowercase")
 fn lowercase(s: String) -> String
 
