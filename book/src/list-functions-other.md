@@ -2,6 +2,20 @@
 
 # Other
 
+### `unit_of`
+
+```nbt
+fn unit_of<T: Dim>(x: T) -> T
+```
+(defined in *core::quantities*)
+
+### `value_of`
+
+```nbt
+fn value_of<T: Dim>(x: T) -> Scalar
+```
+(defined in *core::quantities*)
+
 ### `error`
 Throw a user-defined error.
 

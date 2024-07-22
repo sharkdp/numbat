@@ -67,7 +67,12 @@ fn inspect_functions_in_module(ctx: &Context, module: String) {
         }
 
         if let Some(ref description) = description {
-            println!("{}", description.trim());
+            let description = description.trim();
+            if description.ends_with('.') {
+                println!("{description}");
+            } else {
+                println!("{description}.");
+            }
         }
         if let Some(url) = url {
             println!("More information [here]({url}).");

@@ -82,18 +82,25 @@ list_of_functions(
     "Mathematical functions",
     [
         "core::functions",
-        "core::quantities",
         "math::functions",
         "math::trigonometry_extra",
         "core::random",
         "math::statistics",
+        "extra::quadratic_equation",
+        "numerics::diff",
+        "numerics::solve",
     ],
 )
 
 list_of_functions(
     "other",
     "Other",
-    ["core::error", "physics::temperature_conversion", "chemistry::elements"],
+    [
+        "core::quantities",
+        "core::error",
+        "physics::temperature_conversion",
+        "chemistry::elements",
+    ],
 )
 
 subprocess.run(["mdbook", "build"], text=True)
