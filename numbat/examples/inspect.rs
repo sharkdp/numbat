@@ -6,6 +6,7 @@ const AUTO_GENERATED_HINT: &'static str = "<!-- NOTE! This file is auto-generate
 
 fn inspect_units(ctx: &Context) {
     println!("{AUTO_GENERATED_HINT}
+
 # List of supported units
 
 See also: [Unit notation](./unit-notation.md).
@@ -39,33 +40,47 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
     }
 }
 
-fn inspect_functions(ctx: &Context) {
-    println!(
-        "{AUTO_GENERATED_HINT}
-# List of functions
+fn inspect_functions_in_modules(ctx: &Context, title: String, modules: Vec<String>) {
+    println!("{AUTO_GENERATED_HINT}\n");
 
-"
-    );
+    println!("# {title}\n");
 
-    for (fn_name, name, signature, description, url) in ctx.functions() {
+    for module in modules {
+        inspect_functions_in_module(ctx, module);
+    }
+}
+
+fn inspect_functions_in_module(ctx: &Context, module: String) {
+    for (fn_name, name, signature, description, url, code_source) in ctx.functions() {
+        let CodeSource::Module(module_path, _) = code_source else {
+            unreachable!();
+        };
+
+        if module_path.to_string() != module {
+            continue;
+        }
+
         if let Some(name) = name {
-            println!("## {name} (`{fn_name}`)");
+            println!("### `{fn_name}` ({name})");
         } else {
-            println!("## `{fn_name}`");
+            println!("### `{fn_name}`");
         }
 
         if let Some(ref description) = description {
             println!("{}", description.trim());
-            println!();
         }
+        if let Some(url) = url {
+            println!("More information [here]({url}).");
+        }
+        println!();
 
         println!("```nbt");
         println!("{}", signature);
         println!("```");
 
-        if let Some(url) = url {
-            println!("[Further information]({url})");
-        }
+        println!("(defined in *{}*)", module_path);
+
+        println!();
     }
 }
 
@@ -82,8 +97,12 @@ fn main() {
     if let Some(arg) = args.next() {
         match arg.as_str() {
             "units" => inspect_units(&ctx),
-            "functions" => inspect_functions(&ctx),
-            _ => eprintln!("USAGE: inspect [units|functions]"),
+            "functions" => {
+                let title = args.next().unwrap();
+                let modules = args.collect();
+                inspect_functions_in_modules(&ctx, title, modules)
+            }
+            _ => eprintln!("USAGE: inspect [units|functions <title> <modules>...]"),
         }
     }
 }
