@@ -50,33 +50,19 @@ fn mod<T: Dim>(a: T, b: T) -> T
 ```
 (defined in *core::functions*)
 
-### `unit_of`
-
-```nbt
-fn unit_of<T: Dim>(x: T) -> T
-```
-(defined in *core::quantities*)
-
-### `value_of`
-
-```nbt
-fn value_of<T: Dim>(x: T) -> Scalar
-```
-(defined in *core::quantities*)
-
 ### `is_nan`
 
 ```nbt
 fn is_nan<T: Dim>(n: T) -> Bool
 ```
-(defined in *core::quantities*)
+(defined in *math::functions*)
 
 ### `is_infinite`
 
 ```nbt
 fn is_infinite<T: Dim>(n: T) -> Bool
 ```
-(defined in *core::quantities*)
+(defined in *math::functions*)
 
 ### `sqrt` (Square root)
 More information [here](https://en.wikipedia.org/wiki/Square_root).
@@ -246,7 +232,7 @@ fn gamma(x: Scalar) -> Scalar
 (defined in *math::functions*)
 
 ### `maximum` (Maxmimum)
-Get the largest element of a list
+Get the largest element of a list.
 
 ```nbt
 fn maximum<D: Dim>(xs: List<D>) -> D
@@ -254,7 +240,7 @@ fn maximum<D: Dim>(xs: List<D>) -> D
 (defined in *math::functions*)
 
 ### `minimum` (Minimum)
-Get the smallest element of a list
+Get the smallest element of a list.
 
 ```nbt
 fn minimum<D: Dim>(xs: List<D>) -> D
@@ -270,7 +256,7 @@ fn mean<D: Dim>(xs: List<D>) -> D
 (defined in *math::functions*)
 
 ### `variance` (Variance)
-Calculate the population variance of a list of quantities
+Calculate the population variance of a list of quantities.
 More information [here](https://en.wikipedia.org/wiki/Variance).
 
 ```nbt
@@ -279,7 +265,7 @@ fn variance<D: Dim>(xs: List<D>) -> D^2
 (defined in *math::functions*)
 
 ### `stdev` (Standard deviation)
-Calculate the population standard deviation of a list of quantities
+Calculate the population standard deviation of a list of quantities.
 More information [here](https://en.wikipedia.org/wiki/Standard_deviation).
 
 ```nbt
@@ -288,7 +274,7 @@ fn stdev<D: Dim>(xs: List<D>) -> D
 (defined in *math::functions*)
 
 ### `median` (Median)
-Calculate the median of a list of quantities
+Calculate the median of a list of quantities.
 More information [here](https://en.wikipedia.org/wiki/Median).
 
 ```nbt
@@ -548,4 +534,31 @@ More information [here](https://en.wikipedia.org/wiki/Pareto_distribution).
 fn rand_pareto<T: Dim>(α: Scalar, min: T) -> T
 ```
 (defined in *math::statistics*)
+
+### `diff` (Numerical differentiation)
+Compute the numerical derivative of a function at a point using the central difference method.
+More information [here](https://en.wikipedia.org/wiki/Numerical_differentiation).
+
+```nbt
+fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X) -> Y / X
+```
+(defined in *numerics::diff*)
+
+### `root_bisect` (Bisection method)
+Find the root of the function f in the interval [x1, x2] using the bisection method. The function f must be continuous and f(x1) × f(x2) < 0.
+More information [here](https://en.wikipedia.org/wiki/Bisection_method).
+
+```nbt
+fn root_bisect<A: Dim, B: Dim>(f: Fn[(A) -> B], x1: A, x2: A, x_tolerance: A, y_tolerance: B) -> A
+```
+(defined in *numerics::solve*)
+
+### `root_newton` (Newton's method)
+Find the root of the function f(x) and its derivative f'(x) using Newton's method.
+More information [here](https://en.wikipedia.org/wiki/Newton%27s_method).
+
+```nbt
+fn root_newton<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B / A], x0: A, y_tolerance: B) -> A
+```
+(defined in *numerics::solve*)
 

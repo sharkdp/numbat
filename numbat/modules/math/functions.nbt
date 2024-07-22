@@ -2,6 +2,12 @@ use core::scalar
 use core::lists
 use math::constants
 
+## Numerical properties
+
+fn is_nan<T: Dim>(n: T) -> Bool
+
+fn is_infinite<T: Dim>(n: T) -> Bool
+
 ## Basics
 
 @name("Square root")

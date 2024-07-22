@@ -2,6 +2,3 @@ use core::scalar
 
 fn unit_of<T: Dim>(x: T) -> T
 fn value_of<T: Dim>(x: T) -> Scalar = x / unit_of(x)
-
-fn is_nan<T: Dim>(n: T) -> Bool
-fn is_infinite<T: Dim>(n: T) -> Bool
