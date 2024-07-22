@@ -1,6 +1,6 @@
 # Other functions
 
-Jump to: [Error handling](#error-handling) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Temperature conversion](#temperature-conversion)
+[Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Temperature conversion](#temperature-conversion)
 
 ## Error handling
 
@@ -11,6 +11,26 @@ Throw an error with the specified message. Stops the execution of the program.
 
 ```nbt
 fn error<T>(message: String) -> T
+```
+
+## Floating point
+
+Defined in: `core::numbers`
+
+### `is_nan`
+Returns true if the input is `NaN`.
+More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.is_nan).
+
+```nbt
+fn is_nan<T: Dim>(n: T) -> Bool
+```
+
+### `is_infinite`
+Returns true if the input is positive infinity or negative infinity.
+More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.is_infinite).
+
+```nbt
+fn is_infinite<T: Dim>(n: T) -> Bool
 ```
 
 ## Quantities

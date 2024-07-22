@@ -69,6 +69,9 @@ def list_of_functions(file_name, document):
     with open(path, "w") as f:
         print(f"# {document['title']}\n", file=f, flush=True)
 
+        if introduction := document.get("introduction"):
+            print(introduction + "\n", file=f, flush=True)
+
         sections = document["sections"]
 
         if len(sections) >= 3:
@@ -116,20 +119,40 @@ list_of_functions(
                 "modules": ["core::functions"],
             },
             {
-                "title": "Trigonometry",
-                "modules": ["math::functions", "math::trigonometry_extra"],
+                "title": "Transcendental functions",
+                "modules": ["math::transcendental"],
             },
             {
-                "title": "Random numbers",
-                "modules": ["core::random", "math::statistics"],
+                "title": "Trigonometry",
+                "modules": ["math::trigonometry"],
+            },
+            {
+                "title": "Statistics",
+                "modules": ["math::statistics"],
+            },
+            {
+                "title": "Random sampling, distributions",
+                "modules": ["core::random", "math::distributions"],
+            },
+            {
+                "title": "Number theory",
+                "modules": ["core::number_theory"],
             },
             {
                 "title": "Numerical methods",
                 "modules": ["numerics::diff", "numerics::solve"],
             },
             {
+                "title": "Geometry",
+                "modules": ["math::geometry"],
+            },
+            {
                 "title": "Algebra",
                 "modules": ["extra::algebra"],
+            },
+            {
+                "title": "Trigonometry (extra)",
+                "modules": ["math::trigonometry_extra"],
             },
         ],
     },
@@ -163,14 +186,10 @@ list_of_functions(
     "datetime",
     {
         "title": "Date and time",
+        "introduction": "See [this page](./date-and-time.md) for a general introduction to date and time handling in Numbat.",
         "sections": [
             {
-                "title": "Basics",
-                "modules": ["datetime::functions"],
-            },
-            {
-                "title": "Human-readable",
-                "modules": ["datetime::human"],
+                "modules": ["datetime::functions", "datetime::human"],
             },
         ],
     },
@@ -185,6 +204,10 @@ list_of_functions(
             {
                 "title": "Error handling",
                 "modules": ["core::error"],
+            },
+            {
+                "title": "Floating point",
+                "modules": ["core::numbers"],
             },
             {
                 "title": "Quantities",

@@ -1,0 +1,31 @@
+use core::scalar
+
+@name("Exponential function")
+@description("The exponential function, $e^x$.")
+@url("https://en.wikipedia.org/wiki/Exponential_function")
+fn exp(x: Scalar) -> Scalar
+
+@name("Natural logarithm")
+@description("The natural logarithm with base $e$.")
+@url("https://en.wikipedia.org/wiki/Natural_logarithm")
+fn ln(x: Scalar) -> Scalar
+
+@name("Natural logarithm")
+@description("The natural logarithm with base $e$.")
+@url("https://en.wikipedia.org/wiki/Natural_logarithm")
+fn log(x: Scalar) -> Scalar = ln(x)
+
+@name("Common logarithm")
+@description("The common logarithm with base $10$.")
+@url("https://en.wikipedia.org/wiki/Common_logarithm")
+fn log10(x: Scalar) -> Scalar
+
+@name("Binary logarithm")
+@description("The binary logarithm with base $2$.")
+@url("https://en.wikipedia.org/wiki/Binary_logarithm")
+fn log2(x: Scalar) -> Scalar
+
+@name("Gamma function")
+@description("The gamma function, $\\Gamma(x)$.")
+@url("https://en.wikipedia.org/wiki/Gamma_function")
+fn gamma(x: Scalar) -> Scalar
