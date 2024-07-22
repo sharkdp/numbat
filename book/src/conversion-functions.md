@@ -30,6 +30,9 @@ now() -> tz("Asia/Kathmandu")
 # Convert a code point number to a character
 0x2764 -> chr
 
+# Convert a character to a code point number
+"❤" -> ord
+
 # Convert a string to upper/lower case
 "numbat is awesome" -> uppercase
 "vier bis elf weiße Querbänder" -> lowercase

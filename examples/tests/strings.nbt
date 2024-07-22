@@ -6,6 +6,14 @@ assert_eq(str_slice("hello world", 6, 11), "world")
 assert_eq(str_slice("hello world", 0, 0), "")
 assert_eq(str_slice("hello world", 0, 100), "")
 
+assert_eq(chr(65), "A")
+assert_eq(chr(97), "a")
+assert_eq(chr(0x2764), "❤")
+
+assert_eq(ord("A"), 65)
+assert_eq(ord("a"), 97)
+assert_eq(ord("❤"), 0x2764)
+
 assert_eq(str_append("foo", "bar"), "foobar")
 
 assert(str_contains("hello world", "hello"))
