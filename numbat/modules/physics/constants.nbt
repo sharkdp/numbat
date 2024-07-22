@@ -1,4 +1,3 @@
-use math::functions
 use units::si
 
 @name("Speed of light in vacuum")

@@ -56,8 +56,21 @@ fn inspect_functions_in_module(ctx: &Context, module: String) {
             println!("### `{fn_name}`");
         }
 
-        if let Some(ref description) = description {
-            let description = description.trim();
+        if let Some(ref description_raw) = description {
+            let description_raw = description_raw.trim().to_string();
+
+            // Replace $..$ with \\( .. \\) for mdbook.
+            let mut description = String::new();
+            for (i, part) in description_raw.split('$').enumerate() {
+                if i % 2 == 0 {
+                    description.push_str(part);
+                } else {
+                    description.push_str("\\\\( ");
+                    description.push_str(part);
+                    description.push_str(" \\\\)");
+                }
+            }
+
             if description.ends_with('.') {
                 println!("{description}");
             } else {

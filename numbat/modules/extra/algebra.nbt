@@ -1,5 +1,5 @@
 use core::error
-use math::functions
+use core::functions
 
 fn _qe_solution<A: Dim, B: Dim>(a: A, b: B, c: B² / A, sign: Scalar) -> B / A =
   (-b + sign × sqrt(b² - 4 a c)) / 2 a

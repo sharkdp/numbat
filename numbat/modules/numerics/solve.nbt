@@ -3,26 +3,26 @@ use core::error
 
 @name("Bisection method")
 @url("https://en.wikipedia.org/wiki/Bisection_method")
-@description("Find the root of the function f in the interval [x1, x2] using the bisection method. The function f must be continuous and f(x1) × f(x2) < 0.")
-fn root_bisect<A: Dim, B: Dim>(f: Fn[(A) -> B], x1: A, x2: A, x_tolerance: A, y_tolerance: B) -> A =
-  if abs(x1 - x2) < x_tolerance
+@description("Find the root of the function $f$ in the interval $[x_1, x_2]$ using the bisection method. The function $f$ must be continuous and $f(x_1) \cdot f(x_2) < 0$.")
+fn root_bisect<A: Dim, B: Dim>(f: Fn[(A) -> B], x1: A, x2: A, x_tol: A, y_tol: B) -> A =
+  if abs(x1 - x2) < x_tol
     then (x1 + x2) / 2
-    else if abs(f((x1 + x2) / 2)) < y_tolerance
+    else if abs(f((x1 + x2) / 2)) < y_tol
       then (x1 + x2) / 2
       else if f((x1 + x2) / 2) * f(x1) < 0
-        then root_bisect(f, x1, (x1 + x2) / 2, x_tolerance, y_tolerance)
-        else root_bisect(f, (x1 + x2) / 2, x2, x_tolerance, y_tolerance)
+        then root_bisect(f, x1, (x1 + x2) / 2, x_tol, y_tol)
+        else root_bisect(f, (x1 + x2) / 2, x2, x_tol, y_tol)
   # TODO: move (x1 + x2) / 2 to a local variable once we support them
 
-fn _root_newton_helper<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B/A], x0: A, y_tolerance: B, max_iterations: Scalar) -> A =
+fn _root_newton_helper<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B/A], x0: A, y_tol: B, max_iterations: Scalar) -> A =
   if max_iterations <= 0
     then error("root_newton: Maximum number of iterations reached. Try another initial guess?")
-    else if abs(f(x0)) < y_tolerance
+    else if abs(f(x0)) < y_tol
       then x0
-      else _root_newton_helper(f, f_prime, x0 - f(x0) / f_prime(x0), y_tolerance, max_iterations - 1)
+      else _root_newton_helper(f, f_prime, x0 - f(x0) / f_prime(x0), y_tol, max_iterations - 1)
 
 @name("Newton's method")
 @url("https://en.wikipedia.org/wiki/Newton%27s_method") 
-@description("Find the root of the function f(x) and its derivative f'(x) using Newton's method.")
-fn root_newton<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B/A], x0: A, y_tolerance: B) -> A =
-  _root_newton_helper(f, f_prime, x0, y_tolerance, 10_000)
+@description("Find the root of the function $f(x)$ and its derivative $f'(x)$ using Newton's method.")
+fn root_newton<A: Dim, B: Dim>(f: Fn[(A) -> B], f_prime: Fn[(A) -> B/A], x0: A, y_tol: B) -> A =
+  _root_newton_helper(f, f_prime, x0, y_tol, 10_000)

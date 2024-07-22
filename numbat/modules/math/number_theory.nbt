@@ -1,0 +1,13 @@
+use core::scalar
+use core::functions
+
+@name("Greatest common divisor")
+@url("https://en.wikipedia.org/wiki/Greatest_common_divisor")
+fn gcd(a: Scalar, b: Scalar) -> Scalar =
+  if b == 0
+    then abs(a)
+    else gcd(b, mod(a, b))
+
+@name("Least common multiple")
+@url("https://en.wikipedia.org/wiki/Least_common_multiple")
+fn lcm(a: Scalar, b: Scalar) -> Scalar = abs(a * b) / gcd(a, b)
