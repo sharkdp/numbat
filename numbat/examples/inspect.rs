@@ -40,16 +40,6 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
     }
 }
 
-fn inspect_functions_in_modules(ctx: &Context, title: String, modules: Vec<String>) {
-    println!("{AUTO_GENERATED_HINT}\n");
-
-    println!("# {title}\n");
-
-    for module in modules {
-        inspect_functions_in_module(ctx, module);
-    }
-}
-
 fn inspect_functions_in_module(ctx: &Context, module: String) {
     for (fn_name, name, signature, description, url, code_source) in ctx.functions() {
         let CodeSource::Module(module_path, _) = code_source else {
@@ -82,9 +72,6 @@ fn inspect_functions_in_module(ctx: &Context, module: String) {
         println!("```nbt");
         println!("{}", signature);
         println!("```");
-
-        println!("(defined in *{}*)", module_path);
-
         println!();
     }
 }
@@ -103,11 +90,10 @@ fn main() {
         match arg.as_str() {
             "units" => inspect_units(&ctx),
             "functions" => {
-                let title = args.next().unwrap();
-                let modules = args.collect();
-                inspect_functions_in_modules(&ctx, title, modules)
+                let module = args.next().unwrap();
+                inspect_functions_in_module(&ctx, module)
             }
-            _ => eprintln!("USAGE: inspect [units|functions <title> <modules>...]"),
+            _ => eprintln!("USAGE: inspect [units|functions <module>]"),
         }
     }
 }

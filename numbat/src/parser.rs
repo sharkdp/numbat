@@ -630,12 +630,12 @@ impl<'a> Parser<'a> {
                                     ));
                                 }
 
-                                let content = token.lexeme.trim_matches('"');
+                                let content = strip_and_escape(&token.lexeme);
 
                                 match decorator.lexeme.as_str() {
-                                    "url" => Decorator::Url(content.into()),
-                                    "name" => Decorator::Name(content.into()),
-                                    "description" => Decorator::Description(content.into()),
+                                    "url" => Decorator::Url(content),
+                                    "name" => Decorator::Name(content),
+                                    "description" => Decorator::Description(content),
                                     _ => unreachable!(),
                                 }
                             } else {

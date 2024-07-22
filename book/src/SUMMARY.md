@@ -45,7 +45,7 @@
 
 - [The prelude](./prelude.md)
 - [Predefined functions](./predefined-functions.md)
-  - [Mathematical](./list-functions-math.md)
+  - [Maths](./list-functions-math.md)
   - [Lists](./list-functions-lists.md)
   - [Strings](./list-functions-strings.md)
   - [Date and time](./list-functions-datetime.md)
