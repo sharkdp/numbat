@@ -2,6 +2,14 @@
 
 # Other
 
+### `error`
+Throw a user-defined error.
+
+```nbt
+fn error<T>(message: String) -> T
+```
+(defined in *core::error*)
+
 ### `from_celsius`
 Converts from degree Celsius to Kelvin.
 More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).

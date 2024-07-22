@@ -45,11 +45,10 @@
 
 - [The prelude](./prelude.md)
 - [Predefined functions](./predefined-functions.md)
-  - [Core](./list-functions-core.md)]
+  - [Mathematical](./list-functions-math.md)
   - [Lists](./list-functions-lists.md)
   - [Strings](./list-functions-strings.md)
   - [Date and time](./list-functions-datetime.md)
-  - [Mathematical](./list-functions-math.md)
   - [Other](./list-functions-other.md)
 - [Predefined constants](./list-constants.md)
 - [List of units](./list-units.md)

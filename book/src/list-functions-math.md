@@ -50,6 +50,34 @@ fn mod<T: Dim>(a: T, b: T) -> T
 ```
 (defined in *core::functions*)
 
+### `unit_of`
+
+```nbt
+fn unit_of<T: Dim>(x: T) -> T
+```
+(defined in *core::quantities*)
+
+### `value_of`
+
+```nbt
+fn value_of<T: Dim>(x: T) -> Scalar
+```
+(defined in *core::quantities*)
+
+### `is_nan`
+
+```nbt
+fn is_nan<T: Dim>(n: T) -> Bool
+```
+(defined in *core::quantities*)
+
+### `is_infinite`
+
+```nbt
+fn is_infinite<T: Dim>(n: T) -> Bool
+```
+(defined in *core::quantities*)
+
 ### `sqrt` (Square root)
 More information [here](https://en.wikipedia.org/wiki/Square_root).
 
@@ -416,6 +444,14 @@ fn csch(x: Scalar) -> Scalar
 fn acsch(x: Scalar) -> Scalar
 ```
 (defined in *math::trigonometry_extra*)
+
+### `random` (Standard uniform distribution sampling)
+Uniformly samples the interval [0,1).
+
+```nbt
+fn random() -> Scalar
+```
+(defined in *core::random*)
 
 ### `rand_uniform` (Continuous uniform distribution sampling)
 Uniformly samples the interval [a,b) if a<=b or [b,a) if b<a using inversion sampling.

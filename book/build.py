@@ -69,12 +69,6 @@ def list_of_functions(file_name, title, modules):
         )
 
 
-list_of_functions(
-    "core",
-    "Core",
-    ["core::quantities", "core::error", "core::random"],
-)
-
 list_of_functions("lists", "Lists", ["core::lists"])
 
 list_of_functions("strings", "Strings", ["core::strings"])
@@ -88,14 +82,18 @@ list_of_functions(
     "Mathematical functions",
     [
         "core::functions",
+        "core::quantities",
         "math::functions",
         "math::trigonometry_extra",
+        "core::random",
         "math::statistics",
     ],
 )
 
 list_of_functions(
-    "other", "Other", ["physics::temperature_conversion", "chemistry::elements"]
+    "other",
+    "Other",
+    ["core::error", "physics::temperature_conversion", "chemistry::elements"],
 )
 
 subprocess.run(["mdbook", "build"], text=True)
