@@ -160,6 +160,7 @@ impl Context {
             String,
             Option<String>,
             Option<String>,
+            CodeSource,
         ),
     > + '_ {
         self.prefix_transformer
@@ -176,6 +177,8 @@ impl Context {
                         .to_string(),
                     meta.description.clone(),
                     meta.url.clone(),
+                    self.resolver
+                        .get_code_source(signature.definition_span.code_source_id),
                 )
             })
     }

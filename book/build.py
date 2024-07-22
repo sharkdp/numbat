@@ -58,10 +58,44 @@ path_units = SCRIPT_DIR / "src" / "list-units.md"
 with open(path_units, "w") as f:
     subprocess.run(["cargo", "run", "--example=inspect", "units"], stdout=f, text=True)
 
-path_functions = SCRIPT_DIR / "src" / "list-functions.md"
-with open(path_functions, "w") as f:
-    subprocess.run(
-        ["cargo", "run", "--example=inspect", "functions"], stdout=f, text=True
-    )
+
+def list_of_functions(file_name, title, modules):
+    path_functions = SCRIPT_DIR / "src" / f"list-functions-{file_name}.md"
+    with open(path_functions, "w") as f:
+        subprocess.run(
+            ["cargo", "run", "--example=inspect", "--", "functions", title] + modules,
+            stdout=f,
+            text=True,
+        )
+
+
+list_of_functions(
+    "core",
+    "Core",
+    ["core::quantities", "core::error", "core::random"],
+)
+
+list_of_functions("lists", "Lists", ["core::lists"])
+
+list_of_functions("strings", "Strings", ["core::strings"])
+
+list_of_functions(
+    "datetime", "Date and time", ["datetime::functions", "datetime::human"]
+)
+
+list_of_functions(
+    "math",
+    "Mathematical functions",
+    [
+        "core::functions",
+        "math::functions",
+        "math::trigonometry_extra",
+        "math::statistics",
+    ],
+)
+
+list_of_functions(
+    "other", "Other", ["physics::temperature_conversion", "chemistry::elements"]
+)
 
 subprocess.run(["mdbook", "build"], text=True)

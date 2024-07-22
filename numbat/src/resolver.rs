@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use crate::{
     ast::Statement, module_importer::ModuleImporter, parser::parse, span::Span, ParseError,
@@ -50,6 +50,7 @@ pub struct Resolver {
     text_code_source_count: usize,
     internal_code_source_count: usize,
     imported_modules: Vec<ModulePath>,
+    codesources: HashMap<usize, CodeSource>,
 }
 
 impl Resolver {
@@ -60,6 +61,7 @@ impl Resolver {
             text_code_source_count: 0,
             internal_code_source_count: 0,
             imported_modules: vec![],
+            codesources: HashMap::new(),
         }
     }
 
@@ -84,7 +86,14 @@ impl Resolver {
             ),
         };
 
-        self.files.add(code_source_name, content.to_string())
+        let id = self.files.add(code_source_name, content.to_string());
+        self.codesources.insert(id, code_source);
+
+        id
+    }
+
+    pub fn get_code_source(&self, id: usize) -> CodeSource {
+        self.codesources.get(&id).cloned().unwrap()
     }
 
     fn parse(&self, code: &str, code_source_id: usize) -> Result<Vec<Statement>> {

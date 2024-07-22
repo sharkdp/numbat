@@ -32,7 +32,7 @@ Numbat's auto-completion functionality. Instead of typing out `halflife`, just t
 let decay_rate = ln(2) / halflife
 ```
 
-As you can see, we can use typical [mathematical functions](./list-functions.md) such as the
+As you can see, we can use typical [mathematical functions](./list-functions-math.md) such as the
 natural logarithm `ln`. Next, we are interested how much radioactivity comes from a certain
 mass of potassium:
 
