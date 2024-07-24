@@ -200,6 +200,8 @@ fn is_identifier_start(c: char) -> bool {
         || is_currency_char(c)
         || is_other_allowed_identifier_char(c)
         || c == '°'
+        || c == '′'
+        || c == '″'
         || c == '_'
 }
 
