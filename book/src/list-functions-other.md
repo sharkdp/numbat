@@ -1,6 +1,6 @@
 # Other functions
 
-[Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Temperature conversion](#temperature-conversion)
+[Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion)
 
 ## Error handling
 
@@ -60,6 +60,42 @@ Get properties of a chemical element by its symbol or name (case-insensitive). F
 
 ```nbt
 fn element(pattern: String) -> ChemicalElement
+```
+
+## Mixed unit conversion
+
+Defined in: `units::mixed`
+
+### `DMS` (Degrees, minutes, seconds)
+Convert an angle to a mixed degrees, (arc)minutes, and (arc)seconds representation. Also called sexagesimal degree notation.
+More information [here](https://en.wikipedia.org/wiki/Sexagesimal_degree).
+
+```nbt
+fn DMS(alpha: Angle) -> String
+```
+
+### `DM` (Degrees, decimal minutes)
+Convert an angle to a mixed degrees and decimal minutes representation.
+More information [here](https://en.wikipedia.org/wiki/Decimal_degrees).
+
+```nbt
+fn DM(alpha: Angle) -> String
+```
+
+### `feet_and_inches` (Feet and inches)
+Convert a length to a mixed feet and inches representation.
+More information [here](https://en.wikipedia.org/wiki/Foot_(unit)).
+
+```nbt
+fn feet_and_inches(length: Length) -> String
+```
+
+### `pounds_and_ounces` (Pounds and ounces)
+Convert a mass to a mixed pounds and ounces representation.
+More information [here](https://en.wikipedia.org/wiki/Pound_(mass)).
+
+```nbt
+fn pounds_and_ounces(mass: Mass) -> String
 ```
 
 ## Temperature conversion

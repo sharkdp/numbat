@@ -219,6 +219,10 @@ list_of_functions(
                 "modules": ["chemistry::elements"],
             },
             {
+                "title": "Mixed unit conversion",
+                "modules": ["units::mixed"],
+            },
+            {
                 "title": "Temperature conversion",
                 "modules": ["physics::temperature_conversion"],
             },

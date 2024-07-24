@@ -29,6 +29,7 @@ use units::fff
 use units::misc
 use units::humorous
 use units::partsperx
+use units::mixed
 
 use units::currency
 use units::bit

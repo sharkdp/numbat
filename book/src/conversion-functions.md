@@ -15,6 +15,12 @@ now() -> tz("Asia/Kathmandu")
 # Convert a duration to days, hours, minutes, seconds
 10 million seconds -> human
 
+# Convert an angle to degrees, minutes, seconds (48° 46′ 32″)
+48.7756° -> DMS
+
+# Convert an angle to degrees, decimal minutes (48° 46.536′)
+48.7756° -> DM
+
 # Convert a number to its binary representation
 42 -> bin
 
