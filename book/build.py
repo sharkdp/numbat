@@ -255,6 +255,10 @@ list_of_functions(
                 "title": "Temperature conversion",
                 "modules": ["physics::temperature_conversion"],
             },
+            {
+                "title": "Color format conversion",
+                "modules": ["extra::color"],
+            },
         ],
     },
 )
