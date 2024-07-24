@@ -337,7 +337,7 @@ impl PrettyPrint for Quantity {
         let unit_str = format!("{}", self.unit());
 
         markup::value(formatted_number)
-            + if unit_str == "°" || unit_str.is_empty() {
+            + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {
                 markup::empty()
             } else {
                 markup::space()

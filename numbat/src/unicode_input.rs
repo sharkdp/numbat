@@ -66,6 +66,8 @@ pub const UNICODE_INPUT: &[(&[&str], &str)] = &[
     (&["yen"], "¥"),
     (&["euro"], "€"),
     (&["degree"], "°"),
+    (&["arcmin"], "′"),
+    (&["arcsec"], "″"),
     (&["ohm"], "Ω"),
     (&["Angstrom"], "Å"),
     (&["percent"], "%"),
