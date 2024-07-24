@@ -68,6 +68,14 @@ More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.
 fn ceil<T: Dim>(x: T) -> T
 ```
 
+### `trunc` (Truncation)
+Returns the integer part of \\( x \\). Non-integer numbers are always truncated towards zero.
+More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.trunc).
+
+```nbt
+fn trunc<T: Dim>(x: T) -> T
+```
+
 ### `mod` (Modulo)
 Calculates the least nonnegative remainder of \\( a (\mod b) \\).
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid).

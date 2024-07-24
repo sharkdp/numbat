@@ -36,6 +36,11 @@ fn floor<T: Dim>(x: T) -> T
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.ceil")
 fn ceil<T: Dim>(x: T) -> T
 
+@name("Truncation")
+@description("Returns the integer part of $x$. Non-integer numbers are always truncated towards zero.")
+@url("https://doc.rust-lang.org/std/primitive.f64.html#method.trunc")
+fn trunc<T: Dim>(x: T) -> T
+
 @name("Modulo")
 @description("Calculates the least nonnegative remainder of $a (\\mod b)$.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid")

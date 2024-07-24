@@ -46,6 +46,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(round, 1..=1);
         insert_function!(floor, 1..=1);
         insert_function!(ceil, 1..=1);
+        insert_function!(trunc, 1..=1);
 
         insert_function!(sin, 1..=1);
         insert_function!(cos, 1..=1);
