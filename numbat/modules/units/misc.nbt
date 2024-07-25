@@ -31,6 +31,8 @@ unit calorie: Energy = 4.184 joule
 unit BTU: Energy = 1055.05585262 joule
 
 @name("Therm")
+@description("A non-SI unit of heat energy equal to 100 000 BTU. therm has different definitions
+              and numbat is using the ISO standard definition which equals 1055.05 joules")
 @url("https://en.wikipedia.org/wiki/Therm")
 @aliases(therms, thm : short)
 unit therm: Energy = 100_000 BTU
