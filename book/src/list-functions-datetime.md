@@ -74,6 +74,14 @@ Parses a string (time only) into a `DateTime` object.
 fn time(input: String) -> DateTime
 ```
 
+### `julian_date` (Julian date)
+Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the propleptic Gregorian calendar).
+More information [here](https://en.wikipedia.org/wiki/Julian_day).
+
+```nbt
+fn julian_date(dt: DateTime) -> Time
+```
+
 ### `human` (Human-readable time duration)
 Converts a time duration to a human-readable string in days, hours, minutes and seconds.
 More information [here](https://numbat.dev/doc/date-and-time.html).
