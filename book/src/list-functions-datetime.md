@@ -75,7 +75,7 @@ fn time(input: String) -> DateTime
 ```
 
 ### `julian_date` (Julian date)
-Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the propleptic Gregorian calendar).
+Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the proleptic Gregorian calendar).
 More information [here](https://en.wikipedia.org/wiki/Julian_day).
 
 ```nbt

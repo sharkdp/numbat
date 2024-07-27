@@ -44,7 +44,7 @@ fn time(input: String) -> DateTime =
   datetime("{_today_str()} {input}")
 
 @name("Julian date")
-@description("Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the propleptic Gregorian calendar).")
+@description("Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the proleptic Gregorian calendar).")
 @url("https://en.wikipedia.org/wiki/Julian_day")
 fn julian_date(dt: DateTime) -> Time =
   (dt - datetime("-4713-11-24 12:00:00 +0000")) -> days
