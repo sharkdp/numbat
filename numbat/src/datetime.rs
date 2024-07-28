@@ -56,6 +56,10 @@ pub fn parse_datetime(input: &str) -> Option<Zoned> {
     }
 }
 
-pub fn to_rfc2822_save(dt: &Zoned) -> String {
-    rfc2822::to_string(dt).unwrap_or("<year out of range for displaying in RFC2822>".into())
+pub fn to_string(dt: &Zoned) -> String {
+    if dt.time_zone() == &TimeZone::UTC {
+        dt.strftime("%Y-%m-%d %H:%M:%S UTC").to_string()
+    } else {
+        dt.strftime("%Y-%m-%d %H:%M:%S %Z (UTC %z)").to_string()
+    }
 }
