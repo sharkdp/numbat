@@ -513,9 +513,9 @@ impl<'a> Parser<'a> {
 
                         parameter_span = parameter_span.extend(&self.last().unwrap().span);
 
-                        self.ignore_newlines();
+                        self.skip_empty_lines();
                         let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                        self.ignore_newlines();
+                        self.skip_empty_lines();
                         if self.match_exact(TokenKind::RightParen).is_some() {
                             break;
                         }
@@ -1183,17 +1183,17 @@ impl<'a> Parser<'a> {
     }
 
     fn arguments(&mut self) -> Result<Vec<Expression>> {
-        self.ignore_newlines();
+        self.skip_empty_lines();
         if self.match_exact(TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
         let mut args: Vec<Expression> = vec![self.expression()?];
         loop {
-            self.ignore_newlines();
+            self.skip_empty_lines();
 
             if self.match_exact(TokenKind::Comma).is_some() {
-                self.ignore_newlines();
+                self.skip_empty_lines();
                 if self.match_exact(TokenKind::RightParen).is_some() {
                     break;
                 }
@@ -1703,10 +1703,6 @@ impl<'a> Parser<'a> {
         } else {
             e
         }
-    }
-
-    fn ignore_newlines(&mut self) {
-        while self.match_exact(TokenKind::Newline).is_some() {}
     }
 
     fn match_exact(&mut self, token_kind: TokenKind) -> Option<&'a Token> {
