@@ -590,7 +590,7 @@ impl Vm {
     }
 
     #[track_caller]
-    fn pop_datetime(&mut self) -> chrono::DateTime<chrono::FixedOffset> {
+    fn pop_datetime(&mut self) -> jiff::Zoned {
         match self.pop() {
             Value::DateTime(q) => q,
             _ => panic!("Expected datetime to be on the top of the stack"),
@@ -715,19 +715,18 @@ impl Vm {
                     let base = rhs.to_base_unit_representation();
                     let seconds_f = base.unsafe_value().to_f64();
 
-                    let duration = chrono::Duration::try_seconds(seconds_f.trunc() as i64)
-                        .ok_or(RuntimeError::DurationOutOfRange)?
-                        + chrono::Duration::nanoseconds(
-                            (seconds_f.fract() * 1_000_000_000f64).round() as i64,
-                        );
+                    let span = jiff::Span::new()
+                        .try_seconds(seconds_f.trunc() as i64)
+                        .map_err(|_| RuntimeError::DurationOutOfRange)?
+                        .nanoseconds((seconds_f.fract() * 1_000_000_000f64).round() as i64);
 
                     self.push(Value::DateTime(match op {
                         Op::AddToDateTime => lhs
-                            .checked_add_signed(duration)
-                            .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                            .checked_add(span)
+                            .map_err(|_| RuntimeError::DateTimeOutOfRange)?,
                         Op::SubFromDateTime => lhs
-                            .checked_sub_signed(duration)
-                            .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                            .checked_sub(span)
+                            .map_err(|_| RuntimeError::DateTimeOutOfRange)?,
                         _ => unreachable!(),
                     }));
                 }
@@ -736,9 +735,8 @@ impl Vm {
                     let rhs = self.pop_datetime();
                     let lhs = self.pop_datetime();
 
-                    let duration = lhs - rhs;
-                    let duration = duration.subsec_nanos() as f64 / 1_000_000_000f64
-                        + duration.num_seconds() as f64;
+                    let duration = lhs.since(&rhs).unwrap(); // TODO
+                    let duration = duration.total(jiff::Unit::Second).unwrap(); // TODO
 
                     let ret = Value::Quantity(Quantity::new(
                         Number::from_f64(duration),
@@ -903,11 +901,10 @@ impl Vm {
 
                             let dt = self.pop_datetime();
 
-                            let tz: chrono_tz::Tz = tz_name
-                                .parse()
+                            let tz = jiff::tz::TimeZone::get(&tz_name)
                                 .map_err(|_| RuntimeError::UnknownTimezone(tz_name.into()))?;
 
-                            let dt = dt.with_timezone(&tz).fixed_offset();
+                            let dt = dt.with_time_zone(tz);
 
                             self.push(Value::DateTime(dt));
                         }
