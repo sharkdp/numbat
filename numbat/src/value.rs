@@ -1,6 +1,7 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use itertools::Itertools;
+use jiff::Zoned;
 
 use crate::{pretty_print::PrettyPrint, quantity::Quantity, typed_ast::StructInfo};
 
@@ -32,7 +33,7 @@ pub enum Value {
     Boolean(bool),
     String(String),
     /// A DateTime with an associated offset used when pretty printing
-    DateTime(chrono::DateTime<chrono::FixedOffset>),
+    DateTime(Zoned),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<String>),
     StructInstance(Arc<StructInfo>, Vec<Value>),
@@ -68,7 +69,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_datetime(self) -> chrono::DateTime<chrono::FixedOffset> {
+    pub fn unsafe_as_datetime(self) -> jiff::Zoned {
         if let Value::DateTime(dt) = self {
             dt
         } else {

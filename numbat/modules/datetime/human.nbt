@@ -12,7 +12,7 @@ fn _remove_plural_suffix(str: String) -> String =
   if str_slice(str, 0, 2) == "1 " then str_slice(str, 0, str_length(str) - 1) else str
 
 fn _human_seconds(dt: DateTime) -> String =
-  _remove_plural_suffix(format_datetime("%-S%.f seconds", dt))
+  _remove_plural_suffix(format_datetime("%-S seconds", dt))
 
 fn _human_minutes(dt: DateTime) -> String =
   _remove_plural_suffix(format_datetime("%-M minutes", dt))

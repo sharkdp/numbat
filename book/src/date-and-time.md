@@ -62,7 +62,7 @@ The following functions are available for date and time handling:
 - `datetime(input: String) -> DateTime`: Parses a string (date and time) into a `DateTime` object.
 - `date(input: String) -> DateTime`: Parses a string (only date) into a `DateTime` object.
 - `time(input: String) -> DateTime`: Parses a string (only time) into a `DateTime` object.
-- `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/chrono/latest/chrono/format/strftime/index.html#specifiers) for possible format specifiers.
+- `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/jiff/0.1.1/jiff/fmt/strtime/index.html#conversion-specifications) for possible format specifiers.
 - `tz(tz: String) -> Fn[(DateTime) -> DateTime]`: Returns a timezone conversion function, typically used with the conversion operator (`datetime -> tz("Europe/Berlin")`)
 - `local(dt: DateTime) -> DateTime`: Timezone conversion function targeting the users local timezone (`datetime -> local`)
 - `get_local_timezone() -> String`: Returns the users local timezone
