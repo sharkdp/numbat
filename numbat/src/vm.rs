@@ -922,7 +922,7 @@ impl Vm {
                         Value::Quantity(q) => q.to_string(),
                         Value::Boolean(b) => b.to_string(),
                         Value::String(s) => s,
-                        Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
+                        Value::DateTime(dt) => crate::datetime::to_string(&dt),
                         Value::FunctionReference(r) => r.to_string(),
                         s @ Value::StructInstance(..) => s.to_string(),
                         l @ Value::List(_) => l.to_string(),
