@@ -36,7 +36,7 @@ pub fn format_datetime(mut args: Args) -> Result<Value> {
 
 pub fn get_local_timezone(_args: Args) -> Result<Value> {
     let local_tz = datetime::get_local_timezone_or_utc();
-    let tz_name = local_tz.iana_name().unwrap_or("<unknown timezone>"); // TODO
+    let tz_name = local_tz.iana_name().unwrap_or("<unknown timezone>");
 
     return_string!(tz_name)
 }
