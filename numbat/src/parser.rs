@@ -513,8 +513,12 @@ impl<'a> Parser<'a> {
 
                         parameter_span = parameter_span.extend(&self.last().unwrap().span);
 
+                        self.ignore_newlines();
                         let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                        self.match_exact(TokenKind::Newline);
+                        self.ignore_newlines();
+                        if self.match_exact(TokenKind::RightParen).is_some() {
+                            break;
+                        }
 
                         if !has_comma && self.peek().kind != TokenKind::RightParen {
                             return Err(ParseError {
@@ -2454,6 +2458,38 @@ mod tests {
                 function_name: "foo".into(),
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None)],
+                body: Some(scalar!(1.0)),
+                return_type_annotation: None,
+                decorators: vec![],
+            },
+        );
+
+        parse_as(
+            &["fn foo(x,) = 1"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![(Span::dummy(), "x".into(), None)],
+                body: Some(scalar!(1.0)),
+                return_type_annotation: None,
+                decorators: vec![],
+            },
+        );
+
+        parse_as(
+            &["fn foo(
+                x,
+                y,
+            ) = 1"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![
+                    (Span::dummy(), "x".into(), None),
+                    (Span::dummy(), "y".into(), None),
+                ],
                 body: Some(scalar!(1.0)),
                 return_type_annotation: None,
                 decorators: vec![],
