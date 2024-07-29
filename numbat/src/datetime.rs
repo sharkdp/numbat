@@ -13,14 +13,14 @@ pub fn parse_datetime(input: &str) -> Option<Zoned> {
     } else {
         const FORMATS: [&str; 8] = [
             // 24 hour formats:
-            "%Y-%m-%d %H:%M:%S", // TODO: add support for fractional seconds
-            "%Y/%m/%d %H:%M:%S", // TODO: add support for fractional seconds
+            "%Y-%m-%d %H:%M:%S%.f",
+            "%Y/%m/%d %H:%M:%S%.f",
             "%Y-%m-%d %H:%M",
             "%Y/%m/%d %H:%M",
             // 12 hour formats:
-            "%Y-%m-%d %I:%M:%S %p", // TODO: add support for fractional seconds
+            "%Y-%m-%d %I:%M:%S %p%.f",
             "%Y-%m-%d %I:%M %p",
-            "%Y/%m/%d %I:%M:%S %p", // TODO: add support for fractional seconds
+            "%Y/%m/%d %I:%M:%S %p%.f",
             "%Y/%m/%d %I:%M %p",
         ];
 

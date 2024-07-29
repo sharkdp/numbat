@@ -664,9 +664,9 @@ checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
 name = "jiff"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52113e019082508e868f92202f6e55c690c69990b17c350db01813cdf1dc1b19"
+checksum = "0c33f2189d126c374d29641af39a0dc73daa1c8292403645575ce32e22e768a4"
 dependencies = [
  "jiff-tzdb-platform",
  "windows-sys 0.52.0",
