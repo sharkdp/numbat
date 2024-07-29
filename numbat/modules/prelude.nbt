@@ -6,11 +6,16 @@ use core::lists
 use core::strings
 use core::error
 use core::random
+use core::numbers
 
 use math::constants
-use math::functions
+use math::transcendental
+use math::trigonometry
 use math::trigonometry_extra
 use math::statistics
+use math::number_theory
+use math::distributions
+use math::geometry
 
 use units::si
 use units::time
@@ -24,6 +29,7 @@ use units::fff
 use units::misc
 use units::humorous
 use units::partsperx
+use units::mixed
 
 use units::currency
 use units::bit

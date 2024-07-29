@@ -2,15 +2,11 @@ use itertools::Itertools;
 use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context};
 use std::path::Path;
 
-fn main() {
-    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
+const AUTO_GENERATED_HINT: &'static str = "<!-- NOTE! This file is auto-generated -->";
 
-    let mut importer = FileSystemImporter::default();
-    importer.add_path(module_path);
-    let mut ctx = Context::new(importer);
-    let _result = ctx.interpret("use all", CodeSource::Internal).unwrap();
+fn inspect_units(ctx: &Context) {
+    println!("{AUTO_GENERATED_HINT}
 
-    println!("<!-- NOTE! This file is auto-generated -->
 # List of supported units
 
 See also: [Unit notation](./unit-notation.md).
@@ -41,5 +37,76 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
         let readable_type = unit_metadata.readable_type;
 
         println!("| `{readable_type}` | {name_with_url} | `{names}` |");
+    }
+}
+
+fn inspect_functions_in_module(ctx: &Context, module: String) {
+    for (fn_name, name, signature, description, url, code_source) in ctx.functions() {
+        let CodeSource::Module(module_path, _) = code_source else {
+            unreachable!();
+        };
+
+        if module_path.to_string() != module {
+            continue;
+        }
+
+        if let Some(name) = name {
+            println!("### `{fn_name}` ({name})");
+        } else {
+            println!("### `{fn_name}`");
+        }
+
+        if let Some(ref description_raw) = description {
+            let description_raw = description_raw.trim().to_string();
+
+            // Replace $..$ with \\( .. \\) for mdbook.
+            let mut description = String::new();
+            for (i, part) in description_raw.split('$').enumerate() {
+                if i % 2 == 0 {
+                    description.push_str(part);
+                } else {
+                    description.push_str("\\\\( ");
+                    description.push_str(part);
+                    description.push_str(" \\\\)");
+                }
+            }
+
+            if description.ends_with('.') {
+                println!("{description}");
+            } else {
+                println!("{description}.");
+            }
+        }
+        if let Some(url) = url {
+            println!("More information [here]({url}).");
+        }
+        println!();
+
+        println!("```nbt");
+        println!("{}", signature);
+        println!("```");
+        println!();
+    }
+}
+
+fn main() {
+    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
+
+    let mut importer = FileSystemImporter::default();
+    importer.add_path(module_path);
+    let mut ctx = Context::new(importer);
+    let _result = ctx.interpret("use all", CodeSource::Internal).unwrap();
+
+    let mut args = std::env::args();
+    args.next();
+    if let Some(arg) = args.next() {
+        match arg.as_str() {
+            "units" => inspect_units(&ctx),
+            "functions" => {
+                let module = args.next().unwrap();
+                inspect_functions_in_module(&ctx, module)
+            }
+            _ => eprintln!("USAGE: inspect [units|functions <module>]"),
+        }
     }
 }

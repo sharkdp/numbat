@@ -41,6 +41,7 @@ simple_polymorphic_math_function!(abs, abs);
 simple_polymorphic_math_function!(round, round);
 simple_polymorphic_math_function!(floor, floor);
 simple_polymorphic_math_function!(ceil, ceil);
+simple_polymorphic_math_function!(trunc, trunc);
 
 simple_scalar_math_function!(sin, sin);
 simple_scalar_math_function!(cos, cos);

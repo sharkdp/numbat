@@ -8,6 +8,7 @@ use crate::dimension::DimensionRegistry;
 use crate::pretty_print::escape_numbat_string;
 use crate::traversal::{ForAllExpressions, ForAllTypeSchemes};
 use crate::type_variable::TypeVariable;
+use crate::typechecker::qualified_type::QualifiedType;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::typechecker::TypeCheckError;
 use crate::{
@@ -575,6 +576,7 @@ pub enum Statement {
         Expression,
         Option<TypeAnnotation>,
         TypeScheme,
+        Markup,
     ),
     DefineFunction(
         String,
@@ -582,11 +584,15 @@ pub enum Statement {
         Vec<(String, Option<TypeParameterBound>)>, // type parameters
         Vec<(
             // parameters:
-            Span,   // span of the parameter
-            String, // parameter name
+            Span,                   // span of the parameter
+            String,                 // parameter name
+            Option<TypeAnnotation>, // parameter type annotation
+            Markup,                 // readable parameter type
         )>,
-        Option<Expression>, // function body
-        TypeScheme,         // function type
+        Option<Expression>,     // function body
+        TypeScheme,             // function type
+        Option<TypeAnnotation>, // return type annotation
+        Markup,                 // readable return type
     ),
     DefineDimension(String, Vec<TypeExpression>),
     DefineBaseUnit(String, Vec<Decorator>, Option<TypeAnnotation>, TypeScheme),
@@ -596,6 +602,7 @@ pub enum Statement {
         Vec<Decorator>,
         Option<TypeAnnotation>,
         TypeScheme,
+        Markup,
     ),
     ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
     DefineStruct(StructInfo),
@@ -612,6 +619,68 @@ impl Statement {
 
     pub(crate) fn generalize_types(&mut self, dtype_variables: &[TypeVariable]) {
         self.for_all_type_schemes(&mut |type_: &mut TypeScheme| type_.generalize(dtype_variables));
+    }
+
+    fn create_readable_type(
+        registry: &DimensionRegistry,
+        type_: &TypeScheme,
+        annotation: &Option<TypeAnnotation>,
+    ) -> Markup {
+        if let Some(annotation) = annotation {
+            annotation.pretty_print()
+        } else {
+            type_.to_readable_type(registry)
+        }
+    }
+
+    pub(crate) fn update_readable_types(&mut self, registry: &DimensionRegistry) {
+        match self {
+            Statement::Expression(_) => {}
+            Statement::DefineVariable(_, _, _, type_annotation, type_, readable_type) => {
+                *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+            }
+            Statement::DefineFunction(
+                _,
+                _,
+                type_parameters,
+                parameters,
+                _,
+                fn_type,
+                return_type_annotation,
+                readable_return_type,
+            ) => {
+                let (fn_type, _) = fn_type.instantiate_for_printing(Some(
+                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
+                ));
+
+                let Type::Fn(parameter_types, return_type) = fn_type.inner else {
+                    unreachable!("Expected a function type")
+                };
+
+                *readable_return_type = Self::create_readable_type(
+                    registry,
+                    &TypeScheme::concrete(*return_type),
+                    return_type_annotation,
+                );
+
+                for ((_, _, type_annotation, readable_parameter_type), parameter_type) in
+                    parameters.iter_mut().zip(parameter_types.iter())
+                {
+                    *readable_parameter_type = Self::create_readable_type(
+                        registry,
+                        &TypeScheme::concrete(parameter_type.clone()),
+                        type_annotation,
+                    );
+                }
+            }
+            Statement::DefineDimension(_, _) => {}
+            Statement::DefineBaseUnit(_, _, _, _) => {}
+            Statement::DefineDerivedUnit(_, _, _, type_annotation, type_, readable_type) => {
+                *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+            }
+            Statement::ProcedureCall(_, _) => {}
+            Statement::DefineStruct(_) => {}
+        }
     }
 
     pub(crate) fn exponents_for(&mut self, tv: &TypeVariable) -> Vec<Exponent> {
@@ -770,19 +839,75 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
     markup_decorators
 }
 
+pub fn pretty_print_function_signature(
+    function_name: &str,
+    fn_type: &QualifiedType,
+    type_parameters: &[TypeVariable],
+    parameters: impl Iterator<
+        Item = (
+            String, // parameter name
+            Markup, // readable parameter type
+        ),
+    >,
+    readable_return_type: &Markup,
+) -> Markup {
+    let markup_type_parameters = if type_parameters.is_empty() {
+        m::empty()
+    } else {
+        m::operator("<")
+            + Itertools::intersperse(
+                type_parameters.iter().map(|tv| {
+                    m::type_identifier(tv.unsafe_name())
+                        + if fn_type.bounds.is_dtype_bound(tv) {
+                            m::operator(":") + m::space() + m::type_identifier("Dim")
+                        } else {
+                            m::empty()
+                        }
+                }),
+                m::operator(", "),
+            )
+            .sum()
+            + m::operator(">")
+    };
+
+    let markup_parameters = Itertools::intersperse(
+        parameters.map(|(name, parameter_type)| {
+            m::identifier(name) + m::operator(":") + m::space() + parameter_type.clone()
+        }),
+        m::operator(", "),
+    )
+    .sum();
+
+    let markup_return_type =
+        m::space() + m::operator("->") + m::space() + readable_return_type.clone();
+
+    m::keyword("fn")
+        + m::space()
+        + m::identifier(function_name)
+        + markup_type_parameters
+        + m::operator("(")
+        + markup_parameters
+        + m::operator(")")
+        + markup_return_type
+}
+
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DefineVariable(identifier, _decs, expr, annotation, type_) => {
+            Statement::DefineVariable(
+                identifier,
+                _decs,
+                expr,
+                _annotation,
+                _type,
+                readable_type,
+            ) => {
                 m::keyword("let")
                     + m::space()
                     + m::identifier(identifier)
                     + m::operator(":")
                     + m::space()
-                    + annotation
-                        .as_ref()
-                        .map(|a| a.pretty_print())
-                        .unwrap_or(type_.pretty_print())
+                    + readable_type.clone()
                     + m::space()
                     + m::operator("=")
                     + m::space()
@@ -791,64 +916,29 @@ impl PrettyPrint for Statement {
             Statement::DefineFunction(
                 function_name,
                 _decorators,
-                _type_parameters, // TODO: we ignore user-supplied type parameters here
+                type_parameters,
                 parameters,
                 body,
                 fn_type,
+                _return_type_annotation,
+                readable_return_type,
             ) => {
-                let (fn_type, type_parameters) = fn_type.instantiate_for_printing();
+                let (fn_type, type_parameters) = fn_type.instantiate_for_printing(Some(
+                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
+                ));
 
-                let Type::Fn(parameter_types, return_type) = fn_type.inner else {
-                    unreachable!("Expected a function type")
-                };
-
-                let markup_type_parameters = if type_parameters.is_empty() {
-                    m::empty()
-                } else {
-                    m::operator("<")
-                        + Itertools::intersperse(
-                            type_parameters.iter().map(|tv| {
-                                m::type_identifier(tv.unsafe_name())
-                                    + if fn_type.bounds.is_dtype_bound(tv) {
-                                        m::operator(":") + m::space() + m::type_identifier("Dim")
-                                    } else {
-                                        m::empty()
-                                    }
-                            }),
-                            m::operator(", "),
-                        )
-                        .sum()
-                        + m::operator(">")
-                };
-
-                let markup_parameters = Itertools::intersperse(
-                    parameters.iter().zip(parameter_types.iter()).map(
-                        |((_span, name), parameter_type)| {
-                            m::identifier(name)
-                                + m::operator(":")
-                                + m::space()
-                                + parameter_type.pretty_print()
-                        },
-                    ),
-                    m::operator(", "),
-                )
-                .sum();
-
-                let markup_return_type =
-                    m::space() + m::operator("->") + m::space() + return_type.pretty_print();
-
-                m::keyword("fn")
-                    + m::space()
-                    + m::identifier(function_name)
-                    + markup_type_parameters
-                    + m::operator("(")
-                    + markup_parameters
-                    + m::operator(")")
-                    + markup_return_type
-                    + body
-                        .as_ref()
-                        .map(|e| m::space() + m::operator("=") + m::space() + e.pretty_print())
-                        .unwrap_or_default()
+                pretty_print_function_signature(
+                    function_name,
+                    &fn_type,
+                    &type_parameters,
+                    parameters
+                        .iter()
+                        .map(|(_, name, _, type_)| (name.clone(), type_.clone())),
+                    readable_return_type,
+                ) + body
+                    .as_ref()
+                    .map(|e| m::space() + m::operator("=") + m::space() + e.pretty_print())
+                    .unwrap_or_default()
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DefineDimension(identifier, dexprs) if dexprs.is_empty() => {
@@ -879,17 +969,21 @@ impl PrettyPrint for Statement {
                         .map(|a| a.pretty_print())
                         .unwrap_or(type_.pretty_print())
             }
-            Statement::DefineDerivedUnit(identifier, expr, decorators, annotation, type_) => {
+            Statement::DefineDerivedUnit(
+                identifier,
+                expr,
+                decorators,
+                _annotation,
+                _type,
+                readable_type,
+            ) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
                     + m::unit(identifier)
                     + m::operator(":")
                     + m::space()
-                    + annotation
-                        .as_ref()
-                        .map(|a| a.pretty_print())
-                        .unwrap_or(type_.pretty_print())
+                    + readable_type.clone()
                     + m::space()
                     + m::operator("=")
                     + m::space()

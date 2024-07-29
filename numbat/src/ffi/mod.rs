@@ -12,6 +12,7 @@ mod strings;
 use std::collections::VecDeque;
 
 use crate::interpreter::RuntimeError;
+use crate::span::Span;
 use crate::value::Value;
 use crate::vm::ExecutionContext;
 
@@ -27,7 +28,7 @@ type BoxedFunction = Box<dyn Fn(Args) -> Result<Value> + Send + Sync>;
 
 pub(crate) enum Callable {
     Function(BoxedFunction),
-    Procedure(fn(&mut ExecutionContext, Args) -> ControlFlow),
+    Procedure(fn(&mut ExecutionContext, Args, Vec<Span>) -> ControlFlow),
 }
 
 pub(crate) struct ForeignFunction {

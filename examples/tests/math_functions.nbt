@@ -1,0 +1,196 @@
+# sqrt
+
+assert_eq(sqrt(0), 0)
+assert_eq(sqrt(1), 1)
+assert_eq(sqrt(4), 2)
+
+assert_eq(sqrt(0 m²), 0 m)
+assert_eq(sqrt(1 m²), 1 m)
+assert_eq(sqrt(4 m²), 2 m)
+
+# sqr
+
+assert_eq(sqr(0), 0)
+assert_eq(sqr(1), 1)
+assert_eq(sqr(4), 16)
+
+assert_eq(sqr(0 m), 0 m²)
+assert_eq(sqr(1 m), 1 m²)
+assert_eq(sqr(4 m), 16 m²)
+
+# exp
+
+assert_eq(exp(0), 1)
+assert_eq(exp(1), e)
+assert_eq(exp(2), e * e, 1e-8)
+
+# ln/log
+
+assert_eq(ln(1), 0)
+assert_eq(ln(e), 1)
+assert_eq(ln(e * e), 2, 1e-8)
+
+assert_eq(log(1), 0)
+assert_eq(log(e), 1)
+assert_eq(log(e * e), 2, 1e-8)
+
+# log10
+
+assert_eq(log10(1), 0)
+assert_eq(log10(10), 1)
+assert_eq(log10(100), 2)
+
+# log2
+
+assert_eq(log2(1), 0)
+assert_eq(log2(2), 1)
+assert_eq(log2(4), 2)
+assert_eq(log2(1024), 10)
+
+# sin, cos, tan
+
+assert_eq(sin(0), 0, 1e-8)
+assert_eq(sin(π / 2), 1, 1e-8)
+assert_eq(sin(π), 0, 1e-8)
+
+assert_eq(cos(0), 1, 1e-8)
+assert_eq(cos(π / 2), 0, 1e-8)
+assert_eq(cos(π), -1, 1e-8)
+
+assert_eq(tan(0), 0, 1e-8)
+assert_eq(tan(π / 4), 1, 1e-8)
+
+# asin, acos, atan
+
+assert_eq(asin(0), 0, 1e-8)
+assert_eq(asin(1), π / 2, 1e-8)
+
+assert_eq(acos(0), π / 2, 1e-8)
+assert_eq(acos(1), 0, 1e-8)
+
+assert_eq(atan(0), 0, 1e-8)
+assert_eq(atan(1), π / 4, 1e-8)
+
+# atan2
+
+assert_eq(atan2(0, 1), 0, 1e-8)
+assert_eq(atan2(1, 0), π / 2, 1e-8)
+assert_eq(atan2(0, -1), π, 1e-8)
+assert_eq(atan2(-1, 0), -π / 2, 1e-8)
+
+# sinh, cosh, tanh
+
+assert_eq(sinh(0), 0, 1e-8)
+assert_eq(sinh(1), (e - 1 / e) / 2, 1e-8)
+
+assert_eq(cosh(0), 1, 1e-8)
+assert_eq(cosh(1), (e + 1 / e) / 2, 1e-8)
+
+assert_eq(tanh(0), 0, 1e-8)
+assert_eq(tanh(1), (e * e - 1) / (e * e + 1), 1e-8)
+
+# asinh, acosh, atanh
+
+assert_eq(asinh(0), 0, 1e-8)
+assert_eq(asinh(1), ln(1 + sqrt(2)), 1e-8)
+
+assert_eq(acosh(1), 0, 1e-8)
+assert_eq(acosh(2), ln(2 + sqrt(3)), 1e-8)
+
+assert_eq(atanh(0), 0, 1e-8)
+assert_eq(atanh(0.5), 0.549_306_144, 1e-8)
+
+# gamma
+
+assert_eq(gamma(1), 1)
+assert_eq(gamma(2), 1)
+assert_eq(gamma(2.5), 1.329_340_388, 1e-8)
+assert_eq(gamma(3), 2)
+assert_eq(gamma(4), 6)
+
+# maximum
+
+assert_eq(maximum([1]), 1)
+assert_eq(maximum([1, 3]), 3)
+assert_eq(maximum([3, 1]), 3)
+assert_eq(maximum([100 cm, 3 m]), 3 m)
+
+# minimum
+
+assert_eq(minimum([1]), 1)
+assert_eq(minimum([1, 3]), 1)
+assert_eq(minimum([3, 1]), 1)
+assert_eq(minimum([100 cm, 3 m]), 100 cm)
+
+# mean
+
+assert_eq(mean([]), 0)
+assert_eq(mean([1]), 1)
+assert_eq(mean([1, 3]), 2)
+assert_eq(mean([1 m, 300 cm]), 2 m)
+
+# variance
+
+assert_eq(variance([]), 0)
+assert_eq(variance([1]), 0)
+assert_eq(variance([1, 1, 1, 1]), 0)
+assert_eq(variance([1, 2, 3, 4, 5]), 2.0)
+assert_eq(variance([1, -1, 1, -1]), 1.0)
+assert_eq(variance([-2, -4, -6, -8]), 5.0)
+
+# standard deviation
+
+assert_eq(stdev([]), 0)
+assert_eq(stdev([1]), 0)
+assert_eq(stdev([1, 1, 1, 1]), 0)
+assert_eq(stdev([1, 2, 3, 4, 5]), sqrt(2.0))
+
+# median
+
+assert_eq(median([1]), 1)
+assert_eq(median([1, 2]), 1.5)
+assert_eq(median([1, 2, 3]), 2)
+assert_eq(median([1, 2, 3, 4]), 2.5)
+assert_eq(median([1, 2, 3, 4, 5]), 3)
+
+# gcd
+
+assert_eq(gcd(0, 0), 0)
+assert_eq(gcd(0, 1), 1)
+assert_eq(gcd(1, 0), 1)
+assert_eq(gcd(1, 1), 1)
+assert_eq(gcd(2, 3), 1)
+assert_eq(gcd(2, 4), 2)
+assert_eq(gcd(3, 6), 3)
+assert_eq(gcd(4, 6), 2)
+assert_eq(gcd(4, 8), 4)
+assert_eq(gcd(6, 35), 1)
+assert_eq(gcd(1071, 462), 21)
+assert_eq(gcd(-8, 4), 4)
+assert_eq(gcd(-8, -4), 4)
+assert_eq(gcd(8, -4), 4)
+
+# lcm
+
+assert_eq(lcm(1, 1), 1)
+assert_eq(lcm(2, 3), 6)
+assert_eq(lcm(2, 4), 4)
+assert_eq(lcm(3, 6), 6)
+assert_eq(lcm(21, 6), 42)
+assert_eq(lcm(-8, 4), 8)
+assert_eq(lcm(8, -4), 8)
+
+# hypot2, hypot3
+
+assert_eq(hypot2(3, 4), 5)
+assert_eq(hypot2(3 m, 4 m), 5 m)
+
+assert_eq(hypot3(8, 9, 12), 17)
+assert_eq(hypot3(8 m, 9 m, 12 m), 17 m)
+
+# circle_area, circle_circumference, sphere_area, sphere_volume
+
+assert_eq(circle_area(2 m), 4 π m²)
+assert_eq(circle_circumference(2 m), 4 π m)
+assert_eq(sphere_area(2 m), 16 π m²)
+assert_eq(sphere_volume(2 m), 32/3 * π m³)

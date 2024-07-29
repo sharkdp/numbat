@@ -310,7 +310,14 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DefineVariable(identifier, decorators, expr, _annotation, _type) => {
+            Statement::DefineVariable(
+                identifier,
+                decorators,
+                expr,
+                _annotation,
+                _type,
+                _readable_type,
+            ) => {
                 let current_depth = self.current_depth();
 
                 // For variables, we ignore the prefix info and only use the names
@@ -342,6 +349,8 @@ impl BytecodeInterpreter {
                 parameters,
                 Some(expr),
                 _return_type,
+                _return_type_annotation,
+                _readable_return_type,
             ) => {
                 self.vm.begin_function(name);
 
@@ -372,6 +381,8 @@ impl BytecodeInterpreter {
                 parameters,
                 None,
                 _return_type,
+                _return_type_annotation,
+                _readable_return_type,
             ) => {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
@@ -422,7 +433,14 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::DefineDerivedUnit(unit_name, expr, decorators, annotation, type_) => {
+            Statement::DefineDerivedUnit(
+                unit_name,
+                expr,
+                decorators,
+                annotation,
+                type_,
+                _readable_type,
+            ) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.clone(), ap))
                     .collect();
@@ -487,9 +505,18 @@ impl BytecodeInterpreter {
 
                 let name = &ffi::procedures().get(kind).unwrap().name;
 
-                let idx = self.vm.get_ffi_callable_idx(name).unwrap();
-                self.vm
-                    .add_op2(Op::FFICallProcedure, idx, args.len() as u16); // TODO: check overflow
+                let callable_idx = self.vm.get_ffi_callable_idx(name).unwrap();
+
+                let arg_spans = args.iter().map(|a| a.full_span()).collect();
+                let spans_idx = self.vm.add_procedure_arg_span(arg_spans);
+
+                self.vm.add_op3(
+                    Op::FFICallProcedure,
+                    callable_idx,
+                    args.len() as u16,
+                    spans_idx,
+                );
+                // TODO: check overflow
             }
             Statement::DefineStruct(struct_info) => {
                 self.vm.add_struct_info(struct_info);

@@ -1,4 +1,5 @@
 <!-- NOTE! This file is auto-generated -->
+
 # List of supported units
 
 See also: [Unit notation](./unit-notation.md).
@@ -11,8 +12,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `AbsorbedDose` | [Gray](https://en.wikipedia.org/wiki/Gray_(unit)) | `gray`, `grays`, `Gy` |
 | `Activity` | [Becquerel](https://en.wikipedia.org/wiki/Becquerel) | `becquerel`, `becquerels`, `Bq` |
 | `AmountOfSubstance` | [Mole](https://en.wikipedia.org/wiki/Mole_(unit)) | `mol`, `mole`, `moles` |
-| `Angle` | [Minute of arc](https://en.wikipedia.org/wiki/Minute_and_second_of_arc) | `arcmin`, `arcminute`, `arcminutes` |
-| `Angle` | [Second of arc](https://en.wikipedia.org/wiki/Minute_and_second_of_arc) | `arcsec`, `arcsecond`, `arcseconds` |
+| `Angle` | [Minute of arc](https://en.wikipedia.org/wiki/Minute_and_second_of_arc) | `arcmin`, `arcminute`, `arcminutes`, `′` |
+| `Angle` | [Second of arc](https://en.wikipedia.org/wiki/Minute_and_second_of_arc) | `arcsec`, `arcsecond`, `arcseconds`, `″` |
 | `Angle` | [Degree](https://en.wikipedia.org/wiki/Degree_(angle)) | `deg`, `degree`, `degrees`, `°` |
 | `Angle` | [Gradian](https://en.wikipedia.org/wiki/Gradian) | `gon`, `gons`, `grad`, `grade`, `grades`, `gradian`, `gradians`, `grads` |
 | `Angle` | [Radian](https://en.wikipedia.org/wiki/Radian) | `rad`, `radian`, `radians` |
@@ -46,6 +47,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Energy` | [Joule](https://en.wikipedia.org/wiki/Joule) | `J`, `joule`, `joules` |
 | `Energy` | [Planck energy](https://en.wikipedia.org/wiki/Planck_energy) | `planck_energy` |
 | `Energy` | [Rydberg unit of energy](https://en.wikipedia.org/wiki/Rydberg_constant) | `Ry` |
+| `Energy` | [Therm](https://en.wikipedia.org/wiki/Therm) | `therm`, `therms` |
+| `Energy` | [Thermie](https://en.wikipedia.org/wiki/Thermie) | `thermie`, `thermies` |
 | `Energy` | [Watt-hour](https://en.wikipedia.org/wiki/Watt_hour) | `watthour`, `Wh` |
 | `EquivalentDose` | [Sievert](https://en.wikipedia.org/wiki/Sievert) | `sievert`, `sieverts`, `Sv` |
 | `Force` | [Dyne](https://en.wikipedia.org/wiki/Dyne) | `dyn`, `dyne` |

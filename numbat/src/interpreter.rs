@@ -3,6 +3,7 @@ use crate::{
     markup::Markup,
     pretty_print::PrettyPrint,
     quantity::{Quantity, QuantityError},
+    span::Span,
     typed_ast::Statement,
     unit_registry::{UnitRegistry, UnitRegistryError},
 };
@@ -26,11 +27,11 @@ pub enum RuntimeError {
     #[error("{0}")]
     QuantityError(QuantityError),
     #[error("Assertion failed")]
-    AssertFailed,
-    #[error("Assertion failed because the following two values are not the same:\n  {0}\n  {1}")]
-    AssertEq2Failed(Value, Value),
-    #[error("Assertion failed because the following two quantities differ by more than {2}:\n  {0}\n  {1}")]
-    AssertEq3Failed(Quantity, Quantity, Quantity),
+    AssertFailed(Span),
+    #[error("Assertion failed because the following two values are not the same:\n  {1}\n  {3}")]
+    AssertEq2Failed(Span, Value, Span, Value),
+    #[error("Assertion failed because the following two quantities differ by more than {4}:\n  {1}\n  {3}")]
+    AssertEq3Failed(Span, Quantity, Span, Quantity, Quantity),
     #[error("Could not load exchange rates from European Central Bank.")]
     CouldNotLoadExchangeRates,
     #[error("User error: {0}")]

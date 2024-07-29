@@ -3,6 +3,7 @@ use super::Args;
 use super::Result;
 use crate::quantity::Quantity;
 use crate::value::Value;
+use crate::RuntimeError;
 
 pub fn str_length(mut args: Args) -> Result<Value> {
     let len = string_arg!(args).len();
@@ -33,4 +34,16 @@ pub fn chr(mut args: Args) -> Result<Value> {
     let output = char::from_u32(idx).unwrap_or('�');
 
     return_string!(output)
+}
+
+pub fn ord(mut args: Args) -> Result<Value> {
+    let input = string_arg!(args);
+
+    if input.is_empty() {
+        return Err(RuntimeError::EmptyList);
+    }
+
+    let output = input.chars().next().unwrap() as u32;
+
+    return_scalar!(output as f64)
 }

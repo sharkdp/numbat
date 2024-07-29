@@ -214,11 +214,11 @@ impl ApplySubstitution for Statement {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
             Statement::Expression(e) => e.apply(s),
-            Statement::DefineVariable(_, _, e, _annotation, type_) => {
+            Statement::DefineVariable(_, _, e, _annotation, type_, _) => {
                 e.apply(s)?;
                 type_.apply(s)
             }
-            Statement::DefineFunction(_, _, _, _, body, fn_type) => {
+            Statement::DefineFunction(_, _, _, _, body, fn_type, _, _) => {
                 if let Some(body) = body {
                     body.apply(s)?;
                 }
@@ -226,7 +226,7 @@ impl ApplySubstitution for Statement {
             }
             Statement::DefineDimension(_, _) => Ok(()),
             Statement::DefineBaseUnit(_, _, _annotation, type_) => type_.apply(s),
-            Statement::DefineDerivedUnit(_, e, _, _annotation, type_) => {
+            Statement::DefineDerivedUnit(_, e, _, _annotation, type_, _) => {
                 e.apply(s)?;
                 type_.apply(s)
             }

@@ -15,6 +15,12 @@ now() -> tz("Asia/Kathmandu")
 # Convert a duration to days, hours, minutes, seconds
 10 million seconds -> human
 
+# Convert an angle to degrees, minutes, seconds (48° 46′ 32″)
+48.7756° -> DMS
+
+# Convert an angle to degrees, decimal minutes (48° 46.536′)
+48.7756° -> DM
+
 # Convert a number to its binary representation
 42 -> bin
 
@@ -27,8 +33,11 @@ now() -> tz("Asia/Kathmandu")
 # Convert a number to a custom base
 42 -> base(16)
 
-# Convert an ASCII code point number to a character
-78 -> chr
+# Convert a code point number to a character
+0x2764 -> chr
+
+# Convert a character to a code point number
+"❤" -> ord
 
 # Convert a string to upper/lower case
 "numbat is awesome" -> uppercase

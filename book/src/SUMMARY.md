@@ -44,9 +44,14 @@
 # Standard library reference
 
 - [The prelude](./prelude.md)
-  - [Predefined functions](./list-functions.md)
-  - [Predefined constants](./list-constants.md)
-  - [List of units](./list-units.md)
+- [Predefined functions](./predefined-functions.md)
+  - [Maths](./list-functions-math.md)
+  - [Lists](./list-functions-lists.md)
+  - [Strings](./list-functions-strings.md)
+  - [Date and time](./list-functions-datetime.md)
+  - [Other](./list-functions-other.md)
+- [Predefined constants](./list-constants.md)
+- [List of units](./list-units.md)
 
 # Command line tool
 

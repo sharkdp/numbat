@@ -1,4 +1,10 @@
 use prelude
+
 use units::currencies
 use units::stoney
 use units::hartree
+
+use extra::algebra
+
+use numerics::diff
+use numerics::solve

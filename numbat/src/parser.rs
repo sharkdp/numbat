@@ -51,7 +51,7 @@
 //! bin_number      ::=   "0b" [01]*
 //! integer         ::=   [0-9]([0-9_]*[0-9])?
 //! identifier      ::=   identifier_s identifier_c*
-//! identifier_s    ::=   Unicode_XID_Start | Unicode_Currency | "%" | "°" | "_"
+//! identifier_s    ::=   Unicode_XID_Start | Unicode_Currency | "%" | "°" | "′" | "″" | "_"
 //! identifier_c    ::=   Unicode_XID_Continue | Unicode_Currency  | "%"
 //! typed_hole      ::=   "?"
 //! boolean         ::=   "true" | "false"
@@ -630,12 +630,12 @@ impl<'a> Parser<'a> {
                                     ));
                                 }
 
-                                let content = token.lexeme.trim_matches('"');
+                                let content = strip_and_escape(&token.lexeme);
 
                                 match decorator.lexeme.as_str() {
-                                    "url" => Decorator::Url(content.into()),
-                                    "name" => Decorator::Name(content.into()),
-                                    "description" => Decorator::Description(content.into()),
+                                    "url" => Decorator::Url(content),
+                                    "name" => Decorator::Name(content),
+                                    "description" => Decorator::Description(content),
                                     _ => unreachable!(),
                                 }
                             } else {
@@ -2036,6 +2036,8 @@ mod tests {
         parse_as_expression(&["foo_bar"], identifier!("foo_bar"));
         parse_as_expression(&["MeineSchöneVariable"], identifier!("MeineSchöneVariable"));
         parse_as_expression(&["°"], identifier!("°"));
+        parse_as_expression(&["′"], identifier!("′"));
+        parse_as_expression(&["″"], identifier!("″"));
         parse_as_expression(&["Mass_H₂O"], identifier!("Mass_H₂O"));
     }
 

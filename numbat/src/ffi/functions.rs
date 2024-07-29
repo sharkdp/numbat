@@ -47,6 +47,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(round, 1..=1);
         insert_function!(floor, 1..=1);
         insert_function!(ceil, 1..=1);
+        insert_function!(trunc, 1..=1);
 
         insert_function!(sin, 1..=1);
         insert_function!(cos, 1..=1);
@@ -84,6 +85,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(uppercase, 1..=1);
         insert_function!(str_slice, 3..=3);
         insert_function!(chr, 1..=1);
+        insert_function!(ord, 1..=1);
 
         // Date and time
         insert_function!(now, 0..=0);

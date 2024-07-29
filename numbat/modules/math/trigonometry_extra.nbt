@@ -1,4 +1,8 @@
-use math::functions
+use core::scalar
+use core::functions
+use math::constants
+use math::trigonometry
+use math::transcendental
 
 fn cot(x: Scalar) -> Scalar = 1 / tan(x)
 fn acot(x: Scalar) -> Scalar = atan(1 / x)

@@ -1,5 +1,6 @@
 # https://en.wikipedia.org/wiki/Planck_units
 
+use core::functions
 use physics::constants
 
 @name("Planck length")

@@ -57,7 +57,6 @@ use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
 
-use pretty_print::PrettyPrint;
 use resolver::CodeSource;
 use resolver::Resolver;
 use resolver::ResolverError;
@@ -151,6 +150,38 @@ impl Context {
             .iter()
             .filter(|name| !name.starts_with('_'))
             .cloned()
+    }
+
+    pub fn functions(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            String,
+            Option<String>,
+            String,
+            Option<String>,
+            Option<String>,
+            CodeSource,
+        ),
+    > + '_ {
+        self.prefix_transformer
+            .function_names
+            .iter()
+            .filter(|name| !name.starts_with('_'))
+            .map(move |name| {
+                let (signature, meta) = self.typechecker.lookup_function(name).unwrap();
+                (
+                    name.clone(),
+                    meta.name.clone(),
+                    signature
+                        .pretty_print(self.dimension_registry())
+                        .to_string(),
+                    meta.description.clone(),
+                    meta.url.clone(),
+                    self.resolver
+                        .get_code_source(signature.definition_span.code_source_id),
+                )
+            })
     }
 
     pub fn unit_names(&self) -> &[Vec<String>] {
@@ -438,7 +469,7 @@ impl Context {
 
             help += m::text("Signature:  ")
                 + m::space()
-                + fn_signature.fn_type.pretty_print()
+                + fn_signature.pretty_print(self.typechecker.registry())
                 + m::nl();
 
             if let Some(description) = &metadata.description {
@@ -725,6 +756,8 @@ impl Context {
 
         let typed_statements = result?;
 
+        let interpreter_old = self.interpreter.clone();
+
         let result = self.interpreter.interpret_statements(
             settings,
             &typed_statements,
@@ -744,6 +777,7 @@ impl Context {
             //
             self.prefix_transformer = prefix_transformer_old;
             self.typechecker = typechecker_old;
+            self.interpreter = interpreter_old;
         }
 
         let result = result.map_err(NumbatError::RuntimeError)?;

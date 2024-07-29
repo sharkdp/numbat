@@ -68,7 +68,7 @@ fn assert_successful_typecheck(input: &str) {
 fn get_inferred_fn_type(input: &str) -> TypeScheme {
     let statement = run_typecheck(input).expect("Input was expected to type-check");
     match statement {
-        Statement::DefineFunction(_, _, _, _, _, fn_type) => fn_type,
+        Statement::DefineFunction(_, _, _, _, _, fn_type, _, _) => fn_type,
         _ => {
             unreachable!();
         }

@@ -47,6 +47,21 @@ fn expect_output(code: &str, expected_output: impl AsRef<str>) {
 }
 
 #[track_caller]
+fn expect_pretty_print(code: &str, expected_pretty_print_output: impl AsRef<str>) {
+    let mut ctx = get_test_context();
+
+    let (statements, _result) = ctx.interpret(code, CodeSource::Internal).unwrap();
+
+    assert_eq!(statements.len(), 1);
+
+    let statement = &statements[0];
+    assert_eq!(
+        statement.pretty_print().to_string(),
+        expected_pretty_print_output.as_ref()
+    );
+}
+
+#[track_caller]
 fn expect_failure_with_context(ctx: &mut Context, code: &str, msg_part: &str) {
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         let error_message = e.to_string();
@@ -561,14 +576,14 @@ fn test_logical() {
     expect_output("false || true && !false", "true");
 
     // Errors
-    insta::assert_display_snapshot!(fail("1 || 2"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("true || 2"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("1 || true"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("1 && 2"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("true && 2"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("1 && true"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("!1"), @"Expected boolean value");
-    insta::assert_display_snapshot!(fail("!1 || true"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("1 || 2"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("true || 2"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("1 || true"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("1 && 2"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("true && 2"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("1 && true"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("!1"), @"Expected boolean value");
+    insta::assert_snapshot!(fail("!1 || true"), @"Expected boolean value");
 }
 
 #[test]
@@ -718,4 +733,83 @@ fn test_user_errors() {
         "if true then error(\"test\") else \"foo\"",
         "User error: test",
     );
+}
+
+#[test]
+fn test_recovery_after_runtime_error() {
+    {
+        let mut ctx = get_test_context();
+
+        expect_failure_with_context(&mut ctx, "let x = 1/0", "Division by zero");
+        expect_failure_with_context(&mut ctx, "x", "Unknown identifier 'x'");
+    }
+    {
+        let mut ctx = get_test_context();
+
+        expect_failure_with_context(&mut ctx, "let x = 1/0", "Division by zero");
+        assert!(ctx
+            .interpret("let x = 1", CodeSource::Internal)
+            .unwrap()
+            .1
+            .is_continue());
+        expect_output_with_context(&mut ctx, "x", "1");
+    }
+}
+
+#[test]
+fn test_statement_pretty_printing() {
+    // Let definitions
+    expect_pretty_print("let v = 10 m/s", "let v: Velocity = 10 metre / second");
+    expect_pretty_print(
+        "let v: Length * Frequency = 10 m/s",
+        "let v: Length × Frequency = 10 metre / second",
+    );
+
+    expect_pretty_print("let x = 0 + 1 m", "let x: Length = 0 + 1 metre");
+
+    expect_pretty_print("let x: Length = 0", "let x: Length = 0");
+    expect_pretty_print("let x = 0", "let x: forall A: Dim. A = 0"); // TODO: This is not ideal. 'forall' is not valid Numbat syntax.
+
+    // Derived unit definitions
+    expect_pretty_print(
+        "unit my_length_base_unit: Length",
+        "unit my_length_base_unit: Length",
+    );
+    expect_pretty_print(
+        "unit my_custom_base_unit",
+        "unit my_custom_base_unit: MyCustomBaseUnit",
+    );
+    expect_pretty_print(
+        "unit my_speed_unit = 10 m/s",
+        "unit my_speed_unit: Velocity = 10 metre / second",
+    );
+
+    // Function definitions
+    expect_pretty_print(
+        "fn f(v)=(v+1 knot)/1s",
+        "fn f(v: Velocity) -> Acceleration = (v + 1 knot) / 1 second",
+    );
+
+    expect_pretty_print("fn f(x) = x", "fn f<A>(x: A) -> A = x");
+
+    expect_pretty_print("fn f(x, y) = y", "fn f<A, B>(x: A, y: B) -> B = y");
+    expect_pretty_print("fn f(x, y) = x", "fn f<A, B>(x: B, y: A) -> B = x"); // TODO: This is correct, but it would be nice to associate 'x' to 'A', not 'B'.
+
+    expect_pretty_print("fn f(x) = 2 x", "fn f<A: Dim>(x: A) -> A = 2 x");
+
+    // Partially annotated functions
+    expect_pretty_print(
+        "fn f() -> Length * Frequency = c",
+        "fn f() -> Length × Frequency = c",
+    );
+    expect_pretty_print(
+        "fn f(v: Length * Frequency) = 1",
+        "fn f(v: Length × Frequency) -> Scalar = 1",
+    );
+
+    expect_pretty_print("fn f(x: Length) = 2 x", "fn f(x: Length) -> Length = 2 x");
+    expect_pretty_print("fn f(x) -> Length = 2 x", "fn f(x: Length) -> Length = 2 x");
+
+    // TODO:
+    // expect_pretty_print("fn f<Z>(z: Z) = z", "fn f<Z>(z: Z) -> Z = z");
 }

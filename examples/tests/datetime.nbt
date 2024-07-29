@@ -10,10 +10,18 @@ assert_eq(from_unixtime(1658346725) -> unixtime, 1658346725)
 
 # 2020 was a leap year
 let y = datetime("2020-02-28 20:00 UTC")
-assert(format_datetime("%Y/%m/%d", y + 12 hours) == "2020/02/29")
+assert_eq(format_datetime("%Y/%m/%d", y + 12 hours), "2020/02/29")
 let z = datetime("2021-02-28 20:00 UTC")
-assert(format_datetime("%Y/%m/%d", z + 12 hours) == "2021/03/01")
+assert_eq(format_datetime("%Y/%m/%d", z + 12 hours), "2021/03/01")
 
 # Regression test for #376
 let dt_376 = datetime("Fri, 23 Feb 2024 14:01:54 -0800")
-assert(format_datetime("%Y-%m-%dT%H:%M:%S%:z", dt_376) == "2024-02-23T14:01:54-08:00")
+assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S%:z", dt_376), "2024-02-23T14:01:54-08:00")
+
+
+# Julian date
+
+let dt_jd = datetime("2013-01-01 00:30:00 UTC")
+assert_eq(dt_jd -> julian_date, 2_456_293.520_833 days, 1e-6 days)
+
+assert_eq(epoch -> julian_date, 2_440_587.5 days, 1e-6 days)

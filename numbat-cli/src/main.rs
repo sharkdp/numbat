@@ -65,7 +65,7 @@ struct Args {
     no_config: bool,
 
     /// Do not load the prelude with predefined physical dimensions and units. This implies --no-init.
-    #[arg(long, hide_short_help = true)]
+    #[arg(short = 'N', long, hide_short_help = true)]
     no_prelude: bool,
 
     /// Do not load the user init file.

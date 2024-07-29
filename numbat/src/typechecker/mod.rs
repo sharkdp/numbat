@@ -176,9 +176,11 @@ impl TypeChecker {
         argument_types: Vec<Type>,
     ) -> Result<typed_ast::Expression> {
         let FunctionSignature {
+            name: _,
             definition_span,
             type_parameters: _,
             parameters,
+            return_type_annotation: _,
             fn_type,
         } = signature;
 
@@ -1152,6 +1154,7 @@ impl TypeChecker {
                     expr_checked,
                     type_annotation.clone(),
                     TypeScheme::concrete(type_deduced),
+                    crate::markup::empty(),
                 )
             }
             ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
@@ -1271,6 +1274,7 @@ impl TypeChecker {
                     decorators.clone(),
                     type_annotation.clone(),
                     TypeScheme::Concrete(type_deduced),
+                    crate::markup::empty(),
                 )
             }
             ast::Statement::DefineFunction {
@@ -1353,7 +1357,12 @@ impl TypeChecker {
                         *parameter_span,
                         false,
                     );
-                    typed_parameters.push((*parameter_span, parameter.clone(), parameter_type));
+                    typed_parameters.push((
+                        *parameter_span,
+                        parameter.clone(),
+                        parameter_type,
+                        type_annotation,
+                    ));
                 }
 
                 let annotated_return_type = return_type_annotation
@@ -1370,11 +1379,11 @@ impl TypeChecker {
 
                 let parameters: Vec<_> = typed_parameters
                     .iter()
-                    .map(|(span, name, _)| (*span, name.clone()))
+                    .map(|(span, name, _, annotation)| (*span, name.clone(), (*annotation).clone()))
                     .collect();
                 let parameter_types = typed_parameters
                     .iter()
-                    .map(|(_, _, type_)| type_.clone())
+                    .map(|(_, _, type_, _)| type_.clone())
                     .collect();
 
                 let fn_type =
@@ -1383,9 +1392,11 @@ impl TypeChecker {
                 typechecker_fn.env.add_function(
                     function_name.clone(),
                     FunctionSignature {
+                        name: function_name.clone(),
                         definition_span: *function_name_span,
                         type_parameters: type_parameters.clone(),
                         parameters,
+                        return_type_annotation: return_type_annotation.clone(),
                         fn_type: fn_type.clone(),
                     },
                     FunctionMetadata {
@@ -1495,10 +1506,19 @@ impl TypeChecker {
                         .collect(),
                     typed_parameters
                         .iter()
-                        .map(|(span, name, _)| (*span, name.clone()))
+                        .map(|(span, name, _, ref type_annotation)| {
+                            (
+                                *span,
+                                name.clone(),
+                                (*type_annotation).clone(),
+                                crate::markup::empty(),
+                            )
+                        })
                         .collect(),
                     body_checked,
                     fn_type,
+                    return_type_annotation.clone(),
+                    crate::markup::empty(),
                 )
             }
             ast::Statement::DefineDimension(name_span, name, dexprs) => {
@@ -1709,7 +1729,7 @@ impl TypeChecker {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
 
-        if let typed_ast::Statement::DefineDerivedUnit(_, expr, _, _annotation, type_) =
+        if let typed_ast::Statement::DefineDerivedUnit(_, expr, _, _annotation, type_, _) =
             &elaborated_statement
         {
             if !type_.unsafe_as_concrete().is_closed() {
@@ -1761,6 +1781,9 @@ impl TypeChecker {
         }
 
         elaborated_statement.generalize_types(&dtype_variables);
+
+        elaborated_statement.update_readable_types(&self.registry);
+
         self.env.generalize_types(&dtype_variables);
 
         // Check if there is a typed hole in the statement
