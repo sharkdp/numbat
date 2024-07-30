@@ -542,7 +542,7 @@ impl Tokenizer {
             ')' => TokenKind::RightParen,
             '[' => TokenKind::LeftBracket,
             ']' => TokenKind::RightBracket,
-            '{' if self.last_token == Some(TokenKind::Identifier) => {
+            '{' if !self.is_inside_interpolation() => {
                 self.open_scope(ScopeType::Curly)?;
                 TokenKind::LeftCurly
             }

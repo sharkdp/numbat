@@ -1767,6 +1767,7 @@ impl TypeChecker {
             ast::Statement::DefineStruct {
                 struct_name_span,
                 struct_name,
+                type_parameters,
                 fields,
             } => {
                 self.type_namespace
@@ -1778,6 +1779,43 @@ impl TypeChecker {
                     .map_err(|err| Box::new(err.into()))?;
 
                 let mut seen_fields = HashMap::new();
+
+                let mut typechecker_struct = self.clone();
+
+                for (span, type_parameter, bound) in type_parameters {
+                    if typechecker_struct
+                        .type_namespace
+                        .has_identifier(type_parameter)
+                    {
+                        return Err(Box::new(TypeCheckError::TypeParameterNameClash(
+                            *span,
+                            type_parameter.to_string(),
+                        )));
+                    }
+
+                    typechecker_struct
+                        .type_namespace
+                        .add_identifier(
+                            type_parameter.to_compact_string(),
+                            *span,
+                            "type parameter".to_compact_string(),
+                        )
+                        .ok(); // TODO: is this call even correct?
+
+                    typechecker_struct
+                        .registry
+                        .introduced_type_parameters
+                        .push((*span, type_parameter.to_compact_string(), bound.clone()));
+
+                    match bound {
+                        Some(TypeParameterBound::Dim) => {
+                            typechecker_struct
+                                .add_dtype_constraint(&Type::TPar(type_parameter.to_compact_string()))
+                                .ok();
+                        }
+                        None => {}
+                    }
+                }
 
                 for (span, field, _) in fields {
                     if let Some(other_span) = seen_fields.get(field) {
@@ -1794,12 +1832,16 @@ impl TypeChecker {
                 let struct_info = StructInfo {
                     definition_span: *struct_name_span,
                     name: struct_name.to_compact_string(),
+                    type_parameters: type_parameters
+                        .iter()
+                        .map(|(span, name, bound)| (*span, (*name).to_compact_string(), bound.clone()))
+                        .collect(),
                     fields: fields
                         .iter()
                         .map(|(span, name, type_)| {
                             Ok((
                                 name.to_compact_string(),
-                                (*span, self.type_from_annotation(type_)?),
+                                (*span, typechecker_struct.type_from_annotation(type_)?),
                             ))
                         })
                         .collect::<Result<_>>()?,

@@ -420,6 +420,58 @@ impl<'a> Parser<'a> {
         Ok(identifiers)
     }
 
+    fn type_parameters(
+        &mut self,
+        tokens: &[Token<'a>],
+    ) -> Result<Vec<(Span, &'a str, Option<TypeParameterBound>)>> {
+        let mut type_parameters = vec![];
+        // Parsing the generic parameters if there are any
+        if self.match_exact(tokens, TokenKind::LessThan).is_some() {
+            while self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
+                if let Some(type_parameter_name) = self.match_exact(tokens, TokenKind::Identifier) {
+                    let bound = if self.match_exact(tokens, TokenKind::Colon).is_some() {
+                        match self.match_exact(tokens, TokenKind::Identifier) {
+                            Some(token) if token.lexeme == "Dim" => Some(TypeParameterBound::Dim),
+                            Some(token) => {
+                                return Err(ParseError {
+                                    kind: ParseErrorKind::UnknownBound(token.lexeme.into()),
+                                    span: token.span,
+                                });
+                            }
+                            None => {
+                                return Err(ParseError {
+                                    kind: ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
+                                    span: self.peek(tokens).span,
+                                });
+                            }
+                        }
+                    } else {
+                        None
+                    };
+
+                    let span = self.last(tokens).unwrap().span;
+                    type_parameters.push((span, type_parameter_name.lexeme, bound));
+
+                    if self.match_exact(tokens, TokenKind::Comma).is_none()
+                        && self.peek(tokens).kind != TokenKind::GreaterThan
+                    {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
+                            span: self.peek(tokens).span,
+                        });
+                    }
+                } else {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedTypeParameterName,
+                        span: self.peek(tokens).span,
+                    });
+                }
+            }
+        }
+
+        Ok(type_parameters)
+    }
+
     fn statement(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if !(self.peek(tokens).kind == TokenKind::At
             || self.peek(tokens).kind == TokenKind::Unit
@@ -516,55 +568,7 @@ impl<'a> Parser<'a> {
     fn parse_function_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if let Some(fn_name) = self.match_exact(tokens, TokenKind::Identifier) {
             let function_name_span = self.last(tokens).unwrap().span;
-            let mut type_parameters = vec![];
-            // Parsing the generic parameters if there are any
-            if self.match_exact(tokens, TokenKind::LessThan).is_some() {
-                while self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
-                    if let Some(type_parameter_name) =
-                        self.match_exact(tokens, TokenKind::Identifier)
-                    {
-                        let bound = if self.match_exact(tokens, TokenKind::Colon).is_some() {
-                            match self.match_exact(tokens, TokenKind::Identifier) {
-                                Some(token) if token.lexeme == "Dim" => {
-                                    Some(TypeParameterBound::Dim)
-                                }
-                                Some(token) => {
-                                    return Err(ParseError {
-                                        kind: ParseErrorKind::UnknownBound(token.lexeme.to_owned()),
-                                        span: token.span,
-                                    });
-                                }
-                                None => {
-                                    return Err(ParseError {
-                                        kind:
-                                            ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
-                                        span: self.peek(tokens).span,
-                                    });
-                                }
-                            }
-                        } else {
-                            None
-                        };
-
-                        let span = self.last(tokens).unwrap().span;
-                        type_parameters.push((span, type_parameter_name.lexeme, bound));
-
-                        if self.match_exact(tokens, TokenKind::Comma).is_none()
-                            && self.peek(tokens).kind != TokenKind::GreaterThan
-                        {
-                            return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
-                                span: self.peek(tokens).span,
-                            });
-                        }
-                    } else {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedTypeParameterName,
-                            span: self.peek(tokens).span,
-                        });
-                    }
-                }
-            }
+            let type_parameters = self.type_parameters(tokens)?;
 
             if self.match_exact(tokens, TokenKind::LeftParen).is_none() {
                 return Err(ParseError {
@@ -938,6 +942,7 @@ impl<'a> Parser<'a> {
     fn parse_struct(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         let name = self.identifier(tokens)?;
         let name_span = self.last(tokens).unwrap().span;
+        let type_parameters = self.type_parameters(tokens)?;
 
         if self.match_exact(tokens, TokenKind::LeftCurly).is_none() {
             return Err(ParseError {
@@ -990,6 +995,7 @@ impl<'a> Parser<'a> {
         Ok(Statement::DefineStruct {
             struct_name_span: name_span,
             struct_name: name,
+            type_parameters,
             fields,
         })
     }
@@ -3502,6 +3508,7 @@ mod tests {
             Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
                 struct_name: "Foo",
+                type_parameters: vec![],
                 fields: vec![
                     (
                         Span::dummy(),
@@ -3519,6 +3526,37 @@ mod tests {
                             CompactString::const_new("Scalar"),
                         )),
                     ),
+                ],
+            },
+        );
+
+        parse_as(
+            &["struct Foo<T, D: Dim> { data: T, quantity: D, name: String }"],
+            Statement::DefineStruct {
+                struct_name_span: Span::dummy(),
+                struct_name: "Foo",
+                type_parameters: vec![
+                    (Span::dummy(), "T", None),
+                    (Span::dummy(), "D", Some(TypeParameterBound::Dim)),
+                ],
+                fields: vec![
+                    (
+                        Span::dummy(),
+                        "data",
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            CompactString::const_new("T"),
+                        )),
+                    ),
+                    (
+                        Span::dummy(),
+                        "quantity",
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            CompactString::const_new("D"),
+                        )),
+                    ),
+                    (Span::dummy(), "name", TypeAnnotation::String(Span::dummy())),
                 ],
             },
         );

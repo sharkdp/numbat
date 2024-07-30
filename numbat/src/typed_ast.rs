@@ -287,6 +287,7 @@ impl From<BaseRepresentation> for DType {
 pub struct StructInfo {
     pub definition_span: Span,
     pub name: CompactString,
+    pub type_parameters: Vec<(Span, CompactString, Option<TypeParameterBound>)>,
     pub fields: IndexMap<CompactString, (Span, Type)>,
 }
 
