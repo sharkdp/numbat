@@ -75,7 +75,7 @@ pub fn to_string(dt: &Zoned) -> String {
         dt.strftime("%Y-%m-%d %H:%M:%S UTC").to_string()
     } else {
         let offset = dt.offset();
-        let zone_abbreviation = dt.strftime("%Z").to_string();
+        let zone_abbreviation = tz.to_offset(dt.timestamp()).2;
         let abbreviation_and_offset =
             if zone_abbreviation.starts_with('+') || zone_abbreviation.starts_with('-') {
                 format!("(UTC {})", offset)
