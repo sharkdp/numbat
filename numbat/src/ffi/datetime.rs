@@ -19,7 +19,8 @@ pub fn now(_args: Args) -> Result<Value> {
 pub fn datetime(mut args: Args) -> Result<Value> {
     let input = string_arg!(args);
 
-    let output = datetime::parse_datetime(&input).ok_or(RuntimeError::DateParsingErrorUnknown)?;
+    let output = datetime::parse_datetime(&input)
+        .map_err(|e| RuntimeError::DateParsingError(e.to_string()))?;
 
     return_datetime!(output)
 }

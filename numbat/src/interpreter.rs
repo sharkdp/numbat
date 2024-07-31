@@ -36,8 +36,8 @@ pub enum RuntimeError {
     CouldNotLoadExchangeRates,
     #[error("User error: {0}")]
     UserError(String),
-    #[error("Unrecognized datetime format")]
-    DateParsingErrorUnknown,
+    #[error("Unrecognized datetime format: {0}")]
+    DateParsingError(String),
     #[error("Unknown timezone: {0}")]
     UnknownTimezone(String),
     #[error("Exceeded maximum size for time durations")]
