@@ -29,7 +29,7 @@ libc = "0.2.152"
 rust-embed = { version = "8.2.0", features = ["interpolate-folder-path", "debug-embed"] }
 num-format = "0.4.4"
 walkdir = "2"
-jiff = "0.1.2"
+jiff = { version = "0.1.3", features = ["js"] }
 termcolor = { version = "1.4.1", optional = true }
 html-escape = { version = "0.2.13", optional = true }
 rand = "0.8.5"
