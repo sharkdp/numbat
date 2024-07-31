@@ -1037,7 +1037,7 @@ impl Vm {
                         list.push_front(self.pop());
                     }
 
-                    self.stack.push(Value::List(list));
+                    self.stack.push(list.into());
                 }
             }
         }

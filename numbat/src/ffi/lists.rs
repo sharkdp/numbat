@@ -11,10 +11,12 @@ pub fn len(mut args: Args) -> Result<Value> {
 }
 
 pub fn head(mut args: Args) -> Result<Value> {
-    let mut list = list_arg!(args);
+    let list = list_arg!(args);
 
-    if let Some(first) = list.pop_front() {
-        Ok(first)
+    // We don't need to pop or drop anything, the whole allocation will
+    // be dropped if we're its last owner.
+    if let Some(first) = list.front() {
+        Ok(first.clone())
     } else {
         Err(RuntimeError::EmptyList)
     }
@@ -23,11 +25,8 @@ pub fn head(mut args: Args) -> Result<Value> {
 pub fn tail(mut args: Args) -> Result<Value> {
     let mut list = list_arg!(args);
 
-    if list.pop_front().is_some() {
-        return_list!(list)
-    } else {
-        Err(RuntimeError::EmptyList)
-    }
+    list.advance_view()?;
+    Ok(list.into())
 }
 
 pub fn cons(mut args: Args) -> Result<Value> {
