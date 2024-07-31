@@ -1,22 +1,76 @@
+# General datetime parsing
+
+let test_date1 = datetime("2024-07-31T13:24:00Z")
+let test_date2 = datetime("2024-01-02T13:24:56Z")
+let test_date3 = datetime("2024-01-02T13:24:56.789Z")
+
+# RFC 2822
+assert_eq(datetime("Wed, 31 Jul 2024 13:24:00 UTC"), test_date1)
+assert_eq(datetime("Wed, 31 Jul 2024 13:24 UTC"), test_date1)
+assert_eq(datetime("Wed, 31 Jul 2024 13:24 Z"), test_date1)
+
+assert_eq(datetime("2024-07-31 13:24:00 UTC"), test_date1)
+assert_eq(datetime("2024-07-31 13:24 UTC"), test_date1)
+assert_eq(datetime("2024-07-31 01:24 pm UTC"), test_date1)
+assert_eq(datetime("2024/07/31 13:24:00 UTC"), test_date1)
+assert_eq(datetime("2024/07/31 13:24 UTC"), test_date1)
+assert_eq(datetime("2024/07/31 01:24 pm UTC"), test_date1)
+
+assert_eq(datetime("2024-01-02 13:24:56 UTC"), test_date2)
+assert_eq(datetime("2024-01-02 01:24:56 pm UTC"), test_date2)
+assert_eq(datetime("2024/01/02 13:24:56 UTC"), test_date2)
+assert_eq(datetime("2024/01/02 01:24:56 pm UTC"), test_date2)
+
+assert_eq(datetime("2024-01-02 13:24:56.789 UTC"), test_date3)
+assert_eq(datetime("2024/01/02 13:24:56.789 UTC"), test_date3)
+
+
+
+# Parsing with offsets / timezones
+
+assert_eq(datetime("2024-01-02 13:24:56.789 +0000"), test_date3)
+assert_eq(datetime("2024-01-02 15:24:56.789 +0200"), test_date3)
+assert_eq(datetime("2024-01-02 07:24:56.789 -0600"), test_date3)
+
+assert_eq(datetime("2024-07-31 15:24:00 Europe/Berlin"), test_date1)  # CEST (UTC+2)
+assert_eq(datetime("2024-01-02 14:24:56 Europe/Berlin"), test_date2)  # CET  (UTC+1)
+
+assert_eq(datetime("2024-07-31 09:24:00 US/Eastern"), test_date1)  # UTC-4
+assert_eq(datetime("2024-01-02 08:24:56 US/Eastern"), test_date2)  # UTC-5
+
+
+
+# Formatting
+
+assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S%:z", test_date1), "2024-07-31T13:24:00+00:00")
+assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S%:z", test_date2), "2024-01-02T13:24:56+00:00")
+assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S.%3f%:z", test_date3), "2024-01-02T13:24:56.789+00:00")
+
+
+# Test leap years (2020 was a leap year)
+let dt_leap = datetime("2020-02-28 20:00 UTC")
+assert_eq(format_datetime("%Y/%m/%d", dt_leap + 12 hours), "2020/02/29")
+let dt_no_leap = datetime("2021-02-28 20:00 UTC")
+assert_eq(format_datetime("%Y/%m/%d", dt_no_leap + 12 hours), "2021/03/01")
+
+# Regression test for #376
+let dt_issue_376 = datetime("Fri, 23 Feb 2024 14:01:54 -0800")
+assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S%:z", dt_issue_376), "2024-02-23T14:01:54-08:00")
+
+
+
+# Unix time
+
 let epoch = datetime("1970-01-01T00:00:00Z")
 assert_eq(epoch -> unixtime, 0)
 
 assert_eq(epoch + 1000 milliseconds + 2 seconds -> unixtime, 3)
 
-let x = datetime("Wed, 20 Jul 2022 21:52:05 +0200")
-assert_eq(x -> unixtime, 1658346725)
+let dt_unixtime_1 = datetime("Wed, 20 Jul 2022 21:52:05 +0200")
+assert_eq(dt_unixtime_1 -> unixtime, 1658346725)
 
-assert_eq(from_unixtime(1658346725) -> unixtime, 1658346725)
+assert_eq(from_unixtime(1658346725), dt_unixtime_1)
 
-# 2020 was a leap year
-let y = datetime("2020-02-28 20:00 UTC")
-assert_eq(format_datetime("%Y/%m/%d", y + 12 hours), "2020/02/29")
-let z = datetime("2021-02-28 20:00 UTC")
-assert_eq(format_datetime("%Y/%m/%d", z + 12 hours), "2021/03/01")
-
-# Regression test for #376
-let dt_376 = datetime("Fri, 23 Feb 2024 14:01:54 -0800")
-assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S%:z", dt_376), "2024-02-23T14:01:54-08:00")
 
 
 # Julian date
