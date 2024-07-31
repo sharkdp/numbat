@@ -120,6 +120,25 @@ impl<T: Clone> ArcListView<T> {
             inner.push_front(element);
         }
     }
+
+    /// Allocate iif the list being used by another value at the same time
+    pub fn push_back(&mut self, element: T) {
+        let inner = Arc::make_mut(&mut self.alloc);
+        if let Some((_start, end)) = &mut self.view {
+            // if we were alone on the allocation and had a view of the inner allocation
+            // we can keep the allocation and overwrite the end+1 element.
+            // but we need to take care of the special case where the end is `alloc.len()`.
+            if *end == inner.len() {
+                inner.push_back(element);
+                *end += 1;
+            } else {
+                *end += 1;
+                inner[*end] = element;
+            }
+        } else {
+            inner.push_back(element);
+        }
+    }
 }
 
 impl From<ArcListView<Value>> for Value {
