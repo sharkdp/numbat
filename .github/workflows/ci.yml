@@ -98,6 +98,12 @@ jobs:
         components: clippy
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
       run: cargo clippy --locked --all-targets ${{ env.MSRV_FEATURES }}
+    - name: Check TZDIR
+      shell: bash
+      run: |
+        echo "TZDIR=$TZDIR"
+        ls -alh /usr/share/zoneinfo/
+        cat -A /usr/share/zoneinfo/Europe/Berlin
     - name: Run tests
       run: cargo test --locked ${{ env.MSRV_FEATURES }}
 
