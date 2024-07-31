@@ -14,6 +14,9 @@ fn tail<A>(xs: List<A>) -> List<A>
 @description("Prepend an element to a list")
 fn cons<A>(x: A, xs: List<A>) -> List<A>
 
+@description("Append an element to the end of a list")
+fn cons_end<A>(xs: List<A>, x: A) -> List<A>
+
 @description("Check if a list is empty")
 fn is_empty<A>(xs: List<A>) -> Bool = xs == []
 
@@ -47,11 +50,6 @@ fn range(start: Scalar, end: Scalar) -> List<Scalar> =
     then []
     else cons(start, range(start + 1, end))
 
-@description("Append an element to the end of a list")
-fn cons_end<A>(xs: List<A>, x: A) -> List<A> =
-  if is_empty(xs)
-    then [x]
-    else cons(head(xs), cons_end(tail(xs), x))
 
 @description("Reverse the order of a list")
 fn reverse<A>(xs: List<A>) -> List<A> =
