@@ -69,9 +69,27 @@ pub fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
 }
 
 pub fn to_string(dt: &Zoned) -> String {
+    let tz = dt.time_zone();
+
     if dt.time_zone() == &TimeZone::UTC {
         dt.strftime("%Y-%m-%d %H:%M:%S UTC").to_string()
     } else {
-        dt.strftime("%Y-%m-%d %H:%M:%S %Z (UTC %z)").to_string()
+        let offset = dt.offset();
+        let zone_abbreviation = dt.strftime("%Z").to_string();
+        let abbreviation_and_offset =
+            if zone_abbreviation.starts_with('+') || zone_abbreviation.starts_with('-') {
+                format!("(UTC {})", offset)
+            } else {
+                format!("{} (UTC {})", zone_abbreviation, offset)
+            };
+
+        let timezone_name = if let Some(iana_tz_name) = tz.iana_name() {
+            format!(", {iana_tz_name}")
+        } else {
+            "".into()
+        };
+
+        let dt_str = dt.strftime("%Y-%m-%d %H:%M:%S");
+        format!("{dt_str} {abbreviation_and_offset}{timezone_name}")
     }
 }

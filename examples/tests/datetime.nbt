@@ -47,6 +47,26 @@ assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S%:z", test_date2), "2024-01-02T13:24
 assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S.%3f%:z", test_date3), "2024-01-02T13:24:56.789+00:00")
 
 
+
+# Time zone conversions
+
+fn as_string(dt: DateTime) -> String = "{dt}"
+
+assert_eq(as_string(test_date3), "2024-01-02 13:24:56 UTC")
+assert_eq(as_string(test_date3 -> UTC),
+          "2024-01-02 13:24:56 UTC")
+
+assert_eq(as_string(test_date3 -> tz("Europe/Berlin")),
+          "2024-01-02 14:24:56 CET (UTC +01), Europe/Berlin")
+assert_eq(as_string(test_date3 -> tz("US/Eastern")),
+            "2024-01-02 08:24:56 EST (UTC -05), US/Eastern")
+assert_eq(as_string(test_date3 -> tz("Asia/Kathmandu")),
+            "2024-01-02 19:09:56 (UTC +05:45), Asia/Kathmandu")
+
+
+
+
+
 # Test leap years (2020 was a leap year)
 let dt_leap = datetime("2020-02-28 20:00 UTC")
 assert_eq(format_datetime("%Y/%m/%d", dt_leap + 12 hours), "2020/02/29")
