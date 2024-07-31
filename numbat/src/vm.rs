@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::{cmp::Ordering, fmt::Display};
 
 use indexmap::IndexMap;
+use num_traits::ToPrimitive;
 
 use crate::span::Span;
 use crate::typed_ast::StructInfo;
@@ -713,12 +714,16 @@ impl Vm {
 
                     // for time, the base unit is in seconds
                     let base = rhs.to_base_unit_representation();
-                    let seconds_f = base.unsafe_value().to_f64();
+                    let seconds_f64 = base.unsafe_value().to_f64();
+
+                    let seconds_i64 = seconds_f64
+                        .to_i64()
+                        .ok_or(RuntimeError::DurationOutOfRange)?;
 
                     let span = jiff::Span::new()
-                        .try_seconds(seconds_f.trunc() as i64)
+                        .try_seconds(seconds_i64)
                         .map_err(|_| RuntimeError::DurationOutOfRange)?
-                        .nanoseconds((seconds_f.fract() * 1_000_000_000f64).round() as i64);
+                        .nanoseconds((seconds_f64.fract() * 1_000_000_000f64).round() as i64);
 
                     self.push(Value::DateTime(match op {
                         Op::AddToDateTime => lhs
@@ -735,8 +740,12 @@ impl Vm {
                     let rhs = self.pop_datetime();
                     let lhs = self.pop_datetime();
 
-                    let duration = lhs.since(&rhs).unwrap(); // TODO
-                    let duration = duration.total(jiff::Unit::Second).unwrap(); // TODO
+                    let duration = lhs
+                        .since(&rhs)
+                        .map_err(|_| RuntimeError::DateTimeOutOfRange)?;
+                    let duration = duration
+                        .total(jiff::Unit::Second)
+                        .map_err(|_| RuntimeError::DurationOutOfRange)?;
 
                     let ret = Value::Quantity(Quantity::new(
                         Number::from_f64(duration),
