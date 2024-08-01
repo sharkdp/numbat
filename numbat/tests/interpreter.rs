@@ -733,6 +733,10 @@ fn test_user_errors() {
         "if true then error(\"test\") else \"foo\"",
         "User error: test",
     );
+    expect_failure(
+        "if false then \"foo\" else error(\"test\")",
+        "User error: test",
+    );
 }
 
 #[test]
