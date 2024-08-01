@@ -1,5 +1,7 @@
+use jiff::Span;
 use jiff::Timestamp;
 use jiff::Zoned;
+use num_traits::ToPrimitive;
 
 use super::macros::*;
 use super::Args;
@@ -66,4 +68,41 @@ pub fn from_unixtime(mut args: Args) -> Result<Value> {
         .to_zoned(datetime::get_local_timezone_or_utc());
 
     return_datetime!(dt)
+}
+
+fn calendar_add(
+    mut args: Args,
+    unit_name: &str,
+    to_span: fn(i64) -> std::result::Result<Span, jiff::Error>,
+) -> Result<Value> {
+    let dt = datetime_arg!(args);
+    let n = quantity_arg!(args).unsafe_value().to_f64();
+
+    if n.fract() != 0.0 {
+        return Err(RuntimeError::UserError(format!(
+            "calendar_add: requires an integer number of {unit_name}s"
+        )));
+    }
+
+    let n_i64 = n.to_i64().ok_or_else(|| {
+        RuntimeError::UserError(format!("calendar:add: number of {unit_name}s is too large",))
+    })?;
+
+    let output = dt
+        .checked_add(to_span(n_i64).map_err(|_| RuntimeError::DurationOutOfRange)?)
+        .map_err(|_| RuntimeError::DateTimeOutOfRange)?;
+
+    return_datetime!(output)
+}
+
+pub fn _add_days(args: Args) -> Result<Value> {
+    calendar_add(args, "day", |n| Span::new().try_days(n))
+}
+
+pub fn _add_months(args: Args) -> Result<Value> {
+    calendar_add(args, "month", |n| Span::new().try_months(n))
+}
+
+pub fn _add_years(args: Args) -> Result<Value> {
+    calendar_add(args, "year", |n| Span::new().try_years(n))
 }
