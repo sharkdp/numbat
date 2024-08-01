@@ -74,6 +74,27 @@ Parses a string (time only) into a `DateTime` object.
 fn time(input: String) -> DateTime
 ```
 
+### `calendar_add`
+Adds the given time span to a `DateTime`. This uses leap-year and DST-aware calendar arithmetic with variable-length days, months, and years.
+
+```nbt
+fn calendar_add(dt: DateTime, span: Time) -> DateTime
+```
+
+### `calendar_sub`
+Subtract the given time span from a `DateTime`. This uses leap-year and DST-aware calendar arithmetic with variable-length days, months, and years.
+
+```nbt
+fn calendar_sub(dt: DateTime, span: Time) -> DateTime
+```
+
+### `weekday`
+Get the day of the week from a given `DateTime`.
+
+```nbt
+fn weekday(dt: DateTime) -> String
+```
+
 ### `julian_date` (Julian date)
 Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the proleptic Gregorian calendar).
 More information [here](https://en.wikipedia.org/wiki/Julian_day).

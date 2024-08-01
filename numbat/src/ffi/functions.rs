@@ -95,6 +95,10 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(unixtime, 1..=1);
         insert_function!(from_unixtime, 1..=1);
 
+        insert_function!(_add_days, 2..=2);
+        insert_function!(_add_months, 2..=2);
+        insert_function!(_add_years, 2..=2);
+
         // Currency
         insert_function!(exchange_rate, 1..=1);
 

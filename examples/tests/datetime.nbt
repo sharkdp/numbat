@@ -93,6 +93,33 @@ assert_eq(from_unixtime(1658346725), dt_unixtime_1)
 
 
 
+# Calendar arithmetic
+
+let dt_start = datetime("2024-03-30 12:00:00 Europe/Berlin") # one day before DST starts
+
+# If we simply add "1 day == 24 hours", we end up at 13:00 on the next day:
+assert_eq(dt_start + 1 day, datetime("2024-03-31 13:00:00 Europe/Berlin"))
+
+# If we use DST-aware calendar arithmetic, we end up at 12:00 on the next day:
+assert_eq(calendar_add(dt_start, 1 day), datetime("2024-03-31 12:00:00 Europe/Berlin"))
+assert_eq(calendar_add(dt_start, 2 days), datetime("2024-04-01 12:00:00 Europe/Berlin"))
+
+assert_eq(calendar_add(dt_start, 3 months), datetime("2024-06-30 12:00:00 Europe/Berlin"))
+assert_eq(calendar_add(dt_start, 12 months), datetime("2025-03-30 12:00:00 Europe/Berlin"))
+
+assert_eq(calendar_add(dt_start, 10 years), datetime("2034-03-30 12:00:00 Europe/Berlin"))
+
+assert_eq(calendar_add(dt_start, 1 second), datetime("2024-03-30 12:00:01 Europe/Berlin"))
+assert_eq(calendar_add(dt_start, 1 minute), datetime("2024-03-30 12:01:00 Europe/Berlin"))
+assert_eq(calendar_add(dt_start, 1 hour), datetime("2024-03-30 13:00:00 Europe/Berlin"))
+
+
+
+# Weekday
+
+assert_eq(date("2024-08-01") -> weekday, "Thursday")
+
+
 # Julian date
 
 let dt_jd = datetime("2013-01-01 00:30:00 UTC")
