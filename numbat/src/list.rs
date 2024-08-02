@@ -1,3 +1,10 @@
+//! This module defines a custom kind of list used in the [`numbat::Value::List`].
+//! The specificities of this list are that:
+//! - It's based on a `VecDeque`, which means insertion at the beginning or the end is `O(1)`.
+//! - It's stored behind an `Arc`, which makes cloning the value very cheap.
+//! - It tries to reduce the number of allocations as much as possible, even when shared between multiple values.
+//!   If you are the only owner of the list or while you're not pushing elements in it in, never re-allocate.
+
 use std::{collections::VecDeque, fmt, sync::Arc};
 
 use crate::{value::Value, RuntimeError};
