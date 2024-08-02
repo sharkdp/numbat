@@ -4,9 +4,9 @@ use std::{cmp::Ordering, fmt::Display};
 
 use indexmap::IndexMap;
 
+use crate::list::NumbatList;
 use crate::span::Span;
 use crate::typed_ast::StructInfo;
-use crate::value::NumbatList;
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},

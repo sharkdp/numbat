@@ -16,6 +16,7 @@ pub mod help;
 pub mod html_formatter;
 mod interpreter;
 pub mod keywords;
+pub mod list;
 pub mod markup;
 mod math;
 pub mod module_importer;
