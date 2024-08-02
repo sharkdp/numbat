@@ -11,6 +11,15 @@ pub struct NumbatList<T> {
     view: Option<(usize, usize)>,
 }
 
+impl<T> Default for NumbatList<T> {
+    fn default() -> Self {
+        Self {
+            alloc: Default::default(),
+            view: Default::default(),
+        }
+    }
+}
+
 impl<T: fmt::Debug + Clone> fmt::Debug for NumbatList<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.iter()).finish()
@@ -35,12 +44,20 @@ impl<T: PartialEq> PartialEq for NumbatList<T> {
 }
 
 impl<T> NumbatList<T> {
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn len(&self) -> usize {
         if let Some(view) = self.view {
             view.1 - view.0
         } else {
             self.alloc.len()
         }
+    }
+
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
@@ -60,7 +77,7 @@ impl<T> NumbatList<T> {
 
     /// Advance the view you have of the list by one.
     pub fn advance_view(&mut self) -> Result<(), RuntimeError> {
-        if self.len() == 0 {
+        if self.is_empty() {
             return Err(RuntimeError::EmptyList);
         }
         if let Some(view) = &mut self.view {
@@ -151,5 +168,118 @@ impl From<VecDeque<Value>> for Value {
             alloc: Arc::new(list),
             view: None,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn basic() {
+        let mut list = NumbatList::<usize>::new();
+        let alloc = Arc::as_ptr(&list.alloc);
+
+        assert_eq!(list.len(), 0);
+        list.push_front(1);
+        assert_eq!(list.len(), 1);
+        list.push_front(0);
+        assert_eq!(list.len(), 2);
+        list.push_back(2);
+        assert_eq!(list.len(), 3);
+        list.push_back(3);
+        assert_eq!(list.len(), 4);
+        assert_eq!(alloc, Arc::as_ptr(&list.alloc));
+
+        insta::assert_debug_snapshot!(list, @r###"
+        [
+            0,
+            1,
+            2,
+            3,
+        ]
+        "###);
+        let iter: Vec<_> = list.iter().collect();
+        insta::assert_debug_snapshot!(iter, @r###"
+        [
+            0,
+            1,
+            2,
+            3,
+        ]
+        "###);
+
+        list.advance_view().unwrap();
+        assert_eq!(list.len(), 3);
+        list.advance_view().unwrap();
+        assert_eq!(list.len(), 2);
+        assert_eq!(alloc, Arc::as_ptr(&list.alloc));
+
+        insta::assert_debug_snapshot!(list, @r###"
+        [
+            2,
+            3,
+        ]
+        "###);
+        let iter: Vec<_> = list.iter().collect();
+        insta::assert_debug_snapshot!(iter, @r###"
+        [
+            2,
+            3,
+        ]
+        "###);
+
+        list.advance_view().unwrap();
+        list.advance_view().unwrap();
+        assert!(list.is_empty());
+        assert_eq!(alloc, Arc::as_ptr(&list.alloc));
+
+        assert_eq!(list.advance_view(), Err(RuntimeError::EmptyList));
+    }
+
+    #[test]
+    fn allocate() {
+        let mut list1 = NumbatList::<usize>::new();
+
+        list1.push_front(1);
+        list1.push_back(0);
+
+        let mut list2 = list1.clone();
+
+        assert_eq!(Arc::as_ptr(&list1.alloc), Arc::as_ptr(&list2.alloc));
+
+        list2.advance_view().unwrap();
+        // Even after advancing the list2 the alloc can still be shared between both instance
+        assert_eq!(Arc::as_ptr(&list1.alloc), Arc::as_ptr(&list2.alloc));
+
+        // Pushing something new in the first list should re-allocate
+        list1.push_front(2);
+        assert_ne!(Arc::as_ptr(&list1.alloc), Arc::as_ptr(&list2.alloc));
+
+        // Now that list2 is alone on its allocation it should be able
+        // to push an element to the front without re-allocating anything
+        let alloc = Arc::as_ptr(&list2.alloc);
+        // Pushing something new in the first list should re-allocate
+        list2.push_front(2);
+        assert_eq!(alloc, Arc::as_ptr(&list2.alloc));
+    }
+
+    #[test]
+    fn equality() {
+        let mut list1 = NumbatList::<usize>::new();
+
+        list1.push_front(1);
+        list1.push_back(0);
+
+        let mut list2 = list1.clone();
+
+        assert_eq!(list1, list2);
+
+        list2.advance_view().unwrap();
+        assert_ne!(list1, list2);
+
+        // Even if the list do not share the same allocation they should match
+        list2.push_front(1);
+        assert_eq!(list1, list2);
     }
 }
