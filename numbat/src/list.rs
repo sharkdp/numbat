@@ -102,7 +102,7 @@ impl<T> NumbatList<T> {
 }
 
 impl<T: Clone> NumbatList<T> {
-    fn make_mut(&mut self) -> &mut VecDeque<T> {
+    fn make_mut(&mut self) -> (&mut Option<(usize, usize)>, &mut VecDeque<T>) {
         if Arc::strong_count(&self.alloc) != 1 {
             // If someone else is using the list we must clone it
             self.alloc = Arc::new(self.iter().cloned().collect());
@@ -110,14 +110,13 @@ impl<T: Clone> NumbatList<T> {
         }
         // With our usage, this should never allocate since we know we're the only
         // one holding a reference to this `Arc` and we don't use weak references.
-        Arc::make_mut(&mut self.alloc)
+        (&mut self.view, Arc::make_mut(&mut self.alloc))
     }
 
     /// Allocate iif the list being used by another value at the same time
     pub fn push_front(&mut self, element: T) {
-        let mut view = self.view;
-        let inner = self.make_mut();
-        if let Some((start, end)) = &mut view {
+        let (view, inner) = self.make_mut();
+        if let Some((start, end)) = view {
             // if we were alone on the allocation and had a view of the inner allocation
             // we can keep the allocation and overwrite the start-1 element.
             // but we need to take care of the special case where the start is 0.
@@ -131,14 +130,12 @@ impl<T: Clone> NumbatList<T> {
         } else {
             inner.push_front(element);
         }
-        self.view = view;
     }
 
     /// Allocate iif the list being used by another value at the same time
     pub fn push_back(&mut self, element: T) {
-        let mut view = self.view;
-        let inner = self.make_mut();
-        if let Some((_start, end)) = &mut view {
+        let (view, inner) = self.make_mut();
+        if let Some((_start, end)) = view {
             // if we were alone on the allocation and had a view of the inner allocation
             // we can keep the allocation and overwrite the end+1 element.
             // but we need to take care of the special case where the end is `alloc.len()`.
@@ -152,7 +149,6 @@ impl<T: Clone> NumbatList<T> {
         } else {
             inner.push_back(element);
         }
-        self.view = view;
     }
 }
 
@@ -281,5 +277,14 @@ mod test {
         // Even if the list do not share the same allocation they should match
         list2.push_front(1);
         assert_eq!(list1, list2);
+    }
+
+    #[test]
+    fn bug_1() {
+        let mut list1 = NumbatList::<usize>::new();
+        list1.push_front(1);
+        let _list2 = list1.clone();
+        list1.advance_view().unwrap();
+        list1.push_front(2);
     }
 }
