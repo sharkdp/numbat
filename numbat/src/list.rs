@@ -1,9 +1,9 @@
 //! This module defines a custom kind of list used in the [`numbat::Value::List`].
 //! The specificities of this list are that:
 //! - It's based on a `VecDeque`, which means insertion at the beginning or the end is `O(1)`.
-//! - It's stored behind an `Arc`, which makes cloning the value very cheap.
+//! - It's stored behind an `Arc`, which makes cloning the [`numbat::Value`] very cheap.
 //! - It tries to reduce the number of allocations as much as possible, even when shared between multiple values.
-//!   If you are the only owner of the list or while you're not pushing elements in it in, never re-allocate.
+//!   It never re-allocates unless there are multiple owners and elements are being added to the list.
 
 use std::{collections::VecDeque, fmt, sync::Arc};
 
@@ -14,7 +14,7 @@ use crate::{value::Value, RuntimeError};
 pub struct NumbatList<T> {
     /// The original alloc shared between all values
     alloc: Arc<VecDeque<T>>,
-    /// The indexes accessible to us. If `None` we own the whole allocation
+    /// The indexes accessible to us. If this is `None`, we own the whole allocation
     view: Option<(usize, usize)>,
 }
 
@@ -35,12 +35,12 @@ impl<T: fmt::Debug + Clone> fmt::Debug for NumbatList<T> {
 
 impl<T: PartialEq> PartialEq for NumbatList<T> {
     fn eq(&self, other: &Self) -> bool {
-        // Best case scenario, the slice don't have the same len and we can early exit
+        // Best case scenario, the slice doesn't have the same length; exit early
         if self.len() != other.len() {
             return false;
         }
-        // Second best case scenario, the slice comes from the same allocation
-        // and have the same view => they are equal
+        // Second best case, the other slice comes from the same allocation and
+        // has the same view => they are equal
         if Arc::as_ptr(&self.alloc) == Arc::as_ptr(&other.alloc) && self.view == other.view {
             true
         } else {
@@ -269,7 +269,7 @@ mod test {
         // Now that list2 is alone on its allocation it should be able
         // to push an element to the front without re-allocating anything
         let alloc = Arc::as_ptr(&list2.alloc);
-        // Pushing something new in the first list should re-allocate
+        // Pushing something new in the first list should not re-allocate
         list2.push_front(2);
         assert_eq!(alloc, Arc::as_ptr(&list2.alloc));
     }
@@ -288,7 +288,7 @@ mod test {
         list2.tail().unwrap();
         assert_ne!(list1, list2);
 
-        // Even if the list do not share the same allocation they should match
+        // Even if the lists don't share the same allocation, they should be equal
         list2.push_front(1);
         assert_eq!(list1, list2);
     }
