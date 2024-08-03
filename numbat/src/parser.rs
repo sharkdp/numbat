@@ -395,447 +395,473 @@ impl<'a> Parser<'a> {
         }
 
         if self.match_exact(TokenKind::Let).is_some() {
-            if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-                let identifier_span = self.last().unwrap().span;
+            self.parse_let()
+        } else if self.match_exact(TokenKind::Fn).is_some() {
+            self.parse_function_declaration()
+        } else if self.match_exact(TokenKind::Dimension).is_some() {
+            self.parse_dimension_declaration()
+        } else if self.match_exact(TokenKind::At).is_some() {
+            self.parse_decorators()
+        } else if self.match_exact(TokenKind::Unit).is_some() {
+            self.parse_unit_declaration()
+        } else if self.match_exact(TokenKind::Use).is_some() {
+            self.parse_use()
+        } else if self.match_exact(TokenKind::Struct).is_some() {
+            self.parse_struct()
+        } else if self.match_any(PROCEDURES).is_some() {
+            self.parse_procedure()
+        } else {
+            Ok(Statement::Expression(self.expression()?))
+        }
+    }
 
-                let type_annotation = if self.match_exact(TokenKind::Colon).is_some() {
-                    Some(self.type_annotation()?)
-                } else {
-                    None
-                };
+    fn parse_let(&mut self) -> Result<Statement> {
+        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+            let identifier_span = self.last().unwrap().span;
 
-                if self.match_exact(TokenKind::Equal).is_none() {
-                    Err(ParseError {
-                        kind: ParseErrorKind::ExpectedEqualOrColonAfterLetIdentifier,
-                        span: self.peek().span,
-                    })
-                } else {
-                    self.skip_empty_lines();
-                    let expr = self.expression()?;
-
-                    if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
-                            span: self.peek().span,
-                        });
-                    }
-                    let mut decorators = vec![];
-                    std::mem::swap(&mut decorators, &mut self.decorator_stack);
-
-                    Ok(Statement::DefineVariable {
-                        identifier_span,
-                        identifier: identifier.lexeme.clone(),
-                        expr,
-                        type_annotation,
-                        decorators,
-                    })
-                }
+            let type_annotation = if self.match_exact(TokenKind::Colon).is_some() {
+                Some(self.type_annotation()?)
             } else {
+                None
+            };
+
+            if self.match_exact(TokenKind::Equal).is_none() {
                 Err(ParseError {
-                    kind: ParseErrorKind::ExpectedIdentifierAfterLet,
+                    kind: ParseErrorKind::ExpectedEqualOrColonAfterLetIdentifier,
                     span: self.peek().span,
                 })
-            }
-        } else if self.match_exact(TokenKind::Fn).is_some() {
-            if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
-                let function_name_span = self.last().unwrap().span;
-                let mut type_parameters = vec![];
-                // Parsing the generic parameters if there are any
-                if self.match_exact(TokenKind::LessThan).is_some() {
-                    while self.match_exact(TokenKind::GreaterThan).is_none() {
-                        if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
-                            let bound = if self.match_exact(TokenKind::Colon).is_some() {
-                                match self.match_exact(TokenKind::Identifier) {
-                                    Some(token) if token.lexeme == "Dim" => {
-                                        Some(TypeParameterBound::Dim)
-                                    }
-                                    Some(token) => {
-                                        return Err(ParseError {
-                                            kind: ParseErrorKind::UnknownBound(
-                                                token.lexeme.clone(),
-                                            ),
-                                            span: token.span,
-                                        });
-                                    }
-                                    None => {
-                                        return Err(ParseError {
-                                            kind: ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
-                                            span: self.peek().span,
-                                        });
-                                    }
-                                }
-                            } else {
-                                None
-                            };
+            } else {
+                self.skip_empty_lines();
+                let expr = self.expression()?;
 
-                            let span = self.last().unwrap().span;
-                            type_parameters.push((
-                                span,
-                                type_parameter_name.lexeme.to_string(),
-                                bound,
-                            ));
-
-                            if self.match_exact(TokenKind::Comma).is_none()
-                                && self.peek().kind != TokenKind::GreaterThan
-                            {
-                                return Err(ParseError {
-                                    kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
-                                    span: self.peek().span,
-                                });
-                            }
-                        } else {
-                            return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedTypeParameterName,
-                                span: self.peek().span,
-                            });
-                        }
-                    }
-                }
-
-                if self.match_exact(TokenKind::LeftParen).is_none() {
+                if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
                     return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedLeftParenInFunctionDefinition,
+                        kind: ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
                         span: self.peek().span,
                     });
                 }
+                let mut decorators = vec![];
+                std::mem::swap(&mut decorators, &mut self.decorator_stack);
 
-                let mut parameter_span = self.peek().span;
+                Ok(Statement::DefineVariable {
+                    identifier_span,
+                    identifier: identifier.lexeme.clone(),
+                    expr,
+                    type_annotation,
+                    decorators,
+                })
+            }
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::ExpectedIdentifierAfterLet,
+                span: self.peek().span,
+            })
+        }
+    }
 
-                self.match_exact(TokenKind::Newline);
-                let mut parameters = vec![];
-                while self.match_exact(TokenKind::RightParen).is_none() {
-                    if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
-                        let span = self.last().unwrap().span;
-                        let param_type_dexpr = if self.match_exact(TokenKind::Colon).is_some() {
-                            Some(self.type_annotation()?)
+    fn parse_function_declaration(&mut self) -> Result<Statement> {
+        if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
+            let function_name_span = self.last().unwrap().span;
+            let mut type_parameters = vec![];
+            // Parsing the generic parameters if there are any
+            if self.match_exact(TokenKind::LessThan).is_some() {
+                while self.match_exact(TokenKind::GreaterThan).is_none() {
+                    if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
+                        let bound = if self.match_exact(TokenKind::Colon).is_some() {
+                            match self.match_exact(TokenKind::Identifier) {
+                                Some(token) if token.lexeme == "Dim" => {
+                                    Some(TypeParameterBound::Dim)
+                                }
+                                Some(token) => {
+                                    return Err(ParseError {
+                                        kind: ParseErrorKind::UnknownBound(token.lexeme.clone()),
+                                        span: token.span,
+                                    });
+                                }
+                                None => {
+                                    return Err(ParseError {
+                                        kind:
+                                            ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
+                                        span: self.peek().span,
+                                    });
+                                }
+                            }
                         } else {
                             None
                         };
 
-                        parameters.push((span, param_name.lexeme.to_string(), param_type_dexpr));
+                        let span = self.last().unwrap().span;
+                        type_parameters.push((span, type_parameter_name.lexeme.to_string(), bound));
 
-                        parameter_span = parameter_span.extend(&self.last().unwrap().span);
-
-                        self.skip_empty_lines();
-                        let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                        self.skip_empty_lines();
-                        if self.match_exact(TokenKind::RightParen).is_some() {
-                            break;
-                        }
-
-                        if !has_comma && self.peek().kind != TokenKind::RightParen {
+                        if self.match_exact(TokenKind::Comma).is_none()
+                            && self.peek().kind != TokenKind::GreaterThan
+                        {
                             return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
+                                kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
                                 span: self.peek().span,
                             });
                         }
                     } else {
                         return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedParameterNameInFunctionDefinition,
+                            kind: ParseErrorKind::ExpectedTypeParameterName,
                             span: self.peek().span,
                         });
                     }
                 }
-
-                let return_type_annotation = if self.match_exact(TokenKind::Arrow).is_some() {
-                    Some(self.type_annotation()?)
-                } else {
-                    None
-                };
-
-                let body = if self.match_exact(TokenKind::Equal).is_none() {
-                    None
-                } else {
-                    self.skip_empty_lines();
-                    Some(self.expression()?)
-                };
-
-                if decorator::contains_aliases(&self.decorator_stack) {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::AliasUsedOnFunction,
-                        span: self.peek().span,
-                    });
-                }
-
-                let mut decorators = vec![];
-                std::mem::swap(&mut decorators, &mut self.decorator_stack);
-
-                Ok(Statement::DefineFunction {
-                    function_name_span,
-                    function_name: fn_name.lexeme.clone(),
-                    type_parameters,
-                    parameters,
-                    body,
-                    return_type_annotation,
-                    decorators,
-                })
-            } else {
-                Err(ParseError {
-                    kind: ParseErrorKind::ExpectedIdentifierAfterFn,
-                    span: self.peek().span,
-                })
             }
-        } else if self.match_exact(TokenKind::Dimension).is_some() {
-            if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-                if identifier.lexeme.starts_with("__") {
-                    return Err(ParseError::new(
-                        ParseErrorKind::DoubleUnderscoreTypeNamesReserved,
-                        identifier.span,
-                    ));
-                }
 
-                if self.match_exact(TokenKind::Equal).is_some() {
-                    self.skip_empty_lines();
-                    let mut dexprs = vec![self.dimension_expression()?];
-
-                    while self.match_exact(TokenKind::Equal).is_some() {
-                        self.skip_empty_lines();
-                        dexprs.push(self.dimension_expression()?);
-                    }
-
-                    Ok(Statement::DefineDimension(
-                        identifier.span,
-                        identifier.lexeme.clone(),
-                        dexprs,
-                    ))
-                } else {
-                    Ok(Statement::DefineDimension(
-                        identifier.span,
-                        identifier.lexeme.clone(),
-                        vec![],
-                    ))
-                }
-            } else {
-                Err(ParseError {
-                    kind: ParseErrorKind::ExpectedIdentifierAfterDimension,
-                    span: self.peek().span,
-                })
-            }
-        } else if self.match_exact(TokenKind::At).is_some() {
-            if let Some(decorator) = self.match_exact(TokenKind::Identifier) {
-                let decorator = match decorator.lexeme.as_str() {
-                    "metric_prefixes" => Decorator::MetricPrefixes,
-                    "binary_prefixes" => Decorator::BinaryPrefixes,
-                    "aliases" => {
-                        if self.match_exact(TokenKind::LeftParen).is_some() {
-                            let aliases = self.list_of_aliases()?;
-                            Decorator::Aliases(aliases)
-                        } else {
-                            return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
-                                span: self.peek().span,
-                            });
-                        }
-                    }
-                    "url" | "name" | "description" => {
-                        if self.match_exact(TokenKind::LeftParen).is_some() {
-                            if let Some(token) = self.match_exact(TokenKind::StringFixed) {
-                                if self.match_exact(TokenKind::RightParen).is_none() {
-                                    return Err(ParseError::new(
-                                        ParseErrorKind::MissingClosingParen,
-                                        self.peek().span,
-                                    ));
-                                }
-
-                                let content = strip_and_escape(&token.lexeme);
-
-                                match decorator.lexeme.as_str() {
-                                    "url" => Decorator::Url(content),
-                                    "name" => Decorator::Name(content),
-                                    "description" => Decorator::Description(content),
-                                    _ => unreachable!(),
-                                }
-                            } else {
-                                return Err(ParseError {
-                                    kind: ParseErrorKind::ExpectedString,
-                                    span: self.peek().span,
-                                });
-                            }
-                        } else {
-                            return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
-                                span: self.peek().span,
-                            });
-                        }
-                    }
-                    _ => {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::UnknownDecorator,
-                            span: decorator.span,
-                        });
-                    }
-                };
-
-                self.decorator_stack.push(decorator); // TODO: make sure that there are no duplicate decorators
-
-                // A decorator is not yet a full statement. Continue parsing:
-                self.skip_empty_lines();
-                self.statement()
-            } else {
-                Err(ParseError {
-                    kind: ParseErrorKind::ExpectedDecoratorName,
-                    span: self.peek().span,
-                })
-            }
-        } else if self.match_exact(TokenKind::Unit).is_some() {
-            if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-                let identifier_span = self.last().unwrap().span;
-                let (type_annotation_span, dexpr) = if self.match_exact(TokenKind::Colon).is_some()
-                {
-                    let type_annotation = self.dimension_expression()?;
-                    (Some(self.last().unwrap().span), Some(type_annotation))
-                } else {
-                    (None, None)
-                };
-
-                let unit_name = identifier.lexeme.clone();
-
-                let mut decorators = vec![];
-                std::mem::swap(&mut decorators, &mut self.decorator_stack);
-
-                if self.match_exact(TokenKind::Equal).is_some() {
-                    self.skip_empty_lines();
-                    let expr = self.expression()?;
-                    Ok(Statement::DefineDerivedUnit {
-                        identifier_span,
-                        identifier: unit_name,
-                        expr,
-                        type_annotation_span,
-                        type_annotation: dexpr.map(TypeAnnotation::TypeExpression),
-                        decorators,
-                    })
-                } else if dexpr.is_some() {
-                    Ok(Statement::DefineBaseUnit(
-                        identifier_span,
-                        unit_name,
-                        dexpr,
-                        decorators,
-                    ))
-                } else if self.is_end_of_statement() {
-                    Ok(Statement::DefineBaseUnit(
-                        identifier_span,
-                        unit_name,
-                        None,
-                        decorators,
-                    ))
-                } else {
-                    Err(ParseError {
-                        kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
-                        span: self.peek().span,
-                    })
-                }
-            } else {
-                Err(ParseError {
-                    kind: ParseErrorKind::ExpectedIdentifierAfterUnit,
-                    span: self.peek().span,
-                })
-            }
-        } else if self.match_exact(TokenKind::Use).is_some() {
-            let mut span = self.peek().span;
-
-            if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-                let mut module_path = vec![identifier.lexeme.clone()];
-
-                while self.match_exact(TokenKind::DoubleColon).is_some() {
-                    if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-                        module_path.push(identifier.lexeme.clone());
-                    } else {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedModuleNameAfterDoubleColon,
-                            span: self.peek().span,
-                        });
-                    }
-                }
-                span = span.extend(&self.last().unwrap().span);
-
-                Ok(Statement::ModuleImport(span, ModulePath(module_path)))
-            } else {
-                Err(ParseError {
-                    kind: ParseErrorKind::ExpectedModulePathAfterUse,
-                    span: self.peek().span,
-                })
-            }
-        } else if self.match_exact(TokenKind::Struct).is_some() {
-            let name = self.identifier()?;
-            let name_span = self.last().unwrap().span;
-
-            if self.match_exact(TokenKind::LeftCurly).is_none() {
+            if self.match_exact(TokenKind::LeftParen).is_none() {
                 return Err(ParseError {
-                    kind: ParseErrorKind::ExpectedLeftCurlyAfterStructName,
+                    kind: ParseErrorKind::ExpectedLeftParenInFunctionDefinition,
                     span: self.peek().span,
                 });
             }
 
-            self.skip_empty_lines();
+            let mut parameter_span = self.peek().span;
 
-            let mut fields = vec![];
-            while self.match_exact(TokenKind::RightCurly).is_none() {
-                self.skip_empty_lines();
+            self.match_exact(TokenKind::Newline);
+            let mut parameters = vec![];
+            while self.match_exact(TokenKind::RightParen).is_none() {
+                if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
+                    let span = self.last().unwrap().span;
+                    let param_type_dexpr = if self.match_exact(TokenKind::Colon).is_some() {
+                        Some(self.type_annotation()?)
+                    } else {
+                        None
+                    };
 
-                let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
+                    parameters.push((span, param_name.lexeme.to_string(), param_type_dexpr));
+
+                    parameter_span = parameter_span.extend(&self.last().unwrap().span);
+
+                    self.skip_empty_lines();
+                    let has_comma = self.match_exact(TokenKind::Comma).is_some();
+                    self.skip_empty_lines();
+                    if self.match_exact(TokenKind::RightParen).is_some() {
+                        break;
+                    }
+
+                    if !has_comma && self.peek().kind != TokenKind::RightParen {
+                        return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
+                                span: self.peek().span,
+                            });
+                    }
+                } else {
                     return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedFieldNameInStruct,
-                        span: self.peek().span,
-                    });
-                };
-
-                self.skip_empty_lines();
-
-                if self.match_exact(TokenKind::Colon).is_none() {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedColonAfterFieldName,
+                        kind: ParseErrorKind::ExpectedParameterNameInFunctionDefinition,
                         span: self.peek().span,
                     });
                 }
-                self.skip_empty_lines();
-
-                let attr_type = self.type_annotation()?;
-
-                self.skip_empty_lines();
-
-                let has_comma = self.match_exact(TokenKind::Comma).is_some();
-
-                self.skip_empty_lines();
-
-                if !has_comma && self.peek().kind != TokenKind::RightCurly {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
-                        span: self.peek().span,
-                    });
-                }
-
-                fields.push((field_name.span, field_name.lexeme.to_owned(), attr_type));
             }
 
-            Ok(Statement::DefineStruct {
-                struct_name_span: name_span,
-                struct_name: name,
-                fields,
-            })
-        } else if self.match_any(PROCEDURES).is_some() {
-            let span = self.last().unwrap().span;
-            let procedure_kind = match self.last().unwrap().kind {
-                TokenKind::ProcedurePrint => ProcedureKind::Print,
-                TokenKind::ProcedureAssert => ProcedureKind::Assert,
-                TokenKind::ProcedureAssertEq => ProcedureKind::AssertEq,
-                TokenKind::ProcedureType => ProcedureKind::Type,
-                _ => unreachable!(),
+            let return_type_annotation = if self.match_exact(TokenKind::Arrow).is_some() {
+                Some(self.type_annotation()?)
+            } else {
+                None
             };
 
-            if self.match_exact(TokenKind::LeftParen).is_some() {
-                Ok(Statement::ProcedureCall(
-                    span,
-                    procedure_kind,
-                    self.arguments()?,
+            let body = if self.match_exact(TokenKind::Equal).is_none() {
+                None
+            } else {
+                self.skip_empty_lines();
+                Some(self.expression()?)
+            };
+
+            if decorator::contains_aliases(&self.decorator_stack) {
+                return Err(ParseError {
+                    kind: ParseErrorKind::AliasUsedOnFunction,
+                    span: self.peek().span,
+                });
+            }
+
+            let mut decorators = vec![];
+            std::mem::swap(&mut decorators, &mut self.decorator_stack);
+
+            Ok(Statement::DefineFunction {
+                function_name_span,
+                function_name: fn_name.lexeme.clone(),
+                type_parameters,
+                parameters,
+                body,
+                return_type_annotation,
+                decorators,
+            })
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::ExpectedIdentifierAfterFn,
+                span: self.peek().span,
+            })
+        }
+    }
+
+    fn parse_dimension_declaration(&mut self) -> Result<Statement> {
+        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+            if identifier.lexeme.starts_with("__") {
+                return Err(ParseError::new(
+                    ParseErrorKind::DoubleUnderscoreTypeNamesReserved,
+                    identifier.span,
+                ));
+            }
+
+            if self.match_exact(TokenKind::Equal).is_some() {
+                self.skip_empty_lines();
+                let mut dexprs = vec![self.dimension_expression()?];
+
+                while self.match_exact(TokenKind::Equal).is_some() {
+                    self.skip_empty_lines();
+                    dexprs.push(self.dimension_expression()?);
+                }
+
+                Ok(Statement::DefineDimension(
+                    identifier.span,
+                    identifier.lexeme.clone(),
+                    dexprs,
+                ))
+            } else {
+                Ok(Statement::DefineDimension(
+                    identifier.span,
+                    identifier.lexeme.clone(),
+                    vec![],
+                ))
+            }
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::ExpectedIdentifierAfterDimension,
+                span: self.peek().span,
+            })
+        }
+    }
+
+    fn parse_decorators(&mut self) -> Result<Statement> {
+        if let Some(decorator) = self.match_exact(TokenKind::Identifier) {
+            let decorator = match decorator.lexeme.as_str() {
+                "metric_prefixes" => Decorator::MetricPrefixes,
+                "binary_prefixes" => Decorator::BinaryPrefixes,
+                "aliases" => {
+                    if self.match_exact(TokenKind::LeftParen).is_some() {
+                        let aliases = self.list_of_aliases()?;
+                        Decorator::Aliases(aliases)
+                    } else {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek().span,
+                        });
+                    }
+                }
+                "url" | "name" | "description" => {
+                    if self.match_exact(TokenKind::LeftParen).is_some() {
+                        if let Some(token) = self.match_exact(TokenKind::StringFixed) {
+                            if self.match_exact(TokenKind::RightParen).is_none() {
+                                return Err(ParseError::new(
+                                    ParseErrorKind::MissingClosingParen,
+                                    self.peek().span,
+                                ));
+                            }
+
+                            let content = strip_and_escape(&token.lexeme);
+
+                            match decorator.lexeme.as_str() {
+                                "url" => Decorator::Url(content),
+                                "name" => Decorator::Name(content),
+                                "description" => Decorator::Description(content),
+                                _ => unreachable!(),
+                            }
+                        } else {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedString,
+                                span: self.peek().span,
+                            });
+                        }
+                    } else {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek().span,
+                        });
+                    }
+                }
+                _ => {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::UnknownDecorator,
+                        span: decorator.span,
+                    });
+                }
+            };
+
+            self.decorator_stack.push(decorator); // TODO: make sure that there are no duplicate decorators
+
+            // A decorator is not yet a full statement. Continue parsing:
+            self.skip_empty_lines();
+            self.statement()
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::ExpectedDecoratorName,
+                span: self.peek().span,
+            })
+        }
+    }
+
+    fn parse_unit_declaration(&mut self) -> Result<Statement> {
+        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+            let identifier_span = self.last().unwrap().span;
+            let (type_annotation_span, dexpr) = if self.match_exact(TokenKind::Colon).is_some() {
+                let type_annotation = self.dimension_expression()?;
+                (Some(self.last().unwrap().span), Some(type_annotation))
+            } else {
+                (None, None)
+            };
+
+            let unit_name = identifier.lexeme.clone();
+
+            let mut decorators = vec![];
+            std::mem::swap(&mut decorators, &mut self.decorator_stack);
+
+            if self.match_exact(TokenKind::Equal).is_some() {
+                self.skip_empty_lines();
+                let expr = self.expression()?;
+                Ok(Statement::DefineDerivedUnit {
+                    identifier_span,
+                    identifier: unit_name,
+                    expr,
+                    type_annotation_span,
+                    type_annotation: dexpr.map(TypeAnnotation::TypeExpression),
+                    decorators,
+                })
+            } else if dexpr.is_some() {
+                Ok(Statement::DefineBaseUnit(
+                    identifier_span,
+                    unit_name,
+                    dexpr,
+                    decorators,
+                ))
+            } else if self.is_end_of_statement() {
+                Ok(Statement::DefineBaseUnit(
+                    identifier_span,
+                    unit_name,
+                    None,
+                    decorators,
                 ))
             } else {
                 Err(ParseError {
-                    kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
+                    kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
                     span: self.peek().span,
                 })
             }
         } else {
-            Ok(Statement::Expression(self.expression()?))
+            Err(ParseError {
+                kind: ParseErrorKind::ExpectedIdentifierAfterUnit,
+                span: self.peek().span,
+            })
+        }
+    }
+
+    fn parse_use(&mut self) -> Result<Statement> {
+        let mut span = self.peek().span;
+
+        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+            let mut module_path = vec![identifier.lexeme.clone()];
+
+            while self.match_exact(TokenKind::DoubleColon).is_some() {
+                if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+                    module_path.push(identifier.lexeme.clone());
+                } else {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedModuleNameAfterDoubleColon,
+                        span: self.peek().span,
+                    });
+                }
+            }
+            span = span.extend(&self.last().unwrap().span);
+
+            Ok(Statement::ModuleImport(span, ModulePath(module_path)))
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::ExpectedModulePathAfterUse,
+                span: self.peek().span,
+            })
+        }
+    }
+
+    fn parse_struct(&mut self) -> Result<Statement> {
+        let name = self.identifier()?;
+        let name_span = self.last().unwrap().span;
+
+        if self.match_exact(TokenKind::LeftCurly).is_none() {
+            return Err(ParseError {
+                kind: ParseErrorKind::ExpectedLeftCurlyAfterStructName,
+                span: self.peek().span,
+            });
+        }
+
+        self.skip_empty_lines();
+
+        let mut fields = vec![];
+        while self.match_exact(TokenKind::RightCurly).is_none() {
+            self.skip_empty_lines();
+
+            let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
+                return Err(ParseError {
+                    kind: ParseErrorKind::ExpectedFieldNameInStruct,
+                    span: self.peek().span,
+                });
+            };
+
+            self.skip_empty_lines();
+
+            if self.match_exact(TokenKind::Colon).is_none() {
+                return Err(ParseError {
+                    kind: ParseErrorKind::ExpectedColonAfterFieldName,
+                    span: self.peek().span,
+                });
+            }
+            self.skip_empty_lines();
+
+            let attr_type = self.type_annotation()?;
+
+            self.skip_empty_lines();
+
+            let has_comma = self.match_exact(TokenKind::Comma).is_some();
+
+            self.skip_empty_lines();
+
+            if !has_comma && self.peek().kind != TokenKind::RightCurly {
+                return Err(ParseError {
+                    kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
+                    span: self.peek().span,
+                });
+            }
+
+            fields.push((field_name.span, field_name.lexeme.to_owned(), attr_type));
+        }
+
+        Ok(Statement::DefineStruct {
+            struct_name_span: name_span,
+            struct_name: name,
+            fields,
+        })
+    }
+
+    fn parse_procedure(&mut self) -> Result<Statement> {
+        let span = self.last().unwrap().span;
+        let procedure_kind = match self.last().unwrap().kind {
+            TokenKind::ProcedurePrint => ProcedureKind::Print,
+            TokenKind::ProcedureAssert => ProcedureKind::Assert,
+            TokenKind::ProcedureAssertEq => ProcedureKind::AssertEq,
+            TokenKind::ProcedureType => ProcedureKind::Type,
+            _ => unreachable!(),
+        };
+
+        if self.match_exact(TokenKind::LeftParen).is_some() {
+            Ok(Statement::ProcedureCall(
+                span,
+                procedure_kind,
+                self.arguments()?,
+            ))
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
+                span: self.peek().span,
+            })
         }
     }
 
