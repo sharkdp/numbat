@@ -108,10 +108,8 @@ pub enum ParseErrorKind {
     #[error("Expected identifier")]
     ExpectedIdentifier,
 
-    #[error(
-        "Expected identifier or function call after postfix apply (`//`) but instead got: `{0}`"
-    )]
-    ExpectedIdentifierOrCallAfterPostfixApply(String),
+    #[error("Expected identifier or function call after postfix apply (`//`)")]
+    ExpectedIdentifierOrCallAfterPostfixApply,
 
     #[error("Expected dimension identifier, '1', or opening parenthesis")]
     ExpectedDimensionPrimary,
@@ -902,11 +900,9 @@ impl<'a> Parser<'a> {
                     params.push(expr);
                     expr = Expression::FunctionCall(call_span, full_span, call, params);
                 }
-                other => {
+                _other => {
                     return Err(ParseError::new(
-                        ParseErrorKind::ExpectedIdentifierOrCallAfterPostfixApply(format!(
-                            "{other:?}"
-                        )),
+                        ParseErrorKind::ExpectedIdentifierOrCallAfterPostfixApply,
                         full_span,
                     ))
                 }
@@ -1878,7 +1874,7 @@ mod tests {
         for input in inputs {
             match parse(input, 0) {
                 Err((_, errors)) => {
-                    assert_eq!(errors[0].kind, error_kind);
+                    assert_eq!(errors[0].kind, error_kind, "Failed on {}", input);
                 }
                 _ => {
                     panic!();
@@ -2754,6 +2750,24 @@ mod tests {
                 Box::new(identifier!("foo")),
                 vec![binop!(scalar!(1.0), Add, scalar!(1.0))],
             ),
+        );
+        parse_as_expression(
+            &["1 + 1 // kefir(2)"],
+            Expression::FunctionCall(
+                Span::dummy(),
+                Span::dummy(),
+                Box::new(identifier!("kefir")),
+                vec![scalar!(2.0), binop!(scalar!(1.0), Add, scalar!(1.0))],
+            ),
+        );
+
+        should_fail_with(&["1 // print()"], ParseErrorKind::InlineProcedureUsage);
+
+        should_fail_with(&["1 // +"], ParseErrorKind::ExpectedPrimary);
+
+        should_fail_with(
+            &["1 // 2", "1 // 1 +"],
+            ParseErrorKind::ExpectedIdentifierOrCallAfterPostfixApply,
         );
     }
 
