@@ -108,6 +108,11 @@ pub enum ParseErrorKind {
     #[error("Expected identifier")]
     ExpectedIdentifier,
 
+    #[error(
+        "Expected identifier or function call after postfix apply (`//`) but instead got: `{0}`"
+    )]
+    ExpectedIdentifierOrCallAfterPostfixApply(String),
+
     #[error("Expected dimension identifier, '1', or opening parenthesis")]
     ExpectedDimensionPrimary,
 
@@ -880,16 +885,32 @@ impl<'a> Parser<'a> {
         let mut expr = self.condition()?;
         let mut full_span = expr.full_span();
         while self.match_exact(TokenKind::PostfixApply).is_some() {
-            let identifier = self.identifier()?;
-            let identifier_span = self.last().unwrap().span;
-            full_span = full_span.extend(&identifier_span);
+            match self.call()? {
+                Expression::Identifier(span, ident) => {
+                    full_span = full_span.extend(&span);
 
-            expr = Expression::FunctionCall(
-                identifier_span,
-                full_span,
-                Box::new(Expression::Identifier(identifier_span, identifier)),
-                vec![expr],
-            );
+                    expr = Expression::FunctionCall(
+                        span,
+                        full_span,
+                        Box::new(Expression::Identifier(span, ident)),
+                        vec![expr],
+                    );
+                }
+                Expression::FunctionCall(call_span, fn_full_span, call, mut params) => {
+                    full_span = full_span.extend(&fn_full_span);
+
+                    params.push(expr);
+                    expr = Expression::FunctionCall(call_span, full_span, call, params);
+                }
+                other => {
+                    return Err(ParseError::new(
+                        ParseErrorKind::ExpectedIdentifierOrCallAfterPostfixApply(format!(
+                            "{other:?}"
+                        )),
+                        full_span,
+                    ))
+                }
+            }
         }
         Ok(expr)
     }
