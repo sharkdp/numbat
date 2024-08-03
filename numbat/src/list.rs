@@ -41,7 +41,7 @@ impl<T: PartialEq> PartialEq for NumbatList<T> {
         }
         // Second best case, the other slice comes from the same allocation and
         // has the same view => they are equal
-        if Arc::as_ptr(&self.alloc) == Arc::as_ptr(&other.alloc) && self.view == other.view {
+        if Arc::ptr_eq(&self.alloc, &other.alloc) && self.view == other.view {
             true
         } else {
             // Worst case scenario, we need to compare all the elements one by one
@@ -256,15 +256,15 @@ mod test {
 
         let mut list2 = list1.clone();
 
-        assert_eq!(Arc::as_ptr(&list1.alloc), Arc::as_ptr(&list2.alloc));
+        assert!(Arc::ptr_eq(&list1.alloc, &list2.alloc));
 
         list2.tail().unwrap();
         // Even after advancing the list2 the alloc can still be shared between both instance
-        assert_eq!(Arc::as_ptr(&list1.alloc), Arc::as_ptr(&list2.alloc));
+        assert!(Arc::ptr_eq(&list1.alloc, &list2.alloc));
 
         // Pushing something new in the first list should re-allocate
         list1.push_front(2);
-        assert_ne!(Arc::as_ptr(&list1.alloc), Arc::as_ptr(&list2.alloc));
+        assert!(!Arc::ptr_eq(&list1.alloc, &list2.alloc));
 
         // Now that list2 is alone on its allocation it should be able
         // to push an element to the front without re-allocating anything
