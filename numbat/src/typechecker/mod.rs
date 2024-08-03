@@ -16,8 +16,8 @@ use std::ops::Deref;
 
 use crate::arithmetic::Exponent;
 use crate::ast::{
-    self, BinaryOperator, ProcedureKind, StringPart, TypeAnnotation, TypeExpression,
-    TypeParameterBound,
+    self, BinaryOperator, DefineVariable, ProcedureKind, StringPart, TypeAnnotation,
+    TypeExpression, TypeParameterBound,
 };
 use crate::dimension::DimensionRegistry;
 use crate::name_resolution::Namespace;
@@ -1064,6 +1064,89 @@ impl TypeChecker {
         })
     }
 
+    fn elaborate_define_variable(
+        &mut self,
+        define_variable: &ast::DefineVariable,
+    ) -> Result<typed_ast::DefineVariable> {
+        let DefineVariable {
+            identifier_span,
+            identifier,
+            expr,
+            type_annotation,
+            decorators,
+        } = define_variable;
+
+        let expr_checked = self.elaborate_expression(expr)?;
+        let type_deduced = expr_checked.get_type();
+
+        if let Some(ref type_annotation) = type_annotation {
+            let type_annotated = self.type_from_annotation(type_annotation)?;
+
+            match (&type_deduced, &type_annotated) {
+                (Type::Dimension(dexpr_deduced), Type::Dimension(dexpr_specified))
+                    if type_deduced.is_closed() && type_annotated.is_closed() =>
+                {
+                    if dexpr_deduced != dexpr_specified {
+                        return Err(TypeCheckError::IncompatibleDimensions(
+                            IncompatibleDimensionsError {
+                                span_operation: *identifier_span,
+                                operation: "variable definition".into(),
+                                span_expected: type_annotation.full_span(),
+                                expected_name: "specified dimension",
+                                expected_dimensions: self.registry.get_derived_entry_names_for(
+                                    &dexpr_specified.to_base_representation(),
+                                ),
+                                expected_type: dexpr_specified.to_base_representation(),
+                                span_actual: expr.full_span(),
+                                actual_name: "   actual dimension",
+                                actual_name_for_fix: "right hand side expression",
+                                actual_dimensions: self.registry.get_derived_entry_names_for(
+                                    &dexpr_deduced.to_base_representation(),
+                                ),
+                                actual_type: dexpr_deduced.to_base_representation(),
+                            },
+                        ));
+                    }
+                }
+                (deduced, annotated) => {
+                    if self
+                        .add_equal_constraint(deduced, annotated)
+                        .is_trivially_violated()
+                    {
+                        return Err(TypeCheckError::IncompatibleTypesInAnnotation(
+                            "definition".into(),
+                            *identifier_span,
+                            annotated.clone(),
+                            type_annotation.full_span(),
+                            deduced.clone(),
+                            expr_checked.full_span(),
+                        ));
+                    }
+                }
+            }
+        }
+
+        for (name, _) in decorator::name_and_aliases(identifier, decorators) {
+            self.env
+                .add(name.clone(), type_deduced.clone(), *identifier_span, false);
+
+            self.value_namespace.add_identifier_allow_override(
+                name.clone(),
+                *identifier_span,
+                "constant".to_owned(),
+            )?;
+        }
+
+        Ok(typed_ast::DefineVariable(
+            identifier.clone(),
+            decorators.clone(),
+            expr_checked,
+            type_annotation.clone(),
+            TypeScheme::concrete(type_deduced),
+            crate::markup::empty(),
+        ))
+    }
+
     fn elaborate_statement(&mut self, ast: &ast::Statement) -> Result<typed_ast::Statement> {
         Ok(match ast {
             ast::Statement::Expression(expr) => {
@@ -1076,85 +1159,9 @@ impl TypeChecker {
                 }
                 typed_ast::Statement::Expression(checked_expr)
             }
-            ast::Statement::DefineVariable {
-                identifier_span,
-                identifier,
-                expr,
-                type_annotation,
-                decorators,
-            } => {
-                let expr_checked = self.elaborate_expression(expr)?;
-                let type_deduced = expr_checked.get_type();
-
-                if let Some(ref type_annotation) = type_annotation {
-                    let type_annotated = self.type_from_annotation(type_annotation)?;
-
-                    match (&type_deduced, &type_annotated) {
-                        (Type::Dimension(dexpr_deduced), Type::Dimension(dexpr_specified))
-                            if type_deduced.is_closed() && type_annotated.is_closed() =>
-                        {
-                            if dexpr_deduced != dexpr_specified {
-                                return Err(TypeCheckError::IncompatibleDimensions(
-                                    IncompatibleDimensionsError {
-                                        span_operation: *identifier_span,
-                                        operation: "variable definition".into(),
-                                        span_expected: type_annotation.full_span(),
-                                        expected_name: "specified dimension",
-                                        expected_dimensions: self
-                                            .registry
-                                            .get_derived_entry_names_for(
-                                                &dexpr_specified.to_base_representation(),
-                                            ),
-                                        expected_type: dexpr_specified.to_base_representation(),
-                                        span_actual: expr.full_span(),
-                                        actual_name: "   actual dimension",
-                                        actual_name_for_fix: "right hand side expression",
-                                        actual_dimensions: self
-                                            .registry
-                                            .get_derived_entry_names_for(
-                                                &dexpr_deduced.to_base_representation(),
-                                            ),
-                                        actual_type: dexpr_deduced.to_base_representation(),
-                                    },
-                                ));
-                            }
-                        }
-                        (deduced, annotated) => {
-                            if self
-                                .add_equal_constraint(deduced, annotated)
-                                .is_trivially_violated()
-                            {
-                                return Err(TypeCheckError::IncompatibleTypesInAnnotation(
-                                    "definition".into(),
-                                    *identifier_span,
-                                    annotated.clone(),
-                                    type_annotation.full_span(),
-                                    deduced.clone(),
-                                    expr_checked.full_span(),
-                                ));
-                            }
-                        }
-                    }
-                }
-
-                for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-                    self.env
-                        .add(name.clone(), type_deduced.clone(), *identifier_span, false);
-
-                    self.value_namespace.add_identifier_allow_override(
-                        name.clone(),
-                        *identifier_span,
-                        "constant".to_owned(),
-                    )?;
-                }
-
+            ast::Statement::DefineVariable(define_variable) => {
                 typed_ast::Statement::DefineVariable(
-                    identifier.clone(),
-                    decorators.clone(),
-                    expr_checked,
-                    type_annotation.clone(),
-                    TypeScheme::concrete(type_deduced),
-                    crate::markup::empty(),
+                    self.elaborate_define_variable(define_variable)?,
                 )
             }
             ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
@@ -1283,6 +1290,7 @@ impl TypeChecker {
                 type_parameters,
                 parameters,
                 body,
+                local_variables,
                 return_type_annotation,
                 decorators,
             } => {
@@ -1363,6 +1371,11 @@ impl TypeChecker {
                         parameter_type,
                         type_annotation,
                     ));
+                }
+
+                let mut typed_local_variables = vec![];
+                for local_variable in local_variables {
+                    typed_local_variables.push(self.elaborate_define_variable(local_variable)?);
                 }
 
                 let annotated_return_type = return_type_annotation
@@ -1516,6 +1529,7 @@ impl TypeChecker {
                         })
                         .collect(),
                     body_checked,
+                    typed_local_variables,
                     fn_type,
                     return_type_annotation.clone(),
                     crate::markup::empty(),
