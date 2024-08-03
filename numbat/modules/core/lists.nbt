@@ -44,6 +44,12 @@ fn element_at<A>(i: Scalar, xs: List<A>) -> A =
     then head(xs)
     else element_at(i - 1, tail(xs))
 
+@description("Insert the element at index `i` in a list")
+fn insert_at<A>(el: A, i: Scalar, xs: List<A>) -> List<A> =
+  if i == 0
+    then cons(el, xs)
+    else cons(head(xs), insert_at(el, i - 1, tail(xs)))
+
 @description("Generate a range of integer numbers from `start` to `end` (inclusive)")
 fn range(start: Scalar, end: Scalar) -> List<Scalar> =
   if start > end
