@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{DType, DTypeFactor, Expression, StructInfo, Type};
+use crate::typed_ast::{DType, DTypeFactor, DefineVariable, Expression, StructInfo, Type};
 use crate::Statement;
 
 #[derive(Debug, Clone)]
@@ -214,11 +214,15 @@ impl ApplySubstitution for Statement {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
             Statement::Expression(e) => e.apply(s),
-            Statement::DefineVariable(_, _, e, _annotation, type_, _) => {
+            Statement::DefineVariable(DefineVariable(_, _, e, _annotation, type_, _)) => {
                 e.apply(s)?;
                 type_.apply(s)
             }
-            Statement::DefineFunction(_, _, _, _, body, fn_type, _, _) => {
+            Statement::DefineFunction(_, _, _, _, body, local_variables, fn_type, _, _) => {
+                for local_variable in local_variables {
+                    local_variable.2.apply(s)?;
+                    local_variable.4.apply(s)?;
+                }
                 if let Some(body) = body {
                     body.apply(s)?;
                 }

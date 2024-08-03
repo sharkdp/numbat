@@ -64,8 +64,8 @@
 
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{
-    BinaryOperator, Expression, ProcedureKind, Statement, StringPart, TypeAnnotation,
-    TypeExpression, TypeParameterBound, UnaryOperator,
+    BinaryOperator, DefineVariable, Expression, ProcedureKind, Statement, StringPart,
+    TypeAnnotation, TypeExpression, TypeParameterBound, UnaryOperator,
 };
 use crate::decorator::{self, Decorator};
 use crate::number::Number;
@@ -443,13 +443,13 @@ impl<'a> Parser<'a> {
                 let mut decorators = vec![];
                 std::mem::swap(&mut decorators, &mut self.decorator_stack);
 
-                Ok(Statement::DefineVariable {
+                Ok(Statement::DefineVariable(DefineVariable {
                     identifier_span,
                     identifier: identifier.lexeme.clone(),
                     expr,
                     type_annotation,
                     decorators,
-                })
+                }))
             }
         } else {
             Err(ParseError {
@@ -584,6 +584,7 @@ impl<'a> Parser<'a> {
                 type_parameters,
                 parameters,
                 body,
+                local_variables: todo!(),
                 return_type_annotation,
                 decorators,
             })
@@ -2282,18 +2283,18 @@ mod tests {
     fn variable_definition() {
         parse_as(
             &["let foo = 1", "let foo=1"],
-            Statement::DefineVariable {
+            Statement::DefineVariable(DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: "foo".into(),
                 expr: scalar!(1.0),
                 type_annotation: None,
                 decorators: Vec::new(),
-            },
+            }),
         );
 
         parse_as(
             &["let x: Length = 1 * meter"],
-            Statement::DefineVariable {
+            Statement::DefineVariable(DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: "x".into(),
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
@@ -2301,13 +2302,13 @@ mod tests {
                     TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
                 )),
                 decorators: Vec::new(),
-            },
+            }),
         );
 
         // same as above, but with some decorators
         parse_as(
             &["@name(\"myvar\") @aliases(foo, bar) let x: Length = 1 * meter"],
-            Statement::DefineVariable {
+            Statement::DefineVariable(DefineVariable {
                 identifier_span: Span::dummy(),
                 identifier: "x".into(),
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
@@ -2318,7 +2319,7 @@ mod tests {
                     decorator::Decorator::Name("myvar".into()),
                     decorator::Decorator::Aliases(vec![("foo".into(), None), ("bar".into(), None)]),
                 ],
-            },
+            }),
         );
 
         should_fail_with(
@@ -2471,6 +2472,7 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2484,6 +2486,7 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
@@ -2499,6 +2502,7 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2512,6 +2516,7 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2531,6 +2536,7 @@ mod tests {
                     (Span::dummy(), "y".into(), None),
                 ],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2548,6 +2554,7 @@ mod tests {
                     (Span::dummy(), "z".into(), None),
                 ],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2601,6 +2608,7 @@ mod tests {
                     ),
                 ],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
                 )),
@@ -2622,6 +2630,7 @@ mod tests {
                     )),
                 )],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2641,6 +2650,7 @@ mod tests {
                     )),
                 )],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
             },
@@ -2654,6 +2664,7 @@ mod tests {
                 type_parameters: vec![],
                 parameters: vec![(Span::dummy(), "x".into(), None)],
                 body: Some(scalar!(1.0)),
+                local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![
                     decorator::Decorator::Name("Some function".into()),

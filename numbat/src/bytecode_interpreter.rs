@@ -12,7 +12,9 @@ use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
-use crate::typed_ast::{BinaryOperator, Expression, Statement, StringPart, UnaryOperator};
+use crate::typed_ast::{
+    BinaryOperator, DefineVariable, Expression, Statement, StringPart, UnaryOperator,
+};
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::FunctionReference;
@@ -300,6 +302,35 @@ impl BytecodeInterpreter {
         Ok(())
     }
 
+    fn compile_define_variable(&mut self, define_variable: &DefineVariable) -> Result<()> {
+        let DefineVariable(identifier, decorators, expr, _annotation, _type, _readable_type) =
+            define_variable;
+        let current_depth = self.current_depth();
+
+        // For variables, we ignore the prefix info and only use the names
+        let aliases = crate::decorator::name_and_aliases(identifier, decorators)
+            .map(|(name, _)| name)
+            .cloned()
+            .collect::<Vec<_>>();
+        let metadata = LocalMetadata {
+            name: crate::decorator::name(decorators),
+            url: crate::decorator::url(decorators),
+            description: crate::decorator::description(decorators),
+            aliases: aliases.clone(),
+        };
+
+        for alias_name in aliases {
+            self.compile_expression_with_simplify(expr)?;
+
+            self.locals[current_depth].push(Local {
+                identifier: alias_name.clone(),
+                depth: 0,
+                metadata: metadata.clone(),
+            });
+        }
+        Ok(())
+    }
+
     fn compile_statement(
         &mut self,
         stmt: &Statement,
@@ -310,37 +341,8 @@ impl BytecodeInterpreter {
                 self.compile_expression_with_simplify(expr)?;
                 self.vm.add_op(Op::Return);
             }
-            Statement::DefineVariable(
-                identifier,
-                decorators,
-                expr,
-                _annotation,
-                _type,
-                _readable_type,
-            ) => {
-                let current_depth = self.current_depth();
-
-                // For variables, we ignore the prefix info and only use the names
-                let aliases = crate::decorator::name_and_aliases(identifier, decorators)
-                    .map(|(name, _)| name)
-                    .cloned()
-                    .collect::<Vec<_>>();
-                let metadata = LocalMetadata {
-                    name: crate::decorator::name(decorators),
-                    url: crate::decorator::url(decorators),
-                    description: crate::decorator::description(decorators),
-                    aliases: aliases.clone(),
-                };
-
-                for alias_name in aliases {
-                    self.compile_expression_with_simplify(expr)?;
-
-                    self.locals[current_depth].push(Local {
-                        identifier: alias_name.clone(),
-                        depth: 0,
-                        metadata: metadata.clone(),
-                    });
-                }
+            Statement::DefineVariable(define_variable) => {
+                self.compile_define_variable(define_variable)?
             }
             Statement::DefineFunction(
                 name,
@@ -348,6 +350,7 @@ impl BytecodeInterpreter {
                 _type_parameters,
                 parameters,
                 Some(expr),
+                local_variables,
                 _return_type,
                 _return_type_annotation,
                 _readable_return_type,
@@ -363,6 +366,9 @@ impl BytecodeInterpreter {
                         depth: current_depth,
                         metadata: LocalMetadata::default(),
                     });
+                }
+                for local_variables in local_variables {
+                    self.compile_define_variable(local_variables)?;
                 }
 
                 self.compile_expression_with_simplify(expr)?;
@@ -380,6 +386,7 @@ impl BytecodeInterpreter {
                 _type_parameters,
                 parameters,
                 None,
+                _local_variables,
                 _return_type,
                 _return_type_annotation,
                 _readable_return_type,

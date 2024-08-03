@@ -394,15 +394,18 @@ pub enum TypeParameterBound {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct DefineVariable {
+    pub identifier_span: Span,
+    pub identifier: String,
+    pub expr: Expression,
+    pub type_annotation: Option<TypeAnnotation>,
+    pub decorators: Vec<Decorator>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DefineVariable {
-        identifier_span: Span,
-        identifier: String,
-        expr: Expression,
-        type_annotation: Option<TypeAnnotation>,
-        decorators: Vec<Decorator>,
-    },
+    DefineVariable(DefineVariable),
     DefineFunction {
         function_name_span: Span,
         function_name: String,
@@ -411,6 +414,8 @@ pub enum Statement {
         parameters: Vec<(Span, String, Option<TypeAnnotation>)>,
         /// Function body. If it is absent, the function is implemented via FFI
         body: Option<Expression>,
+        /// Local variables
+        local_variables: Vec<DefineVariable>,
         /// Optional annotated return type
         return_type_annotation: Option<TypeAnnotation>,
         decorators: Vec<Decorator>,
@@ -574,29 +579,33 @@ impl ReplaceSpans for Expression {
 }
 
 #[cfg(test)]
+impl ReplaceSpans for DefineVariable {
+    fn replace_spans(&self) -> Self {
+        Self {
+            identifier_span: Span::dummy(),
+            identifier: self.identifier.clone(),
+            expr: self.expr.replace_spans(),
+            type_annotation: self.type_annotation.as_ref().map(|t| t.replace_spans()),
+            decorators: self.decorators.clone(),
+        }
+    }
+}
+
+#[cfg(test)]
 impl ReplaceSpans for Statement {
     fn replace_spans(&self) -> Self {
         match self {
             Statement::Expression(expr) => Statement::Expression(expr.replace_spans()),
-            Statement::DefineVariable {
-                identifier_span: _,
-                identifier,
-                expr,
-                type_annotation,
-                decorators,
-            } => Statement::DefineVariable {
-                identifier_span: Span::dummy(),
-                identifier: identifier.clone(),
-                expr: expr.replace_spans(),
-                type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
-                decorators: decorators.clone(),
-            },
+            Statement::DefineVariable(variable) => {
+                Statement::DefineVariable(variable.replace_spans())
+            }
             Statement::DefineFunction {
                 function_name_span: _,
                 function_name,
                 type_parameters,
                 parameters,
                 body,
+                local_variables,
                 return_type_annotation,
                 decorators,
             } => Statement::DefineFunction {
@@ -617,6 +626,10 @@ impl ReplaceSpans for Statement {
                     })
                     .collect(),
                 body: body.clone().map(|b| b.replace_spans()),
+                local_variables: local_variables
+                    .iter()
+                    .map(DefineVariable::replace_spans)
+                    .collect(),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
                 decorators: decorators.clone(),
             },
