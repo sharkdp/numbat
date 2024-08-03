@@ -74,14 +74,6 @@ impl<T> NumbatList<T> {
         }
     }
 
-    pub fn front(&self) -> Option<&T> {
-        if let Some(view) = self.view {
-            self.alloc.get(view.0)
-        } else {
-            self.alloc.front()
-        }
-    }
-
     /// Advance the view you have of the list by one.
     pub fn advance_view(&mut self) -> Result<(), RuntimeError> {
         if self.is_empty() {
@@ -118,6 +110,20 @@ impl<T: Clone> NumbatList<T> {
         // With our usage, this should never allocate since we know we're the only
         // one holding a reference to this `Arc` and we don't use weak references.
         (&mut self.view, Arc::make_mut(&mut self.alloc))
+    }
+
+    /// Return the first element of the list. If we're the only owner of the list,
+    /// drop the list and do not copy anything. If another list is alive, only
+    /// clone the value that's being returned.
+    pub fn head(self) -> Option<T> {
+        let front = self.view.map_or(0, |(start, _end)| start);
+        if Arc::strong_count(&self.alloc) == 1 {
+            // safety: unwrap cannot fail because we ensured there was only one strong reference above
+            let mut alloc = Arc::try_unwrap(self.alloc).map_err(|_| ()).unwrap();
+            alloc.swap_remove_front(front)
+        } else {
+            self.alloc.get(front).cloned()
+        }
     }
 
     /// Allocate iif the list being used by another value at the same time

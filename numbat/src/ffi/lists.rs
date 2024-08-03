@@ -13,10 +13,8 @@ pub fn len(mut args: Args) -> Result<Value> {
 pub fn head(mut args: Args) -> Result<Value> {
     let list = list_arg!(args);
 
-    // We don't need to pop or drop anything, the whole allocation will
-    // be dropped if we're its last owner.
-    if let Some(first) = list.front() {
-        Ok(first.clone())
+    if let Some(first) = list.head() {
+        Ok(first)
     } else {
         Err(RuntimeError::EmptyList)
     }
