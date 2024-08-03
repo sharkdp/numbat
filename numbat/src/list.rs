@@ -122,7 +122,7 @@ impl<T: Clone> NumbatList<T> {
         }
     }
 
-    /// Allocate iif the list being used by another value at the same time
+    /// Allocate if the list is being used by another value at the same time
     pub fn push_front(&mut self, element: T) {
         let (view, inner) = self.make_mut();
         if let Some((start, end)) = view {
@@ -141,7 +141,7 @@ impl<T: Clone> NumbatList<T> {
         }
     }
 
-    /// Allocate iif the list being used by another value at the same time
+    /// Allocate if the list is being used by another value at the same time
     pub fn push_back(&mut self, element: T) {
         let (view, inner) = self.make_mut();
         if let Some((_start, end)) = view {
