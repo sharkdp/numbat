@@ -23,7 +23,7 @@ pub fn head(mut args: Args) -> Result<Value> {
 pub fn tail(mut args: Args) -> Result<Value> {
     let mut list = list_arg!(args);
 
-    list.advance_view()?;
+    list.tail()?;
     Ok(list.into())
 }
 
