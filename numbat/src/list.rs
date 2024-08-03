@@ -74,8 +74,9 @@ impl<T> NumbatList<T> {
         }
     }
 
-    /// Advance the view you have of the list by one.
-    pub fn advance_view(&mut self) -> Result<(), RuntimeError> {
+    /// Return the tail of the list without the first element.
+    /// Return an error if the list is empty.
+    pub fn tail(&mut self) -> Result<(), RuntimeError> {
         if self.is_empty() {
             return Err(RuntimeError::EmptyList);
         }
@@ -218,9 +219,9 @@ mod test {
         ]
         "###);
 
-        list.advance_view().unwrap();
+        list.tail().unwrap();
         assert_eq!(list.len(), 3);
-        list.advance_view().unwrap();
+        list.tail().unwrap();
         assert_eq!(list.len(), 2);
         assert_eq!(alloc, Arc::as_ptr(&list.alloc));
 
@@ -238,12 +239,12 @@ mod test {
         ]
         "###);
 
-        list.advance_view().unwrap();
-        list.advance_view().unwrap();
+        list.tail().unwrap();
+        list.tail().unwrap();
         assert!(list.is_empty());
         assert_eq!(alloc, Arc::as_ptr(&list.alloc));
 
-        assert_eq!(list.advance_view(), Err(RuntimeError::EmptyList));
+        assert_eq!(list.tail(), Err(RuntimeError::EmptyList));
     }
 
     #[test]
@@ -257,7 +258,7 @@ mod test {
 
         assert_eq!(Arc::as_ptr(&list1.alloc), Arc::as_ptr(&list2.alloc));
 
-        list2.advance_view().unwrap();
+        list2.tail().unwrap();
         // Even after advancing the list2 the alloc can still be shared between both instance
         assert_eq!(Arc::as_ptr(&list1.alloc), Arc::as_ptr(&list2.alloc));
 
@@ -284,7 +285,7 @@ mod test {
 
         assert_eq!(list1, list2);
 
-        list2.advance_view().unwrap();
+        list2.tail().unwrap();
         assert_ne!(list1, list2);
 
         // Even if the list do not share the same allocation they should match
@@ -297,7 +298,7 @@ mod test {
         let mut list1 = NumbatList::<usize>::new();
         list1.push_front(1);
         let _list2 = list1.clone();
-        list1.advance_view().unwrap();
+        list1.tail().unwrap();
         list1.push_front(2);
     }
 }
