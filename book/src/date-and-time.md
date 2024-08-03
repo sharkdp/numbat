@@ -1,17 +1,11 @@
 # Date and time
 
 Numbat supports date and time handling based on the [proleptic Gregorian calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar),
-which is the (usual) Gregorian calendar extended to dates before its introduction in 1582. Julian calendar dates are currently not supported.
+which is the (usual) Gregorian calendar extended to dates before its introduction in 1582.
 
 A few examples of useful operations that can be performed on dates and times:
 
 ```nbt
-# Which date is 40 days from now?
-now() + 40 days
-
-# Which date was 1 million seconds ago?
-now() - 1 million seconds
-
 # How many days are left until September 1st?
 date("2024-11-01") - today() -> days
 
@@ -21,13 +15,22 @@ now() -> tz("Asia/Kathmandu")  # use tab completion to find time zone names
 # What is the local time when it is 2024-11-01 12:30:00 in Australia?
 datetime("2024-11-01 12:30:00 Australia/Sydney") -> local
 
+# Which date was 1 million seconds ago?
+now() - 1 million seconds
+
+# Which date is 40 days from now?
+calendar_add(now(), 40 days)
+
+# Which weekday was the 1st day of this century?
+date("2000-01-01") -> weekday
+
 # What is the current UNIX timestamp?
 now() -> unixtime
 
-# What is the date corresponding to the UNIX timestamp 1707568901?
+# What is the date corresponding to a given UNIX timestamp?
 from_unixtime(1707568901)
 
-# How long are one million seconds in days, hours, minutes, seconds
+# How long are one million seconds in days, hours, minutes, seconds?
 1 million seconds -> human
 ```
 
@@ -44,12 +47,16 @@ The following operations are supported for `DateTime` objects:
 
 <div class="warning">
 
-**Warning**: You can add `years` or `months` to a given date (`now() + 3 months`), but note that the result might not be what you expect.
-The unit `year` is defined as the *average* length of a year (a [tropical year](https://en.wikipedia.org/wiki/Tropical_year), to be precise), and
-`month` is defined as the *average* length of a month (1/12 of a `year`). So this does not take into account the actual length of the months or the leap years.
-However, note that adding or subtracting "one year" or "one month" is not a well-defined operation anyway. For example, what should "one month after March 31st"
-be? April 30th or May 1st? If your answer is April 30th, then what is "one month after March 30th"? If your answer is May 1st, then what is "one month after
-April 1st"?
+**Warning**: You can directly add `days`, `months` and `years` to a given date (`now() + 3 months`), but note that the result might not be what you expect.
+The unit `day` is defined as having a length of 24 hours. But due to daylight
+saving time, days can be shorter or longer than that. A `month` is defined
+as 1/12 of a `year`, but calendar months have varying lengths. And a `year`
+is defined as the average length of a
+[tropical](https://en.wikipedia.org/wiki/Tropical_year) year. But a calendar
+year can have 365 or 366 days, depending on whether it is a leap year or not.
+
+If you want to take all of these factors into account, you should use the `calendar_add`/`calendar_sub` functions instead of directly adding or
+subtracting `days`, `months`, or `years`.
 
 </div>
 
@@ -62,13 +69,17 @@ The following functions are available for date and time handling:
 - `datetime(input: String) -> DateTime`: Parses a string (date and time) into a `DateTime` object.
 - `date(input: String) -> DateTime`: Parses a string (only date) into a `DateTime` object.
 - `time(input: String) -> DateTime`: Parses a string (only time) into a `DateTime` object.
-- `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/chrono/latest/chrono/format/strftime/index.html#specifiers) for possible format specifiers.
+- `format_datetime(format: String, dt: DateTime) -> String`: Formats a `DateTime` object as a string. See [this page](https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications) for possible format specifiers.
 - `tz(tz: String) -> Fn[(DateTime) -> DateTime]`: Returns a timezone conversion function, typically used with the conversion operator (`datetime -> tz("Europe/Berlin")`)
 - `local(dt: DateTime) -> DateTime`: Timezone conversion function targeting the users local timezone (`datetime -> local`)
 - `get_local_timezone() -> String`: Returns the users local timezone
 - `unixtime(dt: DateTime) -> Scalar`: Converts a `DateTime` to a UNIX timestamp.
 - `from_unixtime(ut: Scalar) -> DateTime`: Converts a UNIX timestamp to a `DateTime` object.
-- `human(duration: Time) -> String`: Converts a `Time` to a human-readable string in days, hours, minutes and seconds
+- `calendar_add(dt: DateTime, span: Time)`: Add a span of time to a `DateTime` object, taking proper calendar arithmetic into accound.
+- `calendar_sub(dt: DateTime, span: Time)`: Subtract a span of time from a `DateTime` object, taking proper calendar arithmetic into accound.
+- `weekday(dt: DateTime) -> String`: Returns the weekday of a `DateTime` object as a string.
+- `human(duration: Time) -> String`: Converts a `Time` to a human-readable string in days, hours, minutes and seconds.
+- `julian_date(dt: DateTime) -> Scalar`: Convert a `DateTime` to a [Julian date](https://en.wikipedia.org/wiki/Julian_day).
 
 ## Date time formats
 

@@ -30,6 +30,13 @@ Prepend an element to a list.
 fn cons<A>(x: A, xs: List<A>) -> List<A>
 ```
 
+### `cons_end`
+Append an element to the end of a list.
+
+```nbt
+fn cons_end<A>(xs: List<A>, x: A) -> List<A>
+```
+
 ### `is_empty`
 Check if a list is empty.
 
@@ -70,13 +77,6 @@ Generate a range of integer numbers from `start` to `end` (inclusive).
 
 ```nbt
 fn range(start: Scalar, end: Scalar) -> List<Scalar>
-```
-
-### `cons_end`
-Append an element to the end of a list.
-
-```nbt
-fn cons_end<A>(xs: List<A>, x: A) -> List<A>
 ```
 
 ### `reverse`

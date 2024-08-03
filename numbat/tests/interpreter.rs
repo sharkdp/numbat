@@ -711,7 +711,7 @@ fn test_datetime_runtime_errors() {
         "Exceeded maximum size for time durations",
     );
     expect_failure(
-        "date(\"2000-01-01\") + 100000000 years",
+        "date(\"2000-01-01\") + 15_000 years",
         "DateTime out of range",
     );
     expect_failure(
@@ -731,6 +731,10 @@ fn test_user_errors() {
     expect_failure("if 3 < 2 then 2 m else error(\"test\")", "User error: test");
     expect_failure(
         "if true then error(\"test\") else \"foo\"",
+        "User error: test",
+    );
+    expect_failure(
+        "if false then \"foo\" else error(\"test\")",
         "User error: test",
     );
 }

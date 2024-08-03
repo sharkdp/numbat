@@ -79,7 +79,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum ParseErrorKind {
-    #[error("{0}")]
+    #[error(transparent)]
     TokenizerError(TokenizerErrorKind),
 
     #[error(
@@ -513,8 +513,12 @@ impl<'a> Parser<'a> {
 
                         parameter_span = parameter_span.extend(&self.last().unwrap().span);
 
+                        self.skip_empty_lines();
                         let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                        self.match_exact(TokenKind::Newline);
+                        self.skip_empty_lines();
+                        if self.match_exact(TokenKind::RightParen).is_some() {
+                            break;
+                        }
 
                         if !has_comma && self.peek().kind != TokenKind::RightParen {
                             return Err(ParseError {
@@ -1179,22 +1183,37 @@ impl<'a> Parser<'a> {
     }
 
     fn arguments(&mut self) -> Result<Vec<Expression>> {
+        self.skip_empty_lines();
         if self.match_exact(TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
-        self.match_exact(TokenKind::Newline);
         let mut args: Vec<Expression> = vec![self.expression()?];
-        while self.match_exact(TokenKind::Comma).is_some() {
-            self.match_exact(TokenKind::Newline);
-            args.push(self.expression()?);
-        }
+        loop {
+            self.skip_empty_lines();
 
-        if self.match_exact(TokenKind::RightParen).is_none() {
-            return Err(ParseError::new(
-                ParseErrorKind::MissingClosingParen,
-                self.peek().span,
-            ));
+            if self.match_exact(TokenKind::Comma).is_some() {
+                self.skip_empty_lines();
+                if self.match_exact(TokenKind::RightParen).is_some() {
+                    break;
+                }
+                match self.expression() {
+                    Ok(expr) => args.push(expr),
+                    Err(_err) => {
+                        return Err(ParseError::new(
+                            ParseErrorKind::MissingClosingParen,
+                            self.peek().span,
+                        ))
+                    }
+                }
+            } else if self.match_exact(TokenKind::RightParen).is_some() {
+                break;
+            } else {
+                return Err(ParseError::new(
+                    ParseErrorKind::MissingClosingParen,
+                    self.peek().span,
+                ));
+            }
         }
 
         Ok(args)
@@ -2442,6 +2461,38 @@ mod tests {
         );
 
         parse_as(
+            &["fn foo(x,) = 1"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![(Span::dummy(), "x".into(), None)],
+                body: Some(scalar!(1.0)),
+                return_type_annotation: None,
+                decorators: vec![],
+            },
+        );
+
+        parse_as(
+            &["fn foo(
+                x,
+                y,
+            ) = 1"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "foo".into(),
+                type_parameters: vec![],
+                parameters: vec![
+                    (Span::dummy(), "x".into(), None),
+                    (Span::dummy(), "y".into(), None),
+                ],
+                body: Some(scalar!(1.0)),
+                return_type_annotation: None,
+                decorators: vec![],
+            },
+        );
+
+        parse_as(
             &["fn foo(x, y, z) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
@@ -2607,7 +2658,36 @@ mod tests {
             ),
         );
 
-        should_fail(&["exp(,)", "exp(1,)"])
+        // https://github.com/sharkdp/numbat/issues/507
+        assert_snapshot!(snap_parse(
+            "tamo(
+              2 m,
+              5 m
+            )"), @r###"
+        Expression(FunctionCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 56, line: 4, position: 14 }, code_source_id: 0 }, Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, "tamo"), [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 20, line: 2, position: 15 }, end: SourceCodePositition { byte: 21, line: 2, position: 16 }, code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 22, line: 2, position: 17 }, end: SourceCodePositition { byte: 23, line: 2, position: 18 }, code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 39, line: 3, position: 15 }, end: SourceCodePositition { byte: 40, line: 3, position: 16 }, code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 41, line: 3, position: 17 }, end: SourceCodePositition { byte: 42, line: 3, position: 18 }, code_source_id: 0 }, "m"), span_op: None }]))
+        "###);
+
+        assert_snapshot!(snap_parse(
+            "kefir(
+              2 m,
+              5 m,
+            )"), @r###"
+        Expression(FunctionCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 58, line: 4, position: 14 }, code_source_id: 0 }, Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, "kefir"), [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 15 }, end: SourceCodePositition { byte: 22, line: 2, position: 16 }, code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 23, line: 2, position: 17 }, end: SourceCodePositition { byte: 24, line: 2, position: 18 }, code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 40, line: 3, position: 15 }, end: SourceCodePositition { byte: 41, line: 3, position: 16 }, code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 42, line: 3, position: 17 }, end: SourceCodePositition { byte: 43, line: 3, position: 18 }, code_source_id: 0 }, "m"), span_op: None }]))
+        "###);
+        assert_snapshot!(snap_parse(
+            "echo(
+            )"), @r###"
+        Expression(FunctionCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 19, line: 2, position: 14 }, code_source_id: 0 }, Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, "echo"), []))
+        "###);
+        assert_snapshot!(snap_parse(
+            "jax(
+              2 m,
+              5 m,
+            "), @r###"
+        Successfully parsed:
+        Errors encountered:
+        Missing closing parenthesis ')' - ParseError { kind: MissingClosingParen, span: Span { start: SourceCodePositition { byte: 55, line: 4, position: 13 }, end: SourceCodePositition { byte: 55, line: 4, position: 13 }, code_source_id: 0 } }
+        "###);
     }
 
     #[test]
@@ -2683,6 +2763,38 @@ mod tests {
             &["fn print() = 1"],
             ParseErrorKind::ExpectedIdentifierAfterFn,
         );
+
+        // https://github.com/sharkdp/numbat/issues/507
+        assert_snapshot!(snap_parse(
+            "print(
+              2 m,
+              5 m
+            )"), @r###"
+        ProcedureCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 15 }, end: SourceCodePositition { byte: 22, line: 2, position: 16 }, code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 23, line: 2, position: 17 }, end: SourceCodePositition { byte: 24, line: 2, position: 18 }, code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 40, line: 3, position: 15 }, end: SourceCodePositition { byte: 41, line: 3, position: 16 }, code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 42, line: 3, position: 17 }, end: SourceCodePositition { byte: 43, line: 3, position: 18 }, code_source_id: 0 }, "m"), span_op: None }])
+        "###);
+
+        assert_snapshot!(snap_parse(
+            "print(
+              2 m,
+              5 m,
+            )"), @r###"
+        ProcedureCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 15 }, end: SourceCodePositition { byte: 22, line: 2, position: 16 }, code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 23, line: 2, position: 17 }, end: SourceCodePositition { byte: 24, line: 2, position: 18 }, code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 40, line: 3, position: 15 }, end: SourceCodePositition { byte: 41, line: 3, position: 16 }, code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 42, line: 3, position: 17 }, end: SourceCodePositition { byte: 43, line: 3, position: 18 }, code_source_id: 0 }, "m"), span_op: None }])
+        "###);
+        assert_snapshot!(snap_parse(
+            "print(
+            )"), @r###"
+        ProcedureCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, Print, [])
+        "###);
+        println!("HEEEERE");
+        assert_snapshot!(snap_parse(
+            "print(
+              2 m,
+              5 m,
+            "), @r###"
+        Successfully parsed:
+        Errors encountered:
+        Missing closing parenthesis ')' - ParseError { kind: MissingClosingParen, span: Span { start: SourceCodePositition { byte: 57, line: 4, position: 13 }, end: SourceCodePositition { byte: 57, line: 4, position: 13 }, code_source_id: 0 } }
+        "###);
     }
 
     #[test]

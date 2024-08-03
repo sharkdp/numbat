@@ -1,0 +1,3 @@
+[build.env]
+# 'cross' Docker images do not have the tzdata package installed. Add a volume mount to pass it in from the host
+volumes = ["ZONEINFO=/usr/share/zoneinfo"]

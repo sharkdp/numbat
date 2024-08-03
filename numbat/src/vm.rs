@@ -3,10 +3,11 @@ use std::sync::Arc;
 use std::{cmp::Ordering, fmt::Display};
 
 use indexmap::IndexMap;
+use num_traits::ToPrimitive;
 
+use crate::list::NumbatList;
 use crate::span::Span;
 use crate::typed_ast::StructInfo;
-use crate::value::NumbatList;
 use crate::{
     ffi::{self, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
@@ -590,7 +591,7 @@ impl Vm {
     }
 
     #[track_caller]
-    fn pop_datetime(&mut self) -> chrono::DateTime<chrono::FixedOffset> {
+    fn pop_datetime(&mut self) -> jiff::Zoned {
         match self.pop() {
             Value::DateTime(q) => q,
             _ => panic!("Expected datetime to be on the top of the stack"),
@@ -713,21 +714,24 @@ impl Vm {
 
                     // for time, the base unit is in seconds
                     let base = rhs.to_base_unit_representation();
-                    let seconds_f = base.unsafe_value().to_f64();
+                    let seconds_f64 = base.unsafe_value().to_f64();
 
-                    let duration = chrono::Duration::try_seconds(seconds_f.trunc() as i64)
-                        .ok_or(RuntimeError::DurationOutOfRange)?
-                        + chrono::Duration::nanoseconds(
-                            (seconds_f.fract() * 1_000_000_000f64).round() as i64,
-                        );
+                    let seconds_i64 = seconds_f64
+                        .to_i64()
+                        .ok_or(RuntimeError::DurationOutOfRange)?;
+
+                    let span = jiff::Span::new()
+                        .try_seconds(seconds_i64)
+                        .map_err(|_| RuntimeError::DurationOutOfRange)?
+                        .nanoseconds((seconds_f64.fract() * 1_000_000_000f64).round() as i64);
 
                     self.push(Value::DateTime(match op {
                         Op::AddToDateTime => lhs
-                            .checked_add_signed(duration)
-                            .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                            .checked_add(span)
+                            .map_err(|_| RuntimeError::DateTimeOutOfRange)?,
                         Op::SubFromDateTime => lhs
-                            .checked_sub_signed(duration)
-                            .ok_or(RuntimeError::DateTimeOutOfRange)?,
+                            .checked_sub(span)
+                            .map_err(|_| RuntimeError::DateTimeOutOfRange)?,
                         _ => unreachable!(),
                     }));
                 }
@@ -736,9 +740,12 @@ impl Vm {
                     let rhs = self.pop_datetime();
                     let lhs = self.pop_datetime();
 
-                    let duration = lhs - rhs;
-                    let duration = duration.subsec_nanos() as f64 / 1_000_000_000f64
-                        + duration.num_seconds() as f64;
+                    let duration = lhs
+                        .since(&rhs)
+                        .map_err(|_| RuntimeError::DateTimeOutOfRange)?;
+                    let duration = duration
+                        .total(jiff::Unit::Second)
+                        .map_err(|_| RuntimeError::DurationOutOfRange)?;
 
                     let ret = Value::Quantity(Quantity::new(
                         Number::from_f64(duration),
@@ -903,11 +910,10 @@ impl Vm {
 
                             let dt = self.pop_datetime();
 
-                            let tz: chrono_tz::Tz = tz_name
-                                .parse()
+                            let tz = jiff::tz::TimeZone::get(&tz_name)
                                 .map_err(|_| RuntimeError::UnknownTimezone(tz_name.into()))?;
 
-                            let dt = dt.with_timezone(&tz).fixed_offset();
+                            let dt = dt.with_time_zone(tz);
 
                             self.push(Value::DateTime(dt));
                         }
@@ -925,7 +931,7 @@ impl Vm {
                         Value::Quantity(q) => q.to_string(),
                         Value::Boolean(b) => b.to_string(),
                         Value::String(s) => s,
-                        Value::DateTime(dt) => crate::datetime::to_rfc2822_save(&dt),
+                        Value::DateTime(dt) => crate::datetime::to_string(&dt),
                         Value::FunctionReference(r) => r.to_string(),
                         s @ Value::StructInstance(..) => s.to_string(),
                         l @ Value::List(_) => l.to_string(),
@@ -1037,7 +1043,7 @@ impl Vm {
                         list.push_front(self.pop());
                     }
 
-                    self.stack.push(Value::List(list));
+                    self.stack.push(list.into());
                 }
             }
         }

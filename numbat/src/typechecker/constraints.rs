@@ -240,6 +240,18 @@ impl Constraint {
                     t.clone(),
                 )))
             }
+            Constraint::Equal(t, Type::Dimension(dtype_x))
+                if dtype_x
+                    .deconstruct_as_single_type_variable()
+                    .map(|tv| !t.contains(&tv, false))
+                    .unwrap_or(false) =>
+            {
+                let x = dtype_x.deconstruct_as_single_type_variable().unwrap();
+                Some(Satisfied::with_substitution(Substitution::single(
+                    x.clone(),
+                    t.clone(),
+                )))
+            }
             Constraint::Equal(Type::Fn(params1, return1), Type::Fn(params2, return2))
                 if params1.len() == params2.len() =>
             {

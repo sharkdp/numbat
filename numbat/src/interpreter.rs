@@ -36,15 +36,15 @@ pub enum RuntimeError {
     CouldNotLoadExchangeRates,
     #[error("User error: {0}")]
     UserError(String),
-    #[error("Unrecognized datetime format")]
-    DateParsingErrorUnknown,
+    #[error("Unrecognized datetime format: {0}")]
+    DateParsingError(String),
     #[error("Unknown timezone: {0}")]
     UnknownTimezone(String),
     #[error("Exceeded maximum size for time durations")]
     DurationOutOfRange,
     #[error("DateTime out of range")]
     DateTimeOutOfRange,
-    #[error("Error in datetime format. See https://docs.rs/chrono/latest/chrono/format/strftime/index.html for possible format specifiers.")]
+    #[error("Error in datetime format. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
     DateFormattingError,
 
     #[error("Invalid format specifiers: {0}")]

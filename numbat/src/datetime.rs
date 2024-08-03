@@ -1,82 +1,95 @@
-use chrono::{DateTime, Datelike, FixedOffset, LocalResult};
-use chrono_tz::Tz;
+use jiff::{civil::DateTime, fmt::rfc2822, tz::TimeZone, Timestamp, Zoned};
+use std::str::FromStr;
 
-#[cfg(feature = "local-timezone")]
-pub fn get_local_timezone() -> Option<Tz> {
-    let tz_str = iana_time_zone::get_timezone().ok()?;
-    tz_str.parse().ok()
+pub fn get_local_timezone_or_utc() -> TimeZone {
+    TimeZone::system()
 }
 
-#[cfg(feature = "local-timezone")]
-pub fn get_local_timezone_or_utc() -> Tz {
-    get_local_timezone().unwrap_or(chrono_tz::UTC)
-}
+pub fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
+    if let zoned @ Ok(_) = Zoned::from_str(input) {
+        return zoned;
+    }
 
-#[cfg(not(feature = "local-timezone"))]
-pub fn get_local_timezone_or_utc() -> Tz {
-    chrono_tz::UTC
-}
+    // RFC 3339
+    if let Ok(timestamp) = DateTime::strptime("%Y-%m-%dT%H:%M:%S%.fZ", input) {
+        if let zoned @ Ok(_) = timestamp.to_zoned(TimeZone::UTC) {
+            return zoned;
+        }
+    }
 
-pub fn parse_datetime(input: &str) -> Option<DateTime<FixedOffset>> {
-    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(input) {
-        Some(dt)
-    } else if let Ok(dt) = chrono::DateTime::parse_from_rfc2822(input) {
-        Some(dt)
-    } else {
-        const FORMATS: [&str; 8] = [
-            // 24 hour formats:
-            "%Y-%m-%d %H:%M:%S%.f",
-            "%Y/%m/%d %H:%M:%S%.f",
-            "%Y-%m-%d %H:%M",
-            "%Y/%m/%d %H:%M",
-            // 12 hour formats:
-            "%Y-%m-%d %I:%M:%S%.f %p",
-            "%Y-%m-%d %I:%M %p",
-            "%Y/%m/%d %I:%M:%S%.f %p",
-            "%Y/%m/%d %I:%M %p",
-        ];
+    // RFC 2822
+    if let dt @ Ok(_) = rfc2822::parse(input) {
+        return dt;
+    }
 
-        for format in FORMATS {
-            // Try to match the given format plus an additional UTC offset (%z)
-            if let Ok(dt) = chrono::DateTime::parse_from_str(input, &format!("{format} %z")) {
-                return Some(dt);
-            }
+    const FORMATS: [&str; 8] = [
+        // 24 hour formats:
+        "%Y-%m-%d %H:%M:%S%.f",
+        "%Y/%m/%d %H:%M:%S%.f",
+        "%Y-%m-%d %H:%M",
+        "%Y/%m/%d %H:%M",
+        // 12 hour formats:
+        "%Y-%m-%d %I:%M:%S %p%.f",
+        "%Y-%m-%d %I:%M %p",
+        "%Y/%m/%d %I:%M:%S %p%.f",
+        "%Y/%m/%d %I:%M %p",
+    ];
 
-            // Try to match the given format plus an additional timezone name (%Z).
-            // chrono does not support %Z, so we implement this ourselves. We were
-            // warned by developers before us not to write timezone-related code on
-            // our own, so we're probably going to regret this.
+    for format in FORMATS {
+        // Try to match the given format plus an additional UTC offset (%z)
+        if let Ok(dt) = Zoned::strptime(&format!("{format} %z"), input) {
+            return Ok(dt);
+        }
 
-            // Get the last space-separated word in the input string, and try to parse it
-            // as a timezone specifier, then try to match the rest of the string with the
-            // given format.
-            if let Some((rest, potential_timezone_name)) = input.rsplit_once(' ') {
-                if let Ok(tz) = potential_timezone_name.parse::<Tz>() {
-                    if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(rest, format) {
-                        if let LocalResult::Single(dt) = ndt.and_local_timezone(tz) {
-                            return Some(dt.fixed_offset());
-                        }
-                    }
-                }
-            }
+        // Try to match the given format plus an additional timezone name. This is
+        // similar to '%Z', which is not supported for parsing in jiff. The reason
+        // for this is that it can be ambiguous. CST, for example, has several
+        // meanings.
+        // We were warned by developers before us not to write timezone-related
+        // code on our own, so we're probably going to regret this.
 
-            // Without timezone/offset
-            if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(input, format) {
-                if let LocalResult::Single(dt) = ndt.and_local_timezone(get_local_timezone_or_utc())
-                {
-                    return Some(dt.fixed_offset());
+        // Get the last space-separated word in the input string, and try to parse it
+        // as a timezone specifier, then try to match the rest of the string with the
+        // given format.
+        if let Some((rest, potential_timezone_name)) = input.rsplit_once(' ') {
+            if let Ok(tz) = TimeZone::get(potential_timezone_name) {
+                if let Ok(datetime) = DateTime::strptime(format, rest) {
+                    return datetime.to_zoned(tz);
                 }
             }
         }
 
-        None
+        // Without timezone/offset
+        if let Ok(dt) = DateTime::strptime(format, input) {
+            return dt.to_zoned(get_local_timezone_or_utc());
+        }
     }
+
+    Timestamp::from_str(input).map(|ts| ts.to_zoned(get_local_timezone_or_utc()))
 }
 
-pub fn to_rfc2822_save(dt: &DateTime<FixedOffset>) -> String {
-    if dt.year() < 0 || dt.year() > 9999 {
-        "<year out of range for displaying in RFC2822>".to_string()
+pub fn to_string(dt: &Zoned) -> String {
+    let tz = dt.time_zone();
+
+    if dt.time_zone() == &TimeZone::UTC {
+        dt.strftime("%Y-%m-%d %H:%M:%S UTC").to_string()
     } else {
-        dt.to_rfc2822()
+        let offset = dt.offset();
+        let zone_abbreviation = tz.to_offset(dt.timestamp()).2;
+        let abbreviation_and_offset =
+            if zone_abbreviation.starts_with('+') || zone_abbreviation.starts_with('-') {
+                format!("(UTC {})", offset)
+            } else {
+                format!("{} (UTC {})", zone_abbreviation, offset)
+            };
+
+        let timezone_name = if let Some(iana_tz_name) = tz.iana_name() {
+            format!(", {iana_tz_name}")
+        } else {
+            "".into()
+        };
+
+        let dt_str = dt.strftime("%Y-%m-%d %H:%M:%S");
+        format!("{dt_str} {abbreviation_and_offset}{timezone_name}")
     }
 }

@@ -1,8 +1,11 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::sync::Arc;
 
 use itertools::Itertools;
+use jiff::Zoned;
 
-use crate::{pretty_print::PrettyPrint, quantity::Quantity, typed_ast::StructInfo};
+use crate::{
+    list::NumbatList, pretty_print::PrettyPrint, quantity::Quantity, typed_ast::StructInfo,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FunctionReference {
@@ -24,15 +27,13 @@ impl std::fmt::Display for FunctionReference {
     }
 }
 
-pub type NumbatList<T> = VecDeque<T>;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Quantity(Quantity),
     Boolean(bool),
     String(String),
     /// A DateTime with an associated offset used when pretty printing
-    DateTime(chrono::DateTime<chrono::FixedOffset>),
+    DateTime(Zoned),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<String>),
     StructInstance(Arc<StructInfo>, Vec<Value>),
@@ -68,7 +69,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_datetime(self) -> chrono::DateTime<chrono::FixedOffset> {
+    pub fn unsafe_as_datetime(self) -> jiff::Zoned {
         if let Value::DateTime(dt) = self {
             dt
         } else {
@@ -153,7 +154,7 @@ impl PrettyPrint for Value {
             Value::Quantity(q) => q.pretty_print(),
             Value::Boolean(b) => b.pretty_print(),
             Value::String(s) => s.pretty_print(),
-            Value::DateTime(dt) => crate::markup::string(crate::datetime::to_rfc2822_save(dt)),
+            Value::DateTime(dt) => crate::markup::string(crate::datetime::to_string(dt)),
             Value::FunctionReference(r) => crate::markup::string(r.to_string()),
             Value::FormatSpecifiers(Some(s)) => crate::markup::string(s),
             Value::FormatSpecifiers(None) => crate::markup::empty(),
