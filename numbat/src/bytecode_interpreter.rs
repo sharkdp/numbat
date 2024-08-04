@@ -324,7 +324,7 @@ impl BytecodeInterpreter {
 
             self.locals[current_depth].push(Local {
                 identifier: alias_name.clone(),
-                depth: 0,
+                depth: current_depth,
                 metadata: metadata.clone(),
             });
         }

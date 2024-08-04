@@ -294,17 +294,19 @@ impl TypeChecker {
             ast::Expression::Identifier(span, name) => {
                 let type_scheme = self.identifier_type(*span, name)?.clone();
 
-                let qt = type_scheme.instantiate(&mut self.name_generator);
+                let ty = match type_scheme {
+                    TypeScheme::Concrete(ty) => ty,
+                    TypeScheme::Quantified(_, _) => {
+                        let qt = type_scheme.instantiate(&mut self.name_generator);
 
-                for Bound::IsDim(t) in qt.bounds.iter() {
-                    self.constraints.add(Constraint::IsDType(t.clone())).ok();
-                }
+                        for Bound::IsDim(t) in qt.bounds.iter() {
+                            self.constraints.add(Constraint::IsDType(t.clone())).ok();
+                        }
+                        qt.inner
+                    }
+                };
 
-                typed_ast::Expression::Identifier(
-                    *span,
-                    name.clone(),
-                    TypeScheme::concrete(qt.inner),
-                )
+                typed_ast::Expression::Identifier(*span, name.clone(), TypeScheme::concrete(ty))
             }
             ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
                 let type_scheme = self.identifier_type(*span, name)?.clone();
@@ -1373,11 +1375,6 @@ impl TypeChecker {
                     ));
                 }
 
-                let mut typed_local_variables = vec![];
-                for local_variable in local_variables {
-                    typed_local_variables.push(self.elaborate_define_variable(local_variable)?);
-                }
-
                 let annotated_return_type = return_type_annotation
                     .as_ref()
                     .map(|annotation| typechecker_fn.type_from_annotation(annotation))
@@ -1418,6 +1415,12 @@ impl TypeChecker {
                         description: crate::decorator::description(decorators),
                     },
                 );
+
+                let mut typed_local_variables = vec![];
+                for local_variable in local_variables {
+                    typed_local_variables
+                        .push(typechecker_fn.elaborate_define_variable(local_variable)?);
+                }
 
                 let body_checked = body
                     .as_ref()
