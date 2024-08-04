@@ -297,27 +297,12 @@ impl<'a> Parser<'a> {
             match self.peek().kind {
                 TokenKind::Newline => {
                     // Skip over empty lines
-                    while self.match_exact(TokenKind::Newline).is_some() {}
+                    self.skip_empty_lines();
                 }
                 TokenKind::Eof => {
                     break;
                 }
-                TokenKind::Equal => {
-                    errors.push(ParseError {
-                        kind: ParseErrorKind::TrailingEqualSign(
-                            self.last().unwrap().lexeme.clone(),
-                        ),
-                        span: self.peek().span,
-                    });
-                    self.recover_from_error();
-                }
-                _ => {
-                    errors.push(ParseError {
-                        kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
-                        span: self.peek().span,
-                    });
-                    self.recover_from_error();
-                }
+                _ => {}
             }
         }
 
@@ -392,7 +377,7 @@ impl<'a> Parser<'a> {
         }
 
         if self.match_exact(TokenKind::Let).is_some() {
-            self.parse_let()
+            self.parse_variable().map(Statement::DefineVariable)
         } else if self.match_exact(TokenKind::Fn).is_some() {
             self.parse_function_declaration()
         } else if self.match_exact(TokenKind::Dimension).is_some() {
@@ -412,7 +397,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_let(&mut self) -> Result<Statement> {
+    fn parse_variable(&mut self) -> Result<DefineVariable> {
         if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             let identifier_span = self.last().unwrap().span;
 
@@ -440,13 +425,13 @@ impl<'a> Parser<'a> {
                 let mut decorators = vec![];
                 std::mem::swap(&mut decorators, &mut self.decorator_stack);
 
-                Ok(Statement::DefineVariable(DefineVariable {
+                Ok(DefineVariable {
                     identifier_span,
                     identifier: identifier.lexeme.clone(),
                     expr,
                     type_annotation,
                     decorators,
-                }))
+                })
             }
         } else {
             Err(ParseError {
@@ -565,6 +550,16 @@ impl<'a> Parser<'a> {
                 Some(self.expression()?)
             };
 
+            let mut local_variables = Vec::new();
+            self.skip_empty_lines();
+            if self.match_exact(TokenKind::Where).is_some() {
+                self.skip_empty_lines();
+                while let Ok(local_variable) = self.parse_variable() {
+                    local_variables.push(local_variable);
+                    self.skip_empty_lines();
+                }
+            }
+
             if decorator::contains_aliases(&self.decorator_stack) {
                 return Err(ParseError {
                     kind: ParseErrorKind::AliasUsedOnFunction,
@@ -581,7 +576,7 @@ impl<'a> Parser<'a> {
                 type_parameters,
                 parameters,
                 body,
-                local_variables: todo!(),
+                local_variables,
                 return_type_annotation,
                 decorators,
             })
