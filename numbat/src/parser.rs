@@ -2670,6 +2670,58 @@ mod tests {
             },
         );
 
+        parse_as(
+            &["fn double_kef(x) = y where y = x * 2"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "double_kef".into(),
+                type_parameters: vec![],
+                parameters: vec![(Span::dummy(), "x".into(), None)],
+                body: Some(identifier!("y")),
+                local_variables: vec![DefineVariable {
+                    identifier_span: Span::dummy(),
+                    identifier: String::from("y"),
+                    expr: binop!(identifier!("x"), Mul, scalar!(2.0)),
+                    type_annotation: None,
+                    decorators: vec![],
+                }],
+                return_type_annotation: None,
+                decorators: vec![],
+            },
+        );
+
+        parse_as(
+            &["fn kefirausaure(x) = z + y
+                where
+                    y = x + x
+                    z = y + x"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "kefirausaure".into(),
+                type_parameters: vec![],
+                parameters: vec![(Span::dummy(), "x".into(), None)],
+                body: Some(binop!(identifier!("z"), Add, identifier!("y"))),
+                local_variables: vec![
+                    DefineVariable {
+                        identifier_span: Span::dummy(),
+                        identifier: String::from("y"),
+                        expr: binop!(identifier!("x"), Add, identifier!("x")),
+                        type_annotation: None,
+                        decorators: vec![],
+                    },
+                    DefineVariable {
+                        identifier_span: Span::dummy(),
+                        identifier: String::from("z"),
+                        expr: binop!(identifier!("y"), Add, identifier!("x")),
+                        type_annotation: None,
+                        decorators: vec![],
+                    },
+                ],
+                return_type_annotation: None,
+                decorators: vec![],
+            },
+        );
+
         should_fail_with(
             &["@aliases(foo) fn foobar(a: Scalar) -> Scalar"],
             ParseErrorKind::AliasUsedOnFunction,
