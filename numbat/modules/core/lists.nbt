@@ -15,7 +15,7 @@ fn tail<A>(xs: List<A>) -> List<A>
 fn cons<A>(x: A, xs: List<A>) -> List<A>
 
 @description("Append an element to the end of a list")
-fn cons_end<A>(xs: List<A>, x: A) -> List<A>
+fn cons_end<A>(x: A, xs: List<A>) -> List<A>
 
 @description("Check if a list is empty")
 fn is_empty<A>(xs: List<A>) -> Bool = xs == []
@@ -55,7 +55,7 @@ fn range(start: Scalar, end: Scalar) -> List<Scalar> =
 fn reverse<A>(xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
-    else cons_end(reverse(tail(xs)), head(xs))
+    else cons_end(head(xs), reverse(tail(xs)))
 
 @description("Generate a new list by applying a function to each element of the input list")
 fn map<A, B>(f: Fn[(A) -> B], xs: List<A>) -> List<B> =

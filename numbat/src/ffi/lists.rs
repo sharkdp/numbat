@@ -36,8 +36,8 @@ pub fn cons(mut args: Args) -> Result<Value> {
 }
 
 pub fn cons_end(mut args: Args) -> Result<Value> {
-    let mut list = list_arg!(args);
     let element = arg!(args);
+    let mut list = list_arg!(args);
     list.push_back(element);
 
     return_list!(list)
