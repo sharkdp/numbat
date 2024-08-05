@@ -388,7 +388,7 @@ pub enum ProcedureKind {
     Type,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeParameterBound {
     Dim,
 }
@@ -430,6 +430,7 @@ pub enum Statement {
     DefineStruct {
         struct_name_span: Span,
         struct_name: String,
+        type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
         fields: Vec<(Span, String, TypeAnnotation)>,
     },
 }
@@ -656,11 +657,16 @@ impl ReplaceSpans for Statement {
             }
             Statement::DefineStruct {
                 struct_name,
+                type_parameters,
                 fields,
                 ..
             } => Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
                 struct_name: struct_name.clone(),
+                type_parameters: type_parameters
+                    .iter()
+                    .map(|(_, name, bound)| (Span::dummy(), name.clone(), bound.clone()))
+                    .collect(),
                 fields: fields
                     .iter()
                     .map(|(_span, name, type_)| {

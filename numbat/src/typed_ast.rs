@@ -270,6 +270,7 @@ impl From<BaseRepresentation> for DType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructInfo {
     pub definition_span: Span,
+    pub type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
     pub name: String,
     pub fields: IndexMap<String, (Span, Type)>,
 }

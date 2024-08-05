@@ -245,10 +245,12 @@ impl Transformer {
             Statement::DefineStruct {
                 struct_name_span,
                 struct_name,
+                type_parameters,
                 fields,
             } => Statement::DefineStruct {
                 struct_name_span,
                 struct_name,
+                type_parameters,
                 fields,
             },
             Statement::DefineDimension(name_span, name, dexprs) => {

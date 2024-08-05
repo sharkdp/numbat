@@ -65,6 +65,7 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
 
         let info = StructInfo {
             name: "_ChemicalElementRaw".to_string(),
+            type_parameters: vec![],
             definition_span: unknown_span,
             fields,
         };

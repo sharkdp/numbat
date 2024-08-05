@@ -1655,6 +1655,7 @@ impl TypeChecker {
             ast::Statement::DefineStruct {
                 struct_name_span,
                 struct_name,
+                type_parameters,
                 fields,
             } => {
                 self.type_namespace.add_identifier(
@@ -1664,6 +1665,39 @@ impl TypeChecker {
                 )?;
 
                 let mut seen_fields = HashMap::new();
+
+                let mut typechecker_struct = self.clone();
+
+                for (span, type_parameter, bound) in type_parameters {
+                    if typechecker_struct
+                        .type_namespace
+                        .has_identifier(type_parameter)
+                    {
+                        return Err(TypeCheckError::TypeParameterNameClash(
+                            *span,
+                            type_parameter.clone(),
+                        ));
+                    }
+
+                    typechecker_struct
+                        .type_namespace
+                        .add_identifier(type_parameter.clone(), *span, "type parameter".to_owned())
+                        .ok(); // TODO: is this call even correct?
+
+                    typechecker_struct
+                        .registry
+                        .introduced_type_parameters
+                        .push((*span, type_parameter.clone(), bound.clone()));
+
+                    match bound {
+                        Some(TypeParameterBound::Dim) => {
+                            typechecker_struct
+                                .add_dtype_constraint(&Type::TPar(type_parameter.clone()))
+                                .ok();
+                        }
+                        None => {}
+                    }
+                }
 
                 for (span, field, _) in fields {
                     if let Some(other_span) = seen_fields.get(field) {
@@ -1680,10 +1714,14 @@ impl TypeChecker {
                 let struct_info = StructInfo {
                     definition_span: *struct_name_span,
                     name: struct_name.clone(),
+                    type_parameters: type_parameters.clone(),
                     fields: fields
                         .iter()
                         .map(|(span, name, type_)| {
-                            Ok((name.clone(), (*span, self.type_from_annotation(type_)?)))
+                            Ok((
+                                name.clone(),
+                                (*span, typechecker_struct.type_from_annotation(type_)?),
+                            ))
                         })
                         .collect::<Result<_>>()?,
                 };
