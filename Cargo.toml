@@ -5,6 +5,7 @@ members = [
     "numbat",
     "numbat-exchange-rates",
     "numbat-cli",
+    "numbat-lsp",
 ]
 
 exclude = [
@@ -12,6 +13,6 @@ exclude = [
 ]
 
 [profile.release]
-lto = true
-strip = true
-codegen-units = 1
+# lto = true
+# strip = true
+# codegen-units = 1
