@@ -4,4 +4,7 @@ let λ = 1.5 s
 
 fn amplitude(t) = A0 exp(-t/λ) cos(ω t)
 
-plot(amplitude, 0 s, 8 s, "Time", "Amplitude")
+line_plot(amplitude, 0 s, 8 s) |>
+  xlabel("Time") |>
+  ylabel("Amplitude") |>
+  show

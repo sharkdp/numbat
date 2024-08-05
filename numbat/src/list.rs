@@ -159,19 +159,6 @@ impl<T: Clone> NumbatList<T> {
             inner.push_back(element);
         }
     }
-
-    pub fn into_inner(self) -> VecDeque<T> {
-        if let Some((start, end)) = self.view {
-            self.alloc
-                .iter()
-                .skip(start)
-                .take(end - start)
-                .cloned()
-                .collect()
-        } else {
-            Arc::into_inner(self.alloc).unwrap()
-        }
-    }
 }
 
 impl From<NumbatList<Value>> for Value {
