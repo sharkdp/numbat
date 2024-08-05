@@ -3,7 +3,7 @@ use super::Args;
 use super::Result;
 use crate::value::Value;
 
-pub fn _create_line_plot(mut args: Args) -> Result<Value> {
+pub fn _show_line_plot(mut args: Args) -> Result<Value> {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let ys = fields.pop().unwrap();
     let xs = fields.pop().unwrap();

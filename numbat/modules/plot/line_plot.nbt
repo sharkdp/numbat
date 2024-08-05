@@ -11,7 +11,7 @@ struct LinePlot {
   ys: List<Scalar>,
 }
 
-fn _create_line_plot(data: LinePlot) -> String
+fn _show_line_plot(data: LinePlot) -> String
 
 fn _unit_name<A: Dim>(x: A) -> String = str_replace("{unit_of(x)}", "1 ", "")
 
@@ -51,4 +51,4 @@ fn ylabel(label: String, plot: LinePlot) -> LinePlot =
   }
 
 fn show(plot: LinePlot) -> String =
-  _create_line_plot(plot)
+  _show_line_plot(plot)
