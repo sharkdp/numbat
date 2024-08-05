@@ -14,11 +14,13 @@ pub fn _create_line_plot(mut args: Args) -> Result<Value> {
     let y_label = y_label.unsafe_as_string();
     let xs = xs
         .unsafe_as_list()
+        .into_inner()
         .into_iter()
         .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
         .collect::<Vec<_>>();
     let ys = ys
         .unsafe_as_list()
+        .into_inner()
         .into_iter()
         .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
         .collect::<Vec<_>>();
