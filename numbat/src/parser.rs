@@ -883,6 +883,7 @@ impl<'a> Parser<'a> {
         let mut expr = self.condition()?;
         let mut full_span = expr.full_span();
         while self.match_exact(TokenKind::PostfixApply).is_some() {
+            self.skip_empty_lines();
             match self.call()? {
                 Expression::Identifier(span, ident) => {
                     full_span = full_span.extend(&span);
