@@ -24,8 +24,8 @@ Numbers in Numbat can be written in the following forms:
 ## Convert numbers to other bases
 
 You can use the `bin`, `oct`, `dec` and `hex` functions to convert numbers to binary, octal, decimal and hexadecimal bases,
-respectively. You can call those using `hex(2^16 - 1)`, or `2^16 - 1 // hex`, but they are also available as targets of the
-conversion operator `->`/`to`, so you can write expressions like:
+respectively. You can call those using `hex(2^16 - 1)`, but they are also available as targets of the conversion operator `->`/`to`,
+so you can write expressions like:
 
 Examples:
 ```nbt
