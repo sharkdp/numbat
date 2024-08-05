@@ -24,7 +24,7 @@
 //! dim_primary     ::=   identifier | "1" | "(" dimension_expr ")"
 //!
 //! expression      ::=   postfix_apply
-//! postfix_apply   ::=   condition ( "//" identifier ) *
+//! postfix_apply   ::=   condition ( "|>" identifier ) *
 //! condition       ::=   ( "if" conversion "then" condition "else" condition ) | conversion
 //! conversion      ::=   logical_or ( ( "→" | "->" | "to" ) logical_or ) *
 //! logical_or      ::=   logical_and ( "||" logical_and ) *
@@ -108,7 +108,7 @@ pub enum ParseErrorKind {
     #[error("Expected identifier")]
     ExpectedIdentifier,
 
-    #[error("Expected identifier or function call after postfix apply (`//`)")]
+    #[error("Expected identifier or function call after postfix apply (`|>`)")]
     ExpectedIdentifierOrCallAfterPostfixApply,
 
     #[error("Expected dimension identifier, '1', or opening parenthesis")]
@@ -2743,7 +2743,7 @@ mod tests {
     #[test]
     fn postfix_apply() {
         parse_as_expression(
-            &["1 + 1 // foo"],
+            &["1 + 1 |> foo"],
             Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
@@ -2752,7 +2752,7 @@ mod tests {
             ),
         );
         parse_as_expression(
-            &["1 + 1 // kefir(2)"],
+            &["1 + 1 |> kefir(2)"],
             Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
@@ -2761,12 +2761,12 @@ mod tests {
             ),
         );
 
-        should_fail_with(&["1 // print()"], ParseErrorKind::InlineProcedureUsage);
+        should_fail_with(&["1 |> print()"], ParseErrorKind::InlineProcedureUsage);
 
-        should_fail_with(&["1 // +"], ParseErrorKind::ExpectedPrimary);
+        should_fail_with(&["1 |> +"], ParseErrorKind::ExpectedPrimary);
 
         should_fail_with(
-            &["1 // 2", "1 // 1 +"],
+            &["1 |> 2", "1 |> 1 +"],
             ParseErrorKind::ExpectedIdentifierOrCallAfterPostfixApply,
         );
     }

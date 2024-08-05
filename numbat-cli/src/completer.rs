@@ -116,7 +116,7 @@ impl Completer for NumbatCompleter {
 
         // don't add an opening paren if we're completing after a reverse function call
         // or when completing conversion functions
-        let add_paren = !["//", "->", "→", "➞", "to"]
+        let add_paren = !["|>", "->", "→", "➞", "to"]
             .iter()
             .any(|&s| line[..pos].contains(s));
 

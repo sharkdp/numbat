@@ -29,7 +29,7 @@ print("Speed of the bicycle: {speed} ({speed -> mph})")
 Format specifiers are also supported in interpolations. For instance:
 
 ```nbt
-print("{pi:0.2f}") // Prints "3.14"
+print("{pi:0.2f}")  # Prints "3.14"
 ```
 
 For more information on supported format specifiers, please see
