@@ -13,7 +13,7 @@ fn _create_line_plot(data: _PlotData) -> String
 
 fn _unit_name<A: Dim>(x: A) -> String = str_replace("{unit_of(x)}", "1 ", "")
 
-let _num_points_for_line_plot = 800
+let _num_points_for_line_plot = 2000
 
 fn _is_scalar<A: Dim>(x: A) -> Bool = "{unit_of(x)}" == "1"
 
