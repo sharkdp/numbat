@@ -34,7 +34,7 @@ fn cons<A>(x: A, xs: List<A>) -> List<A>
 Append an element to the end of a list.
 
 ```nbt
-fn cons_end<A>(xs: List<A>, x: A) -> List<A>
+fn cons_end<A>(x: A, xs: List<A>) -> List<A>
 ```
 
 ### `is_empty`
