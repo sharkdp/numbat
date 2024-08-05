@@ -43,4 +43,4 @@ use chemistry::elements
 use datetime::functions
 use datetime::human
 
-use plotting::line_plot
+use plot::line_plot
