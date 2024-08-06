@@ -138,5 +138,7 @@ fn split(input: String, separator: String) -> List<String> =
     then []
     else if !str_contains(input, separator)
       then [input]
-      else cons(str_slice(input, 0, str_find(input, separator)),  # TODO: avoid duplication
-                split(str_slice(input, str_find(input, separator) + str_length(separator), str_length(input)), separator))
+      else cons(str_slice(input, 0, idx_separator),
+                split(str_slice(input, idx_separator + str_length(separator), str_length(input)), separator))
+  where
+    idx_separator = str_find(input, separator)
