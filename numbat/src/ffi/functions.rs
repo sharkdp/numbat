@@ -108,7 +108,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(_get_chemical_element_data_raw, 1..=1);
 
         // Plotting
-        insert_function!(_show_line_plot, 1..=1);
+        insert_function!(show, 1..=1);
 
         m
     })

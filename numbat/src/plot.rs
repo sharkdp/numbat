@@ -2,7 +2,7 @@ use plotly::{
     color::Rgb,
     common::{Font, Line},
     layout::Axis,
-    Configuration, Layout, Plot, Scatter,
+    Bar, Configuration, Layout, Plot, Scatter,
 };
 
 pub fn line_plot(xs: Vec<f64>, ys: Vec<f64>, x_label: &str, y_label: &str) {
@@ -28,5 +28,22 @@ pub fn line_plot(xs: Vec<f64>, ys: Vec<f64>, x_label: &str, y_label: &str) {
     plot.set_configuration(Configuration::new());
 
     // plot.use_local_plotly();
+    plot.show();
+}
+
+pub fn bar_chart(values: Vec<f64>, x_labels: Vec<String>, value_label: &str) {
+    let mut plot = Plot::new();
+
+    let trace = Bar::new(x_labels, values);
+    plot.add_trace(trace);
+
+    let layout = Layout::new()
+        .y_axis(Axis::new().title(value_label))
+        .font(Font::new().size(16).family("Lato, Roboto, sans-serif"))
+        .width(1200);
+    plot.set_layout(layout);
+
+    plot.set_configuration(Configuration::new());
+
     plot.show();
 }
