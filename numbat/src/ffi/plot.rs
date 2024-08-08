@@ -1,10 +1,12 @@
+use plotly::Plot;
+
 use super::macros::*;
 use super::Args;
 use super::Result;
 use crate::value::Value;
 use crate::RuntimeError;
 
-fn show_line_plot(mut args: Args) {
+fn line_plot(mut args: Args) -> Plot {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let ys = fields.pop().unwrap();
     let xs = fields.pop().unwrap();
@@ -43,10 +45,10 @@ fn show_line_plot(mut args: Args) {
         .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
         .collect::<Vec<_>>();
 
-    crate::plot::line_plot(xs, ys, &x_label, &y_label);
+    crate::plot::line_plot(xs, ys, &x_label, &y_label)
 }
 
-fn show_bar_chart(mut args: Args) {
+fn bar_chat(mut args: Args) -> Plot {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let x_labels = fields.pop().unwrap();
     let values = fields.pop().unwrap();
@@ -75,7 +77,22 @@ fn show_bar_chart(mut args: Args) {
         }
     );
 
-    crate::plot::bar_chart(values, x_labels, &value_label);
+    crate::plot::bar_chart(values, x_labels, &value_label)
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn show_plot(plot: Plot) -> String {
+    plot.show();
+
+    "Plot will be opened in the browser".into()
+}
+
+#[cfg(target_family = "wasm")]
+fn show_plot(plot: Plot) -> String {
+    // The way we could implement this would be to return plot.to_inline_html(..).
+    // This would have to be retrieved on the JS side and then rendered using plotly.js.
+
+    "Plotting is currently not supported on this platform.".into()
 }
 
 pub fn show(args: Args) -> Result<Value> {
@@ -87,16 +104,16 @@ pub fn show(args: Args) -> Result<Value> {
         )));
     };
 
-    if info.name == "LinePlot" {
-        show_line_plot(args);
+    let plot = if info.name == "LinePlot" {
+        line_plot(args)
     } else if info.name == "BarChart" {
-        show_bar_chart(args);
+        bar_chat(args)
     } else {
         return Err(RuntimeError::UserError(format!(
             "Unsupported plot type: {}",
             info.name
         )));
-    }
+    };
 
-    return_string!("Plot will be opened in the browser")
+    return_string!(show_plot(plot))
 }

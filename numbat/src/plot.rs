@@ -5,7 +5,7 @@ use plotly::{
     Bar, Configuration, Layout, Plot, Scatter,
 };
 
-pub fn line_plot(xs: Vec<f64>, ys: Vec<f64>, x_label: &str, y_label: &str) {
+pub fn line_plot(xs: Vec<f64>, ys: Vec<f64>, x_label: &str, y_label: &str) -> Plot {
     let x_min = xs[0];
     let x_max = xs[xs.len() - 1];
     let y_min = ys.iter().fold(f64::INFINITY, |a, &b| a.min(b));
@@ -27,11 +27,10 @@ pub fn line_plot(xs: Vec<f64>, ys: Vec<f64>, x_label: &str, y_label: &str) {
 
     plot.set_configuration(Configuration::new());
 
-    // plot.use_local_plotly();
-    plot.show();
+    plot
 }
 
-pub fn bar_chart(values: Vec<f64>, x_labels: Vec<String>, value_label: &str) {
+pub fn bar_chart(values: Vec<f64>, x_labels: Vec<String>, value_label: &str) -> Plot {
     let mut plot = Plot::new();
 
     let trace = Bar::new(x_labels, values);
@@ -45,5 +44,5 @@ pub fn bar_chart(values: Vec<f64>, x_labels: Vec<String>, value_label: &str) {
 
     plot.set_configuration(Configuration::new());
 
-    plot.show();
+    plot
 }
