@@ -1,6 +1,7 @@
 use core::quantities
 use core::strings
 use core::lists
+use plot::common
 
 struct BarChart {
   value_label: String,
