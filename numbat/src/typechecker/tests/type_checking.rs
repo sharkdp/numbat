@@ -191,6 +191,20 @@ fn recursive_functions() {
 }
 
 #[test]
+fn function_definitions_with_local_variables() {
+    assert_successful_typecheck("fn f(x: A) -> C = x * y where y: B = b");
+    assert_successful_typecheck(
+        "fn f(x: A) -> C = y * z
+           where y = x * 2
+             and z = b * 2",
+    );
+    assert!(matches!(
+        get_typecheck_error("fn f(x: A) = y where y = x + b"),
+        TypeCheckError::IncompatibleDimensions(_)
+    ));
+}
+
+#[test]
 fn generics_basic() {
     assert_successful_typecheck(
         "

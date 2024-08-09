@@ -6,20 +6,23 @@ use core::error
 @description("Find the root of the function $f$ in the interval $[x_1, x_2]$ using the bisection method. The function $f$ must be continuous and $f(x_1) \cdot f(x_2) < 0$.")
 fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y) -> X =
   if abs(x1 - x2) < x_tol
-    then (x1 + x2) / 2
-    else if abs(f((x1 + x2) / 2)) < y_tol
-      then (x1 + x2) / 2
-      else if f((x1 + x2) / 2) * f(x1) < 0
-        then root_bisect(f, x1, (x1 + x2) / 2, x_tol, y_tol)
-        else root_bisect(f, (x1 + x2) / 2, x2, x_tol, y_tol)
-  # TODO: move (x1 + x2) / 2 to a local variable once we support them
+    then x_mean
+    else if abs(f_x_mean) < y_tol
+      then x_mean
+      else if f_x_mean × f(x1) < 0
+        then root_bisect(f, x1, x_mean, x_tol, y_tol)
+        else root_bisect(f, x_mean, x2, x_tol, y_tol)
+  where x_mean = (x1 + x2) / 2
+    and f_x_mean = f(x_mean)
 
 fn _root_newton_helper<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y, max_iterations: Scalar) -> X =
   if max_iterations <= 0
     then error("root_newton: Maximum number of iterations reached. Try another initial guess?")
-    else if abs(f(x0)) < y_tol
+    else if abs(f_x0) < y_tol
       then x0
-      else _root_newton_helper(f, f_prime, x0 - f(x0) / f_prime(x0), y_tol, max_iterations - 1)
+      else _root_newton_helper(f, f_prime, x0 - f_x0 / f_prime(x0), y_tol, max_iterations - 1)
+  where
+    f_x0 = f(x0)
 
 @name("Newton's method")
 @url("https://en.wikipedia.org/wiki/Newton%27s_method") 

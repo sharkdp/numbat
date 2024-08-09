@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expression, Statement, StringPart},
+    ast::{DefineVariable, Expression, Statement, StringPart},
     decorator::{self, Decorator},
     name_resolution::NameResolutionError,
     prefix_parser::{PrefixParser, PrefixParserResult},
@@ -159,6 +159,32 @@ impl Transformer {
         Ok(())
     }
 
+    fn transform_define_variable(
+        &mut self,
+        define_variable: DefineVariable,
+    ) -> Result<DefineVariable> {
+        let DefineVariable {
+            identifier_span,
+            identifier,
+            expr,
+            type_annotation,
+            decorators,
+        } = define_variable;
+
+        for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
+            self.variable_names.push(name.clone());
+        }
+        self.prefix_parser
+            .add_other_identifier(&identifier, identifier_span)?;
+        Ok(DefineVariable {
+            identifier_span,
+            identifier,
+            expr: self.transform_expression(expr),
+            type_annotation,
+            decorators,
+        })
+    }
+
     fn transform_statement(&mut self, statement: Statement) -> Result<Statement> {
         Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
@@ -184,25 +210,8 @@ impl Transformer {
                     decorators,
                 }
             }
-            Statement::DefineVariable {
-                identifier_span,
-                identifier,
-                expr,
-                type_annotation,
-                decorators,
-            } => {
-                for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
-                    self.variable_names.push(name.clone());
-                }
-                self.prefix_parser
-                    .add_other_identifier(&identifier, identifier_span)?;
-                Statement::DefineVariable {
-                    identifier_span,
-                    identifier,
-                    expr: self.transform_expression(expr),
-                    type_annotation,
-                    decorators,
-                }
+            Statement::DefineVariable(define_variable) => {
+                Statement::DefineVariable(self.transform_define_variable(define_variable)?)
             }
             Statement::DefineFunction {
                 function_name_span,
@@ -210,6 +219,7 @@ impl Transformer {
                 type_parameters,
                 parameters,
                 body,
+                local_variables,
                 return_type_annotation,
                 decorators,
             } => {
@@ -238,6 +248,10 @@ impl Transformer {
                     type_parameters,
                     parameters,
                     body: body.map(|expr| self.transform_expression(expr)),
+                    local_variables: local_variables
+                        .into_iter()
+                        .map(|def| self.transform_define_variable(def))
+                        .collect::<Result<_>>()?,
                     return_type_annotation,
                     decorators,
                 }

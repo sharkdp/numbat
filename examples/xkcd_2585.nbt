@@ -4,29 +4,29 @@
 
 17 mph
 
-ans -> meters/sec    |> round
-ans -> knots         |> round
-ans -> fathoms/sec   |> round
-ans -> furlongs/min  |> round
-ans -> fathoms/sec   |> round
-ans -> kph           |> round
-ans -> knots         |> round
-ans -> kph           |> round
-ans -> furlongs/hour |> round
-ans -> mph           |> round
-ans -> m/s           |> round
-ans -> furlongs/min  |> round
-ans -> yards/sec     |> round
-ans -> fathoms/sec   |> round
-ans -> m/s           |> round
-ans -> mph           |> round
-ans -> furlongs/min  |> round
-ans -> knots         |> round
-ans -> yards/sec     |> round
-ans -> fathoms/sec   |> round
-ans -> knots         |> round
-ans -> furlongs/min  |> round
-ans -> mph           |> round
+ans -> meters/sec    -> round
+ans -> knots         -> round
+ans -> fathoms/sec   -> round
+ans -> furlongs/min  -> round
+ans -> fathoms/sec   -> round
+ans -> kph           -> round
+ans -> knots         -> round
+ans -> kph           -> round
+ans -> furlongs/hour -> round
+ans -> mph           -> round
+ans -> m/s           -> round
+ans -> furlongs/min  -> round
+ans -> yards/sec     -> round
+ans -> fathoms/sec   -> round
+ans -> m/s           -> round
+ans -> mph           -> round
+ans -> furlongs/min  -> round
+ans -> knots         -> round
+ans -> yards/sec     -> round
+ans -> fathoms/sec   -> round
+ans -> knots         -> round
+ans -> furlongs/min  -> round
+ans -> mph           -> round
 
 print("I can ride my bike at {ans}.")
 print("If you round.")

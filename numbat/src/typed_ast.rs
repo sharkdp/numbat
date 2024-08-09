@@ -568,16 +568,19 @@ impl Expression {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct DefineVariable(
+    pub String,
+    pub Vec<Decorator>,
+    pub Expression,
+    pub Option<TypeAnnotation>,
+    pub TypeScheme,
+    pub Markup,
+);
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Expression),
-    DefineVariable(
-        String,
-        Vec<Decorator>,
-        Expression,
-        Option<TypeAnnotation>,
-        TypeScheme,
-        Markup,
-    ),
+    DefineVariable(DefineVariable),
     DefineFunction(
         String,
         Vec<Decorator>,                            // decorators
@@ -590,6 +593,7 @@ pub enum Statement {
             Markup,                 // readable parameter type
         )>,
         Option<Expression>,     // function body
+        Vec<DefineVariable>,    // local variables
         TypeScheme,             // function type
         Option<TypeAnnotation>, // return type annotation
         Markup,                 // readable return type
@@ -636,7 +640,14 @@ impl Statement {
     pub(crate) fn update_readable_types(&mut self, registry: &DimensionRegistry) {
         match self {
             Statement::Expression(_) => {}
-            Statement::DefineVariable(_, _, _, type_annotation, type_, readable_type) => {
+            Statement::DefineVariable(DefineVariable(
+                _,
+                _,
+                _,
+                type_annotation,
+                type_,
+                readable_type,
+            )) => {
                 *readable_type = Self::create_readable_type(registry, type_, type_annotation);
             }
             Statement::DefineFunction(
@@ -645,6 +656,7 @@ impl Statement {
                 type_parameters,
                 parameters,
                 _,
+                local_variables,
                 fn_type,
                 return_type_annotation,
                 readable_return_type,
@@ -652,6 +664,12 @@ impl Statement {
                 let (fn_type, _) = fn_type.instantiate_for_printing(Some(
                     type_parameters.iter().map(|(n, _)| n.clone()).collect(),
                 ));
+
+                for DefineVariable(_, _, _, type_annotation, type_, readable_type) in
+                    local_variables
+                {
+                    *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+                }
 
                 let Type::Fn(parameter_types, return_type) = fn_type.inner else {
                     unreachable!("Expected a function type")
@@ -894,14 +912,14 @@ pub fn pretty_print_function_signature(
 impl PrettyPrint for Statement {
     fn pretty_print(&self) -> Markup {
         match self {
-            Statement::DefineVariable(
+            Statement::DefineVariable(DefineVariable(
                 identifier,
                 _decs,
                 expr,
                 _annotation,
                 _type,
                 readable_type,
-            ) => {
+            )) => {
                 m::keyword("let")
                     + m::space()
                     + m::identifier(identifier)
@@ -919,6 +937,7 @@ impl PrettyPrint for Statement {
                 type_parameters,
                 parameters,
                 body,
+                local_variables,
                 fn_type,
                 _return_type_annotation,
                 readable_return_type,
@@ -926,6 +945,41 @@ impl PrettyPrint for Statement {
                 let (fn_type, type_parameters) = fn_type.instantiate_for_printing(Some(
                     type_parameters.iter().map(|(n, _)| n.clone()).collect(),
                 ));
+
+                let mut pretty_local_variables = None;
+                let mut first = true;
+                if !local_variables.is_empty() {
+                    let mut plv = m::empty();
+                    for DefineVariable(
+                        identifier,
+                        _decs,
+                        expr,
+                        _annotation,
+                        _type,
+                        readable_type,
+                    ) in local_variables
+                    {
+                        let introducer_keyword = if first {
+                            first = false;
+                            m::space() + m::space() + m::keyword("where")
+                        } else {
+                            m::space() + m::space() + m::space() + m::space() + m::keyword("and")
+                        };
+
+                        plv += m::nl()
+                            + introducer_keyword
+                            + m::space()
+                            + m::identifier(identifier)
+                            + m::operator(":")
+                            + m::space()
+                            + readable_type.clone()
+                            + m::space()
+                            + m::operator("=")
+                            + m::space()
+                            + expr.pretty_print();
+                    }
+                    pretty_local_variables = Some(plv);
+                }
 
                 pretty_print_function_signature(
                     function_name,
@@ -939,6 +993,7 @@ impl PrettyPrint for Statement {
                     .as_ref()
                     .map(|e| m::space() + m::operator("=") + m::space() + e.pretty_print())
                     .unwrap_or_default()
+                    + pretty_local_variables.unwrap_or_default()
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DefineDimension(identifier, dexprs) if dexprs.is_empty() => {

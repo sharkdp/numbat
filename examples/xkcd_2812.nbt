@@ -9,8 +9,6 @@
 # [1] https://en.wikipedia.org/wiki/Solar_luminosity
 # [2] https://en.wikipedia.org/wiki/Sun
 
-unit $: Money
-
 let net_metering_rate = $ 0.20 / kWh
 let panel_area = 1 m²
 let panel_efficiency = 20 %

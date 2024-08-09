@@ -61,7 +61,7 @@ There is also a plain `assert` procedure that can test any boolean condition. Fo
 
 ```nbt
 assert(1 yard < 1 meter)
-assert(π != 3)
+assert(str_contains("foobar", "bar"))
 ```
 
 A runtime error is thrown if an assertion fails. Otherwise, nothing happens.

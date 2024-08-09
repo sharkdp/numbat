@@ -1,5 +1,5 @@
 :root {
-  --terminal-height: 550px;
+    --terminal-height: 550px;
 }
 
 html {
@@ -46,22 +46,25 @@ p.links a {
 }
 
 #skeleton-loader {
-  animation: skeleton-loading 1.5s infinite;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  height: var(--terminal-height);
-  width: 100%;
+    animation: skeleton-loading 1.5s infinite;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    height: var(--terminal-height);
+    width: 100%;
 }
+
 @keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
+
 .hidden {
-  display: none;
+    display: none;
 }
 
 #terminal {

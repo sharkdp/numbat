@@ -1,5 +1,5 @@
 use crate::typechecker::type_scheme::TypeScheme;
-use crate::typed_ast::{Expression, Statement, StructInfo};
+use crate::typed_ast::{DefineVariable, Expression, Statement, StructInfo};
 
 pub trait ForAllTypeSchemes {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme));
@@ -79,11 +79,15 @@ impl ForAllTypeSchemes for Statement {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
         match self {
             Statement::Expression(expr) => expr.for_all_type_schemes(f),
-            Statement::DefineVariable(_, _, expr, _annotation, type_, _) => {
+            Statement::DefineVariable(DefineVariable(_, _, expr, _annotation, type_, _)) => {
                 expr.for_all_type_schemes(f);
                 f(type_);
             }
-            Statement::DefineFunction(_, _, _, _, body, fn_type, _, _) => {
+            Statement::DefineFunction(_, _, _, _, body, local_variables, fn_type, _, _) => {
+                for local_variable in local_variables {
+                    local_variable.2.for_all_type_schemes(f);
+                    f(&mut local_variable.4);
+                }
                 if let Some(body) = body {
                     body.for_all_type_schemes(f);
                 }
@@ -115,8 +119,13 @@ impl ForAllExpressions for Statement {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
         match self {
             Statement::Expression(expr) => expr.for_all_expressions(f),
-            Statement::DefineVariable(_, _, expr, _, _, _) => expr.for_all_expressions(f),
-            Statement::DefineFunction(_, _, _, _, body, _, _, _) => {
+            Statement::DefineVariable(DefineVariable(_, _, expr, _, _, _)) => {
+                expr.for_all_expressions(f)
+            }
+            Statement::DefineFunction(_, _, _, _, body, local_variables, _, _, _) => {
+                for local_variable in local_variables {
+                    local_variable.2.for_all_expressions(f);
+                }
                 if let Some(body) = body {
                     body.for_all_expressions(f);
                 }

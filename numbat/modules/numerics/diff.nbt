@@ -1,10 +1,9 @@
 use core::quantities
 
-# TODO: Move this to a local definition inside `diff` once we support that
-fn _delta<X: Dim>(x: X) -> X = 1e-10 × unit_of(x)
-
 @name("Numerical differentiation")
 @url("https://en.wikipedia.org/wiki/Numerical_differentiation")
 @description("Compute the numerical derivative of the function $f$ at point $x$ using the central difference method.")
 fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X) -> Y / X =
-  (f(x + _delta(x)) - f(x - _delta(x))) / (2 _delta(x))
+  (f(x + Δx) - f(x - Δx)) / (2 Δx)
+  where
+    Δx = 1e-10 × unit_of(x)

@@ -56,6 +56,6 @@ In interactive command-line mode, you can use the following key bindings. Most i
 To share the result of a calculation with someone else, you can just copy the URL from
 your browers address bar. As you enter new lines in the terminal, your input will be
 appended to the URL to build up something like
-[`https://numbat.dev/?q=let+P0+%3D+50_000+people%0A…`](https://numbat.dev/?q=let+P0+%3D+50_000+people%0Alet+growth_rate+%3D+2%25+per+year%0A%0Afn+population(t%3A+Time)+%3D%0A++++P0+×+e^(growth_rate·t)+%2F%2F+round%0A%0Aprint("P(20+years)+%3D+{population(20+years)}"))
+[`https://numbat.dev/?q=let+P0+%3D+50_000+people%0A…`](https://numbat.dev/?q=let+P0+%3D+50_000+people%0Alet+growth_rate+%3D+2%25+per+year%0A%0Afn+population(t%3A+Time)+%3D%0A++++P0+×+e^(growth_rate·t)+%7C%3E+round%0A%0Aprint("P(20+years)+%3D+{population(20+years)}"))
 that you can just copy and share. To reset the state and clear the URL, use the `reset`
 command (see above).

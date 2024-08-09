@@ -30,9 +30,6 @@ now() -> tz("Asia/Kathmandu")
 # Convert a number to its hexadecimal representation
 2^31-1 -> hex
 
-# Convert a number to a custom base
-42 -> base(16)
-
 # Convert a code point number to a character
 0x2764 -> chr
 
@@ -44,5 +41,5 @@ now() -> tz("Asia/Kathmandu")
 "vier bis elf weiße Querbänder" -> lowercase
 ```
 
-Note that the `tz(…)` and `base(…)` calls above return *functions*, i.e. the right hand side of
+Note that the `tz(…)` call above *returns a function*, i.e. the right hand side of
 the conversion operator is still a function.

@@ -11,5 +11,5 @@ where `<cond>` is a condition that evaluates to a Boolean value, like
 For example, you can defined a simple step function using
 
 ```nbt
-fn step(x: Scalar) -> Scalar = if x < 0 then 0 else 1
+fn step(x) = if x < 0 then 0 else 1
 ```

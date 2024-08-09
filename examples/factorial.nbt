@@ -1,7 +1,7 @@
 # Naive factorial implementation to showcase recursive
 # functions and conditionals.
 
-fn factorial(n: Scalar) -> Scalar =
+fn factorial(n) =
   if n < 1
     then 1
     else n × factorial(n - 1)
