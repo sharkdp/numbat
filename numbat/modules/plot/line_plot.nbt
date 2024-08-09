@@ -1,0 +1,44 @@
+use core::quantities
+use core::lists
+use plot::common
+
+struct LinePlot {
+  x_label: String,
+  x_unit: String,
+  y_label: String,
+  y_unit: String,
+  xs: List<Scalar>,
+  ys: List<Scalar>,
+}
+let _num_points_for_line_plot = 2000
+
+fn line_plot<A: Dim, B: Dim>(f: Fn[(A) -> B], x_start: A, x_end: A) -> LinePlot =
+  LinePlot {
+    x_label: "",
+    x_unit: if _is_scalar(x_end) then "" else _unit_name(x_end),
+    y_label: "",
+    y_unit: if _is_scalar(f(x_end)) then "" else _unit_name(f(x_end)),
+    xs: linspace(x_start / unit_of(x_start), x_end / unit_of(x_end), _num_points_for_line_plot),
+    ys: map(value_of, map(f, linspace(x_start, x_end, _num_points_for_line_plot))),
+  }
+
+
+fn xlabel(label: String, plot: LinePlot) -> LinePlot =
+  LinePlot {  # TODO: this would be much nicer with some form of struct update syntax: `plot { x_label: label }`
+    x_label: label,
+    x_unit: plot.x_unit,
+    y_label: plot.y_label,
+    y_unit: plot.y_unit,
+    xs: plot.xs,
+    ys: plot.ys,
+  }
+
+fn ylabel(label: String, plot: LinePlot) -> LinePlot =
+  LinePlot {
+    x_label: plot.x_label,
+    x_unit: plot.x_unit,
+    y_label: label,
+    y_unit: plot.y_unit,
+    xs: plot.xs,
+    ys: plot.ys,
+  }

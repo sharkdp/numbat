@@ -1,0 +1,11 @@
+let names = ["Iron", "Copper", "Silver", "Gold", "Platinum"]
+let elements = map(element, names)
+
+fn density(e: ChemicalElement) -> MassDensity = e.density
+
+let densities = map(density, elements)
+
+bar_chart(densities) |>
+  xlabels(names) |>
+  value_label("Density") |>
+  show

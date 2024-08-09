@@ -1,0 +1,37 @@
+use core::quantities
+use core::strings
+use core::lists
+use plot::common
+
+struct BarChart {
+  value_label: String,
+  value_unit: String,
+  values: List<Scalar>,
+  x_labels: List<String>,
+}
+
+fn _default_label(n: Scalar) -> String = "{n}"
+
+fn bar_chart<A: Dim>(values: List<A>) -> BarChart =
+  BarChart {
+    value_label: "",
+    value_unit: if _is_scalar(head(values)) then "" else _unit_name(head(values)),
+    values: map(value_of, values),
+    x_labels: map(_default_label, range(1, len(values))),
+  }
+
+fn xlabels(ls: List<String>, chart: BarChart) -> BarChart =
+  BarChart {
+    value_label: chart.value_label,
+    value_unit: chart.value_unit,
+    values: chart.values,
+    x_labels: ls,
+  }
+
+fn value_label(label: String, chart: BarChart) -> BarChart =
+  BarChart {
+    value_label: label,
+    value_unit: chart.value_unit,
+    values: chart.values,
+    x_labels: chart.x_labels,
+  }

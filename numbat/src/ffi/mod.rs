@@ -5,6 +5,7 @@ mod lists;
 mod lookup;
 mod macros;
 mod math;
+mod plot;
 mod procedures;
 mod strings;
 
