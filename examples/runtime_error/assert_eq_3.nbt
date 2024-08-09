@@ -1,0 +1,2 @@
+# fail approximate equality test with epsilon in units that are different from either comparand
+assert_eq(2m, 201cm, 0.1cm to mm)
