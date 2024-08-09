@@ -1,12 +1,10 @@
-use plotly::Plot;
-
 use super::macros::*;
 use super::Args;
 use super::Result;
 use crate::value::Value;
 use crate::RuntimeError;
 
-fn line_plot(mut args: Args) -> Plot {
+fn line_plot(mut args: Args) {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let ys = fields.pop().unwrap();
     let xs = fields.pop().unwrap();
@@ -48,7 +46,7 @@ fn line_plot(mut args: Args) -> Plot {
     crate::plot::line_plot(xs, ys, &x_label, &y_label)
 }
 
-fn bar_chat(mut args: Args) -> Plot {
+fn bar_chat(mut args: Args) {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let x_labels = fields.pop().unwrap();
     let values = fields.pop().unwrap();
@@ -80,21 +78,12 @@ fn bar_chat(mut args: Args) -> Plot {
     crate::plot::bar_chart(values, x_labels, &value_label)
 }
 
-#[cfg(not(target_family = "wasm"))]
-fn show_plot(plot: Plot) -> String {
-    plot.show();
-
-    "Plot will be opened in the browser".into()
-}
-
 #[cfg(target_family = "wasm")]
-fn show_plot(plot: Plot) -> String {
-    // The way we could implement this would be to return plot.to_inline_html(..).
-    // This would have to be retrieved on the JS side and then rendered using plotly.js.
-
+pub fn show(args: Args) -> String {
     "Plotting is currently not supported on this platform.".into()
 }
 
+#[cfg(not(target_family = "wasm"))]
 pub fn show(args: Args) -> Result<Value> {
     // Dynamic dispatch hack since we don't have bounded polymorphism.
     // And no real support for generics in the FFI.
@@ -104,7 +93,7 @@ pub fn show(args: Args) -> Result<Value> {
         )));
     };
 
-    let plot = if info.name == "LinePlot" {
+    if info.name == "LinePlot" {
         line_plot(args)
     } else if info.name == "BarChart" {
         bar_chat(args)
@@ -115,5 +104,5 @@ pub fn show(args: Args) -> Result<Value> {
         )));
     };
 
-    return_string!(show_plot(plot))
+    return_string!("Done.")
 }

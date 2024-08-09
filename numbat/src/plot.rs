@@ -1,48 +1,58 @@
-use plotly::{
-    color::Rgb,
-    common::{Font, Line},
-    layout::Axis,
-    Bar, Configuration, Layout, Plot, Scatter,
-};
+use egui::{emath::Numeric, Color32, Stroke};
+use egui_plot::{Bar, BarChart, Line, Orientation, Plot, PlotPoints};
 
-pub fn line_plot(xs: Vec<f64>, ys: Vec<f64>, x_label: &str, y_label: &str) -> Plot {
-    let x_min = xs[0];
-    let x_max = xs[xs.len() - 1];
-    let y_min = ys.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-    let y_max = ys.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+pub fn line_plot(xs: Vec<f64>, ys: Vec<f64>, x_label: &str, y_label: &str) {
+    let options = eframe::NativeOptions::default();
+    let x_label = x_label.to_string();
+    let y_label = y_label.to_string();
 
-    let y_max = y_max + 0.1 * (y_max - y_min);
-    let y_min = y_min - 0.1 * (y_max - y_min);
+    eframe::run_simple_native("Numbat Plot", options, move |ctx, _frame| {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            egui::widgets::global_dark_light_mode_buttons(ui);
+        });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let plot_points: PlotPoints = xs.iter().zip(&ys).map(|(x, y)| [*x, *y]).collect();
+            let line = Line::new(plot_points);
 
-    let mut plot = Plot::new();
-    let trace = Scatter::new(xs, ys).line(Line::new().color(Rgb::new(0x00, 0x77, 0xff)));
-    plot.add_trace(trace);
-
-    let layout = Layout::new()
-        .x_axis(Axis::new().title(x_label).range(vec![x_min, x_max]))
-        .y_axis(Axis::new().title(y_label).range(vec![y_min, y_max]))
-        .font(Font::new().size(16).family("Lato, Roboto, sans-serif"))
-        .width(1200);
-    plot.set_layout(layout);
-
-    plot.set_configuration(Configuration::new());
-
-    plot
+            Plot::new("plot")
+                .x_axis_label(&x_label)
+                .y_axis_label(&y_label)
+                .show(ui, |plot_ui| plot_ui.line(line));
+        });
+    })
+    .unwrap();
 }
 
-pub fn bar_chart(values: Vec<f64>, x_labels: Vec<String>, value_label: &str) -> Plot {
-    let mut plot = Plot::new();
+pub fn bar_chart(values: Vec<f64>, x_labels: Vec<String>, value_label: &str) {
+    let options = eframe::NativeOptions::default();
+    let value_label = value_label.to_string();
 
-    let trace = Bar::new(x_labels, values);
-    plot.add_trace(trace);
+    eframe::run_simple_native("Numbat Plot", options, move |ctx, _frame| {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            egui::widgets::global_dark_light_mode_buttons(ui);
+        });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let bars = x_labels
+                .iter()
+                .zip(&values)
+                .enumerate()
+                .map(|(i, (x_label, value))| Bar {
+                    name: x_label.clone(),
+                    orientation: Orientation::Vertical,
+                    argument: i.to_f64(),
+                    value: *value,
+                    base_offset: None,
+                    bar_width: 0.5,
+                    stroke: Stroke::new(1.0, Color32::TRANSPARENT),
+                    fill: Color32::TRANSPARENT,
+                })
+                .collect();
+            let chart = BarChart::new(bars);
 
-    let layout = Layout::new()
-        .y_axis(Axis::new().title(value_label))
-        .font(Font::new().size(16).family("Lato, Roboto, sans-serif"))
-        .width(1200);
-    plot.set_layout(layout);
-
-    plot.set_configuration(Configuration::new());
-
-    plot
+            Plot::new("plot")
+                .y_axis_label(&value_label)
+                .show(ui, |plot_ui| plot_ui.bar_chart(chart));
+        });
+    })
+    .unwrap();
 }
