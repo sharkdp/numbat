@@ -1,0 +1,39 @@
+use core::scalar
+use core::functions
+use core::strings
+
+struct Color {
+  red: Scalar,
+  green: Scalar,
+  blue: Scalar,
+}
+
+fn rgb(red: Scalar, green: Scalar, blue: Scalar) -> Color =
+  Color { red: red, green: green, blue: blue }
+
+fn color(rgb_hex: Scalar) -> Color =
+  rgb(
+    floor(rgb_hex / 256^2),
+    floor((mod(rgb_hex, 256^2)) / 256),
+    mod(rgb_hex, 256))
+
+fn _color_to_scalar(color: Color) -> Scalar =
+  color.red * 0x010000 + color.green * 0x000100 + color.blue
+
+fn color_rgb(color: Color) -> String =
+  "rgb({color.red}, {color.green}, {color.blue})"
+
+fn color_rgb_float(color: Color) -> String =
+  "rgb({color.red / 255:.3}, {color.green / 255:.3}, {color.blue / 255:.3})"
+
+fn color_hex(color: Color) -> String =
+  str_append("#", str_replace(str_replace("{color -> _color_to_scalar -> hex:>8}", "0x", ""), " ", "0"))
+
+let black: Color = rgb(0, 0, 0)
+let white: Color = rgb(255, 255, 255)
+let red: Color = rgb(255, 0, 0)
+let green: Color = rgb(0, 255, 0)
+let blue: Color = rgb(0, 0, 255)
+let yellow: Color = rgb(255, 255, 0)
+let cyan: Color = rgb(0, 255, 255)
+let magenta: Color = rgb(255, 0, 255)

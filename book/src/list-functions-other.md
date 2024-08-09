@@ -1,6 +1,6 @@
 # Other functions
 
-[Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion)
+[Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Color format conversion](#color-format-conversion)
 
 ## Error handling
 
@@ -132,5 +132,39 @@ More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_te
 
 ```nbt
 fn fahrenheit(t_kelvin: Temperature) -> Scalar
+```
+
+## Color format conversion
+
+Defined in: `extra::color`
+
+### `rgb`
+
+```nbt
+fn rgb(red: Scalar, green: Scalar, blue: Scalar) -> Color
+```
+
+### `color`
+
+```nbt
+fn color(rgb_hex: Scalar) -> Color
+```
+
+### `color_rgb`
+
+```nbt
+fn color_rgb(color: Color) -> String
+```
+
+### `color_rgb_float`
+
+```nbt
+fn color_rgb_float(color: Color) -> String
+```
+
+### `color_hex`
+
+```nbt
+fn color_hex(color: Color) -> String
 ```
 
