@@ -21,6 +21,7 @@ pub fn get_test_context() -> Context {
         let mut context = get_test_context_without_prelude();
 
         let _ = context.interpret("use prelude", CodeSource::Internal)?;
+        let _ = context.interpret("use units::currencies", CodeSource::Internal)?;
         Ok(context)
     });
 

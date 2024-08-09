@@ -55,7 +55,7 @@ dimension Power = Energy / Time
 
 ## Type inference and type annotations
 
-The type checker can infer the types of (most) expressions without explicitly declaring them. For example,
+The type checker can infer the types of all expressions without explicitly declaring them. For example,
 the following definition does not mention any types:
 ``` numbat
 let E_pot = 80 kg × 9.8 m/s² × 5 m
@@ -71,22 +71,28 @@ Function definitions also allow for type annotations, both for the parameters as
 let p0: Pressure = 101325 Pa
 let t0: Temperature = 288.15 K
 
-let gradient = 0.65 K / 100 m
+let lapse_rate = 0.65 K / 100 m
 
-fn air_pressure(height: Length) -> Pressure = p0 · (1 - gradient · height / t0)^5.255
+fn air_pressure(height: Length) -> Pressure =
+  p0 · (1 - lapse_rate · height / t0)^5.255
 ```
+See [this chapter](./function-definitions.md) for more details on the type inference algorithm.
 
 
 ## Generic types
 
-Numbat's type system also supports generic types (type polymorphism).
+Numbat's type system also supports generic types (parametric polymorphism).
 These can be used for functions that work regardless of the physical dimension of the argument(s).
 For example, the type signature of the absolute value function is given by
 ``` numbat
-fn abs<D>(x: D) -> D
+fn abs<D: Dim>(x: D) -> D
 ```
 where the angle brackets after the function name introduce new type parameters (`D`).
-This can be read as: `abs` takes an arbitrary physical quantity of dimension `D` and returns a quantity of the *same* physical dimension `D`.
+This can be read as: `abs` takes an arbitrary physical quantity of dimension type `D`
+and returns a quantity of the *same* physical dimension `D`.
+
+The `Dim` constraint makes sure that this can not be used with non-dimensional types like `Bool`
+or `String`.
 
 As a more interesting example, we can look at the `sqrt` function. Its type signature can be written as
 ``` numbat
@@ -133,9 +139,8 @@ requires that:
     * `expr1` is also of type `Scalar`
     * `expr2` can be *evaluated at compile time* and yields a rational number.
 
-#### Remark
-
-We would probably need to enter the world of *dependent types* if we wanted to fully
-support exponentiation expressions without the limitations above. For example, consider
-the function `f(x, n) = x^n`. The return type of that function *depends on the value*
-of the parameter `n`.
+> **Remark**:
+> We would probably need to enter the world of *dependent types* if we wanted to fully
+> support exponentiation expressions without the limitations above. For example, consider
+> the function `f(x, n) = x^n`. The return type of that function *depends on the value*
+> of the parameter `n`.

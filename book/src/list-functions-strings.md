@@ -79,6 +79,13 @@ Repeat the input string `n` times.
 fn str_repeat(a: String, n: Scalar) -> String
 ```
 
+### `base`
+Convert a number to the given base. Example: `42 |> base(16)`.
+
+```nbt
+fn base(b: Scalar, x: Scalar) -> String
+```
+
 ### `bin`
 Get a binary representation of a number. Example: `42 -> bin`.
 
@@ -105,12 +112,5 @@ Get a hexadecimal representation of a number. Example: `2^31-1 -> hex`.
 
 ```nbt
 fn hex(x: Scalar) -> String
-```
-
-### `base`
-Convert a number to the given base. Example: `42 -> base(16)`.
-
-```nbt
-fn base(b: Scalar) -> Fn[(Scalar) -> String]
 ```
 

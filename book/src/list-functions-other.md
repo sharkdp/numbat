@@ -33,6 +33,13 @@ More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.
 fn is_infinite<T: Dim>(n: T) -> Bool
 ```
 
+### `is_finite`
+Returns true if the input is neither infinite nor `NaN`.
+
+```nbt
+fn is_finite<T: Dim>(n: T) -> Bool
+```
+
 ## Quantities
 
 Defined in: `core::quantities`
