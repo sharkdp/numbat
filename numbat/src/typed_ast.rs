@@ -947,8 +947,9 @@ impl PrettyPrint for Statement {
                 ));
 
                 let mut pretty_local_variables = None;
+                let mut first = true;
                 if !local_variables.is_empty() {
-                    let mut plv = m::keyword("where");
+                    let mut plv = m::empty();
                     for DefineVariable(
                         identifier,
                         _decs,
@@ -958,7 +959,16 @@ impl PrettyPrint for Statement {
                         readable_type,
                     ) in local_variables
                     {
-                        plv += m::space()
+                        let introducer_keyword = if first {
+                            first = false;
+                            m::space() + m::space() + m::keyword("where")
+                        } else {
+                            m::space() + m::space() + m::space() + m::space() + m::keyword("and")
+                        };
+
+                        plv += m::nl()
+                            + introducer_keyword
+                            + m::space()
                             + m::identifier(identifier)
                             + m::operator(":")
                             + m::space()

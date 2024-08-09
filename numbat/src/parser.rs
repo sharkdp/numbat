@@ -233,6 +233,9 @@ pub enum ParseErrorKind {
 
     #[error("Empty string interpolation")]
     EmptyStringInterpolation,
+
+    #[error("Expected local variable definition after where/and")]
+    ExpectedLocalVariableDefinition,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -395,7 +398,7 @@ impl<'a> Parser<'a> {
         }
 
         if self.match_exact(TokenKind::Let).is_some() {
-            self.parse_variable().map(Statement::DefineVariable)
+            self.parse_variable(true).map(Statement::DefineVariable)
         } else if self.match_exact(TokenKind::Fn).is_some() {
             self.parse_function_declaration()
         } else if self.match_exact(TokenKind::Dimension).is_some() {
@@ -415,7 +418,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_variable(&mut self) -> Result<DefineVariable> {
+    fn parse_variable(&mut self, flush_decorators: bool) -> Result<DefineVariable> {
         if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
             let identifier_span = self.last().unwrap().span;
 
@@ -434,14 +437,16 @@ impl<'a> Parser<'a> {
                 self.skip_empty_lines();
                 let expr = self.expression()?;
 
-                if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
-                        span: self.peek().span,
-                    });
-                }
                 let mut decorators = vec![];
-                std::mem::swap(&mut decorators, &mut self.decorator_stack);
+                if flush_decorators {
+                    if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
+                            span: self.peek().span,
+                        });
+                    }
+                    std::mem::swap(&mut decorators, &mut self.decorator_stack);
+                }
 
                 Ok(DefineVariable {
                     identifier_span,
@@ -567,23 +572,37 @@ impl<'a> Parser<'a> {
                 self.skip_empty_lines();
                 let body = self.expression()?;
 
-                // After parsing the `where` statement we have eaten all
-                // the newlines. We're not supposed to do that.
-                // We'll resume the parser to where we were at before doing that.
-                let mut step_back_to = self.current;
-
                 let mut local_variables = Vec::new();
-                self.skip_empty_lines();
-                if self.match_exact(TokenKind::Where).is_some() {
-                    step_back_to = self.current;
+
+                if self
+                    .match_exact_beyond_linebreaks(TokenKind::Where)
+                    .is_some()
+                {
+                    let keyword_span = self.last().unwrap().span;
                     self.skip_empty_lines();
-                    while let Ok(local_variable) = self.parse_variable() {
+                    if let Ok(local_variable) = self.parse_variable(false) {
                         local_variables.push(local_variable);
-                        step_back_to = self.current;
+                    } else {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLocalVariableDefinition,
+                            span: keyword_span,
+                        });
+                    }
+
+                    while self.match_exact_beyond_linebreaks(TokenKind::And).is_some() {
+                        let keyword_span = self.last().unwrap().span;
                         self.skip_empty_lines();
+                        if let Ok(local_variable) = self.parse_variable(false) {
+                            local_variables.push(local_variable);
+                        } else {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedLocalVariableDefinition,
+                                span: keyword_span,
+                            });
+                        }
                     }
                 }
-                self.current = step_back_to;
+
                 (Some(body), local_variables)
             };
 
@@ -1779,6 +1798,26 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn look_ahead_beyond_linebreak(&self, token_kind: TokenKind) -> bool {
+        let mut i = self.current;
+        while i < self.tokens.len() {
+            if self.tokens[i].kind != TokenKind::Newline {
+                return self.tokens[i].kind == token_kind;
+            }
+            i += 1;
+        }
+        false
+    }
+
+    /// Same as 'match_exact', but skips empty lines before matching. Note that this
+    /// does *not* skip empty lines in case there is no match.
+    fn match_exact_beyond_linebreaks(&mut self, token_kind: TokenKind) -> Option<&'a Token> {
+        if self.look_ahead_beyond_linebreak(token_kind) {
+            self.skip_empty_lines();
+        }
+        self.match_exact(token_kind)
+    }
+
     fn match_any(&mut self, kinds: &[TokenKind]) -> Option<&'a Token> {
         for kind in kinds {
             if let result @ Some(..) = self.match_exact(*kind) {
@@ -2716,9 +2755,8 @@ mod tests {
 
         parse_as(
             &["fn kefirausaure(x) = z + y
-                where
-                    y = x + x
-                    z = y + x"],
+                 where y = x + x
+                   and z = y + x"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "kefirausaure".into(),
@@ -2744,6 +2782,16 @@ mod tests {
                 return_type_annotation: None,
                 decorators: vec![],
             },
+        );
+
+        should_fail_with(
+            &["fn f(x) = x where"],
+            ParseErrorKind::ExpectedLocalVariableDefinition,
+        );
+
+        should_fail_with(
+            &["fn f(x) = x where z = 1 and"],
+            ParseErrorKind::ExpectedLocalVariableDefinition,
         );
 
         should_fail_with(

@@ -32,9 +32,8 @@ fn str_find(haystack: String, needle: String) -> Scalar =
       else if str_find(tail_haystack, needle) == -1
         then -1
         else 1 + str_find(tail_haystack, needle)
-  where
-    len_haystack = str_length(haystack)
-    tail_haystack = str_slice(haystack, 1, len_haystack)
+  where len_haystack = str_length(haystack)
+    and tail_haystack = str_slice(haystack, 1, len_haystack)
 
 @description("Check if a string contains a substring")
 fn str_contains(haystack: String, needle: String) -> Bool =

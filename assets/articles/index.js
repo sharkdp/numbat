@@ -54,7 +54,7 @@ ace.define(
           {
             token: "keyword",
             regex:
-              "\\b(?:per|to|let|fn|where|dimension|unit|use|long|short|both|none|print|assert|assert_eq|type|if|then|else|true|false)\\b",
+              "\\b(?:per|to|let|fn|where|and|dimension|unit|use|long|short|both|none|print|assert|assert_eq|type|if|then|else|true|false)\\b",
           },
           {
             token: "constant.numeric",

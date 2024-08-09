@@ -90,6 +90,7 @@ pub enum TokenKind {
     Let,
     Fn, // 'fn'
     Where,
+    And,
     Dimension,
     Unit,
     Use,
@@ -376,6 +377,7 @@ impl Tokenizer {
             m.insert("let", TokenKind::Let);
             m.insert("fn", TokenKind::Fn);
             m.insert("where", TokenKind::Where);
+            m.insert("and", TokenKind::And);
             m.insert("dimension", TokenKind::Dimension);
             m.insert("unit", TokenKind::Unit);
             m.insert("use", TokenKind::Use);
