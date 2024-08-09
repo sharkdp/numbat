@@ -518,16 +518,25 @@ impl ErrorDiagnostic for RuntimeError {
                     ])
                     .with_notes(vec![inner])]
             }
-            RuntimeError::AssertEq3Failed(span_lhs, lhs, span_rhs, rhs, _) => {
+            RuntimeError::AssertEq3Failed(
+                span_lhs,
+                lhs_original,
+                lhs_converted,
+                span_rhs,
+                rhs_original,
+                rhs_converted,
+                _eps,
+                _diff_abs,
+            ) => {
                 vec![Diagnostic::error()
                     .with_message("Assertion failed")
                     .with_labels(vec![
                         span_lhs
                             .diagnostic_label(LabelStyle::Secondary)
-                            .with_message(format!("{lhs}")),
+                            .with_message(format!("{lhs_converted} ({lhs_original})")),
                         span_rhs
                             .diagnostic_label(LabelStyle::Primary)
-                            .with_message(format!("{rhs}")),
+                            .with_message(format!("{rhs_converted} ({rhs_original})")),
                     ])
                     .with_notes(vec![format!("{self:#}")])]
             }
