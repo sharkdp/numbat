@@ -3,7 +3,7 @@
 let initial_population = 50_000 people
 let growth_rate = 2% per year
 
-fn predict_population(t: Time) =
+fn predict_population(t) =
     initial_population × e^(growth_rate·t) |> round
 
 print("Population in  20 years: {predict_population(20 years)}")

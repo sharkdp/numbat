@@ -29,12 +29,17 @@ so you can write expressions like:
 
 Examples:
 ```nbt
+0xffee -> bin
+42 -> oct
+2^16 - 1 -> hex
+
+# using 'to':
 0xffee to bin
-42 to oct
-2^16 - 1 to hex
 ```
 
-You can also use `base(b)` to convert a number to base `b`:
+You can also use `base(b, n)` to convert a number `n` to base `b`. Using the reverse function application operator `|>` you can write
+this in a similar style to the previous examples:
 ```nbt
-0xffee to base(2)
+273 |> base(3)
+144 |> base(12)
 ```
