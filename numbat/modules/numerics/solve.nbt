@@ -12,9 +12,8 @@ fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y
       else if f_x_mean × f(x1) < 0
         then root_bisect(f, x1, x_mean, x_tol, y_tol)
         else root_bisect(f, x_mean, x2, x_tol, y_tol)
-  where
-    x_mean = (x1 + x2) / 2
-    f_x_mean = f(x_mean)
+  where x_mean = (x1 + x2) / 2
+    and f_x_mean = f(x_mean)
 
 fn _root_newton_helper<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y, max_iterations: Scalar) -> X =
   if max_iterations <= 0

@@ -71,6 +71,9 @@ fn foo(z: Scalar) -> Scalar = 2 * z + 3                   # A simple function
 fn speed(len: Length, dur: Time) -> Velocity = len / dur  # Two parameters
 fn my_sqrt<T: Dim>(q: T^2) -> T = q^(1/2)                 # A generic function
 fn is_non_negative(x: Scalar) -> Bool = x ≥ 0             # Returns a bool
+fn power_4(x: Scalar) = z                                 # A function with local variables
+  where y = x * x
+    and z = y * y
 
 # 6. Dimension definitions
 
