@@ -395,7 +395,7 @@ fn lcm(a: Scalar, b: Scalar) -> Scalar
 
 ## Numerical methods
 
-Defined in: `numerics::diff`, `numerics::solve`
+Defined in: `numerics::diff`, `numerics::solve`, `numerics::fixed_point`
 
 ### `diff` (Numerical differentiation)
 Compute the numerical derivative of the function \\( f \\) at point \\( x \\) using the central difference method.
@@ -419,6 +419,14 @@ More information [here](https://en.wikipedia.org/wiki/Newton%27s_method).
 
 ```nbt
 fn root_newton<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y) -> X
+```
+
+### `fixed_point` (Fixed-point iteration)
+Compute the approximate fixed point of a function \\( f: X \rightarrow X \\) starting from \\( x_0 \\), until \\( |f(x) - x| < ε \\).
+More information [here](https://en.wikipedia.org/wiki/Fixed-point_iteration).
+
+```nbt
+fn fixed_point<X: Dim>(f: Fn[(X) -> X], x0: X, ε: X) -> X
 ```
 
 ## Geometry
