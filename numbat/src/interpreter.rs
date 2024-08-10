@@ -194,7 +194,7 @@ impl Display for AssertEq3Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (lhs, rhs) = self.formatted_quantities();
 
-        write!(f, "Assertion failed because the following two quantities differ by {}, which is more than or equal to {}:\n  {}\n  {}", self.diff_abs, self.eps, lhs, rhs)
+        write!(f, "Assertion failed because the following two quantities differ by {}, which is more than {}:\n  {}\n  {}", self.diff_abs, self.eps, lhs, rhs)
     }
 }
 
