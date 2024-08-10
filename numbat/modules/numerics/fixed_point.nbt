@@ -1,0 +1,19 @@
+use core::scalar
+use core::functions
+use core::error
+
+fn _fixed_point<X: Dim>(f: Fn[(X) -> X], x0: X, ε: X, max_iter: Scalar) =
+  if abs(x1 - x0) < ε
+    then x1
+    else
+      if max_iter > 0
+        then _fixed_point(f, x1, ε, max_iter - 1)
+        else error("fixed_point: Exceeded max. number of iterations")
+  where
+    x1 = f(x0)
+
+@name("Fixed-point iteration")
+@url("https://en.wikipedia.org/wiki/Fixed-point_iteration")
+@description("Compute the approximate fixed point of a function $f: X \\rightarrow X$ starting from $x_0$, until $|f(x) - x| < ε$.")
+fn fixed_point<X: Dim>(f: Fn[(X) -> X], x0: X, ε: X) =
+  _fixed_point(f, x0, ε, 100)

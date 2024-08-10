@@ -141,7 +141,11 @@ list_of_functions(
             },
             {
                 "title": "Numerical methods",
-                "modules": ["numerics::diff", "numerics::solve"],
+                "modules": [
+                    "numerics::diff",
+                    "numerics::solve",
+                    "numerics::fixed_point",
+                ],
             },
             {
                 "title": "Geometry",
