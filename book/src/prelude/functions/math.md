@@ -865,6 +865,14 @@ fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X, Δx: X) -> Y / X
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%2C%201e%2D10%20s%29%0Avelocity%282%20s%29){ .md-button }
 
+### `dsolve_runge_kutta` (Runge-Kutta method)
+Solve the ordinary differential equation \( y' = f(x, y) \) on the interval \( x \in [x_0, x_e] \) with initial conditions \( y(x_0) = y_0 \) using the fourth-order Runge-Kutta method.
+More information [here](https://en.wikipedia.org/wiki/Runge-Kutta_methods).
+
+```nbt
+fn dsolve_runge_kutta<X: Dim, Y: Dim>(f: Fn[(X, Y) -> Y / X], x_0: X, x_e: X, y_0: Y, steps: Scalar) -> RungeKuttaResult<X, Y>
+```
+
 ### `root_bisect` (Bisection method)
 Find the root of the function \( f \) in the interval \( [x_1, x_2] \) using the bisection method. The function \( f \) must be continuous and \( f(x_1) \cdot f(x_2) < 0 \).
 More information [here](https://en.wikipedia.org/wiki/Bisection_method).

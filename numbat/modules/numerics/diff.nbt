@@ -1,4 +1,5 @@
 use core::quantities
+use core::lists
 
 @name("Numerical differentiation")
 @url("https://en.wikipedia.org/wiki/Numerical_differentiation")
@@ -7,3 +8,42 @@ use core::quantities
 @example("fn distance(t) = 0.5 g0 t²\nfn velocity(t) = diff(distance, t, 1e-10 s)\nvelocity(2 s)", "Compute the free fall velocity after $t=2 s$.")
 fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X, Δx: X) -> Y / X =
   (f(x + Δx) - f(x - Δx)) / 2 Δx
+
+struct RungeKuttaResult<X: Dim, Y: Dim> {
+  xs: List<X>,
+  ys: List<Y>,
+}
+
+fn _dsolve_runge_kutta<X: Dim, Y: Dim>(
+  f: Fn[(X, Y) -> Y / X],
+  Δx: X,
+  steps: Scalar,
+  prev: RungeKuttaResult<X, Y>,
+) -> RungeKuttaResult<X, Y> =
+  if steps <= 0
+    then prev
+    else _dsolve_runge_kutta(f, Δx, steps - 1, RungeKuttaResult {
+        xs: cons_end(x_next, prev.xs),
+        ys: cons_end(y_next, prev.ys),
+      })
+  where x = element_at(len(prev.xs) - 1, prev.xs)
+    and y = element_at(len(prev.ys) - 1, prev.ys)
+    and k1 = f(x, y)
+    and k2 = f(x + Δx / 2, y + Δx k1 / 2)
+    and k3 = f(x + Δx / 2, y + Δx k2 / 2)
+    and k4 = f(x + Δx, y + Δx k3)
+    and x_next = x + Δx
+    and y_next = y + Δx / 6 × (k1 + 2 k2 + 2 k3 + k4)
+
+@name("Runge-Kutta method")
+@url("https://en.wikipedia.org/wiki/Runge-Kutta_methods")
+@description("Solve the ordinary differential equation $y' = f(x, y)$ on the interval $x \\in [x_0, x_e]$ with initial conditions $y(x_0) = y_0$ using the fourth-order Runge-Kutta method.")
+fn dsolve_runge_kutta<X: Dim, Y: Dim>(
+  f: Fn[(X, Y) -> Y / X],
+  x_0: X,
+  x_e: X,
+  y_0: Y,
+  steps: Scalar
+) -> RungeKuttaResult<X, Y> =
+  _dsolve_runge_kutta(f, Δx, steps - 1, RungeKuttaResult { xs: [x_0], ys: [y_0] })
+  where Δx = (x_e - x_0) / (steps - 1)
