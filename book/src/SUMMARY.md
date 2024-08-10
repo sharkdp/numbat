@@ -17,6 +17,7 @@
     - [Population growth](./example-population_growth.md)
     - [Recipe](./example-recipe.md)
     - [Voyager](./example-voyager.md)
+    - [XKCD 681](./example-xkcd_681.md)
     - [XKCD 687](./example-xkcd_687.md)
     - [XKCD 2585](./example-xkcd_2585.md)
     - [XKCD 2812](./example-xkcd_2812.md)
