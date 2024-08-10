@@ -23,6 +23,23 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: im
 }
 
 #[track_caller]
+fn succeed(code: &str) -> String {
+    let mut ctx = get_test_context();
+    let ret = ctx.interpret(code, CodeSource::Internal);
+    match ret {
+        Err(e) => panic!("was supposed to succeed but instead got:\n{}", e),
+        Ok((_stmts, ret)) => {
+            if let InterpreterResult::Value(val) = ret {
+                let fmt = PlainTextFormatter {};
+                fmt.format(&val.pretty_print(), false)
+            } else {
+                String::new()
+            }
+        }
+    }
+}
+
+#[track_caller]
 fn fail(code: &str) -> NumbatError {
     let mut ctx = get_test_context();
     let ret = ctx.interpret(code, CodeSource::Internal);
@@ -815,4 +832,43 @@ fn test_statement_pretty_printing() {
     expect_pretty_print("fn f(x) -> Length = 2 x", "fn f(x: Length) -> Length = 2 x");
 
     expect_pretty_print("fn f<Z>(z: Z) = z", "fn f<Z>(z: Z) -> Z = z");
+}
+
+#[test]
+fn test_assert_eq_3() {
+    // approximate equality succeeds when epsilon is larger than the difference between lhs and rhs
+    insta::assert_snapshot!(succeed("assert_eq(200cm, 201cm, 2cm)"), @"");
+
+    insta::assert_snapshot!(fail("assert_eq(200cm, 201cm, 2 watts)"), @"Argument types in assert_eq calls must match");
+
+    // approximate equality succeeds when epsilon is equal to the difference between the lhs and rhs
+    insta::assert_snapshot!(succeed("assert_eq(200cm, 201cm, 1cm)"), @"");
+
+    // approximate equality failure with the same units for all arguments shows no original values in parentheses
+    insta::assert_snapshot!(fail("assert_eq(200cm, 201cm, 0.1cm)"), @r###"
+    Assertion failed because the following two quantities differ by 1 cm, which is more than 0.1 cm:
+      200 cm
+      201 cm
+    "###);
+
+    // approximate equality failure with different units for rhs shows original values in parentheses for rhs only
+    insta::assert_snapshot!(fail("assert_eq(2000mm, 201cm, 0.1cm to mm)"), @r###"
+    Assertion failed because the following two quantities differ by 10.0 mm, which is more than 1 mm:
+      2000 mm
+      2010.0 mm (201 cm)
+    "###);
+
+    // approximate equality failure with different units for lhs shows original values in parentheses for lhs only
+    insta::assert_snapshot!(fail("assert_eq(2m, 2010mm, 0.1cm to mm)"), @r###"
+    Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
+      2000 mm (2 m)
+      2010 mm
+    "###);
+
+    // approximate equality failure with different units for lhs and rhs shows original values in parentheses for lhs and rhs
+    insta::assert_snapshot!(fail("assert_eq(2m, 201cm, 0.1cm to mm)"), @r###"
+    Assertion failed because the following two quantities differ by 10.0 mm, which is more than 1 mm:
+      2000 mm (2 m)
+      2010.0 mm (201 cm)
+    "###);
 }
