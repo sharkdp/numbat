@@ -38,7 +38,7 @@ In particular, note that the type of the function argument `v` is correctly infe
 > are known. The `+` operator imposes a *constraint* on the types: two quantities can
 > only be added if their physical dimension is the same. The type inference algorithm
 > records constraints like this, and then tries to find a solution that satisfies all
-> all of them. In this case, only a single equation needs to be solved:
+> of them. In this case, only a single equation needs to be solved:
 > ```
 > type(v) × type(t_reaction) = type(v)² / (type(µ) × type(g0)      )
 > type(v) × Time             = type(v)² / (      1 × Length / Time²)
