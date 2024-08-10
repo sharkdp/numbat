@@ -33,3 +33,30 @@ fn dist(t: Time) -> Length = 0.5 g0 t^2
 fn velocity(t: Time) -> Velocity = diff(dist, t, 1e-10 s)
 
 assert_eq(velocity(2.0 s), 2.0 s × g0, 1e-3 m/s)
+
+# Differential equations
+
+let t_min = 0 s
+let t_max = 1 s
+let n_points = 1_000
+
+let μ = 0.7 / s
+let x0 = 2 m
+
+# Numerically solve x'(t) = μ x(t) with x(0) = x0.
+# The exact solution is x(t) = x0 e^(μ t).
+#
+# 'ode(t, x)' is the right-hand side of the ODE.
+fn ode(t, x) = μ x
+
+let result = dsolve_runge_kutta(ode, t_min, t_max, x0, n_points)
+
+fn numerical_solution(t) = element_at(idx, result.ys)
+  where t_range = t_max - t_min
+    and idx = floor((t - t_min) / t_range * (n_points - 1))
+
+fn exact_solution(t) = x0 exp(μ t)
+
+assert_eq(numerical_solution(0 s), exact_solution(0 s))
+assert_eq(numerical_solution(0.5 s), exact_solution(0.5 s), 1e-3 x0)
+assert_eq(numerical_solution(1 s), exact_solution(1 s), 1e-3 x0)
