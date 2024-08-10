@@ -814,6 +814,5 @@ fn test_statement_pretty_printing() {
     expect_pretty_print("fn f(x: Length) = 2 x", "fn f(x: Length) -> Length = 2 x");
     expect_pretty_print("fn f(x) -> Length = 2 x", "fn f(x: Length) -> Length = 2 x");
 
-    // TODO:
-    // expect_pretty_print("fn f<Z>(z: Z) = z", "fn f<Z>(z: Z) -> Z = z");
+    expect_pretty_print("fn f<Z>(z: Z) = z", "fn f<Z>(z: Z) -> Z = z");
 }
