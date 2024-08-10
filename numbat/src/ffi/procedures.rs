@@ -128,7 +128,7 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> 
             Err(e) => ControlFlow::Break(RuntimeError::QuantityError(e)),
             Ok(diff) => {
                 let diff_abs = diff.abs();
-                if diff_abs < eps {
+                if diff_abs <= eps {
                     ControlFlow::Continue(())
                 } else {
                     ControlFlow::Break(RuntimeError::AssertEq3Failed(AssertEq3Error {
