@@ -53,6 +53,10 @@ impl Quantity {
         self.value.to_f64() == 0.0
     }
 
+    pub fn abs(self) -> Self {
+        Quantity::new(self.value.abs(), self.unit)
+    }
+
     pub fn to_base_unit_representation(&self) -> Quantity {
         let (unit, factor) = self.unit.to_base_unit_representation();
         Quantity::new(self.value * factor, unit)
@@ -443,6 +447,24 @@ mod tests {
                 epsilon = 1e-6
             );
         }
+    }
+
+    #[test]
+    fn abs() {
+        assert_eq!(
+            Quantity::new_f64(0.0, Unit::scalar()).abs(),
+            Quantity::new_f64(0.0, Unit::scalar())
+        );
+
+        assert_eq!(
+            Quantity::new_f64(1.0, Unit::scalar()).abs(),
+            Quantity::new_f64(1.0, Unit::scalar())
+        );
+
+        assert_eq!(
+            Quantity::new_f64(-1.0, Unit::scalar()).abs(),
+            Quantity::new_f64(1.0, Unit::scalar())
+        );
     }
 
     #[test]
