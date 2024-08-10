@@ -19,6 +19,10 @@ impl Number {
         Number::from_f64(self.to_f64().pow(other.to_f64()))
     }
 
+    pub fn abs(self) -> Self {
+        Number::from_f64(self.to_f64().abs())
+    }
+
     fn is_integer(self) -> bool {
         self.0.trunc() == self.0
     }
@@ -157,4 +161,11 @@ fn test_pretty_print() {
     assert_eq!(Number::from_f64(0.00001).pretty_print(), "0.00001");
     assert_eq!(Number::from_f64(0.000001).pretty_print(), "0.000001");
     assert_eq!(Number::from_f64(0.0000001).pretty_print(), "1.0e-7");
+}
+
+#[test]
+fn test_abs() {
+    assert_eq!(Number::from_f64(0.0).abs(), Number::from_f64(0.0));
+    assert_eq!(Number::from_f64(1.0).abs(), Number::from_f64(1.0));
+    assert_eq!(Number::from_f64(-1.0).abs(), Number::from_f64(1.0));
 }

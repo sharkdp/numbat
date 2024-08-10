@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 
 use super::macros::*;
 use crate::{
-    ast::ProcedureKind, ffi::ControlFlow, pretty_print::PrettyPrint, quantity::Quantity,
+    ast::ProcedureKind, ffi::ControlFlow, interpreter::AssertEq3Error, pretty_print::PrettyPrint,
     span::Span, value::Value, vm::ExecutionContext, RuntimeError,
 };
 
@@ -127,20 +127,20 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> 
         match result {
             Err(e) => ControlFlow::Break(RuntimeError::QuantityError(e)),
             Ok(diff) => {
-                let diff_abs = diff.unsafe_value().to_f64().abs();
-                if diff_abs < eps.unsafe_value().to_f64() {
+                let diff_abs = diff.abs();
+                if diff_abs < eps {
                     ControlFlow::Continue(())
                 } else {
-                    ControlFlow::Break(RuntimeError::AssertEq3Failed(
+                    ControlFlow::Break(RuntimeError::AssertEq3Failed(AssertEq3Error {
                         span_lhs,
-                        lhs_original.clone(),
-                        lhs_converted.clone(),
+                        lhs_original,
+                        lhs_converted,
                         span_rhs,
-                        rhs_original.clone(),
-                        rhs_converted.clone(),
-                        eps.clone(),
-                        Quantity::new_f64(diff_abs, diff.unit().clone()),
-                    ))
+                        rhs_original,
+                        rhs_converted,
+                        eps,
+                        diff_abs,
+                    }))
                 }
             }
         }

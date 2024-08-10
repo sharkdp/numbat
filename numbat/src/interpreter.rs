@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     dimension::DimensionRegistry,
     markup::Markup,
@@ -30,17 +32,8 @@ pub enum RuntimeError {
     AssertFailed(Span),
     #[error("Assertion failed because the following two values are not the same:\n  {1}\n  {3}")]
     AssertEq2Failed(Span, Value, Span, Value),
-    #[error("Assertion failed because the following two quantities differ by {7}, which is more than or equal to {6}:\n  {2} ({1})\n  {5} ({4})")]
-    AssertEq3Failed(
-        Span,
-        Quantity,
-        Quantity,
-        Span,
-        Quantity,
-        Quantity,
-        Quantity,
-        Quantity,
-    ),
+    #[error("{0}")]
+    AssertEq3Failed(AssertEq3Error),
     #[error("Could not load exchange rates from European Central Bank.")]
     CouldNotLoadExchangeRates,
     #[error("User error: {0}")]
@@ -166,6 +159,43 @@ pub trait Interpreter {
         dimension_registry: &DimensionRegistry,
     ) -> Result<InterpreterResult>;
     fn get_unit_registry(&self) -> &UnitRegistry;
+}
+
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
+pub struct AssertEq3Error {
+    pub span_lhs: Span,
+    pub lhs_original: Quantity,
+    pub lhs_converted: Quantity,
+    pub span_rhs: Span,
+    pub rhs_original: Quantity,
+    pub rhs_converted: Quantity,
+    pub eps: Quantity,
+    pub diff_abs: Quantity,
+}
+
+impl AssertEq3Error {
+    pub fn formatted_quantities(&self) -> (String, String) {
+        let lhs = Self::fmt_quantity(&self.lhs_converted, &self.lhs_original);
+        let rhs = Self::fmt_quantity(&self.rhs_converted, &self.rhs_original);
+
+        (lhs, rhs)
+    }
+
+    fn fmt_quantity(converted: &Quantity, original: &Quantity) -> String {
+        if converted.unit() == original.unit() {
+            format!("{}", converted)
+        } else {
+            format!("{} ({})", converted, original)
+        }
+    }
+}
+
+impl Display for AssertEq3Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (lhs, rhs) = self.formatted_quantities();
+
+        write!(f, "Assertion failed because the following two quantities differ by {}, which is more than or equal to {}:\n  {}\n  {}", self.diff_abs, self.eps, lhs, rhs)
+    }
 }
 
 #[cfg(test)]
