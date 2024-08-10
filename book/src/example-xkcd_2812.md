@@ -40,3 +40,5 @@ let savings_b = savings(sun_luminosity / sun_area)
 
 print(savings_b |> round)
 ```
+
+<p align="center" style="margin-top: 2em"><a href="https://xkcd.com/2812/"><img src="https://imgs.xkcd.com/comics/solar_panel_placement.png" alt="XKCD 2812" style="max-width: 100%"></a><br>Source: <a href="https://xkcd.com/2812/">https://xkcd.com/2812/</a></p>

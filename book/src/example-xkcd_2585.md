@@ -37,3 +37,5 @@ ans -> mph           -> round
 print("I can ride my bike at {ans}.")
 print("If you round.")
 ```
+
+<p align="center" style="margin-top: 2em"><a href="https://xkcd.com/2585/"><img src="https://imgs.xkcd.com/comics/rounding.png" alt="XKCD 2585" style="max-width: 100%"></a><br>Source: <a href="https://xkcd.com/2585/">https://xkcd.com/2585/</a></p>

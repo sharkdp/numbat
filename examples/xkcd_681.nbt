@@ -7,6 +7,13 @@ use extra::astronomy
 fn well_depth(mass: Mass, radius: Length) -> Length =
     G × mass / (g0 × radius) -> km
 
+print("Gravity well depths:")
+print("Sun     {well_depth(solar_mass, solar_radius):8.0f}")
+print("Earth   {well_depth(earth_mass, earth_radius):8.0f}")
+print("Moon    {well_depth(lunar_mass, lunar_radius):8.0f}")
+print("Mars    {well_depth(mars_mass,  mars_radius):8.0f}")
+print("Jupiter {well_depth(jupiter_mass, jupiter_radius):8.0f}")
+
 assert_eq(well_depth(earth_mass, earth_radius), 6379 km, 1 km)
 assert_eq(well_depth(mars_mass,  mars_radius),  1286 km, 3 km)
 assert_eq(well_depth(lunar_mass, lunar_radius),  288 km, 1 km)
