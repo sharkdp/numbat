@@ -1,0 +1,116 @@
+# Compute the geographical distance between two points on
+# Earth's surface using Vincenty's formulae, which are accurate
+# to sub-millimeter precision.
+#
+# See:
+# - http://www.movable-type.co.uk/scripts/latlong-vincenty.html
+# - https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+
+use numerics::fixed_point
+
+struct LatLon {
+  name: String,
+  lat: Angle,
+  lon: Angle,
+}
+
+let stuttgart = LatLon {
+  name: "Stuttgart",
+  lat: 48° + 47′,
+  lon: 9° + 11′,
+}
+
+let paris = LatLon {
+  name: "Paris",
+  lat: 48° + 51′,
+  lon: 2° + 21′,
+}
+
+let cape_town = LatLon {
+  name: "Cape Town",
+  lat: -(33° + 56′),
+  lon: 18° + 25′,
+}
+
+let lima = LatLon {
+  name: "Lima",
+  lat: -(12° + 04′),
+  lon: -(77° + 02′),
+}
+
+let p1 = stuttgart
+let p2 = lima
+
+let λ1 = p1.lon
+let φ1 = p1.lat
+
+let λ2 = p2.lon
+let φ2 = p2.lat
+
+# Equatorial radius of the Earth (Semi-major axis):
+let a: Length = 6_378_137.0 m
+
+# Polar radius of the Earth (Semi-minor axis, GR80):
+let b: Length = 6_356_752.314_140_347 m
+
+let flattening: Scalar = (a - b) / a
+
+# Difference in longitude:
+let ΔL = λ2 - λ1
+
+# Reduced latitudes:
+let U1 = atan((1 - flattening) * tan(φ1))
+let U2 = atan((1 - flattening) * tan(φ2))
+
+fn step_λ(λ: Angle) -> Angle =
+  ΔL + (1 - C_) flattening sinα × (σ + C_ sinσ × (cos2σm + C_ cosσ × (-1 + 2 cos2σm²)))
+
+  where sinλ = sin(λ)
+    and cosλ = cos(λ)
+    and sinσ = sqrt((cos(U2) sinλ)² + (cos(U1) sin(U2) - sin(U1) cos(U2) cosλ)²)
+    and cosσ = sin(U1) sin(U2) + cos(U1) cos(U2) cosλ
+    and σ = atan2(sinσ, cosσ)
+    and sinα = cos(U1) cos(U2) sinλ / sinσ
+    and cosα_squared = 1 - sinα²
+    and cos2σm = cosσ - 2 sin(U1) sin(U2) / cosα_squared
+    and C_ = flattening / 16 × cosα_squared × (4 + flattening × (4 - 3 cosα_squared))
+
+let λ = fixed_point(step_λ, ΔL, 1e-12)
+
+# TODO: It's unfortunate that we have to duplicate this part:
+let sinλ = sin(λ)
+let cosλ = cos(λ)
+let sinσ = sqrt((cos(U2) sinλ)² + (cos(U1) sin(U2) - sin(U1) cos(U2) cosλ)²)
+let cosσ = sin(U1) sin(U2) + cos(U1) cos(U2) cosλ
+let σ = atan2(sinσ, cosσ)
+let sinα = cos(U1) cos(U2) sinλ / sinσ
+let cosα_squared = 1 - sinα²
+let cos2σm = cosσ - 2 sin(U1) sin(U2) / cosα_squared
+let C_ = flattening / 16 × cosα_squared × (4 + flattening × (4 - 3 cosα_squared))
+
+let u_squared = cosα_squared × (a² - b²) / b²
+
+let A_ = 1 + u_squared / 16384 × (4096 + u_squared × (-768 + u_squared × (320 - 175 u_squared)))
+let B_ = u_squared / 1024 × (256 + u_squared × (-128 + u_squared × (74 - 47 u_squared)))
+
+let Δσ = B_ sinσ × (cos2σm + B_ / 4 × (cosσ × (-1 + 2 cos2σm²) - B_/6 × cos2σm × (-3 + 4 sinσ²) × (-3 + 4 cos2σm²)))
+
+let distance = b A_ × (σ - Δσ)
+
+print("Distance {p1.name} - {p2.name}: {distance -> km:.6f}")
+
+# The reference values are computed using
+# https://geodesyapps.ga.gov.au/vincenty-inverse
+#
+# Ellipsoid: GRS80
+# Coordinate Reference System: Geographic
+# Geographic Coordinate Notation: DDM
+
+# Stuttgart - Lima
+assert_eq(distance, 10_733.845_039 km, 1 mm)
+
+# Stuttgart - Paris
+# assert_eq(distance, 501.725_916 km, 1 mm)
+
+# Stuttgart - Cape Town
+# assert_eq(distance, 9_207.599_441 km, 40 km)
