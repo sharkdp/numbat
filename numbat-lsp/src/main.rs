@@ -7,7 +7,8 @@ use dashmap::DashMap;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::resolver::{CodeSource, ResolverError};
 use numbat::{
-    Context, IncompatibleDimensionsError, NameResolutionError, NumbatError, Span, TypeCheckError,
+    Context, IncompatibleDimensionsError, InterpreterSettings, NameResolutionError, NumbatError,
+    Span, TypeCheckError,
 };
 use numbat_lsp::chumsky::{type_inference, Func, ImCompleteSemanticToken};
 use numbat_lsp::completion::completion;
@@ -484,25 +485,22 @@ impl Backend {
         let Ok(filepath) = params.uri.to_file_path() else {
             return;
         };
-        match self
-            .context
-            .lock()
-            .await
-            .interpret(&params.text, CodeSource::File(filepath))
-        {
+        let diagnostics = match self.context.lock().await.interpret_with_settings(
+            &mut InterpreterSettings {
+                print_fn: Box::new(move |_s| ()),
+            },
+            &params.text,
+            CodeSource::File(filepath),
+        ) {
             Ok((_stmts, _results)) => {
-                self.client
-                    .publish_diagnostics(params.uri.clone(), vec![], Some(params.version))
-                    .await;
+                vec![]
             }
-            Err(err) => {
-                self.publish_numbat_error(params, err).await;
-            }
-        }
+            Err(err) => self.err_to_diagnostic(err).await,
+        };
 
-        // self.client
-        //     .publish_diagnostics(params.uri.clone(), diagnostics, Some(params.version))
-        //     .await;
+        self.client
+            .publish_diagnostics(params.uri.clone(), diagnostics, Some(params.version))
+            .await;
 
         // if let Some(ast) = ast {
         //     self.ast_map.insert(params.uri.to_string(), ast);
@@ -514,14 +512,15 @@ impl Backend {
         //     .insert(params.uri.to_string(), semantic_tokens);
     }
 
-    async fn publish_numbat_error(&self, params: TextDocumentItem, error: NumbatError) {
+    async fn err_to_diagnostic(&self, error: NumbatError) -> Vec<Diagnostic> {
         match error {
             NumbatError::ResolverError(err) => match err {
                 ResolverError::UnknownModule(span, ref _path) => {
-                    self.publish_simple_error(params, span, err).await
+                    self.simple_diagnostic(span, err).await
                 }
-                ResolverError::ParseErrors(errors) => {
-                    let diagnostics = errors.iter().map(|error| Diagnostic {
+                ResolverError::ParseErrors(errors) => errors
+                    .iter()
+                    .map(|error| Diagnostic {
                         range: span_to_range(error.span),
                         severity: Some(DiagnosticSeverity::ERROR),
                         code: None,
@@ -531,114 +530,72 @@ impl Backend {
                         related_information: None,
                         tags: None,
                         data: None,
-                    });
-
-                    self.client
-                        .publish_diagnostics(
-                            params.uri.clone(),
-                            diagnostics.collect(),
-                            Some(params.version),
-                        )
-                        .await;
-                }
+                    })
+                    .collect(),
             },
-            NumbatError::NameResolutionError(err) => {
-                self.publish_numbat_name_resolution_error(params, err).await
-            }
-            NumbatError::TypeCheckError(err) => {
-                self.publish_numbat_typecheck_error(params, err).await
-            }
-            NumbatError::RuntimeError(err) => {
-                self.publish_error_without_location(params, err).await
-            }
+            NumbatError::NameResolutionError(err) => self.name_resolution_diagnostic(err).await,
+            NumbatError::TypeCheckError(err) => self.typecheck_diagnostic(err).await,
+            NumbatError::RuntimeError(err) => self.diagnostic_without_location(err).await,
         }
     }
 
-    async fn publish_error_without_location(
-        &self,
-        params: TextDocumentItem,
-        error: impl std::error::Error,
-    ) {
-        self.client
-            .publish_diagnostics(
-                params.uri.clone(),
-                vec![Diagnostic {
-                    // When we don't have a location to display the error, we
-                    // always show the errors on the first line.
-                    range: Range::new(Position::new(0, 0), Position::new(1, 0)),
-                    severity: Some(DiagnosticSeverity::ERROR),
-                    code: None,
-                    code_description: None,
-                    source: Some("numbat".to_string()),
-                    message: error.to_string(),
-                    related_information: None,
-                    tags: None,
-                    data: None,
-                }],
-                Some(params.version),
-            )
-            .await;
+    async fn diagnostic_without_location(&self, error: impl std::error::Error) -> Vec<Diagnostic> {
+        vec![Diagnostic {
+            // When we don't have a location to display the error, we
+            // always show the errors on the first line.
+            range: Range::new(Position::new(0, 0), Position::new(1, 0)),
+            severity: Some(DiagnosticSeverity::ERROR),
+            code: None,
+            code_description: None,
+            source: Some("numbat".to_string()),
+            message: error.to_string(),
+            related_information: None,
+            tags: None,
+            data: None,
+        }]
     }
 
-    async fn publish_simple_error(
+    async fn simple_diagnostic(
         &self,
-        params: TextDocumentItem,
         location: Span,
         error: impl std::error::Error,
-    ) {
-        self.client
-            .publish_diagnostics(
-                params.uri.clone(),
-                vec![Diagnostic {
-                    range: span_to_range(location),
-                    severity: Some(DiagnosticSeverity::ERROR),
-                    code: None,
-                    code_description: None,
-                    source: Some("numbat".to_string()),
-                    message: error.to_string(),
-                    related_information: None,
-                    tags: None,
-                    data: None,
-                }],
-                Some(params.version),
-            )
-            .await;
+    ) -> Vec<Diagnostic> {
+        vec![Diagnostic {
+            range: span_to_range(location),
+            severity: Some(DiagnosticSeverity::ERROR),
+            code: None,
+            code_description: None,
+            source: Some("numbat".to_string()),
+            message: error.to_string(),
+            related_information: None,
+            tags: None,
+            data: None,
+        }]
     }
 
-    async fn publish_defined_here_error(
+    async fn defined_here_diagnostic(
         &self,
-        params: TextDocumentItem,
         error_location: Span,
         defined_here: Span,
         error: impl std::error::Error,
-    ) {
-        self.client
-            .publish_diagnostics(
-                params.uri.clone(),
-                vec![Diagnostic {
-                    range: span_to_range(error_location),
-                    severity: Some(DiagnosticSeverity::ERROR),
-                    code: None,
-                    code_description: None,
-                    source: Some("numbat".to_string()),
-                    message: error.to_string(),
-                    related_information: Some(vec![DiagnosticRelatedInformation {
-                        location: self.span_to_location(defined_here).await,
-                        message: "Defined here".to_string(),
-                    }]),
-                    tags: None,
-                    data: None,
-                }],
-                Some(params.version),
-            )
-            .await;
+    ) -> Vec<Diagnostic> {
+        vec![Diagnostic {
+            range: span_to_range(error_location),
+            severity: Some(DiagnosticSeverity::ERROR),
+            code: None,
+            code_description: None,
+            source: Some("numbat".to_string()),
+            message: error.to_string(),
+            related_information: Some(vec![DiagnosticRelatedInformation {
+                location: self.span_to_location(defined_here).await,
+                message: "Defined here".to_string(),
+            }]),
+            tags: None,
+            data: None,
+        }]
     }
 
-    async fn publish_numbat_name_resolution_error(
-        &self,
-        params: TextDocumentItem,
-        error: NameResolutionError,
-    ) {
+    async fn name_resolution_diagnostic(&self, error: NameResolutionError) -> Vec<Diagnostic> {
         match error {
             NameResolutionError::IdentifierClash {
                 conflicting_identifier: _,
@@ -646,20 +603,16 @@ impl Backend {
                 original_span,
                 original_item_type: _,
             } => {
-                self.publish_defined_here_error(params, conflict_span, original_span, error)
+                self.defined_here_diagnostic(conflict_span, original_span, error)
                     .await
             }
             NameResolutionError::ReservedIdentifier(span) => {
-                self.publish_simple_error(params, span, error).await
+                self.simple_diagnostic(span, error).await
             }
         }
     }
 
-    async fn publish_numbat_typecheck_error(
-        &self,
-        params: TextDocumentItem,
-        error: TypeCheckError,
-    ) {
+    async fn typecheck_diagnostic(&self, error: TypeCheckError) -> Vec<Diagnostic> {
         match error {
             TypeCheckError::UnknownIdentifier(span, _, _)
             | TypeCheckError::NonScalarExponent(span, _)
@@ -691,7 +644,7 @@ impl Backend {
                 num_args: _,
             }
             | TypeCheckError::IncompatibleAlternativeDimensionExpression(_, span, _, _, _) => {
-                self.publish_simple_error(params, span, error).await
+                self.simple_diagnostic(span, error).await
             }
 
             // Defined here stuff
@@ -701,16 +654,13 @@ impl Backend {
                 callable_definition_span: Some(here),
                 arity: _,
                 num_args: _,
-            } => {
-                self.publish_defined_here_error(params, span, here, error)
-                    .await
-            }
+            } => self.defined_here_diagnostic(span, here, error).await,
 
             // Stuff with no span
             TypeCheckError::ConstraintSolverError(_, _)
             | TypeCheckError::RegistryError(_)
             | TypeCheckError::SubstitutionError(_, _) => {
-                self.publish_error_without_location(params, error).await
+                self.diagnostic_without_location(error).await
             }
 
             // Complex stuff
@@ -727,36 +677,28 @@ impl Backend {
                 actual_type: _,
                 actual_dimensions: _,
             }) => {
-                self.client
-                    .publish_diagnostics(
-                        params.uri.clone(),
-                        vec![Diagnostic {
-                            range: span_to_range(span_operation),
-                            severity: Some(DiagnosticSeverity::ERROR),
-                            code: None,
-                            code_description: None,
-                            source: Some("numbat".to_string()),
-                            message: error.to_string(),
-                            related_information: Some(vec![
-                                DiagnosticRelatedInformation {
-                                    location: self.span_to_location(span_actual).await,
-                                    message: format!("Expected {actual_name_for_fix}"),
-                                },
-                                DiagnosticRelatedInformation {
-                                    location: self.span_to_location(span_expected).await,
-                                    message: "Defined here".to_string(),
-                                },
-                            ]),
-                            tags: None,
-                            data: None,
-                        }],
-                        Some(params.version),
-                    )
-                    .await;
+                vec![Diagnostic {
+                    range: span_to_range(span_operation),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: Some("numbat".to_string()),
+                    message: error.to_string(),
+                    related_information: Some(vec![
+                        DiagnosticRelatedInformation {
+                            location: self.span_to_location(span_actual).await,
+                            message: format!("Expected {actual_name_for_fix}"),
+                        },
+                        DiagnosticRelatedInformation {
+                            location: self.span_to_location(span_expected).await,
+                            message: "Defined here".to_string(),
+                        },
+                    ]),
+                    tags: None,
+                    data: None,
+                }]
             }
-            TypeCheckError::NameResolutionError(err) => {
-                self.publish_numbat_name_resolution_error(params, err).await
-            }
+            TypeCheckError::NameResolutionError(err) => self.name_resolution_diagnostic(err).await,
 
             // TODO: Should be improved
             TypeCheckError::IncompatibleTypesInCondition(span, _, _, _, _)
@@ -774,7 +716,7 @@ impl Backend {
             | TypeCheckError::UnknownFieldAccess(span, _, _, _)
             | TypeCheckError::MissingFieldsInStructInstantiation(span, _, _)
             | TypeCheckError::IncompatibleTypesInList(span, _, _, _) => {
-                self.publish_simple_error(params, span, error).await
+                self.simple_diagnostic(span, error).await
             }
         }
     }
@@ -847,9 +789,9 @@ async fn main() {
 
     let (service, socket) = LspService::build(|client| Backend {
         client,
-        ast_map: DashMap::new(),
-        document_map: DashMap::new(),
-        semantic_token_map: DashMap::new(),
+        ast_map: Default::default(),
+        document_map: Default::default(),
+        semantic_token_map: Default::default(),
 
         context: Arc::new(Mutex::new(context)),
     })
