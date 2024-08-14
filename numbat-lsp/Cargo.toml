@@ -14,7 +14,8 @@ tokio = { version = "1.17.0", features = ["full"] }
 tower-lsp = { version = "0.20.0", features = ["proposed"]}
 serde = { version = "1.0", features = ["derive"] }
 dashmap = "5.1.0"
+dirs = "5"
 log = "0.4.14"
 im-rc = "15.0.0"
-
+numbat = { path = "../numbat" }
 

@@ -1,7 +1,15 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::Arc;
 
 use dashmap::DashMap;
-use numbat_lsp::chumsky::{parse, type_inference, Func, ImCompleteSemanticToken, ParserResult};
+use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
+use numbat::resolver::{CodeSource, ResolverError};
+use numbat::{
+    Context, IncompatibleDimensionsError, NameResolutionError, NumbatError, Span, TypeCheckError,
+};
+use numbat_lsp::chumsky::{type_inference, Func, ImCompleteSemanticToken};
 use numbat_lsp::completion::completion;
 use numbat_lsp::jump_definition::get_definition;
 use numbat_lsp::reference::get_reference;
@@ -9,16 +17,18 @@ use numbat_lsp::semantic_token::{semantic_token_from_ast, LEGEND_TYPE};
 use ropey::Rope;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tokio::sync::Mutex;
 use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::notification::Notification;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
-#[derive(Debug)]
+
 struct Backend {
     client: Client,
     ast_map: DashMap<String, HashMap<String, Func>>,
     document_map: DashMap<String, Rope>,
     semantic_token_map: DashMap<String, Vec<ImCompleteSemanticToken>>,
+
+    context: Arc<Mutex<Context>>,
 }
 
 #[tower_lsp::async_trait]
@@ -34,7 +44,7 @@ impl LanguageServer for Backend {
                 )),
                 completion_provider: Some(CompletionOptions {
                     resolve_provider: Some(false),
-                    trigger_characters: Some(vec![".".to_string()]),
+                    trigger_characters: Some(vec!["|>".to_string()]),
                     work_done_progress_options: Default::default(),
                     all_commit_characters: None,
                     completion_item: None,
@@ -57,9 +67,9 @@ impl LanguageServer for Backend {
                             text_document_registration_options: {
                                 TextDocumentRegistrationOptions {
                                     document_selector: Some(vec![DocumentFilter {
-                                        language: Some("nbt".to_string()),
+                                        language: Some("numbat".to_string()),
                                         scheme: Some("file".to_string()),
-                                        pattern: None,
+                                        pattern: Some("*.nbt".to_string()),
                                     }]),
                                 }
                             },
@@ -459,11 +469,6 @@ struct InlayHintParams {
     path: String,
 }
 
-enum CustomNotification {}
-impl Notification for CustomNotification {
-    type Params = InlayHintParams;
-    const METHOD: &'static str = "custom/notification";
-}
 struct TextDocumentItem {
     uri: Url,
     text: String,
@@ -475,72 +480,336 @@ impl Backend {
         let rope = ropey::Rope::from_str(&params.text);
         self.document_map
             .insert(params.uri.to_string(), rope.clone());
-        let ParserResult {
-            ast,
-            parse_errors,
-            semantic_tokens,
-        } = parse(&params.text);
-        let diagnostics = parse_errors
-            .into_iter()
-            .filter_map(|item| {
-                let (message, span) = match item.reason() {
-                    chumsky::error::SimpleReason::Unclosed { span, delimiter } => {
-                        (format!("Unclosed delimiter {}", delimiter), span.clone())
-                    }
-                    chumsky::error::SimpleReason::Unexpected => (
-                        format!(
-                            "{}, expected {}",
-                            if item.found().is_some() {
-                                "Unexpected token in input"
-                            } else {
-                                "Unexpected end of input"
-                            },
-                            if item.expected().len() == 0 {
-                                "something else".to_string()
-                            } else {
-                                item.expected()
-                                    .map(|expected| match expected {
-                                        Some(expected) => expected.to_string(),
-                                        None => "end of input".to_string(),
-                                    })
-                                    .collect::<Vec<_>>()
-                                    .join(", ")
-                            }
-                        ),
-                        item.span(),
-                    ),
-                    chumsky::error::SimpleReason::Custom(msg) => (msg.to_string(), item.span()),
-                };
 
-                || -> Option<Diagnostic> {
-                    // let start_line = rope.try_char_to_line(span.start)?;
-                    // let first_char = rope.try_line_to_char(start_line)?;
-                    // let start_column = span.start - first_char;
-                    let start_position = offset_to_position(span.start, &rope)?;
-                    let end_position = offset_to_position(span.end, &rope)?;
-                    // let end_line = rope.try_char_to_line(span.end)?;
-                    // let first_char = rope.try_line_to_char(end_line)?;
-                    // let end_column = span.end - first_char;
-                    Some(Diagnostic::new_simple(
-                        Range::new(start_position, end_position),
-                        message,
-                    ))
-                }()
-            })
-            .collect::<Vec<_>>();
-
-        self.client
-            .publish_diagnostics(params.uri.clone(), diagnostics, Some(params.version))
-            .await;
-
-        if let Some(ast) = ast {
-            self.ast_map.insert(params.uri.to_string(), ast);
+        let Ok(filepath) = params.uri.to_file_path() else {
+            return;
+        };
+        match self
+            .context
+            .lock()
+            .await
+            .interpret(&params.text, CodeSource::File(filepath))
+        {
+            Ok((_stmts, _results)) => {
+                self.client
+                    .publish_diagnostics(params.uri.clone(), vec![], Some(params.version))
+                    .await;
+            }
+            Err(err) => {
+                self.publish_numbat_error(params, err).await;
+            }
         }
+
+        // self.client
+        //     .publish_diagnostics(params.uri.clone(), diagnostics, Some(params.version))
+        //     .await;
+
+        // if let Some(ast) = ast {
+        //     self.ast_map.insert(params.uri.to_string(), ast);
+        // }
         // self.client
         //     .log_message(MessageType::INFO, &format!("{:?}", semantic_tokens))
         //     .await;
-        self.semantic_token_map
-            .insert(params.uri.to_string(), semantic_tokens);
+        // self.semantic_token_map
+        //     .insert(params.uri.to_string(), semantic_tokens);
+    }
+
+    async fn publish_numbat_error(&self, params: TextDocumentItem, error: NumbatError) {
+        match error {
+            NumbatError::ResolverError(err) => match err {
+                ResolverError::UnknownModule(span, ref _path) => {
+                    self.publish_simple_error(params, span, err).await
+                }
+                ResolverError::ParseErrors(errors) => {
+                    let diagnostics = errors.iter().map(|error| Diagnostic {
+                        range: span_to_range(error.span),
+                        severity: Some(DiagnosticSeverity::ERROR),
+                        code: None,
+                        code_description: None,
+                        source: Some("numbat".to_string()),
+                        message: error.to_string(),
+                        related_information: None,
+                        tags: None,
+                        data: None,
+                    });
+
+                    self.client
+                        .publish_diagnostics(
+                            params.uri.clone(),
+                            diagnostics.collect(),
+                            Some(params.version),
+                        )
+                        .await;
+                }
+            },
+            NumbatError::NameResolutionError(err) => {
+                self.publish_numbat_name_resolution_error(params, err).await
+            }
+            NumbatError::TypeCheckError(err) => {
+                self.publish_numbat_typecheck_error(params, err).await
+            }
+            NumbatError::RuntimeError(err) => {
+                self.publish_error_without_location(params, err).await
+            }
+        }
+    }
+
+    async fn publish_error_without_location(
+        &self,
+        params: TextDocumentItem,
+        error: impl std::error::Error,
+    ) {
+        self.client
+            .publish_diagnostics(
+                params.uri.clone(),
+                vec![Diagnostic {
+                    // When we don't have a location to display the error, we
+                    // always show the errors on the first line.
+                    range: Range::new(Position::new(0, 0), Position::new(1, 0)),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: Some("numbat".to_string()),
+                    message: error.to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                }],
+                Some(params.version),
+            )
+            .await;
+    }
+
+    async fn publish_simple_error(
+        &self,
+        params: TextDocumentItem,
+        location: Span,
+        error: impl std::error::Error,
+    ) {
+        self.client
+            .publish_diagnostics(
+                params.uri.clone(),
+                vec![Diagnostic {
+                    range: span_to_range(location),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: Some("numbat".to_string()),
+                    message: error.to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                }],
+                Some(params.version),
+            )
+            .await;
+    }
+
+    async fn publish_defined_here_error(
+        &self,
+        params: TextDocumentItem,
+        error_location: Span,
+        defined_here: Span,
+        error: impl std::error::Error,
+    ) {
+        self.client
+            .publish_diagnostics(
+                params.uri.clone(),
+                vec![Diagnostic {
+                    range: span_to_range(error_location),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: Some("numbat".to_string()),
+                    message: error.to_string(),
+                    related_information: Some(vec![DiagnosticRelatedInformation {
+                        location: self.span_to_location(defined_here).await,
+                        message: "Defined here".to_string(),
+                    }]),
+                    tags: None,
+                    data: None,
+                }],
+                Some(params.version),
+            )
+            .await;
+    }
+
+    async fn publish_numbat_name_resolution_error(
+        &self,
+        params: TextDocumentItem,
+        error: NameResolutionError,
+    ) {
+        match error {
+            NameResolutionError::IdentifierClash {
+                conflicting_identifier: _,
+                conflict_span,
+                original_span,
+                original_item_type: _,
+            } => {
+                self.publish_defined_here_error(params, conflict_span, original_span, error)
+                    .await
+            }
+            NameResolutionError::ReservedIdentifier(span) => {
+                self.publish_simple_error(params, span, error).await
+            }
+        }
+    }
+
+    async fn publish_numbat_typecheck_error(
+        &self,
+        params: TextDocumentItem,
+        error: TypeCheckError,
+    ) {
+        match error {
+            TypeCheckError::UnknownIdentifier(span, _, _)
+            | TypeCheckError::NonScalarExponent(span, _)
+            | TypeCheckError::NonScalarFactorialArgument(span, _)
+            | TypeCheckError::UnsupportedConstEvalExpression(span, _)
+            | TypeCheckError::DivisionByZeroInConstEvalExpression(span)
+            | TypeCheckError::TypeParameterNameClash(span, _)
+            | TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
+            | TypeCheckError::UnknownForeignFunction(span, _)
+            | TypeCheckError::NonRationalExponent(span)
+            | TypeCheckError::OverflowInConstExpr(span)
+            | TypeCheckError::ExpectedDimensionType(span, _)
+            | TypeCheckError::ExpectedBool(span)
+            | TypeCheckError::MissingDimension(span, _)
+            | TypeCheckError::NoFunctionReferenceToGenericFunction(span)
+            | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span)
+            | TypeCheckError::NoDimensionlessBaseUnit(span, _)
+            | TypeCheckError::UnknownStruct(span, _)
+            | TypeCheckError::MissingDimBound(span)
+            | TypeCheckError::ExponentiationNeedsTypeAnnotation(span)
+            | TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(span)
+            | TypeCheckError::TypedHoleInStatement(span, _, _, _)
+            | TypeCheckError::MultipleTypedHoles(span)
+            | TypeCheckError::WrongArity {
+                callable_span: span,
+                callable_name: _,
+                callable_definition_span: None,
+                arity: _,
+                num_args: _,
+            }
+            | TypeCheckError::IncompatibleAlternativeDimensionExpression(_, span, _, _, _) => {
+                self.publish_simple_error(params, span, error).await
+            }
+
+            // Defined here stuff
+            TypeCheckError::WrongArity {
+                callable_span: span,
+                callable_name: _,
+                callable_definition_span: Some(here),
+                arity: _,
+                num_args: _,
+            } => {
+                self.publish_defined_here_error(params, span, here, error)
+                    .await
+            }
+
+            // Stuff with no span
+            TypeCheckError::ConstraintSolverError(_, _)
+            | TypeCheckError::RegistryError(_)
+            | TypeCheckError::SubstitutionError(_, _) => {
+                self.publish_error_without_location(params, error).await
+            }
+
+            // Complex stuff
+            TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {
+                span_operation,
+                operation: _,
+                span_expected,
+                expected_name: _,
+                expected_type: _,
+                expected_dimensions: _,
+                span_actual,
+                actual_name: _,
+                actual_name_for_fix,
+                actual_type: _,
+                actual_dimensions: _,
+            }) => {
+                self.client
+                    .publish_diagnostics(
+                        params.uri.clone(),
+                        vec![Diagnostic {
+                            range: span_to_range(span_operation),
+                            severity: Some(DiagnosticSeverity::ERROR),
+                            code: None,
+                            code_description: None,
+                            source: Some("numbat".to_string()),
+                            message: error.to_string(),
+                            related_information: Some(vec![
+                                DiagnosticRelatedInformation {
+                                    location: self.span_to_location(span_actual).await,
+                                    message: format!("Expected {actual_name_for_fix}"),
+                                },
+                                DiagnosticRelatedInformation {
+                                    location: self.span_to_location(span_expected).await,
+                                    message: "Defined here".to_string(),
+                                },
+                            ]),
+                            tags: None,
+                            data: None,
+                        }],
+                        Some(params.version),
+                    )
+                    .await;
+            }
+            TypeCheckError::NameResolutionError(err) => {
+                self.publish_numbat_name_resolution_error(params, err).await
+            }
+
+            // TODO: Should be improved
+            TypeCheckError::IncompatibleTypesInCondition(span, _, _, _, _)
+            | TypeCheckError::IncompatibleTypeInAssert(span, _, _)
+            | TypeCheckError::IncompatibleTypesInAssertEq(span, _, _, _, _)
+            | TypeCheckError::IncompatibleTypesInAnnotation(_, span, _, _, _, _)
+            | TypeCheckError::IncompatibleTypesInComparison(span, _, _, _, _)
+            | TypeCheckError::IncompatibleTypesInOperator(span, _, _, _, _, _)
+            | TypeCheckError::IncompatibleTypesInFunctionCall(_, _, span, _)
+            | TypeCheckError::IncompatibleTypesForStructField(span, _, _, _)
+            | TypeCheckError::UnknownFieldInStructInstantiation(span, _, _, _)
+            | TypeCheckError::DuplicateFieldInStructDefinition(span, _, _)
+            | TypeCheckError::DuplicateFieldInStructInstantiation(span, _, _)
+            | TypeCheckError::FieldAccessOfNonStructType(span, _, _, _)
+            | TypeCheckError::UnknownFieldAccess(span, _, _, _)
+            | TypeCheckError::MissingFieldsInStructInstantiation(span, _, _)
+            | TypeCheckError::IncompatibleTypesInList(span, _, _, _) => {
+                self.publish_simple_error(params, span, error).await
+            }
+        }
+    }
+
+    async fn span_to_location(&self, span: Span) -> Location {
+        let code_source = self
+            .context
+            .lock()
+            .await
+            .resolver()
+            .get_code_source(span.code_source_id);
+        let uri = match code_source {
+            CodeSource::Text => unreachable!("You cannot run the lsp without a file right?"),
+            CodeSource::Internal => PathBuf::from_str("<internal>").unwrap(),
+            CodeSource::File(path) | CodeSource::Module(_, Some(path)) => path,
+            CodeSource::Module(_, None) => todo!(),
+        };
+
+        Location {
+            uri: Url::from_file_path(uri).unwrap(),
+            range: span_to_range(span),
+        }
+    }
+}
+
+fn span_to_range(span: Span) -> Range {
+    Range {
+        start: Position {
+            line: span.start.line - 1,
+            character: span.start.position - 1,
+        },
+        end: Position {
+            line: span.end.line - 1,
+            character: span.end.position - 1,
+        },
     }
 }
 
@@ -551,15 +820,41 @@ async fn main() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
+    let mut fs_importer = FileSystemImporter::default();
+    for path in get_modules_paths().await {
+        fs_importer.add_path(path);
+    }
+
+    let importer = ChainedImporter::new(
+        Box::new(fs_importer),
+        Box::<BuiltinModuleImporter>::default(),
+    );
+
+    let mut context = Context::new(importer);
+    context.set_terminal_width(Some(60));
+    /// TODO: Store everything for the goto-definition maybe?
+    let _result = context
+        .interpret("use prelude", CodeSource::Internal)
+        .unwrap();
+
+    /// TODO: Store everything for the goto-definition maybe?
+    let user_init_path = get_config_path().await.join("init.nbt");
+    if let Ok(user_init_code) = tokio::fs::read_to_string(&user_init_path).await {
+        let _result = context
+            .interpret(&user_init_code, CodeSource::File(user_init_path))
+            .unwrap();
+    }
+
     let (service, socket) = LspService::build(|client| Backend {
         client,
         ast_map: DashMap::new(),
         document_map: DashMap::new(),
         semantic_token_map: DashMap::new(),
+
+        context: Arc::new(Mutex::new(context)),
     })
     .finish();
 
-    serde_json::json!({"test": 20});
     Server::new(stdin, stdout, socket).serve(service).await;
 }
 
@@ -568,4 +863,38 @@ fn offset_to_position(offset: usize, rope: &Rope) -> Option<Position> {
     let first_char_of_line = rope.try_line_to_char(line).ok()?;
     let column = offset - first_char_of_line;
     Some(Position::new(line as u32, column as u32))
+}
+
+async fn get_modules_paths() -> Vec<PathBuf> {
+    let mut paths = vec![];
+
+    if let Some(modules_path) = std::env::var_os("NUMBAT_MODULES_PATH") {
+        for path in modules_path.to_string_lossy().split(':') {
+            paths.push(path.into());
+        }
+    }
+
+    paths.push(get_config_path().await.join("modules"));
+
+    // We read the value of this environment variable at compile time to
+    // allow package maintainers to control the system-wide module path
+    // for Numbat.
+    if let Some(system_module_path) = option_env!("NUMBAT_SYSTEM_MODULE_PATH") {
+        if !system_module_path.is_empty() {
+            paths.push(system_module_path.into());
+        }
+    } else if cfg!(unix) {
+        paths.push("/usr/share/numbat/modules".into());
+    } else {
+        paths.push("C:\\Program Files\\numbat\\modules".into());
+    }
+    paths
+}
+
+async fn get_config_path() -> PathBuf {
+    let config_dir = tokio::task::spawn_blocking(dirs::config_dir)
+        .await
+        .unwrap()
+        .unwrap_or_else(|| PathBuf::from("."));
+    config_dir.join("numbat")
 }

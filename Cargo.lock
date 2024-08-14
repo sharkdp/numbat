@@ -1199,9 +1199,11 @@ version = "0.1.0"
 dependencies = [
  "chumsky",
  "dashmap",
+ "dirs",
  "env_logger",
  "im-rc",
  "log",
+ "numbat",
  "ropey",
  "serde",
  "serde_json",
