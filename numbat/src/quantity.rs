@@ -24,18 +24,29 @@ pub type Result<T> = std::result::Result<T, QuantityError>;
 pub struct Quantity {
     value: Number,
     unit: Unit,
+    can_simplify: bool,
 }
 
 impl Quantity {
     pub fn new(value: Number, unit: Unit) -> Self {
-        Quantity { value, unit }
+        Quantity {
+            value,
+            unit,
+            can_simplify: true,
+        }
     }
 
     pub fn new_f64(value: f64, unit: Unit) -> Self {
         Quantity {
             value: Number::from_f64(value),
             unit,
+            can_simplify: true,
         }
+    }
+
+    pub fn no_simplify(mut self) -> Self {
+        self.can_simplify = false;
+        self
     }
 
     pub fn from_scalar(value: f64) -> Quantity {
@@ -130,6 +141,10 @@ impl Quantity {
     }
 
     pub fn full_simplify(&self) -> Self {
+        if !self.can_simplify {
+            return self.clone();
+        }
+
         // Heuristic 1
         if let Ok(scalar_result) = self.convert_to(&Unit::scalar()) {
             return scalar_result;
@@ -256,10 +271,10 @@ impl std::ops::Add for &Quantity {
         } else if rhs.is_zero() {
             Ok(self.clone())
         } else {
-            Ok(Quantity {
-                value: self.value + rhs.convert_to(&self.unit)?.value,
-                unit: self.unit.clone(),
-            })
+            Ok(Quantity::new(
+                self.value + rhs.convert_to(&self.unit)?.value,
+                self.unit.clone(),
+            ))
         }
     }
 }
@@ -273,10 +288,10 @@ impl std::ops::Sub for &Quantity {
         } else if rhs.is_zero() {
             Ok(self.clone())
         } else {
-            Ok(Quantity {
-                value: self.value - rhs.convert_to(&self.unit)?.value,
-                unit: self.unit.clone(),
-            })
+            Ok(Quantity::new(
+                self.value - rhs.convert_to(&self.unit)?.value,
+                self.unit.clone(),
+            ))
         }
     }
 }
@@ -285,10 +300,7 @@ impl std::ops::Mul for Quantity {
     type Output = Quantity;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Quantity {
-            value: self.value * rhs.value,
-            unit: self.unit * rhs.unit,
-        }
+        Quantity::new(self.value * rhs.value, self.unit * rhs.unit)
     }
 }
 
@@ -296,10 +308,7 @@ impl std::ops::Div for Quantity {
     type Output = Quantity;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Quantity {
-            value: self.value / rhs.value,
-            unit: self.unit / rhs.unit,
-        }
+        Quantity::new(self.value / rhs.value, self.unit / rhs.unit)
     }
 }
 
@@ -307,10 +316,7 @@ impl std::ops::Neg for Quantity {
     type Output = Quantity;
 
     fn neg(self) -> Self::Output {
-        Quantity {
-            value: -self.value,
-            unit: self.unit,
-        }
+        Quantity::new(-self.value, self.unit)
     }
 }
 

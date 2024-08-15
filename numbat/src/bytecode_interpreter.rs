@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 
-use crate::ast::ProcedureKind;
+use crate::ast::{ProcedureKind, TypeAnnotation};
 use crate::decorator::Decorator;
 use crate::dimension::DimensionRegistry;
 use crate::interpreter::{
@@ -159,7 +159,7 @@ impl BytecodeInterpreter {
             Expression::FunctionCall(_span, _full_span, name, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression_with_simplify(arg)?;
+                    self.compile_expression(arg)?;
                 }
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
@@ -181,7 +181,7 @@ impl BytecodeInterpreter {
                     .sorted_by_key(|(n, _)| struct_info.fields.get_index_of(n).unwrap());
 
                 for (_, expr) in sorted_exprs.rev() {
-                    self.compile_expression_with_simplify(expr)?;
+                    self.compile_expression(expr)?;
                 }
 
                 let struct_info_idx = self.vm.get_structinfo_idx(&struct_info.name).unwrap() as u16;
@@ -190,7 +190,7 @@ impl BytecodeInterpreter {
                     .add_op2(Op::BuildStructInstance, struct_info_idx, exprs.len() as u16);
             }
             Expression::AccessField(_span, _full_span, expr, attr, struct_type, _result_type) => {
-                self.compile_expression_with_simplify(expr)?;
+                self.compile_expression(expr)?;
 
                 let Type::Struct(ref struct_info) = struct_type.to_concrete_type() else {
                     unreachable!(
@@ -205,7 +205,7 @@ impl BytecodeInterpreter {
             Expression::CallableCall(_span, callable, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression_with_simplify(arg)?;
+                    self.compile_expression(arg)?;
                 }
 
                 // Put the callable on top of the stack
@@ -263,7 +263,7 @@ impl BytecodeInterpreter {
             }
             Expression::List(_, elements, _) => {
                 for element in elements {
-                    self.compile_expression_with_simplify(element)?;
+                    self.compile_expression(element)?;
                 }
 
                 self.vm.add_op1(Op::BuildList, elements.len() as u16);
@@ -339,6 +339,7 @@ impl BytecodeInterpreter {
         match stmt {
             Statement::Expression(expr) => {
                 self.compile_expression_with_simplify(expr)?;
+                self.vm.add_op(Op::FullSimplify);
                 self.vm.add_op(Op::Return);
             }
             Statement::DefineVariable(define_variable) => {
@@ -351,8 +352,8 @@ impl BytecodeInterpreter {
                 parameters,
                 Some(expr),
                 local_variables,
-                _return_type,
-                _return_type_annotation,
+                _function_type,
+                return_type_annotation,
                 _readable_return_type,
             ) => {
                 self.vm.begin_function(name);
@@ -371,7 +372,24 @@ impl BytecodeInterpreter {
                     self.compile_define_variable(local_variables)?;
                 }
 
-                self.compile_expression_with_simplify(expr)?;
+                self.compile_expression(expr)?;
+
+                // If the return type was specified we must convert the output to the return type
+                if let Some(_return_type) = return_type_annotation {
+                    // dbg!(return_type);
+                    // self.vm;
+                    // let index = self.vm.add_constant(Constant::Unit(Unit::new_base(
+                    //     unit_name,
+                    //     crate::decorator::get_canonical_unit_name(
+                    //         unit_name.as_str(),
+                    //         &decorators[..],
+                    //     ),
+                    // )));
+                    // self.vm.add_op1(Op::LoadConstant, index);
+                    // self.vm.add_op(Op::ConvertTo);
+                    // todo!();
+                }
+
                 self.vm.add_op(Op::Return);
 
                 self.locals.pop();
@@ -484,7 +502,7 @@ impl BytecodeInterpreter {
                     },
                 ); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 
-                self.compile_expression_with_simplify(expr)?;
+                self.compile_expression(expr)?;
                 self.vm
                     .add_op2(Op::SetUnitConstant, unit_information_idx, constant_idx);
 

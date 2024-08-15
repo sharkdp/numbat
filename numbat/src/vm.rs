@@ -703,7 +703,9 @@ impl Vm {
                             Ok(lhs.checked_div(rhs).ok_or(RuntimeError::DivisionByZero)?)
                         }
                         Op::Power => lhs.power(rhs),
-                        Op::ConvertTo => lhs.convert_to(rhs.unit()),
+                        // If the user specifically converted the type of a unit, we should NOT simplify this value
+                        // before any operations are applied to it
+                        Op::ConvertTo => lhs.convert_to(rhs.unit()).map(Quantity::no_simplify),
                         _ => unreachable!(),
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
@@ -911,7 +913,7 @@ impl Vm {
                             let dt = self.pop_datetime();
 
                             let tz = jiff::tz::TimeZone::get(&tz_name)
-                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name.into()))?;
+                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name))?;
 
                             let dt = dt.with_time_zone(tz);
 
