@@ -1,5 +1,6 @@
 use crate::markup as m;
 use crate::span::Span;
+use crate::unit::Unit;
 use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint, resolver::ModulePath,
