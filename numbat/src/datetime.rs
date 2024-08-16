@@ -78,9 +78,9 @@ pub fn to_string(dt: &Zoned) -> String {
         let zone_abbreviation = tz.to_offset(dt.timestamp()).2;
         let abbreviation_and_offset =
             if zone_abbreviation.starts_with('+') || zone_abbreviation.starts_with('-') {
-                format!("(UTC {})", offset)
+                format!("(UTC {offset})")
             } else {
-                format!("{} (UTC {})", zone_abbreviation, offset)
+                format!("{zone_abbreviation} (UTC {offset})")
             };
 
         let timezone_name = if let Some(iana_tz_name) = tz.iana_name() {

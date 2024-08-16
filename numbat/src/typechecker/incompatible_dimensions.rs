@@ -27,8 +27,8 @@ fn pad(a: &str, b: &str) -> (String, String) {
     let max_length = a.width().max(b.width());
 
     (
-        format!("{a: <width$}", width = max_length),
-        format!("{b: <width$}", width = max_length),
+        format!("{a: <max_length$}"),
+        format!("{b: <max_length$}"),
     )
 }
 

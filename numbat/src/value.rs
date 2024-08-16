@@ -112,11 +112,11 @@ impl Value {
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Quantity(q) => write!(f, "{}", q),
-            Value::Boolean(b) => write!(f, "{}", b),
-            Value::String(s) => write!(f, "\"{}\"", s),
-            Value::DateTime(dt) => write!(f, "datetime(\"{}\")", dt),
-            Value::FunctionReference(r) => write!(f, "{}", r),
+            Value::Quantity(q) => write!(f, "{q}"),
+            Value::Boolean(b) => write!(f, "{b}"),
+            Value::String(s) => write!(f, "\"{s}\""),
+            Value::DateTime(dt) => write!(f, "datetime(\"{dt}\")"),
+            Value::FunctionReference(r) => write!(f, "{r}"),
             Value::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
             Value::StructInstance(struct_info, values) => write!(
                 f,

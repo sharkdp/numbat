@@ -38,7 +38,7 @@ impl Highlighter for NumbatHighlighter {
     ) -> Cow<'c, str> {
         let ctx = self.context.lock().unwrap();
         if ctx.variable_names().any(|n| n == candidate)
-            || ctx.function_names().any(|n| format!("{}(", n) == candidate)
+            || ctx.function_names().any(|n| format!("{n}(") == candidate)
         {
             Cow::Owned(ansi_format(&markup::identifier(candidate), false))
         } else if ctx

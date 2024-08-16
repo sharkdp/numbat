@@ -1960,7 +1960,7 @@ mod tests {
         for input in inputs {
             match parse(input, 0) {
                 Err((_, errors)) => {
-                    assert_eq!(errors[0].kind, error_kind, "Failed on {}", input);
+                    assert_eq!(errors[0].kind, error_kind, "Failed on {input}");
                 }
                 _ => {
                     panic!();

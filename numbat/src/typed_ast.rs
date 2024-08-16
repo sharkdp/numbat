@@ -290,11 +290,11 @@ pub enum Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::TVar(TypeVariable::Named(name)) => write!(f, "{}", name),
+            Type::TVar(TypeVariable::Named(name)) => write!(f, "{name}"),
             Type::TVar(TypeVariable::Quantified(_)) => {
                 unreachable!("Quantified types should not be printed")
             }
-            Type::TPar(name) => write!(f, "{}", name),
+            Type::TPar(name) => write!(f, "{name}"),
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
@@ -316,7 +316,7 @@ impl std::fmt::Display for Type {
                         .join(", ")
                 )
             }
-            Type::List(element_type) => write!(f, "List<{}>", element_type),
+            Type::List(element_type) => write!(f, "List<{element_type}>"),
         }
     }
 }

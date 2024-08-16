@@ -64,7 +64,7 @@ impl Number {
             if formatted_number.contains('.') && !formatted_number.contains('e') {
                 let formatted_number = formatted_number.trim_end_matches('0');
                 if formatted_number.ends_with('.') {
-                    format!("{}0", formatted_number)
+                    format!("{formatted_number}0")
                 } else {
                     formatted_number.to_string()
                 }

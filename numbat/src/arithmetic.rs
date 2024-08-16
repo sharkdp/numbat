@@ -37,8 +37,8 @@ pub fn pretty_exponent(e: &Exponent) -> String {
     } else if e == &Ratio::from_integer(-5) {
         "⁻⁵".into()
     } else if e.is_positive() && e.is_integer() {
-        format!("^{}", e)
+        format!("^{e}")
     } else {
-        format!("^({})", e)
+        format!("^({e})")
     }
 }

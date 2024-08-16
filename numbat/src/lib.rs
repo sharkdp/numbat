@@ -278,7 +278,7 @@ impl Context {
 
             for function in self.function_names() {
                 if add_paren {
-                    words.push(format!("{}(", function));
+                    words.push(format!("{function}("));
                 } else {
                     words.push(function.to_string());
                 }

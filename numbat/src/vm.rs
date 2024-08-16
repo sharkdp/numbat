@@ -236,11 +236,11 @@ impl Constant {
 impl Display for Constant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Constant::Scalar(n) => write!(f, "{}", n),
-            Constant::Unit(unit) => write!(f, "{}", unit),
-            Constant::Boolean(val) => write!(f, "{}", val),
-            Constant::String(val) => write!(f, "\"{}\"", val),
-            Constant::FunctionReference(inner) => write!(f, "{}", inner),
+            Constant::Scalar(n) => write!(f, "{n}"),
+            Constant::Unit(unit) => write!(f, "{unit}"),
+            Constant::Boolean(val) => write!(f, "{val}"),
+            Constant::String(val) => write!(f, "\"{val}\""),
+            Constant::FunctionReference(inner) => write!(f, "{inner}"),
             Constant::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
         }
     }
@@ -493,14 +493,14 @@ impl Vm {
         eprintln!();
         eprintln!(".CONSTANTS");
         for (idx, constant) in self.constants.iter().enumerate() {
-            eprintln!("  {:04} {}", idx, constant);
+            eprintln!("  {idx:04} {constant}");
         }
         eprintln!(".IDENTIFIERS");
         for (idx, identifier) in self.unit_information.iter().enumerate() {
             eprintln!("  {:04} {}", idx, identifier.0);
         }
         for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
-            eprintln!(".CODE {idx} ({name})", idx = idx, name = function_name);
+            eprintln!(".CODE {idx} ({function_name})");
             let mut offset = 0;
             while offset < bytecode.len() {
                 let this_offset = offset;
@@ -954,7 +954,7 @@ impl Vm {
                                     vars.insert("value".to_string(), q.unsafe_value().to_f64());
 
                                     let mut str =
-                                        strfmt::strfmt(&format!("{{value{}}}", specifiers), &vars)
+                                        strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
                                             .map_err(map_strfmt_error_to_runtime_error)?;
 
                                     let unit_str = q.unit().to_string();
@@ -970,7 +970,7 @@ impl Vm {
                                     let mut vars = HashMap::new();
                                     vars.insert("value".to_string(), to_str(value));
 
-                                    strfmt::strfmt(&format!("{{value{}}}", specifiers), &vars)
+                                    strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
                                         .map_err(map_strfmt_error_to_runtime_error)?
                                 }
                             },

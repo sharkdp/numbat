@@ -491,7 +491,7 @@ impl Cli {
                 if pretty_print {
                     for statement in &statements {
                         let repr = ansi_format(&statement.pretty_print(), true);
-                        println!("{}", repr);
+                        println!("{repr}");
                         println!();
                     }
                 }
@@ -619,14 +619,14 @@ fn main() {
 
     if args.generate_config {
         if let Err(e) = generate_config() {
-            eprintln!("{:#}", e);
+            eprintln!("{e:#}");
             std::process::exit(1);
         }
         std::process::exit(0);
     }
 
     if let Err(e) = Cli::new(args).and_then(|mut cli| cli.run()) {
-        eprintln!("{:#}", e);
+        eprintln!("{e:#}");
         std::process::exit(1);
     }
 }

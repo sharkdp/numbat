@@ -141,7 +141,7 @@ impl Default for InterpreterSettings {
     fn default() -> Self {
         Self {
             print_fn: Box::new(move |s: &Markup| {
-                print!("{}", s);
+                print!("{s}");
             }),
         }
     }
@@ -195,7 +195,7 @@ mod tests {
 
     #[track_caller]
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
-        let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
+        let full_code = format!("{TEST_PRELUDE}\n{input}");
         let statements = crate::parser::parse(&full_code, 0)
             .expect("No parse errors for inputs in this test suite");
         let statements_transformed = Transformer::new()
