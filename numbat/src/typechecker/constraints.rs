@@ -338,9 +338,7 @@ impl Constraint {
             Constraint::IsDType(t) => format!("  {t}: DType"),
             Constraint::EqualScalar(d) => format!("  {d} = Scalar"),
             Constraint::HasField(struct_type, field_name, field_type) => {
-                format!(
-                    "HasField({struct_type}, \"{field_name}\", {field_type})"
-                )
+                format!("HasField({struct_type}, \"{field_name}\", {field_type})")
             }
         }
     }
