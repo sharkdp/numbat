@@ -130,7 +130,7 @@ impl Prefix {
             Prefix::Metric(27) => "R".into(),
             Prefix::Metric(30) => "Q".into(),
 
-            Prefix::Metric(n) => format!("<prefix 10^{}>", n),
+            Prefix::Metric(n) => format!("<prefix 10^{n}>"),
 
             Prefix::Binary(0) => "".into(),
             Prefix::Binary(10) => "Ki".into(),
@@ -142,7 +142,7 @@ impl Prefix {
             Prefix::Binary(70) => "Zi".into(),
             Prefix::Binary(80) => "Yi".into(),
 
-            Prefix::Binary(n) => format!("<prefix 2^{}>", n),
+            Prefix::Binary(n) => format!("<prefix 2^{n}>"),
         }
     }
 
@@ -174,7 +174,7 @@ impl Prefix {
             Prefix::Metric(27) => "ronna".into(),
             Prefix::Metric(30) => "quetta".into(),
 
-            Prefix::Metric(n) => format!("<prefix 10^{}>", n),
+            Prefix::Metric(n) => format!("<prefix 10^{n}>"),
 
             Prefix::Binary(0) => "".into(),
             Prefix::Binary(10) => "kibi".into(),
@@ -186,7 +186,7 @@ impl Prefix {
             Prefix::Binary(70) => "zebi".into(),
             Prefix::Binary(80) => "yobi".into(),
 
-            Prefix::Binary(n) => format!("<prefix 2^{}>", n),
+            Prefix::Binary(n) => format!("<prefix 2^{n}>"),
         }
     }
 }

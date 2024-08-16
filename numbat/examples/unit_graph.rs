@@ -39,7 +39,7 @@ fn main() {
 
         if !is_base {
             for (base_factor, _) in base_representation {
-                println!("  {} -> {}", unit_name, base_factor);
+                println!("  {unit_name} -> {base_factor}");
             }
         }
     }

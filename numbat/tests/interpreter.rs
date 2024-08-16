@@ -34,7 +34,7 @@ fn fail(code: &str) -> NumbatError {
                 let output = fmt.format(&val.pretty_print(), false);
                 panic!("was supposed to fail but instead got:\n{}", output.trim())
             } else {
-                panic!("was supposed to fail but instead got:\n{:?}", ret)
+                panic!("was supposed to fail but instead got:\n{ret:?}")
             }
         }
     }
@@ -65,7 +65,7 @@ fn expect_pretty_print(code: &str, expected_pretty_print_output: impl AsRef<str>
 fn expect_failure_with_context(ctx: &mut Context, code: &str, msg_part: &str) {
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         let error_message = e.to_string();
-        println!("{}", error_message);
+        println!("{error_message}");
         assert!(
             error_message.contains(msg_part),
             "Expected '{msg_part}' but got '{error_message}'"

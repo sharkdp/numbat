@@ -65,7 +65,7 @@ fn run_for_each_file(glob_pattern: &str, f: impl Fn(&str)) {
             continue;
         }
 
-        println!("Testing example {example:?}", example = path);
+        println!("Testing example {path:?}");
         let example_code = fs::read_to_string(path).unwrap();
 
         f(&example_code);

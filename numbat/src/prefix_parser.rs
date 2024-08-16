@@ -191,7 +191,7 @@ impl PrefixParser {
 
             if accepts_prefix.long {
                 self.ensure_name_is_available(
-                    &format!("{}{}", prefix_long, unit_name),
+                    &format!("{prefix_long}{unit_name}"),
                     definition_span,
                     true,
                 )?;
@@ -199,7 +199,7 @@ impl PrefixParser {
             if accepts_prefix.short {
                 for prefix_short in *prefixes_short {
                     self.ensure_name_is_available(
-                        &format!("{}{}", prefix_short, unit_name),
+                        &format!("{prefix_short}{unit_name}"),
                         definition_span,
                         true,
                     )?;

@@ -75,7 +75,7 @@ impl ErrorDiagnostic for NameResolutionError {
 impl ErrorDiagnostic for TypeCheckError {
     fn diagnostics(&self) -> Vec<Diagnostic> {
         let d = Diagnostic::error().with_message("while type checking");
-        let inner_error = format!("{}", self);
+        let inner_error = format!("{self}");
 
         let d = match self {
             TypeCheckError::UnknownIdentifier(span, _, suggestion) => {
@@ -120,7 +120,7 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_message(actual_type),
                     span_operation
                         .diagnostic_label(LabelStyle::Secondary)
-                        .with_message(format!("incompatible dimensions in {}", operation)),
+                        .with_message(format!("incompatible dimensions in {operation}")),
                 ];
                 d.with_labels(labels).with_notes(vec![inner_error])
             }

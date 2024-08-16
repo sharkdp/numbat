@@ -20,7 +20,7 @@ impl Completer for NumbatCompleter {
     ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
         for (patterns, replacement) in UNICODE_INPUT {
             for pattern in *patterns {
-                let backslash_pattern = format!("\\{}", pattern);
+                let backslash_pattern = format!("\\{pattern}");
                 if line[..pos].ends_with(&backslash_pattern) {
                     return Ok((
                         pos - (1 + pattern.len()),
