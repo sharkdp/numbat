@@ -519,7 +519,7 @@ impl ErrorDiagnostic for RuntimeError {
                     .with_notes(vec![inner])]
             }
             RuntimeError::AssertEq3Failed(assert_eq3_error) => {
-                let (lhs, rhs) = assert_eq3_error.formatted_quantities();
+                let (lhs, rhs) = assert_eq3_error.fmt_comparands();
 
                 vec![Diagnostic::error()
                     .with_message("Assertion failed")

@@ -1,4 +1,7 @@
+use std::fmt::Display;
+
 use num_traits::{Pow, ToPrimitive};
+use pretty_dtoa::FmtFloatConfig;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)] // TODO: we probably want to remove 'Copy' once we move to a more sophisticated numerical type
 pub struct Number(pub f64);
@@ -27,7 +30,15 @@ impl Number {
         self.0.trunc() == self.0
     }
 
+    /// Pretty prints with default options
     pub fn pretty_print(self) -> String {
+        self.pretty_print_with_options(None)
+    }
+
+    /// Pretty prints with the given options if options is not None.
+    /// If options is None, default options will be used.
+    /// If options is not None, float-based format handling is used and integer-based format handling is skipped.
+    pub fn pretty_print_with_options(self, options: Option<FmtFloatConfig>) -> String {
         let number = self.0;
 
         // 64-bit floats can accurately represent integers up to 2^52 [1],
@@ -35,7 +46,8 @@ impl Number {
         //
         // [1] https://stackoverflow.com/a/43656339
         //
-        if self.is_integer() && self.0.abs() < 1e15 {
+        // Skip special format handling for integers if options is not None.
+        if options.is_none() && self.is_integer() && self.0.abs() < 1e15 {
             use num_format::{CustomFormat, Grouping, ToFormattedString};
 
             let format = CustomFormat::builder()
@@ -56,17 +68,26 @@ impl Number {
         } else {
             use pretty_dtoa::{dtoa, FmtFloatConfig};
 
-            let config = FmtFloatConfig::default()
-                .max_significant_digits(6)
-                .add_point_zero(false)
-                .lower_e_break(-6)
-                .upper_e_break(6)
-                .round();
+            let config = if let Some(options) = options {
+                options
+            } else {
+                FmtFloatConfig::default()
+                    .max_significant_digits(6)
+                    .add_point_zero(false)
+                    .lower_e_break(-6)
+                    .upper_e_break(6)
+                    .round()
+            };
 
             let formatted_number = dtoa(number, config);
 
             if formatted_number.contains('.') && !formatted_number.contains('e') {
-                let formatted_number = formatted_number.trim_end_matches('0');
+                let formatted_number = if config.max_sig_digits.is_some() {
+                    formatted_number.trim_end_matches('0')
+                } else {
+                    &formatted_number
+                };
+
                 if formatted_number.ends_with('.') {
                     format!("{formatted_number}0")
                 } else {
@@ -78,6 +99,12 @@ impl Number {
                 formatted_number
             }
         }
+    }
+}
+
+impl Display for Number {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.to_f64().fmt(f)
     }
 }
 

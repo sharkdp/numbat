@@ -1,4 +1,5 @@
 mod arithmetic;
+mod assert_eq_3;
 mod ast;
 #[cfg(feature = "html-formatter")]
 pub mod buffered_writer;

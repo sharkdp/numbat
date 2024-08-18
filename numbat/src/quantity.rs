@@ -6,6 +6,7 @@ use crate::unit::{is_multiple_of, Unit, UnitFactor};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::{FromPrimitive, Zero};
+use pretty_dtoa::FmtFloatConfig;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
@@ -334,9 +335,17 @@ impl PartialOrd for Quantity {
 
 impl PrettyPrint for Quantity {
     fn pretty_print(&self) -> crate::markup::Markup {
+        self.pretty_print_with_options(None)
+    }
+}
+
+impl Quantity {
+    /// Pretty prints with the given options.
+    /// If options is None, default options will be used.
+    fn pretty_print_with_options(&self, options: Option<FmtFloatConfig>) -> crate::markup::Markup {
         use crate::markup;
 
-        let formatted_number = self.unsafe_value().pretty_print();
+        let formatted_number = self.unsafe_value().pretty_print_with_options(options);
 
         let unit_str = format!("{}", self.unit());
 
@@ -347,6 +356,22 @@ impl PrettyPrint for Quantity {
                 markup::space()
             }
             + markup::unit(unit_str)
+    }
+
+    /// Pretty prints with the given precision. Disables e (scientific) notation.
+    /// Prints without fractional part if precision is 0.
+    pub fn pretty_print_with_precision(&self, precision: i8) -> crate::markup::Markup {
+        let options = FmtFloatConfig::default()
+            .min_decimal_digits(precision)
+            .max_decimal_digits(precision)
+            .add_point_zero(false)
+            .force_no_e_notation()
+            .round();
+        self.pretty_print_with_options(Some(options))
+    }
+
+    pub fn unsafe_value_as_string(&self) -> String {
+        self.unsafe_value().to_string()
     }
 }
 

@@ -833,42 +833,104 @@ fn test_statement_pretty_printing() {
 
     expect_pretty_print("fn f<Z>(z: Z) = z", "fn f<Z>(z: Z) -> Z = z");
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[cfg(test)]
+    mod assert_eq_3 {
+        use super::*;
 
-#[test]
-fn test_assert_eq_3() {
-    // approximate equality succeeds when epsilon is larger than the difference between lhs and rhs
-    insta::assert_snapshot!(succeed("assert_eq(200cm, 201cm, 2cm)"), @"");
+        #[test]
+        fn succeeds_when_eps_larger_than_diff() {
+            insta::assert_snapshot!(succeed("assert_eq(200cm, 201cm, 2cm)"), @"");
+        }
 
-    insta::assert_snapshot!(fail("assert_eq(200cm, 201cm, 2 watts)"), @"Argument types in assert_eq calls must match");
+        #[test]
+        fn succeeds_when_eps_is_equal_to_diff() {
+            insta::assert_snapshot!(succeed("assert_eq(200cm, 201cm, 1cm)"), @"");
+        }
 
-    // approximate equality succeeds when epsilon is equal to the difference between the lhs and rhs
-    insta::assert_snapshot!(succeed("assert_eq(200cm, 201cm, 1cm)"), @"");
+        #[test]
+        fn fails_when_types_mismatch() {
+            insta::assert_snapshot!(fail("assert_eq(200cm, 201cm, 2 watts)"), @"Argument types in assert_eq calls must match");
+        }
 
-    // approximate equality failure with the same units for all arguments shows no original values in parentheses
-    insta::assert_snapshot!(fail("assert_eq(200cm, 201cm, 0.1cm)"), @r###"
-    Assertion failed because the following two quantities differ by 1 cm, which is more than 0.1 cm:
-      200 cm
-      201 cm
-    "###);
+        #[test]
+        fn fails_and_does_not_show_original_values_when_same_units() {
+            insta::assert_snapshot!(fail("assert_eq(200cm, 201cm, 0.1cm)"), @r###"
+            Assertion failed because the following two quantities differ by 1.0 cm, which is more than 0.1 cm:
+              200.0 cm
+              201.0 cm
+            "###);
+        }
 
-    // approximate equality failure with different units for rhs shows original values in parentheses for rhs only
-    insta::assert_snapshot!(fail("assert_eq(2000mm, 201cm, 0.1cm to mm)"), @r###"
-    Assertion failed because the following two quantities differ by 10.0 mm, which is more than 1 mm:
-      2000 mm
-      2010.0 mm (201 cm)
-    "###);
+        #[test]
+        fn fails_and_show_original_values_for_rhs_only() {
+            // approximate equality failure with different units for rhs shows original values in parentheses for rhs only
+            insta::assert_snapshot!(fail("assert_eq(2000mm, 201cm, 0.1cm to mm)"), @r###"
+            Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
+              2000 mm
+              2010 mm (201 cm)
+            "###);
+        }
 
-    // approximate equality failure with different units for lhs shows original values in parentheses for lhs only
-    insta::assert_snapshot!(fail("assert_eq(2m, 2010mm, 0.1cm to mm)"), @r###"
-    Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
-      2000 mm (2 m)
-      2010 mm
-    "###);
+        #[test]
+        fn fails_and_show_original_values_for_lhs_only() {
+            // approximate equality failure with different units for lhs shows original values in parentheses for lhs only
+            insta::assert_snapshot!(fail("assert_eq(2m, 2010mm, 0.1cm to mm)"), @r###"
+            Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
+              2000 mm (2 m)
+              2010 mm
+            "###);
+        }
 
-    // approximate equality failure with different units for lhs and rhs shows original values in parentheses for lhs and rhs
-    insta::assert_snapshot!(fail("assert_eq(2m, 201cm, 0.1cm to mm)"), @r###"
-    Assertion failed because the following two quantities differ by 10.0 mm, which is more than 1 mm:
-      2000 mm (2 m)
-      2010.0 mm (201 cm)
-    "###);
+        #[test]
+        fn fails_and_show_original_values_for_lhs_and_rhs() {
+            // approximate equality failure with different units for lhs and rhs shows original values in parentheses for lhs and rhs
+            insta::assert_snapshot!(fail("assert_eq(2m, 201cm, 0.1cm to mm)"), @r###"
+            Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
+              2000 mm (2 m)
+              2010 mm (201 cm)
+            "###);
+        }
+
+        #[test]
+        fn fails_and_formats_to_match_precision_of_eps() {
+            // check lhs, rhs, and diff have the same number of decimal places as epsilon
+            // extra 0s at the end of epsilon are not currently considered
+            insta::assert_snapshot!(fail("assert_eq(212121000.123456cm, 212121001.123456cm, 0.900cm)"), @r###"
+            Assertion failed because the following two quantities differ by 1.0 cm, which is more than 0.9 cm:
+              212121000.1 cm
+              212121001.1 cm
+            "###);
+
+            // check left padding and alignment when lhs and rhs are positive
+            insta::assert_snapshot!(fail("assert_eq(2.0000006cm, 243.311336cm, 0.0001mm)"), @r###"
+            Assertion failed because the following two quantities differ by 2413.1134 mm, which is more than 0.0001 mm:
+              0020.0000 mm (2.0 cm)
+              2433.1134 mm (243.311 cm)
+            "###);
+
+            // check left padding and alignment when lhs and rhs are negative
+            insta::assert_snapshot!(fail("assert_eq(-2.0000006cm, -243cm, 0.0001mm)"), @r###"
+            Assertion failed because the following two quantities differ by 2410.0000 mm, which is more than 0.0001 mm:
+              -0020.0000 mm (-2.0 cm)
+              -2430.0000 mm (-243 cm)
+            "###);
+
+            // check left padding and alignment when only rhs is negative
+            insta::assert_snapshot!(fail("assert_eq(2.0000006cm, -243cm, 0.0001mm)"), @r###"
+            Assertion failed because the following two quantities differ by 2450.0000 mm, which is more than 0.0001 mm:
+              00020.0000 mm (2.0 cm)
+              -2430.0000 mm (-243 cm)
+            "###);
+
+            // check lhs, rhs, and diff have the same number of decimal places as epsilon when epsilon is negative
+            insta::assert_snapshot!(fail("assert_eq(212121000.123456cm, 212121001.123456cm, -0.900cm)"), @r###"
+            Assertion failed because the following two quantities differ by 1.0 cm, which is more than -0.9 cm:
+              212121000.1 cm
+              212121001.1 cm
+            "###);
+        }
+    }
 }

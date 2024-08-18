@@ -1,10 +1,9 @@
-use std::fmt::Display;
-
 use crate::{
+    assert_eq_3::AssertEq3Error,
     dimension::DimensionRegistry,
     markup::Markup,
     pretty_print::PrettyPrint,
-    quantity::{Quantity, QuantityError},
+    quantity::QuantityError,
     span::Span,
     typed_ast::Statement,
     unit_registry::{UnitRegistry, UnitRegistryError},
@@ -161,46 +160,10 @@ pub trait Interpreter {
     fn get_unit_registry(&self) -> &UnitRegistry;
 }
 
-#[derive(Debug, Clone, Error, PartialEq, Eq)]
-pub struct AssertEq3Error {
-    pub span_lhs: Span,
-    pub lhs_original: Quantity,
-    pub lhs_converted: Quantity,
-    pub span_rhs: Span,
-    pub rhs_original: Quantity,
-    pub rhs_converted: Quantity,
-    pub eps: Quantity,
-    pub diff_abs: Quantity,
-}
-
-impl AssertEq3Error {
-    pub fn formatted_quantities(&self) -> (String, String) {
-        let lhs = Self::fmt_quantity(&self.lhs_converted, &self.lhs_original);
-        let rhs = Self::fmt_quantity(&self.rhs_converted, &self.rhs_original);
-
-        (lhs, rhs)
-    }
-
-    fn fmt_quantity(converted: &Quantity, original: &Quantity) -> String {
-        if converted.unit() == original.unit() {
-            format!("{}", converted)
-        } else {
-            format!("{} ({})", converted, original)
-        }
-    }
-}
-
-impl Display for AssertEq3Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (lhs, rhs) = self.formatted_quantities();
-
-        write!(f, "Assertion failed because the following two quantities differ by {}, which is more than {}:\n  {}\n  {}", self.diff_abs, self.eps, lhs, rhs)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::prefix_parser::AcceptsPrefix;
+    use crate::quantity::Quantity;
     use crate::unit::{CanonicalName, Unit};
     use crate::{bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer};
 
