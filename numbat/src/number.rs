@@ -66,7 +66,7 @@ impl Number {
                 .expect("small enough integers are representable as i64")
                 .to_formatted_string(&format)
         } else {
-            use pretty_dtoa::{dtoa, FmtFloatConfig};
+            use pretty_dtoa::dtoa;
 
             let config = if let Some(options) = options {
                 options
