@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 
 use super::macros::*;
 use crate::{
-    ast::ProcedureKind, ffi::ControlFlow, interpreter::AssertEq3Error, pretty_print::PrettyPrint,
+    assert_eq_3::AssertEq3Error, ast::ProcedureKind, ffi::ControlFlow, pretty_print::PrettyPrint,
     span::Span, value::Value, vm::ExecutionContext, RuntimeError,
 };
 
