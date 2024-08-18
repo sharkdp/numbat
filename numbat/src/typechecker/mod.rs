@@ -6,6 +6,7 @@ mod constraints;
 mod environment;
 mod error;
 mod incompatible_dimensions;
+pub mod map_stack;
 mod name_generator;
 pub mod qualified_type;
 mod substitutions;
