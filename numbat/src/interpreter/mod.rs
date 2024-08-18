@@ -1,5 +1,6 @@
+pub(crate) mod assert_eq_3;
+
 use crate::{
-    assert_eq_3::AssertEq3Error,
     dimension::DimensionRegistry,
     markup::Markup,
     pretty_print::PrettyPrint,
@@ -9,8 +10,9 @@ use crate::{
     unit_registry::{UnitRegistry, UnitRegistryError},
 };
 
-use crate::markup as m;
+pub use crate::markup as m;
 
+use assert_eq_3::AssertEq3Error;
 use thiserror::Error;
 
 pub use crate::value::Value;

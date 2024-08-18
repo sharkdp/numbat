@@ -4,8 +4,8 @@ use std::sync::OnceLock;
 
 use super::macros::*;
 use crate::{
-    assert_eq_3::AssertEq3Error, ast::ProcedureKind, ffi::ControlFlow, pretty_print::PrettyPrint,
-    span::Span, value::Value, vm::ExecutionContext, RuntimeError,
+    ast::ProcedureKind, ffi::ControlFlow, interpreter::assert_eq_3::AssertEq3Error,
+    pretty_print::PrettyPrint, span::Span, value::Value, vm::ExecutionContext, RuntimeError,
 };
 
 use super::{Args, Callable, ForeignFunction};
