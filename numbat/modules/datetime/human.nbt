@@ -24,7 +24,7 @@ fn _human_days(num_days: Scalar) -> String =
   _remove_plural_suffix("{num_days} days")
 
 fn _human_readable_duration(time: Time, dt: DateTime, num_days: Scalar) -> String =
-    _human_days(_human_num_days(time)) |> _human_join(_human_hours(dt)) |> _human_join(_human_minutes(dt)) |> _human_join(_human_seconds(dt))
+  _human_join(_human_join(_human_join(_human_days(_human_num_days(time)), _human_hours(dt)), _human_minutes(dt)), _human_seconds(dt))
 
 # Implementation details:
 # we skip hours/minutes/seconds for durations larger than 1000 days because:
