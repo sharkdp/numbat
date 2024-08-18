@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 
-use crate::ast::{ProcedureKind, TypeAnnotation};
+use crate::ast::ProcedureKind;
 use crate::decorator::Decorator;
 use crate::dimension::DimensionRegistry;
 use crate::interpreter::{
@@ -280,20 +280,21 @@ impl BytecodeInterpreter {
         self.compile_expression(expr)?;
 
         match expr {
+            Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
+            | Expression::InstantiateStruct(..)
+            | Expression::Boolean(..)
+            | Expression::String(..)
+            | Expression::Condition(..)
+            | Expression::List(..) => (),
             Expression::Scalar(..)
             | Expression::Identifier(..)
             | Expression::UnitIdentifier(..)
             | Expression::FunctionCall(..)
             | Expression::CallableCall(..)
             | Expression::UnaryOperator(..)
-            | Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
-            | Expression::Boolean(..)
-            | Expression::String(..)
-            | Expression::Condition(..)
-            | Expression::InstantiateStruct(..)
             | Expression::AccessField(..)
-            | Expression::List(..) => {}
-            Expression::BinaryOperator(..) | Expression::BinaryOperatorForDate(..) => {
+            | Expression::BinaryOperator(..)
+            | Expression::BinaryOperatorForDate(..) => {
                 self.vm.add_op(Op::FullSimplify);
             }
             Expression::TypedHole(_, _) => unreachable!("Typed holes cause type inference errors"),
@@ -353,7 +354,7 @@ impl BytecodeInterpreter {
                 Some(expr),
                 local_variables,
                 _function_type,
-                return_type_annotation,
+                _return_type_annotation,
                 _readable_return_type,
             ) => {
                 self.vm.begin_function(name);
@@ -373,22 +374,6 @@ impl BytecodeInterpreter {
                 }
 
                 self.compile_expression(expr)?;
-
-                // If the return type was specified we must convert the output to the return type
-                if let Some(_return_type) = return_type_annotation {
-                    // dbg!(return_type);
-                    // self.vm;
-                    // let index = self.vm.add_constant(Constant::Unit(Unit::new_base(
-                    //     unit_name,
-                    //     crate::decorator::get_canonical_unit_name(
-                    //         unit_name.as_str(),
-                    //         &decorators[..],
-                    //     ),
-                    // )));
-                    // self.vm.add_op1(Op::LoadConstant, index);
-                    // self.vm.add_op(Op::ConvertTo);
-                    // todo!();
-                }
 
                 self.vm.add_op(Op::Return);
 
