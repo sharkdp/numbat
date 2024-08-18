@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use thiserror::Error;
 
-use crate::span::Span;
+use crate::{span::Span, typechecker::map_stack::MapStack};
 
 pub const LAST_RESULT_IDENTIFIERS: &[&str] = &["ans", "_"];
 
@@ -23,10 +21,18 @@ pub enum NameResolutionError {
 
 #[derive(Debug, Clone, Default)]
 pub struct Namespace {
-    seen: HashMap<String, (String, Span)>,
+    seen: MapStack<String, (String, Span)>,
 }
 
 impl Namespace {
+    pub(crate) fn save(&mut self) {
+        self.seen.save()
+    }
+
+    pub(crate) fn restore(&mut self) {
+        self.seen.restore()
+    }
+
     pub fn add_identifier_allow_override(
         &mut self,
         name: String,
@@ -73,7 +79,7 @@ impl Namespace {
             });
         }
 
-        self.seen.insert(name, (item_type, span));
+        let _ = self.seen.insert(name, (item_type, span));
 
         Ok(())
     }
