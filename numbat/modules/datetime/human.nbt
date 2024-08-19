@@ -3,7 +3,7 @@ use core::strings
 use units::si
 use datetime::functions
 
-fn _human_num_days(time: Time) -> Scalar = floor(time / day)
+fn _human_num_days(time: Time) -> Scalar = floor(time / days)
 
 fn _human_join(a: String, b: String) -> String =
   if str_slice(a, 0, 2) == "0 " then b else if str_slice(b, 0, 2) == "0 " then a else "{a} + {b}"
