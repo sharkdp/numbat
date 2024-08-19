@@ -20,7 +20,7 @@ print("Option A: On the roof, south facing")
 
 let savings_a = savings(4 kWh/m²/day)
 
-print(savings_a |> round)
+print(savings_a |> round_in($/year))
 assert_eq(savings_a, 58 $/year, 1 $/year)
 
 print()
@@ -33,5 +33,5 @@ let sun_area: Area = 6.09e12 km^2            # [2]
 
 let savings_b = savings(sun_luminosity / sun_area)
 
-print(savings_b |> round)
+print(savings_b |> round_in($/year))
 assert_eq(savings_b, 22 million $/year, 1 million $/year)

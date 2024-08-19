@@ -45,35 +45,63 @@ fn sqr<D: Dim>(x: D) -> D^2
 ```
 
 ### `round` (Rounding)
-Round to the nearest integer. If the value is half-way between two integers, round away from \\( 0 \\).
+Round to the nearest integer. If the value is half-way between two integers, round away from \\( 0 \\). See also: `round_in`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.round).
 
 ```nbt
-fn round<T: Dim>(x: T) -> T
+fn round(x: Scalar) -> Scalar
+```
+
+### `round_in` (Rounding)
+Round to the nearest multiple of `base`. For example: `round_in(m, 5.3 m) == 5 m`.
+
+```nbt
+fn round_in<D: Dim>(base: D, value: D) -> D
 ```
 
 ### `floor` (Floor function)
-Returns the largest integer less than or equal to \\( x \\).
+Returns the largest integer less than or equal to \\( x \\). See also: `floor_in`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.floor).
 
 ```nbt
-fn floor<T: Dim>(x: T) -> T
+fn floor(x: Scalar) -> Scalar
+```
+
+### `floor_in` (Floor function)
+Returns the largest integer multiple of `base` less than or equal to `value`. For example: `floor_in(m, 5.7 m) == 5 m`.
+
+```nbt
+fn floor_in<D: Dim>(base: D, value: D) -> D
 ```
 
 ### `ceil` (Ceil function)
-Returns the smallest integer greater than or equal to \\( x \\).
+Returns the smallest integer greater than or equal to \\( x \\). See also: `ceil_in`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.ceil).
 
 ```nbt
-fn ceil<T: Dim>(x: T) -> T
+fn ceil(x: Scalar) -> Scalar
+```
+
+### `ceil_in` (Ceil function)
+Returns the smallest integer multuple of `base` greater than or equal to `value`. For example: `ceil_in(m, 5.3 m) == 6 m`.
+
+```nbt
+fn ceil_in<D: Dim>(base: D, value: D) -> D
 ```
 
 ### `trunc` (Truncation)
-Returns the integer part of \\( x \\). Non-integer numbers are always truncated towards zero.
+Returns the integer part of \\( x \\). Non-integer numbers are always truncated towards zero. See also: `trunc_in`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.trunc).
 
 ```nbt
-fn trunc<T: Dim>(x: T) -> T
+fn trunc(x: Scalar) -> Scalar
+```
+
+### `trunc_in` (Truncation)
+Truncates to an integer multiple of `base` (towards zero). For example: `trunc_in(m, -5.7 m) == -5 m`.
+
+```nbt
+fn trunc_in<D: Dim>(base: D, value: D) -> D
 ```
 
 ### `mod` (Modulo)

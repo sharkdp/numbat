@@ -1,3 +1,5 @@
+use core::scalar
+
 @name("Identity function")
 @description("Return the input value.")
 fn id<A>(x: A) -> A = x
@@ -22,24 +24,40 @@ fn cbrt<D: Dim>(x: D^3) -> D = x^(1/3)
 fn sqr<D: Dim>(x: D) -> D^2 = x^2
 
 @name("Rounding")
-@description("Round to the nearest integer. If the value is half-way between two integers, round away from $0$.")
+@description("Round to the nearest integer. If the value is half-way between two integers, round away from $0$. See also: `round_in`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.round")
-fn round<T: Dim>(x: T) -> T
+fn round(x: Scalar) -> Scalar
+
+@name("Rounding")
+@description("Round to the nearest multiple of `base`. For example: `round_in(m, 5.3 m) == 5 m`.")
+fn round_in<D: Dim>(base: D, value: D) -> D = round(value / base) × base
 
 @name("Floor function")
-@description("Returns the largest integer less than or equal to $x$.")
+@description("Returns the largest integer less than or equal to $x$. See also: `floor_in`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.floor")
-fn floor<T: Dim>(x: T) -> T
+fn floor(x: Scalar) -> Scalar
+
+@name("Floor function")
+@description("Returns the largest integer multiple of `base` less than or equal to `value`. For example: `floor_in(m, 5.7 m) == 5 m`.")
+fn floor_in<D: Dim>(base: D, value: D) -> D = floor(value / base) × base
 
 @name("Ceil function")
-@description("Returns the smallest integer greater than or equal to $x$.")
+@description("Returns the smallest integer greater than or equal to $x$. See also: `ceil_in`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.ceil")
-fn ceil<T: Dim>(x: T) -> T
+fn ceil(x: Scalar) -> Scalar
+
+@name("Ceil function")
+@description("Returns the smallest integer multuple of `base` greater than or equal to `value`. For example: `ceil_in(m, 5.3 m) == 6 m`.")
+fn ceil_in<D: Dim>(base: D, value: D) -> D = ceil(value / base) × base
 
 @name("Truncation")
-@description("Returns the integer part of $x$. Non-integer numbers are always truncated towards zero.")
+@description("Returns the integer part of $x$. Non-integer numbers are always truncated towards zero. See also: `trunc_in`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.trunc")
-fn trunc<T: Dim>(x: T) -> T
+fn trunc(x: Scalar) -> Scalar
+
+@name("Truncation")
+@description("Truncates to an integer multiple of `base` (towards zero). For example: `trunc_in(m, -5.7 m) == -5 m`.")
+fn trunc_in<D: Dim>(base: D, value: D) -> D = trunc(value / base) × base
 
 @name("Modulo")
 @description("Calculates the least nonnegative remainder of $a (\\mod b)$.")

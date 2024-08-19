@@ -15,18 +15,6 @@ pub fn mod_(mut args: Args) -> Result<Value> {
     return_quantity!(x_value.rem_euclid(y_value), x.unit().clone())
 }
 
-// A simple math function with signature 'Dim D. Fn[(D) -> D]', which only operates on the value of the quantity
-macro_rules! simple_polymorphic_math_function {
-    ($name:ident, $op:ident) => {
-        pub fn $name(mut args: Args) -> Result<Value> {
-            let arg = quantity_arg!(args);
-
-            let value = arg.unsafe_value().to_f64();
-            return_quantity!(value.$op(), arg.unit().clone())
-        }
-    };
-}
-
 // Similar, but with signature 'Fn[(Scalar) -> Scalar]'
 macro_rules! simple_scalar_math_function {
     ($name:ident, $op:ident) => {
@@ -37,11 +25,11 @@ macro_rules! simple_scalar_math_function {
     };
 }
 
-simple_polymorphic_math_function!(abs, abs);
-simple_polymorphic_math_function!(round, round);
-simple_polymorphic_math_function!(floor, floor);
-simple_polymorphic_math_function!(ceil, ceil);
-simple_polymorphic_math_function!(trunc, trunc);
+simple_scalar_math_function!(abs, abs);
+simple_scalar_math_function!(round, round);
+simple_scalar_math_function!(floor, floor);
+simple_scalar_math_function!(ceil, ceil);
+simple_scalar_math_function!(trunc, trunc);
 
 simple_scalar_math_function!(sin, sin);
 simple_scalar_math_function!(cos, cos);
