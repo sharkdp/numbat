@@ -96,7 +96,7 @@ impl TypeChecker {
                         // if we see a struct name here, it's safe to assume it
                         // isn't accidentally clashing with a dimension, we
                         // check that earlier.
-                        return Ok(Type::Struct(info.clone()));
+                        return Ok(Type::Struct(Box::new(info.clone())));
                     }
                 }
 
