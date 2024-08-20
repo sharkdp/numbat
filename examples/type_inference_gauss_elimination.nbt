@@ -1,0 +1,27 @@
+# A silly example to demonstrate that Numbats type inference engine can be
+# used to solve systems of linear equations (with rational coefficients) by
+# encoding them as type constraints.
+#
+# Example system of equations from [1]:
+#
+#      2x + y -  z = 8
+#     -3x - y + 2z = -11
+#     -2x + y + 2z = -3
+#
+# With solution x = 2, y = 3, z = -1.
+#
+# [1] https://en.wikipedia.org/wiki/Gaussian_elimination
+
+unit a
+
+fn f(x, y, z) =
+  (x^2 y z^-1 == a^8) && (x^-3 y^-1 z^2 == a^-11) && (x^-2 y z^2 == a^-3)
+
+# Note: The choice of '==' and '&&' above is somewhat arbitrary. Instead of
+# '==', we could have used any other operation that introduces an equality
+# constraint, like '+', for example. Instead of '&&' to introduce multiple
+# constraints, we could have used '*', for example.
+
+# The solution can be read off from the type of f:
+
+type(f)
