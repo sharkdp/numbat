@@ -818,6 +818,11 @@ fn test_statement_pretty_printing() {
 
     expect_pretty_print("fn f(x) = 2 x", "fn f<A: Dim>(x: A) -> A = 2 x");
 
+    expect_pretty_print(
+        "fn f(x, y) = x * y",
+        "fn f<A: Dim, B: Dim>(x: A, y: B) -> A × B = x × y",
+    );
+
     // Partially annotated functions
     expect_pretty_print(
         "fn f() -> Length * Frequency = c",
@@ -832,6 +837,12 @@ fn test_statement_pretty_printing() {
     expect_pretty_print("fn f(x) -> Length = 2 x", "fn f(x: Length) -> Length = 2 x");
 
     expect_pretty_print("fn f<Z>(z: Z) = z", "fn f<Z>(z: Z) -> Z = z");
+
+    // Functions with local variables
+    expect_pretty_print(
+        "fn f(x) = y where y = x",
+        "fn f<A>(x: A) -> A = y\n  where y: A = x",
+    );
 }
 #[cfg(test)]
 mod tests {

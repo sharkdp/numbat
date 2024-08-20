@@ -1813,7 +1813,9 @@ impl TypeChecker {
         if let Some((span, type_of_hole)) = elaborated_statement.find_typed_hole()? {
             return Err(TypeCheckError::TypedHoleInStatement(
                 span,
-                type_of_hole.to_readable_type(&self.registry).to_string(),
+                type_of_hole
+                    .to_readable_type(&self.registry, true)
+                    .to_string(),
                 elaborated_statement.pretty_print().to_string(),
                 self.env
                     .iter_relevant_matches()

@@ -630,11 +630,12 @@ impl Statement {
         registry: &DimensionRegistry,
         type_: &TypeScheme,
         annotation: &Option<TypeAnnotation>,
+        with_quantifiers: bool,
     ) -> Markup {
         if let Some(annotation) = annotation {
             annotation.pretty_print()
         } else {
-            type_.to_readable_type(registry)
+            type_.to_readable_type(registry, with_quantifiers)
         }
     }
 
@@ -649,7 +650,7 @@ impl Statement {
                 type_,
                 readable_type,
             )) => {
-                *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+                *readable_type = Self::create_readable_type(registry, type_, type_annotation, true);
             }
             Statement::DefineFunction(
                 _,
@@ -669,7 +670,8 @@ impl Statement {
                 for DefineVariable(_, _, _, type_annotation, type_, readable_type) in
                     local_variables
                 {
-                    *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+                    *readable_type =
+                        Self::create_readable_type(registry, type_, type_annotation, false);
                 }
 
                 let Type::Fn(parameter_types, return_type) = fn_type.inner else {
@@ -680,6 +682,7 @@ impl Statement {
                     registry,
                     &TypeScheme::concrete(*return_type),
                     return_type_annotation,
+                    false,
                 );
 
                 for ((_, _, type_annotation, readable_parameter_type), parameter_type) in
@@ -689,13 +692,15 @@ impl Statement {
                         registry,
                         &TypeScheme::concrete(parameter_type.clone()),
                         type_annotation,
+                        false,
                     );
                 }
             }
             Statement::DefineDimension(_, _) => {}
             Statement::DefineBaseUnit(_, _, _, _) => {}
             Statement::DefineDerivedUnit(_, _, _, type_annotation, type_, readable_type) => {
-                *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+                *readable_type =
+                    Self::create_readable_type(registry, type_, type_annotation, false);
             }
             Statement::ProcedureCall(_, _) => {}
             Statement::DefineStruct(_) => {}

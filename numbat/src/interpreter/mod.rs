@@ -93,7 +93,7 @@ impl InterpreterResult {
                             if type_.is_scalar() {
                                 None
                             } else {
-                                let ty = type_.to_readable_type(registry);
+                                let ty = type_.to_readable_type(registry, true);
                                 Some(m::dimmed("    [") + ty + m::dimmed("]"))
                             }
                         })
