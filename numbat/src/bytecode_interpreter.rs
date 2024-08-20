@@ -417,7 +417,7 @@ impl BytecodeInterpreter {
                             readable_type: annotation
                                 .as_ref()
                                 .map(|a| a.pretty_print())
-                                .unwrap_or(type_.to_readable_type(dimension_registry)),
+                                .unwrap_or(type_.to_readable_type(dimension_registry, false)),
                             aliases,
                             name: decorator::name(decorators),
                             canonical_name: decorator::get_canonical_unit_name(
@@ -473,7 +473,7 @@ impl BytecodeInterpreter {
                         readable_type: annotation
                             .as_ref()
                             .map(|a| a.pretty_print())
-                            .unwrap_or(type_.to_readable_type(dimension_registry)),
+                            .unwrap_or(type_.to_readable_type(dimension_registry, false)),
                         aliases,
                         name: decorator::name(decorators),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),

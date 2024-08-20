@@ -109,22 +109,34 @@ impl TypeScheme {
     pub(crate) fn to_readable_type(
         &self,
         registry: &crate::dimension::DimensionRegistry,
+        with_quantifiers: bool,
     ) -> crate::markup::Markup {
         let (instantiated_type, type_parameters) = self.instantiate_for_printing(None);
 
         let mut markup = m::empty();
-        for type_parameter in &type_parameters {
-            markup += m::keyword("forall");
-            markup += m::space();
-            markup += m::type_identifier(type_parameter.unsafe_name());
 
-            if instantiated_type.bounds.is_dtype_bound(type_parameter) {
-                markup += m::operator(":");
-                markup += m::space();
-                markup += m::type_identifier("Dim");
+        if with_quantifiers {
+            let has_type_parameters = !type_parameters.is_empty();
+
+            if has_type_parameters {
+                markup += m::keyword("forall");
             }
-            markup += m::operator(".");
-            markup += m::space();
+
+            for type_parameter in &type_parameters {
+                markup += m::space();
+                markup += m::type_identifier(type_parameter.unsafe_name());
+
+                if instantiated_type.bounds.is_dtype_bound(type_parameter) {
+                    markup += m::operator(":");
+                    markup += m::space();
+                    markup += m::type_identifier("Dim");
+                }
+                markup += m::operator(".");
+            }
+
+            if has_type_parameters {
+                markup += m::space();
+            }
         }
 
         markup + instantiated_type.inner.to_readable_type(registry)
