@@ -340,7 +340,6 @@ impl BytecodeInterpreter {
         match stmt {
             Statement::Expression(expr) => {
                 self.compile_expression_with_simplify(expr)?;
-                self.vm.add_op(Op::FullSimplify);
                 self.vm.add_op(Op::Return);
             }
             Statement::DefineVariable(define_variable) => {
