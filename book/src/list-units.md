@@ -89,6 +89,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Length` | [Yard](https://en.wikipedia.org/wiki/Yard) | `yard`, `yards`, `yd` |
 | `Length / Volume` | [Miles per gallon](https://en.wikipedia.org/wiki/Fuel_economy_in_automobiles) | `mpg` |
 | `Length^2` | [darcy](https://en.wikipedia.org/wiki/Darcy_(unit)) | `darcies`, `darcy`, `darcys` |
+| `LinesOfCode` | [Lines of code](https://en.wikipedia.org/wiki/Source_lines_of_code) | `LOC`, `SLOC` |
 | `LuminousFlux` | [Lumen](https://en.wikipedia.org/wiki/Lumen_(unit)) | `lm`, `lumen`, `lumens` |
 | `LuminousIntensity` | [Candela](https://en.wikipedia.org/wiki/Candela) | `candela`, `candelas`, `cd` |
 | `MagneticFieldStrength` | [Oersted](https://en.wikipedia.org/wiki/Oersted) | `Oe`, `oersted` |

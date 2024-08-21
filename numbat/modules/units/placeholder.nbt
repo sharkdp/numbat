@@ -66,3 +66,12 @@ dimension Person
 @name("Person")
 @aliases(persons, people, capita)
 unit person: Person
+
+# A unit for counting lines of code
+dimension LinesOfCode
+
+@name("Lines of code")
+@url("https://en.wikipedia.org/wiki/Source_lines_of_code")
+@metric_prefixes
+@aliases(LOC: short, SLOC: short)
+unit LOC: LinesOfCode
