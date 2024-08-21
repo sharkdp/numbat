@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;700&family=Lustria&family=Lato:wght@700&display=swap');
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-size: 30px;
+}
+
+.split {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+.gutter {
+    background-color: #eee;
+    background-repeat: no-repeat;
+    background-position: 50%;
+}
+
+.gutter.gutter-horizontal {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+    cursor: col-resize;
+}
+
+#editor {
+    font-family: 'Fira Mono', monospace;
+    font-size: 1em;
+}
+
+
+.type-expr {
+    font-family: 'Fira Mono', monospace;
+    font-size: 1em;
+    margin-top: 0em;
+    margin-bottom: 0;
+    padding: 1em;
+    overflow: auto;
+    display: block;
+}
+
+#results {
+    font-family: 'Fira Mono', monospace;
+    font-size: 1em;
+    padding: 0.1em;
+    background-color: #f6f8f6;
+    overflow: auto;
+}
+
+.numbat-type-identifier {
+    color: #ca3b63;
+}
+
+.ace_type {
+    color: #ca3b63 !important;
+}
+
+.numbat-value {
+    color: #0040ff;
+}
+
+.ace_numeric {
+    color: #0040ff !important;
+}
+
+.numbat-keyword {
+    color: #c802ff !important;
+}
+
+.ace_keyword {
+    color: #c802ff !important;
+}
+
+.ace_comment {
+    color: #8c8c8c !important;
+}
+
+.ace_string {
+    color: #27a85f !important;
+}
+
+.ace_decorator {
+    color: #27a85f !important;
+}
+
+.numbat-string {
+    color: #27a85f;
+}
+
+.ace_operator {
+    color: #db2828 !important;
+}
+
+.numbat-unit {
+    color: #5c12a6;
+}
+
+.numbat-dimmed {
+    color: #888;
+}
+
+.numbat-diagnostic-red {
+    color: #cc3b0a;
+}
+
+.numbat-diagnostic-blue {
+    color: #0040ff;
+}
+
+.numbat-diagnostic-bold {
+    font-weight: bold;
+}
