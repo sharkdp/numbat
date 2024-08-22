@@ -18,16 +18,16 @@ is specified as `Length`.
 
 Numbat has a powerful type inference system, which is able to infer missing types
 when they are not explicitly specified. For example, consider the following function
-definition for the breaking distance of a car, given its velocity `v`:
+definition for the braking distance of a car, given its velocity `v`:
 ```nbt
-fn breaking_distance(v) = v t_reaction + v² / 2 µ g0
+fn braking_distance(v) = v t_reaction + v² / 2 µ g0
   where t_reaction = 1 s # driver reaction time
     and µ = 0.7          # coefficient of friction
 ```
 If you enter this function into the Numbat REPL, you will see that all types are filled
 in automatically:
 ```nbt
-fn breaking_distance(v: Velocity) -> Length = v × t_reaction + (v² / (2 µ × g0))
+fn braking_distance(v: Velocity) -> Length = v × t_reaction + (v² / (2 µ × g0))
   where t_reaction: Time = 1 second
     and µ: Scalar = 0.7
 ```
