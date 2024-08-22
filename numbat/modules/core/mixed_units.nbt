@@ -25,3 +25,13 @@ fn _mixed_units<D: Dim>(q: D, units: List<D>, names: List<String>, round_last: B
   if q < 0
     then str_append("-", _mixed_units(-q, units, names, round_last))
     else join(_mixed_units_helper(q, units, names, round_last), "")
+
+
+fn _mixed_unit_list<A: Dim>(val: A, units: List<A>, acc: List<A>) -> List<A> =
+  if len(units) == 1 
+  then reverse(cons(val -> head(units), acc))
+  else _mixed_unit_list(val - unit_val, tail(units), cons(unit_val, acc))
+  where unit_val: A =
+    if (len(units) > 0)
+    then trunc_in(head(units), val)
+    else error("Units list cannot be empty")
