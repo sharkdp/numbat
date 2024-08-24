@@ -19,8 +19,8 @@ FROM nginx:alpine
 # Copy the built files from the builder stage
 COPY --from=builder /usr/src/numbat/numbat-wasm/www /usr/share/nginx/html
 
-# Expose port 8192
-EXPOSE 8192
+# Expose port 80
+EXPOSE 80
 
 # The default command starts Nginx
 CMD ["nginx", "-g", "daemon off;"]

@@ -9,4 +9,4 @@ services:
     #   context: https://github.com/sharkdp/numbat.git
     #   dockerfile: Dockerfile
     ports:
-      - "8192:8192"
+      - "8192:80"
