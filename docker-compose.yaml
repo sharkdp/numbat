@@ -1,0 +1,12 @@
+version: '3'
+services:
+  numbat-web:
+    # Option 1: Build from local codebase
+    build: .
+
+    # Option 2: Build from GitHub repository
+    # build:
+    #   context: https://github.com/sharkdp/numbat.git
+    #   dockerfile: Dockerfile
+    ports:
+      - "8192:8192"
