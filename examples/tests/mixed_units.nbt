@@ -34,3 +34,10 @@ assert_eq(5 lb -> pounds_and_ounces, "5 lb 0 oz")
 assert_eq(5.5 lb -> pounds_and_ounces, "5 lb 8 oz")
 assert_eq(6.75 lb -> pounds_and_ounces, "6 lb 12 oz")
 assert_eq(-5.5 lb -> pounds_and_ounces, "-5 lb 8 oz")
+
+# Unit list
+
+assert_eq(unit_list([m, cm, mm], 1m + 23cm + 4mm), [1m, 23cm, 4mm])
+assert_eq(unit_list([deg, arcmin], 1deg + 23arcmin + 4arcsec), [1deg, 23arcmin, 4arcsec])
+assert_eq(unit_list([hour], 1.5hour), [1.5hour])
+

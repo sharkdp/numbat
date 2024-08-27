@@ -27,11 +27,17 @@ fn _mixed_units<D: Dim>(q: D, units: List<D>, names: List<String>, round_last: B
     else join(_mixed_units_helper(q, units, names, round_last), "")
 
 
-fn _mixed_unit_list<A: Dim>(val: A, units: List<A>, acc: List<A>) -> List<A> =
-  if len(units) == 1 
-  then reverse(cons(val -> head(units), acc))
-  else _mixed_unit_list(val - unit_val, tail(units), cons(unit_val, acc))
+fn _zero_length<A: Dim>(val: A) -> A = val * 0 -> val
+
+
+fn _mixed_unit_list<A: Dim>(val: A, units: List<A>, min_unit: A, acc: List<A>) -> List<A> =
+  if trunc_in(min_unit, val) == 0
+  then concat(acc, map(_zero_length, units))
+  else if len(units) == 1
+  then cons_end(val -> head(units), acc)
+  else _mixed_unit_list(val - unit_val, tail(units), min_unit, cons_end(unit_val, acc))
   where unit_val: A =
     if (len(units) > 0)
-    then trunc_in(head(units), val)
+    then (val |> round_in(min_unit) |> trunc_in(head(units)))
     else error("Units list cannot be empty")
+
