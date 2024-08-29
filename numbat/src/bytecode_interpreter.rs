@@ -17,7 +17,7 @@ use crate::typed_ast::{
 };
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
-use crate::value::FunctionReference;
+use crate::value::{FunctionReference, Value};
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
 use crate::{decorator, ffi, Type};
 
@@ -229,7 +229,7 @@ impl BytecodeInterpreter {
                             span: _,
                             format_specifiers,
                         } => {
-                            self.compile_expression_with_simplify(expr)?;
+                            self.compile_expression(expr)?;
                             let index = self.vm.add_constant(Constant::FormatSpecifiers(
                                 format_specifiers.clone(),
                             ));
@@ -276,33 +276,6 @@ impl BytecodeInterpreter {
         Ok(())
     }
 
-    fn compile_expression_with_simplify(&mut self, expr: &Expression) -> Result<()> {
-        self.compile_expression(expr)?;
-
-        match expr {
-            Expression::BinaryOperator(_, BinaryOperator::ConvertTo, _, _, _)
-            | Expression::InstantiateStruct(..)
-            | Expression::Boolean(..)
-            | Expression::String(..)
-            | Expression::Condition(..)
-            | Expression::List(..) => (),
-            Expression::Scalar(..)
-            | Expression::Identifier(..)
-            | Expression::UnitIdentifier(..)
-            | Expression::FunctionCall(..)
-            | Expression::CallableCall(..)
-            | Expression::UnaryOperator(..)
-            | Expression::AccessField(..)
-            | Expression::BinaryOperator(..)
-            | Expression::BinaryOperatorForDate(..) => {
-                self.vm.add_op(Op::FullSimplify);
-            }
-            Expression::TypedHole(_, _) => unreachable!("Typed holes cause type inference errors"),
-        }
-
-        Ok(())
-    }
-
     fn compile_define_variable(&mut self, define_variable: &DefineVariable) -> Result<()> {
         let DefineVariable(identifier, decorators, expr, _annotation, _type, _readable_type) =
             define_variable;
@@ -321,7 +294,7 @@ impl BytecodeInterpreter {
         };
 
         for alias_name in aliases {
-            self.compile_expression_with_simplify(expr)?;
+            self.compile_expression(expr)?;
 
             self.locals[current_depth].push(Local {
                 identifier: alias_name.clone(),
@@ -339,7 +312,7 @@ impl BytecodeInterpreter {
     ) -> Result<()> {
         match stmt {
             Statement::Expression(expr) => {
-                self.compile_expression_with_simplify(expr)?;
+                self.compile_expression(expr)?;
                 self.vm.add_op(Op::Return);
             }
             Statement::DefineVariable(define_variable) => {
@@ -509,7 +482,7 @@ impl BytecodeInterpreter {
             Statement::ProcedureCall(kind, args) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression_with_simplify(arg)?;
+                    self.compile_expression(arg)?;
                 }
 
                 let name = &ffi::procedures().get(kind).unwrap().name;
@@ -543,6 +516,13 @@ impl BytecodeInterpreter {
         self.vm.disassemble();
 
         let result = self.vm.run(&mut ctx);
+
+        let result = match result {
+            Ok(InterpreterResult::Value(Value::Quantity(q))) => {
+                Ok(InterpreterResult::Value(Value::Quantity(q.full_simplify())))
+            }
+            r => r,
+        };
 
         self.vm.debug();
 

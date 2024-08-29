@@ -108,9 +108,6 @@ pub enum Op {
     /// Combine N strings on the stack into a single part, used by string interpolation
     JoinString,
 
-    /// Perform a simplification operation to the current value on the stack
-    FullSimplify,
-
     /// Build a struct from the field values on the stack
     BuildStructInstance,
     /// Access a single field of a struct
@@ -159,7 +156,6 @@ impl Op {
             | Op::LogicalAnd
             | Op::LogicalOr
             | Op::LogicalNeg
-            | Op::FullSimplify
             | Op::Return
             | Op::GetLastResult => 0,
         }
@@ -201,7 +197,6 @@ impl Op {
             Op::CallCallable => "CallCallable",
             Op::PrintString => "PrintString",
             Op::JoinString => "JoinString",
-            Op::FullSimplify => "FullSimplify",
             Op::Return => "Return",
             Op::BuildStructInstance => "BuildStructInstance",
             Op::AccessStructField => "AccessStructField",
@@ -930,7 +925,7 @@ impl Vm {
                     let num_parts = self.read_u16() as usize;
                     let mut joined = String::new();
                     let to_str = |value| match value {
-                        Value::Quantity(q) => q.to_string(),
+                        Value::Quantity(q) => q.full_simplify().to_string(),
                         Value::Boolean(b) => b.to_string(),
                         Value::String(s) => s,
                         Value::DateTime(dt) => crate::datetime::to_string(&dt),
@@ -952,6 +947,8 @@ impl Vm {
                         let part = match self.pop() {
                             Value::FormatSpecifiers(Some(specifiers)) => match self.pop() {
                                 Value::Quantity(q) => {
+                                    let q = q.full_simplify();
+
                                     let mut vars = HashMap::new();
                                     vars.insert("value".to_string(), q.unsafe_value().to_f64());
 
@@ -983,13 +980,6 @@ impl Vm {
                     }
                     self.push(Value::String(joined))
                 }
-                Op::FullSimplify => match self.pop() {
-                    Value::Quantity(q) => {
-                        let simplified = q.full_simplify();
-                        self.push_quantity(simplified);
-                    }
-                    v => self.push(v),
-                },
                 Op::Return => {
                     if self.frames.len() == 1 {
                         let return_value = self.pop();
