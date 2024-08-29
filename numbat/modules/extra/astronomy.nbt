@@ -2,29 +2,67 @@ use physics::constants
 use units::si
 use units::astronomical
 
-unit lyr: Length = lightyear
-
 @name("Light-second")
+@description("The distance that light travels in one second.")
 @url("https://en.wikipedia.org/wiki/Light-second")
 @aliases(lightseconds, lsec)
 unit lightsecond: Length = speed_of_light × 1 s
 
+@name("Lunar mass")
+@description("The mass of Earth's Moon.")
+@url("https://en.wikipedia.org/wiki/Moon#Size_and_mass")
 unit lunar_mass: Mass = 7.342e22 kg
+
+@name("Lunar radius")
+@description("The radius of Earth's Moon.")
+@url("https://en.wikipedia.org/wiki/Moon#Size_and_mass")
 unit lunar_radius: Length = 1737.4 km
 
+@name("Earth mass")
+@description("The mass of planet Earth.")
+@url("https://en.wikipedia.org/wiki/Earth")
 unit earth_mass: Mass = 5.9722e24 kg
+
+@name("Earth radius")
+@description("The radius of planet Earth.")
+@url("https://en.wikipedia.org/wiki/Earth")
 unit earth_radius: Length = 6371.0088 km
 
+@name("Mars mass")
+@description("The mass of planet Mars.")
+@url("https://en.wikipedia.org/wiki/Mars")
 unit mars_mass: Mass = 6.4171e23 kg
+
+@name("Mars radius")
+@description("The radius of planet Mars.")
+@url("https://en.wikipedia.org/wiki/Mars")
 unit mars_radius: Length = 3389.5 km
 
+@name("Jupiter mass")
+@description("The mass of planet Jupiter.")
+@url("https://en.wikipedia.org/wiki/Jupiter")
 unit jupiter_mass: Mass = 1.89813e27 kg
+
+@name("Jupiter radius")
+@description("The radius of planet Jupiter.")
+@url("https://en.wikipedia.org/wiki/Jupiter")
 unit jupiter_radius: Length = 71_492 km
 
+@name("Solar mass")
+@description("The mass of the Sun.")
+@url("https://en.wikipedia.org/wiki/Sun")
 unit solar_mass: Mass = 1.98847e30 kg
+
+@name("Solar radius")
+@description("The radius of the Sun.")
+@url("https://en.wikipedia.org/wiki/Sun")
 unit solar_radius: Length = 6.957e5 km
 
 dimension RadiantFlux = Power
+
+@name("Solar luminosity")
+@description("The total amount of energy emitted by the Sun per unit time.")
+@url("https://en.wikipedia.org/wiki/Solar_luminosity")
 unit solar_luminosity: RadiantFlux = 3.828e26 W
 
 dimension SpectralFluxDensity = RadiantFlux / Area / Frequency

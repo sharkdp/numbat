@@ -6,6 +6,8 @@ use units::hartree
 
 use extra::algebra
 use extra::color
+use extra::astronomy
+use extra::cooking
 
 use numerics::diff
 use numerics::solve
