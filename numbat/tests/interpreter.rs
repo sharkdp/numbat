@@ -943,5 +943,14 @@ mod tests {
               212121001.1 cm
             "###);
         }
+
+        #[test]
+        fn issue505_angles() {
+            insta::assert_snapshot!(fail("assert_eq(-77° + 0′ + 32″, -77.0089°, 1e-4°)"), @r###"
+            Assertion failed because the following two quantities differ by 0.0178°, which is more than 0.0001°:
+              -76.9911°
+              -77.0089°
+            "###);
+        }
     }
 }
