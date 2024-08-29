@@ -1,3 +1,5 @@
+use extra::color
+
 assert_eq(0x000000 -> color, black)
 assert_eq(0xffffff -> color, white)
 assert_eq(0x123456 -> color, Color { red: 0x12, green: 0x34, blue: 0x56 })

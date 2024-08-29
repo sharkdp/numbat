@@ -5,6 +5,7 @@ use units::stoney
 use units::hartree
 
 use extra::algebra
+use extra::color
 
 use numerics::diff
 use numerics::solve
