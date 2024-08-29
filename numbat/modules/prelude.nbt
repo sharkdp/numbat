@@ -42,5 +42,3 @@ use chemistry::elements
 
 use datetime::functions
 use datetime::human
-
-use extra::color
