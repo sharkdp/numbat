@@ -213,6 +213,13 @@ fn test_conversions() {
     expect_output("5m^2 -> cm*m", "500 cm·m");
     expect_output("1 kB / 10 ms -> MB/s", "0.1 MB/s");
     expect_output("55! / (6! (55 - 6)!) -> million", "28.9897 million");
+
+    // regression test for https://github.com/sharkdp/numbat/issues/534
+    let mut ctx = get_test_context();
+    let _ = ctx
+        .interpret("let x = 1 deg", CodeSource::Internal)
+        .unwrap();
+    expect_output_with_context(&mut ctx, "12 deg -> x", "12°");
 }
 
 #[test]
