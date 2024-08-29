@@ -47,7 +47,9 @@ assert_eq(q1, q2, ε)
 ```
 
 where the first version tests for exact equality while the second version tests for approximate
-equality \\( |q_1-q_2| < \epsilon \\) with a specified accuracy of \\( \epsilon \\). For example:
+equality \\( |q_1-q_2| <= \epsilon \\) with a specified accuracy of \\( \epsilon \\).
+Note that the input quantities are converted to the units of \\( \epsilon \\) before comparison.
+For example:
 
 ```nbt
 assert_eq(2 + 3, 5)

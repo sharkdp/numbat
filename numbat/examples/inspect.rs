@@ -83,7 +83,7 @@ fn inspect_functions_in_module(ctx: &Context, module: String) {
         println!();
 
         println!("```nbt");
-        println!("{}", signature);
+        println!("{signature}");
         println!("```");
         println!();
     }

@@ -23,6 +23,23 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: im
 }
 
 #[track_caller]
+fn succeed(code: &str) -> String {
+    let mut ctx = get_test_context();
+    let ret = ctx.interpret(code, CodeSource::Internal);
+    match ret {
+        Err(e) => panic!("was supposed to succeed but instead got:\n{}", e),
+        Ok((_stmts, ret)) => {
+            if let InterpreterResult::Value(val) = ret {
+                let fmt = PlainTextFormatter {};
+                fmt.format(&val.pretty_print(), false)
+            } else {
+                String::new()
+            }
+        }
+    }
+}
+
+#[track_caller]
 fn fail(code: &str) -> NumbatError {
     let mut ctx = get_test_context();
     let ret = ctx.interpret(code, CodeSource::Internal);
@@ -34,7 +51,7 @@ fn fail(code: &str) -> NumbatError {
                 let output = fmt.format(&val.pretty_print(), false);
                 panic!("was supposed to fail but instead got:\n{}", output.trim())
             } else {
-                panic!("was supposed to fail but instead got:\n{:?}", ret)
+                panic!("was supposed to fail but instead got:\n{ret:?}")
             }
         }
     }
@@ -65,7 +82,7 @@ fn expect_pretty_print(code: &str, expected_pretty_print_output: impl AsRef<str>
 fn expect_failure_with_context(ctx: &mut Context, code: &str, msg_part: &str) {
     if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
         let error_message = e.to_string();
-        println!("{}", error_message);
+        println!("{error_message}");
         assert!(
             error_message.contains(msg_part),
             "Expected '{msg_part}' but got '{error_message}'"
@@ -196,6 +213,13 @@ fn test_conversions() {
     expect_output("5m^2 -> cm*m", "500 cm·m");
     expect_output("1 kB / 10 ms -> MB/s", "0.1 MB/s");
     expect_output("55! / (6! (55 - 6)!) -> million", "28.9897 million");
+
+    // regression test for https://github.com/sharkdp/numbat/issues/534
+    let mut ctx = get_test_context();
+    let _ = ctx
+        .interpret("let x = 1 deg", CodeSource::Internal)
+        .unwrap();
+    expect_output_with_context(&mut ctx, "12 deg -> x", "12°");
 }
 
 #[test]
@@ -801,6 +825,11 @@ fn test_statement_pretty_printing() {
 
     expect_pretty_print("fn f(x) = 2 x", "fn f<A: Dim>(x: A) -> A = 2 x");
 
+    expect_pretty_print(
+        "fn f(x, y) = x * y",
+        "fn f<A: Dim, B: Dim>(x: A, y: B) -> A × B = x × y",
+    );
+
     // Partially annotated functions
     expect_pretty_print(
         "fn f() -> Length * Frequency = c",
@@ -814,6 +843,121 @@ fn test_statement_pretty_printing() {
     expect_pretty_print("fn f(x: Length) = 2 x", "fn f(x: Length) -> Length = 2 x");
     expect_pretty_print("fn f(x) -> Length = 2 x", "fn f(x: Length) -> Length = 2 x");
 
-    // TODO:
-    // expect_pretty_print("fn f<Z>(z: Z) = z", "fn f<Z>(z: Z) -> Z = z");
+    expect_pretty_print("fn f<Z>(z: Z) = z", "fn f<Z>(z: Z) -> Z = z");
+
+    // Functions with local variables
+    expect_pretty_print(
+        "fn f(x) = y where y = x",
+        "fn f<A>(x: A) -> A = y\n  where y: A = x",
+    );
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[cfg(test)]
+    mod assert_eq_3 {
+        use super::*;
+
+        #[test]
+        fn succeeds_when_eps_larger_than_diff() {
+            insta::assert_snapshot!(succeed("assert_eq(200cm, 201cm, 2cm)"), @"");
+        }
+
+        #[test]
+        fn succeeds_when_eps_is_equal_to_diff() {
+            insta::assert_snapshot!(succeed("assert_eq(200cm, 201cm, 1cm)"), @"");
+        }
+
+        #[test]
+        fn fails_when_types_mismatch() {
+            insta::assert_snapshot!(fail("assert_eq(200cm, 201cm, 2 watts)"), @"Argument types in assert_eq calls must match");
+        }
+
+        #[test]
+        fn fails_and_does_not_show_original_values_when_same_units() {
+            insta::assert_snapshot!(fail("assert_eq(200cm, 201cm, 0.1cm)"), @r###"
+            Assertion failed because the following two quantities differ by 1.0 cm, which is more than 0.1 cm:
+              200.0 cm
+              201.0 cm
+            "###);
+        }
+
+        #[test]
+        fn fails_and_show_original_values_for_rhs_only() {
+            // approximate equality failure with different units for rhs shows original values in parentheses for rhs only
+            insta::assert_snapshot!(fail("assert_eq(2000mm, 201cm, 0.1cm to mm)"), @r###"
+            Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
+              2000 mm
+              2010 mm (201 cm)
+            "###);
+        }
+
+        #[test]
+        fn fails_and_show_original_values_for_lhs_only() {
+            // approximate equality failure with different units for lhs shows original values in parentheses for lhs only
+            insta::assert_snapshot!(fail("assert_eq(2m, 2010mm, 0.1cm to mm)"), @r###"
+            Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
+              2000 mm (2 m)
+              2010 mm
+            "###);
+        }
+
+        #[test]
+        fn fails_and_show_original_values_for_lhs_and_rhs() {
+            // approximate equality failure with different units for lhs and rhs shows original values in parentheses for lhs and rhs
+            insta::assert_snapshot!(fail("assert_eq(2m, 201cm, 0.1cm to mm)"), @r###"
+            Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
+              2000 mm (2 m)
+              2010 mm (201 cm)
+            "###);
+        }
+
+        #[test]
+        fn fails_and_formats_to_match_precision_of_eps() {
+            // check lhs, rhs, and diff have the same number of decimal places as epsilon
+            // extra 0s at the end of epsilon are not currently considered
+            insta::assert_snapshot!(fail("assert_eq(212121000.123456cm, 212121001.123456cm, 0.900cm)"), @r###"
+            Assertion failed because the following two quantities differ by 1.0 cm, which is more than 0.9 cm:
+              212121000.1 cm
+              212121001.1 cm
+            "###);
+
+            // check left padding and alignment when lhs and rhs are positive
+            insta::assert_snapshot!(fail("assert_eq(2.0000006cm, 243.311336cm, 0.0001mm)"), @r###"
+            Assertion failed because the following two quantities differ by 2413.1134 mm, which is more than 0.0001 mm:
+              0020.0000 mm (2.0 cm)
+              2433.1134 mm (243.311 cm)
+            "###);
+
+            // check left padding and alignment when lhs and rhs are negative
+            insta::assert_snapshot!(fail("assert_eq(-2.0000006cm, -243cm, 0.0001mm)"), @r###"
+            Assertion failed because the following two quantities differ by 2410.0000 mm, which is more than 0.0001 mm:
+              -0020.0000 mm (-2.0 cm)
+              -2430.0000 mm (-243 cm)
+            "###);
+
+            // check left padding and alignment when only rhs is negative
+            insta::assert_snapshot!(fail("assert_eq(2.0000006cm, -243cm, 0.0001mm)"), @r###"
+            Assertion failed because the following two quantities differ by 2450.0000 mm, which is more than 0.0001 mm:
+              00020.0000 mm (2.0 cm)
+              -2430.0000 mm (-243 cm)
+            "###);
+
+            // check lhs, rhs, and diff have the same number of decimal places as epsilon when epsilon is negative
+            insta::assert_snapshot!(fail("assert_eq(212121000.123456cm, 212121001.123456cm, -0.900cm)"), @r###"
+            Assertion failed because the following two quantities differ by 1.0 cm, which is more than -0.9 cm:
+              212121000.1 cm
+              212121001.1 cm
+            "###);
+        }
+
+        #[test]
+        fn issue505_angles() {
+            insta::assert_snapshot!(fail("assert_eq(-77° + 0′ + 32″, -77.0089°, 1e-4°)"), @r###"
+            Assertion failed because the following two quantities differ by 0.0178°, which is more than 0.0001°:
+              -76.9911°
+              -77.0089°
+            "###);
+        }
+    }
 }

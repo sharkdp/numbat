@@ -50,7 +50,7 @@ fn type_c() -> DType {
 }
 
 fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
-    let code = &format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
+    let code = &format!("{TEST_PRELUDE}\n{input}");
     let statements = parse(code, 0).expect("No parse errors for inputs in this test suite");
     let transformed_statements = Transformer::new().transform(statements)?;
 

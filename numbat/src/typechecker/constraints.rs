@@ -333,15 +333,12 @@ impl Constraint {
     fn pretty_print(&self) -> String {
         match self {
             Constraint::Equal(t1, t2) => {
-                format!("  {} ~ {}", t1, t2)
+                format!("  {t1} ~ {t2}")
             }
-            Constraint::IsDType(t) => format!("  {}: DType", t),
-            Constraint::EqualScalar(d) => format!("  {} = Scalar", d),
+            Constraint::IsDType(t) => format!("  {t}: DType"),
+            Constraint::EqualScalar(d) => format!("  {d} = Scalar"),
             Constraint::HasField(struct_type, field_name, field_type) => {
-                format!(
-                    "HasField({}, \"{}\", {})",
-                    struct_type, field_name, field_type
-                )
+                format!("HasField({struct_type}, \"{field_name}\", {field_type})")
             }
         }
     }

@@ -1,0 +1,31 @@
+use extra::color
+
+assert_eq(0x000000 -> color, black)
+assert_eq(0xffffff -> color, white)
+assert_eq(0x123456 -> color, Color { red: 0x12, green: 0x34, blue: 0x56 })
+
+assert_eq(black -> color_rgb, "rgb(0, 0, 0)")
+assert_eq(white -> color_rgb, "rgb(255, 255, 255)")
+assert_eq(red -> color_rgb, "rgb(255, 0, 0)")
+assert_eq(green -> color_rgb, "rgb(0, 255, 0)")
+assert_eq(blue -> color_rgb, "rgb(0, 0, 255)")
+assert_eq(0x123456 -> color -> color_rgb, "rgb(18, 52, 86)")
+
+assert_eq(black -> color_rgb_float, "rgb(0.000, 0.000, 0.000)")
+assert_eq(white -> color_rgb_float, "rgb(1.000, 1.000, 1.000)")
+assert_eq(red -> color_rgb_float, "rgb(1.000, 0.000, 0.000)")
+assert_eq(green -> color_rgb_float, "rgb(0.000, 1.000, 0.000)")
+assert_eq(blue -> color_rgb_float, "rgb(0.000, 0.000, 1.000)")
+assert_eq(0x123456 -> color -> color_rgb_float, "rgb(0.071, 0.204, 0.337)")
+
+assert_eq(black -> color_hex, "#000000")
+assert_eq(white -> color_hex, "#ffffff")
+assert_eq(red -> color_hex, "#ff0000")
+assert_eq(green -> color_hex, "#00ff00")
+assert_eq(blue -> color_hex, "#0000ff")
+assert_eq(0x123456 -> color -> color_hex, "#123456")
+
+# Examples:
+
+assert_eq(rgb(225, 36, 143) -> color_hex, "#e1248f")
+assert_eq(0xe1248f -> color -> color_rgb, "rgb(225, 36, 143)")

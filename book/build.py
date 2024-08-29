@@ -6,7 +6,9 @@ import urllib.parse
 SCRIPT_DIR = Path(__file__).parent.resolve()
 
 
-def generate_example(filename, title, strip_asserts=True, insert_run_link=True):
+def generate_example(
+    filename, title, strip_asserts=True, insert_run_link=True, footer=None
+):
     path_in = SCRIPT_DIR.parent / "examples" / f"{filename}.nbt"
     path_out = SCRIPT_DIR / "src" / f"example-{filename}.md"
     print(path_in)
@@ -33,6 +35,20 @@ def generate_example(filename, title, strip_asserts=True, insert_run_link=True):
         fout.writelines(code)
         fout.write("```\n")
 
+        if footer:
+            fout.write("\n")
+            fout.write(footer)
+            fout.write("\n")
+
+
+def xkcd_footer(number, img_name):
+    footer = '<p align="center" style="margin-top: 2em">'
+    footer += f'<a href="https://xkcd.com/{number}/"><img src="https://imgs.xkcd.com/comics/{img_name}.png" alt="XKCD {number}" style="max-width: 100%"></a>'
+    footer += f'<br>Source: <a href="https://xkcd.com/{number}/">https://xkcd.com/{number}/</a>'
+    footer += "</p>"
+
+    return footer
+
 
 generate_example("acidity", "Acidity")
 generate_example("barometric_formula", "Barometric formula")
@@ -46,9 +62,18 @@ generate_example("pipe_flow_rate", "Flow rate in a pipe")
 generate_example("population_growth", "Population growth")
 generate_example("recipe", "Recipe")
 generate_example("voyager", "Voyager")
-generate_example("xkcd_687", "XKCD 687")
-generate_example("xkcd_2585", "XKCD 2585")
-generate_example("xkcd_2812", "XKCD 2812")
+generate_example(
+    "xkcd_681",
+    "XKCD 681",
+    footer=xkcd_footer(681, "gravity_wells"),
+)
+generate_example(
+    "xkcd_687", "XKCD 687", footer=xkcd_footer(687, "dimensional_analysis")
+)
+generate_example("xkcd_2585", "XKCD 2585", footer=xkcd_footer(2585, "rounding"))
+generate_example(
+    "xkcd_2812", "XKCD 2812", footer=xkcd_footer(2812, "solar_panel_placement")
+)
 
 generate_example(
     "numbat_syntax", "Syntax overview", strip_asserts=False, insert_run_link=False
@@ -141,7 +166,11 @@ list_of_functions(
             },
             {
                 "title": "Numerical methods",
-                "modules": ["numerics::diff", "numerics::solve"],
+                "modules": [
+                    "numerics::diff",
+                    "numerics::solve",
+                    "numerics::fixed_point",
+                ],
             },
             {
                 "title": "Geometry",
@@ -225,6 +254,10 @@ list_of_functions(
             {
                 "title": "Temperature conversion",
                 "modules": ["physics::temperature_conversion"],
+            },
+            {
+                "title": "Color format conversion",
+                "modules": ["extra::color"],
             },
         ],
     },

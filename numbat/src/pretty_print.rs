@@ -1,6 +1,7 @@
 use crate::markup::Markup;
 
 pub trait PrettyPrint {
+    /// Pretty prints with default options.
     fn pretty_print(&self) -> Markup;
 }
 

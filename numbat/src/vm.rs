@@ -108,9 +108,6 @@ pub enum Op {
     /// Combine N strings on the stack into a single part, used by string interpolation
     JoinString,
 
-    /// Perform a simplification operation to the current value on the stack
-    FullSimplify,
-
     /// Build a struct from the field values on the stack
     BuildStructInstance,
     /// Access a single field of a struct
@@ -159,7 +156,6 @@ impl Op {
             | Op::LogicalAnd
             | Op::LogicalOr
             | Op::LogicalNeg
-            | Op::FullSimplify
             | Op::Return
             | Op::GetLastResult => 0,
         }
@@ -201,7 +197,6 @@ impl Op {
             Op::CallCallable => "CallCallable",
             Op::PrintString => "PrintString",
             Op::JoinString => "JoinString",
-            Op::FullSimplify => "FullSimplify",
             Op::Return => "Return",
             Op::BuildStructInstance => "BuildStructInstance",
             Op::AccessStructField => "AccessStructField",
@@ -236,11 +231,11 @@ impl Constant {
 impl Display for Constant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Constant::Scalar(n) => write!(f, "{}", n),
-            Constant::Unit(unit) => write!(f, "{}", unit),
-            Constant::Boolean(val) => write!(f, "{}", val),
-            Constant::String(val) => write!(f, "\"{}\"", val),
-            Constant::FunctionReference(inner) => write!(f, "{}", inner),
+            Constant::Scalar(n) => write!(f, "{n}"),
+            Constant::Unit(unit) => write!(f, "{unit}"),
+            Constant::Boolean(val) => write!(f, "{val}"),
+            Constant::String(val) => write!(f, "\"{val}\""),
+            Constant::FunctionReference(inner) => write!(f, "{inner}"),
             Constant::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
         }
     }
@@ -493,14 +488,14 @@ impl Vm {
         eprintln!();
         eprintln!(".CONSTANTS");
         for (idx, constant) in self.constants.iter().enumerate() {
-            eprintln!("  {:04} {}", idx, constant);
+            eprintln!("  {idx:04} {constant}");
         }
         eprintln!(".IDENTIFIERS");
         for (idx, identifier) in self.unit_information.iter().enumerate() {
             eprintln!("  {:04} {}", idx, identifier.0);
         }
         for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
-            eprintln!(".CODE {idx} ({name})", idx = idx, name = function_name);
+            eprintln!(".CODE {idx} ({function_name})");
             let mut offset = 0;
             while offset < bytecode.len() {
                 let this_offset = offset;
@@ -703,7 +698,9 @@ impl Vm {
                             Ok(lhs.checked_div(rhs).ok_or(RuntimeError::DivisionByZero)?)
                         }
                         Op::Power => lhs.power(rhs),
-                        Op::ConvertTo => lhs.convert_to(rhs.unit()),
+                        // If the user specifically converted the type of a unit, we should NOT simplify this value
+                        // before any operations are applied to it
+                        Op::ConvertTo => lhs.convert_to(rhs.unit()).map(Quantity::no_simplify),
                         _ => unreachable!(),
                     };
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
@@ -911,7 +908,7 @@ impl Vm {
                             let dt = self.pop_datetime();
 
                             let tz = jiff::tz::TimeZone::get(&tz_name)
-                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name.into()))?;
+                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name))?;
 
                             let dt = dt.with_time_zone(tz);
 
@@ -928,7 +925,7 @@ impl Vm {
                     let num_parts = self.read_u16() as usize;
                     let mut joined = String::new();
                     let to_str = |value| match value {
-                        Value::Quantity(q) => q.to_string(),
+                        Value::Quantity(q) => q.full_simplify().to_string(),
                         Value::Boolean(b) => b.to_string(),
                         Value::String(s) => s,
                         Value::DateTime(dt) => crate::datetime::to_string(&dt),
@@ -950,11 +947,13 @@ impl Vm {
                         let part = match self.pop() {
                             Value::FormatSpecifiers(Some(specifiers)) => match self.pop() {
                                 Value::Quantity(q) => {
+                                    let q = q.full_simplify();
+
                                     let mut vars = HashMap::new();
                                     vars.insert("value".to_string(), q.unsafe_value().to_f64());
 
                                     let mut str =
-                                        strfmt::strfmt(&format!("{{value{}}}", specifiers), &vars)
+                                        strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
                                             .map_err(map_strfmt_error_to_runtime_error)?;
 
                                     let unit_str = q.unit().to_string();
@@ -970,7 +969,7 @@ impl Vm {
                                     let mut vars = HashMap::new();
                                     vars.insert("value".to_string(), to_str(value));
 
-                                    strfmt::strfmt(&format!("{{value{}}}", specifiers), &vars)
+                                    strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
                                         .map_err(map_strfmt_error_to_runtime_error)?
                                 }
                             },
@@ -981,13 +980,6 @@ impl Vm {
                     }
                     self.push(Value::String(joined))
                 }
-                Op::FullSimplify => match self.pop() {
-                    Value::Quantity(q) => {
-                        let simplified = q.full_simplify();
-                        self.push_quantity(simplified);
-                    }
-                    v => self.push(v),
-                },
                 Op::Return => {
                     if self.frames.len() == 1 {
                         let return_value = self.pop();

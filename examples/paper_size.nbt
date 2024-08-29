@@ -16,7 +16,7 @@ fn paper_size_A(n: Scalar) -> PaperSize =
       }
     else
       PaperSize {
-        width: floor(paper_size_A(n - 1).height / 2),
+        width: floor_in(mm, paper_size_A(n - 1).height / 2),
         height: paper_size_A(n - 1).width,
       }
 

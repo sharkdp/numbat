@@ -75,7 +75,7 @@ impl ErrorDiagnostic for NameResolutionError {
 impl ErrorDiagnostic for TypeCheckError {
     fn diagnostics(&self) -> Vec<Diagnostic> {
         let d = Diagnostic::error().with_message("while type checking");
-        let inner_error = format!("{}", self);
+        let inner_error = format!("{self}");
 
         let d = match self {
             TypeCheckError::UnknownIdentifier(span, _, suggestion) => {
@@ -120,7 +120,7 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_message(actual_type),
                     span_operation
                         .diagnostic_label(LabelStyle::Secondary)
-                        .with_message(format!("incompatible dimensions in {}", operation)),
+                        .with_message(format!("incompatible dimensions in {operation}")),
                 ];
                 d.with_labels(labels).with_notes(vec![inner_error])
             }
@@ -518,16 +518,20 @@ impl ErrorDiagnostic for RuntimeError {
                     ])
                     .with_notes(vec![inner])]
             }
-            RuntimeError::AssertEq3Failed(span_lhs, lhs, span_rhs, rhs, _) => {
+            RuntimeError::AssertEq3Failed(assert_eq3_error) => {
+                let (lhs, rhs) = assert_eq3_error.fmt_comparands();
+
                 vec![Diagnostic::error()
                     .with_message("Assertion failed")
                     .with_labels(vec![
-                        span_lhs
+                        assert_eq3_error
+                            .span_lhs
                             .diagnostic_label(LabelStyle::Secondary)
-                            .with_message(format!("{lhs}")),
-                        span_rhs
+                            .with_message(lhs),
+                        assert_eq3_error
+                            .span_rhs
                             .diagnostic_label(LabelStyle::Primary)
-                            .with_message(format!("{rhs}")),
+                            .with_message(rhs),
                     ])
                     .with_notes(vec![format!("{self:#}")])]
             }

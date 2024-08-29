@@ -6,10 +6,9 @@ use crate::type_variable::TypeVariable;
 use crate::typed_ast::pretty_print_function_signature;
 use crate::Type;
 
+use super::map_stack::MapStack;
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use super::type_scheme::TypeScheme;
-
-use std::collections::HashMap;
 
 type Identifier = String;
 
@@ -94,7 +93,7 @@ impl IdentifierKind {
 
 #[derive(Clone, Debug, Default)]
 pub struct Environment {
-    identifiers: HashMap<Identifier, IdentifierKind>,
+    identifiers: MapStack<Identifier, IdentifierKind>,
 }
 
 impl Environment {
@@ -108,6 +107,14 @@ impl Environment {
     pub fn add_scheme(&mut self, i: Identifier, scheme: TypeScheme, span: Span, is_unit: bool) {
         self.identifiers
             .insert(i, IdentifierKind::Normal(scheme, span, is_unit));
+    }
+
+    pub(crate) fn save(&mut self) {
+        self.identifiers.save();
+    }
+
+    pub(crate) fn restore(&mut self) {
+        self.identifiers.restore();
     }
 
     pub(crate) fn add_function(
@@ -126,7 +133,7 @@ impl Environment {
     }
 
     pub(crate) fn get_identifier_type(&self, v: &str) -> Option<TypeScheme> {
-        self.identifiers.get(v).map(|k| k.get_type())
+        self.find(v).map(|k| k.get_type())
     }
 
     pub(crate) fn iter_identifiers(&self) -> impl Iterator<Item = &Identifier> {
@@ -145,11 +152,15 @@ impl Environment {
             .map(|(id, kind)| (id, kind.get_type()))
     }
 
+    fn find(&self, name: &str) -> Option<&IdentifierKind> {
+        self.identifiers.get(name)
+    }
+
     pub(crate) fn get_function_info(
         &self,
         name: &str,
     ) -> Option<(&FunctionSignature, &FunctionMetadata)> {
-        match self.identifiers.get(name) {
+        match self.find(name) {
             Some(IdentifierKind::Function(signature, metadata)) => Some((signature, metadata)),
             _ => None,
         }

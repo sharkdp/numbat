@@ -23,3 +23,49 @@ assert_eq(value_of(1.2345 m),     1.2345)
 
 assert_eq(value_of(1 m^2/s),      1)
 assert_eq(value_of(1.2345 m^2/s), 1.2345)
+
+# round, round_in
+
+assert_eq(round(1.234), 1)
+
+assert_eq(1.234 m |> round_in(m), 1 m)
+assert_eq(1.234 m |> round_in(cm), 123 cm)
+assert_eq(1.234 m |> round_in(mm), 1234 mm)
+
+assert_eq(1.234 m |> round_in(10 m), 0)
+assert_eq(1.234 m |> round_in(1 m), 1 m)
+assert_eq(1.234 m |> round_in(0.1 m), 1.2 m, 1e-9 m)
+assert_eq(1.234 m |> round_in(0.01 m), 1.23 m, 1e-9 m)
+
+assert_eq(1234 |> round_in(1000), 1000)
+assert_eq(1234 |> round_in(100), 1200)
+assert_eq(1234 |> round_in(10), 1230)
+assert_eq(1234 |> round_in(1), 1234)
+assert_eq(1234 |> round_in(0.1), 1234)
+
+# floor, floor_in
+
+assert_eq(floor(1.2), 1)
+assert_eq(floor(1.8), 1)
+assert_eq(floor(-1.2), -2)
+
+assert_eq(1.8 m |> floor_in(m), 1 m)
+assert_eq(1.8 m |> floor_in(cm), 180 cm)
+
+# ceil, ceil_in
+
+assert_eq(ceil(1.2), 2)
+assert_eq(ceil(-1.2), -1)
+
+assert_eq(1.2 m |> ceil_in(m), 2 m)
+assert_eq(1.2 m |> ceil_in(cm), 120 cm)
+
+# trunc, trunc_in
+
+assert_eq(trunc(1.2), 1)
+assert_eq(trunc(1.8), 1)
+assert_eq(trunc(-1.2), -1)
+assert_eq(trunc(-1.8), -1)
+
+assert_eq(1.8 m |> trunc_in(m), 1 m)
+assert_eq(1.8 m |> trunc_in(cm), 180 cm)

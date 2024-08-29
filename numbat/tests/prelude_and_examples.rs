@@ -21,7 +21,7 @@ fn assert_runs(code: &str) {
 
 fn assert_runs_without_prelude(code: &str) {
     let result = get_test_context_without_prelude().interpret(code, CodeSource::Internal);
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "Failed with: {}", result.unwrap_err());
     assert!(matches!(
         result.unwrap().1,
         InterpreterResult::Value(_) | InterpreterResult::Continue
@@ -65,7 +65,7 @@ fn run_for_each_file(glob_pattern: &str, f: impl Fn(&str)) {
             continue;
         }
 
-        println!("Testing example {example:?}", example = path);
+        println!("Testing example {path:?}");
         let example_code = fs::read_to_string(path).unwrap();
 
         f(&example_code);

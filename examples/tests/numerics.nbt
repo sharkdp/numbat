@@ -1,5 +1,6 @@
 use numerics::solve
 use numerics::diff
+use numerics::fixed_point
 
 # Root finding
 
@@ -9,6 +10,12 @@ assert_eq(root_bisect(f1, 1, 2, 1e-10, 1e-10), 1.52137970680, 1e-8)
 fn f1_prime(x) = 3 x² - 1
 assert_eq(root_newton(f1, f1_prime, 1, 1e-10), 1.52137970680, 1e-8)
 assert_eq(root_newton(f1, f1_prime, 2, 1e-10), 1.52137970680, 1e-8)
+
+# Fixed point iteration
+let a = 3
+fn f_sqrt3(x: Scalar) = 0.5 * (a / x + x)
+
+assert_eq(fixed_point(f_sqrt3, 1, 1e-10), sqrt(3), 1e-10)
 
 # Differentiation
 

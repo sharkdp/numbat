@@ -18,16 +18,16 @@ is specified as `Length`.
 
 Numbat has a powerful type inference system, which is able to infer missing types
 when they are not explicitly specified. For example, consider the following function
-definition for the breaking distance of a car, given its velocity `v`:
+definition for the braking distance of a car, given its velocity `v`:
 ```nbt
-fn breaking_distance(v) = v t_reaction + v² / 2 µ g0
+fn braking_distance(v) = v t_reaction + v² / 2 µ g0
   where t_reaction = 1 s # driver reaction time
     and µ = 0.7          # coefficient of friction
 ```
 If you enter this function into the Numbat REPL, you will see that all types are filled
 in automatically:
 ```nbt
-fn breaking_distance(v: Velocity) -> Length = v × t_reaction + (v² / (2 µ × g0))
+fn braking_distance(v: Velocity) -> Length = v × t_reaction + (v² / (2 µ × g0))
   where t_reaction: Time = 1 second
     and µ: Scalar = 0.7
 ```
@@ -38,7 +38,7 @@ In particular, note that the type of the function argument `v` is correctly infe
 > are known. The `+` operator imposes a *constraint* on the types: two quantities can
 > only be added if their physical dimension is the same. The type inference algorithm
 > records constraints like this, and then tries to find a solution that satisfies all
-> all of them. In this case, only a single equation needs to be solved:
+> of them. In this case, only a single equation needs to be solved:
 > ```
 > type(v) × type(t_reaction) = type(v)² / (type(µ) × type(g0)      )
 > type(v) × Time             = type(v)² / (      1 × Length / Time²)

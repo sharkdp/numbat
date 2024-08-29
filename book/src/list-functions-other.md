@@ -1,6 +1,6 @@
 # Other functions
 
-[Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion)
+[Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Color format conversion](#color-format-conversion)
 
 ## Error handling
 
@@ -139,5 +139,44 @@ More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_te
 
 ```nbt
 fn fahrenheit(t_kelvin: Temperature) -> Scalar
+```
+
+## Color format conversion
+
+Defined in: `extra::color`
+
+### `rgb`
+Create a `Color` from RGB (red, green, blue) values in the range \\( [0, 256) \\).
+
+```nbt
+fn rgb(red: Scalar, green: Scalar, blue: Scalar) -> Color
+```
+
+### `color`
+Create a `Color` from a (hexadecimal) value, e.g. `color(0xff7700)`.
+
+```nbt
+fn color(rgb_hex: Scalar) -> Color
+```
+
+### `color_rgb`
+Convert a color to its RGB representation, e.g. `cyan -> color_rgb`.
+
+```nbt
+fn color_rgb(color: Color) -> String
+```
+
+### `color_rgb_float`
+Convert a color to its RGB floating point representation, e.g. `cyan -> color_rgb_float`.
+
+```nbt
+fn color_rgb_float(color: Color) -> String
+```
+
+### `color_hex`
+Convert a color to its hexadecimal representation, e.g. `rgb(225, 36, 143) -> color_hex`.
+
+```nbt
+fn color_hex(color: Color) -> String
 ```
 

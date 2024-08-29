@@ -283,18 +283,18 @@ pub enum Type {
     String,
     DateTime,
     Fn(Vec<Type>, Box<Type>),
-    Struct(StructInfo),
+    Struct(Box<StructInfo>),
     List(Box<Type>),
 }
 
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::TVar(TypeVariable::Named(name)) => write!(f, "{}", name),
+            Type::TVar(TypeVariable::Named(name)) => write!(f, "{name}"),
             Type::TVar(TypeVariable::Quantified(_)) => {
                 unreachable!("Quantified types should not be printed")
             }
-            Type::TPar(name) => write!(f, "{}", name),
+            Type::TPar(name) => write!(f, "{name}"),
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
@@ -306,7 +306,8 @@ impl std::fmt::Display for Type {
                     ps = param_types.iter().map(|p| p.to_string()).join(", ")
                 )
             }
-            Type::Struct(StructInfo { name, fields, .. }) => {
+            Type::Struct(info) => {
+                let StructInfo { name, fields, .. } = &**info;
                 write!(
                     f,
                     "{name} {{{}}}",
@@ -316,7 +317,7 @@ impl std::fmt::Display for Type {
                         .join(", ")
                 )
             }
-            Type::List(element_type) => write!(f, "List<{}>", element_type),
+            Type::List(element_type) => write!(f, "List<{element_type}>"),
         }
     }
 }
@@ -348,7 +349,7 @@ impl PrettyPrint for Type {
                     + return_type.pretty_print()
                     + m::operator("]")
             }
-            Type::Struct(StructInfo { name, .. }) => m::type_identifier(name),
+            Type::Struct(info) => m::type_identifier(&info.name),
             Type::List(element_type) => {
                 m::type_identifier("List")
                     + m::operator("<")
@@ -400,9 +401,9 @@ impl Type {
                 vars.dedup();
                 vars
             }
-            Type::Struct(StructInfo { fields, .. }) => {
+            Type::Struct(info) => {
                 let mut vars = vec![];
-                for (_, (_, t)) in fields {
+                for (_, (_, t)) in &info.fields {
                     vars.extend(t.type_variables(including_type_parameters));
                 }
                 vars
@@ -629,11 +630,12 @@ impl Statement {
         registry: &DimensionRegistry,
         type_: &TypeScheme,
         annotation: &Option<TypeAnnotation>,
+        with_quantifiers: bool,
     ) -> Markup {
         if let Some(annotation) = annotation {
             annotation.pretty_print()
         } else {
-            type_.to_readable_type(registry)
+            type_.to_readable_type(registry, with_quantifiers)
         }
     }
 
@@ -648,7 +650,7 @@ impl Statement {
                 type_,
                 readable_type,
             )) => {
-                *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+                *readable_type = Self::create_readable_type(registry, type_, type_annotation, true);
             }
             Statement::DefineFunction(
                 _,
@@ -668,7 +670,8 @@ impl Statement {
                 for DefineVariable(_, _, _, type_annotation, type_, readable_type) in
                     local_variables
                 {
-                    *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+                    *readable_type =
+                        Self::create_readable_type(registry, type_, type_annotation, false);
                 }
 
                 let Type::Fn(parameter_types, return_type) = fn_type.inner else {
@@ -679,6 +682,7 @@ impl Statement {
                     registry,
                     &TypeScheme::concrete(*return_type),
                     return_type_annotation,
+                    false,
                 );
 
                 for ((_, _, type_annotation, readable_parameter_type), parameter_type) in
@@ -688,13 +692,15 @@ impl Statement {
                         registry,
                         &TypeScheme::concrete(parameter_type.clone()),
                         type_annotation,
+                        false,
                     );
                 }
             }
             Statement::DefineDimension(_, _) => {}
             Statement::DefineBaseUnit(_, _, _, _) => {}
             Statement::DefineDerivedUnit(_, _, _, type_annotation, type_, readable_type) => {
-                *readable_type = Self::create_readable_type(registry, type_, type_annotation);
+                *readable_type =
+                    Self::create_readable_type(registry, type_, type_annotation, false);
             }
             Statement::ProcedureCall(_, _) => {}
             Statement::DefineStruct(_) => {}
@@ -750,7 +756,7 @@ impl Expression {
             Expression::Boolean(_, _) => Type::Boolean,
             Expression::Condition(_, _, then_, _) => then_.get_type(),
             Expression::String(_, _) => Type::String,
-            Expression::InstantiateStruct(_, _, info_) => Type::Struct(info_.clone()),
+            Expression::InstantiateStruct(_, _, info_) => Type::Struct(Box::new(info_.clone())),
             Expression::AccessField(_, _, _, _, _struct_type, field_type) => {
                 field_type.unsafe_as_concrete()
             }
@@ -775,7 +781,7 @@ impl Expression {
             Expression::Condition(_, _, then_, _) => then_.get_type_scheme(),
             Expression::String(_, _) => TypeScheme::make_quantified(Type::String),
             Expression::InstantiateStruct(_, _, info_) => {
-                TypeScheme::make_quantified(Type::Struct(info_.clone()))
+                TypeScheme::make_quantified(Type::Struct(Box::new(info_.clone())))
             }
             Expression::AccessField(_, _, _, _, _struct_type, field_type) => field_type.clone(),
             Expression::List(_, _, inner) => match inner {

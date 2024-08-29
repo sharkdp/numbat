@@ -1,15 +1,18 @@
+pub(crate) mod assert_eq_3;
+
 use crate::{
     dimension::DimensionRegistry,
     markup::Markup,
     pretty_print::PrettyPrint,
-    quantity::{Quantity, QuantityError},
+    quantity::QuantityError,
     span::Span,
     typed_ast::Statement,
     unit_registry::{UnitRegistry, UnitRegistryError},
 };
 
-use crate::markup as m;
+pub use crate::markup as m;
 
+use assert_eq_3::AssertEq3Error;
 use thiserror::Error;
 
 pub use crate::value::Value;
@@ -30,8 +33,8 @@ pub enum RuntimeError {
     AssertFailed(Span),
     #[error("Assertion failed because the following two values are not the same:\n  {1}\n  {3}")]
     AssertEq2Failed(Span, Value, Span, Value),
-    #[error("Assertion failed because the following two quantities differ by more than {4}:\n  {1}\n  {3}")]
-    AssertEq3Failed(Span, Quantity, Span, Quantity, Quantity),
+    #[error("{0}")]
+    AssertEq3Failed(AssertEq3Error),
     #[error("Could not load exchange rates from European Central Bank.")]
     CouldNotLoadExchangeRates,
     #[error("User error: {0}")]
@@ -90,7 +93,7 @@ impl InterpreterResult {
                             if type_.is_scalar() {
                                 None
                             } else {
-                                let ty = type_.to_readable_type(registry);
+                                let ty = type_.to_readable_type(registry, true);
                                 Some(m::dimmed("    [") + ty + m::dimmed("]"))
                             }
                         })
@@ -141,7 +144,7 @@ impl Default for InterpreterSettings {
     fn default() -> Self {
         Self {
             print_fn: Box::new(move |s: &Markup| {
-                print!("{}", s);
+                print!("{s}");
             }),
         }
     }
@@ -162,6 +165,7 @@ pub trait Interpreter {
 #[cfg(test)]
 mod tests {
     use crate::prefix_parser::AcceptsPrefix;
+    use crate::quantity::Quantity;
     use crate::unit::{CanonicalName, Unit};
     use crate::{bytecode_interpreter::BytecodeInterpreter, prefix_transformer::Transformer};
 
@@ -195,7 +199,7 @@ mod tests {
 
     #[track_caller]
     fn get_interpreter_result(input: &str) -> Result<InterpreterResult> {
-        let full_code = format!("{prelude}\n{input}", prelude = TEST_PRELUDE, input = input);
+        let full_code = format!("{TEST_PRELUDE}\n{input}");
         let statements = crate::parser::parse(&full_code, 0)
             .expect("No parse errors for inputs in this test suite");
         let statements_transformed = Transformer::new()

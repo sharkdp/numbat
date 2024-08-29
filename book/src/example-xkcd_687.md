@@ -18,3 +18,5 @@ let r: Scalar =
 
 print("{r} ≈ π ?")
 ```
+
+<p align="center" style="margin-top: 2em"><a href="https://xkcd.com/687/"><img src="https://imgs.xkcd.com/comics/dimensional_analysis.png" alt="XKCD 687" style="max-width: 100%"></a><br>Source: <a href="https://xkcd.com/687/">https://xkcd.com/687/</a></p>

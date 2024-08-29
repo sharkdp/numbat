@@ -6,6 +6,7 @@ use crate::unit::{is_multiple_of, Unit, UnitFactor};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::{FromPrimitive, Zero};
+use pretty_dtoa::FmtFloatConfig;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
@@ -23,18 +24,29 @@ pub type Result<T> = std::result::Result<T, QuantityError>;
 pub struct Quantity {
     value: Number,
     unit: Unit,
+    can_simplify: bool,
 }
 
 impl Quantity {
     pub fn new(value: Number, unit: Unit) -> Self {
-        Quantity { value, unit }
+        Quantity {
+            value,
+            unit,
+            can_simplify: true,
+        }
     }
 
     pub fn new_f64(value: f64, unit: Unit) -> Self {
         Quantity {
             value: Number::from_f64(value),
             unit,
+            can_simplify: true,
         }
+    }
+
+    pub fn no_simplify(mut self) -> Self {
+        self.can_simplify = false;
+        self
     }
 
     pub fn from_scalar(value: f64) -> Quantity {
@@ -51,6 +63,10 @@ impl Quantity {
 
     pub fn is_zero(&self) -> bool {
         self.value.to_f64() == 0.0
+    }
+
+    pub fn abs(self) -> Self {
+        Quantity::new(self.value.abs(), self.unit)
     }
 
     pub fn to_base_unit_representation(&self) -> Quantity {
@@ -125,6 +141,10 @@ impl Quantity {
     }
 
     pub fn full_simplify(&self) -> Self {
+        if !self.can_simplify {
+            return self.clone();
+        }
+
         // Heuristic 1
         if let Ok(scalar_result) = self.convert_to(&Unit::scalar()) {
             return scalar_result;
@@ -251,10 +271,10 @@ impl std::ops::Add for &Quantity {
         } else if rhs.is_zero() {
             Ok(self.clone())
         } else {
-            Ok(Quantity {
-                value: self.value + rhs.convert_to(&self.unit)?.value,
-                unit: self.unit.clone(),
-            })
+            Ok(Quantity::new(
+                self.value + rhs.convert_to(&self.unit)?.value,
+                self.unit.clone(),
+            ))
         }
     }
 }
@@ -268,10 +288,10 @@ impl std::ops::Sub for &Quantity {
         } else if rhs.is_zero() {
             Ok(self.clone())
         } else {
-            Ok(Quantity {
-                value: self.value - rhs.convert_to(&self.unit)?.value,
-                unit: self.unit.clone(),
-            })
+            Ok(Quantity::new(
+                self.value - rhs.convert_to(&self.unit)?.value,
+                self.unit.clone(),
+            ))
         }
     }
 }
@@ -280,10 +300,7 @@ impl std::ops::Mul for Quantity {
     type Output = Quantity;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Quantity {
-            value: self.value * rhs.value,
-            unit: self.unit * rhs.unit,
-        }
+        Quantity::new(self.value * rhs.value, self.unit * rhs.unit)
     }
 }
 
@@ -291,10 +308,7 @@ impl std::ops::Div for Quantity {
     type Output = Quantity;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Quantity {
-            value: self.value / rhs.value,
-            unit: self.unit / rhs.unit,
-        }
+        Quantity::new(self.value / rhs.value, self.unit / rhs.unit)
     }
 }
 
@@ -302,10 +316,7 @@ impl std::ops::Neg for Quantity {
     type Output = Quantity;
 
     fn neg(self) -> Self::Output {
-        Quantity {
-            value: -self.value,
-            unit: self.unit,
-        }
+        Quantity::new(-self.value, self.unit)
     }
 }
 
@@ -330,9 +341,17 @@ impl PartialOrd for Quantity {
 
 impl PrettyPrint for Quantity {
     fn pretty_print(&self) -> crate::markup::Markup {
+        self.pretty_print_with_options(None)
+    }
+}
+
+impl Quantity {
+    /// Pretty prints with the given options.
+    /// If options is None, default options will be used.
+    fn pretty_print_with_options(&self, options: Option<FmtFloatConfig>) -> crate::markup::Markup {
         use crate::markup;
 
-        let formatted_number = self.unsafe_value().pretty_print();
+        let formatted_number = self.unsafe_value().pretty_print_with_options(options);
 
         let unit_str = format!("{}", self.unit());
 
@@ -343,6 +362,22 @@ impl PrettyPrint for Quantity {
                 markup::space()
             }
             + markup::unit(unit_str)
+    }
+
+    /// Pretty prints with the given precision. Disables e (scientific) notation.
+    /// Prints without fractional part if precision is 0.
+    pub fn pretty_print_with_precision(&self, precision: i8) -> crate::markup::Markup {
+        let options = FmtFloatConfig::default()
+            .min_decimal_digits(precision)
+            .max_decimal_digits(precision)
+            .add_point_zero(false)
+            .force_no_e_notation()
+            .round();
+        self.pretty_print_with_options(Some(options))
+    }
+
+    pub fn unsafe_value_as_string(&self) -> String {
+        self.unsafe_value().to_string()
     }
 }
 
@@ -443,6 +478,24 @@ mod tests {
                 epsilon = 1e-6
             );
         }
+    }
+
+    #[test]
+    fn abs() {
+        assert_eq!(
+            Quantity::new_f64(0.0, Unit::scalar()).abs(),
+            Quantity::new_f64(0.0, Unit::scalar())
+        );
+
+        assert_eq!(
+            Quantity::new_f64(1.0, Unit::scalar()).abs(),
+            Quantity::new_f64(1.0, Unit::scalar())
+        );
+
+        assert_eq!(
+            Quantity::new_f64(-1.0, Unit::scalar()).abs(),
+            Quantity::new_f64(1.0, Unit::scalar())
+        );
     }
 
     #[test]

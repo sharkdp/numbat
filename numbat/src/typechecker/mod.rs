@@ -6,6 +6,7 @@ mod constraints;
 mod environment;
 mod error;
 mod incompatible_dimensions;
+pub mod map_stack;
 mod name_generator;
 pub mod qualified_type;
 mod substitutions;
@@ -55,8 +56,8 @@ pub struct TypeChecker {
 
     type_namespace: Namespace,
     value_namespace: Namespace,
-
     env: Environment,
+
     name_generator: NameGenerator,
     constraints: ConstraintSet,
 }
@@ -95,7 +96,7 @@ impl TypeChecker {
                         // if we see a struct name here, it's safe to assume it
                         // isn't accidentally clashing with a dimension, we
                         // check that earlier.
-                        return Ok(Type::Struct(info.clone()));
+                        return Ok(Type::Struct(Box::new(info.clone())));
                     }
                 }
 
@@ -1310,23 +1311,27 @@ impl TypeChecker {
                     )?;
                 }
 
-                let mut typechecker_fn = self.clone();
+                // Save the environment and namespaces to avoid polluting
+                // their parents with the locals of this function
+                self.env.save();
+                self.type_namespace.save();
+                self.value_namespace.save();
+
                 let is_ffi_function = body.is_none();
 
                 for (span, type_parameter, bound) in type_parameters {
-                    if typechecker_fn.type_namespace.has_identifier(type_parameter) {
+                    if self.type_namespace.has_identifier(type_parameter) {
                         return Err(TypeCheckError::TypeParameterNameClash(
                             *span,
                             type_parameter.clone(),
                         ));
                     }
 
-                    typechecker_fn
-                        .type_namespace
+                    self.type_namespace
                         .add_identifier(type_parameter.clone(), *span, "type parameter".to_owned())
                         .ok(); // TODO: is this call even correct?
 
-                    typechecker_fn.registry.introduced_type_parameters.push((
+                    self.registry.introduced_type_parameters.push((
                         *span,
                         type_parameter.clone(),
                         bound.clone(),
@@ -1334,8 +1339,7 @@ impl TypeChecker {
 
                     match bound {
                         Some(TypeParameterBound::Dim) => {
-                            typechecker_fn
-                                .add_dtype_constraint(&Type::TPar(type_parameter.clone()))
+                            self.add_dtype_constraint(&Type::TPar(type_parameter.clone()))
                                 .ok();
                         }
                         None => {}
@@ -1346,12 +1350,12 @@ impl TypeChecker {
                 for (parameter_span, parameter, type_annotation) in parameters {
                     let annotated_type = type_annotation
                         .as_ref()
-                        .map(|a| typechecker_fn.type_from_annotation(a))
+                        .map(|a| self.type_from_annotation(a))
                         .transpose()?;
 
                     let parameter_type = match &annotated_type {
                         Some(annotated_type) => annotated_type.clone(),
-                        None => typechecker_fn.fresh_type_variable(),
+                        None => self.fresh_type_variable(),
                     };
 
                     if is_ffi_function && annotated_type.is_none() {
@@ -1361,7 +1365,7 @@ impl TypeChecker {
                         ));
                     }
 
-                    typechecker_fn.env.add_scheme(
+                    self.env.add_scheme(
                         parameter.clone(),
                         TypeScheme::make_quantified(parameter_type.clone()),
                         *parameter_span,
@@ -1377,12 +1381,12 @@ impl TypeChecker {
 
                 let annotated_return_type = return_type_annotation
                     .as_ref()
-                    .map(|annotation| typechecker_fn.type_from_annotation(annotation))
+                    .map(|annotation| self.type_from_annotation(annotation))
                     .transpose()?;
 
                 let return_type = match &annotated_return_type {
                     Some(annotated_return_type) => annotated_return_type.clone(),
-                    None => typechecker_fn.fresh_type_variable(),
+                    None => self.fresh_type_variable(),
                 };
 
                 // Add the function to the environment, so it can be called recursively
@@ -1399,7 +1403,7 @@ impl TypeChecker {
                 let fn_type =
                     TypeScheme::Concrete(Type::Fn(parameter_types, Box::new(return_type.clone())));
 
-                typechecker_fn.env.add_function(
+                self.env.add_function(
                     function_name.clone(),
                     FunctionSignature {
                         name: function_name.clone(),
@@ -1418,19 +1422,18 @@ impl TypeChecker {
 
                 let mut typed_local_variables = vec![];
                 for local_variable in local_variables {
-                    typed_local_variables
-                        .push(typechecker_fn.elaborate_define_variable(local_variable)?);
+                    typed_local_variables.push(self.elaborate_define_variable(local_variable)?);
                 }
 
                 let body_checked = body
                     .as_ref()
-                    .map(|expr| typechecker_fn.elaborate_expression(expr))
+                    .map(|expr| self.elaborate_expression(expr))
                     .transpose()?;
 
                 let return_type_inferred = if let Some(ref expr) = body_checked {
                     let return_type_inferred = expr.get_type();
 
-                    if typechecker_fn
+                    if self
                         .add_equal_constraint(&return_type_inferred, &return_type)
                         .is_trivially_violated()
                     {
@@ -1449,7 +1452,7 @@ impl TypeChecker {
                                                 .unwrap()
                                                 .full_span(),
                                             expected_name: "specified return type",
-                                            expected_dimensions: typechecker_fn
+                                            expected_dimensions: self
                                                 .registry
                                                 .get_derived_entry_names_for(
                                                     &dtype_specified.to_base_representation(),
@@ -1461,7 +1464,7 @@ impl TypeChecker {
                                                 .unwrap(),
                                             actual_name: "   actual return type",
                                             actual_name_for_fix: "expression in the function body",
-                                            actual_dimensions: typechecker_fn
+                                            actual_dimensions: self
                                                 .registry
                                                 .get_derived_entry_names_for(
                                                     &dtype_deduced.to_base_representation(),
@@ -1500,16 +1503,19 @@ impl TypeChecker {
                     })?
                 };
 
-                typechecker_fn
-                    .add_equal_constraint(&return_type_inferred, &return_type)
+                self.add_equal_constraint(&return_type_inferred, &return_type)
                     .ok();
 
-                self.constraints = typechecker_fn.constraints;
-                self.name_generator = typechecker_fn.name_generator;
-                self.registry = typechecker_fn.registry;
                 // Copy identifier for the new function into local env:
-                let (signature, metadata) =
-                    typechecker_fn.env.get_function_info(function_name).unwrap();
+                let (signature, metadata) = self.env.get_function_info(function_name).unwrap();
+                let signature = signature.clone();
+                let metadata = metadata.clone();
+
+                // Restore the environment and namespaces before exiting and
+                // add the function name to the environment
+                self.value_namespace.restore();
+                self.type_namespace.restore();
+                self.env.restore();
                 self.env
                     .add_function(function_name.clone(), signature.clone(), metadata.clone());
 
@@ -1807,7 +1813,9 @@ impl TypeChecker {
         if let Some((span, type_of_hole)) = elaborated_statement.find_typed_hole()? {
             return Err(TypeCheckError::TypedHoleInStatement(
                 span,
-                type_of_hole.to_readable_type(&self.registry).to_string(),
+                type_of_hole
+                    .to_readable_type(&self.registry, true)
+                    .to_string(),
                 elaborated_statement.pretty_print().to_string(),
                 self.env
                     .iter_relevant_matches()
