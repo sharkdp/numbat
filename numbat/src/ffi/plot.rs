@@ -48,7 +48,7 @@ fn line_plot(mut args: Args) -> Plot {
     crate::plot::line_plot(xs, ys, &x_label, &y_label)
 }
 
-fn bar_chat(mut args: Args) -> Plot {
+fn bar_chart(mut args: Args) -> Plot {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let x_labels = fields.pop().unwrap();
     let values = fields.pop().unwrap();
@@ -107,7 +107,7 @@ pub fn show(args: Args) -> Result<Value> {
     let plot = if info.name == "LinePlot" {
         line_plot(args)
     } else if info.name == "BarChart" {
-        bar_chat(args)
+        bar_chart(args)
     } else {
         return Err(RuntimeError::UserError(format!(
             "Unsupported plot type: {}",
