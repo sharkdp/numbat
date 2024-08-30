@@ -1734,6 +1734,7 @@ impl TypeChecker {
         info!("");
 
         info!("Constraints:");
+        self.constraints.remove_duplicates();
         for constraint in self.constraints.iter() {
             info!("{}", constraint.pretty_print());
         }

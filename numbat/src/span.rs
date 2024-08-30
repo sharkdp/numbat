@@ -25,7 +25,7 @@ impl SourceCodePositition {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Span {
     pub start: SourceCodePositition,
     pub end: SourceCodePositition,

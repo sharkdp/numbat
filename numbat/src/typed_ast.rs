@@ -18,7 +18,7 @@ use crate::{
 use crate::{markup as m, BaseRepresentation, BaseRepresentationFactor};
 
 /// Dimension type
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DTypeFactor {
     TVar(TypeVariable),
     TPar(String),
@@ -36,7 +36,7 @@ impl DTypeFactor {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DType {
     // Always in canonical form
     pub factors: Vec<(DTypeFactor, Exponent)>, // TODO make this private
@@ -274,7 +274,19 @@ pub struct StructInfo {
     pub fields: IndexMap<String, (Span, Type)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl PartialOrd for StructInfo {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.name.partial_cmp(&other.name)
+    }
+}
+
+impl Ord for StructInfo {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Type {
     TVar(TypeVariable),
     TPar(String),

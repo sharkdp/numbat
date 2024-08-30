@@ -111,6 +111,7 @@ impl ConstraintSet {
             }
 
             self.constraints = new_constraint_set.constraints;
+            self.remove_duplicates();
         }
 
         // Solve remaining type class constraints (if possible), by remembering
@@ -154,6 +155,11 @@ impl ConstraintSet {
     fn is_empty(&self) -> bool {
         self.constraints.is_empty()
     }
+
+    pub fn remove_duplicates(&mut self) {
+        self.constraints.sort();
+        self.constraints.dedup();
+    }
 }
 
 impl ApplySubstitution for ConstraintSet {
@@ -189,7 +195,7 @@ impl TrivialResultion {
 /// - A unification constraint `Type1 ~ Type2` which constrains two types to be equal
 /// - A 'type class' constraint `Type: DType` which constrains `Type` to be a dimension type (like `Scalar`, `Length`, or `Length × Mass / Time²`).
 /// - A constraint `DType ~ Scalar` which constrains a dimension type to be dimensionless.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Constraint {
     Equal(Type, Type),
     IsDType(Type),
