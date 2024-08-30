@@ -36,6 +36,7 @@ rand = "0.8.5"
 strfmt = "0.2.4"
 indexmap = "2.2.6"
 mendeleev = "0.8.1"
+log = "0.4.21"
 
 [features]
 default = ["fetch-exchangerates"]

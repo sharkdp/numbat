@@ -33,6 +33,7 @@ use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResultion};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
+use log::info;
 use name_generator::NameGenerator;
 use num_traits::Zero;
 
@@ -1726,6 +1727,15 @@ impl TypeChecker {
         // with unification variables, i.e. type variables that will only later be
         // filled in after the constraints have been solved.
         let mut elaborated_statement = self.elaborate_statement(statement)?;
+
+        info!("=========================================");
+        info!("Elaborated statements:");
+        info!("{}", elaborated_statement.pretty_print());
+        info!("");
+
+        info!("Constraints:");
+        info!("{}", self.constraints.pretty_print(2));
+        info!("");
 
         // Solve constraints
         let (substitution, dtype_variables) =
