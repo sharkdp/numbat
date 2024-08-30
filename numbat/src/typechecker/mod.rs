@@ -1729,12 +1729,14 @@ impl TypeChecker {
         let mut elaborated_statement = self.elaborate_statement(statement)?;
 
         info!("=========================================");
-        info!("Elaborated statements:");
+        info!("Elaborated statement:");
         info!("{}", elaborated_statement.pretty_print());
         info!("");
 
         info!("Constraints:");
-        info!("{}", self.constraints.pretty_print(2));
+        for constraint in self.constraints.iter() {
+            info!("{}", constraint.pretty_print());
+        }
         info!("");
 
         // Solve constraints

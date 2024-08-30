@@ -96,10 +96,12 @@ impl ConstraintSet {
 
                         substitution.extend(new_substitution);
 
-                        debug!(
-                            "    New constraints:\n{}",
-                            new_constraint_set.pretty_print(6)
-                        );
+                        if !new_constraint_set.is_empty() {
+                            debug!("    New constraints:");
+                            for c in new_constraint_set.iter() {
+                                debug!("      {}\n", c.pretty_print());
+                            }
+                        }
 
                         made_progress = true;
                         break;
@@ -149,12 +151,8 @@ impl ConstraintSet {
         self.constraints.iter()
     }
 
-    pub fn pretty_print(&self, indent: usize) -> String {
-        self.constraints
-            .iter()
-            .map(|c| format!("{:indent$}{}", "", c.pretty_print(), indent = indent))
-            .collect::<Vec<String>>()
-            .join("\n")
+    fn is_empty(&self) -> bool {
+        self.constraints.is_empty()
     }
 }
 
@@ -403,7 +401,7 @@ impl Constraint {
         }
     }
 
-    fn pretty_print(&self) -> String {
+    pub fn pretty_print(&self) -> String {
         match self {
             Constraint::Equal(t1, t2) => {
                 format!("  {t1} ~ {t2}")
