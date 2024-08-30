@@ -88,7 +88,7 @@ fn show_plot(plot: Plot) -> String {
 }
 
 #[cfg(target_family = "wasm")]
-fn show_plot(plot: Plot) -> String {
+fn show_plot(_plot: Plot) -> String {
     // The way we could implement this would be to return plot.to_inline_html(..).
     // This would have to be retrieved on the JS side and then rendered using plotly.js.
 
