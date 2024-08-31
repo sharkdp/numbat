@@ -33,7 +33,7 @@ use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResultion};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
-use log::info;
+use log::{debug, info};
 use name_generator::NameGenerator;
 use num_traits::Zero;
 
@@ -178,7 +178,7 @@ impl TypeChecker {
         argument_types: Vec<Type>,
     ) -> Result<typed_ast::Expression> {
         let FunctionSignature {
-            name: _,
+            name,
             definition_span,
             type_parameters: _,
             parameters,
@@ -194,6 +194,11 @@ impl TypeChecker {
             }
             TypeScheme::Quantified(_, _) => {
                 let qt = fn_type.instantiate(&mut self.name_generator);
+
+                debug!(
+                    "Instantiated function type for call to {name}: {qt}",
+                    qt = qt.inner.pretty_print()
+                );
 
                 for Bound::IsDim(t) in qt.bounds.iter() {
                     self.add_dtype_constraint(t).ok();
@@ -1723,12 +1728,14 @@ impl TypeChecker {
         self.constraints.clear();
         self.registry.introduced_type_parameters.clear();
 
+        info!("=========================================");
+        info!("Starting elaboration");
+
         // Elaborate the program/statement: turn the AST into a typed AST, possibly
         // with unification variables, i.e. type variables that will only later be
         // filled in after the constraints have been solved.
         let mut elaborated_statement = self.elaborate_statement(statement)?;
 
-        info!("=========================================");
         info!("Elaborated statement:");
         info!("{}", elaborated_statement.pretty_print());
         info!("");
