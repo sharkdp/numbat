@@ -9,37 +9,51 @@ html {
     /* Maybe lower font-size to 16px? */
     font-size: 30px;
 
-    --editor-bg-color: #FFFFFF;
-    --results-bg-color: #f6f8f6;
-    --editor-accent-color: #eee;
-    --editor-text-color: black;
+    /* Light theme */ 
+    --editor-bg-color-light: #FFFFFF;
+    --results-bg-color-light: #f6f8f6;
+    --editor-accent-color-light: #eee;
+    --editor-text-color-light: black;
+    
+    /* Dark theme */ 
+    --editor-bg-color-dark: #262826;
+    --results-bg-color-dark: #2F322F;
+    --editor-accent-color-dark: #464846;
+    --editor-text-color-dark: #eee;
+
+    /* Default theme */ 
+    --editor-bg-color: var(--editor-bg-color-light);
+    --results-bg-color: var(--results-bg-color-light);
+    --editor-accent-color: var(--editor-accent-color-light);
+    --editor-text-color: var(--editor-text-color-light);
+
     background-color: var(--editor-bg-color);
 }
 
 .alt-theme body,
 html.alt-theme {
-    --editor-bg-color: #262826;
-    --results-bg-color: #2F322F;
-    --editor-accent-color: #464846;
-    --editor-text-color: #eee;
+    --editor-bg-color: var(--editor-bg-color-dark);
+    --results-bg-color: var(--results-bg-color-dark);
+    --editor-accent-color: var(--editor-accent-color-dark);
+    --editor-text-color: var(--editor-text-color-dark);
 }
 
 @media (prefers-color-scheme: dark) {
 
     body,
     html {
-        --editor-bg-color: #262826;
-        --results-bg-color: #2F322F;
-        --editor-accent-color: #464846;
-        --editor-text-color: #eee;
+        --editor-bg-color: var(--editor-bg-color-dark);
+        --results-bg-color: var(--results-bg-color-dark);
+        --editor-accent-color: var(--editor-accent-color-dark);
+        --editor-text-color: var(--editor-text-color-dark);
     }
 
     .alt-theme body,
     html.alt-theme {
-        --editor-bg-color: #FFFFFF;
-        --results-bg-color: #f6f8f6;
-        --editor-accent-color: #eee;
-        --editor-text-color: black;
+        --editor-bg-color: var(--editor-bg-color-light);
+        --results-bg-color: var(--results-bg-color-light);
+        --editor-accent-color: var(--editor-accent-color-light);
+        --editor-text-color: var(--editor-text-color-light);
     }
 }
 
