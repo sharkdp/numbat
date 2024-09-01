@@ -26,13 +26,16 @@ function interpret(input) {
         let num_newlines = res ? res.length : 0;
 
         let brs = "<br>".repeat(num_newlines);
-        let output = numbat.interpret(part).output;
-        
-        if (output.length === 0) {
-            output = "<br>";
+        let output = part.trim().length > 0 ? numbat.interpret(part).output : "";
+        let result = "";
+
+        if (output.trim().length === 0) {
+            result = brs + "<br>";
+        } else {
+            result = brs + "<div>" + output  + "</div>";
         }
 
-        return "<div>" +  brs + output  + "</div>";
+        return result;
     });
 
     return results.join("<br>");
