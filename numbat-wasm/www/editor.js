@@ -11,6 +11,7 @@ async function main() {
 
     initializeEditor();
     initializeSplit();
+    initializeThemeToggle();
 }
 
 main();
@@ -157,4 +158,24 @@ function initializeSplit() {
     Split(['#editor', '#results'], {
         gutterSize: 15,
     });
+}
+
+function initializeThemeToggle() { 
+    const colorSchemeQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    let toggleImg = document.querySelector("#theme-toggle img");
+    toggleImg.src = colorSchemeQueryList.matches ? "assets/sun.svg" : "assets/moon.svg";
+
+    function toggleTheme() {
+        let classList = document.querySelector(":root").classList;
+        let isToggledOn = classList.toggle("alt-theme");
+
+        if (colorSchemeQueryList.matches) {
+            toggleImg.src = isToggledOn ? "assets/moon.svg" : "assets/sun.svg";
+        } else {
+            toggleImg.src = isToggledOn ? "assets/sun.svg" : "assets/moon.svg";
+        }
+    } 
+
+    document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 }
