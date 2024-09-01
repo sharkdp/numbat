@@ -26,11 +26,16 @@ function interpret(input) {
         let num_newlines = res ? res.length : 0;
 
         let brs = "<br>".repeat(num_newlines);
+        let output = numbat.interpret(part).output;
+        
+        if (output.length === 0) {
+            output = "<br>";
+        }
 
-        return brs + numbat.interpret(part).output;
+        return "<div>" +  brs + output  + "</div>";
     });
 
-    return results.join("<br><br>");
+    return results.join("<br>");
 }
 
 ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.9.6/");
@@ -135,6 +140,7 @@ function initializeEditor() {
         showGutter: true,
         highlightActiveLine: false,
         highlightGutterLine: false,
+        scrollPastEnd: 0,
     });
 
     function evaluate() {
