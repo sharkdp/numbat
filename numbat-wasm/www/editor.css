@@ -5,8 +5,44 @@ html {
     margin: 0;
     padding: 0;
     height: 100%;
+
+    /* Maybe lower font-size to 16px? */
     font-size: 30px;
+
+    --editor-bg-color: #FFFFFF;
+    --results-bg-color: #f6f8f6;
+    --editor-accent-color: #eee;
+    --editor-text-color: black;
+    background-color: var(--editor-bg-color);
 }
+
+.alt-theme body,
+html.alt-theme {
+    --editor-bg-color: #262826;
+    --results-bg-color: #2F322F;
+    --editor-accent-color: #464846;
+    --editor-text-color: #eee;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body,
+    html {
+        --editor-bg-color: #262826;
+        --results-bg-color: #2F322F;
+        --editor-accent-color: #464846;
+        --editor-text-color: #eee;
+    }
+
+    .alt-theme body,
+    html.alt-theme {
+        --editor-bg-color: #FFFFFF;
+        --results-bg-color: #f6f8f6;
+        --editor-accent-color: #eee;
+        --editor-text-color: black;
+    }
+}
+
 
 .split {
     width: 100%;
@@ -15,22 +51,45 @@ html {
     flex-direction: row;
 }
 
+
 .gutter {
-    background-color: #eee;
+    background-color: var(--editor-accent-color);
     background-repeat: no-repeat;
     background-position: 50%;
 }
+
 
 .gutter.gutter-horizontal {
     background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
     cursor: col-resize;
 }
 
+
 #editor {
     font-family: 'Fira Mono', monospace;
     font-size: 1em;
 }
 
+
+.terminal,
+.cmd,
+.ace_editor {
+    background-color: var(--editor-bg-color);
+    color: var(--editor-text-color);
+}
+
+
+#editor .ace_gutter {
+    background-color: var(--editor-accent-color);
+    color: var(--editor-text-color);
+}
+
+#theme-toggle {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    background-color: #00000000;
+}
 
 .type-expr {
     font-family: 'Fira Mono', monospace;
@@ -42,12 +101,13 @@ html {
     display: block;
 }
 
+
 #results {
     font-family: 'Fira Mono', monospace;
     font-size: 1em;
     padding: 0.1em;
-    background-color: #f6f8f6;
-    overflow: auto;
+    background-color: var(--results-bg-color);
+    color: var(--editor-text-color);
 }
 
 .numbat-type-identifier {
@@ -95,7 +155,7 @@ html {
 }
 
 .numbat-unit {
-    color: #5c12a6;
+    color: #8812a6;
 }
 
 .numbat-dimmed {
