@@ -1,0 +1,12 @@
+@aliases(nights)
+unit night
+
+let flights = $ 600
+
+let accomodation = 120 $ per night
+let food = 60 $ per night
+let spending_money = 50 $ per night
+
+let total = flights + 10 nights × (accomodation + food + spending_money)
+
+assert_eq(total, $ 2900)
