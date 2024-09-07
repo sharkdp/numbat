@@ -79,21 +79,31 @@ fn span_from_boundary((start, end): (u32, u32), code_source_id: usize) -> Span {
 
 macro_rules! handle_arg_count {
     (count = 0, $words:expr, $word_boundaries:expr, $code_source_id:expr, "help", $if_ok:expr $(,)?) => {{
-        if $words.next().is_some() {
-            return Some(Err(ParseError {
-                kind: ParseErrorKind::InvalidCommand(
-                    "`help` takes 0 arguments; use `info <item>` for information about an item",
-                ),
-                span: span_through_end($word_boundaries, 1, $code_source_id),
-            }));
-        }
-
-        $if_ok
+        handle_arg_count!(
+            count = 0,
+            $words,
+            $word_boundaries,
+            $code_source_id,
+            "help",
+            Command::Help,
+            "`help` takes 0 arguments; use `info <item>` for information about an item",
+        )
     }};
     (count = 0, $words:expr, $word_boundaries:expr, $code_source_id:expr, $command:literal, $if_ok:expr $(,)?) => {{
+        handle_arg_count!(
+            count = 0,
+            $words,
+            $word_boundaries,
+            $code_source_id,
+            $command,
+            $if_ok,
+            concat!("`", $command, "` takes 0 arguments")
+        )
+    }};
+    (count = 0, $words:expr, $word_boundaries:expr, $code_source_id:expr, $command:literal, $if_ok:expr, $err_msg:expr $(,)?) => {{
         if $words.next().is_some() {
             return Some(Err(ParseError {
-                kind: ParseErrorKind::InvalidCommand(concat!("`", $command, "` takes 0 arguments")),
+                kind: ParseErrorKind::InvalidCommand($err_msg),
                 span: span_through_end($word_boundaries, 1, $code_source_id),
             }));
         }
