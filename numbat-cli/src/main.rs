@@ -10,13 +10,13 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
-use numbat::command;
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
 use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
+use numbat::{command, RuntimeError};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -392,7 +392,11 @@ impl Cli {
                                     }
                                     command::Command::Clear => rl.clear_screen()?,
                                     command::Command::Save { dst } => {
-                                        rl.save_history(dst)?;
+                                        if rl.save_history(dst).is_err() {
+                                            let error = RuntimeError::FileWrite(PathBuf::from(dst));
+                                            self.print_diagnostic(error);
+                                            continue;
+                                        };
                                     }
                                     command::Command::Quit => return Ok(()),
                                 },
