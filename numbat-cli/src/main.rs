@@ -10,6 +10,7 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
+use numbat::command;
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
 use numbat::markup as m;
@@ -347,95 +348,84 @@ impl Cli {
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line)?;
 
-                        match line.trim() {
-                            "list" | "ls" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(
-                                        &self.context.lock().unwrap().print_environment(),
-                                        false
-                                    )
-                                );
-                            }
-                            "list functions" | "ls functions" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(
-                                        &self.context.lock().unwrap().print_functions(),
-                                        false
-                                    )
-                                );
-                            }
-                            "list dimensions" | "ls dimensions" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(
-                                        &self.context.lock().unwrap().print_dimensions(),
-                                        false
-                                    )
-                                );
-                            }
-                            "list variables" | "ls variables" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(
-                                        &self.context.lock().unwrap().print_variables(),
-                                        false
-                                    )
-                                );
-                            }
-                            "list units" | "ls units" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(&self.context.lock().unwrap().print_units(), false)
-                                );
-                            }
-                            "clear" => {
-                                rl.clear_screen()?;
-                            }
-                            "quit" | "exit" => {
-                                return Ok(());
-                            }
-                            "help" | "?" => {
-                                let help = help_markup();
-                                print!("{}", ansi_format(&help, true));
-                                // currently, the ansi formatter adds indents
-                                // _after_ each newline and so we need to manually
-                                // add an extra blank line to absorb this indent
-                                println!();
-                            }
-                            _ => {
-                                if let Some(keyword) = line.strip_prefix("info ") {
-                                    let help = self
-                                        .context
-                                        .lock()
-                                        .unwrap()
-                                        .print_info_for_keyword(keyword.trim());
-                                    println!("{}", ansi_format(&help, true));
+                        let command_result_opt = command::parse_command(
+                            &line,
+                            self.context.lock().unwrap().resolver_mut(),
+                        );
+                        if let Some(command_result) = command_result_opt {
+                            match command_result {
+                                Ok(command) => match command {
+                                    command::Command::Help => {
+                                        let help = help_markup();
+                                        print!("{}", ansi_format(&help, true));
+                                        // currently, the ansi formatter adds indents
+                                        // _after_ each newline and so we need to manually
+                                        // add an extra blank line to absorb this indent
+                                        println!();
+                                    }
+                                    command::Command::List { items } => {
+                                        let context = self.context.lock().unwrap();
+                                        let m = match items {
+                                            None => context.print_environment(),
+                                            Some(command::ListItems::Functions) => {
+                                                context.print_functions()
+                                            }
+                                            Some(command::ListItems::Dimensions) => {
+                                                context.print_dimensions()
+                                            }
+                                            Some(command::ListItems::Variables) => {
+                                                context.print_variables()
+                                            }
+                                            Some(command::ListItems::Units) => {
+                                                context.print_units()
+                                            }
+                                        };
+                                        println!("{}", ansi_format(&m, false));
+                                    }
+                                    command::Command::Clear => rl.clear_screen()?,
+                                    command::Command::Save { dst } => {
+                                        rl.save_history(dst)?;
+                                    }
+                                    command::Command::Quit => return Ok(()),
+                                },
+                                Err(e) => {
+                                    self.print_diagnostic(e);
                                     continue;
                                 }
-                                let result = self.parse_and_evaluate(
-                                    &line,
-                                    CodeSource::Text,
-                                    if interactive {
-                                        ExecutionMode::Interactive
-                                    } else {
-                                        ExecutionMode::Normal
-                                    },
-                                    self.config.pretty_print,
-                                );
-
-                                match result {
-                                    std::ops::ControlFlow::Continue(()) => {}
-                                    std::ops::ControlFlow::Break(ExitStatus::Success) => {
-                                        return Ok(());
-                                    }
-                                    std::ops::ControlFlow::Break(ExitStatus::Error) => {
-                                        bail!("Interpreter stopped due to error")
-                                    }
-                                }
                             }
+
+                            continue;
                         }
+
+                        if let Some(keyword) = line.strip_prefix("info ") {
+                            let help = self
+                                .context
+                                .lock()
+                                .unwrap()
+                                .print_info_for_keyword(keyword.trim());
+                            println!("{}", ansi_format(&help, true));
+                            continue;
+                        }
+                        let result = self.parse_and_evaluate(
+                            &line,
+                            CodeSource::Text,
+                            if interactive {
+                                ExecutionMode::Interactive
+                            } else {
+                                ExecutionMode::Normal
+                            },
+                            self.config.pretty_print,
+                        );
+
+                        match result {
+                            std::ops::ControlFlow::Continue(()) => {}
+                            std::ops::ControlFlow::Break(ExitStatus::Success) => {
+                                return Ok(());
+                            }
+                            std::ops::ControlFlow::Break(ExitStatus::Error) => {
+                                bail!("Interpreter stopped due to error")
+                            }
+                        };
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}

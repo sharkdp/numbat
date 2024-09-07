@@ -236,6 +236,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected local variable definition after where/and")]
     ExpectedLocalVariableDefinition,
+
+    #[error("Invalid command: {0}")]
+    InvalidCommand(&'static str),
 }
 
 #[derive(Debug, Clone, Error)]

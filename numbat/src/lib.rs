@@ -4,6 +4,7 @@ mod ast;
 pub mod buffered_writer;
 mod bytecode_interpreter;
 mod column_formatter;
+pub mod command;
 mod currency;
 mod datetime;
 mod decorator;
@@ -526,6 +527,10 @@ impl Context {
 
     pub fn resolver(&self) -> &Resolver {
         &self.resolver
+    }
+
+    pub fn resolver_mut(&mut self) -> &mut Resolver {
+        &mut self.resolver
     }
 
     pub fn interpret(
