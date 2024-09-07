@@ -232,3 +232,195 @@ fn parse_command_inner<'a>(
 
     Some(Ok(command))
 }
+
+/// Attempt to parse the input as a command, such as "help", "list <args>", "quit", etc
+///
+/// Returns:
+/// - `None`, if the input does not begin with a command keyword
+/// - `Some(Ok(Command))`, if the input is a valid command
+/// - `Some(Err(_))`, if the input starts with a valid command but has the wrong number
+///   or kind of arguments, e.g. `list foobar`
+pub fn parse_command<'a>(
+    input: &'a str,
+    resolver: &mut Resolver,
+) -> Option<Result<Command<'a>, ParseError>> {
+    parse_command_inner(input, Some(resolver))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn parse_command(input: &str) -> Option<Result<Command, ParseError>> {
+        parse_command_inner(input, None)
+    }
+
+    #[test]
+    fn test_existent_commands() {
+        // valid commands
+        assert!(parse_command("help").is_some());
+        assert!(parse_command("help arg").is_some());
+        assert!(parse_command("help arg1 arg2").is_some());
+
+        assert!(parse_command("info").is_some());
+        assert!(parse_command("info arg").is_some());
+        assert!(parse_command("info arg1 arg2").is_some());
+
+        assert!(parse_command("clear").is_some());
+        assert!(parse_command("clear arg").is_some());
+        assert!(parse_command("clear arg1 arg2").is_some());
+
+        assert!(parse_command("list").is_some());
+        assert!(parse_command("list arg").is_some());
+        assert!(parse_command("list arg1 arg2").is_some());
+
+        assert!(parse_command("quit").is_some());
+        assert!(parse_command("quit arg").is_some());
+        assert!(parse_command("quit arg1 arg2").is_some());
+
+        assert!(parse_command("exit").is_some());
+        assert!(parse_command("exit arg").is_some());
+        assert!(parse_command("exit arg1 arg2").is_some());
+
+        assert!(parse_command("save").is_some());
+        assert!(parse_command("save arg").is_some());
+        assert!(parse_command("save arg1 arg2").is_some());
+
+        // these shouldn't happen at runtime because the REPL skips over all
+        // whitespace lines, but we still want to handle them just in case
+        assert!(parse_command("").unwrap().is_err());
+        assert!(parse_command(" ").unwrap().is_err());
+
+        // invalid (nonempty) command names are all None so that parsing can continue on
+        // what is presumably a math expression. case matters
+        assert!(parse_command(".").is_none());
+        assert!(parse_command(",").is_none());
+        assert!(parse_command(";").is_none());
+        assert!(parse_command("HELP").is_none());
+        assert!(parse_command("List").is_none());
+        assert!(parse_command("qUIt").is_none());
+        assert!(parse_command("listfunctions").is_none());
+        assert!(parse_command("exitquit").is_none());
+    }
+
+    #[test]
+    fn test_whitespace() {
+        assert_eq!(
+            parse_command("list").unwrap().unwrap(),
+            Command::List { items: None }
+        );
+
+        assert_eq!(
+            parse_command(" list").unwrap().unwrap(),
+            Command::List { items: None }
+        );
+
+        assert_eq!(
+            parse_command("list ").unwrap().unwrap(),
+            Command::List { items: None }
+        );
+
+        assert_eq!(
+            parse_command(" list ").unwrap().unwrap(),
+            Command::List { items: None }
+        );
+
+        assert_eq!(
+            parse_command("list functions  ").unwrap().unwrap(),
+            Command::List {
+                items: Some(ListItems::Functions)
+            }
+        );
+
+        assert_eq!(
+            parse_command("  list    functions  ").unwrap().unwrap(),
+            Command::List {
+                items: Some(ListItems::Functions)
+            }
+        );
+
+        assert_eq!(
+            parse_command("  list    functions  ").unwrap().unwrap(),
+            Command::List {
+                items: Some(ListItems::Functions)
+            }
+        );
+
+        assert_eq!(
+            parse_command("list    functions").unwrap().unwrap(),
+            Command::List {
+                items: Some(ListItems::Functions)
+            }
+        );
+    }
+
+    #[test]
+    fn test_args() {
+        assert_eq!(parse_command("help").unwrap().unwrap(), Command::Help);
+        assert!(parse_command("help arg").unwrap().is_err());
+        assert!(parse_command("help arg1 arg2").unwrap().is_err());
+
+        assert!(parse_command("info").unwrap().is_err());
+        assert_eq!(
+            parse_command("info arg").unwrap().unwrap(),
+            Command::Info { item: "arg" }
+        );
+        assert_eq!(
+            parse_command("info .").unwrap().unwrap(),
+            Command::Info { item: "." }
+        );
+        assert!(parse_command("info arg1 arg2").unwrap().is_err());
+
+        assert_eq!(parse_command("clear").unwrap().unwrap(), Command::Clear);
+        assert!(parse_command("clear arg").unwrap().is_err());
+        assert!(parse_command("clear arg1 arg2").unwrap().is_err());
+
+        assert_eq!(
+            parse_command("list").unwrap().unwrap(),
+            Command::List { items: None }
+        );
+        assert_eq!(
+            parse_command("list functions").unwrap().unwrap(),
+            Command::List {
+                items: Some(ListItems::Functions)
+            }
+        );
+        assert_eq!(
+            parse_command("list dimensions").unwrap().unwrap(),
+            Command::List {
+                items: Some(ListItems::Dimensions)
+            }
+        );
+        assert_eq!(
+            parse_command("list variables").unwrap().unwrap(),
+            Command::List {
+                items: Some(ListItems::Variables)
+            }
+        );
+        assert_eq!(
+            parse_command("list units").unwrap().unwrap(),
+            Command::List {
+                items: Some(ListItems::Units)
+            }
+        );
+
+        assert_eq!(parse_command("quit").unwrap().unwrap(), Command::Quit);
+        assert!(parse_command("quit arg").unwrap().is_err());
+        assert!(parse_command("quit arg1 arg2").unwrap().is_err());
+
+        assert_eq!(parse_command("exit").unwrap().unwrap(), Command::Quit);
+        assert!(parse_command("exit arg").unwrap().is_err());
+        assert!(parse_command("exit arg1 arg2").unwrap().is_err());
+
+        assert!(parse_command("save").unwrap().is_err());
+        assert_eq!(
+            parse_command("save arg").unwrap().unwrap(),
+            Command::Save { dst: "arg" }
+        );
+        assert_eq!(
+            parse_command("save .").unwrap().unwrap(),
+            Command::Save { dst: "." }
+        );
+        assert!(parse_command("save arg1 arg2").unwrap().is_err());
+    }
+}
