@@ -363,6 +363,14 @@ impl Cli {
                                         // add an extra blank line to absorb this indent
                                         println!();
                                     }
+                                    command::Command::Info { item } => {
+                                        let help = self
+                                            .context
+                                            .lock()
+                                            .unwrap()
+                                            .print_info_for_keyword(item);
+                                        println!("{}", ansi_format(&help, true));
+                                    }
                                     command::Command::List { items } => {
                                         let context = self.context.lock().unwrap();
                                         let m = match items {
@@ -397,15 +405,6 @@ impl Cli {
                             continue;
                         }
 
-                        if let Some(keyword) = line.strip_prefix("info ") {
-                            let help = self
-                                .context
-                                .lock()
-                                .unwrap()
-                                .print_info_for_keyword(keyword.trim());
-                            println!("{}", ansi_format(&help, true));
-                            continue;
-                        }
                         let result = self.parse_and_evaluate(
                             &line,
                             CodeSource::Text,
