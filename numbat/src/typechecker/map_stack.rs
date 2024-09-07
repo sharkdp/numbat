@@ -39,7 +39,7 @@ impl<K: Hash + Eq, V> MapStack<K, V> {
     }
 
     pub(crate) fn keys(&self) -> impl Iterator<Item = &K> {
-        self.iter_dict().map(|dict| dict.keys()).flatten()
+        self.iter_dict().flat_map(|dict| dict.keys())
     }
 
     pub(crate) fn get<Q>(&self, key: &Q) -> Option<&V>
