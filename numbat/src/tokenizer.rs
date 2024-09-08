@@ -145,9 +145,9 @@ pub enum TokenKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Token {
+pub struct Token<'a> {
     pub kind: TokenKind,
-    pub lexeme: String, // TODO(minor): could be a &'str view into the input
+    pub lexeme: &'a str, // TODO(minor): could be a &'str view into the input
     pub span: Span,
 }
 
@@ -233,12 +233,9 @@ impl InterpolationState {
 }
 
 struct Tokenizer {
-    input: Vec<char>,
     current: SourceCodePositition,
     last: SourceCodePositition,
     token_start: SourceCodePositition,
-    current_index: usize,
-    token_start_index: usize,
     code_source_id: usize,
 
     // Special fields / state for parsing string interpolations
@@ -247,15 +244,17 @@ struct Tokenizer {
     interpolation_state: InterpolationState,
 }
 
+fn char_at(s: &str, index_bytes: usize) -> Option<char> {
+    s[index_bytes..].chars().next()
+}
+
 impl Tokenizer {
-    fn new(input: &str, code_source_id: usize) -> Self {
+    fn new(code_source_id: usize) -> Self {
         Tokenizer {
-            input: input.chars().collect(),
             current: SourceCodePositition::start(),
             last: SourceCodePositition::start(),
             token_start: SourceCodePositition::start(),
-            current_index: 0,
-            token_start_index: 0,
+
             code_source_id,
             string_start: SourceCodePositition::start(),
             interpolation_start: SourceCodePositition::start(),
@@ -263,19 +262,18 @@ impl Tokenizer {
         }
     }
 
-    fn scan(&mut self) -> Result<Vec<Token>> {
+    fn scan<'a>(&mut self, input: &'a str) -> Result<Vec<Token<'a>>> {
         let mut tokens = vec![];
-        while !self.at_end() {
+        while !self.at_end(input) {
             self.token_start = self.current;
-            self.token_start_index = self.current_index;
-            if let Some(token) = self.scan_single_token()? {
+            if let Some(token) = self.scan_single_token(input)? {
                 tokens.push(token);
             }
         }
 
         tokens.push(Token {
             kind: TokenKind::Eof,
-            lexeme: "".into(),
+            lexeme: "",
             span: self.current.single_character_span(self.code_source_id),
         });
 
@@ -284,34 +282,42 @@ impl Tokenizer {
 
     fn consume_stream_of_digits(
         &mut self,
+        input: &str,
         at_least_one_digit: bool,
         disallow_leading_underscore: bool,
         disallow_dot_after_stream: bool,
     ) -> Result<()> {
-        if at_least_one_digit && !self.peek().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+        if at_least_one_digit
+            && !self
+                .peek(input)
+                .map(|c| c.is_ascii_digit())
+                .unwrap_or(false)
+        {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::ExpectedDigit {
-                    character: self.peek(),
+                    character: self.peek(input),
                 },
                 span: self.current.single_character_span(self.code_source_id),
             });
         }
 
         // Make sure we don't start with an underscore
-        if disallow_leading_underscore && self.peek().map(|c| c == '_').unwrap_or(false) {
+        if disallow_leading_underscore && self.peek(input).map(|c| c == '_').unwrap_or(false) {
             return Err(TokenizerError {
-                kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(self.peek().unwrap()),
+                kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(
+                    self.peek(input).unwrap(),
+                ),
                 span: self.current.single_character_span(self.code_source_id),
             });
         }
 
         let mut last_char = None;
         while self
-            .peek()
+            .peek(input)
             .map(|c| c.is_ascii_digit() || c == '_')
             .unwrap_or(false)
         {
-            last_char = Some(self.advance());
+            last_char = Some(self.advance(input));
         }
 
         // Make sure we don't end with an underscore
@@ -322,9 +328,11 @@ impl Tokenizer {
             });
         }
 
-        if disallow_dot_after_stream && self.peek().map(|c| c == '.').unwrap_or(false) {
+        if disallow_dot_after_stream && self.peek(input).map(|c| c == '.').unwrap_or(false) {
             return Err(TokenizerError {
-                kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(self.peek().unwrap()),
+                kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(
+                    self.peek(input).unwrap(),
+                ),
                 span: self.current.single_character_span(self.code_source_id),
             });
         }
@@ -332,25 +340,25 @@ impl Tokenizer {
         Ok(())
     }
 
-    fn scientific_notation(&mut self) -> Result<()> {
+    fn scientific_notation(&mut self, input: &str) -> Result<()> {
         if self
-            .peek2()
+            .peek2(input)
             .map(|c| c.is_ascii_digit() || c == '+' || c == '-')
             .unwrap_or(false)
-            && (self.match_char('e') || self.match_char('E'))
+            && (self.match_char(input, 'e') || self.match_char(input, 'E'))
         {
-            let _ = self.match_char('+') || self.match_char('-');
+            let _ = self.match_char(input, '+') || self.match_char(input, '-');
 
-            self.consume_stream_of_digits(true, true, true)?;
+            self.consume_stream_of_digits(input, true, true, true)?;
         }
 
         Ok(())
     }
 
-    fn consume_string(&mut self) -> Result<()> {
+    fn consume_string(&mut self, input: &str) -> Result<()> {
         let mut escaped = false;
         loop {
-            escaped = match self.peek() {
+            escaped = match self.peek(input) {
                 None => {
                     break;
                 }
@@ -361,13 +369,13 @@ impl Tokenizer {
                 Some(_) => false,
             };
 
-            self.advance();
+            self.advance(input);
         }
 
         Ok(())
     }
 
-    fn scan_single_token(&mut self) -> Result<Option<Token>> {
+    fn scan_single_token<'a>(&mut self, input: &'a str) -> Result<Option<Token<'a>>> {
         static KEYWORDS: OnceLock<HashMap<&'static str, TokenKind>> = OnceLock::new();
         let keywords = KEYWORDS.get_or_init(|| {
             let mut m = HashMap::new();
@@ -411,20 +419,20 @@ impl Tokenizer {
             m
         });
 
-        if self.peek() == Some('#') {
+        if self.peek(input) == Some('#') {
             // skip over comment until newline
             loop {
-                match self.peek() {
+                match self.peek(input) {
                     None => return Ok(None),
                     Some('\n') => break,
                     _ => {
-                        self.advance();
+                        self.advance(input);
                     }
                 }
             }
         }
 
-        let current_char = self.advance();
+        let current_char = self.advance(input);
 
         let code_source_id = self.code_source_id;
         let tokenizer_error = |position: &SourceCodePositition, kind| -> Result<Option<Token>> {
@@ -442,34 +450,34 @@ impl Tokenizer {
             '{' if !self.interpolation_state.is_inside() => TokenKind::LeftCurly,
             '}' if !self.interpolation_state.is_inside() => TokenKind::RightCurly,
             '≤' => TokenKind::LessOrEqual,
-            '<' if self.match_char('=') => TokenKind::LessOrEqual,
+            '<' if self.match_char(input, '=') => TokenKind::LessOrEqual,
             '<' => TokenKind::LessThan,
             '≥' => TokenKind::GreaterOrEqual,
-            '>' if self.match_char('=') => TokenKind::GreaterOrEqual,
+            '>' if self.match_char(input, '=') => TokenKind::GreaterOrEqual,
             '>' => TokenKind::GreaterThan,
             '?' => TokenKind::QuestionMark,
             '0' if self
-                .peek()
+                .peek(input)
                 .map(|c| c == 'x' || c == 'o' || c == 'b')
                 .unwrap_or(false) =>
             {
                 let (base, is_digit_in_base): (_, Box<dyn Fn(char) -> bool>) =
-                    match self.peek().unwrap() {
+                    match self.peek(input).unwrap() {
                         'x' => (16, Box::new(|c| c.is_ascii_hexdigit())),
                         'o' => (8, Box::new(|c| ('0'..='7').contains(&c))),
                         'b' => (2, Box::new(|c| c == '0' || c == '1')),
                         _ => unreachable!(),
                     };
 
-                self.advance(); // skip over the x/o/b
+                self.advance(input); // skip over the x/o/b
 
                 // If the first character is not a digits, that's an error.
-                if !self.peek().map(&is_digit_in_base).unwrap_or(false) {
+                if !self.peek(input).map(&is_digit_in_base).unwrap_or(false) {
                     return tokenizer_error(
                         &self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {
                             base,
-                            character: self.peek(),
+                            character: self.peek(input),
                         },
                     );
                 }
@@ -477,18 +485,18 @@ impl Tokenizer {
                 let mut last_char = None;
 
                 while self
-                    .peek()
+                    .peek(input)
                     .map(|c| is_digit_in_base(c) || c == '_')
                     .unwrap_or(false)
                 {
-                    last_char = self.peek();
-                    self.advance();
+                    last_char = self.peek(input);
+                    self.advance(input);
                 }
 
                 // Numeric literal should not end with a `_` either.
                 if last_char == Some('_')
                     || self
-                        .peek()
+                        .peek(input)
                         .map(|c| is_identifier_continue(c) || c == '.')
                         .unwrap_or(false)
                 {
@@ -496,7 +504,7 @@ impl Tokenizer {
                         &self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {
                             base,
-                            character: self.peek(),
+                            character: self.peek(input),
                         },
                     );
                 }
@@ -504,27 +512,27 @@ impl Tokenizer {
                 TokenKind::IntegerWithBase(base)
             }
             c if c.is_ascii_digit() => {
-                self.consume_stream_of_digits(false, false, false)?;
+                self.consume_stream_of_digits(input, false, false, false)?;
 
                 // decimal part
-                if self.match_char('.') {
-                    self.consume_stream_of_digits(false, true, true)?;
+                if self.match_char(input, '.') {
+                    self.consume_stream_of_digits(input, false, true, true)?;
                 }
 
-                self.scientific_notation()?;
+                self.scientific_notation(input)?;
 
                 TokenKind::Number
             }
-            '.' if self.peek() == Some('.') && self.peek2() == Some('.') => {
-                self.advance();
-                self.advance();
+            '.' if self.peek(input) == Some('.') && self.peek2(input) == Some('.') => {
+                self.advance(input);
+                self.advance(input);
 
                 TokenKind::Ellipsis
             }
-            '.' if self.peek().map_or(false, is_identifier_start) => TokenKind::Period,
+            '.' if self.peek(input).map_or(false, is_identifier_start) => TokenKind::Period,
             '.' => {
-                self.consume_stream_of_digits(true, true, true)?;
-                self.scientific_notation()?;
+                self.consume_stream_of_digits(input, true, true, true)?;
+                self.scientific_notation(input)?;
 
                 TokenKind::Number
             }
@@ -532,10 +540,10 @@ impl Tokenizer {
                 return Ok(None);
             }
             '\n' => TokenKind::Newline,
-            '&' if self.match_char('&') => TokenKind::LogicalAnd,
-            '|' if self.match_char('|') => TokenKind::LogicalOr,
-            '|' if self.match_char('>') => TokenKind::PostfixApply,
-            '*' if self.match_char('*') => TokenKind::Power,
+            '&' if self.match_char(input, '&') => TokenKind::LogicalAnd,
+            '|' if self.match_char(input, '|') => TokenKind::LogicalOr,
+            '|' if self.match_char(input, '>') => TokenKind::PostfixApply,
+            '*' if self.match_char(input, '*') => TokenKind::Power,
             '+' => TokenKind::Plus,
             '*' | '·' | '×' => TokenKind::Multiply,
             '/' => TokenKind::Divide,
@@ -543,19 +551,19 @@ impl Tokenizer {
             '^' => TokenKind::Power,
             ',' => TokenKind::Comma,
             '⩵' => TokenKind::EqualEqual,
-            '=' if self.match_char('=') => TokenKind::EqualEqual,
+            '=' if self.match_char(input, '=') => TokenKind::EqualEqual,
             '=' => TokenKind::Equal,
             '@' => TokenKind::At,
             '→' | '➞' => TokenKind::Arrow,
-            '-' if self.match_char('>') => TokenKind::Arrow,
+            '-' if self.match_char(input, '>') => TokenKind::Arrow,
             '-' | '−' => TokenKind::Minus,
             '≠' => TokenKind::NotEqual,
-            '!' if self.match_char('=') => TokenKind::NotEqual,
+            '!' if self.match_char(input, '=') => TokenKind::NotEqual,
             '!' => TokenKind::ExclamationMark,
             '⁻' => {
-                let c = self.peek();
+                let c = self.peek(input);
                 if c.map(is_exponent_char).unwrap_or(false) {
-                    self.advance();
+                    self.advance(input);
                     TokenKind::UnicodeExponent
                 } else {
                     return tokenizer_error(
@@ -571,11 +579,11 @@ impl Tokenizer {
                 InterpolationState::Outside => {
                     self.string_start = self.token_start;
 
-                    self.consume_string()?;
+                    self.consume_string(input)?;
 
-                    if self.match_char('"') {
+                    if self.match_char(input, '"') {
                         TokenKind::StringFixed
-                    } else if self.match_char('{') {
+                    } else if self.match_char(input, '{') {
                         self.interpolation_state = InterpolationState::Inside;
                         self.interpolation_start = self.last;
                         TokenKind::StringInterpolationStart
@@ -602,11 +610,15 @@ impl Tokenizer {
                 }
             },
             ':' if self.interpolation_state.is_inside() => {
-                while self.peek().map(|c| c != '"' && c != '}').unwrap_or(false) {
-                    self.advance();
+                while self
+                    .peek(input)
+                    .map(|c| c != '"' && c != '}')
+                    .unwrap_or(false)
+                {
+                    self.advance(input);
                 }
 
-                if self.peek() == Some('"') {
+                if self.peek(input) == Some('"') {
                     return Err(TokenizerError {
                         kind: TokenizerErrorKind::UnterminatedStringInterpolation,
                         span: Span {
@@ -616,7 +628,7 @@ impl Tokenizer {
                         },
                     });
                 }
-                if self.peek() == Some('}') {
+                if self.peek(input) == Some('}') {
                     TokenKind::StringInterpolationSpecifiers
                 } else {
                     return Err(TokenizerError {
@@ -630,12 +642,12 @@ impl Tokenizer {
                 }
             }
             '}' if self.interpolation_state.is_inside() => {
-                self.consume_string()?;
+                self.consume_string(input)?;
 
-                if self.match_char('"') {
+                if self.match_char(input, '"') {
                     self.interpolation_state = InterpolationState::Outside;
                     TokenKind::StringInterpolationEnd
-                } else if self.match_char('{') {
+                } else if self.match_char(input, '{') {
                     self.interpolation_start = self.last;
                     TokenKind::StringInterpolationMiddle
                 } else {
@@ -657,29 +669,35 @@ impl Tokenizer {
             }
             '…' => TokenKind::Ellipsis,
             c if is_identifier_start(c) => {
-                while self.peek().map(is_identifier_continue).unwrap_or(false) {
-                    self.advance();
+                while self
+                    .peek(input)
+                    .map(is_identifier_continue)
+                    .unwrap_or(false)
+                {
+                    self.advance(input);
                 }
 
-                if self.peek().map(|c| c == '.').unwrap_or(false)
+                if self.peek(input).map(|c| c == '.').unwrap_or(false)
                     && self
-                        .peek2()
+                        .peek2(input)
                         .map(|c| !is_identifier_start(c))
                         .unwrap_or(true)
                 {
                     return tokenizer_error(
                         &self.current,
-                        TokenizerErrorKind::UnexpectedCharacterInIdentifier(self.peek().unwrap()),
+                        TokenizerErrorKind::UnexpectedCharacterInIdentifier(
+                            self.peek(input).unwrap(),
+                        ),
                     );
                 }
 
-                if let Some(kind) = keywords.get(self.lexeme().as_str()) {
+                if let Some(kind) = keywords.get(self.lexeme(input)) {
                     *kind
                 } else {
                     TokenKind::Identifier
                 }
             }
-            ':' if self.match_char(':') => TokenKind::DoubleColon,
+            ':' if self.match_char(input, ':') => TokenKind::DoubleColon,
             ':' => TokenKind::Colon,
             c => {
                 return tokenizer_error(
@@ -691,7 +709,7 @@ impl Tokenizer {
 
         let token = Some(Token {
             kind,
-            lexeme: self.lexeme(),
+            lexeme: self.lexeme(input),
             span: Span {
                 start: self.token_start,
                 end: self.current,
@@ -700,53 +718,53 @@ impl Tokenizer {
         });
 
         if kind == TokenKind::Newline {
-            self.current.line += 1;
+            self.current.line += current_char.len_utf8() as u32;
             self.current.position = 1;
         }
 
         Ok(token)
     }
 
-    fn lexeme(&self) -> String {
-        self.input[self.token_start_index..self.current_index]
-            .iter()
-            .collect()
+    fn lexeme<'a>(&self, input: &'a str) -> &'a str {
+        &input[self.token_start.byte as usize..self.current.byte as usize]
     }
 
-    fn advance(&mut self) -> char {
-        let c = self.input[self.current_index];
+    fn advance(&mut self, input: &str) -> char {
+        let c = char_at(input, self.current.byte as usize).unwrap();
         self.last = self.current;
-        self.current_index += 1;
         self.current.byte += c.len_utf8() as u32;
         self.current.position += 1;
         c
     }
 
-    fn peek(&self) -> Option<char> {
-        self.input.get(self.current_index).copied()
+    fn peek(&self, input: &str) -> Option<char> {
+        char_at(input, self.current.byte as usize)
     }
 
-    fn peek2(&self) -> Option<char> {
-        self.input.get(self.current_index + 1).copied()
+    fn peek2(&self, input: &str) -> Option<char> {
+        let next_char = self.peek(input)?;
+        input[self.current.byte as usize + next_char.len_utf8()..]
+            .chars()
+            .next()
     }
 
-    fn match_char(&mut self, c: char) -> bool {
-        if self.peek() == Some(c) {
-            self.advance();
+    fn match_char(&mut self, input: &str, c: char) -> bool {
+        if self.peek(input) == Some(c) {
+            self.advance(input);
             true
         } else {
             false
         }
     }
 
-    fn at_end(&self) -> bool {
-        self.current_index >= self.input.len()
+    fn at_end(&self, input: &str) -> bool {
+        self.current.byte as usize >= input.len()
     }
 }
 
 pub fn tokenize(input: &str, code_source_id: usize) -> Result<Vec<Token>> {
-    let mut tokenizer = Tokenizer::new(input, code_source_id);
-    tokenizer.scan()
+    let mut tokenizer = Tokenizer::new(code_source_id);
+    tokenizer.scan(input)
 }
 
 #[cfg(test)]
