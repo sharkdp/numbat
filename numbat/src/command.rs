@@ -14,11 +14,6 @@ pub enum ListItems {
     Units,
 }
 
-enum ListAlias {
-    List,
-    Ls,
-}
-
 enum QuitAlias {
     Quit,
     Exit,
@@ -27,7 +22,7 @@ enum QuitAlias {
 enum CommandKind {
     Help,
     Info,
-    List(ListAlias),
+    List,
     Clear,
     Save,
     Quit(QuitAlias),
@@ -39,8 +34,7 @@ impl CommandKind {
         Some(match word {
             "help" => Help,
             "info" => Info,
-            "list" => List(ListAlias::List),
-            "ls" => List(ListAlias::Ls),
+            "list" => List,
             "clear" => Clear,
             "save" => Save,
             "quit" => Quit(QuitAlias::Quit),
@@ -239,17 +233,11 @@ impl<'a> CommandParser<'a> {
 
                 Command::Info { item }
             }
-            CommandKind::List(alias) => {
+            CommandKind::List => {
                 let items = self.inner.args.next();
 
                 if self.inner.args.next().is_some() {
-                    return Err(self.err_through_end_from(
-                        2,
-                        match alias {
-                            ListAlias::List => "`list` takes at most one argument",
-                            ListAlias::Ls => "`ls` takes at most one argument",
-                        },
-                    ));
+                    return Err(self.err_through_end_from(2, "`list` takes at most one argument"));
                 }
 
                 let items = match items {
@@ -261,16 +249,8 @@ impl<'a> CommandParser<'a> {
                     _ => {
                         return Err(self.err_at_idx(
                             1,
-                            match alias {
-                                ListAlias::List => {
-                                    "if provided, the argument to `list` must be \
-                                    one of: functions, dimensions, variables, units"
-                                }
-                                ListAlias::Ls => {
-                                    "if provided, the argument to `ls` must be \
-                                    one of: functions, dimensions, variables, units"
-                                }
-                            },
+                            "if provided, the argument to `list` must be \
+                            one of: functions, dimensions, variables, units",
                         ));
                     }
                 };
@@ -415,6 +395,7 @@ mod test {
         assert!(parser(".").is_none());
         assert!(parser(",").is_none());
         assert!(parser(";").is_none());
+        assert!(parser("ls").is_none());
         assert!(parser("HELP").is_none());
         assert!(parser("List xyz").is_none());
         assert!(parser("qUIt abc").is_none());
