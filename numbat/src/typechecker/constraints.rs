@@ -79,24 +79,22 @@ impl ConstraintSet {
             let mut new_constraint_set = self.clone();
 
             for (i, c) in self.iter().enumerate() {
-                match c.try_satisfy() {
-                    Some(Satisfied {
-                        new_constraints,
-                        new_substitution,
-                    }) => {
-                        new_constraint_set.remove(i);
-                        new_constraint_set.constraints.extend(new_constraints);
+                if let Some(Satisfied {
+                    new_constraints,
+                    new_substitution,
+                }) = c.try_satisfy()
+                {
+                    new_constraint_set.remove(i);
+                    new_constraint_set.constraints.extend(new_constraints);
 
-                        new_constraint_set
-                            .apply(&new_substitution)
-                            .map_err(ConstraintSolverError::SubstitutionError)?;
+                    new_constraint_set
+                        .apply(&new_substitution)
+                        .map_err(ConstraintSolverError::SubstitutionError)?;
 
-                        substitution.extend(new_substitution);
+                    substitution.extend(new_substitution);
 
-                        made_progress = true;
-                        break;
-                    }
-                    None => {}
+                    made_progress = true;
+                    break;
                 }
             }
 
