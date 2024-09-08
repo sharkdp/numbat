@@ -24,7 +24,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                 m.insert(
                     $fn_name.to_string(),
                     ForeignFunction {
-                        name: $fn_name.to_string(),
+                        name: $fn_name,
                         arity: $arity,
                         callable: Callable::Function(Box::new($callable)),
                     },

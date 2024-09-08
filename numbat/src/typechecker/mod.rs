@@ -145,9 +145,9 @@ impl TypeChecker {
             let suggestion = suggestion::did_you_mean(
                 self.env
                     .iter_identifiers()
-                    .map(|k| k.to_string())
-                    .chain(["true".into(), "false".into()]) // These are parsed as keywords, but can act like identifiers
-                    .chain(ffi::procedures().values().map(|p| p.name.clone())),
+                    .map(|k| k.as_str())
+                    .chain(["true", "false"]) // These are parsed as keywords, but can act like identifiers
+                    .chain(ffi::procedures().values().map(|p| p.name)),
                 name,
             );
             TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
@@ -211,7 +211,7 @@ impl TypeChecker {
         if !arity_range.contains(&arguments.len()) {
             return Err(TypeCheckError::WrongArity {
                 callable_span: *span,
-                callable_name: function_name.into(),
+                callable_name: function_name.to_owned(),
                 callable_definition_span: Some(*definition_span),
                 arity: arity_range,
                 num_args: arguments.len(),
@@ -750,8 +750,9 @@ impl TypeChecker {
                 // that evaluates to a function "pointer".
 
                 if let Some((name, signature)) = self.get_proper_function_reference(callable) {
-                    let name = name.clone(); // TODO: there is probably a better way to get around borrowing issues here
-                    let signature = signature.clone(); // TODO: same
+                    // TODO: there is probably a better way to get around borrowing issues here
+                    let signature = signature.clone();
+
                     self.proper_function_call(
                         span,
                         full_span,
@@ -1608,7 +1609,7 @@ impl TypeChecker {
                 if !procedure.arity.contains(&args.len()) {
                     return Err(TypeCheckError::WrongArity {
                         callable_span: *span,
-                        callable_name: procedure.name.clone(),
+                        callable_name: procedure.name.to_owned(),
                         callable_definition_span: None,
                         arity: procedure.arity.clone(),
                         num_args: args.len(),

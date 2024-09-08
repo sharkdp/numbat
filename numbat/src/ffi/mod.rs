@@ -31,7 +31,7 @@ pub(crate) enum Callable {
 }
 
 pub(crate) struct ForeignFunction {
-    pub(crate) name: String,
+    pub(crate) name: &'static str,
     pub(crate) arity: ArityRange,
     pub(crate) callable: Callable,
 }
