@@ -14,6 +14,42 @@ pub enum ListItems {
     Units,
 }
 
+enum ListAlias {
+    List,
+    Ls,
+}
+
+enum QuitAlias {
+    Quit,
+    Exit,
+}
+
+enum CommandKind {
+    Help,
+    Info,
+    List(ListAlias),
+    Clear,
+    Save,
+    Quit(QuitAlias),
+}
+
+impl CommandKind {
+    fn new(word: &str) -> Option<Self> {
+        use CommandKind::*;
+        Some(match word {
+            "help" => Help,
+            "info" => Info,
+            "list" => List(ListAlias::List),
+            "ls" => List(ListAlias::Ls),
+            "clear" => Clear,
+            "save" => Save,
+            "quit" => Quit(QuitAlias::Quit),
+            "exit" => Quit(QuitAlias::Exit),
+            _ => return None,
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command<'a> {
     Help,
@@ -35,8 +71,11 @@ pub enum Command<'a> {
 /// we proceed with parsing the input as a numbat expression (which will create its own
 /// `code_source_id`).
 pub struct SourcelessCommandParser<'a> {
-    /// The words in the input
-    words: SplitWhitespace<'a>,
+    /// The command we're running ("list", "quit", etc) without any of its args
+    command_kind: CommandKind,
+    /// The words in the input. This does not include the command name, which has been
+    /// stripped off and placed in `command_kind`
+    args: SplitWhitespace<'a>,
     /// For tracking spans. Contains `(start, start+len)` for each (whitespace-separated)
     /// word in the input
     word_boundaries: Vec<(u32, u32)>,
@@ -52,11 +91,8 @@ impl<'a> SourcelessCommandParser<'a> {
     /// If this returns `None`, you should proceed with parsing the input as an ordinary
     /// numbat expression
     pub fn new(input: &'a str) -> Option<Self> {
-        let Some("help" | "info" | "clear" | "quit" | "exit" | "list" | "ls" | "save") =
-            input.split_whitespace().next()
-        else {
-            return None;
-        };
+        let mut words: SplitWhitespace<'_> = input.split_whitespace();
+        let command_kind = words.next().and_then(CommandKind::new)?;
 
         let mut word_boundaries = Vec::new();
         let mut prev_char_was_whitespace = true;
@@ -76,7 +112,8 @@ impl<'a> SourcelessCommandParser<'a> {
         }
 
         Some(Self {
-            words: input.split_whitespace(),
+            command_kind,
+            args: words,
             word_boundaries,
         })
     }
@@ -164,7 +201,7 @@ impl<'a> CommandParser<'a> {
                 ensure_zero_args!($parser, $cmd, "")
             }};
             ($parser:expr, $cmd: literal, $err_msg_suffix:literal) => {{
-                if $parser.inner.words.next().is_some() {
+                if $parser.inner.args.next().is_some() {
                     return Err($parser.err_through_end_from(
                         1,
                         concat!("`", $cmd, "` takes 0 arguments", $err_msg_suffix),
@@ -175,13 +212,8 @@ impl<'a> CommandParser<'a> {
 
         // expect() is guaranteed to succeed; CommandParser::new ensures there is at
         // least one word
-        let command = match self
-            .inner
-            .words
-            .next()
-            .expect("CommandParser::new is supposed to check that we have a valid command")
-        {
-            "help" => {
+        let command = match &self.inner.command_kind {
+            CommandKind::Help => {
                 ensure_zero_args!(
                     self,
                     "help",
@@ -189,32 +221,44 @@ impl<'a> CommandParser<'a> {
                 );
                 Command::Help
             }
-            "clear" => {
+            CommandKind::Clear => {
                 ensure_zero_args!(self, "clear");
                 Command::Clear
             }
-            "quit" => {
-                ensure_zero_args!(self, "quit");
+            CommandKind::Quit(alias) => {
+                match alias {
+                    QuitAlias::Quit => ensure_zero_args!(self, "quit"),
+                    QuitAlias::Exit => ensure_zero_args!(self, "exit"),
+                }
+
                 Command::Quit
             }
-            "exit" => {
-                ensure_zero_args!(self, "exit");
-                Command::Quit
-            }
-            "info" => {
+            CommandKind::Info => {
                 let err_msg = "`info` requires exactly one argument, the item to get info on";
-                let Some(item) = self.inner.words.next() else {
+                let Some(item) = self.inner.args.next() else {
                     return Err(self.err_at_idx(0, err_msg));
                 };
 
-                if self.inner.words.next().is_some() {
+                if self.inner.args.next().is_some() {
                     return Err(self.err_through_end_from(1, err_msg));
                 }
 
                 Command::Info { item }
             }
-            "list" | "ls" => {
-                let items = match self.inner.words.next() {
+            CommandKind::List(alias) => {
+                let items = self.inner.args.next();
+
+                if self.inner.args.next().is_some() {
+                    return Err(self.err_through_end_from(
+                        2,
+                        match alias {
+                            ListAlias::List => "`list` takes at most one argument",
+                            ListAlias::Ls => "`ls` takes at most one argument",
+                        },
+                    ));
+                }
+
+                let items = match items {
                     None => None,
                     Some("functions") => Some(ListItems::Functions),
                     Some("dimensions") => Some(ListItems::Dimensions),
@@ -223,32 +267,33 @@ impl<'a> CommandParser<'a> {
                     _ => {
                         return Err(self.err_at_idx(
                             1,
-                            "if provided, the argument to `list` or `ls` must be \
-                        one of: functions, dimensions, variables, units",
+                            match alias {
+                                ListAlias::List => {
+                                    "if provided, the argument to `list` must be \
+                                    one of: functions, dimensions, variables, units"
+                                }
+                                ListAlias::Ls => {
+                                    "if provided, the argument to `ls` must be \
+                                    one of: functions, dimensions, variables, units"
+                                }
+                            },
                         ));
                     }
                 };
-                if self.inner.words.next().is_some() {
-                    return Err(self.err_through_end_from(2, "`list` takes at most one argument"));
-                }
 
                 Command::List { items }
             }
-            "save" => {
+            CommandKind::Save => {
                 let err_msg = "`save` requires exactly one argument, the destination";
-                let Some(dst) = self.inner.words.next() else {
+                let Some(dst) = self.inner.args.next() else {
                     return Err(self.err_at_idx(0, err_msg));
                 };
 
-                if self.inner.words.next().is_some() {
+                if self.inner.args.next().is_some() {
                     return Err(self.err_through_end_from(2, err_msg));
                 }
 
                 Command::Save { dst }
-            }
-
-            _ => {
-                unreachable!("CommandParser::new is supposed to check that we have a valid command")
             }
         };
 
