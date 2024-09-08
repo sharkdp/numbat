@@ -24,17 +24,40 @@ pub enum Command<'a> {
     Quit,
 }
 
-struct CommandParser<'a> {
+/// Contains just the words and word boundaries of the input we're parsing, no
+/// `code_source_id`
+///
+/// This type has a single method, a fallible initializer. If it succeeds, then we know
+/// we're actually looking at a command (not necessarily a well-formed one, eg `list
+/// foobar` is a command but will fail later on). Then we go and construct a new
+/// `code_source_id`, and then use a full `CommandParser`, constructed from this and the
+/// `code_source_id`, to do the actual command parsing. If the initializer fails, then
+/// we proceed with parsing the input as a numbat expression (which will create its own
+/// `code_source_id`).
+pub struct SourcelessCommandParser<'a> {
     /// The words in the input
     words: SplitWhitespace<'a>,
     /// For tracking spans. Contains `(start, start+len)` for each (whitespace-separated)
     /// word in the input
     word_boundaries: Vec<(u32, u32)>,
-    code_source_id: usize,
 }
 
-impl<'a> CommandParser<'a> {
-    fn new(input: &'a str, code_source_id: usize) -> Self {
+impl<'a> SourcelessCommandParser<'a> {
+    ///Fallibly construct a new `Self` from the input
+    ///
+    /// Returns:
+    /// - `None`, if the first word of the input is not a command
+    /// - `Some(Self)`, if the first word of the input is a command
+    ///
+    /// If this returns `None`, you should proceed with parsing the input as an ordinary
+    /// numbat expression
+    pub fn new(input: &'a str) -> Option<Self> {
+        let Some("help" | "info" | "clear" | "quit" | "exit" | "list" | "ls" | "save") =
+            input.split_whitespace().next()
+        else {
+            return None;
+        };
+
         let mut word_boundaries = Vec::new();
         let mut prev_char_was_whitespace = true;
         let mut start_idx = 0;
@@ -52,11 +75,36 @@ impl<'a> CommandParser<'a> {
             prev_char_was_whitespace = c.is_whitespace();
         }
 
-        Self {
+        Some(Self {
             words: input.split_whitespace(),
             word_boundaries,
+        })
+    }
+}
+
+/// A "full" command parser, containing both the state we need to parse (`inner:
+/// SourcelessCommandParser`) and a `code_source_id` to report errors correctly
+///
+/// All actual parsing happens through this struct. Since we managed to obtain a
+/// `SourcelessCommandParser`, we know that the input was a command and not a numbat
+/// expression, so we can proceed with parsing the command further.
+pub struct CommandParser<'a> {
+    inner: SourcelessCommandParser<'a>,
+    code_source_id: usize,
+}
+
+impl<'a> CommandParser<'a> {
+    /// Construct a new `CommandParser` from an existing `SourcelessCommandParser`,
+    /// which contains the input, and a `code_source_id`, for reporting errors
+    pub fn new(inner: SourcelessCommandParser<'a>, code_source_id: usize) -> Self {
+        Self {
+            inner,
             code_source_id,
         }
+    }
+
+    pub fn set_code_source_id(&mut self, code_source_id: usize) {
+        self.code_source_id = code_source_id;
     }
 
     /// Get the span starting at the start of the word at `word_index`, through the end of
@@ -65,8 +113,8 @@ impl<'a> CommandParser<'a> {
     /// ## Panics
     /// If `word_index` is out of bounds, ie `word_index >= word_boundaries.len()`
     fn span_through_end(&self, word_index: usize) -> Span {
-        let start = self.word_boundaries[word_index].0;
-        let end = self.word_boundaries.last().unwrap().1;
+        let start = self.inner.word_boundaries[word_index].0;
+        let end = self.inner.word_boundaries.last().unwrap().1;
         self.span_from_boundary((start, end))
     }
 
@@ -92,7 +140,7 @@ impl<'a> CommandParser<'a> {
     fn err_at_idx(&self, index: usize, err_msg: &'static str) -> ParseError {
         ParseError {
             kind: ParseErrorKind::InvalidCommand(err_msg),
-            span: self.span_from_boundary(self.word_boundaries[index]),
+            span: self.span_from_boundary(self.inner.word_boundaries[index]),
         }
     }
 
@@ -102,269 +150,265 @@ impl<'a> CommandParser<'a> {
             span: self.span_through_end(index),
         }
     }
-}
 
-macro_rules! ensure_zero_args {
-    ($parser:expr, $cmd:literal) => {{
-        ensure_zero_args!($parser, $cmd, "")
-    }};
-    ($parser:expr, $cmd: literal, $err_msg_suffix:literal) => {{
-        if $parser.words.next().is_some() {
-            return Some(Err($parser.err_through_end_from(
-                1,
-                concat!("`", $cmd, "` takes 0 arguments", $err_msg_suffix),
-            )));
-        }
-    }};
-}
-
-/// Attempt to parse the input as a command, such as "help", "list <args>", "quit", etc
-///
-/// Returns:
-/// - `None`, if the input does not begin with a command keyword
-/// - `Some(Ok(Command))`, if the input is a valid command
-/// - `Some(Err(_))`, if the input starts with a valid command but has the wrong number
-///   or kind of arguments, e.g. `list foobar`
-pub fn parse_command(input: &str, code_source_id: usize) -> Option<Result<Command, ParseError>> {
-    let mut parser = CommandParser::new(input, code_source_id);
-
-    let Some(command_str) = parser.words.next() else {
-        // should never hit this branch in practice because all-whitespace inputs are
-        // skipped over
-
-        return Some(Err(ParseError {
-            kind: ParseErrorKind::InvalidCommand("invalid empty command"),
-            span: parser.span_from_boundary((0, u32::try_from(input.len()).unwrap())),
-        }));
-    };
-
-    let command = match command_str {
-        "help" => {
-            ensure_zero_args!(
-                parser,
-                "help",
-                "; use `info <item>` for information about an item"
-            );
-            Command::Help
-        }
-        "clear" => {
-            ensure_zero_args!(parser, "clear");
-            Command::Clear
-        }
-        "quit" => {
-            ensure_zero_args!(parser, "quit");
-            Command::Quit
-        }
-        "exit" => {
-            ensure_zero_args!(parser, "exit");
-            Command::Quit
-        }
-        "info" => {
-            let err_msg = "`info` requires exactly one argument, the item to get info on";
-            let Some(item) = parser.words.next() else {
-                return Some(Err(parser.err_at_idx(0, err_msg)));
-            };
-
-            if parser.words.next().is_some() {
-                return Some(Err(parser.err_through_end_from(1, err_msg)));
-            }
-
-            Command::Info { item }
-        }
-        "list" | "ls" => {
-            let items = match parser.words.next() {
-                None => None,
-                Some("functions") => Some(ListItems::Functions),
-                Some("dimensions") => Some(ListItems::Dimensions),
-                Some("variables") => Some(ListItems::Variables),
-                Some("units") => Some(ListItems::Units),
-                _ => {
-                    return Some(Err(parser.err_at_idx(
+    /// Attempt to parse the input provided to Self::new as a command, such as "help",
+    /// "list <args>", "quit", etc
+    ///
+    /// Returns:
+    /// - `Ok(Command)`, if the input is a valid command with correct arguments
+    /// - `Err(ParseError)`, if the input starts with a valid command but has the wrong
+    ///   number or kind of arguments, e.g. `list foobar`
+    pub fn parse_command(&mut self) -> Result<Command, ParseError> {
+        macro_rules! ensure_zero_args {
+            ($parser:expr, $cmd:literal) => {{
+                ensure_zero_args!($parser, $cmd, "")
+            }};
+            ($parser:expr, $cmd: literal, $err_msg_suffix:literal) => {{
+                if $parser.inner.words.next().is_some() {
+                    return Err($parser.err_through_end_from(
                         1,
-                        "if provided, the argument to `list` or `ls` must be \
-                        one of: functions, dimensions, variables, units",
-                    )));
+                        concat!("`", $cmd, "` takes 0 arguments", $err_msg_suffix),
+                    ));
                 }
-            };
-            if parser.words.next().is_some() {
-                return Some(Err(
-                    parser.err_through_end_from(2, "`list` takes at most one argument")
-                ));
-            }
-
-            Command::List { items }
-        }
-        "save" => {
-            let err_msg = "`save` requires exactly one argument, the destination";
-            let Some(dst) = parser.words.next() else {
-                return Some(Err(parser.err_at_idx(0, err_msg)));
-            };
-
-            if parser.words.next().is_some() {
-                return Some(Err(parser.err_through_end_from(2, err_msg)));
-            }
-
-            Command::Save { dst }
+            }};
         }
 
-        _ => return None,
-    };
+        // expect() is guaranteed to succeed; CommandParser::new ensures there is at
+        // least one word
+        let command = match self
+            .inner
+            .words
+            .next()
+            .expect("CommandParser::new is supposed to check that we have a valid command")
+        {
+            "help" => {
+                ensure_zero_args!(
+                    self,
+                    "help",
+                    "; use `info <item>` for information about an item"
+                );
+                Command::Help
+            }
+            "clear" => {
+                ensure_zero_args!(self, "clear");
+                Command::Clear
+            }
+            "quit" => {
+                ensure_zero_args!(self, "quit");
+                Command::Quit
+            }
+            "exit" => {
+                ensure_zero_args!(self, "exit");
+                Command::Quit
+            }
+            "info" => {
+                let err_msg = "`info` requires exactly one argument, the item to get info on";
+                let Some(item) = self.inner.words.next() else {
+                    return Err(self.err_at_idx(0, err_msg));
+                };
 
-    Some(Ok(command))
+                if self.inner.words.next().is_some() {
+                    return Err(self.err_through_end_from(1, err_msg));
+                }
+
+                Command::Info { item }
+            }
+            "list" | "ls" => {
+                let items = match self.inner.words.next() {
+                    None => None,
+                    Some("functions") => Some(ListItems::Functions),
+                    Some("dimensions") => Some(ListItems::Dimensions),
+                    Some("variables") => Some(ListItems::Variables),
+                    Some("units") => Some(ListItems::Units),
+                    _ => {
+                        return Err(self.err_at_idx(
+                            1,
+                            "if provided, the argument to `list` or `ls` must be \
+                        one of: functions, dimensions, variables, units",
+                        ));
+                    }
+                };
+                if self.inner.words.next().is_some() {
+                    return Err(self.err_through_end_from(2, "`list` takes at most one argument"));
+                }
+
+                Command::List { items }
+            }
+            "save" => {
+                let err_msg = "`save` requires exactly one argument, the destination";
+                let Some(dst) = self.inner.words.next() else {
+                    return Err(self.err_at_idx(0, err_msg));
+                };
+
+                if self.inner.words.next().is_some() {
+                    return Err(self.err_through_end_from(2, err_msg));
+                }
+
+                Command::Save { dst }
+            }
+
+            _ => {
+                unreachable!("CommandParser::new is supposed to check that we have a valid command")
+            }
+        };
+
+        Ok(command)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    fn parse_command(input: &str) -> Option<Result<Command, ParseError>> {
-        super::parse_command(input, 0)
+    fn parser(input: &'static str) -> Option<CommandParser<'static>> {
+        Some(CommandParser::new(SourcelessCommandParser::new(input)?, 0))
+    }
+
+    // can't be a function due to lifetimes/borrow checker
+    macro_rules! parse {
+        ($input:literal) => {{
+            parser($input).unwrap().parse_command()
+        }};
     }
 
     #[test]
     fn test_command_parser() {
-        assert_eq!(&CommandParser::new("", 0).word_boundaries, &[]);
-        assert_eq!(&CommandParser::new(" ", 0).word_boundaries, &[]);
-        assert_eq!(&CommandParser::new("  ", 0).word_boundaries, &[]);
+        assert!(parser("").is_none());
+        assert!(parser(" ").is_none());
+        assert!(parser("  ").is_none());
 
-        assert_eq!(&CommandParser::new("x", 0).word_boundaries, &[(0, 1)]);
-        assert_eq!(&CommandParser::new("x ", 0).word_boundaries, &[(0, 1)]);
-        assert_eq!(&CommandParser::new(" x", 0).word_boundaries, &[(1, 2)]);
-        assert_eq!(&CommandParser::new(" x ", 0).word_boundaries, &[(1, 2)]);
+        assert!(parser("x").is_none());
+        assert!(parser("x ").is_none());
+        assert!(parser(" x").is_none());
+        assert!(parser(" x ").is_none());
 
-        assert_eq!(&CommandParser::new("xyz", 0).word_boundaries, &[(0, 3)]);
-        assert_eq!(&CommandParser::new("xyz  ", 0).word_boundaries, &[(0, 3)]);
-        assert_eq!(&CommandParser::new("  xyz", 0).word_boundaries, &[(2, 5)]);
-        assert_eq!(&CommandParser::new("  xyz  ", 0).word_boundaries, &[(2, 5)]);
+        assert!(parser("xyz").is_none());
+        assert!(parser("xyz  ").is_none());
+        assert!(parser("  xyz").is_none());
+        assert!(parser("  xyz  ").is_none());
 
-        assert_eq!(
-            &CommandParser::new("abc x", 0).word_boundaries,
-            &[(0, 3), (4, 5)]
-        );
-        assert_eq!(
-            &CommandParser::new("abc  x ", 0).word_boundaries,
-            &[(0, 3), (5, 6)]
-        );
-        assert_eq!(
-            &CommandParser::new(" abc   x", 0).word_boundaries,
-            &[(1, 4), (7, 8)]
-        );
-        assert_eq!(
-            &CommandParser::new("  abc   x  ", 0).word_boundaries,
-            &[(2, 5), (8, 9)]
-        );
+        assert!(parser("abc x").is_none(),);
+        assert!(parser("abc  x ").is_none(),);
+        assert!(parser(" abc   x").is_none());
+        assert!(parser("  abc   x  ").is_none());
+
+        assert_eq!(&parser("list").unwrap().inner.word_boundaries, &[(0, 4)]);
+        assert_eq!(&parser("list ").unwrap().inner.word_boundaries, &[(0, 4)]);
+        assert_eq!(&parser(" list").unwrap().inner.word_boundaries, &[(1, 5)]);
+        assert_eq!(&parser(" list ").unwrap().inner.word_boundaries, &[(1, 5)]);
 
         assert_eq!(
-            &CommandParser::new("abc x y z", 0).word_boundaries,
-            &[(0, 3), (4, 5), (6, 7), (8, 9)]
+            &parser("list   ab").unwrap().inner.word_boundaries,
+            &[(0, 4), (7, 9)]
         );
         assert_eq!(
-            &CommandParser::new("abc x y z  ", 0).word_boundaries,
-            &[(0, 3), (4, 5), (6, 7), (8, 9)]
+            &parser("list   ab ").unwrap().inner.word_boundaries,
+            &[(0, 4), (7, 9)]
         );
         assert_eq!(
-            &CommandParser::new("  abc x y z", 0).word_boundaries,
-            &[(2, 5), (6, 7), (8, 9), (10, 11)]
+            &parser(" list   ab").unwrap().inner.word_boundaries,
+            &[(1, 5), (8, 10)]
         );
         assert_eq!(
-            &CommandParser::new("  abc x y z  ", 0).word_boundaries,
-            &[(2, 5), (6, 7), (8, 9), (10, 11)]
+            &parser(" list   ab ").unwrap().inner.word_boundaries,
+            &[(1, 5), (8, 10)]
+        );
+
+        assert_eq!(
+            &parser("list   ab xy").unwrap().inner.word_boundaries,
+            &[(0, 4), (7, 9), (10, 12)]
+        );
+        assert_eq!(
+            &parser("list   ab   xy ").unwrap().inner.word_boundaries,
+            &[(0, 4), (7, 9), (12, 14)]
+        );
+        assert_eq!(
+            parser("   list   ab    xy").unwrap().inner.word_boundaries,
+            &[(3, 7), (10, 12), (16, 18)]
+        );
+        assert_eq!(
+            parser("   list   ab    xy   ")
+                .unwrap()
+                .inner
+                .word_boundaries,
+            &[(3, 7), (10, 12), (16, 18)]
         );
     }
 
     #[test]
     fn test_existent_commands() {
-        // valid commands
-        assert!(parse_command("help").is_some());
-        assert!(parse_command("help arg").is_some());
-        assert!(parse_command("help arg1 arg2").is_some());
-
-        assert!(parse_command("info").is_some());
-        assert!(parse_command("info arg").is_some());
-        assert!(parse_command("info arg1 arg2").is_some());
-
-        assert!(parse_command("clear").is_some());
-        assert!(parse_command("clear arg").is_some());
-        assert!(parse_command("clear arg1 arg2").is_some());
-
-        assert!(parse_command("list").is_some());
-        assert!(parse_command("list arg").is_some());
-        assert!(parse_command("list arg1 arg2").is_some());
-
-        assert!(parse_command("quit").is_some());
-        assert!(parse_command("quit arg").is_some());
-        assert!(parse_command("quit arg1 arg2").is_some());
-
-        assert!(parse_command("exit").is_some());
-        assert!(parse_command("exit arg").is_some());
-        assert!(parse_command("exit arg1 arg2").is_some());
-
-        assert!(parse_command("save").is_some());
-        assert!(parse_command("save arg").is_some());
-        assert!(parse_command("save arg1 arg2").is_some());
-
         // these shouldn't happen at runtime because the REPL skips over all
         // whitespace lines, but we still want to handle them just in case
-        assert!(parse_command("").unwrap().is_err());
-        assert!(parse_command(" ").unwrap().is_err());
+        assert!(parser("").is_none());
+        assert!(parser(" ").is_none());
+
+        // valid commands
+        assert!(parser("help").is_some());
+        assert!(parser("help arg").is_some());
+        assert!(parser("help arg1 arg2").is_some());
+
+        assert!(parser("info").is_some());
+        assert!(parser("info arg").is_some());
+        assert!(parser("info arg1 arg2").is_some());
+
+        assert!(parser("clear").is_some());
+        assert!(parser("clear arg").is_some());
+        assert!(parser("clear arg1 arg2").is_some());
+
+        assert!(parser("list").is_some());
+        assert!(parser("list arg").is_some());
+        assert!(parser("list arg1 arg2").is_some());
+
+        assert!(parser("quit").is_some());
+        assert!(parser("quit arg").is_some());
+        assert!(parser("quit arg1 arg2").is_some());
+
+        assert!(parser("exit").is_some());
+        assert!(parser("exit arg").is_some());
+        assert!(parser("exit arg1 arg2").is_some());
+
+        assert!(parser("save").is_some());
+        assert!(parser("save arg").is_some());
+        assert!(parser("save arg1 arg2").is_some());
 
         // invalid (nonempty) command names are all None so that parsing can continue on
         // what is presumably a math expression. case matters
-        assert!(parse_command(".").is_none());
-        assert!(parse_command(",").is_none());
-        assert!(parse_command(";").is_none());
-        assert!(parse_command("HELP").is_none());
-        assert!(parse_command("List").is_none());
-        assert!(parse_command("qUIt").is_none());
-        assert!(parse_command("listfunctions").is_none());
-        assert!(parse_command("exitquit").is_none());
+        assert!(parser(".").is_none());
+        assert!(parser(",").is_none());
+        assert!(parser(";").is_none());
+        assert!(parser("HELP").is_none());
+        assert!(parser("List xyz").is_none());
+        assert!(parser("qUIt abc").is_none());
+        assert!(parser("listfunctions").is_none());
+        assert!(parser("exitquit").is_none());
     }
 
     #[test]
     fn test_whitespace() {
+        assert_eq!(parse!("list").unwrap(), Command::List { items: None });
+        assert_eq!(parse!(" list").unwrap(), Command::List { items: None });
+        assert_eq!(parse!("list ").unwrap(), Command::List { items: None });
+        assert_eq!(parse!(" list ").unwrap(), Command::List { items: None });
         assert_eq!(
-            parse_command("list").unwrap().unwrap(),
-            Command::List { items: None }
-        );
-
-        assert_eq!(
-            parse_command(" list").unwrap().unwrap(),
-            Command::List { items: None }
-        );
-
-        assert_eq!(
-            parse_command("list ").unwrap().unwrap(),
-            Command::List { items: None }
-        );
-
-        assert_eq!(
-            parse_command(" list ").unwrap().unwrap(),
-            Command::List { items: None }
-        );
-
-        assert_eq!(
-            parse_command("list functions  ").unwrap().unwrap(),
+            parse!("list functions  ").unwrap(),
             Command::List {
                 items: Some(ListItems::Functions)
             }
         );
-
         assert_eq!(
-            parse_command("  list    functions  ").unwrap().unwrap(),
+            parse!("  list    functions  ").unwrap(),
             Command::List {
                 items: Some(ListItems::Functions)
             }
         );
-
         assert_eq!(
-            parse_command("  list    functions  ").unwrap().unwrap(),
+            parse!("  list    functions  ").unwrap(),
             Command::List {
                 items: Some(ListItems::Functions)
             }
         );
-
         assert_eq!(
-            parse_command("list    functions").unwrap().unwrap(),
+            parse!("list    functions").unwrap(),
             Command::List {
                 items: Some(ListItems::Functions)
             }
@@ -373,71 +417,56 @@ mod test {
 
     #[test]
     fn test_args() {
-        assert_eq!(parse_command("help").unwrap().unwrap(), Command::Help);
-        assert!(parse_command("help arg").unwrap().is_err());
-        assert!(parse_command("help arg1 arg2").unwrap().is_err());
+        assert_eq!(parse!("help").unwrap(), Command::Help);
+        assert!(parse!("help arg").is_err());
+        assert!(parse!("help arg1 arg2").is_err());
 
-        assert!(parse_command("info").unwrap().is_err());
-        assert_eq!(
-            parse_command("info arg").unwrap().unwrap(),
-            Command::Info { item: "arg" }
-        );
-        assert_eq!(
-            parse_command("info .").unwrap().unwrap(),
-            Command::Info { item: "." }
-        );
-        assert!(parse_command("info arg1 arg2").unwrap().is_err());
+        assert!(parse!("info").is_err());
+        assert_eq!(parse!("info arg").unwrap(), Command::Info { item: "arg" });
+        assert_eq!(parse!("info .").unwrap(), Command::Info { item: "." });
+        assert!(parse!("info arg1 arg2").is_err());
 
-        assert_eq!(parse_command("clear").unwrap().unwrap(), Command::Clear);
-        assert!(parse_command("clear arg").unwrap().is_err());
-        assert!(parse_command("clear arg1 arg2").unwrap().is_err());
+        assert_eq!(parse!("clear").unwrap(), Command::Clear);
+        assert!(parse!("clear arg").is_err());
+        assert!(parse!("clear arg1 arg2").is_err());
 
+        assert_eq!(parse!("list").unwrap(), Command::List { items: None });
         assert_eq!(
-            parse_command("list").unwrap().unwrap(),
-            Command::List { items: None }
-        );
-        assert_eq!(
-            parse_command("list functions").unwrap().unwrap(),
+            parse!("list functions").unwrap(),
             Command::List {
                 items: Some(ListItems::Functions)
             }
         );
         assert_eq!(
-            parse_command("list dimensions").unwrap().unwrap(),
+            parse!("list dimensions").unwrap(),
             Command::List {
                 items: Some(ListItems::Dimensions)
             }
         );
         assert_eq!(
-            parse_command("list variables").unwrap().unwrap(),
+            parse!("list variables").unwrap(),
             Command::List {
                 items: Some(ListItems::Variables)
             }
         );
         assert_eq!(
-            parse_command("list units").unwrap().unwrap(),
+            parse!("list units").unwrap(),
             Command::List {
                 items: Some(ListItems::Units)
             }
         );
 
-        assert_eq!(parse_command("quit").unwrap().unwrap(), Command::Quit);
-        assert!(parse_command("quit arg").unwrap().is_err());
-        assert!(parse_command("quit arg1 arg2").unwrap().is_err());
+        assert_eq!(parse!("quit").unwrap(), Command::Quit);
+        assert!(parse!("quit arg").is_err());
+        assert!(parse!("quit arg1 arg2").is_err());
 
-        assert_eq!(parse_command("exit").unwrap().unwrap(), Command::Quit);
-        assert!(parse_command("exit arg").unwrap().is_err());
-        assert!(parse_command("exit arg1 arg2").unwrap().is_err());
+        assert_eq!(parse!("exit").unwrap(), Command::Quit);
+        assert!(parse!("exit arg").is_err());
+        assert!(parse!("exit arg1 arg2").is_err());
 
-        assert!(parse_command("save").unwrap().is_err());
-        assert_eq!(
-            parse_command("save arg").unwrap().unwrap(),
-            Command::Save { dst: "arg" }
-        );
-        assert_eq!(
-            parse_command("save .").unwrap().unwrap(),
-            Command::Save { dst: "." }
-        );
-        assert!(parse_command("save arg1 arg2").unwrap().is_err());
+        assert!(parse!("save").is_err());
+        assert_eq!(parse!("save arg").unwrap(), Command::Save { dst: "arg" });
+        assert_eq!(parse!("save .").unwrap(), Command::Save { dst: "." });
+        assert!(parse!("save arg1 arg2").is_err());
     }
 }

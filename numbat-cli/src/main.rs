@@ -10,6 +10,7 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
+use numbat::command::{CommandParser, SourcelessCommandParser};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
 use numbat::markup as m;
@@ -348,16 +349,18 @@ impl Cli {
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line)?;
 
-                        let code_source_id = self
-                            .context
-                            .lock()
-                            .unwrap()
-                            .resolver_mut()
-                            .add_code_source(CodeSource::Text, &line);
+                        // if we enter here, the line looks like a command
+                        if let Some(sourceless_parser) = SourcelessCommandParser::new(&line) {
+                            let mut parser = CommandParser::new(
+                                sourceless_parser,
+                                self.context
+                                    .lock()
+                                    .unwrap()
+                                    .resolver_mut()
+                                    .add_code_source(CodeSource::Text, &line),
+                            );
 
-                        let command_result_opt = command::parse_command(&line, code_source_id);
-                        if let Some(command_result) = command_result_opt {
-                            match command_result {
+                            match parser.parse_command() {
                                 Ok(command) => match command {
                                     command::Command::Help => {
                                         let help = help_markup();
