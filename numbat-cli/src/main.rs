@@ -348,10 +348,14 @@ impl Cli {
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line)?;
 
-                        let command_result_opt = command::parse_command(
-                            &line,
-                            self.context.lock().unwrap().resolver_mut(),
-                        );
+                        let code_source_id = self
+                            .context
+                            .lock()
+                            .unwrap()
+                            .resolver_mut()
+                            .add_code_source(CodeSource::Text, &line);
+
+                        let command_result_opt = command::parse_command(&line, code_source_id);
                         if let Some(command_result) = command_result_opt {
                             match command_result {
                                 Ok(command) => match command {

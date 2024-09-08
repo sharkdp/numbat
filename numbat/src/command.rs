@@ -1,6 +1,5 @@
 use crate::{
     parser::ParseErrorKind,
-    resolver::{CodeSource, Resolver},
     span::{SourceCodePositition, Span},
     ParseError,
 };
@@ -112,19 +111,15 @@ macro_rules! handle_arg_count {
     }};
 }
 
-/// this function primarily exists for testing, to not have to provide a resolver
+/// Attempt to parse the input as a command, such as "help", "list <args>", "quit", etc
 ///
-/// for an actual build, a resolver is necessary for error reporting
-fn parse_command_inner<'a>(
-    input: &'a str,
-    resolver: Option<&mut Resolver>,
-) -> Option<Result<Command<'a>, ParseError>> {
+/// Returns:
+/// - `None`, if the input does not begin with a command keyword
+/// - `Some(Ok(Command))`, if the input is a valid command
+/// - `Some(Err(_))`, if the input starts with a valid command but has the wrong number
+///   or kind of arguments, e.g. `list foobar`
+pub fn parse_command(input: &str, code_source_id: usize) -> Option<Result<Command, ParseError>> {
     let word_boundaries = get_word_boundaries(input);
-
-    let code_source_id = match resolver {
-        Some(resolver) => resolver.add_code_source(CodeSource::Text, input),
-        None => 0,
-    };
 
     let mut words = input.split_whitespace();
     let Some(command_str) = words.next() else {
@@ -243,26 +238,12 @@ fn parse_command_inner<'a>(
     Some(Ok(command))
 }
 
-/// Attempt to parse the input as a command, such as "help", "list <args>", "quit", etc
-///
-/// Returns:
-/// - `None`, if the input does not begin with a command keyword
-/// - `Some(Ok(Command))`, if the input is a valid command
-/// - `Some(Err(_))`, if the input starts with a valid command but has the wrong number
-///   or kind of arguments, e.g. `list foobar`
-pub fn parse_command<'a>(
-    input: &'a str,
-    resolver: &mut Resolver,
-) -> Option<Result<Command<'a>, ParseError>> {
-    parse_command_inner(input, Some(resolver))
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
     fn parse_command(input: &str) -> Option<Result<Command, ParseError>> {
-        parse_command_inner(input, None)
+        super::parse_command(input, 0)
     }
 
     #[test]
