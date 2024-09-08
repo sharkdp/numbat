@@ -111,9 +111,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
 }
 
 fn error(mut args: Args) -> Result<Value> {
-    Err(RuntimeError::UserError(
-        arg!(args).unsafe_as_string().into(),
-    ))
+    Err(RuntimeError::UserError(arg!(args).unsafe_as_string()))
 }
 
 fn unit_of(mut args: Args) -> Result<Value> {
