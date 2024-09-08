@@ -261,23 +261,21 @@ static PROCEDURES: &[TokenKind] = &[
     TokenKind::ProcedureType,
 ];
 
-struct Parser<'a> {
-    tokens: &'a [Token],
+struct Parser {
     current: usize,
     decorator_stack: Vec<Decorator>,
 }
 
-impl<'a> Parser<'a> {
-    pub(crate) fn new(tokens: &'a [Token]) -> Self {
+impl Parser {
+    pub(crate) fn new() -> Self {
         Parser {
-            tokens,
             current: 0,
             decorator_stack: vec![],
         }
     }
 
-    fn skip_empty_lines(&mut self) {
-        while self.match_exact(TokenKind::Newline).is_some() {}
+    fn skip_empty_lines(&mut self, tokens: &[Token]) {
+        while self.match_exact(tokens, TokenKind::Newline).is_some() {}
     }
 
     /// Parse a token stream.
@@ -285,25 +283,25 @@ impl<'a> Parser<'a> {
     /// will try to recover from the error and parse as many statements as possible
     /// while stacking all the errors in a `Vec`. At the end, it returns the complete
     /// list of statements parsed + the list of errors accumulated.
-    fn parse(&mut self) -> ParseResult {
+    fn parse(&mut self, tokens: &[Token]) -> ParseResult {
         let mut statements = vec![];
         let mut errors = vec![];
 
-        self.skip_empty_lines();
+        self.skip_empty_lines(tokens);
 
-        while !self.is_at_end() {
-            match self.statement() {
+        while !self.is_at_end(tokens) {
+            match self.statement(tokens) {
                 Ok(statement) => statements.push(statement),
                 Err(e) => {
                     errors.push(e);
-                    self.recover_from_error();
+                    self.recover_from_error(tokens);
                 }
             }
 
-            match self.peek().kind {
+            match self.peek(tokens).kind {
                 TokenKind::Newline => {
                     // Skip over empty lines
-                    self.skip_empty_lines();
+                    self.skip_empty_lines(tokens);
                 }
                 TokenKind::Eof => {
                     break;
@@ -311,18 +309,20 @@ impl<'a> Parser<'a> {
                 TokenKind::Equal => {
                     errors.push(ParseError {
                         kind: ParseErrorKind::TrailingEqualSign(
-                            self.last().unwrap().lexeme.clone(),
+                            self.last(tokens).unwrap().lexeme.to_owned(),
                         ),
-                        span: self.peek().span,
+                        span: self.peek(tokens).span,
                     });
-                    self.recover_from_error();
+                    self.recover_from_error(tokens);
                 }
                 _ => {
                     errors.push(ParseError {
-                        kind: ParseErrorKind::TrailingCharacters(self.peek().lexeme.clone()),
-                        span: self.peek().span,
+                        kind: ParseErrorKind::TrailingCharacters(
+                            self.peek(tokens).lexeme.to_owned(),
+                        ),
+                        span: self.peek(tokens).span,
                     });
-                    self.recover_from_error();
+                    self.recover_from_error(tokens);
                 }
             }
         }
@@ -335,27 +335,27 @@ impl<'a> Parser<'a> {
     }
 
     /// Must be called after encountering an error.
-    fn recover_from_error(&mut self) {
+    fn recover_from_error(&mut self, tokens: &[Token]) {
         // Skip all the tokens until we encounter a newline or EoF.
-        while !matches!(self.peek().kind, TokenKind::Newline | TokenKind::Eof) {
-            self.advance()
+        while !matches!(self.peek(tokens).kind, TokenKind::Newline | TokenKind::Eof) {
+            self.advance(tokens)
         }
     }
 
-    fn accepts_prefix(&mut self) -> Result<Option<AcceptsPrefix>> {
-        if self.match_exact(TokenKind::Colon).is_some() {
-            if self.match_exact(TokenKind::Long).is_some() {
+    fn accepts_prefix(&mut self, tokens: &[Token]) -> Result<Option<AcceptsPrefix>> {
+        if self.match_exact(tokens, TokenKind::Colon).is_some() {
+            if self.match_exact(tokens, TokenKind::Long).is_some() {
                 Ok(Some(AcceptsPrefix::only_long()))
-            } else if self.match_exact(TokenKind::Short).is_some() {
+            } else if self.match_exact(tokens, TokenKind::Short).is_some() {
                 Ok(Some(AcceptsPrefix::only_short()))
-            } else if self.match_exact(TokenKind::Both).is_some() {
+            } else if self.match_exact(tokens, TokenKind::Both).is_some() {
                 Ok(Some(AcceptsPrefix::both()))
-            } else if self.match_exact(TokenKind::None).is_some() {
+            } else if self.match_exact(tokens, TokenKind::None).is_some() {
                 Ok(Some(AcceptsPrefix::none()))
             } else {
                 return Err(ParseError::new(
                     ParseErrorKind::UnknownAliasAnnotation,
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
         } else {
@@ -363,86 +363,94 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn list_of_aliases(&mut self) -> Result<Vec<(String, Option<AcceptsPrefix>)>> {
-        if self.match_exact(TokenKind::RightParen).is_some() {
+    fn list_of_aliases(
+        &mut self,
+        tokens: &[Token],
+    ) -> Result<Vec<(String, Option<AcceptsPrefix>)>> {
+        if self.match_exact(tokens, TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
         let mut identifiers: Vec<(String, Option<AcceptsPrefix>)> =
-            vec![(self.identifier()?, self.accepts_prefix()?)];
-        while self.match_exact(TokenKind::Comma).is_some() {
-            identifiers.push((self.identifier()?, self.accepts_prefix()?));
+            vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?)];
+        while self.match_exact(tokens, TokenKind::Comma).is_some() {
+            identifiers.push((self.identifier(tokens)?, self.accepts_prefix(tokens)?));
         }
 
-        if self.match_exact(TokenKind::RightParen).is_none() {
+        if self.match_exact(tokens, TokenKind::RightParen).is_none() {
             return Err(ParseError::new(
                 ParseErrorKind::MissingClosingParen,
-                self.peek().span,
+                self.peek(tokens).span,
             ));
         }
 
         Ok(identifiers)
     }
 
-    fn statement(&mut self) -> Result<Statement> {
-        if !(self.peek().kind == TokenKind::At
-            || self.peek().kind == TokenKind::Unit
-            || self.peek().kind == TokenKind::Let
-            || self.peek().kind == TokenKind::Fn
+    fn statement(&mut self, tokens: &[Token]) -> Result<Statement> {
+        if !(self.peek(tokens).kind == TokenKind::At
+            || self.peek(tokens).kind == TokenKind::Unit
+            || self.peek(tokens).kind == TokenKind::Let
+            || self.peek(tokens).kind == TokenKind::Fn
             || self.decorator_stack.is_empty())
         {
             return Err(ParseError {
                 kind: ParseErrorKind::DecoratorUsedOnUnsuitableKind,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             });
         }
 
-        if self.match_exact(TokenKind::Let).is_some() {
-            self.parse_variable(true).map(Statement::DefineVariable)
-        } else if self.match_exact(TokenKind::Fn).is_some() {
-            self.parse_function_declaration()
-        } else if self.match_exact(TokenKind::Dimension).is_some() {
-            self.parse_dimension_declaration()
-        } else if self.match_exact(TokenKind::At).is_some() {
-            self.parse_decorators()
-        } else if self.match_exact(TokenKind::Unit).is_some() {
-            self.parse_unit_declaration()
-        } else if self.match_exact(TokenKind::Use).is_some() {
-            self.parse_use()
-        } else if self.match_exact(TokenKind::Struct).is_some() {
-            self.parse_struct()
-        } else if self.match_any(PROCEDURES).is_some() {
-            self.parse_procedure()
+        if self.match_exact(tokens, TokenKind::Let).is_some() {
+            self.parse_variable(tokens, true)
+                .map(Statement::DefineVariable)
+        } else if self.match_exact(tokens, TokenKind::Fn).is_some() {
+            self.parse_function_declaration(tokens)
+        } else if self.match_exact(tokens, TokenKind::Dimension).is_some() {
+            self.parse_dimension_declaration(tokens)
+        } else if self.match_exact(tokens, TokenKind::At).is_some() {
+            self.parse_decorators(tokens)
+        } else if self.match_exact(tokens, TokenKind::Unit).is_some() {
+            self.parse_unit_declaration(tokens)
+        } else if self.match_exact(tokens, TokenKind::Use).is_some() {
+            self.parse_use(tokens)
+        } else if self.match_exact(tokens, TokenKind::Struct).is_some() {
+            self.parse_struct(tokens)
+        } else if self.match_any(tokens, PROCEDURES).is_some() {
+            self.parse_procedure(tokens)
         } else {
-            Ok(Statement::Expression(self.expression()?))
+            Ok(Statement::Expression(self.expression(tokens)?))
         }
     }
 
-    fn parse_variable(&mut self, flush_decorators: bool) -> Result<DefineVariable> {
-        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-            let identifier_span = self.last().unwrap().span;
+    fn parse_variable(
+        &mut self,
+        tokens: &[Token],
+        flush_decorators: bool,
+    ) -> Result<DefineVariable> {
+        if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
+            let identifier_span = self.last(tokens).unwrap().span;
 
-            let type_annotation = if self.match_exact(TokenKind::Colon).is_some() {
-                Some(self.type_annotation()?)
+            let type_annotation = if self.match_exact(tokens, TokenKind::Colon).is_some() {
+                Some(self.type_annotation(tokens)?)
             } else {
                 None
             };
 
-            if self.match_exact(TokenKind::Equal).is_none() {
+            if self.match_exact(tokens, TokenKind::Equal).is_none() {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedEqualOrColonAfterLetIdentifier,
-                    span: self.peek().span,
+                    span: self.peek(tokens).span,
                 })
             } else {
-                self.skip_empty_lines();
-                let expr = self.expression()?;
+                self.skip_empty_lines(tokens);
+                let expr = self.expression(tokens)?;
 
                 let mut decorators = vec![];
                 if flush_decorators {
                     if decorator::contains_aliases_with_prefixes(&self.decorator_stack) {
                         return Err(ParseError {
                             kind: ParseErrorKind::DecoratorsWithPrefixOnLetDefinition,
-                            span: self.peek().span,
+                            span: self.peek(tokens).span,
                         });
                     }
                     std::mem::swap(&mut decorators, &mut self.decorator_stack);
@@ -450,7 +458,7 @@ impl<'a> Parser<'a> {
 
                 Ok(DefineVariable {
                     identifier_span,
-                    identifier: identifier.lexeme.clone(),
+                    identifier: identifier.lexeme.to_owned(),
                     expr,
                     type_annotation,
                     decorators,
@@ -459,27 +467,29 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedIdentifierAfterLet,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             })
         }
     }
 
-    fn parse_function_declaration(&mut self) -> Result<Statement> {
-        if let Some(fn_name) = self.match_exact(TokenKind::Identifier) {
-            let function_name_span = self.last().unwrap().span;
+    fn parse_function_declaration(&mut self, tokens: &[Token]) -> Result<Statement> {
+        if let Some(fn_name) = self.match_exact(tokens, TokenKind::Identifier) {
+            let function_name_span = self.last(tokens).unwrap().span;
             let mut type_parameters = vec![];
             // Parsing the generic parameters if there are any
-            if self.match_exact(TokenKind::LessThan).is_some() {
-                while self.match_exact(TokenKind::GreaterThan).is_none() {
-                    if let Some(type_parameter_name) = self.match_exact(TokenKind::Identifier) {
-                        let bound = if self.match_exact(TokenKind::Colon).is_some() {
-                            match self.match_exact(TokenKind::Identifier) {
+            if self.match_exact(tokens, TokenKind::LessThan).is_some() {
+                while self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
+                    if let Some(type_parameter_name) =
+                        self.match_exact(tokens, TokenKind::Identifier)
+                    {
+                        let bound = if self.match_exact(tokens, TokenKind::Colon).is_some() {
+                            match self.match_exact(tokens, TokenKind::Identifier) {
                                 Some(token) if token.lexeme == "Dim" => {
                                     Some(TypeParameterBound::Dim)
                                 }
                                 Some(token) => {
                                     return Err(ParseError {
-                                        kind: ParseErrorKind::UnknownBound(token.lexeme.clone()),
+                                        kind: ParseErrorKind::UnknownBound(token.lexeme.to_owned()),
                                         span: token.span,
                                     });
                                 }
@@ -487,7 +497,7 @@ impl<'a> Parser<'a> {
                                     return Err(ParseError {
                                         kind:
                                             ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
-                                        span: self.peek().span,
+                                        span: self.peek(tokens).span,
                                     });
                                 }
                             }
@@ -495,92 +505,92 @@ impl<'a> Parser<'a> {
                             None
                         };
 
-                        let span = self.last().unwrap().span;
+                        let span = self.last(tokens).unwrap().span;
                         type_parameters.push((span, type_parameter_name.lexeme.to_string(), bound));
 
-                        if self.match_exact(TokenKind::Comma).is_none()
-                            && self.peek().kind != TokenKind::GreaterThan
+                        if self.match_exact(tokens, TokenKind::Comma).is_none()
+                            && self.peek(tokens).kind != TokenKind::GreaterThan
                         {
                             return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
-                                span: self.peek().span,
+                                span: self.peek(tokens).span,
                             });
                         }
                     } else {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedTypeParameterName,
-                            span: self.peek().span,
+                            span: self.peek(tokens).span,
                         });
                     }
                 }
             }
 
-            if self.match_exact(TokenKind::LeftParen).is_none() {
+            if self.match_exact(tokens, TokenKind::LeftParen).is_none() {
                 return Err(ParseError {
                     kind: ParseErrorKind::ExpectedLeftParenInFunctionDefinition,
-                    span: self.peek().span,
+                    span: self.peek(tokens).span,
                 });
             }
 
-            let mut parameter_span = self.peek().span;
+            let mut parameter_span = self.peek(tokens).span;
 
-            self.match_exact(TokenKind::Newline);
+            self.match_exact(tokens, TokenKind::Newline);
             let mut parameters = vec![];
-            while self.match_exact(TokenKind::RightParen).is_none() {
-                if let Some(param_name) = self.match_exact(TokenKind::Identifier) {
-                    let span = self.last().unwrap().span;
-                    let param_type_dexpr = if self.match_exact(TokenKind::Colon).is_some() {
-                        Some(self.type_annotation()?)
+            while self.match_exact(tokens, TokenKind::RightParen).is_none() {
+                if let Some(param_name) = self.match_exact(tokens, TokenKind::Identifier) {
+                    let span = self.last(tokens).unwrap().span;
+                    let param_type_dexpr = if self.match_exact(tokens, TokenKind::Colon).is_some() {
+                        Some(self.type_annotation(tokens)?)
                     } else {
                         None
                     };
 
                     parameters.push((span, param_name.lexeme.to_string(), param_type_dexpr));
 
-                    parameter_span = parameter_span.extend(&self.last().unwrap().span);
+                    parameter_span = parameter_span.extend(&self.last(tokens).unwrap().span);
 
-                    self.skip_empty_lines();
-                    let has_comma = self.match_exact(TokenKind::Comma).is_some();
-                    self.skip_empty_lines();
-                    if self.match_exact(TokenKind::RightParen).is_some() {
+                    self.skip_empty_lines(tokens);
+                    let has_comma = self.match_exact(tokens, TokenKind::Comma).is_some();
+                    self.skip_empty_lines(tokens);
+                    if self.match_exact(tokens, TokenKind::RightParen).is_some() {
                         break;
                     }
 
-                    if !has_comma && self.peek().kind != TokenKind::RightParen {
+                    if !has_comma && self.peek(tokens).kind != TokenKind::RightParen {
                         return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
-                                span: self.peek().span,
+                                span: self.peek(tokens).span,
                             });
                     }
                 } else {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedParameterNameInFunctionDefinition,
-                        span: self.peek().span,
+                        span: self.peek(tokens).span,
                     });
                 }
             }
 
-            let return_type_annotation = if self.match_exact(TokenKind::Arrow).is_some() {
-                Some(self.type_annotation()?)
+            let return_type_annotation = if self.match_exact(tokens, TokenKind::Arrow).is_some() {
+                Some(self.type_annotation(tokens)?)
             } else {
                 None
             };
 
-            let (body, local_variables) = if self.match_exact(TokenKind::Equal).is_none() {
+            let (body, local_variables) = if self.match_exact(tokens, TokenKind::Equal).is_none() {
                 (None, vec![])
             } else {
-                self.skip_empty_lines();
-                let body = self.expression()?;
+                self.skip_empty_lines(tokens);
+                let body = self.expression(tokens)?;
 
                 let mut local_variables = Vec::new();
 
                 if self
-                    .match_exact_beyond_linebreaks(TokenKind::Where)
+                    .match_exact_beyond_linebreaks(tokens, TokenKind::Where)
                     .is_some()
                 {
-                    let keyword_span = self.last().unwrap().span;
-                    self.skip_empty_lines();
-                    if let Ok(local_variable) = self.parse_variable(false) {
+                    let keyword_span = self.last(tokens).unwrap().span;
+                    self.skip_empty_lines(tokens);
+                    if let Ok(local_variable) = self.parse_variable(tokens, false) {
                         local_variables.push(local_variable);
                     } else {
                         return Err(ParseError {
@@ -589,10 +599,13 @@ impl<'a> Parser<'a> {
                         });
                     }
 
-                    while self.match_exact_beyond_linebreaks(TokenKind::And).is_some() {
-                        let keyword_span = self.last().unwrap().span;
-                        self.skip_empty_lines();
-                        if let Ok(local_variable) = self.parse_variable(false) {
+                    while self
+                        .match_exact_beyond_linebreaks(tokens, TokenKind::And)
+                        .is_some()
+                    {
+                        let keyword_span = self.last(tokens).unwrap().span;
+                        self.skip_empty_lines(tokens);
+                        if let Ok(local_variable) = self.parse_variable(tokens, false) {
                             local_variables.push(local_variable);
                         } else {
                             return Err(ParseError {
@@ -609,7 +622,7 @@ impl<'a> Parser<'a> {
             if decorator::contains_aliases(&self.decorator_stack) {
                 return Err(ParseError {
                     kind: ParseErrorKind::AliasUsedOnFunction,
-                    span: self.peek().span,
+                    span: self.peek(tokens).span,
                 });
             }
 
@@ -618,7 +631,7 @@ impl<'a> Parser<'a> {
 
             Ok(Statement::DefineFunction {
                 function_name_span,
-                function_name: fn_name.lexeme.clone(),
+                function_name: fn_name.lexeme.to_owned(),
                 type_parameters,
                 parameters,
                 body,
@@ -629,13 +642,13 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedIdentifierAfterFn,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             })
         }
     }
 
-    fn parse_dimension_declaration(&mut self) -> Result<Statement> {
-        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
+    fn parse_dimension_declaration(&mut self, tokens: &[Token]) -> Result<Statement> {
+        if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             if identifier.lexeme.starts_with("__") {
                 return Err(ParseError::new(
                     ParseErrorKind::DoubleUnderscoreTypeNamesReserved,
@@ -643,64 +656,64 @@ impl<'a> Parser<'a> {
                 ));
             }
 
-            if self.match_exact(TokenKind::Equal).is_some() {
-                self.skip_empty_lines();
-                let mut dexprs = vec![self.dimension_expression()?];
+            if self.match_exact(tokens, TokenKind::Equal).is_some() {
+                self.skip_empty_lines(tokens);
+                let mut dexprs = vec![self.dimension_expression(tokens)?];
 
-                while self.match_exact(TokenKind::Equal).is_some() {
-                    self.skip_empty_lines();
-                    dexprs.push(self.dimension_expression()?);
+                while self.match_exact(tokens, TokenKind::Equal).is_some() {
+                    self.skip_empty_lines(tokens);
+                    dexprs.push(self.dimension_expression(tokens)?);
                 }
 
                 Ok(Statement::DefineDimension(
                     identifier.span,
-                    identifier.lexeme.clone(),
+                    identifier.lexeme.to_owned(),
                     dexprs,
                 ))
             } else {
                 Ok(Statement::DefineDimension(
                     identifier.span,
-                    identifier.lexeme.clone(),
+                    identifier.lexeme.to_owned(),
                     vec![],
                 ))
             }
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedIdentifierAfterDimension,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             })
         }
     }
 
-    fn parse_decorators(&mut self) -> Result<Statement> {
-        if let Some(decorator) = self.match_exact(TokenKind::Identifier) {
-            let decorator = match decorator.lexeme.as_str() {
+    fn parse_decorators(&mut self, tokens: &[Token]) -> Result<Statement> {
+        if let Some(decorator) = self.match_exact(tokens, TokenKind::Identifier) {
+            let decorator = match decorator.lexeme {
                 "metric_prefixes" => Decorator::MetricPrefixes,
                 "binary_prefixes" => Decorator::BinaryPrefixes,
                 "aliases" => {
-                    if self.match_exact(TokenKind::LeftParen).is_some() {
-                        let aliases = self.list_of_aliases()?;
+                    if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+                        let aliases = self.list_of_aliases(tokens)?;
                         Decorator::Aliases(aliases)
                     } else {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
-                            span: self.peek().span,
+                            span: self.peek(tokens).span,
                         });
                     }
                 }
                 "url" | "name" | "description" => {
-                    if self.match_exact(TokenKind::LeftParen).is_some() {
-                        if let Some(token) = self.match_exact(TokenKind::StringFixed) {
-                            if self.match_exact(TokenKind::RightParen).is_none() {
+                    if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+                        if let Some(token) = self.match_exact(tokens, TokenKind::StringFixed) {
+                            if self.match_exact(tokens, TokenKind::RightParen).is_none() {
                                 return Err(ParseError::new(
                                     ParseErrorKind::MissingClosingParen,
-                                    self.peek().span,
+                                    self.peek(tokens).span,
                                 ));
                             }
 
                             let content = strip_and_escape(&token.lexeme);
 
-                            match decorator.lexeme.as_str() {
+                            match decorator.lexeme {
                                 "url" => Decorator::Url(content),
                                 "name" => Decorator::Name(content),
                                 "description" => Decorator::Description(content),
@@ -709,13 +722,13 @@ impl<'a> Parser<'a> {
                         } else {
                             return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedString,
-                                span: self.peek().span,
+                                span: self.peek(tokens).span,
                             });
                         }
                     } else {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
-                            span: self.peek().span,
+                            span: self.peek(tokens).span,
                         });
                     }
                 }
@@ -730,34 +743,35 @@ impl<'a> Parser<'a> {
             self.decorator_stack.push(decorator); // TODO: make sure that there are no duplicate decorators
 
             // A decorator is not yet a full statement. Continue parsing:
-            self.skip_empty_lines();
-            self.statement()
+            self.skip_empty_lines(tokens);
+            self.statement(tokens)
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedDecoratorName,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             })
         }
     }
 
-    fn parse_unit_declaration(&mut self) -> Result<Statement> {
-        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-            let identifier_span = self.last().unwrap().span;
-            let (type_annotation_span, dexpr) = if self.match_exact(TokenKind::Colon).is_some() {
-                let type_annotation = self.dimension_expression()?;
-                (Some(self.last().unwrap().span), Some(type_annotation))
-            } else {
-                (None, None)
-            };
+    fn parse_unit_declaration(&mut self, tokens: &[Token]) -> Result<Statement> {
+        if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
+            let identifier_span = self.last(tokens).unwrap().span;
+            let (type_annotation_span, dexpr) =
+                if self.match_exact(tokens, TokenKind::Colon).is_some() {
+                    let type_annotation = self.dimension_expression(tokens)?;
+                    (Some(self.last(tokens).unwrap().span), Some(type_annotation))
+                } else {
+                    (None, None)
+                };
 
-            let unit_name = identifier.lexeme.clone();
+            let unit_name = identifier.lexeme.to_owned();
 
             let mut decorators = vec![];
             std::mem::swap(&mut decorators, &mut self.decorator_stack);
 
-            if self.match_exact(TokenKind::Equal).is_some() {
-                self.skip_empty_lines();
-                let expr = self.expression()?;
+            if self.match_exact(tokens, TokenKind::Equal).is_some() {
+                self.skip_empty_lines(tokens);
+                let expr = self.expression(tokens)?;
                 Ok(Statement::DefineDerivedUnit {
                     identifier_span,
                     identifier: unit_name,
@@ -773,7 +787,7 @@ impl<'a> Parser<'a> {
                     dexpr,
                     decorators,
                 ))
-            } else if self.is_end_of_statement() {
+            } else if self.is_end_of_statement(tokens) {
                 Ok(Statement::DefineBaseUnit(
                     identifier_span,
                     unit_name,
@@ -783,90 +797,90 @@ impl<'a> Parser<'a> {
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
-                    span: self.peek().span,
+                    span: self.peek(tokens).span,
                 })
             }
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedIdentifierAfterUnit,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             })
         }
     }
 
-    fn parse_use(&mut self) -> Result<Statement> {
-        let mut span = self.peek().span;
+    fn parse_use(&mut self, tokens: &[Token]) -> Result<Statement> {
+        let mut span = self.peek(tokens).span;
 
-        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-            let mut module_path = vec![identifier.lexeme.clone()];
+        if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
+            let mut module_path = vec![identifier.lexeme.to_owned()];
 
-            while self.match_exact(TokenKind::DoubleColon).is_some() {
-                if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-                    module_path.push(identifier.lexeme.clone());
+            while self.match_exact(tokens, TokenKind::DoubleColon).is_some() {
+                if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
+                    module_path.push(identifier.lexeme.to_owned());
                 } else {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedModuleNameAfterDoubleColon,
-                        span: self.peek().span,
+                        span: self.peek(tokens).span,
                     });
                 }
             }
-            span = span.extend(&self.last().unwrap().span);
+            span = span.extend(&self.last(tokens).unwrap().span);
 
             Ok(Statement::ModuleImport(span, ModulePath(module_path)))
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedModulePathAfterUse,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             })
         }
     }
 
-    fn parse_struct(&mut self) -> Result<Statement> {
-        let name = self.identifier()?;
-        let name_span = self.last().unwrap().span;
+    fn parse_struct(&mut self, tokens: &[Token]) -> Result<Statement> {
+        let name = self.identifier(tokens)?;
+        let name_span = self.last(tokens).unwrap().span;
 
-        if self.match_exact(TokenKind::LeftCurly).is_none() {
+        if self.match_exact(tokens, TokenKind::LeftCurly).is_none() {
             return Err(ParseError {
                 kind: ParseErrorKind::ExpectedLeftCurlyAfterStructName,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             });
         }
 
-        self.skip_empty_lines();
+        self.skip_empty_lines(tokens);
 
         let mut fields = vec![];
-        while self.match_exact(TokenKind::RightCurly).is_none() {
-            self.skip_empty_lines();
+        while self.match_exact(tokens, TokenKind::RightCurly).is_none() {
+            self.skip_empty_lines(tokens);
 
-            let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
+            let Some(field_name) = self.match_exact(tokens, TokenKind::Identifier) else {
                 return Err(ParseError {
                     kind: ParseErrorKind::ExpectedFieldNameInStruct,
-                    span: self.peek().span,
+                    span: self.peek(tokens).span,
                 });
             };
 
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            if self.match_exact(TokenKind::Colon).is_none() {
+            if self.match_exact(tokens, TokenKind::Colon).is_none() {
                 return Err(ParseError {
                     kind: ParseErrorKind::ExpectedColonAfterFieldName,
-                    span: self.peek().span,
+                    span: self.peek(tokens).span,
                 });
             }
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            let attr_type = self.type_annotation()?;
+            let attr_type = self.type_annotation(tokens)?;
 
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            let has_comma = self.match_exact(TokenKind::Comma).is_some();
+            let has_comma = self.match_exact(tokens, TokenKind::Comma).is_some();
 
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            if !has_comma && self.peek().kind != TokenKind::RightCurly {
+            if !has_comma && self.peek(tokens).kind != TokenKind::RightCurly {
                 return Err(ParseError {
                     kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
-                    span: self.peek().span,
+                    span: self.peek(tokens).span,
                 });
             }
 
@@ -880,9 +894,9 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn parse_procedure(&mut self) -> Result<Statement> {
-        let span = self.last().unwrap().span;
-        let procedure_kind = match self.last().unwrap().kind {
+    fn parse_procedure(&mut self, tokens: &[Token]) -> Result<Statement> {
+        let span = self.last(tokens).unwrap().span;
+        let procedure_kind = match self.last(tokens).unwrap().kind {
             TokenKind::ProcedurePrint => ProcedureKind::Print,
             TokenKind::ProcedureAssert => ProcedureKind::Assert,
             TokenKind::ProcedureAssertEq => ProcedureKind::AssertEq,
@@ -890,16 +904,16 @@ impl<'a> Parser<'a> {
             _ => unreachable!(),
         };
 
-        if self.match_exact(TokenKind::LeftParen).is_some() {
+        if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
             Ok(Statement::ProcedureCall(
                 span,
                 procedure_kind,
-                self.arguments()?,
+                self.arguments(tokens)?,
             ))
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
-                span: self.peek().span,
+                span: self.peek(tokens).span,
             })
         }
     }
@@ -910,13 +924,14 @@ impl<'a> Parser<'a> {
     /// - arg `next` specifiy the next parser to call between each symbols
     fn parse_binop(
         &mut self,
+        tokens: &[Token],
         op_symbol: &[TokenKind],
         op: impl Fn(TokenKind) -> BinaryOperator,
         next_parser: impl Fn(&mut Self) -> Result<Expression>,
     ) -> Result<Expression> {
         let mut expr = next_parser(self)?;
-        while let Some(matched) = self.match_any(op_symbol) {
-            let span_op = Some(self.last().unwrap().span);
+        while let Some(matched) = self.match_any(tokens, op_symbol) {
+            let span_op = Some(self.last(tokens).unwrap().span);
             let rhs = next_parser(self)?;
 
             expr = Expression::BinaryOperator {
@@ -929,27 +944,27 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    pub fn expression(&mut self) -> Result<Expression> {
-        self.postfix_apply()
+    pub fn expression(&mut self, tokens: &[Token]) -> Result<Expression> {
+        self.postfix_apply(tokens)
     }
 
-    fn identifier(&mut self) -> Result<String> {
-        if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-            Ok(identifier.lexeme.clone())
+    fn identifier(&mut self, tokens: &[Token]) -> Result<String> {
+        if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
+            Ok(identifier.lexeme.to_owned())
         } else {
             Err(ParseError::new(
                 ParseErrorKind::ExpectedIdentifier,
-                self.peek().span,
+                self.peek(tokens).span,
             ))
         }
     }
 
-    pub fn postfix_apply(&mut self) -> Result<Expression> {
-        let mut expr = self.condition()?;
+    pub fn postfix_apply(&mut self, tokens: &[Token]) -> Result<Expression> {
+        let mut expr = self.condition(tokens)?;
         let mut full_span = expr.full_span();
-        while self.match_exact(TokenKind::PostfixApply).is_some() {
-            self.skip_empty_lines();
-            match self.call()? {
+        while self.match_exact(tokens, TokenKind::PostfixApply).is_some() {
+            self.skip_empty_lines(tokens);
+            match self.call(tokens)? {
                 Expression::Identifier(span, ident) => {
                     full_span = full_span.extend(&span);
 
@@ -977,36 +992,36 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn condition(&mut self) -> Result<Expression> {
-        if self.match_exact(TokenKind::If).is_some() {
-            let span_if = self.last().unwrap().span;
-            let condition_expr = self.conversion()?;
+    fn condition(&mut self, tokens: &[Token]) -> Result<Expression> {
+        if self.match_exact(tokens, TokenKind::If).is_some() {
+            let span_if = self.last(tokens).unwrap().span;
+            let condition_expr = self.conversion(tokens)?;
 
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            if self.match_exact(TokenKind::Then).is_none() {
+            if self.match_exact(tokens, TokenKind::Then).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedThen,
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            let then_expr = self.condition()?;
+            let then_expr = self.condition(tokens)?;
 
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            if self.match_exact(TokenKind::Else).is_none() {
+            if self.match_exact(tokens, TokenKind::Else).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedElse,
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            let else_expr = self.condition()?;
+            let else_expr = self.condition(tokens)?;
 
             Ok(Expression::Condition(
                 span_if,
@@ -1015,38 +1030,44 @@ impl<'a> Parser<'a> {
                 Box::new(else_expr),
             ))
         } else {
-            self.conversion()
+            self.conversion(tokens)
         }
     }
 
-    fn conversion(&mut self) -> Result<Expression> {
+    fn conversion(&mut self, tokens: &[Token]) -> Result<Expression> {
         self.parse_binop(
+            tokens,
             &[TokenKind::Arrow, TokenKind::To],
             |_| BinaryOperator::ConvertTo,
-            Self::logical_or,
+            |parser| parser.logical_or(tokens),
         )
     }
 
-    fn logical_or(&mut self) -> Result<Expression> {
+    fn logical_or(&mut self, tokens: &[Token]) -> Result<Expression> {
         self.parse_binop(
+            tokens,
             &[TokenKind::LogicalOr],
             |_| BinaryOperator::LogicalOr,
-            Self::logical_and,
+            |parser| parser.logical_and(tokens),
         )
     }
 
-    fn logical_and(&mut self) -> Result<Expression> {
+    fn logical_and(&mut self, tokens: &[Token]) -> Result<Expression> {
         self.parse_binop(
+            tokens,
             &[TokenKind::LogicalAnd],
             |_| BinaryOperator::LogicalAnd,
-            Self::logical_neg,
+            |parser| parser.logical_neg(tokens),
         )
     }
 
-    fn logical_neg(&mut self) -> Result<Expression> {
-        if self.match_exact(TokenKind::ExclamationMark).is_some() {
-            let span = self.last().unwrap().span;
-            let rhs = self.logical_neg()?;
+    fn logical_neg(&mut self, tokens: &[Token]) -> Result<Expression> {
+        if self
+            .match_exact(tokens, TokenKind::ExclamationMark)
+            .is_some()
+        {
+            let span = self.last(tokens).unwrap().span;
+            let rhs = self.logical_neg(tokens)?;
 
             Ok(Expression::UnaryOperator {
                 op: UnaryOperator::LogicalNeg,
@@ -1054,12 +1075,13 @@ impl<'a> Parser<'a> {
                 span_op: span,
             })
         } else {
-            self.comparison()
+            self.comparison(tokens)
         }
     }
 
-    fn comparison(&mut self) -> Result<Expression> {
+    fn comparison(&mut self, tokens: &[Token]) -> Result<Expression> {
         self.parse_binop(
+            tokens,
             &[
                 TokenKind::LessThan,
                 TokenKind::GreaterThan,
@@ -1077,62 +1099,69 @@ impl<'a> Parser<'a> {
                 TokenKind::NotEqual => BinaryOperator::NotEqual,
                 _ => unreachable!(),
             },
-            Self::term,
+            |parser| parser.term(tokens),
         )
     }
 
-    fn term(&mut self) -> Result<Expression> {
+    fn term(&mut self, tokens: &[Token]) -> Result<Expression> {
         self.parse_binop(
+            tokens,
             &[TokenKind::Plus, TokenKind::Minus],
             |matched| match matched {
                 TokenKind::Plus => BinaryOperator::Add,
                 TokenKind::Minus => BinaryOperator::Sub,
                 _ => unreachable!(),
             },
-            Self::factor,
+            |parser| parser.factor(tokens),
         )
     }
 
-    fn factor(&mut self) -> Result<Expression> {
+    fn factor(&mut self, tokens: &[Token]) -> Result<Expression> {
         self.parse_binop(
+            tokens,
             &[TokenKind::Multiply, TokenKind::Divide],
             |matched| match matched {
                 TokenKind::Multiply => BinaryOperator::Mul,
                 TokenKind::Divide => BinaryOperator::Div,
                 _ => unreachable!(),
             },
-            Self::per_factor,
+            |parser| parser.per_factor(tokens),
         )
     }
 
-    fn per_factor(&mut self) -> Result<Expression> {
-        self.parse_binop(&[TokenKind::Per], |_| BinaryOperator::Div, Self::unary)
+    fn per_factor(&mut self, tokens: &[Token]) -> Result<Expression> {
+        self.parse_binop(
+            tokens,
+            &[TokenKind::Per],
+            |_| BinaryOperator::Div,
+            |parser| parser.unary(tokens),
+        )
     }
 
-    fn unary(&mut self) -> Result<Expression> {
-        if self.match_exact(TokenKind::Minus).is_some() {
-            let span = self.last().unwrap().span;
-            let rhs = self.unary()?;
+    fn unary(&mut self, tokens: &[Token]) -> Result<Expression> {
+        if self.match_exact(tokens, TokenKind::Minus).is_some() {
+            let span = self.last(tokens).unwrap().span;
+            let rhs = self.unary(tokens)?;
 
             Ok(Expression::UnaryOperator {
                 op: UnaryOperator::Negate,
                 expr: Box::new(rhs),
                 span_op: span,
             })
-        } else if self.match_exact(TokenKind::Plus).is_some() {
+        } else if self.match_exact(tokens, TokenKind::Plus).is_some() {
             // A unary `+` is equivalent to nothing. We can get rid of the
             // symbol without inserting any nodes in the AST.
-            self.unary()
+            self.unary(tokens)
         } else {
-            self.ifactor()
+            self.ifactor(tokens)
         }
     }
 
-    fn ifactor(&mut self) -> Result<Expression> {
-        let mut expr = self.power()?;
+    fn ifactor(&mut self, tokens: &[Token]) -> Result<Expression> {
+        let mut expr = self.power(tokens)?;
 
-        while self.next_token_could_start_power_expression() {
-            let rhs = self.power()?;
+        while self.next_token_could_start_power_expression(tokens) {
+            let rhs = self.power(tokens)?;
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Mul,
                 lhs: Box::new(expr),
@@ -1144,21 +1173,21 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn power(&mut self) -> Result<Expression> {
-        let mut expr = self.factorial()?;
+    fn power(&mut self, tokens: &[Token]) -> Result<Expression> {
+        let mut expr = self.factorial(tokens)?;
 
-        if self.match_exact(TokenKind::Power).is_some() {
-            let span_op = Some(self.last().unwrap().span);
+        if self.match_exact(tokens, TokenKind::Power).is_some() {
+            let span_op = Some(self.last(tokens).unwrap().span);
 
-            let unary_op = if self.match_exact(TokenKind::Minus).is_some() {
-                let span_unary_minus = self.last().unwrap().span;
+            let unary_op = if self.match_exact(tokens, TokenKind::Minus).is_some() {
+                let span_unary_minus = self.last(tokens).unwrap().span;
 
                 Some((UnaryOperator::Negate, span_unary_minus))
             } else {
                 None
             };
 
-            let mut rhs = self.power()?;
+            let mut rhs = self.power(tokens)?;
 
             if let Some((op, span_op)) = unary_op {
                 rhs = Expression::UnaryOperator {
@@ -1179,11 +1208,14 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn factorial(&mut self) -> Result<Expression> {
-        let mut expr = self.unicode_power()?;
+    fn factorial(&mut self, tokens: &[Token]) -> Result<Expression> {
+        let mut expr = self.unicode_power(tokens)?;
 
-        while self.match_exact(TokenKind::ExclamationMark).is_some() {
-            let span = self.last().unwrap().span;
+        while self
+            .match_exact(tokens, TokenKind::ExclamationMark)
+            .is_some()
+        {
+            let span = self.last(tokens).unwrap().span;
 
             expr = Expression::UnaryOperator {
                 op: UnaryOperator::Factorial,
@@ -1221,11 +1253,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn unicode_power(&mut self) -> Result<Expression> {
-        let mut expr = self.call()?;
+    fn unicode_power(&mut self, tokens: &[Token]) -> Result<Expression> {
+        let mut expr = self.call(tokens)?;
 
-        if let Some(exponent) = self.match_exact(TokenKind::UnicodeExponent) {
-            let exp = Self::unicode_exponent_to_int(exponent.lexeme.as_str());
+        if let Some(exponent) = self.match_exact(tokens, TokenKind::UnicodeExponent) {
+            let exp = Self::unicode_exponent_to_int(exponent.lexeme);
 
             expr = Expression::BinaryOperator {
                 op: BinaryOperator::Power,
@@ -1241,21 +1273,21 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn call(&mut self) -> Result<Expression> {
-        let mut expr = self.primary()?;
+    fn call(&mut self, tokens: &[Token]) -> Result<Expression> {
+        let mut expr = self.primary(tokens)?;
 
         loop {
-            if self.match_exact(TokenKind::LeftParen).is_some() {
-                let args = self.arguments()?;
+            if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+                let args = self.arguments(tokens)?;
                 expr = Expression::FunctionCall(
                     expr.full_span(),
-                    expr.full_span().extend(&self.last().unwrap().span),
+                    expr.full_span().extend(&self.last(tokens).unwrap().span),
                     Box::new(expr),
                     args,
                 );
-            } else if self.match_exact(TokenKind::Period).is_some() {
-                let ident = self.identifier()?;
-                let ident_span = self.last().unwrap().span;
+            } else if self.match_exact(tokens, TokenKind::Period).is_some() {
+                let ident = self.identifier(tokens)?;
+                let ident_span = self.last(tokens).unwrap().span;
                 let full_span = expr.full_span().extend(&ident_span);
 
                 expr = Expression::AccessField(full_span, ident_span, Box::new(expr), ident)
@@ -1265,36 +1297,36 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn arguments(&mut self) -> Result<Vec<Expression>> {
-        self.skip_empty_lines();
-        if self.match_exact(TokenKind::RightParen).is_some() {
+    fn arguments(&mut self, tokens: &[Token]) -> Result<Vec<Expression>> {
+        self.skip_empty_lines(tokens);
+        if self.match_exact(tokens, TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
-        let mut args: Vec<Expression> = vec![self.expression()?];
+        let mut args: Vec<Expression> = vec![self.expression(tokens)?];
         loop {
-            self.skip_empty_lines();
+            self.skip_empty_lines(tokens);
 
-            if self.match_exact(TokenKind::Comma).is_some() {
-                self.skip_empty_lines();
-                if self.match_exact(TokenKind::RightParen).is_some() {
+            if self.match_exact(tokens, TokenKind::Comma).is_some() {
+                self.skip_empty_lines(tokens);
+                if self.match_exact(tokens, TokenKind::RightParen).is_some() {
                     break;
                 }
-                match self.expression() {
+                match self.expression(tokens) {
                     Ok(expr) => args.push(expr),
                     Err(_err) => {
                         return Err(ParseError::new(
                             ParseErrorKind::MissingClosingParen,
-                            self.peek().span,
+                            self.peek(tokens).span,
                         ))
                     }
                 }
-            } else if self.match_exact(TokenKind::RightParen).is_some() {
+            } else if self.match_exact(tokens, TokenKind::RightParen).is_some() {
                 break;
             } else {
                 return Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
         }
@@ -1302,7 +1334,7 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    fn primary(&mut self) -> Result<Expression> {
+    fn primary(&mut self, tokens: &[Token]) -> Result<Expression> {
         // This function needs to be kept in sync with `next_token_could_start_power_expression` below.
 
         let overflow_error = |span| {
@@ -1312,14 +1344,14 @@ impl<'a> Parser<'a> {
             ))
         };
 
-        if let Some(num) = self.match_exact(TokenKind::Number) {
+        if let Some(num) = self.match_exact(tokens, TokenKind::Number) {
             let num_string = num.lexeme.replace('_', "");
             Ok(Expression::Scalar(
-                self.last().unwrap().span,
+                self.last(tokens).unwrap().span,
                 Number::from_f64(num_string.parse::<f64>().unwrap()),
             ))
-        } else if let Some(hex_int) = self.match_exact(TokenKind::IntegerWithBase(16)) {
-            let span = self.last().unwrap().span;
+        } else if let Some(hex_int) = self.match_exact(tokens, TokenKind::IntegerWithBase(16)) {
+            let span = self.last(tokens).unwrap().span;
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
@@ -1327,8 +1359,8 @@ impl<'a> Parser<'a> {
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
-        } else if let Some(oct_int) = self.match_exact(TokenKind::IntegerWithBase(8)) {
-            let span = self.last().unwrap().span;
+        } else if let Some(oct_int) = self.match_exact(tokens, TokenKind::IntegerWithBase(8)) {
+            let span = self.last(tokens).unwrap().span;
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
@@ -1336,8 +1368,8 @@ impl<'a> Parser<'a> {
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
-        } else if let Some(bin_int) = self.match_exact(TokenKind::IntegerWithBase(2)) {
-            let span = self.last().unwrap().span;
+        } else if let Some(bin_int) = self.match_exact(tokens, TokenKind::IntegerWithBase(2)) {
+            let span = self.last(tokens).unwrap().span;
             Ok(Expression::Scalar(
                 span,
                 Number::from_f64(
@@ -1345,123 +1377,126 @@ impl<'a> Parser<'a> {
                         .or_else(|_| overflow_error(span))? as f64, // TODO: i128 limits our precision here
                 ),
             ))
-        } else if self.match_exact(TokenKind::NaN).is_some() {
-            let span = self.last().unwrap().span;
+        } else if self.match_exact(tokens, TokenKind::NaN).is_some() {
+            let span = self.last(tokens).unwrap().span;
             Ok(Expression::Scalar(span, Number::from_f64(f64::NAN)))
-        } else if self.match_exact(TokenKind::Inf).is_some() {
-            let span = self.last().unwrap().span;
+        } else if self.match_exact(tokens, TokenKind::Inf).is_some() {
+            let span = self.last(tokens).unwrap().span;
             Ok(Expression::Scalar(span, Number::from_f64(f64::INFINITY)))
-        } else if self.match_exact(TokenKind::LeftBracket).is_some() {
-            let span = self.last().unwrap().span;
-            self.skip_empty_lines();
+        } else if self.match_exact(tokens, TokenKind::LeftBracket).is_some() {
+            let span = self.last(tokens).unwrap().span;
+            self.skip_empty_lines(tokens);
 
             let mut elements = vec![];
-            while self.match_exact(TokenKind::RightBracket).is_none() {
-                self.skip_empty_lines();
+            while self.match_exact(tokens, TokenKind::RightBracket).is_none() {
+                self.skip_empty_lines(tokens);
 
-                elements.push(self.expression()?);
+                elements.push(self.expression(tokens)?);
 
-                self.skip_empty_lines();
+                self.skip_empty_lines(tokens);
 
-                if self.match_exact(TokenKind::Comma).is_none()
-                    && self.peek().kind != TokenKind::RightBracket
+                if self.match_exact(tokens, TokenKind::Comma).is_none()
+                    && self.peek(tokens).kind != TokenKind::RightBracket
                 {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedCommaOrRightBracketInList,
-                        span: self.peek().span,
+                        span: self.peek(tokens).span,
                     });
                 }
 
-                self.skip_empty_lines();
+                self.skip_empty_lines(tokens);
             }
-            let span = span.extend(&self.last().unwrap().span);
+            let span = span.extend(&self.last(tokens).unwrap().span);
 
             Ok(Expression::List(span, elements))
-        } else if self.match_exact(TokenKind::QuestionMark).is_some() {
-            let span = self.last().unwrap().span;
+        } else if self.match_exact(tokens, TokenKind::QuestionMark).is_some() {
+            let span = self.last(tokens).unwrap().span;
             Ok(Expression::TypedHole(span))
-        } else if let Some(identifier) = self.match_exact(TokenKind::Identifier) {
-            let span = self.last().unwrap().span;
+        } else if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
+            let span = self.last(tokens).unwrap().span;
 
-            if self.match_exact(TokenKind::LeftCurly).is_some() {
-                self.skip_empty_lines();
+            if self.match_exact(tokens, TokenKind::LeftCurly).is_some() {
+                self.skip_empty_lines(tokens);
 
                 let mut fields = vec![];
-                while self.match_exact(TokenKind::RightCurly).is_none() {
-                    self.skip_empty_lines();
+                while self.match_exact(tokens, TokenKind::RightCurly).is_none() {
+                    self.skip_empty_lines(tokens);
 
-                    let Some(field_name) = self.match_exact(TokenKind::Identifier) else {
+                    let Some(field_name) = self.match_exact(tokens, TokenKind::Identifier) else {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedFieldNameInStruct,
-                            span: self.peek().span,
+                            span: self.peek(tokens).span,
                         });
                     };
 
-                    self.skip_empty_lines();
+                    self.skip_empty_lines(tokens);
 
-                    if self.match_exact(TokenKind::Colon).is_none() {
+                    if self.match_exact(tokens, TokenKind::Colon).is_none() {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedColonAfterFieldName,
-                            span: self.peek().span,
+                            span: self.peek(tokens).span,
                         });
                     }
 
-                    self.skip_empty_lines();
+                    self.skip_empty_lines(tokens);
 
-                    let expr = self.expression()?;
+                    let expr = self.expression(tokens)?;
 
-                    self.skip_empty_lines();
+                    self.skip_empty_lines(tokens);
 
-                    let has_comma = self.match_exact(TokenKind::Comma).is_some();
+                    let has_comma = self.match_exact(tokens, TokenKind::Comma).is_some();
 
-                    self.skip_empty_lines();
+                    self.skip_empty_lines(tokens);
 
-                    if !has_comma && self.peek().kind != TokenKind::RightCurly {
+                    if !has_comma && self.peek(tokens).kind != TokenKind::RightCurly {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedCommaOrRightCurlyInStructFieldList,
-                            span: self.peek().span,
+                            span: self.peek(tokens).span,
                         });
                     }
 
                     fields.push((field_name.span, field_name.lexeme.to_owned(), expr));
                 }
 
-                let full_span = span.extend(&self.last().unwrap().span);
+                let full_span = span.extend(&self.last(tokens).unwrap().span);
 
                 return Ok(Expression::InstantiateStruct {
                     full_span,
                     ident_span: span,
-                    name: identifier.lexeme.clone(),
+                    name: identifier.lexeme.to_owned(),
                     fields,
                 });
             }
 
-            Ok(Expression::Identifier(span, identifier.lexeme.clone()))
-        } else if let Some(inner) = self.match_any(&[TokenKind::True, TokenKind::False]) {
+            Ok(Expression::Identifier(span, identifier.lexeme.to_owned()))
+        } else if let Some(inner) = self.match_any(tokens, &[TokenKind::True, TokenKind::False]) {
             Ok(Expression::Boolean(
                 inner.span,
                 matches!(inner.kind, TokenKind::True),
             ))
-        } else if let Some(token) = self.match_exact(TokenKind::StringFixed) {
+        } else if let Some(token) = self.match_exact(tokens, TokenKind::StringFixed) {
             Ok(Expression::String(
                 token.span,
                 vec![StringPart::Fixed(strip_and_escape(&token.lexeme))],
             ))
-        } else if let Some(token) = self.match_exact(TokenKind::StringInterpolationStart) {
+        } else if let Some(token) = self.match_exact(tokens, TokenKind::StringInterpolationStart) {
             let mut parts = Vec::new();
 
-            self.interpolation(&mut parts, token)?;
+            self.interpolation(tokens, &mut parts, token)?;
 
             let mut span_full_string = token.span;
             let mut has_end = false;
-            while let Some(inner_token) = self.match_any(&[
-                TokenKind::StringInterpolationMiddle,
-                TokenKind::StringInterpolationEnd,
-            ]) {
+            while let Some(inner_token) = self.match_any(
+                tokens,
+                &[
+                    TokenKind::StringInterpolationMiddle,
+                    TokenKind::StringInterpolationEnd,
+                ],
+            ) {
                 span_full_string = span_full_string.extend(&inner_token.span);
                 match inner_token.kind {
                     TokenKind::StringInterpolationMiddle => {
-                        self.interpolation(&mut parts, inner_token)?;
+                        self.interpolation(tokens, &mut parts, inner_token)?;
                     }
                     TokenKind::StringInterpolationEnd => {
                         parts.push(StringPart::Fixed(strip_and_escape(&inner_token.lexeme)));
@@ -1473,7 +1508,7 @@ impl<'a> Parser<'a> {
             }
 
             if !has_end {
-                span_full_string = span_full_string.extend(&self.last().unwrap().span);
+                span_full_string = span_full_string.extend(&self.last(tokens).unwrap().span);
                 return Err(ParseError::new(
                     ParseErrorKind::UnterminatedString,
                     span_full_string,
@@ -1483,27 +1518,27 @@ impl<'a> Parser<'a> {
             parts.retain(|p| !matches!(p, StringPart::Fixed(s) if s.is_empty()));
 
             Ok(Expression::String(span_full_string, parts))
-        } else if self.match_exact(TokenKind::LeftParen).is_some() {
-            let inner = self.expression()?;
+        } else if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+            let inner = self.expression(tokens)?;
 
-            if self.match_exact(TokenKind::RightParen).is_none() {
+            if self.match_exact(tokens, TokenKind::RightParen).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
             Ok(inner)
         } else if matches!(
-            self.peek().kind,
+            self.peek(tokens).kind,
             TokenKind::ProcedurePrint | TokenKind::ProcedureAssertEq
         ) {
             Err(ParseError::new(
                 ParseErrorKind::InlineProcedureUsage,
-                self.peek().span,
+                self.peek(tokens).span,
             ))
         } else if self
-            .last()
+            .last(tokens)
             .map(|t| {
                 matches!(
                     t.kind,
@@ -1512,7 +1547,7 @@ impl<'a> Parser<'a> {
             })
             .unwrap_or(false)
         {
-            let full_interpolation_end_span = self.peek().span;
+            let full_interpolation_end_span = self.peek(tokens).span;
             let closing_brace_span = full_interpolation_end_span
                 .start
                 .single_character_span(full_interpolation_end_span.code_source_id);
@@ -1524,19 +1559,24 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParseError::new(
                 ParseErrorKind::ExpectedPrimary,
-                self.peek().span,
+                self.peek(tokens).span,
             ))
         }
     }
 
-    fn interpolation(&mut self, parts: &mut Vec<StringPart>, token: &Token) -> Result<()> {
+    fn interpolation(
+        &mut self,
+        tokens: &[Token],
+        parts: &mut Vec<StringPart>,
+        token: &Token,
+    ) -> Result<()> {
         parts.push(StringPart::Fixed(strip_and_escape(&token.lexeme)));
 
-        let expr = self.expression()?;
+        let expr = self.expression(tokens)?;
 
         let format_specifiers = self
-            .match_exact(TokenKind::StringInterpolationSpecifiers)
-            .map(|token| token.lexeme.clone());
+            .match_exact(tokens, TokenKind::StringInterpolationSpecifiers)
+            .map(|token| token.lexeme.to_owned());
 
         parts.push(StringPart::Interpolation {
             span: expr.full_span(),
@@ -1549,11 +1589,11 @@ impl<'a> Parser<'a> {
 
     /// Returns true iff the upcoming token indicates the beginning of a 'power'
     /// expression (which needs to start with a 'primary' expression).
-    fn next_token_could_start_power_expression(&self) -> bool {
+    fn next_token_could_start_power_expression(&self, tokens: &[Token]) -> bool {
         // This function needs to be kept in sync with `primary` above.
 
         matches!(
-            self.peek().kind,
+            self.peek(tokens).kind,
             TokenKind::Number
                 | TokenKind::Identifier
                 | TokenKind::LeftParen
@@ -1561,98 +1601,102 @@ impl<'a> Parser<'a> {
         )
     }
 
-    fn type_annotation(&mut self) -> Result<TypeAnnotation> {
-        if let Some(token) = self.match_exact(TokenKind::Bool) {
+    fn type_annotation(&mut self, tokens: &[Token]) -> Result<TypeAnnotation> {
+        if let Some(token) = self.match_exact(tokens, TokenKind::Bool) {
             Ok(TypeAnnotation::Bool(token.span))
-        } else if let Some(token) = self.match_exact(TokenKind::String) {
+        } else if let Some(token) = self.match_exact(tokens, TokenKind::String) {
             Ok(TypeAnnotation::String(token.span))
-        } else if let Some(token) = self.match_exact(TokenKind::DateTime) {
+        } else if let Some(token) = self.match_exact(tokens, TokenKind::DateTime) {
             Ok(TypeAnnotation::DateTime(token.span))
-        } else if self.match_exact(TokenKind::CapitalFn).is_some() {
-            let span = self.last().unwrap().span;
-            if self.match_exact(TokenKind::LeftBracket).is_none() {
+        } else if self.match_exact(tokens, TokenKind::CapitalFn).is_some() {
+            let span = self.last(tokens).unwrap().span;
+            if self.match_exact(tokens, TokenKind::LeftBracket).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedTokenInFunctionType("left bracket"),
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
-            if self.match_exact(TokenKind::LeftParen).is_none() {
+            if self.match_exact(tokens, TokenKind::LeftParen).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedTokenInFunctionType("left parenthesis"),
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
             let mut params = vec![];
-            if self.peek().kind != TokenKind::RightParen {
-                params.push(self.type_annotation()?);
-                while self.match_exact(TokenKind::Comma).is_some() {
-                    params.push(self.type_annotation()?);
+            if self.peek(tokens).kind != TokenKind::RightParen {
+                params.push(self.type_annotation(tokens)?);
+                while self.match_exact(tokens, TokenKind::Comma).is_some() {
+                    params.push(self.type_annotation(tokens)?);
                 }
             }
 
-            if self.match_exact(TokenKind::RightParen).is_none() {
+            if self.match_exact(tokens, TokenKind::RightParen).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
-            if self.match_exact(TokenKind::Arrow).is_none() {
+            if self.match_exact(tokens, TokenKind::Arrow).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedTokenInFunctionType("arrow (->)"),
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
-            let return_type = self.type_annotation()?;
+            let return_type = self.type_annotation(tokens)?;
 
-            if self.match_exact(TokenKind::RightBracket).is_none() {
+            if self.match_exact(tokens, TokenKind::RightBracket).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedTokenInFunctionType("right bracket"),
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
-            let span = span.extend(&self.last().unwrap().span);
+            let span = span.extend(&self.last(tokens).unwrap().span);
 
             Ok(TypeAnnotation::Fn(span, params, Box::new(return_type)))
-        } else if self.match_exact(TokenKind::List).is_some() {
-            let span = self.last().unwrap().span;
+        } else if self.match_exact(tokens, TokenKind::List).is_some() {
+            let span = self.last(tokens).unwrap().span;
 
-            if self.match_exact(TokenKind::LessThan).is_none() {
+            if self.match_exact(tokens, TokenKind::LessThan).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedTokenInListType("'<'"),
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
-            let element_type = self.type_annotation()?;
+            let element_type = self.type_annotation(tokens)?;
 
-            if self.match_exact(TokenKind::GreaterThan).is_none() {
+            if self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedTokenInListType("'>'"),
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
 
-            let span = span.extend(&self.last().unwrap().span);
+            let span = span.extend(&self.last(tokens).unwrap().span);
 
             Ok(TypeAnnotation::List(span, Box::new(element_type)))
         } else {
-            Ok(TypeAnnotation::TypeExpression(self.dimension_expression()?))
+            Ok(TypeAnnotation::TypeExpression(
+                self.dimension_expression(tokens)?,
+            ))
         }
     }
 
-    fn dimension_expression(&mut self) -> Result<TypeExpression> {
-        self.dimension_factor()
+    fn dimension_expression(&mut self, tokens: &[Token]) -> Result<TypeExpression> {
+        self.dimension_factor(tokens)
     }
 
-    fn dimension_factor(&mut self) -> Result<TypeExpression> {
-        let mut expr = self.dimension_power()?;
-        while let Some(operator_token) = self.match_any(&[TokenKind::Multiply, TokenKind::Divide]) {
-            let span = self.last().unwrap().span;
-            let rhs = self.dimension_power()?;
+    fn dimension_factor(&mut self, tokens: &[Token]) -> Result<TypeExpression> {
+        let mut expr = self.dimension_power(tokens)?;
+        while let Some(operator_token) =
+            self.match_any(tokens, &[TokenKind::Multiply, TokenKind::Divide])
+        {
+            let span = self.last(tokens).unwrap().span;
+            let rhs = self.dimension_power(tokens)?;
 
             expr = if operator_token.kind == TokenKind::Multiply {
                 TypeExpression::Multiply(span, Box::new(expr), Box::new(rhs))
@@ -1663,12 +1707,12 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn dimension_power(&mut self) -> Result<TypeExpression> {
-        let expr = self.dimension_primary()?;
+    fn dimension_power(&mut self, tokens: &[Token]) -> Result<TypeExpression> {
+        let expr = self.dimension_primary(tokens)?;
 
-        if self.match_exact(TokenKind::Power).is_some() {
-            let span = self.last().unwrap().span;
-            let (span_exponent, exponent) = self.dimension_exponent()?;
+        if self.match_exact(tokens, TokenKind::Power).is_some() {
+            let span = self.last(tokens).unwrap().span;
+            let (span_exponent, exponent) = self.dimension_exponent(tokens)?;
 
             Ok(TypeExpression::Power(
                 Some(span),
@@ -1676,9 +1720,9 @@ impl<'a> Parser<'a> {
                 span_exponent,
                 exponent,
             ))
-        } else if let Some(exponent) = self.match_exact(TokenKind::UnicodeExponent) {
-            let span_exponent = self.last().unwrap().span;
-            let exp = Self::unicode_exponent_to_int(exponent.lexeme.as_str());
+        } else if let Some(exponent) = self.match_exact(tokens, TokenKind::UnicodeExponent) {
+            let span_exponent = self.last(tokens).unwrap().span;
+            let exp = Self::unicode_exponent_to_int(exponent.lexeme);
 
             Ok(TypeExpression::Power(
                 None,
@@ -1691,9 +1735,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn dimension_exponent(&mut self) -> Result<(Span, Exponent)> {
-        if let Some(token) = self.match_exact(TokenKind::Number) {
-            let span = self.last().unwrap().span;
+    fn dimension_exponent(&mut self, tokens: &[Token]) -> Result<(Span, Exponent)> {
+        if let Some(token) = self.match_exact(tokens, TokenKind::Number) {
+            let span = self.last(tokens).unwrap().span;
             let num_str = token.lexeme.replace('_', "");
             Ok((
                 span,
@@ -1706,32 +1750,32 @@ impl<'a> Parser<'a> {
                     span: token.span,
                 })?,
             ))
-        } else if self.match_exact(TokenKind::Minus).is_some() {
-            let span = self.last().unwrap().span;
-            let (span_inner, exponent) = self.dimension_exponent()?;
+        } else if self.match_exact(tokens, TokenKind::Minus).is_some() {
+            let span = self.last(tokens).unwrap().span;
+            let (span_inner, exponent) = self.dimension_exponent(tokens)?;
             Ok((span.extend(&span_inner), -exponent))
-        } else if self.match_exact(TokenKind::LeftParen).is_some() {
-            let mut span = self.last().unwrap().span;
-            let (span_inner, exponent) = self.dimension_exponent()?;
+        } else if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+            let mut span = self.last(tokens).unwrap().span;
+            let (span_inner, exponent) = self.dimension_exponent(tokens)?;
             span = span.extend(&span_inner);
-            if self.match_exact(TokenKind::RightParen).is_some() {
-                span = span.extend(&self.last().unwrap().span);
+            if self.match_exact(tokens, TokenKind::RightParen).is_some() {
+                span = span.extend(&self.last(tokens).unwrap().span);
                 Ok((span, exponent))
-            } else if self.match_exact(TokenKind::Divide).is_some() {
-                let (span_rhs, rhs) = self.dimension_exponent()?;
+            } else if self.match_exact(tokens, TokenKind::Divide).is_some() {
+                let (span_rhs, rhs) = self.dimension_exponent(tokens)?;
                 span = span.extend(&span_rhs);
                 if rhs == Rational::zero() {
                     Err(ParseError::new(
                         ParseErrorKind::DivisionByZeroInDimensionExponent,
-                        self.last().unwrap().span,
+                        self.last(tokens).unwrap().span,
                     ))
-                } else if self.match_exact(TokenKind::RightParen).is_none() {
+                } else if self.match_exact(tokens, TokenKind::RightParen).is_none() {
                     Err(ParseError::new(
                         ParseErrorKind::MissingClosingParen,
-                        self.peek().span,
+                        self.peek(tokens).span,
                     ))
                 } else {
-                    span = span.extend(&self.last().unwrap().span);
+                    span = span.extend(&self.last(tokens).unwrap().span);
                     Ok((
                         span,
                         exponent.checked_div(&rhs).ok_or_else(|| {
@@ -1742,44 +1786,47 @@ impl<'a> Parser<'a> {
             } else {
                 Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ))
             }
         } else {
             Err(ParseError::new(
                 ParseErrorKind::ExpectedDimensionExponent,
-                self.peek().span,
+                self.peek(tokens).span,
             ))
         }
     }
 
-    fn dimension_primary(&mut self) -> Result<TypeExpression> {
+    fn dimension_primary(&mut self, tokens: &[Token]) -> Result<TypeExpression> {
         let e = Err(ParseError::new(
             ParseErrorKind::ExpectedDimensionPrimary,
-            self.peek().span,
+            self.peek(tokens).span,
         ));
-        if let Some(token) = self.match_exact(TokenKind::Identifier) {
+        if let Some(token) = self.match_exact(tokens, TokenKind::Identifier) {
             if token.lexeme.starts_with("__") {
                 return Err(ParseError::new(
                     ParseErrorKind::DoubleUnderscoreTypeNamesReserved,
                     token.span,
                 ));
             }
-            let span = self.last().unwrap().span;
-            Ok(TypeExpression::TypeIdentifier(span, token.lexeme.clone()))
-        } else if let Some(number) = self.match_exact(TokenKind::Number) {
-            let span = self.last().unwrap().span;
+            let span = self.last(tokens).unwrap().span;
+            Ok(TypeExpression::TypeIdentifier(
+                span,
+                token.lexeme.to_owned(),
+            ))
+        } else if let Some(number) = self.match_exact(tokens, TokenKind::Number) {
+            let span = self.last(tokens).unwrap().span;
             if number.lexeme != "1" {
                 e
             } else {
                 Ok(TypeExpression::Unity(span))
             }
-        } else if self.match_exact(TokenKind::LeftParen).is_some() {
-            let dexpr = self.dimension_expression()?;
-            if self.match_exact(TokenKind::RightParen).is_none() {
+        } else if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+            let dexpr = self.dimension_expression(tokens)?;
+            if self.match_exact(tokens, TokenKind::RightParen).is_none() {
                 return Err(ParseError::new(
                     ParseErrorKind::MissingClosingParen,
-                    self.peek().span,
+                    self.peek(tokens).span,
                 ));
             }
             Ok(dexpr)
@@ -1788,21 +1835,25 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn match_exact(&mut self, token_kind: TokenKind) -> Option<&'a Token> {
-        let token = self.peek();
+    fn match_exact<'a>(
+        &mut self,
+        tokens: &'a [Token<'a>],
+        token_kind: TokenKind,
+    ) -> Option<&'a Token<'a>> {
+        let token = self.peek(tokens);
         if token.kind == token_kind {
-            self.advance();
+            self.advance(tokens);
             Some(token)
         } else {
             None
         }
     }
 
-    fn look_ahead_beyond_linebreak(&self, token_kind: TokenKind) -> bool {
+    fn look_ahead_beyond_linebreak(&self, tokens: &[Token], token_kind: TokenKind) -> bool {
         let mut i = self.current;
-        while i < self.tokens.len() {
-            if self.tokens[i].kind != TokenKind::Newline {
-                return self.tokens[i].kind == token_kind;
+        while i < tokens.len() {
+            if tokens[i].kind != TokenKind::Newline {
+                return tokens[i].kind == token_kind;
             }
             i += 1;
         }
@@ -1811,46 +1862,54 @@ impl<'a> Parser<'a> {
 
     /// Same as 'match_exact', but skips empty lines before matching. Note that this
     /// does *not* skip empty lines in case there is no match.
-    fn match_exact_beyond_linebreaks(&mut self, token_kind: TokenKind) -> Option<&'a Token> {
-        if self.look_ahead_beyond_linebreak(token_kind) {
-            self.skip_empty_lines();
+    fn match_exact_beyond_linebreaks<'a>(
+        &mut self,
+        tokens: &'a [Token<'a>],
+        token_kind: TokenKind,
+    ) -> Option<&'a Token<'a>> {
+        if self.look_ahead_beyond_linebreak(tokens, token_kind) {
+            self.skip_empty_lines(tokens);
         }
-        self.match_exact(token_kind)
+        self.match_exact(tokens, token_kind)
     }
 
-    fn match_any(&mut self, kinds: &[TokenKind]) -> Option<&'a Token> {
+    fn match_any<'a>(
+        &mut self,
+        tokens: &'a [Token<'a>],
+        kinds: &[TokenKind],
+    ) -> Option<&'a Token<'a>> {
         for kind in kinds {
-            if let result @ Some(..) = self.match_exact(*kind) {
+            if let result @ Some(..) = self.match_exact(tokens, *kind) {
                 return result;
             }
         }
         None
     }
 
-    fn advance(&mut self) {
-        if !self.is_at_end() {
+    fn advance(&mut self, tokens: &[Token]) {
+        if !self.is_at_end(tokens) {
             self.current += 1;
         }
     }
 
-    fn peek(&self) -> &'a Token {
-        &self.tokens[self.current]
+    fn peek<'a>(&self, tokens: &'a [Token<'a>]) -> &'a Token<'a> {
+        &tokens[self.current]
     }
 
-    fn last(&self) -> Option<&'a Token> {
+    fn last<'a>(&self, tokens: &'a [Token<'a>]) -> Option<&'a Token<'a>> {
         if self.current == 0 {
             None
         } else {
-            self.tokens.get(self.current - 1)
+            tokens.get(self.current - 1)
         }
     }
 
-    pub fn is_end_of_statement(&self) -> bool {
-        self.peek().kind == TokenKind::Newline || self.is_at_end()
+    pub fn is_end_of_statement(&self, tokens: &[Token]) -> bool {
+        self.peek(tokens).kind == TokenKind::Newline || self.is_at_end(tokens)
     }
 
-    pub fn is_at_end(&self) -> bool {
-        self.peek().kind == TokenKind::Eof
+    pub fn is_at_end(&self, tokens: &[Token]) -> bool {
+        self.peek(tokens).kind == TokenKind::Eof
     }
 }
 
@@ -1903,18 +1962,18 @@ pub fn parse(input: &str, code_source_id: usize) -> ParseResult {
             ParseError::new(ParseErrorKind::TokenizerError(kind), span)
         })
         .map_err(|e| (Vec::new(), vec![e]))?;
-    let mut parser = Parser::new(&tokens);
-    parser.parse()
+    let mut parser = Parser::new();
+    parser.parse(&tokens)
 }
 
 #[cfg(test)]
 pub fn parse_dexpr(input: &str) -> TypeExpression {
     let tokens = crate::tokenizer::tokenize(input, 0).expect("No tokenizer errors in tests");
-    let mut parser = crate::parser::Parser::new(&tokens);
+    let mut parser = crate::parser::Parser::new();
     let expr = parser
-        .dimension_expression()
+        .dimension_expression(&tokens)
         .expect("No parser errors in tests");
-    assert!(parser.is_at_end());
+    assert!(parser.is_at_end(&tokens));
     expr
 }
 
