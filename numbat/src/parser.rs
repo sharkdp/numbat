@@ -3335,7 +3335,7 @@ mod tests {
     fn accumulate_errors() {
         // error on the last character of a line
         assert_snapshot!(snap_parse(
-            "1 + 
+            "1 +\x20
             2 + 3"), @r###"
         Successfully parsed:
         Expression(BinaryOperator { op: Add, lhs: Scalar(Span { start: SourceCodePositition { byte: 17, line: 2, position: 13 }, end: SourceCodePositition { byte: 18, line: 2, position: 14 }, code_source_id: 0 }, Number(2.0)), rhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 17 }, end: SourceCodePositition { byte: 22, line: 2, position: 18 }, code_source_id: 0 }, Number(3.0)), span_op: Some(Span { start: SourceCodePositition { byte: 19, line: 2, position: 15 }, end: SourceCodePositition { byte: 20, line: 2, position: 16 }, code_source_id: 0 }) })
@@ -3346,7 +3346,7 @@ mod tests {
         assert_snapshot!(snap_parse(
             "
             let cool = 50
-            let tamo = * 30 
+            let tamo = * 30\x20
             assert_eq(tamo + cool == 80)
             30m"), @r###"
         Successfully parsed:
