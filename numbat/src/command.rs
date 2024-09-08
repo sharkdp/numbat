@@ -1,3 +1,5 @@
+use std::str::SplitWhitespace;
+
 use crate::{
     parser::ParseErrorKind,
     span::{SourceCodePositition, Span},
@@ -22,92 +24,97 @@ pub enum Command<'a> {
     Quit,
 }
 
-/// For tracking spans. Contains `(start, start+len)` for each (whitespace-separated)
-/// word in the input
-fn get_word_boundaries(input: &str) -> Vec<(u32, u32)> {
-    let mut word_boundaries = Vec::new();
-    let mut prev_char_was_whitespace = true;
-    let mut start_idx = 0;
-    for (i, c) in input.char_indices() {
-        if prev_char_was_whitespace && !c.is_whitespace() {
-            start_idx = u32::try_from(i).unwrap();
-        } else if !prev_char_was_whitespace && c.is_whitespace() {
-            word_boundaries.push((start_idx, u32::try_from(i).unwrap()));
-        }
-        prev_char_was_whitespace = c.is_whitespace();
-    }
-
-    // if no whitespace after last word, need to add last word
-    if !prev_char_was_whitespace {
-        word_boundaries.push((start_idx, u32::try_from(input.len()).unwrap()));
-    }
-
-    word_boundaries
-}
-
-/// Get the span starting at the start of the word at `word_index`, through the end of
-/// the last word represented by `word_boundaries`
-///
-/// ## Panics
-/// If `word_index` is out of bounds, ie `word_index >= word_boundaries.len()`
-fn span_through_end(
-    word_boundaries: &[(u32, u32)],
-    word_index: usize,
+struct CommandParser<'a> {
+    /// The words in the input
+    words: SplitWhitespace<'a>,
+    /// For tracking spans. Contains `(start, start+len)` for each (whitespace-separated)
+    /// word in the input
+    word_boundaries: Vec<(u32, u32)>,
     code_source_id: usize,
-) -> Span {
-    let start = word_boundaries[word_index].0;
-    let end = word_boundaries.last().unwrap().1;
-    span_from_boundary((start, end), code_source_id)
 }
 
-fn span_from_boundary((start, end): (u32, u32), code_source_id: usize) -> Span {
-    Span {
-        start: SourceCodePositition {
-            byte: start,
-            line: 1,
-            position: start,
-        },
-        end: SourceCodePositition {
-            byte: end,
-            line: 1,
-            position: end,
-        },
-        code_source_id,
+impl<'a> CommandParser<'a> {
+    fn new(input: &'a str, code_source_id: usize) -> Self {
+        let mut word_boundaries = Vec::new();
+        let mut prev_char_was_whitespace = true;
+        let mut start_idx = 0;
+
+        for (i, c) in input
+            .char_indices()
+            // force trailing whitespace to get last word
+            .chain(std::iter::once((input.len(), ' ')))
+        {
+            if prev_char_was_whitespace && !c.is_whitespace() {
+                start_idx = u32::try_from(i).unwrap();
+            } else if !prev_char_was_whitespace && c.is_whitespace() {
+                word_boundaries.push((start_idx, u32::try_from(i).unwrap()));
+            }
+            prev_char_was_whitespace = c.is_whitespace();
+        }
+
+        Self {
+            words: input.split_whitespace(),
+            word_boundaries,
+            code_source_id,
+        }
+    }
+
+    /// Get the span starting at the start of the word at `word_index`, through the end of
+    /// the last word represented by `word_boundaries`
+    ///
+    /// ## Panics
+    /// If `word_index` is out of bounds, ie `word_index >= word_boundaries.len()`
+    fn span_through_end(&self, word_index: usize) -> Span {
+        let start = self.word_boundaries[word_index].0;
+        let end = self.word_boundaries.last().unwrap().1;
+        self.span_from_boundary((start, end))
+    }
+
+    /// Get the span between indices given by `start` and `end`
+    ///
+    /// The only role of `&self` here is to provide the `code_source_id`
+    fn span_from_boundary(&self, (start, end): (u32, u32)) -> Span {
+        Span {
+            start: SourceCodePositition {
+                byte: start,
+                line: 1,
+                position: start,
+            },
+            end: SourceCodePositition {
+                byte: end,
+                line: 1,
+                position: end,
+            },
+            code_source_id: self.code_source_id,
+        }
+    }
+
+    fn err_at_idx(&self, index: usize, err_msg: &'static str) -> ParseError {
+        ParseError {
+            kind: ParseErrorKind::InvalidCommand(err_msg),
+            span: self.span_from_boundary(self.word_boundaries[index]),
+        }
+    }
+
+    fn err_through_end_from(&self, index: usize, err_msg: &'static str) -> ParseError {
+        ParseError {
+            kind: ParseErrorKind::InvalidCommand(err_msg),
+            span: self.span_through_end(index),
+        }
     }
 }
 
-macro_rules! handle_arg_count {
-    (count = 0, $words:expr, $word_boundaries:expr, $code_source_id:expr, "help", $if_ok:expr $(,)?) => {{
-        handle_arg_count!(
-            count = 0,
-            $words,
-            $word_boundaries,
-            $code_source_id,
-            "help",
-            Command::Help,
-            "`help` takes 0 arguments; use `info <item>` for information about an item",
-        )
+macro_rules! ensure_zero_args {
+    ($parser:expr, $cmd:literal) => {{
+        ensure_zero_args!($parser, $cmd, "")
     }};
-    (count = 0, $words:expr, $word_boundaries:expr, $code_source_id:expr, $command:literal, $if_ok:expr $(,)?) => {{
-        handle_arg_count!(
-            count = 0,
-            $words,
-            $word_boundaries,
-            $code_source_id,
-            $command,
-            $if_ok,
-            concat!("`", $command, "` takes 0 arguments")
-        )
-    }};
-    (count = 0, $words:expr, $word_boundaries:expr, $code_source_id:expr, $command:literal, $if_ok:expr, $err_msg:expr $(,)?) => {{
-        if $words.next().is_some() {
-            return Some(Err(ParseError {
-                kind: ParseErrorKind::InvalidCommand($err_msg),
-                span: span_through_end($word_boundaries, 1, $code_source_id),
-            }));
+    ($parser:expr, $cmd: literal, $err_msg_suffix:literal) => {{
+        if $parser.words.next().is_some() {
+            return Some(Err($parser.err_through_end_from(
+                1,
+                concat!("`", $cmd, "` takes 0 arguments", $err_msg_suffix),
+            )));
         }
-
-        $if_ok
     }};
 }
 
@@ -119,114 +126,82 @@ macro_rules! handle_arg_count {
 /// - `Some(Err(_))`, if the input starts with a valid command but has the wrong number
 ///   or kind of arguments, e.g. `list foobar`
 pub fn parse_command(input: &str, code_source_id: usize) -> Option<Result<Command, ParseError>> {
-    let word_boundaries = get_word_boundaries(input);
+    let mut parser = CommandParser::new(input, code_source_id);
 
-    let mut words = input.split_whitespace();
-    let Some(command_str) = words.next() else {
+    let Some(command_str) = parser.words.next() else {
         // should never hit this branch in practice because all-whitespace inputs are
         // skipped over
 
         return Some(Err(ParseError {
             kind: ParseErrorKind::InvalidCommand("invalid empty command"),
-            span: span_from_boundary((0, u32::try_from(input.len()).unwrap()), code_source_id),
+            span: parser.span_from_boundary((0, u32::try_from(input.len()).unwrap())),
         }));
     };
 
     let command = match command_str {
-        "help" => handle_arg_count!(
-            count = 0,
-            words,
-            &word_boundaries,
-            code_source_id,
-            "help",
-            Command::Help,
-        ),
-        "clear" => handle_arg_count!(
-            count = 0,
-            words,
-            &word_boundaries,
-            code_source_id,
-            "clear",
-            Command::Clear,
-        ),
-        "quit" => handle_arg_count!(
-            count = 0,
-            words,
-            &word_boundaries,
-            code_source_id,
-            "quit",
-            Command::Quit,
-        ),
-        "exit" => handle_arg_count!(
-            count = 0,
-            words,
-            &word_boundaries,
-            code_source_id,
-            "exit",
-            Command::Quit,
-        ),
+        "help" => {
+            ensure_zero_args!(
+                parser,
+                "help",
+                "; use `info <item>` for information about an item"
+            );
+            Command::Help
+        }
+        "clear" => {
+            ensure_zero_args!(parser, "clear");
+            Command::Clear
+        }
+        "quit" => {
+            ensure_zero_args!(parser, "quit");
+            Command::Quit
+        }
+        "exit" => {
+            ensure_zero_args!(parser, "exit");
+            Command::Quit
+        }
         "info" => {
             let err_msg = "`info` requires exactly one argument, the item to get info on";
-            let Some(item) = words.next() else {
-                return Some(Err(ParseError {
-                    kind: ParseErrorKind::InvalidCommand(err_msg),
-                    span: span_from_boundary(word_boundaries[0], code_source_id),
-                }));
+            let Some(item) = parser.words.next() else {
+                return Some(Err(parser.err_at_idx(0, err_msg)));
             };
 
-            if words.next().is_some() {
-                return Some(Err(ParseError {
-                    kind: ParseErrorKind::InvalidCommand(err_msg),
-                    span: span_through_end(&word_boundaries, 1, code_source_id),
-                }));
+            if parser.words.next().is_some() {
+                return Some(Err(parser.err_through_end_from(1, err_msg)));
             }
 
             Command::Info { item }
         }
         "list" | "ls" => {
-            let items = match words.next() {
+            let items = match parser.words.next() {
                 None => None,
                 Some("functions") => Some(ListItems::Functions),
                 Some("dimensions") => Some(ListItems::Dimensions),
                 Some("variables") => Some(ListItems::Variables),
                 Some("units") => Some(ListItems::Units),
                 _ => {
-                    return Some(Err(ParseError {
-                        kind: ParseErrorKind::InvalidCommand(
-                            "if provided, the argument to `list` or `ls` must be \
-                             one of: functions, dimensions, variables, units",
-                        ),
-                        span: span_from_boundary(word_boundaries[1], code_source_id),
-                    }));
+                    return Some(Err(parser.err_at_idx(
+                        1,
+                        "if provided, the argument to `list` or `ls` must be \
+                        one of: functions, dimensions, variables, units",
+                    )));
                 }
             };
-            if words.next().is_some() {
-                let start = word_boundaries[2].0;
-                let end = word_boundaries.last().unwrap().1;
-                return Some(Err(ParseError {
-                    kind: ParseErrorKind::InvalidCommand("`list` takes at most one argument"),
-                    span: span_from_boundary((start, end), code_source_id),
-                }));
+            if parser.words.next().is_some() {
+                return Some(Err(
+                    parser.err_through_end_from(2, "`list` takes at most one argument")
+                ));
             }
 
             Command::List { items }
         }
         "save" => {
             let err_msg = "`save` requires exactly one argument, the destination";
-            let Some(dst) = words.next() else {
-                return Some(Err(ParseError {
-                    kind: ParseErrorKind::InvalidCommand(err_msg),
-                    span: span_from_boundary(word_boundaries[0], code_source_id),
-                }));
+            let Some(dst) = parser.words.next() else {
+                return Some(Err(parser.err_at_idx(0, err_msg)));
             };
 
-            if words.next().is_some() {
-                let start = word_boundaries[2].0;
-                let end = word_boundaries.last().unwrap().1;
-                return Some(Err(ParseError {
-                    kind: ParseErrorKind::InvalidCommand(err_msg),
-                    span: span_from_boundary((start, end), code_source_id),
-                }));
+            if parser.words.next().is_some() {
+                return Some(Err(parser.err_through_end_from(2, err_msg)));
             }
 
             Command::Save { dst }
@@ -244,6 +219,57 @@ mod test {
 
     fn parse_command(input: &str) -> Option<Result<Command, ParseError>> {
         super::parse_command(input, 0)
+    }
+
+    #[test]
+    fn test_command_parser() {
+        assert_eq!(&CommandParser::new("", 0).word_boundaries, &[]);
+        assert_eq!(&CommandParser::new(" ", 0).word_boundaries, &[]);
+        assert_eq!(&CommandParser::new("  ", 0).word_boundaries, &[]);
+
+        assert_eq!(&CommandParser::new("x", 0).word_boundaries, &[(0, 1)]);
+        assert_eq!(&CommandParser::new("x ", 0).word_boundaries, &[(0, 1)]);
+        assert_eq!(&CommandParser::new(" x", 0).word_boundaries, &[(1, 2)]);
+        assert_eq!(&CommandParser::new(" x ", 0).word_boundaries, &[(1, 2)]);
+
+        assert_eq!(&CommandParser::new("xyz", 0).word_boundaries, &[(0, 3)]);
+        assert_eq!(&CommandParser::new("xyz  ", 0).word_boundaries, &[(0, 3)]);
+        assert_eq!(&CommandParser::new("  xyz", 0).word_boundaries, &[(2, 5)]);
+        assert_eq!(&CommandParser::new("  xyz  ", 0).word_boundaries, &[(2, 5)]);
+
+        assert_eq!(
+            &CommandParser::new("abc x", 0).word_boundaries,
+            &[(0, 3), (4, 5)]
+        );
+        assert_eq!(
+            &CommandParser::new("abc  x ", 0).word_boundaries,
+            &[(0, 3), (5, 6)]
+        );
+        assert_eq!(
+            &CommandParser::new(" abc   x", 0).word_boundaries,
+            &[(1, 4), (7, 8)]
+        );
+        assert_eq!(
+            &CommandParser::new("  abc   x  ", 0).word_boundaries,
+            &[(2, 5), (8, 9)]
+        );
+
+        assert_eq!(
+            &CommandParser::new("abc x y z", 0).word_boundaries,
+            &[(0, 3), (4, 5), (6, 7), (8, 9)]
+        );
+        assert_eq!(
+            &CommandParser::new("abc x y z  ", 0).word_boundaries,
+            &[(0, 3), (4, 5), (6, 7), (8, 9)]
+        );
+        assert_eq!(
+            &CommandParser::new("  abc x y z", 0).word_boundaries,
+            &[(2, 5), (6, 7), (8, 9), (10, 11)]
+        );
+        assert_eq!(
+            &CommandParser::new("  abc x y z  ", 0).word_boundaries,
+            &[(2, 5), (6, 7), (8, 9), (10, 11)]
+        );
     }
 
     #[test]
