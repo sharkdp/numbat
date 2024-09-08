@@ -134,10 +134,6 @@ impl<'a> CommandParser<'a> {
         }
     }
 
-    pub fn set_code_source_id(&mut self, code_source_id: usize) {
-        self.code_source_id = code_source_id;
-    }
-
     /// Get the span starting at the start of the word at `word_index`, through the end of
     /// the last word represented by `word_boundaries`
     ///
