@@ -30,7 +30,7 @@ use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
 
 use const_evaluation::evaluate_const_expr;
-use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResultion};
+use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResolution};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
 use name_generator::NameGenerator;
@@ -67,12 +67,12 @@ impl TypeChecker {
         Type::TVar(self.name_generator.fresh_type_variable())
     }
 
-    fn add_equal_constraint(&mut self, lhs: &Type, rhs: &Type) -> TrivialResultion {
+    fn add_equal_constraint(&mut self, lhs: &Type, rhs: &Type) -> TrivialResolution {
         self.constraints
             .add(Constraint::Equal(lhs.clone(), rhs.clone()))
     }
 
-    fn add_dtype_constraint(&mut self, type_: &Type) -> TrivialResultion {
+    fn add_dtype_constraint(&mut self, type_: &Type) -> TrivialResolution {
         self.constraints.add(Constraint::IsDType(type_.clone()))
     }
 
