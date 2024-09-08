@@ -174,18 +174,30 @@ impl<'a> CommandParser<'a> {
         }
     }
 
-    fn err_at_idx(&self, index: usize, err_msg: &'static str) -> ParseError {
+    fn err_at_idx(&self, index: usize, err_msg: impl Into<String>) -> ParseError {
         ParseError {
-            kind: ParseErrorKind::InvalidCommand(err_msg),
+            kind: ParseErrorKind::InvalidCommand(err_msg.into()),
             span: self.span_from_boundary(self.inner.word_boundaries[index]),
         }
     }
 
-    fn err_through_end_from(&self, index: usize, err_msg: &'static str) -> ParseError {
+    fn err_through_end_from(&self, index: usize, err_msg: impl Into<String>) -> ParseError {
         ParseError {
-            kind: ParseErrorKind::InvalidCommand(err_msg),
+            kind: ParseErrorKind::InvalidCommand(err_msg.into()),
             span: self.span_through_end(index),
         }
+    }
+
+    fn ensure_zero_args(
+        &mut self,
+        cmd: &'static str,
+        err_msg_suffix: &'static str,
+    ) -> Result<(), ParseError> {
+        let message = format!("`{}` takes 0 arguments{}", cmd, err_msg_suffix);
+        if self.inner.args.next().is_some() {
+            return Err(self.err_through_end_from(1, message));
+        }
+        Ok(())
     }
 
     /// Attempt to parse the input provided to Self::new as a command, such as "help",
@@ -196,39 +208,21 @@ impl<'a> CommandParser<'a> {
     /// - `Err(ParseError)`, if the input starts with a valid command but has the wrong
     ///   number or kind of arguments, e.g. `list foobar`
     pub fn parse_command(&mut self) -> Result<Command, ParseError> {
-        macro_rules! ensure_zero_args {
-            ($parser:expr, $cmd:literal) => {{
-                ensure_zero_args!($parser, $cmd, "")
-            }};
-            ($parser:expr, $cmd: literal, $err_msg_suffix:literal) => {{
-                if $parser.inner.args.next().is_some() {
-                    return Err($parser.err_through_end_from(
-                        1,
-                        concat!("`", $cmd, "` takes 0 arguments", $err_msg_suffix),
-                    ));
-                }
-            }};
-        }
-
         // expect() is guaranteed to succeed; CommandParser::new ensures there is at
         // least one word
         let command = match &self.inner.command_kind {
             CommandKind::Help => {
-                ensure_zero_args!(
-                    self,
-                    "help",
-                    "; use `info <item>` for information about an item"
-                );
+                self.ensure_zero_args("help", "; use `info <item>` for information about an item")?;
                 Command::Help
             }
             CommandKind::Clear => {
-                ensure_zero_args!(self, "clear");
+                self.ensure_zero_args("clear", "")?;
                 Command::Clear
             }
             CommandKind::Quit(alias) => {
                 match alias {
-                    QuitAlias::Quit => ensure_zero_args!(self, "quit"),
-                    QuitAlias::Exit => ensure_zero_args!(self, "exit"),
+                    QuitAlias::Quit => self.ensure_zero_args("quit", "")?,
+                    QuitAlias::Exit => self.ensure_zero_args("exit", "")?,
                 }
 
                 Command::Quit

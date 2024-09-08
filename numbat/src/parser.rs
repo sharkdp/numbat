@@ -238,7 +238,7 @@ pub enum ParseErrorKind {
     ExpectedLocalVariableDefinition,
 
     #[error("Invalid command: {0}")]
-    InvalidCommand(&'static str),
+    InvalidCommand(String),
 }
 
 #[derive(Debug, Clone, Error)]
