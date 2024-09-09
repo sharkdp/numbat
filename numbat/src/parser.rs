@@ -711,7 +711,7 @@ impl Parser {
                                 ));
                             }
 
-                            let content = strip_and_escape(&token.lexeme);
+                            let content = strip_and_escape(token.lexeme);
 
                             match decorator.lexeme {
                                 "url" => Decorator::Url(content),
@@ -1477,7 +1477,7 @@ impl Parser {
         } else if let Some(token) = self.match_exact(tokens, TokenKind::StringFixed) {
             Ok(Expression::String(
                 token.span,
-                vec![StringPart::Fixed(strip_and_escape(&token.lexeme))],
+                vec![StringPart::Fixed(strip_and_escape(token.lexeme))],
             ))
         } else if let Some(token) = self.match_exact(tokens, TokenKind::StringInterpolationStart) {
             let mut parts = Vec::new();
@@ -1499,7 +1499,7 @@ impl Parser {
                         self.interpolation(tokens, &mut parts, inner_token)?;
                     }
                     TokenKind::StringInterpolationEnd => {
-                        parts.push(StringPart::Fixed(strip_and_escape(&inner_token.lexeme)));
+                        parts.push(StringPart::Fixed(strip_and_escape(inner_token.lexeme)));
                         has_end = true;
                         break;
                     }
@@ -1570,7 +1570,7 @@ impl Parser {
         parts: &mut Vec<StringPart>,
         token: &Token,
     ) -> Result<()> {
-        parts.push(StringPart::Fixed(strip_and_escape(&token.lexeme)));
+        parts.push(StringPart::Fixed(strip_and_escape(token.lexeme)));
 
         let expr = self.expression(tokens)?;
 
@@ -3391,7 +3391,7 @@ mod tests {
     fn accumulate_errors() {
         // error on the last character of a line
         assert_snapshot!(snap_parse(
-            "1 + 
+            "1 +
             2 + 3"), @r###"
         Successfully parsed:
         Expression(BinaryOperator { op: Add, lhs: Scalar(Span { start: SourceCodePositition { byte: 17, line: 2, position: 13 }, end: SourceCodePositition { byte: 18, line: 2, position: 14 }, code_source_id: 0 }, Number(2.0)), rhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 17 }, end: SourceCodePositition { byte: 22, line: 2, position: 18 }, code_source_id: 0 }, Number(3.0)), span_op: Some(Span { start: SourceCodePositition { byte: 19, line: 2, position: 15 }, end: SourceCodePositition { byte: 20, line: 2, position: 16 }, code_source_id: 0 }) })
@@ -3402,7 +3402,7 @@ mod tests {
         assert_snapshot!(snap_parse(
             "
             let cool = 50
-            let tamo = * 30 
+            let tamo = * 30
             assert_eq(tamo + cool == 80)
             30m"), @r###"
         Successfully parsed:
