@@ -6,28 +6,31 @@ html {
     padding: 0;
     height: 100%;
 
-    /* Maybe lower font-size to 16px? */
-    font-size: 30px;
+    font-size: 18px;
 
     /* Light theme */ 
     --editor-bg-color-light: #FFFFFF;
     --results-bg-color-light: #f6f8f6;
     --editor-accent-color-light: #eee;
     --editor-text-color-light: black;
+    --editor-text-highlight-color-light: rgb(181, 213, 255);
     
     /* Dark theme */ 
     --editor-bg-color-dark: #262826;
     --results-bg-color-dark: #2F322F;
     --editor-accent-color-dark: #464846;
     --editor-text-color-dark: #eee;
+    --editor-text-highlight-color-dark: rgb(83, 157, 255);
 
     /* Default theme */ 
     --editor-bg-color: var(--editor-bg-color-light);
     --results-bg-color: var(--results-bg-color-light);
     --editor-accent-color: var(--editor-accent-color-light);
     --editor-text-color: var(--editor-text-color-light);
+    --editor-text-highlight-color: var(--editor-text-highlight-color-light);
 
     background-color: var(--editor-bg-color);
+    caret-color: var(--editor-text-color);
 }
 
 .alt-theme body,
@@ -36,6 +39,7 @@ html.alt-theme {
     --results-bg-color: var(--results-bg-color-dark);
     --editor-accent-color: var(--editor-accent-color-dark);
     --editor-text-color: var(--editor-text-color-dark);
+    --editor-text-highlight-color: var(--editor-text-highlight-color-dark);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,6 +50,7 @@ html.alt-theme {
         --results-bg-color: var(--results-bg-color-dark);
         --editor-accent-color: var(--editor-accent-color-dark);
         --editor-text-color: var(--editor-text-color-dark);
+        --editor-text-highlight-color: var(--editor-text-highlight-color-dark);
     }
 
     .alt-theme body,
@@ -54,6 +59,7 @@ html.alt-theme {
         --results-bg-color: var(--results-bg-color-light);
         --editor-accent-color: var(--editor-accent-color-light);
         --editor-text-color: var(--editor-text-color-light);
+        --editor-text-highlight-color: var(--editor-text-highlight-color-light);
     }
 }
 
@@ -94,6 +100,13 @@ html.alt-theme {
     color: var(--editor-text-color);
 }
 
+.ace-tm .ace_cursor {
+    color: var(--editor-text-color)
+}
+
+.ace-tm .ace_marker-layer .ace_selection {
+    background: var(--editor-text-highlight-color)
+}
 
 #editor .ace_gutter {
     background-color: var(--editor-accent-color);
