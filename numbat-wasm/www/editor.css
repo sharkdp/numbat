@@ -7,6 +7,7 @@ html {
     height: 100%;
 
     font-size: 18px;
+    overflow-y: auto;
 
     /* Light theme */ 
     --editor-bg-color-light: #FFFFFF;
@@ -69,7 +70,7 @@ html.alt-theme {
     min-height: 100%;
     display: flex;
     flex-direction: row;
-    overflow-y: auto;
+    overflow-y: clip;
 }
 
 
@@ -83,13 +84,16 @@ html.alt-theme {
 .gutter.gutter-horizontal {
     background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
     cursor: col-resize;
+    height: 100dvh;
+        position: sticky;
+        top: 0px;
 }
 
 
 #editor {
     font-family: 'Fira Mono', monospace;
     font-size: 1em;
-    overflow-y: hidden;
+    overflow-y: clip;
 }
 
 
@@ -138,7 +142,7 @@ html.alt-theme {
     padding-bottom: 1em;
     background-color: var(--results-bg-color);
     color: var(--editor-text-color);
-    overflow-y: hidden;
+    overflow-y: clip;
 }
 
 .numbat-type-identifier {
