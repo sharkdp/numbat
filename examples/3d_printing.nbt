@@ -1,0 +1,27 @@
+struct Material {
+  diameter: Length,
+  density: MassDensity,
+  price: Money / Mass,
+}
+
+let PLA = Material {
+  diameter: 1.75 mm,
+  density: 1.27 g/cm^3,
+  price: 16.99 €/kg,
+}
+
+fn print_cost(material: Material, mass: Mass) -> Money = material.price × mass
+
+fn filament_length(material: Material, mass: Mass) -> Length = volume / cross_section -> meter
+  where r = material.diameter / 2
+    and cross_section: Area = π r²
+    and volume: Volume = mass / material.density
+
+
+# Print parameters
+let mass_model = 80 g
+let material = PLA
+
+print("Mass of model:   {mass_model}")
+print("Filament length: {filament_length(material, mass_model):.2}")
+print("Cost of model:   {print_cost(material, mass_model):.2}")
