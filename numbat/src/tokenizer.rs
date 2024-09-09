@@ -244,8 +244,8 @@ struct Tokenizer {
     interpolation_state: InterpolationState,
 }
 
-fn char_at(s: &str, index_bytes: usize) -> Option<char> {
-    s[index_bytes..].chars().next()
+fn char_at(s: &str, byte_index: usize) -> Option<char> {
+    s[byte_index..].chars().next()
 }
 
 impl Tokenizer {
