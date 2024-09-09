@@ -718,7 +718,7 @@ impl Tokenizer {
         });
 
         if kind == TokenKind::Newline {
-            self.current.line += current_char.len_utf8() as u32;
+            self.current.line += 1;
             self.current.position = 1;
         }
 
