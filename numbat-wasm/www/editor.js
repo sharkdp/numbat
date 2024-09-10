@@ -41,7 +41,7 @@ function interpret(input) {
     return results.join("<br>");
 }
 
-ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.9.6/");
+ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.36.2/");
 
 ace.define(
     "ace/mode/numbat_highlight_rules",
@@ -145,6 +145,20 @@ function initializeEditor() {
         highlightGutterLine: false,
         scrollPastEnd: 0,
     });
+
+    editor.insert(`8 km / (1 h + 25 min)
+
+atan2(30 cm, 1 m) -> deg
+
+let ω = 2π c / 660 nm
+ℏ ω -> eV
+
+
+fn braking_distance(v) = v t_reaction + v² / 2 µ g0
+  where t_reaction = 1 s # driver reaction time
+    and µ = 0.7          # coefficient of friction
+
+braking_distance(50 km/h) -> m`);
 
     function evaluate() {
         let code = editor.getValue();
