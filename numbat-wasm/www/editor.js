@@ -26,7 +26,13 @@ function interpret(input) {
         let num_newlines = res ? res.length : 0;
 
         let brs = "<br>".repeat(num_newlines);
-        let output = part.trim().length > 0 ? numbat.interpret(part).output.trim() : "";
+        let interpretOutput = numbat.interpret(part);
+        
+        let output = part.trim().length > 0 ? interpretOutput.output.trim() : "";
+        
+        if (interpretOutput.is_error) {
+            output = output.replace(/<(input:\d+)>/gm, "&lt;$1&gt;")
+        }
         let result = "";
 
         if (output.trim().length === 0) {
@@ -35,6 +41,7 @@ function interpret(input) {
             result = brs + "<div>" + output  + "</div>";
         }
 
+        interpretOutput.free();
         return result;
     });
 
