@@ -145,6 +145,12 @@ html.alt-theme {
     overflow-y: clip;
 }
 
+
+#results div {
+    white-space-collapse: preserve;
+}
+
+
 .numbat-type-identifier {
     color: #ca3b63;
 }
