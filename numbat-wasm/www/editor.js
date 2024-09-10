@@ -26,8 +26,7 @@ function interpret(input) {
         let num_newlines = res ? res.length : 0;
 
         let brs = "<br>".repeat(num_newlines);
-        let output = part.trim().length > 0 ? numbat.interpret(part).output : "";
-        output = output.replaceAll("\n", "<br>");
+        let output = part.trim().length > 0 ? numbat.interpret(part).output.trim() : "";
         let result = "";
 
         if (output.trim().length === 0) {
