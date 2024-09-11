@@ -13,6 +13,7 @@ pub fn get_test_context_without_prelude() -> Context {
     let mut importer = FileSystemImporter::default();
     importer.add_path(module_path);
 
+    Context::use_test_exchange_rates();
     Context::new(importer)
 }
 

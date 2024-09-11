@@ -1,5 +1,3 @@
-use units::currencies
-
 8 km / (1 h + 25 min)
 140 € -> GBP
 atan2(30 cm, 1 m) -> deg

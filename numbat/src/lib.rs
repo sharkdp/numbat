@@ -136,6 +136,10 @@ impl Context {
         ExchangeRatesCache::set_from_xml(xml_content);
     }
 
+    pub fn use_test_exchange_rates() {
+        ExchangeRatesCache::use_test_rates();
+    }
+
     pub fn variable_names(&self) -> impl Iterator<Item = String> + '_ {
         self.prefix_transformer
             .variable_names
