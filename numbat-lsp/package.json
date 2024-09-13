@@ -1,0 +1,86 @@
+{
+  "name": "nrs-language-server",
+  "description": "nano rust language server",
+  "license": "MIT",
+  "version": "1.5.0",
+  "categories": [],
+  "keywords": [
+    "language-server",
+    "tower-lsp"
+  ],
+  "repository": {
+    "url": "https://github.com/IWANABETHATGUY/tower-lsp-boilerplate"
+  },
+  "engines": {
+    "vscode": "^1.66.0"
+  },
+  "enabledApiProposals": [],
+  "activationEvents": [
+    "onLanguage:nrs"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "nrs",
+        "extensions": [
+          ".nrs"
+        ]
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "nrs-language-server",
+      "properties": {
+        "nrs-language-server.trace.server": {
+          "type": "string",
+          "scope": "window",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "enumDescriptions": [
+            "No traces",
+            "Error only",
+            "Full log"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the language server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "postinstall": "cd client && pnpm i",
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "test-compile": "tsc -p ./",
+    "compile": "cross-env NODE_ENV=production tsc -b",
+    "watch": "rm -rf dist && tsc -b -w",
+    "lint": "eslint src --ext ts",
+    "pretest": "npm run compile && npm run lint",
+    "test": "node ./out/test/runTest.js",
+    "build": "webpack --config webpack.config.js",
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.1.3",
+    "@types/mocha": "^8.0.0",
+    "@types/node": "^12.12.0",
+    "@typescript-eslint/eslint-plugin": "^3.8.0",
+    "@typescript-eslint/parser": "^3.8.0",
+    "cross-env": "^7.0.2",
+    "electron-rebuild": "^1.11.0",
+    "eslint": "^7.6.0",
+    "glob": "^7.1.7",
+    "mocha": "^8.0.1",
+    "typescript": "5.4.5",
+    "vscode-test": "^1.4.0",
+    "vscode-uri": "^3.0.2",
+    "webpack": "^5.82.1"
+  },
+  "dependencies": {
+    "vscode-languageclient": "9.0.1"
+  }
+}

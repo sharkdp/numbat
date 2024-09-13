@@ -61,7 +61,7 @@ use resolver::CodeSource;
 use resolver::Resolver;
 use resolver::ResolverError;
 use thiserror::Error;
-use typechecker::{TypeCheckError, TypeChecker};
+use typechecker::TypeChecker;
 
 pub use diagnostic::Diagnostic;
 pub use interpreter::InterpreterResult;
@@ -71,6 +71,8 @@ pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
 pub use registry::BaseRepresentation;
 pub use registry::BaseRepresentationFactor;
+pub use span::Span;
+pub use typechecker::{IncompatibleDimensionsError, TypeCheckError};
 pub use typed_ast::Statement;
 pub use typed_ast::Type;
 use unit::BaseUnitAndFactor;
