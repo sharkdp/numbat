@@ -1190,8 +1190,8 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "plotly"
-version = "0.9.0"
-source = "git+https://github.com/sharkdp/plotly.rs?branch=add-no_embed-feature#6fff5dea05b3a1ee79afe9f5a1c1adc08f48756b"
+version = "0.9.1"
+source = "git+https://github.com/plotly/plotly.rs#5d265b7ac77680a56fb2c7009b773f2783afd006"
 dependencies = [
  "dyn-clone",
  "erased-serde",
@@ -1207,8 +1207,8 @@ dependencies = [
 
 [[package]]
 name = "plotly_derive"
-version = "0.9.0"
-source = "git+https://github.com/sharkdp/plotly.rs?branch=add-no_embed-feature#6fff5dea05b3a1ee79afe9f5a1c1adc08f48756b"
+version = "0.9.1"
+source = "git+https://github.com/plotly/plotly.rs#5d265b7ac77680a56fb2c7009b773f2783afd006"
 dependencies = [
  "darling",
  "proc-macro2",
