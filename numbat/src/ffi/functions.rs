@@ -14,6 +14,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
     use super::lists::*;
     use super::lookup::*;
     use super::math::*;
+    use super::plot::*;
     use super::strings::*;
 
     FFI_FUNCTIONS.get_or_init(|| {
@@ -105,6 +106,9 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
 
         // Database lookup
         insert_function!(_get_chemical_element_data_raw, 1..=1);
+
+        // Plotting
+        insert_function!(show, 1..=1);
 
         m
     })
