@@ -1420,6 +1420,7 @@ impl TypeChecker {
                         name: crate::decorator::name(decorators),
                         url: crate::decorator::url(decorators),
                         description: crate::decorator::description(decorators),
+                        examples: crate::decorator::examples(decorators),
                     },
                 );
 

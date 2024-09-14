@@ -41,7 +41,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 }
 
 fn inspect_functions_in_module(ctx: &Context, module: String) {
-    for (fn_name, name, signature, description, url, code_source) in ctx.functions() {
+    for (fn_name, name, signature, description, url, examples, code_source) in ctx.functions() {
         let CodeSource::Module(module_path, _) = code_source else {
             unreachable!();
         };
