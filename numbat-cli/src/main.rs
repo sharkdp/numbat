@@ -326,9 +326,7 @@ impl Cli {
             }
         }
 
-        let mut session_history = SessionHistory::default();
-
-        let result = self.repl_loop(&mut rl, &mut session_history, interactive);
+        let result = self.repl_loop(&mut rl, interactive);
 
         if interactive {
             rl.save_history(&history_path).context(format!(
@@ -343,9 +341,10 @@ impl Cli {
     fn repl_loop(
         &mut self,
         rl: &mut Editor<NumbatHelper, DefaultHistory>,
-        session_history: &mut SessionHistory,
         interactive: bool,
     ) -> Result<()> {
+        let mut session_history = SessionHistory::default();
+
         loop {
             let readline = rl.readline(&self.config.prompt);
             match readline {
