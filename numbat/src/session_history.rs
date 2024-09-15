@@ -6,25 +6,10 @@ use std::{
 
 use crate::RuntimeError;
 
-#[derive(Debug, Copy, Clone)]
-pub enum InputErrored {
-    Yes,
-    No,
-}
-
-impl<T, E> From<&Result<T, E>> for InputErrored {
-    fn from(value: &Result<T, E>) -> Self {
-        match value {
-            Ok(_) => Self::No,
-            Err(_) => Self::Yes,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct SessionHistoryItem {
     pub input: String,
-    pub errored: InputErrored,
+    pub errored: bool,
 }
 
 #[derive(Default)]
@@ -62,7 +47,7 @@ impl SessionHistory {
 
         let mut f = fs::File::create(dst).map_err(err_fn)?;
         for item in &self.0 {
-            if matches!(item.errored, InputErrored::Yes) && !include_err_lines {
+            if item.errored && !include_err_lines {
                 continue;
             }
 
