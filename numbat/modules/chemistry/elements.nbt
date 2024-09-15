@@ -49,6 +49,8 @@ fn _convert_from_raw(raw: _ChemicalElementRaw) -> ChemicalElement =
     }
 
 @name("Chemical element")
-@description("Get properties of a chemical element by its symbol or name (case-insensitive). For example: `element(\"H\")` or `element(\"hydrogen\")`.")
+@description("Get properties of a chemical element by its symbol or name (case-insensitive).")
+@example("element(\"H\")", "Get the entire element struct for hydrogen.")
+@example("element(\"hydrogen\").ionization_energy", "Get the ionization energy of hydrogen.")
 fn element(pattern: String) -> ChemicalElement =
     _convert_from_raw(_get_chemical_element_data_raw(pattern))

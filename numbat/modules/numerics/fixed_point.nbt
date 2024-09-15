@@ -15,5 +15,6 @@ fn _fixed_point<X: Dim>(f: Fn[(X) -> X], x0: X, ε: X, max_iter: Scalar) =
 @name("Fixed-point iteration")
 @url("https://en.wikipedia.org/wiki/Fixed-point_iteration")
 @description("Compute the approximate fixed point of a function $f: X \\rightarrow X$ starting from $x_0$, until $|f(x) - x| < ε$.")
+@example("fn function(x) = x/2 - 1\nfixed_point(function, 0, 0.01)", "Compute the fixed poin of $f(x) = x/2 -1$.")
 fn fixed_point<X: Dim>(f: Fn[(X) -> X], x0: X, ε: X) =
   _fixed_point(f, x0, ε, 100)
