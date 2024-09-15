@@ -49,7 +49,7 @@ pub struct Resolver {
     pub files: SimpleFiles<String, String>,
     text_code_source_count: usize,
     internal_code_source_count: usize,
-    imported_modules: Vec<ModulePath>,
+    pub imported_modules: Vec<ModulePath>,
     codesources: HashMap<usize, CodeSource>,
 }
 

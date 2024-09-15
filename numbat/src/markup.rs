@@ -209,3 +209,7 @@ impl Formatter for PlainTextFormatter {
         text.clone()
     }
 }
+
+pub fn plain_text_format(m: &Markup, indent: bool) -> String {
+    PlainTextFormatter {}.format(m, indent)
+}

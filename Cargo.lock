@@ -1089,6 +1089,7 @@ dependencies = [
  "num-traits",
  "numbat-exchange-rates",
  "once_cell",
+ "percent-encoding",
  "plotly",
  "pretty_dtoa",
  "rand",
