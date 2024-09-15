@@ -60,6 +60,9 @@ pub enum RuntimeError {
 
     #[error("Empty list")]
     EmptyList,
+
+    #[error("Could not write to file: {0:?}")]
+    FileWrite(std::path::PathBuf),
 }
 
 #[derive(Debug, PartialEq, Eq)]

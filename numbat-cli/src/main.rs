@@ -16,6 +16,9 @@ use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
+use numbat::session_history::{
+    InputErrored, SessionHistory, SessionHistoryItem, SessionHistoryOptions,
+};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -182,7 +185,7 @@ impl Cli {
         }
 
         if self.config.load_prelude {
-            let result = self.parse_and_evaluate(
+            let (result, _) = self.parse_and_evaluate(
                 "use prelude",
                 CodeSource::Internal,
                 ExecutionMode::Normal,
@@ -197,7 +200,7 @@ impl Cli {
             let user_init_path = Self::get_config_path().join("init.nbt");
 
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
-                let result = self.parse_and_evaluate(
+                let (result, _) = self.parse_and_evaluate(
                     &user_init_code,
                     CodeSource::File(user_init_path),
                     ExecutionMode::Normal,
@@ -238,7 +241,7 @@ impl Cli {
 
         if !code_and_source.is_empty() {
             for (code, code_source) in code_and_source {
-                let result = self.parse_and_evaluate(
+                let (result, _) = self.parse_and_evaluate(
                     &code,
                     code_source,
                     ExecutionMode::Normal,
@@ -323,7 +326,9 @@ impl Cli {
             }
         }
 
-        let result = self.repl_loop(&mut rl, interactive);
+        let mut session_history = SessionHistory::default();
+
+        let result = self.repl_loop(&mut rl, &mut session_history, interactive);
 
         if interactive {
             rl.save_history(&history_path).context(format!(
@@ -338,12 +343,15 @@ impl Cli {
     fn repl_loop(
         &mut self,
         rl: &mut Editor<NumbatHelper, DefaultHistory>,
+        session_history: &mut SessionHistory,
         interactive: bool,
     ) -> Result<()> {
         loop {
             let readline = rl.readline(&self.config.prompt);
             match readline {
                 Ok(line) => {
+                    let mut errored = InputErrored::No;
+
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line)?;
 
@@ -396,6 +404,16 @@ impl Cli {
                             "quit" | "exit" => {
                                 return Ok(());
                             }
+                            "save" => {
+                                session_history.save(
+                                    "numbat_hist.nbt",
+                                    SessionHistoryOptions {
+                                        include_err_lines: false,
+                                        trim_lines: true,
+                                    },
+                                )?;
+                                continue;
+                            }
                             "help" | "?" => {
                                 let help = help_markup();
                                 print!("{}", ansi_format(&help, true));
@@ -414,7 +432,8 @@ impl Cli {
                                     println!("{}", ansi_format(&help, true));
                                     continue;
                                 }
-                                let result = self.parse_and_evaluate(
+                                let result;
+                                (result, errored) = self.parse_and_evaluate(
                                     &line,
                                     CodeSource::Text,
                                     if interactive {
@@ -436,6 +455,11 @@ impl Cli {
                                 }
                             }
                         }
+
+                        session_history.push(SessionHistoryItem {
+                            input: line,
+                            errored,
+                        });
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}
@@ -456,7 +480,7 @@ impl Cli {
         code_source: CodeSource,
         execution_mode: ExecutionMode,
         pretty_print_mode: PrettyPrintMode,
-    ) -> ControlFlow {
+    ) -> (ControlFlow, InputErrored) {
         let to_be_printed: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
         let to_be_printed_c = to_be_printed.clone();
         let mut settings = InterpreterSettings {
@@ -479,7 +503,9 @@ impl Cli {
             PrettyPrintMode::Auto => interactive,
         };
 
-        match result {
+        let input_errored = InputErrored::from(&result);
+
+        let control_flow = match result {
             Ok((statements, interpreter_result)) => {
                 if interactive || pretty_print {
                     println!();
@@ -536,7 +562,9 @@ impl Cli {
                 self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
-        }
+        };
+
+        (control_flow, input_errored)
     }
 
     fn print_diagnostic(&mut self, error: impl ErrorDiagnostic) {
