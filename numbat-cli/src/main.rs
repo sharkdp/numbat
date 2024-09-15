@@ -404,7 +404,7 @@ impl Cli {
                             }
                             "save" => {
                                 session_history.save(
-                                    "numbat_hist.nbt",
+                                    "history.nbt",
                                     SessionHistoryOptions {
                                         include_err_lines: false,
                                         trim_lines: true,
