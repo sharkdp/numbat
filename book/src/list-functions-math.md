@@ -36,8 +36,6 @@ More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.
 fn abs<T: Dim>(x: T) -> T
 ```
 
-</details>
-
 ### `sqrt` (Square root)
 Return the square root \\( \sqrt{x} \\) of the input: `sqrt(121 m^2) = 11 m`.
 More information [here](https://en.wikipedia.org/wiki/Square_root).
@@ -504,8 +502,6 @@ More information [here](https://en.wikipedia.org/wiki/Gamma_function).
 fn gamma(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ## Trigonometry
 
 Defined in: `math::trigonometry`
@@ -517,16 +513,12 @@ More information [here](https://en.wikipedia.org/wiki/Trigonometric_functions).
 fn sin(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `cos` (Cosine)
 More information [here](https://en.wikipedia.org/wiki/Trigonometric_functions).
 
 ```nbt
 fn cos(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `tan` (Tangent)
 More information [here](https://en.wikipedia.org/wiki/Trigonometric_functions).
@@ -535,16 +527,12 @@ More information [here](https://en.wikipedia.org/wiki/Trigonometric_functions).
 fn tan(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `asin` (Arc sine)
 More information [here](https://en.wikipedia.org/wiki/Inverse_trigonometric_functions).
 
 ```nbt
 fn asin(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `acos` (Arc cosine)
 More information [here](https://en.wikipedia.org/wiki/Inverse_trigonometric_functions).
@@ -553,16 +541,12 @@ More information [here](https://en.wikipedia.org/wiki/Inverse_trigonometric_func
 fn acos(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `atan` (Arc tangent)
 More information [here](https://en.wikipedia.org/wiki/Inverse_trigonometric_functions).
 
 ```nbt
 fn atan(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `atan2`
 More information [here](https://en.wikipedia.org/wiki/Atan2).
@@ -571,16 +555,12 @@ More information [here](https://en.wikipedia.org/wiki/Atan2).
 fn atan2<T: Dim>(y: T, x: T) -> Scalar
 ```
 
-</details>
-
 ### `sinh` (Hyperbolic sine)
 More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 
 ```nbt
 fn sinh(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `cosh` (Hyperbolic cosine)
 More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
@@ -589,16 +569,12 @@ More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 fn cosh(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `tanh` (Hyperbolic tangent)
 More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 
 ```nbt
 fn tanh(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `asinh` (Area hyperbolic sine)
 More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
@@ -607,8 +583,6 @@ More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 fn asinh(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `acosh` (Area hyperbolic cosine)
 More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 
@@ -616,16 +590,12 @@ More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 fn acosh(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `atanh` (Area hyperbolic tangent )
 More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 
 ```nbt
 fn atanh(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ## Statistics
 
@@ -778,8 +748,6 @@ Uniformly samples the interval \\( [0,1) \\).
 fn random() -> Scalar
 ```
 
-</details>
-
 ### `rand_uniform` (Continuous uniform distribution sampling)
 Uniformly samples the interval \\( [a,b) \\) if \\( a \le b \\) or \\( [b,a) \\) if \\( b<a \\) using inversion sampling.
 More information [here](https://en.wikipedia.org/wiki/Continuous_uniform_distribution).
@@ -787,8 +755,6 @@ More information [here](https://en.wikipedia.org/wiki/Continuous_uniform_distrib
 ```nbt
 fn rand_uniform<T: Dim>(a: T, b: T) -> T
 ```
-
-</details>
 
 ### `rand_int` (Discrete uniform distribution sampling)
 Uniformly samples integers from the interval \\( [a, b] \\).
@@ -798,8 +764,6 @@ More information [here](https://en.wikipedia.org/wiki/Discrete_uniform_distribut
 fn rand_int(a: Scalar, b: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `rand_bernoulli` (Bernoulli distribution sampling)
 Samples a Bernoulli random variable. That is, \\( 1 \\) with probability \\( p \\) and \\( 0 \\) with probability \\( 1-p \\). The parameter \\( p \\) must be a probability (\\( 0 \le p \le 1 \\)).
 More information [here](https://en.wikipedia.org/wiki/Bernoulli_distribution).
@@ -807,8 +771,6 @@ More information [here](https://en.wikipedia.org/wiki/Bernoulli_distribution).
 ```nbt
 fn rand_bernoulli(p: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `rand_binom` (Binomial distribution sampling)
 Samples a binomial distribution by doing \\( n \\) Bernoulli trials with probability \\( p \\).
@@ -819,8 +781,6 @@ More information [here](https://en.wikipedia.org/wiki/Binomial_distribution).
 fn rand_binom(n: Scalar, p: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `rand_norm` (Normal distribution sampling)
 Samples a normal distribution with mean \\( \mu \\) and standard deviation \\( \sigma \\) using the Box-Muller transform.
 More information [here](https://en.wikipedia.org/wiki/Normal_distribution).
@@ -828,8 +788,6 @@ More information [here](https://en.wikipedia.org/wiki/Normal_distribution).
 ```nbt
 fn rand_norm<T: Dim>(μ: T, σ: T) -> T
 ```
-
-</details>
 
 ### `rand_geom` (Geometric distribution sampling)
 Samples a geometric distribution (the distribution of the number of Bernoulli trials with probability \\( p \\) needed to get one success) by inversion sampling. The parameter \\( p \\) must be a probability (\\( 0 \le p \le 1 \\)).
@@ -839,8 +797,6 @@ More information [here](https://en.wikipedia.org/wiki/Geometric_distribution).
 fn rand_geom(p: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `rand_poisson` (Poisson distribution sampling)
 Sampling a poisson distribution with rate \\( \lambda \\), that is, the distribution of the number of events occurring in a fixed interval if these events occur with mean rate \\( \lambda \\). The rate parameter \\( \lambda \\) must be non-negative.
 More information [here](https://en.wikipedia.org/wiki/Poisson_distribution).
@@ -848,8 +804,6 @@ More information [here](https://en.wikipedia.org/wiki/Poisson_distribution).
 ```nbt
 fn rand_poisson(λ: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `rand_expon` (Exponential distribution sampling)
 Sampling an exponential distribution (the distribution of the distance between events in a Poisson process with rate \\( \lambda \\)) using inversion sampling. The rate parameter \\( \lambda \\) must be positive.
@@ -859,8 +813,6 @@ More information [here](https://en.wikipedia.org/wiki/Exponential_distribution).
 fn rand_expon<T: Dim>(λ: T) -> 1 / T
 ```
 
-</details>
-
 ### `rand_lognorm` (Log-normal distribution sampling)
 Sampling a log-normal distribution, that is, a distribution whose logarithm is a normal distribution with mean \\( \mu \\) and standard deviation \\( \sigma \\).
 More information [here](https://en.wikipedia.org/wiki/Log-normal_distribution).
@@ -869,8 +821,6 @@ More information [here](https://en.wikipedia.org/wiki/Log-normal_distribution).
 fn rand_lognorm(μ: Scalar, σ: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `rand_pareto` (Pareto distribution sampling)
 Sampling a Pareto distribution with minimum value `min` and shape parameter \\( \alpha \\) using inversion sampling. Both parameters must be positive.
 More information [here](https://en.wikipedia.org/wiki/Pareto_distribution).
@@ -878,8 +828,6 @@ More information [here](https://en.wikipedia.org/wiki/Pareto_distribution).
 ```nbt
 fn rand_pareto<T: Dim>(α: Scalar, min: T) -> T
 ```
-
-</details>
 
 ## Number theory
 
@@ -1101,16 +1049,12 @@ The area of a circle, \\( \pi r^2 \\).
 fn circle_area<L: Dim>(radius: L) -> L^2
 ```
 
-</details>
-
 ### `circle_circumference`
 The circumference of a circle, \\( 2\pi r \\).
 
 ```nbt
 fn circle_circumference<L: Dim>(radius: L) -> L
 ```
-
-</details>
 
 ### `sphere_area`
 The surface area of a sphere, \\( 4\pi r^2 \\).
@@ -1119,16 +1063,12 @@ The surface area of a sphere, \\( 4\pi r^2 \\).
 fn sphere_area<L: Dim>(radius: L) -> L^2
 ```
 
-</details>
-
 ### `sphere_volume`
 The volume of a sphere, \\( \frac{4}{3}\pi r^3 \\).
 
 ```nbt
 fn sphere_volume<L: Dim>(radius: L) -> L^3
 ```
-
-</details>
 
 ## Algebra
 
@@ -1168,15 +1108,11 @@ Defined in: `math::trigonometry_extra`
 fn cot(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `acot`
 
 ```nbt
 fn acot(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `coth`
 
@@ -1184,15 +1120,11 @@ fn acot(x: Scalar) -> Scalar
 fn coth(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `acoth`
 
 ```nbt
 fn acoth(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `secant`
 
@@ -1200,15 +1132,11 @@ fn acoth(x: Scalar) -> Scalar
 fn secant(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `arcsecant`
 
 ```nbt
 fn arcsecant(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `cosecant`
 
@@ -1216,15 +1144,11 @@ fn arcsecant(x: Scalar) -> Scalar
 fn cosecant(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `csc`
 
 ```nbt
 fn csc(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `acsc`
 
@@ -1232,15 +1156,11 @@ fn csc(x: Scalar) -> Scalar
 fn acsc(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `sech`
 
 ```nbt
 fn sech(x: Scalar) -> Scalar
 ```
-
-</details>
 
 ### `asech`
 
@@ -1248,21 +1168,15 @@ fn sech(x: Scalar) -> Scalar
 fn asech(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `csch`
 
 ```nbt
 fn csch(x: Scalar) -> Scalar
 ```
 
-</details>
-
 ### `acsch`
 
 ```nbt
 fn acsch(x: Scalar) -> Scalar
 ```
-
-</details>
 

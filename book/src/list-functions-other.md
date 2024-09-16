@@ -13,8 +13,6 @@ Throw an error with the specified message. Stops the execution of the program.
 fn error<T>(message: String) -> T
 ```
 
-</details>
-
 ## Floating point
 
 Defined in: `core::numbers`

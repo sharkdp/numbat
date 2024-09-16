@@ -11,8 +11,6 @@ Returns the current date and time.
 fn now() -> DateTime
 ```
 
-</details>
-
 ### `datetime`
 Parses a string (date and time) into a `DateTime` object. See [here](./date-and-time.md#date-time-formats) for an overview of the supported formats.
 
@@ -182,8 +180,6 @@ Returns the current date at midnight (in the local time).
 fn today() -> DateTime
 ```
 
-</details>
-
 ### `date`
 Parses a string (only date) into a `DateTime` object.
 
@@ -223,7 +219,7 @@ fn time(input: String) -> DateTime
     
       time("21:52")
     
-        = 2024-09-15 21:52:00 UTC    [DateTime]
+        = 2024-09-16 21:52:00 UTC    [DateTime]
     
   ```
 </details>
