@@ -5,25 +5,25 @@ html {
     margin: 0;
     padding: 0;
     height: 100%;
+    width: 100%;
 
-    font-size: 18px;
-    overflow-y: auto;
+    font-size: large;
 
-    /* Light theme */ 
+    /* Light theme */
     --editor-bg-color-light: #FFFFFF;
     --results-bg-color-light: #f6f8f6;
     --editor-accent-color-light: #eee;
     --editor-text-color-light: black;
     --editor-text-highlight-color-light: rgb(181, 213, 255);
-    
-    /* Dark theme */ 
+
+    /* Dark theme */
     --editor-bg-color-dark: #262826;
     --results-bg-color-dark: #2F322F;
     --editor-accent-color-dark: #464846;
     --editor-text-color-dark: #eee;
     --editor-text-highlight-color-dark: rgb(83, 157, 255);
 
-    /* Default theme */ 
+    /* Default theme */
     --editor-bg-color: var(--editor-bg-color-light);
     --results-bg-color: var(--results-bg-color-light);
     --editor-accent-color: var(--editor-accent-color-light);
@@ -66,11 +66,12 @@ html.alt-theme {
 
 
 .split {
-    width: 100%;
+    width: auto;
     min-height: 100%;
     display: flex;
     flex-direction: row;
-    overflow-y: clip;
+    overflow-y: auto;
+    margin: 0px;
 }
 
 
@@ -85,8 +86,8 @@ html.alt-theme {
     background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
     cursor: col-resize;
     height: 100dvh;
-        position: sticky;
-        top: 0px;
+    position: sticky;
+    top: 0px;
 }
 
 
@@ -213,4 +214,32 @@ html.alt-theme {
 
 .numbat-diagnostic-bold {
     font-weight: bold;
+}
+
+
+
+@media all and (width <=900px) {
+
+    body,
+    html {
+        font-size: medium;
+    }
+
+    .split {
+        margin: 0px;
+    }
+}
+
+
+
+@media all and (width >=1900px) {
+
+    body,
+    html {
+        font-size: x-large;
+    }
+
+    .split {
+        margin: 0px 100px;
+    }
 }
