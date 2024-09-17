@@ -105,6 +105,14 @@ More information [here](https://en.wikipedia.org/wiki/Pound_(mass)).
 fn pounds_and_ounces(mass: Mass) -> String
 ```
 
+### `unit_list` (Unit list)
+Converts a value to a mixed unit representation.
+More information [here](https://www.gnu.org/software/units/manual/html_node/Unit-Lists.html)
+
+```nbt
+fn unit_list<D: Dim>(units: List<D>, value: D) -> List<D>
+```
+
 ## Temperature conversion
 
 Defined in: `physics::temperature_conversion`
