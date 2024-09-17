@@ -16,7 +16,7 @@ use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::session_history::{SessionHistory, SessionHistoryItem, SessionHistoryOptions};
+use numbat::session_history::{SessionHistory, SessionHistoryOptions};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -92,6 +92,11 @@ struct Args {
     /// Turn on debug mode and print disassembler output (hidden, mainly for development)
     #[arg(long, short, hide = true)]
     debug: bool,
+}
+
+struct ParseEvaluationResult {
+    control_flow: ControlFlow,
+    errored: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -184,13 +189,12 @@ impl Cli {
 
         if self.config.load_prelude {
             let result = self.parse_and_evaluate(
-                "use prelude".to_owned(),
+                "use prelude",
                 CodeSource::Internal,
                 ExecutionMode::Normal,
                 PrettyPrintMode::Never,
-                None,
             );
-            if result.is_break() {
+            if result.control_flow.is_break() {
                 bail!("Interpreter error in Prelude code")
             }
         }
@@ -200,13 +204,12 @@ impl Cli {
 
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
                 let result = self.parse_and_evaluate(
-                    user_init_code,
+                    &user_init_code,
                     CodeSource::File(user_init_path),
                     ExecutionMode::Normal,
                     PrettyPrintMode::Never,
-                    None,
                 );
-                if result.is_break() {
+                if result.control_flow.is_break() {
                     bail!("Interpreter error in user initialization code")
                 }
             }
@@ -242,14 +245,13 @@ impl Cli {
         if !code_and_source.is_empty() {
             for (code, code_source) in code_and_source {
                 let result = self.parse_and_evaluate(
-                    code,
+                    &code,
                     code_source,
                     ExecutionMode::Normal,
                     self.config.pretty_print,
-                    None,
                 );
 
-                let result_status = match result {
+                let result_status = match result.control_flow {
                     std::ops::ControlFlow::Continue(()) => Ok(()),
                     std::ops::ControlFlow::Break(_) => {
                         bail!("Interpreter stopped")
@@ -410,7 +412,6 @@ impl Cli {
                                         trim_lines: true,
                                     },
                                 )?;
-                                continue;
                             }
                             "help" | "?" => {
                                 let help = help_markup();
@@ -430,8 +431,11 @@ impl Cli {
                                     println!("{}", ansi_format(&help, true));
                                     continue;
                                 }
-                                let result = self.parse_and_evaluate(
-                                    line,
+                                let ParseEvaluationResult {
+                                    control_flow,
+                                    errored,
+                                } = self.parse_and_evaluate(
+                                    &line,
                                     CodeSource::Text,
                                     if interactive {
                                         ExecutionMode::Interactive
@@ -439,10 +443,9 @@ impl Cli {
                                         ExecutionMode::Normal
                                     },
                                     self.config.pretty_print,
-                                    Some(&mut session_history),
                                 );
 
-                                match result {
+                                match control_flow {
                                     std::ops::ControlFlow::Continue(()) => {}
                                     std::ops::ControlFlow::Break(ExitStatus::Success) => {
                                         return Ok(());
@@ -451,6 +454,8 @@ impl Cli {
                                         bail!("Interpreter stopped due to error")
                                     }
                                 }
+
+                                session_history.push(line, errored);
                             }
                         }
                     }
@@ -469,12 +474,11 @@ impl Cli {
     #[must_use]
     fn parse_and_evaluate(
         &mut self,
-        input: String,
+        input: &str,
         code_source: CodeSource,
         execution_mode: ExecutionMode,
         pretty_print_mode: PrettyPrintMode,
-        session_history: Option<&mut SessionHistory>,
-    ) -> ControlFlow {
+    ) -> ParseEvaluationResult {
         let to_be_printed: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
         let to_be_printed_c = to_be_printed.clone();
         let mut settings = InterpreterSettings {
@@ -483,11 +487,11 @@ impl Cli {
             }),
         };
 
-        let result = self.context.lock().unwrap().interpret_with_settings(
-            &mut settings,
-            &input,
-            code_source,
-        );
+        let result =
+            self.context
+                .lock()
+                .unwrap()
+                .interpret_with_settings(&mut settings, input, code_source);
 
         let interactive = execution_mode == ExecutionMode::Interactive;
 
@@ -497,12 +501,7 @@ impl Cli {
             PrettyPrintMode::Auto => interactive,
         };
 
-        if let Some(session_history) = session_history {
-            session_history.push(SessionHistoryItem {
-                input,
-                errored: result.is_err(),
-            });
-        }
+        let errored = result.is_err();
 
         let control_flow = match result {
             Ok((statements, interpreter_result)) => {
@@ -563,7 +562,10 @@ impl Cli {
             }
         };
 
-        control_flow
+        ParseEvaluationResult {
+            control_flow,
+            errored,
+        }
     }
 
     fn print_diagnostic(&mut self, error: impl ErrorDiagnostic) {

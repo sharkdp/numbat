@@ -1,13 +1,9 @@
-use std::{
-    fs,
-    io::{self, Write as _},
-    path::Path,
-};
+use std::{fs, io, path::Path};
 
 use crate::RuntimeError;
 
 #[derive(Debug)]
-pub struct SessionHistoryItem {
+struct SessionHistoryItem {
     pub input: String,
     pub errored: bool,
 }
@@ -28,24 +24,21 @@ pub struct SessionHistoryOptions {
 }
 
 impl SessionHistory {
-    pub fn push(&mut self, item: SessionHistoryItem) {
-        self.0.push(item);
+    pub fn push(&mut self, input: String, errored: bool) {
+        self.0.push(SessionHistoryItem { input, errored });
     }
 
-    pub fn save(
+    fn save_inner(
         &self,
-        dst: impl AsRef<Path>,
+        mut w: impl io::Write,
         options: SessionHistoryOptions,
+        err_fn: impl Fn(io::Error) -> RuntimeError,
     ) -> Result<(), RuntimeError> {
         let SessionHistoryOptions {
             include_err_lines,
             trim_lines,
         } = options;
 
-        let dst = dst.as_ref();
-        let err_fn = |_: io::Error| RuntimeError::FileWrite(dst.to_owned());
-
-        let mut f = fs::File::create(dst).map_err(err_fn)?;
         for item in &self.0 {
             if item.errored && !include_err_lines {
                 continue;
@@ -57,8 +50,88 @@ impl SessionHistory {
                 &item.input
             };
 
-            writeln!(f, "{}", input).map_err(err_fn)?
+            writeln!(w, "{}", input).map_err(&err_fn)?
         }
         Ok(())
+    }
+
+    pub fn save(
+        &self,
+        dst: impl AsRef<Path>,
+        options: SessionHistoryOptions,
+    ) -> Result<(), RuntimeError> {
+        let dst = dst.as_ref();
+        let err_fn = |_: io::Error| RuntimeError::FileWrite(dst.to_owned());
+
+        let f = fs::File::create(dst).map_err(err_fn)?;
+        self.save_inner(f, options, err_fn)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn test() {
+        let mut sh = SessionHistory::new();
+
+        // arbitrary non-ascii characters
+        sh.push("  a→  ".to_owned(), false);
+        sh.push("  b × c  ".to_owned(), true);
+        sh.push("  d ♔ e ⚀ f  ".to_owned(), true);
+        sh.push("  g ☼ h ▶︎ i ❖ j  ".to_owned(), false);
+
+        let test_cases = [
+            (
+                SessionHistoryOptions {
+                    include_err_lines: false,
+                    trim_lines: false,
+                },
+                "  a→  \n  g ☼ h ▶︎ i ❖ j  \n",
+            ),
+            (
+                SessionHistoryOptions {
+                    include_err_lines: true,
+                    trim_lines: false,
+                },
+                "  a→  \n  b × c  \n  d ♔ e ⚀ f  \n  g ☼ h ▶︎ i ❖ j  \n",
+            ),
+            (
+                SessionHistoryOptions {
+                    include_err_lines: false,
+                    trim_lines: true,
+                },
+                "a→\ng ☼ h ▶︎ i ❖ j\n",
+            ),
+            (
+                SessionHistoryOptions {
+                    include_err_lines: true,
+                    trim_lines: true,
+                },
+                "a→\nb × c\nd ♔ e ⚀ f\ng ☼ h ▶︎ i ❖ j\n",
+            ),
+        ];
+
+        for (options, expected) in test_cases {
+            let mut s = Cursor::new(Vec::<u8>::new());
+            sh.save_inner(&mut s, options, |_| unreachable!()).unwrap();
+            assert_eq!(expected, String::from_utf8(s.into_inner()).unwrap())
+        }
+    }
+
+    #[test]
+    fn test_error() {
+        let sh = SessionHistory::new();
+        assert!(sh
+            .save(
+                ".", // one place we know writing will fail
+                SessionHistoryOptions {
+                    include_err_lines: false,
+                    trim_lines: false
+                }
+            )
+            .is_err())
     }
 }
