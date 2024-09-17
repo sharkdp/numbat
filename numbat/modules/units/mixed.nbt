@@ -28,5 +28,5 @@ fn pounds_and_ounces(mass: Mass) -> String =
 
 
 @name("Unit list")
-@description("Convert a value to a mixed representation using the provided units.)
-fn unit_list<A: Dim>(units: List<A>, value: A) -> List<A> = _mixed_unit_list(value, units, minimum(units) / 100, [])
+@description("Convert a value to a mixed representation using the provided units.")
+fn unit_list<D: Dim>(units: List<D>, value: D) -> List<D> = _mixed_unit_list(value, units, [])
