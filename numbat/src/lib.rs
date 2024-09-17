@@ -579,7 +579,7 @@ impl Context {
         let result = self
             .typechecker
             .check(transformed_statements)
-            .map_err(NumbatError::TypeCheckError);
+            .map_err(|err| NumbatError::TypeCheckError(*err));
 
         if result.is_err() {
             // Reset the state of the prefix transformer to what we had before. This is necessary
