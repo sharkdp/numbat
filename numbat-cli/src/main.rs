@@ -479,7 +479,7 @@ impl Cli {
             PrettyPrintMode::Auto => interactive,
         };
 
-        match result {
+        match result.map_err(|b| *b) {
             Ok((statements, interpreter_result)) => {
                 if interactive || pretty_print {
                     println!();
@@ -518,7 +518,7 @@ impl Cli {
                 ControlFlow::Continue(())
             }
             Err(NumbatError::ResolverError(e)) => {
-                self.print_diagnostic(e.clone());
+                self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::NameResolutionError(
