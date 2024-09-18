@@ -16,7 +16,7 @@ use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::session_history::{SessionHistory, SessionHistoryOptions};
+use numbat::session_history::{ParseEvaluationResult, SessionHistory, SessionHistoryOptions};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -94,9 +94,9 @@ struct Args {
     debug: bool,
 }
 
-struct ParseEvaluationResult {
+struct ParseEvaluationOutcome {
     control_flow: ControlFlow,
-    errored: bool,
+    result: ParseEvaluationResult,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -431,9 +431,9 @@ impl Cli {
                                     println!("{}", ansi_format(&help, true));
                                     continue;
                                 }
-                                let ParseEvaluationResult {
+                                let ParseEvaluationOutcome {
                                     control_flow,
-                                    errored,
+                                    result,
                                 } = self.parse_and_evaluate(
                                     &line,
                                     CodeSource::Text,
@@ -455,7 +455,7 @@ impl Cli {
                                     }
                                 }
 
-                                session_history.push(line, errored);
+                                session_history.push(line, result);
                             }
                         }
                     }
@@ -478,7 +478,7 @@ impl Cli {
         code_source: CodeSource,
         execution_mode: ExecutionMode,
         pretty_print_mode: PrettyPrintMode,
-    ) -> ParseEvaluationResult {
+    ) -> ParseEvaluationOutcome {
         let to_be_printed: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
         let to_be_printed_c = to_be_printed.clone();
         let mut settings = InterpreterSettings {
@@ -487,7 +487,7 @@ impl Cli {
             }),
         };
 
-        let result =
+        let interpretation_result =
             self.context
                 .lock()
                 .unwrap()
@@ -501,9 +501,12 @@ impl Cli {
             PrettyPrintMode::Auto => interactive,
         };
 
-        let errored = result.is_err();
+        let parse_eval_result = match &interpretation_result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(()),
+        };
 
-        let control_flow = match result {
+        let control_flow = match interpretation_result {
             Ok((statements, interpreter_result)) => {
                 if interactive || pretty_print {
                     println!();
@@ -562,9 +565,9 @@ impl Cli {
             }
         };
 
-        ParseEvaluationResult {
+        ParseEvaluationOutcome {
             control_flow,
-            errored,
+            result: parse_eval_result,
         }
     }
 

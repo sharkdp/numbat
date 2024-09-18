@@ -2,10 +2,12 @@ use std::{fs, io, path::Path};
 
 use crate::RuntimeError;
 
+pub type ParseEvaluationResult = Result<(), ()>;
+
 #[derive(Debug)]
 struct SessionHistoryItem {
-    pub input: String,
-    pub errored: bool,
+    input: String,
+    result: ParseEvaluationResult,
 }
 
 #[derive(Default)]
@@ -24,8 +26,8 @@ pub struct SessionHistoryOptions {
 }
 
 impl SessionHistory {
-    pub fn push(&mut self, input: String, errored: bool) {
-        self.0.push(SessionHistoryItem { input, errored });
+    pub fn push(&mut self, input: String, result: ParseEvaluationResult) {
+        self.0.push(SessionHistoryItem { input, result });
     }
 
     fn save_inner(
@@ -33,14 +35,14 @@ impl SessionHistory {
         mut w: impl io::Write,
         options: SessionHistoryOptions,
         err_fn: impl Fn(io::Error) -> RuntimeError,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), Box<RuntimeError>> {
         let SessionHistoryOptions {
             include_err_lines,
             trim_lines,
         } = options;
 
         for item in &self.0 {
-            if item.errored && !include_err_lines {
+            if item.result.is_err() && !include_err_lines {
                 continue;
             }
 
@@ -59,7 +61,7 @@ impl SessionHistory {
         &self,
         dst: impl AsRef<Path>,
         options: SessionHistoryOptions,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), Box<RuntimeError>> {
         let dst = dst.as_ref();
         let err_fn = |_: io::Error| RuntimeError::FileWrite(dst.to_owned());
 
@@ -78,10 +80,10 @@ mod test {
         let mut sh = SessionHistory::new();
 
         // arbitrary non-ascii characters
-        sh.push("  a→  ".to_owned(), false);
-        sh.push("  b × c  ".to_owned(), true);
-        sh.push("  d ♔ e ⚀ f  ".to_owned(), true);
-        sh.push("  g ☼ h ▶︎ i ❖ j  ".to_owned(), false);
+        sh.push("  a→  ".to_owned(), Ok(()));
+        sh.push("  b × c  ".to_owned(), Err(()));
+        sh.push("  d ♔ e ⚀ f  ".to_owned(), Err(()));
+        sh.push("  g ☼ h ▶︎ i ❖ j  ".to_owned(), Ok(()));
 
         let test_cases = [
             (
