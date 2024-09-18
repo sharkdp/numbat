@@ -433,6 +433,14 @@ More information [here](https://en.wikipedia.org/wiki/Numerical_differentiation)
 fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X) -> Y / X
 ```
 
+### `dsolve_runge_kutta` (Runga-Kutta method)
+Solve the ordinary differential equation \\( y' = f(x, y) \\) with initial conditions \\( y(x_0) = y_0 \\) using the fourth-order Runge-Kutta method.
+More information [here](https://en.wikipedia.org/wiki/Runge-Kutta_methods).
+
+```nbt
+fn dsolve_runge_kutta<X: Dim, Y: Dim>(f: Fn[(X, Y) -> Y / X], xs: List<X>, y0: Y) -> List<Y>
+```
+
 ### `root_bisect` (Bisection method)
 Find the root of the function \\( f \\) in the interval \\( [x_1, x_2] \\) using the bisection method. The function \\( f \\) must be continuous and \\( f(x_1) \cdot f(x_2) < 0 \\).
 More information [here](https://en.wikipedia.org/wiki/Bisection_method).
