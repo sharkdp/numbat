@@ -52,7 +52,7 @@ impl SessionHistory {
                 &item.input
             };
 
-            writeln!(w, "{}", input).map_err(&err_fn)?
+            writeln!(w, "{input}").map_err(&err_fn)?
         }
         Ok(())
     }
