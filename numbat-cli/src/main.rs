@@ -465,14 +465,11 @@ impl Cli {
             }),
         };
 
-        let (result, registry) = {
-            let mut ctx = self.context.lock().unwrap();
-            let registry = ctx.dimension_registry().clone(); // TODO: get rid of this clone
-            (
-                ctx.interpret_with_settings(&mut settings, input, code_source),
-                registry,
-            )
-        };
+        let result =
+            self.context
+                .lock()
+                .unwrap()
+                .interpret_with_settings(&mut settings, input, code_source);
 
         let interactive = execution_mode == ExecutionMode::Interactive;
 
@@ -504,9 +501,11 @@ impl Cli {
                     println!();
                 }
 
+                let ctx = self.context.lock().unwrap();
+                let registry = ctx.dimension_registry();
                 let result_markup = interpreter_result.to_markup(
                     statements.last(),
-                    &registry,
+                    registry,
                     interactive || pretty_print,
                     interactive || pretty_print,
                 );

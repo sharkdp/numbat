@@ -50,15 +50,15 @@ pub struct ConstraintSet {
 }
 
 impl ConstraintSet {
-    pub fn add(&mut self, constraint: Constraint) -> TrivialResultion {
+    pub fn add(&mut self, constraint: Constraint) -> TrivialResolution {
         let result = constraint.try_trivial_resolution();
 
         match result {
-            TrivialResultion::Satisfied => {}
-            TrivialResultion::Violated => {
+            TrivialResolution::Satisfied => {}
+            TrivialResolution::Violated => {
                 self.constraints.push(constraint);
             }
-            TrivialResultion::Unknown => {
+            TrivialResolution::Unknown => {
                 self.constraints.push(constraint);
             }
         }
@@ -79,24 +79,22 @@ impl ConstraintSet {
             let mut new_constraint_set = self.clone();
 
             for (i, c) in self.iter().enumerate() {
-                match c.try_satisfy() {
-                    Some(Satisfied {
-                        new_constraints,
-                        new_substitution,
-                    }) => {
-                        new_constraint_set.remove(i);
-                        new_constraint_set.constraints.extend(new_constraints);
+                if let Some(Satisfied {
+                    new_constraints,
+                    new_substitution,
+                }) = c.try_satisfy()
+                {
+                    new_constraint_set.remove(i);
+                    new_constraint_set.constraints.extend(new_constraints);
 
-                        new_constraint_set
-                            .apply(&new_substitution)
-                            .map_err(ConstraintSolverError::SubstitutionError)?;
+                    new_constraint_set
+                        .apply(&new_substitution)
+                        .map_err(ConstraintSolverError::SubstitutionError)?;
 
-                        substitution.extend(new_substitution);
+                    substitution.extend(new_substitution);
 
-                        made_progress = true;
-                        break;
-                    }
-                    None => {}
+                    made_progress = true;
+                    break;
                 }
             }
 
@@ -155,15 +153,15 @@ impl ApplySubstitution for ConstraintSet {
 /// either true or false
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
-pub enum TrivialResultion {
+pub enum TrivialResolution {
     Satisfied,
     Violated,
     Unknown,
 }
 
-impl TrivialResultion {
+impl TrivialResolution {
     pub fn is_trivially_violated(self) -> bool {
-        matches!(self, TrivialResultion::Violated)
+        matches!(self, TrivialResolution::Violated)
     }
 
     /// Ignore the result of the trivial resolution. This is a helper to prevent the
@@ -184,34 +182,34 @@ pub enum Constraint {
 }
 
 impl Constraint {
-    fn try_trivial_resolution(&self) -> TrivialResultion {
+    fn try_trivial_resolution(&self) -> TrivialResolution {
         match self {
             Constraint::Equal(t1, t2) if t1.is_closed() && t2.is_closed() => {
                 if t1 == t2 {
-                    TrivialResultion::Satisfied
+                    TrivialResolution::Satisfied
                 } else {
-                    TrivialResultion::Violated
+                    TrivialResolution::Violated
                 }
             }
             Constraint::Equal(Type::Fn(params1, _), Type::Fn(params2, _))
                 if params1.len() != params2.len() =>
             {
-                TrivialResultion::Violated
+                TrivialResolution::Violated
             }
-            Constraint::Equal(_, _) => TrivialResultion::Unknown,
+            Constraint::Equal(_, _) => TrivialResolution::Unknown,
             Constraint::IsDType(t) if t.is_closed() => match t {
-                Type::Dimension(_) => TrivialResultion::Satisfied,
-                _ => TrivialResultion::Violated,
+                Type::Dimension(_) => TrivialResolution::Satisfied,
+                _ => TrivialResolution::Violated,
             },
-            Constraint::IsDType(_) => TrivialResultion::Unknown,
-            Constraint::EqualScalar(d) if d.is_scalar() => TrivialResultion::Satisfied,
+            Constraint::IsDType(_) => TrivialResolution::Unknown,
+            Constraint::EqualScalar(d) if d.is_scalar() => TrivialResolution::Satisfied,
             Constraint::EqualScalar(d) if d.type_variables(false).is_empty() => {
-                TrivialResultion::Violated
+                TrivialResolution::Violated
             }
-            Constraint::EqualScalar(_) => TrivialResultion::Unknown,
+            Constraint::EqualScalar(_) => TrivialResolution::Unknown,
             Constraint::HasField(_, _, _) => {
                 // Trivial resolution handling for structs is done directly in the type checker
-                TrivialResultion::Unknown
+                TrivialResolution::Unknown
             }
         }
     }
