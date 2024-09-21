@@ -183,8 +183,8 @@ impl<'a> CommandParser<'a> {
         cmd: &'static str,
         err_msg_suffix: &'static str,
     ) -> Result<(), ParseError> {
-        let message = format!("`{}` takes 0 arguments{}", cmd, err_msg_suffix);
         if self.inner.args.next().is_some() {
+            let message = format!("`{}` takes 0 arguments{}", cmd, err_msg_suffix);
             return Err(self.err_through_end_from(1, message));
         }
         Ok(())
@@ -198,8 +198,6 @@ impl<'a> CommandParser<'a> {
     /// - `Err(ParseError)`, if the input starts with a valid command but has the wrong
     ///   number or kind of arguments, e.g. `list foobar`
     pub fn parse_command(&mut self) -> Result<Command, ParseError> {
-        // expect() is guaranteed to succeed; CommandParser::new ensures there is at
-        // least one word
         let command = match &self.inner.command_kind {
             CommandKind::Help => {
                 self.ensure_zero_args("help", "; use `info <item>` for information about an item")?;
@@ -210,10 +208,13 @@ impl<'a> CommandParser<'a> {
                 Command::Clear
             }
             CommandKind::Quit(alias) => {
-                match alias {
-                    QuitAlias::Quit => self.ensure_zero_args("quit", "")?,
-                    QuitAlias::Exit => self.ensure_zero_args("exit", "")?,
-                }
+                self.ensure_zero_args(
+                    match alias {
+                        QuitAlias::Quit => "quit",
+                        QuitAlias::Exit => "exit",
+                    },
+                    "",
+                )?;
 
                 Command::Quit
             }
