@@ -48,7 +48,7 @@ pub fn tz(mut args: Args) -> Result<Value> {
     let tz = string_arg!(args);
 
     Ok(Value::FunctionReference(FunctionReference::TzConversion(
-        tz.into(),
+        tz,
     )))
 }
 
