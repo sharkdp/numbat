@@ -32,7 +32,7 @@ impl CommandKind {
     fn new(word: &str) -> Option<Self> {
         use CommandKind::*;
         Some(match word {
-            "help" => Help,
+            "help" | "?" => Help,
             "info" => Info,
             "list" => List,
             "clear" => Clear,
