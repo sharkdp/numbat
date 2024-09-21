@@ -10,14 +10,14 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
-use numbat::command::{CommandParser, SourcelessCommandParser};
+use numbat::command::{self, CommandParser, SourcelessCommandParser};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
 use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::{command, RuntimeError};
+use numbat::session_history::{ParseEvaluationResult, SessionHistory, SessionHistoryOptions};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -93,6 +93,11 @@ struct Args {
     /// Turn on debug mode and print disassembler output (hidden, mainly for development)
     #[arg(long, short, hide = true)]
     debug: bool,
+}
+
+struct ParseEvaluationOutcome {
+    control_flow: ControlFlow,
+    result: ParseEvaluationResult,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -190,7 +195,7 @@ impl Cli {
                 ExecutionMode::Normal,
                 PrettyPrintMode::Never,
             );
-            if result.is_break() {
+            if result.control_flow.is_break() {
                 bail!("Interpreter error in Prelude code")
             }
         }
@@ -205,7 +210,7 @@ impl Cli {
                     ExecutionMode::Normal,
                     PrettyPrintMode::Never,
                 );
-                if result.is_break() {
+                if result.control_flow.is_break() {
                     bail!("Interpreter error in user initialization code")
                 }
             }
@@ -247,7 +252,7 @@ impl Cli {
                     self.config.pretty_print,
                 );
 
-                let result_status = match result {
+                let result_status = match result.control_flow {
                     std::ops::ControlFlow::Continue(()) => Ok(()),
                     std::ops::ControlFlow::Break(_) => {
                         bail!("Interpreter stopped")
@@ -342,6 +347,8 @@ impl Cli {
         rl: &mut Editor<NumbatHelper, DefaultHistory>,
         interactive: bool,
     ) -> Result<()> {
+        let mut session_history = SessionHistory::default();
+
         loop {
             let readline = rl.readline(&self.config.prompt);
             match readline {
@@ -399,11 +406,26 @@ impl Cli {
                                     }
                                     command::Command::Clear => rl.clear_screen()?,
                                     command::Command::Save { dst } => {
-                                        if rl.save_history(dst).is_err() {
-                                            let error = RuntimeError::FileWrite(PathBuf::from(dst));
-                                            self.print_diagnostic(error);
-                                            continue;
-                                        };
+                                        let save_result = session_history.save(
+                                            dst,
+                                            SessionHistoryOptions {
+                                                include_err_lines: false,
+                                                trim_lines: true,
+                                            },
+                                        );
+                                        match save_result {
+                                            Ok(_) => {
+                                                let m = m::text(
+                                                    "successfully saved session history to",
+                                                ) + m::space()
+                                                    + m::string(dst);
+                                                println!("{}", ansi_format(&m, interactive));
+                                            }
+                                            Err(err) => {
+                                                self.print_diagnostic(*err);
+                                                continue;
+                                            }
+                                        }
                                     }
                                     command::Command::Quit => return Ok(()),
                                 },
@@ -416,7 +438,10 @@ impl Cli {
                             continue;
                         }
 
-                        let result = self.parse_and_evaluate(
+                        let ParseEvaluationOutcome {
+                            control_flow,
+                            result,
+                        } = self.parse_and_evaluate(
                             &line,
                             CodeSource::Text,
                             if interactive {
@@ -427,7 +452,7 @@ impl Cli {
                             self.config.pretty_print,
                         );
 
-                        match result {
+                        match control_flow {
                             std::ops::ControlFlow::Continue(()) => {}
                             std::ops::ControlFlow::Break(ExitStatus::Success) => {
                                 return Ok(());
@@ -435,7 +460,9 @@ impl Cli {
                             std::ops::ControlFlow::Break(ExitStatus::Error) => {
                                 bail!("Interpreter stopped due to error")
                             }
-                        };
+                        }
+
+                        session_history.push(line, result);
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}
@@ -456,7 +483,7 @@ impl Cli {
         code_source: CodeSource,
         execution_mode: ExecutionMode,
         pretty_print_mode: PrettyPrintMode,
-    ) -> ControlFlow {
+    ) -> ParseEvaluationOutcome {
         let to_be_printed: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
         let to_be_printed_c = to_be_printed.clone();
         let mut settings = InterpreterSettings {
@@ -465,7 +492,7 @@ impl Cli {
             }),
         };
 
-        let result =
+        let interpretation_result =
             self.context
                 .lock()
                 .unwrap()
@@ -479,7 +506,12 @@ impl Cli {
             PrettyPrintMode::Auto => interactive,
         };
 
-        match result {
+        let parse_eval_result = match &interpretation_result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(()),
+        };
+
+        let control_flow = match interpretation_result {
             Ok((statements, interpreter_result)) => {
                 if interactive || pretty_print {
                     println!();
@@ -536,6 +568,11 @@ impl Cli {
                 self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
+        };
+
+        ParseEvaluationOutcome {
+            control_flow,
+            result: parse_eval_result,
         }
     }
 

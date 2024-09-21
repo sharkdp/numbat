@@ -255,13 +255,15 @@ impl<'a> CommandParser<'a> {
                 Command::List { items }
             }
             CommandKind::Save => {
-                let err_msg = "`save` requires exactly one argument, the destination";
                 let Some(dst) = self.inner.args.next() else {
-                    return Err(self.err_at_idx(0, err_msg));
+                    return Ok(Command::Save { dst: "history.nbt" });
                 };
 
                 if self.inner.args.next().is_some() {
-                    return Err(self.err_through_end_from(2, err_msg));
+                    return Err(self.err_through_end_from(
+                        2,
+                        "`save` requires exactly one argument, the destination",
+                    ));
                 }
 
                 Command::Save { dst }
@@ -481,7 +483,10 @@ mod test {
         assert!(parse!("exit arg").is_err());
         assert!(parse!("exit arg1 arg2").is_err());
 
-        assert!(parse!("save").is_err());
+        assert_eq!(
+            parse!("save").unwrap(),
+            Command::Save { dst: "history.nbt" }
+        );
         assert_eq!(parse!("save arg").unwrap(), Command::Save { dst: "arg" });
         assert_eq!(parse!("save .").unwrap(), Command::Save { dst: "." });
         assert!(parse!("save arg1 arg2").is_err());

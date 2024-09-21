@@ -33,6 +33,7 @@ mod product;
 mod quantity;
 mod registry;
 pub mod resolver;
+pub mod session_history;
 mod span;
 mod suggestion;
 mod tokenizer;
