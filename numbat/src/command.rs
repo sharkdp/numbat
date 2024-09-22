@@ -1,4 +1,4 @@
-use std::str::SplitWhitespace;
+use std::str::{FromStr, SplitWhitespace};
 
 use crate::{
     parser::ParseErrorKind,
@@ -28,10 +28,12 @@ enum CommandKind {
     Quit(QuitAlias),
 }
 
-impl CommandKind {
-    fn new(word: &str) -> Option<Self> {
+impl FromStr for CommandKind {
+    type Err = ();
+
+    fn from_str(word: &str) -> Result<Self, Self::Err> {
         use CommandKind::*;
-        Some(match word {
+        Ok(match word {
             "help" | "?" => Help,
             "info" => Info,
             "list" => List,
@@ -39,7 +41,7 @@ impl CommandKind {
             "save" => Save,
             "quit" => Quit(QuitAlias::Quit),
             "exit" => Quit(QuitAlias::Exit),
-            _ => return None,
+            _ => return Err(()),
         })
     }
 }
@@ -86,7 +88,7 @@ impl<'a> SourcelessCommandParser<'a> {
     /// numbat expression
     pub fn new(input: &'a str) -> Option<Self> {
         let mut words: SplitWhitespace<'_> = input.split_whitespace();
-        let command_kind = words.next().and_then(CommandKind::new)?;
+        let command_kind = words.next().and_then(|w| w.parse().ok())?;
 
         let mut word_boundaries = Vec::new();
         let mut prev_char_was_whitespace = true;
