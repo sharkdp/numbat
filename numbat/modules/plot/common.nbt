@@ -1,0 +1,10 @@
+use core::quantities
+use core::strings
+
+fn _unit_name<A: Dim>(x: A) -> String = str_replace("{unit_of(x)}", "1 ", "")
+
+fn _is_scalar<A: Dim>(x: A) -> Bool = "{unit_of(x)}" == "1"
+
+# TODO: this function is overly generic, but we don't have bounded
+# polymorphism yet.
+fn show<Plot>(plot: Plot) -> String

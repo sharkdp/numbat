@@ -2,7 +2,7 @@ use itertools::Itertools;
 use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context};
 use std::path::Path;
 
-const AUTO_GENERATED_HINT: &'static str = "<!-- NOTE! This file is auto-generated -->";
+const AUTO_GENERATED_HINT: &str = "<!-- NOTE! This file is auto-generated -->";
 
 fn inspect_units(ctx: &Context) {
     println!("{AUTO_GENERATED_HINT}

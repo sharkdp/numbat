@@ -12,15 +12,14 @@ impl PrettyPrint for bool {
 }
 
 pub fn escape_numbat_string(s: &str) -> String {
-    return s
-        .replace("\\", "\\\\")
+    s.replace("\\", "\\\\")
         .replace("\n", "\\n")
         .replace("\r", "\\r")
         .replace("\t", "\\t")
         .replace("\"", "\\\"")
         .replace("\0", "\\0")
         .replace("{", "\\{")
-        .replace("}", "\\}");
+        .replace("}", "\\}")
 }
 
 impl PrettyPrint for String {

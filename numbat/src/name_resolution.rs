@@ -79,7 +79,7 @@ impl Namespace {
             });
         }
 
-        let _ = self.seen.insert(name, (item_type, span));
+        self.seen.insert(name, (item_type, span));
 
         Ok(())
     }

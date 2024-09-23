@@ -23,6 +23,7 @@ pub mod module_importer;
 mod name_resolution;
 mod number;
 mod parser;
+mod plot;
 mod prefix;
 mod prefix_parser;
 mod prefix_transformer;
@@ -134,6 +135,10 @@ impl Context {
 
     pub fn set_exchange_rates(xml_content: &str) {
         ExchangeRatesCache::set_from_xml(xml_content);
+    }
+
+    pub fn use_test_exchange_rates() {
+        ExchangeRatesCache::use_test_rates();
     }
 
     pub fn variable_names(&self) -> impl Iterator<Item = String> + '_ {
