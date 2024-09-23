@@ -366,15 +366,18 @@ impl Parser {
     fn list_of_aliases(
         &mut self,
         tokens: &[Token],
-    ) -> Result<Vec<(String, Option<AcceptsPrefix>)>> {
+    ) -> Result<Vec<(String, Option<AcceptsPrefix>, Span)>> {
         if self.match_exact(tokens, TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
-        let mut identifiers: Vec<(String, Option<AcceptsPrefix>)> =
-            vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?)];
+        let span = self.peek(tokens).span;
+        let mut identifiers: Vec<(String, Option<AcceptsPrefix>, Span)> =
+            vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?, span)];
+
         while self.match_exact(tokens, TokenKind::Comma).is_some() {
-            identifiers.push((self.identifier(tokens)?, self.accepts_prefix(tokens)?));
+            let span = self.peek(tokens).span;
+            identifiers.push((self.identifier(tokens)?, self.accepts_prefix(tokens)?, span));
         }
 
         if self.match_exact(tokens, TokenKind::RightParen).is_none() {
@@ -1983,9 +1986,12 @@ mod tests {
     use std::fmt::Write;
 
     use super::*;
-    use crate::ast::{
-        binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
-        struct_, ReplaceSpans,
+    use crate::{
+        ast::{
+            binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
+            struct_, ReplaceSpans,
+        },
+        span::SourceCodePositition,
     };
 
     #[track_caller]
@@ -2434,7 +2440,42 @@ mod tests {
                 )),
                 decorators: vec![
                     decorator::Decorator::Name("myvar".into()),
-                    decorator::Decorator::Aliases(vec![("foo".into(), None), ("bar".into(), None)]),
+                    decorator::Decorator::Aliases(vec![
+                        (
+                            "foo".into(),
+                            None,
+                            Span {
+                                start: SourceCodePositition {
+                                    byte: 24,
+                                    line: 1,
+                                    position: 25,
+                                },
+                                end: SourceCodePositition {
+                                    byte: 27,
+                                    line: 1,
+                                    position: 28,
+                                },
+                                code_source_id: 0,
+                            },
+                        ),
+                        (
+                            "bar".into(),
+                            None,
+                            Span {
+                                start: SourceCodePositition {
+                                    byte: 29,
+                                    line: 1,
+                                    position: 30,
+                                },
+                                end: SourceCodePositition {
+                                    byte: 32,
+                                    line: 1,
+                                    position: 33,
+                                },
+                                code_source_id: 0,
+                            },
+                        ),
+                    ]),
                 ],
             }),
         );
