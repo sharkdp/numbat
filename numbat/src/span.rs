@@ -25,10 +25,6 @@ impl AddAssign<u32> for ByteIndex {
 }
 
 impl ByteIndex {
-    pub fn start() -> Self {
-        Self(0)
-    }
-
     pub fn single_character_span(self, code_source_id: usize) -> Span {
         Span {
             start: self,
@@ -73,8 +69,8 @@ impl Span {
     #[cfg(test)]
     pub fn dummy() -> Span {
         Self {
-            start: ByteIndex::start(),
-            end: ByteIndex::start(),
+            start: ByteIndex(0),
+            end: ByteIndex(0),
             code_source_id: 0,
         }
     }

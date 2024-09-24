@@ -21,8 +21,8 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
         .find(|e| e.name().to_lowercase() == pattern || e.symbol().to_lowercase() == pattern)
     {
         let unknown_span = Span {
-            start: ByteIndex::start(),
-            end: ByteIndex::start(),
+            start: ByteIndex(0),
+            end: ByteIndex(0),
             code_source_id: 0,
         };
 

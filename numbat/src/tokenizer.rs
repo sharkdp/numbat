@@ -253,13 +253,13 @@ fn char_at(s: &str, byte_index: usize) -> Option<char> {
 impl Tokenizer {
     fn new(code_source_id: usize) -> Self {
         Tokenizer {
-            current: ByteIndex::start(),
-            last: ByteIndex::start(),
-            token_start: ByteIndex::start(),
+            current: ByteIndex(0),
+            last: ByteIndex(0),
+            token_start: ByteIndex(0),
 
             code_source_id,
-            string_start: ByteIndex::start(),
-            interpolation_start: ByteIndex::start(),
+            string_start: ByteIndex(0),
+            interpolation_start: ByteIndex(0),
             interpolation_state: InterpolationState::Outside,
         }
     }
