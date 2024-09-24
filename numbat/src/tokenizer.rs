@@ -1,4 +1,4 @@
-use crate::span::{SourceCodePositition, Span};
+use crate::span::{ByteIndex, Span};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -235,14 +235,14 @@ impl InterpolationState {
 
 #[cfg_attr(debug_assertions, derive(Debug))]
 struct Tokenizer {
-    current: SourceCodePositition,
-    last: SourceCodePositition,
-    token_start: SourceCodePositition,
+    current: ByteIndex,
+    last: ByteIndex,
+    token_start: ByteIndex,
     code_source_id: usize,
 
     // Special fields / state for parsing string interpolations
-    string_start: SourceCodePositition,
-    interpolation_start: SourceCodePositition,
+    string_start: ByteIndex,
+    interpolation_start: ByteIndex,
     interpolation_state: InterpolationState,
 }
 
@@ -253,13 +253,13 @@ fn char_at(s: &str, byte_index: usize) -> Option<char> {
 impl Tokenizer {
     fn new(code_source_id: usize) -> Self {
         Tokenizer {
-            current: SourceCodePositition::start(),
-            last: SourceCodePositition::start(),
-            token_start: SourceCodePositition::start(),
+            current: ByteIndex::start(),
+            last: ByteIndex::start(),
+            token_start: ByteIndex::start(),
 
             code_source_id,
-            string_start: SourceCodePositition::start(),
-            interpolation_start: SourceCodePositition::start(),
+            string_start: ByteIndex::start(),
+            interpolation_start: ByteIndex::start(),
             interpolation_state: InterpolationState::Outside,
         }
     }
@@ -437,7 +437,7 @@ impl Tokenizer {
         let current_char = self.advance(input);
 
         let code_source_id = self.code_source_id;
-        let tokenizer_error = |position: SourceCodePositition, kind| -> Result<Option<Token>> {
+        let tokenizer_error = |position: ByteIndex, kind| -> Result<Option<Token>> {
             Err(TokenizerError {
                 kind,
                 span: position.single_character_span(code_source_id),
@@ -762,7 +762,7 @@ pub fn tokenize(input: &str, code_source_id: usize) -> Result<Vec<Token>> {
 }
 
 #[cfg(test)]
-fn tokenize_reduced(input: &str) -> Result<Vec<(&str, TokenKind, SourceCodePositition)>, String> {
+fn tokenize_reduced(input: &str) -> Result<Vec<(&str, TokenKind, ByteIndex)>, String> {
     Ok(tokenize(input, 0)
         .map_err(|e| format!("Error at index {:?}: `{e}`", e.span.start.0))?
         .iter()
@@ -787,76 +787,76 @@ fn test_tokenize_basic() {
     assert_eq!(
         tokenize_reduced("  12 + 34  ").unwrap(),
         [
-            ("12", Number, SourceCodePositition(2)),
-            ("+", Plus, SourceCodePositition(5)),
-            ("34", Number, SourceCodePositition(7)),
-            ("", Eof, SourceCodePositition(11))
+            ("12", Number, ByteIndex(2)),
+            ("+", Plus, ByteIndex(5)),
+            ("34", Number, ByteIndex(7)),
+            ("", Eof, ByteIndex(11))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("1 2").unwrap(),
         [
-            ("1", Number, SourceCodePositition(0)),
-            ("2", Number, SourceCodePositition(2)),
-            ("", Eof, SourceCodePositition(3))
+            ("1", Number, ByteIndex(0)),
+            ("2", Number, ByteIndex(2)),
+            ("", Eof, ByteIndex(3))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("12 × (3 - 4)").unwrap(),
         [
-            ("12", Number, SourceCodePositition(0)),
+            ("12", Number, ByteIndex(0)),
             // 2 bytes: std::str::from_utf8(b"\xc3\x97") == Ok("×")
-            ("×", Multiply, SourceCodePositition(3)),
-            ("(", LeftParen, SourceCodePositition(6)),
-            ("3", Number, SourceCodePositition(7)),
-            ("-", Minus, SourceCodePositition(9)),
-            ("4", Number, SourceCodePositition(11)),
-            (")", RightParen, SourceCodePositition(12)),
-            ("", Eof, SourceCodePositition(13))
+            ("×", Multiply, ByteIndex(3)),
+            ("(", LeftParen, ByteIndex(6)),
+            ("3", Number, ByteIndex(7)),
+            ("-", Minus, ByteIndex(9)),
+            ("4", Number, ByteIndex(11)),
+            (")", RightParen, ByteIndex(12)),
+            ("", Eof, ByteIndex(13))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("foo to bar").unwrap(),
         [
-            ("foo", Identifier, SourceCodePositition(0)),
-            ("to", To, SourceCodePositition(4)),
-            ("bar", Identifier, SourceCodePositition(7)),
-            ("", Eof, SourceCodePositition(10))
+            ("foo", Identifier, ByteIndex(0)),
+            ("to", To, ByteIndex(4)),
+            ("bar", Identifier, ByteIndex(7)),
+            ("", Eof, ByteIndex(10))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("1 -> 2").unwrap(),
         [
-            ("1", Number, SourceCodePositition(0)),
-            ("->", Arrow, SourceCodePositition(2)),
-            ("2", Number, SourceCodePositition(5)),
-            ("", Eof, SourceCodePositition(6))
+            ("1", Number, ByteIndex(0)),
+            ("->", Arrow, ByteIndex(2)),
+            ("2", Number, ByteIndex(5)),
+            ("", Eof, ByteIndex(6))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("45°").unwrap(),
         [
-            ("45", Number, SourceCodePositition(0)),
+            ("45", Number, ByteIndex(0)),
             // 2 bytes: std::str::from_utf8(b"\xc2\xb0") == Ok("°")
-            ("°", Identifier, SourceCodePositition(2)),
-            ("", Eof, SourceCodePositition(4))
+            ("°", Identifier, ByteIndex(2)),
+            ("", Eof, ByteIndex(4))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("1+2\n42").unwrap(),
         [
-            ("1", Number, SourceCodePositition(0)),
-            ("+", Plus, SourceCodePositition(1)),
-            ("2", Number, SourceCodePositition(2)),
-            ("\n", Newline, SourceCodePositition(3)),
-            ("42", Number, SourceCodePositition(4)),
-            ("", Eof, SourceCodePositition(6))
+            ("1", Number, ByteIndex(0)),
+            ("+", Plus, ByteIndex(1)),
+            ("2", Number, ByteIndex(2)),
+            ("\n", Newline, ByteIndex(3)),
+            ("42", Number, ByteIndex(4)),
+            ("", Eof, ByteIndex(6))
         ]
     );
 
@@ -864,17 +864,14 @@ fn test_tokenize_basic() {
         tokenize_reduced("…").unwrap(),
         [
             // 3 bytes: std::str::from_utf8(b"\xe2\x80\xa6") == Ok("…")
-            ("…", Ellipsis, SourceCodePositition(0)),
-            ("", Eof, SourceCodePositition(3))
+            ("…", Ellipsis, ByteIndex(0)),
+            ("", Eof, ByteIndex(3))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("...").unwrap(),
-        [
-            ("...", Ellipsis, SourceCodePositition(0)),
-            ("", Eof, SourceCodePositition(3))
-        ]
+        [("...", Ellipsis, ByteIndex(0)), ("", Eof, ByteIndex(3))]
     );
 
     insta::assert_snapshot!(
@@ -1067,58 +1064,42 @@ fn test_tokenize_string() {
     assert_eq!(
         tokenize_reduced("\"foo\"").unwrap(),
         [
-            ("\"foo\"", StringFixed, SourceCodePositition(0)),
-            ("", Eof, SourceCodePositition(5))
+            ("\"foo\"", StringFixed, ByteIndex(0)),
+            ("", Eof, ByteIndex(5))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("\"foo = {foo}\"").unwrap(),
         [
-            (
-                "\"foo = {",
-                StringInterpolationStart,
-                SourceCodePositition(0)
-            ),
-            ("foo", Identifier, SourceCodePositition(8)),
-            ("}\"", StringInterpolationEnd, SourceCodePositition(11)),
-            ("", Eof, SourceCodePositition(13))
+            ("\"foo = {", StringInterpolationStart, ByteIndex(0)),
+            ("foo", Identifier, ByteIndex(8)),
+            ("}\"", StringInterpolationEnd, ByteIndex(11)),
+            ("", Eof, ByteIndex(13))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("\"foo = {foo}, and bar = {bar}\"").unwrap(),
         [
-            (
-                "\"foo = {",
-                StringInterpolationStart,
-                SourceCodePositition(0)
-            ),
-            ("foo", Identifier, SourceCodePositition(8)),
-            (
-                "}, and bar = {",
-                StringInterpolationMiddle,
-                SourceCodePositition(11)
-            ),
-            ("bar", Identifier, SourceCodePositition(25)),
-            ("}\"", StringInterpolationEnd, SourceCodePositition(28)),
-            ("", Eof, SourceCodePositition(30))
+            ("\"foo = {", StringInterpolationStart, ByteIndex(0)),
+            ("foo", Identifier, ByteIndex(8)),
+            ("}, and bar = {", StringInterpolationMiddle, ByteIndex(11)),
+            ("bar", Identifier, ByteIndex(25)),
+            ("}\"", StringInterpolationEnd, ByteIndex(28)),
+            ("", Eof, ByteIndex(30))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("\"1 + 2 = {1 + 2}\"").unwrap(),
         [
-            (
-                "\"1 + 2 = {",
-                StringInterpolationStart,
-                SourceCodePositition(0)
-            ),
-            ("1", Number, SourceCodePositition(10)),
-            ("+", Plus, SourceCodePositition(12)),
-            ("2", Number, SourceCodePositition(14)),
-            ("}\"", StringInterpolationEnd, SourceCodePositition(15)),
-            ("", Eof, SourceCodePositition(17))
+            ("\"1 + 2 = {", StringInterpolationStart, ByteIndex(0)),
+            ("1", Number, ByteIndex(10)),
+            ("+", Plus, ByteIndex(12)),
+            ("2", Number, ByteIndex(14)),
+            ("}\"", StringInterpolationEnd, ByteIndex(15)),
+            ("", Eof, ByteIndex(17))
         ]
     );
 

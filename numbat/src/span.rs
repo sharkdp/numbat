@@ -2,15 +2,15 @@ use codespan_reporting::diagnostic::{Label, LabelStyle};
 use std::ops::{Add, AddAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SourceCodePositition(pub u32);
+pub struct ByteIndex(pub u32);
 
-impl From<u32> for SourceCodePositition {
+impl From<u32> for ByteIndex {
     fn from(value: u32) -> Self {
         Self(value)
     }
 }
 
-impl Add<u32> for SourceCodePositition {
+impl Add<u32> for ByteIndex {
     type Output = Self;
 
     fn add(self, rhs: u32) -> Self::Output {
@@ -18,13 +18,13 @@ impl Add<u32> for SourceCodePositition {
     }
 }
 
-impl AddAssign<u32> for SourceCodePositition {
+impl AddAssign<u32> for ByteIndex {
     fn add_assign(&mut self, rhs: u32) {
         self.0 += rhs;
     }
 }
 
-impl SourceCodePositition {
+impl ByteIndex {
     pub fn start() -> Self {
         Self(0)
     }
@@ -47,8 +47,8 @@ impl SourceCodePositition {
 /// one-byte span).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
-    pub start: SourceCodePositition,
-    pub end: SourceCodePositition,
+    pub start: ByteIndex,
+    pub end: ByteIndex,
     pub code_source_id: usize,
 }
 
@@ -73,8 +73,8 @@ impl Span {
     #[cfg(test)]
     pub fn dummy() -> Span {
         Self {
-            start: SourceCodePositition::start(),
-            end: SourceCodePositition::start(),
+            start: ByteIndex::start(),
+            end: ByteIndex::start(),
             code_source_id: 0,
         }
     }
