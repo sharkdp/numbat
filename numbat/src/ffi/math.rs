@@ -15,7 +15,7 @@ pub fn mod_(mut args: Args) -> Result<Value> {
     return_quantity!(x_value.rem_euclid(y_value), x.unit().clone())
 }
 
-// Similar, but with signature 'Fn[(Scalar) -> Scalar]'
+// A simple math function with signature 'Fn[(Scalar) -> Scalar]'
 macro_rules! simple_scalar_math_function {
     ($name:ident, $op:ident) => {
         pub fn $name(mut args: Args) -> Result<Value> {
@@ -25,7 +25,11 @@ macro_rules! simple_scalar_math_function {
     };
 }
 
-simple_scalar_math_function!(abs, abs);
+pub fn abs(mut args: Args) -> Result<Value> {
+    let arg = quantity_arg!(args);
+    return_quantity!(arg.unsafe_value().to_f64().abs(), arg.unit().clone())
+}
+
 simple_scalar_math_function!(round, round);
 simple_scalar_math_function!(floor, floor);
 simple_scalar_math_function!(ceil, ceil);

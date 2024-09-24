@@ -1,4 +1,4 @@
-use crate::span::{SourceCodePositition, Span};
+use crate::span::{ByteIndex, Span};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -219,6 +219,7 @@ fn is_identifier_continue(c: char) -> bool {
 /// When scanning a string interpolation like `"foo = {foo}, and bar = {bar}."`,
 /// the tokenizer needs to keep track of where it currently is, because we allow
 /// for (almost) arbitrary expressions inside the {…} part.
+#[cfg_attr(debug_assertions, derive(Debug))]
 enum InterpolationState {
     /// We are not inside curly braces.
     Outside,
@@ -232,15 +233,16 @@ impl InterpolationState {
     }
 }
 
+#[cfg_attr(debug_assertions, derive(Debug))]
 struct Tokenizer {
-    current: SourceCodePositition,
-    last: SourceCodePositition,
-    token_start: SourceCodePositition,
+    current: ByteIndex,
+    last: ByteIndex,
+    token_start: ByteIndex,
     code_source_id: usize,
 
     // Special fields / state for parsing string interpolations
-    string_start: SourceCodePositition,
-    interpolation_start: SourceCodePositition,
+    string_start: ByteIndex,
+    interpolation_start: ByteIndex,
     interpolation_state: InterpolationState,
 }
 
@@ -251,13 +253,13 @@ fn char_at(s: &str, byte_index: usize) -> Option<char> {
 impl Tokenizer {
     fn new(code_source_id: usize) -> Self {
         Tokenizer {
-            current: SourceCodePositition::start(),
-            last: SourceCodePositition::start(),
-            token_start: SourceCodePositition::start(),
+            current: ByteIndex(0),
+            last: ByteIndex(0),
+            token_start: ByteIndex(0),
 
             code_source_id,
-            string_start: SourceCodePositition::start(),
-            interpolation_start: SourceCodePositition::start(),
+            string_start: ByteIndex(0),
+            interpolation_start: ByteIndex(0),
             interpolation_state: InterpolationState::Outside,
         }
     }
@@ -435,7 +437,7 @@ impl Tokenizer {
         let current_char = self.advance(input);
 
         let code_source_id = self.code_source_id;
-        let tokenizer_error = |position: &SourceCodePositition, kind| -> Result<Option<Token>> {
+        let tokenizer_error = |position: ByteIndex, kind| -> Result<Option<Token>> {
             Err(TokenizerError {
                 kind,
                 span: position.single_character_span(code_source_id),
@@ -474,7 +476,7 @@ impl Tokenizer {
                 // If the first character is not a digits, that's an error.
                 if !self.peek(input).map(&is_digit_in_base).unwrap_or(false) {
                     return tokenizer_error(
-                        &self.current,
+                        self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {
                             base,
                             character: self.peek(input),
@@ -501,7 +503,7 @@ impl Tokenizer {
                         .unwrap_or(false)
                 {
                     return tokenizer_error(
-                        &self.current,
+                        self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {
                             base,
                             character: self.peek(input),
@@ -567,7 +569,7 @@ impl Tokenizer {
                     TokenKind::UnicodeExponent
                 } else {
                     return tokenizer_error(
-                        &self.current,
+                        self.current,
                         TokenizerErrorKind::UnexpectedCharacterInNegativeExponent { character: c },
                     );
                 }
@@ -684,7 +686,7 @@ impl Tokenizer {
                         .unwrap_or(true)
                 {
                     return tokenizer_error(
-                        &self.current,
+                        self.current,
                         TokenizerErrorKind::UnexpectedCharacterInIdentifier(
                             self.peek(input).unwrap(),
                         ),
@@ -701,7 +703,7 @@ impl Tokenizer {
             ':' => TokenKind::Colon,
             c => {
                 return tokenizer_error(
-                    &self.token_start,
+                    self.token_start,
                     TokenizerErrorKind::UnexpectedCharacter { character: c },
                 );
             }
@@ -717,35 +719,27 @@ impl Tokenizer {
             },
         });
 
-        if kind == TokenKind::Newline {
-            self.current.line += 1;
-            self.current.position = 1;
-        }
-
         Ok(token)
     }
 
     fn lexeme<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.token_start.byte as usize..self.current.byte as usize]
+        &input[self.token_start.as_usize()..self.current.as_usize()]
     }
 
     fn advance(&mut self, input: &str) -> char {
-        let c = char_at(input, self.current.byte as usize).unwrap();
+        let c = char_at(input, self.current.as_usize()).unwrap();
         self.last = self.current;
-        self.current.byte += c.len_utf8() as u32;
-        self.current.position += 1;
+        self.current += c.len_utf8() as u32;
         c
     }
 
     fn peek(&self, input: &str) -> Option<char> {
-        char_at(input, self.current.byte as usize)
+        char_at(input, self.current.as_usize())
     }
 
     fn peek2(&self, input: &str) -> Option<char> {
         let next_char = self.peek(input)?;
-        input[self.current.byte as usize + next_char.len_utf8()..]
-            .chars()
-            .next()
+        char_at(input, self.current.as_usize() + next_char.len_utf8())
     }
 
     fn match_char(&mut self, input: &str, c: char) -> bool {
@@ -758,7 +752,7 @@ impl Tokenizer {
     }
 
     fn at_end(&self, input: &str) -> bool {
-        self.current.byte as usize >= input.len()
+        self.current.as_usize() >= input.len()
     }
 }
 
@@ -768,22 +762,11 @@ pub fn tokenize(input: &str, code_source_id: usize) -> Result<Vec<Token>> {
 }
 
 #[cfg(test)]
-fn tokenize_reduced(input: &str) -> Result<Vec<(String, TokenKind, (u32, u32))>, String> {
+fn tokenize_reduced(input: &str) -> Result<Vec<(&str, TokenKind, ByteIndex)>, String> {
     Ok(tokenize(input, 0)
-        .map_err(|e| {
-            format!(
-                "Error at {:?}: `{e}`",
-                (e.span.start.line, e.span.start.position)
-            )
-        })?
+        .map_err(|e| format!("Error at index {:?}: `{e}`", e.span.start.0))?
         .iter()
-        .map(|token| {
-            (
-                token.lexeme.to_string(),
-                token.kind,
-                (token.span.start.line, token.span.start.position),
-            )
-        })
+        .map(|token| (token.lexeme, token.kind, token.span.start))
         .collect())
 }
 
@@ -792,7 +775,7 @@ fn tokenize_reduced_pretty(input: &str) -> Result<String, String> {
     use std::fmt::Write;
     let mut ret = String::new();
     for (lexeme, kind, pos) in tokenize_reduced(input)? {
-        writeln!(ret, "{lexeme:?}, {kind:?}, {pos:?}").unwrap();
+        writeln!(ret, "{lexeme:?}, {kind:?}, {:?}", pos.0).unwrap();
     }
     Ok(ret)
 }
@@ -804,96 +787,96 @@ fn test_tokenize_basic() {
     assert_eq!(
         tokenize_reduced("  12 + 34  ").unwrap(),
         [
-            ("12".to_string(), Number, (1, 3)),
-            ("+".to_string(), Plus, (1, 6)),
-            ("34".to_string(), Number, (1, 8)),
-            ("".to_string(), Eof, (1, 12))
+            ("12", Number, ByteIndex(2)),
+            ("+", Plus, ByteIndex(5)),
+            ("34", Number, ByteIndex(7)),
+            ("", Eof, ByteIndex(11))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("1 2").unwrap(),
         [
-            ("1".to_string(), Number, (1, 1)),
-            ("2".to_string(), Number, (1, 3)),
-            ("".to_string(), Eof, (1, 4))
+            ("1", Number, ByteIndex(0)),
+            ("2", Number, ByteIndex(2)),
+            ("", Eof, ByteIndex(3))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("12 × (3 - 4)").unwrap(),
         [
-            ("12".to_string(), Number, (1, 1)),
-            ("×".to_string(), Multiply, (1, 4)),
-            ("(".to_string(), LeftParen, (1, 6)),
-            ("3".to_string(), Number, (1, 7)),
-            ("-".to_string(), Minus, (1, 9)),
-            ("4".to_string(), Number, (1, 11)),
-            (")".to_string(), RightParen, (1, 12)),
-            ("".to_string(), Eof, (1, 13))
+            ("12", Number, ByteIndex(0)),
+            // 2 bytes: std::str::from_utf8(b"\xc3\x97") == Ok("×")
+            ("×", Multiply, ByteIndex(3)),
+            ("(", LeftParen, ByteIndex(6)),
+            ("3", Number, ByteIndex(7)),
+            ("-", Minus, ByteIndex(9)),
+            ("4", Number, ByteIndex(11)),
+            (")", RightParen, ByteIndex(12)),
+            ("", Eof, ByteIndex(13))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("foo to bar").unwrap(),
         [
-            ("foo".to_string(), Identifier, (1, 1)),
-            ("to".to_string(), To, (1, 5)),
-            ("bar".to_string(), Identifier, (1, 8)),
-            ("".to_string(), Eof, (1, 11))
+            ("foo", Identifier, ByteIndex(0)),
+            ("to", To, ByteIndex(4)),
+            ("bar", Identifier, ByteIndex(7)),
+            ("", Eof, ByteIndex(10))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("1 -> 2").unwrap(),
         [
-            ("1".to_string(), Number, (1, 1)),
-            ("->".to_string(), Arrow, (1, 3)),
-            ("2".to_string(), Number, (1, 6)),
-            ("".to_string(), Eof, (1, 7))
+            ("1", Number, ByteIndex(0)),
+            ("->", Arrow, ByteIndex(2)),
+            ("2", Number, ByteIndex(5)),
+            ("", Eof, ByteIndex(6))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("45°").unwrap(),
         [
-            ("45".to_string(), Number, (1, 1)),
-            ("°".to_string(), Identifier, (1, 3)),
-            ("".to_string(), Eof, (1, 4))
+            ("45", Number, ByteIndex(0)),
+            // 2 bytes: std::str::from_utf8(b"\xc2\xb0") == Ok("°")
+            ("°", Identifier, ByteIndex(2)),
+            ("", Eof, ByteIndex(4))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("1+2\n42").unwrap(),
         [
-            ("1".to_string(), Number, (1, 1)),
-            ("+".to_string(), Plus, (1, 2)),
-            ("2".to_string(), Number, (1, 3)),
-            ("\n".to_string(), Newline, (1, 4)),
-            ("42".to_string(), Number, (2, 1)),
-            ("".to_string(), Eof, (2, 3))
+            ("1", Number, ByteIndex(0)),
+            ("+", Plus, ByteIndex(1)),
+            ("2", Number, ByteIndex(2)),
+            ("\n", Newline, ByteIndex(3)),
+            ("42", Number, ByteIndex(4)),
+            ("", Eof, ByteIndex(6))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("…").unwrap(),
         [
-            ("…".to_string(), Ellipsis, (1, 1)),
-            ("".to_string(), Eof, (1, 2))
+            // 3 bytes: std::str::from_utf8(b"\xe2\x80\xa6") == Ok("…")
+            ("…", Ellipsis, ByteIndex(0)),
+            ("", Eof, ByteIndex(3))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("...").unwrap(),
-        [
-            ("...".to_string(), Ellipsis, (1, 1)),
-            ("".to_string(), Eof, (1, 4))
-        ]
+        [("...", Ellipsis, ByteIndex(0)), ("", Eof, ByteIndex(3))]
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("~").unwrap_err(),
-    @"Error at (1, 1): `Unexpected character: '~'`");
+    @"Error at index 0: `Unexpected character: '~'`");
 }
 
 #[test]
@@ -903,174 +886,174 @@ fn test_tokenize_numbers() {
     insta::assert_snapshot!(
         tokenize_reduced_pretty("12").unwrap(),
         @r###"
-    "12", Number, (1, 1)
-    "", Eof, (1, 3)
+    "12", Number, 0
+    "", Eof, 2
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("1_2").unwrap(),
         @r###"
-    "1_2", Number, (1, 1)
-    "", Eof, (1, 4)
+    "1_2", Number, 0
+    "", Eof, 3
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("1.").unwrap(),
         @r###"
-    "1.", Number, (1, 1)
-    "", Eof, (1, 3)
+    "1.", Number, 0
+    "", Eof, 2
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("1.2").unwrap(),
         @r###"
-    "1.2", Number, (1, 1)
-    "", Eof, (1, 4)
+    "1.2", Number, 0
+    "", Eof, 3
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("1_1.2_2").unwrap(),
         @r###"
-    "1_1.2_2", Number, (1, 1)
-    "", Eof, (1, 8)
+    "1_1.2_2", Number, 0
+    "", Eof, 7
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b01").unwrap(),
         @r###"
-    "0b01", IntegerWithBase(2), (1, 1)
-    "", Eof, (1, 5)
+    "0b01", IntegerWithBase(2), 0
+    "", Eof, 4
     "###
     );
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b1_0").unwrap(),
         @r###"
-    "0b1_0", IntegerWithBase(2), (1, 1)
-    "", Eof, (1, 6)
+    "0b1_0", IntegerWithBase(2), 0
+    "", Eof, 5
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0o01234567").unwrap(),
         @r###"
-    "0o01234567", IntegerWithBase(8), (1, 1)
-    "", Eof, (1, 11)
+    "0o01234567", IntegerWithBase(8), 0
+    "", Eof, 10
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0o1_2").unwrap(),
         @r###"
-    "0o1_2", IntegerWithBase(8), (1, 1)
-    "", Eof, (1, 6)
+    "0o1_2", IntegerWithBase(8), 0
+    "", Eof, 5
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0x1234567890abcdef").unwrap(),
         @r###"
-    "0x1234567890abcdef", IntegerWithBase(16), (1, 1)
-    "", Eof, (1, 19)
+    "0x1234567890abcdef", IntegerWithBase(16), 0
+    "", Eof, 18
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0x1_2").unwrap(),
         @r###"
-    "0x1_2", IntegerWithBase(16), (1, 1)
-    "", Eof, (1, 6)
+    "0x1_2", IntegerWithBase(16), 0
+    "", Eof, 5
     "###
     );
 
     // Failing queries
     insta::assert_snapshot!(
         tokenize_reduced_pretty("1_.2").unwrap_err(),
-        @"Error at (1, 2): `Unexpected character in number literal: '_'`"
+        @"Error at index 1: `Unexpected character in number literal: '_'`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("1.2_").unwrap_err(),
-        @"Error at (1, 4): `Unexpected character in number literal: '_'`"
+        @"Error at index 3: `Unexpected character in number literal: '_'`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b012").unwrap_err(),
-        @"Error at (1, 5): `Expected base-2 digit`"
+        @"Error at index 4: `Expected base-2 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b").unwrap_err(),
-        @"Error at (1, 3): `Expected base-2 digit`"
+        @"Error at index 2: `Expected base-2 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b_").unwrap_err(),
-        @"Error at (1, 3): `Expected base-2 digit`"
+        @"Error at index 2: `Expected base-2 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b_1").unwrap_err(),
-        @"Error at (1, 3): `Expected base-2 digit`"
+        @"Error at index 2: `Expected base-2 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0b1_").unwrap_err(),
-        @"Error at (1, 5): `Expected base-2 digit`"
+        @"Error at index 4: `Expected base-2 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0o012345678").unwrap_err(),
-        @"Error at (1, 11): `Expected base-8 digit`"
+        @"Error at index 10: `Expected base-8 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0o").unwrap_err(),
-        @"Error at (1, 3): `Expected base-8 digit`"
+        @"Error at index 2: `Expected base-8 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0o_").unwrap_err(),
-        @"Error at (1, 3): `Expected base-8 digit`"
+        @"Error at index 2: `Expected base-8 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0o_1").unwrap_err(),
-        @"Error at (1, 3): `Expected base-8 digit`"
+        @"Error at index 2: `Expected base-8 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0o1_").unwrap_err(),
-        @"Error at (1, 5): `Expected base-8 digit`"
+        @"Error at index 4: `Expected base-8 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0x1234567890abcdefg").unwrap_err(),
-        @"Error at (1, 19): `Expected base-16 digit`"
+        @"Error at index 18: `Expected base-16 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0x").unwrap_err(),
-        @"Error at (1, 3): `Expected base-16 digit`"
+        @"Error at index 2: `Expected base-16 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0x_").unwrap_err(),
-        @"Error at (1, 3): `Expected base-16 digit`"
+        @"Error at index 2: `Expected base-16 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0x_1").unwrap_err(),
-        @"Error at (1, 3): `Expected base-16 digit`"
+        @"Error at index 2: `Expected base-16 digit`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0x1_").unwrap_err(),
-        @"Error at (1, 5): `Expected base-16 digit`"
+        @"Error at index 4: `Expected base-16 digit`"
     );
 }
 
@@ -1081,46 +1064,42 @@ fn test_tokenize_string() {
     assert_eq!(
         tokenize_reduced("\"foo\"").unwrap(),
         [
-            ("\"foo\"".to_string(), StringFixed, (1, 1)),
-            ("".to_string(), Eof, (1, 6))
+            ("\"foo\"", StringFixed, ByteIndex(0)),
+            ("", Eof, ByteIndex(5))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("\"foo = {foo}\"").unwrap(),
         [
-            ("\"foo = {".to_string(), StringInterpolationStart, (1, 1)),
-            ("foo".to_string(), Identifier, (1, 9)),
-            ("}\"".to_string(), StringInterpolationEnd, (1, 12)),
-            ("".to_string(), Eof, (1, 14))
+            ("\"foo = {", StringInterpolationStart, ByteIndex(0)),
+            ("foo", Identifier, ByteIndex(8)),
+            ("}\"", StringInterpolationEnd, ByteIndex(11)),
+            ("", Eof, ByteIndex(13))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("\"foo = {foo}, and bar = {bar}\"").unwrap(),
         [
-            ("\"foo = {".to_string(), StringInterpolationStart, (1, 1)),
-            ("foo".to_string(), Identifier, (1, 9)),
-            (
-                "}, and bar = {".to_string(),
-                StringInterpolationMiddle,
-                (1, 12)
-            ),
-            ("bar".to_string(), Identifier, (1, 26)),
-            ("}\"".to_string(), StringInterpolationEnd, (1, 29)),
-            ("".to_string(), Eof, (1, 31))
+            ("\"foo = {", StringInterpolationStart, ByteIndex(0)),
+            ("foo", Identifier, ByteIndex(8)),
+            ("}, and bar = {", StringInterpolationMiddle, ByteIndex(11)),
+            ("bar", Identifier, ByteIndex(25)),
+            ("}\"", StringInterpolationEnd, ByteIndex(28)),
+            ("", Eof, ByteIndex(30))
         ]
     );
 
     assert_eq!(
         tokenize_reduced("\"1 + 2 = {1 + 2}\"").unwrap(),
         [
-            ("\"1 + 2 = {".to_string(), StringInterpolationStart, (1, 1)),
-            ("1".to_string(), Number, (1, 11)),
-            ("+".to_string(), Plus, (1, 13)),
-            ("2".to_string(), Number, (1, 15)),
-            ("}\"".to_string(), StringInterpolationEnd, (1, 16)),
-            ("".to_string(), Eof, (1, 18))
+            ("\"1 + 2 = {", StringInterpolationStart, ByteIndex(0)),
+            ("1", Number, ByteIndex(10)),
+            ("+", Plus, ByteIndex(12)),
+            ("2", Number, ByteIndex(14)),
+            ("}\"", StringInterpolationEnd, ByteIndex(15)),
+            ("", Eof, ByteIndex(17))
         ]
     );
 
@@ -1144,26 +1123,26 @@ fn test_tokenize_string() {
     insta::assert_snapshot!(
         tokenize_reduced_pretty(r#""start \"inner\" end""#).unwrap(),
         @r###"
-    "\"start \\\"inner\\\" end\"", StringFixed, (1, 1)
-    "", Eof, (1, 22)
+    "\"start \\\"inner\\\" end\"", StringFixed, 0
+    "", Eof, 21
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty(r#""start \{inner\} end""#).unwrap(),
         @r###"
-    "\"start \\{inner\\} end\"", StringFixed, (1, 1)
-    "", Eof, (1, 22)
+    "\"start \\{inner\\} end\"", StringFixed, 0
+    "", Eof, 21
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty(r#""start {1} \"inner\" end""#).unwrap(),
         @r###"
-    "\"start {", StringInterpolationStart, (1, 1)
-    "1", Number, (1, 9)
-    "} \\\"inner\\\" end\"", StringInterpolationEnd, (1, 10)
-    "", Eof, (1, 26)
+    "\"start {", StringInterpolationStart, 0
+    "1", Number, 8
+    "} \\\"inner\\\" end\"", StringInterpolationEnd, 9
+    "", Eof, 25
     "###
     );
 }
@@ -1173,31 +1152,31 @@ fn test_logical_operators() {
     insta::assert_snapshot!(
         tokenize_reduced_pretty("true || false").unwrap(),
         @r###"
-    "true", True, (1, 1)
-    "||", LogicalOr, (1, 6)
-    "false", False, (1, 9)
-    "", Eof, (1, 14)
+    "true", True, 0
+    "||", LogicalOr, 5
+    "false", False, 8
+    "", Eof, 13
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("true && false").unwrap(),
         @r###"
-    "true", True, (1, 1)
-    "&&", LogicalAnd, (1, 6)
-    "false", False, (1, 9)
-    "", Eof, (1, 14)
+    "true", True, 0
+    "&&", LogicalAnd, 5
+    "false", False, 8
+    "", Eof, 13
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("true | false").unwrap_err(),
-        @"Error at (1, 6): `Unexpected character: '|'`"
+        @"Error at index 5: `Unexpected character: '|'`"
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("true & false").unwrap_err(),
-        @"Error at (1, 6): `Unexpected character: '&'`"
+        @"Error at index 5: `Unexpected character: '&'`"
     );
 }
 
@@ -1227,38 +1206,38 @@ fn test_field_access() {
     insta::assert_snapshot!(
         tokenize_reduced_pretty("instance2.field").unwrap(),
         @r###"
-    "instance2", Identifier, (1, 1)
-    ".", Period, (1, 10)
-    "field", Identifier, (1, 11)
-    "", Eof, (1, 16)
+    "instance2", Identifier, 0
+    ".", Period, 9
+    "field", Identifier, 10
+    "", Eof, 15
     "###
     );
 
     insta::assert_snapshot!(
         tokenize_reduced_pretty("function().field").unwrap(),
         @r###"
-    "function", Identifier, (1, 1)
-    "(", LeftParen, (1, 9)
-    ")", RightParen, (1, 10)
-    ".", Period, (1, 11)
-    "field", Identifier, (1, 12)
-    "", Eof, (1, 17)
+    "function", Identifier, 0
+    "(", LeftParen, 8
+    ")", RightParen, 9
+    ".", Period, 10
+    "field", Identifier, 11
+    "", Eof, 16
     "###
     );
 
     insta::assert_snapshot!(
     tokenize_reduced_pretty("instance.0").unwrap_err(),
-        @"Error at (1, 9): `Unexpected character in identifier: '.'`"
+        @"Error at index 8: `Unexpected character in identifier: '.'`"
     );
 
     insta::assert_snapshot!(
     tokenize_reduced_pretty("instance..field").unwrap_err(),
-        @"Error at (1, 9): `Unexpected character in identifier: '.'`"
+        @"Error at index 8: `Unexpected character in identifier: '.'`"
     );
 
     insta::assert_snapshot!(
     tokenize_reduced_pretty("instance . field").unwrap_err(),
-        @"Error at (1, 11): `Expected digit`"
+        @"Error at index 10: `Expected digit`"
     );
 }
 
@@ -1267,14 +1246,14 @@ fn test_lists() {
     insta::assert_snapshot!(
         tokenize_reduced_pretty("[1, 2.3, 4]").unwrap(),
         @r###"
-    "[", LeftBracket, (1, 1)
-    "1", Number, (1, 2)
-    ",", Comma, (1, 3)
-    "2.3", Number, (1, 5)
-    ",", Comma, (1, 8)
-    "4", Number, (1, 10)
-    "]", RightBracket, (1, 11)
-    "", Eof, (1, 12)
+    "[", LeftBracket, 0
+    "1", Number, 1
+    ",", Comma, 2
+    "2.3", Number, 4
+    ",", Comma, 7
+    "4", Number, 9
+    "]", RightBracket, 10
+    "", Eof, 11
     "###
     );
 }
