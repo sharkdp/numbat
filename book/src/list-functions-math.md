@@ -16,10 +16,10 @@ fn id<A>(x: A) -> A
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=id%288kg%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=id%288%20kg%29"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> id(8kg)
+    >>> id(8 kg)
     
       id(8 kilogram)
     
@@ -36,6 +36,21 @@ More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.
 fn abs<T: Dim>(x: T) -> T
 ```
 
+<details>
+<summary>Examples</summary>
+
+* <a href="https://numbat.dev/?q=abs%28%2D22%2E2%20m%29"><i class="fa fa-play"></i> Run this example</a>
+
+  ```nbt
+    >>> abs(-22.2 m)
+    
+      abs(-(22.2 metre))
+    
+        = 22.2 m    [Length]
+    
+  ```
+</details>
+
 ### `sqrt` (Square root)
 Return the square root \\( \sqrt{x} \\) of the input: `sqrt(121 m^2) = 11 m`.
 More information [here](https://en.wikipedia.org/wiki/Square_root).
@@ -47,10 +62,10 @@ fn sqrt<D: Dim>(x: D^2) -> D
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=sqrt%284are%29%20%2D%3E%20m"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=sqrt%284%20are%29%20%2D%3E%20m"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> sqrt(4are) -> m
+    >>> sqrt(4 are) -> m
     
       sqrt(4 are) ➞ metre
     
@@ -70,10 +85,10 @@ fn cbrt<D: Dim>(x: D^3) -> D
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=cbrt%288l%29%20%2D%3E%20cm"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=cbrt%288%20L%29%20%2D%3E%20cm"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> cbrt(8l) -> cm
+    >>> cbrt(8 L) -> cm
     
       cbrt(8 litre) ➞ centimetre
     

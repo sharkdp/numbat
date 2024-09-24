@@ -139,7 +139,7 @@ fn _linspace_helper(start, end, n_steps, i) =
     else cons(start + (end - start) * i / (n_steps - 1), _linspace_helper(start, end, n_steps, i + 1))
 
 @description("Generate a list of `n_steps` evenly spaced numbers from `start` to `end` (inclusive)")
-@example("linspace(0, 10, 11)")
+@example("linspace(-5 m, 5 m, 11)")
 fn linspace<D: Dim>(start: D, end: D, n_steps: Scalar) -> List<D> =
   if n_steps <= 1
     then error("Number of steps must be larger than 1")

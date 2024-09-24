@@ -450,14 +450,14 @@ fn linspace<D: Dim>(start: D, end: D, n_steps: Scalar) -> List<D>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=linspace%280%2C%2010%2C%2011%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=linspace%28%2D5%20m%2C%205%20m%2C%2011%29"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> linspace(0, 10, 11)
+    >>> linspace(-5 m, 5 m, 11)
     
-      linspace(0, 10, 11)
+      linspace(-(5 metre), 5 metre, 11)
     
-        = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    [List<Scalar>]
+        = [-5 m, -4 m, -3 m, -2 m, -1 m, 0 m, 1 m, 2 m, 3 m, 4 m, 5 m]    [List<Length>]
     
   ```
 </details>
