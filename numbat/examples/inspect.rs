@@ -45,7 +45,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
     }
 }
 
-fn inspect_functions_in_module(ctx: &Context, module: String) {
+fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: String) {
     for (fn_name, name, signature, description, url, examples, code_source) in ctx.functions() {
         let CodeSource::Module(module_path, _) = code_source else {
             unreachable!();
@@ -86,11 +86,7 @@ fn inspect_functions_in_module(ctx: &Context, module: String) {
             println!();
 
             for (example_code, example_description) in examples {
-                let mut example_ctx = prepare_context();
-                let _result = example_ctx
-                    .interpret("use prelude", CodeSource::Internal)
-                    .unwrap();
-
+                let mut example_ctx = prelude_ctx.clone();
                 let extra_import = if !example_ctx
                     .resolver()
                     .imported_modules
@@ -201,6 +197,11 @@ fn main() {
     let mut ctx = prepare_context();
     let _result = ctx.interpret("use all", CodeSource::Internal).unwrap();
 
+    let mut example_ctx = prepare_context();
+    let _result = example_ctx
+        .interpret("use prelude", CodeSource::Internal)
+        .unwrap();
+
     let mut args = std::env::args();
     args.next();
     if let Some(arg) = args.next() {
@@ -208,7 +209,7 @@ fn main() {
             "units" => inspect_units(&ctx),
             "functions" => {
                 let module = args.next().unwrap();
-                inspect_functions_in_module(&ctx, module)
+                inspect_functions_in_module(&ctx, &example_ctx, module)
             }
             _ => eprintln!("USAGE: inspect [units|functions <module>]"),
         }
