@@ -209,21 +209,6 @@ Parses a string (time only) into a `DateTime` object.
 fn time(input: String) -> DateTime
 ```
 
-<details>
-<summary>Examples</summary>
-
-* <a href="https://numbat.dev/?q=time%28%2221%3A52%22%29"><i class="fa fa-play"></i> Run this example</a>
-
-  ```nbt
-    >>> time("21:52")
-    
-      time("21:52")
-    
-        = 2024-09-16 21:52:00 UTC    [DateTime]
-    
-  ```
-</details>
-
 ### `calendar_add`
 Adds the given time span to a `DateTime`. This uses leap-year and DST-aware calendar arithmetic with variable-length days, months, and years.
 

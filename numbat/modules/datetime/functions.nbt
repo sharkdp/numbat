@@ -52,7 +52,6 @@ fn date(input: String) -> DateTime =
     else datetime("{input} 00:00:00")
 
 @description("Parses a string (time only) into a `DateTime` object.")
-@example("time(\"21:52\")")
 fn time(input: String) -> DateTime =
   datetime("{_today_str()} {input}")
 
