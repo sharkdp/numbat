@@ -2900,7 +2900,7 @@ mod tests {
               2 m,
               5 m
             )"), @r###"
-        Expression(FunctionCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 56, line: 4, position: 14 }, code_source_id: 0 }, Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, "tamo"), [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 20, line: 2, position: 15 }, end: SourceCodePositition { byte: 21, line: 2, position: 16 }, code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 22, line: 2, position: 17 }, end: SourceCodePositition { byte: 23, line: 2, position: 18 }, code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 39, line: 3, position: 15 }, end: SourceCodePositition { byte: 40, line: 3, position: 16 }, code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 41, line: 3, position: 17 }, end: SourceCodePositition { byte: 42, line: 3, position: 18 }, code_source_id: 0 }, "m"), span_op: None }]))
+        Expression(FunctionCall(Span { start: SourceCodePositition(0), end: SourceCodePositition(4), code_source_id: 0 }, Span { start: SourceCodePositition(0), end: SourceCodePositition(56), code_source_id: 0 }, Identifier(Span { start: SourceCodePositition(0), end: SourceCodePositition(4), code_source_id: 0 }, "tamo"), [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(20), end: SourceCodePositition(21), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition(22), end: SourceCodePositition(23), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(39), end: SourceCodePositition(40), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition(41), end: SourceCodePositition(42), code_source_id: 0 }, "m"), span_op: None }]))
         "###);
 
         assert_snapshot!(snap_parse(
@@ -2908,12 +2908,12 @@ mod tests {
               2 m,
               5 m,
             )"), @r###"
-        Expression(FunctionCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 58, line: 4, position: 14 }, code_source_id: 0 }, Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, "kefir"), [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 15 }, end: SourceCodePositition { byte: 22, line: 2, position: 16 }, code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 23, line: 2, position: 17 }, end: SourceCodePositition { byte: 24, line: 2, position: 18 }, code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 40, line: 3, position: 15 }, end: SourceCodePositition { byte: 41, line: 3, position: 16 }, code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 42, line: 3, position: 17 }, end: SourceCodePositition { byte: 43, line: 3, position: 18 }, code_source_id: 0 }, "m"), span_op: None }]))
+        Expression(FunctionCall(Span { start: SourceCodePositition(0), end: SourceCodePositition(5), code_source_id: 0 }, Span { start: SourceCodePositition(0), end: SourceCodePositition(58), code_source_id: 0 }, Identifier(Span { start: SourceCodePositition(0), end: SourceCodePositition(5), code_source_id: 0 }, "kefir"), [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(21), end: SourceCodePositition(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition(23), end: SourceCodePositition(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(40), end: SourceCodePositition(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition(42), end: SourceCodePositition(43), code_source_id: 0 }, "m"), span_op: None }]))
         "###);
         assert_snapshot!(snap_parse(
             "echo(
             )"), @r###"
-        Expression(FunctionCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 19, line: 2, position: 14 }, code_source_id: 0 }, Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, "echo"), []))
+        Expression(FunctionCall(Span { start: SourceCodePositition(0), end: SourceCodePositition(4), code_source_id: 0 }, Span { start: SourceCodePositition(0), end: SourceCodePositition(19), code_source_id: 0 }, Identifier(Span { start: SourceCodePositition(0), end: SourceCodePositition(4), code_source_id: 0 }, "echo"), []))
         "###);
         assert_snapshot!(snap_parse(
             "jax(
@@ -2922,7 +2922,7 @@ mod tests {
             "), @r###"
         Successfully parsed:
         Errors encountered:
-        Missing closing parenthesis ')' - ParseError { kind: MissingClosingParen, span: Span { start: SourceCodePositition { byte: 55, line: 4, position: 13 }, end: SourceCodePositition { byte: 55, line: 4, position: 13 }, code_source_id: 0 } }
+        Missing closing parenthesis ')' - ParseError { kind: MissingClosingParen, span: Span { start: SourceCodePositition(55), end: SourceCodePositition(55), code_source_id: 0 } }
         "###);
     }
 
@@ -3024,7 +3024,7 @@ mod tests {
               2 m,
               5 m
             )"), @r###"
-        ProcedureCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 15 }, end: SourceCodePositition { byte: 22, line: 2, position: 16 }, code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 23, line: 2, position: 17 }, end: SourceCodePositition { byte: 24, line: 2, position: 18 }, code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 40, line: 3, position: 15 }, end: SourceCodePositition { byte: 41, line: 3, position: 16 }, code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 42, line: 3, position: 17 }, end: SourceCodePositition { byte: 43, line: 3, position: 18 }, code_source_id: 0 }, "m"), span_op: None }])
+        ProcedureCall(Span { start: SourceCodePositition(0), end: SourceCodePositition(5), code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(21), end: SourceCodePositition(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition(23), end: SourceCodePositition(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(40), end: SourceCodePositition(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition(42), end: SourceCodePositition(43), code_source_id: 0 }, "m"), span_op: None }])
         "###);
 
         assert_snapshot!(snap_parse(
@@ -3032,12 +3032,12 @@ mod tests {
               2 m,
               5 m,
             )"), @r###"
-        ProcedureCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 15 }, end: SourceCodePositition { byte: 22, line: 2, position: 16 }, code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 23, line: 2, position: 17 }, end: SourceCodePositition { byte: 24, line: 2, position: 18 }, code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 40, line: 3, position: 15 }, end: SourceCodePositition { byte: 41, line: 3, position: 16 }, code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 42, line: 3, position: 17 }, end: SourceCodePositition { byte: 43, line: 3, position: 18 }, code_source_id: 0 }, "m"), span_op: None }])
+        ProcedureCall(Span { start: SourceCodePositition(0), end: SourceCodePositition(5), code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(21), end: SourceCodePositition(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: SourceCodePositition(23), end: SourceCodePositition(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(40), end: SourceCodePositition(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: SourceCodePositition(42), end: SourceCodePositition(43), code_source_id: 0 }, "m"), span_op: None }])
         "###);
         assert_snapshot!(snap_parse(
             "print(
             )"), @r###"
-        ProcedureCall(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, Print, [])
+        ProcedureCall(Span { start: SourceCodePositition(0), end: SourceCodePositition(5), code_source_id: 0 }, Print, [])
         "###);
         println!("HEEEERE");
         assert_snapshot!(snap_parse(
@@ -3047,7 +3047,7 @@ mod tests {
             "), @r###"
         Successfully parsed:
         Errors encountered:
-        Missing closing parenthesis ')' - ParseError { kind: MissingClosingParen, span: Span { start: SourceCodePositition { byte: 57, line: 4, position: 13 }, end: SourceCodePositition { byte: 57, line: 4, position: 13 }, code_source_id: 0 } }
+        Missing closing parenthesis ')' - ParseError { kind: MissingClosingParen, span: Span { start: SourceCodePositition(57), end: SourceCodePositition(57), code_source_id: 0 } }
         "###);
     }
 
@@ -3056,15 +3056,15 @@ mod tests {
         // basic
         assert_snapshot!(snap_parse(
             "true || false"), @r###"
-        Expression(BinaryOperator { op: LogicalOr, lhs: Boolean(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, true), rhs: Boolean(Span { start: SourceCodePositition { byte: 8, line: 1, position: 9 }, end: SourceCodePositition { byte: 13, line: 1, position: 14 }, code_source_id: 0 }, false), span_op: Some(Span { start: SourceCodePositition { byte: 5, line: 1, position: 6 }, end: SourceCodePositition { byte: 7, line: 1, position: 8 }, code_source_id: 0 }) })
+        Expression(BinaryOperator { op: LogicalOr, lhs: Boolean(Span { start: SourceCodePositition(0), end: SourceCodePositition(4), code_source_id: 0 }, true), rhs: Boolean(Span { start: SourceCodePositition(8), end: SourceCodePositition(13), code_source_id: 0 }, false), span_op: Some(Span { start: SourceCodePositition(5), end: SourceCodePositition(7), code_source_id: 0 }) })
         "###);
         assert_snapshot!(snap_parse(
             "true && false"), @r###"
-        Expression(BinaryOperator { op: LogicalAnd, lhs: Boolean(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 4, line: 1, position: 5 }, code_source_id: 0 }, true), rhs: Boolean(Span { start: SourceCodePositition { byte: 8, line: 1, position: 9 }, end: SourceCodePositition { byte: 13, line: 1, position: 14 }, code_source_id: 0 }, false), span_op: Some(Span { start: SourceCodePositition { byte: 5, line: 1, position: 6 }, end: SourceCodePositition { byte: 7, line: 1, position: 8 }, code_source_id: 0 }) })
+        Expression(BinaryOperator { op: LogicalAnd, lhs: Boolean(Span { start: SourceCodePositition(0), end: SourceCodePositition(4), code_source_id: 0 }, true), rhs: Boolean(Span { start: SourceCodePositition(8), end: SourceCodePositition(13), code_source_id: 0 }, false), span_op: Some(Span { start: SourceCodePositition(5), end: SourceCodePositition(7), code_source_id: 0 }) })
         "###);
         assert_snapshot!(snap_parse(
             "!true"), @r###"
-        Expression(UnaryOperator { op: LogicalNeg, expr: Boolean(Span { start: SourceCodePositition { byte: 1, line: 1, position: 2 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 }, true), span_op: Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 1, line: 1, position: 2 }, code_source_id: 0 } })
+        Expression(UnaryOperator { op: LogicalNeg, expr: Boolean(Span { start: SourceCodePositition(1), end: SourceCodePositition(5), code_source_id: 0 }, true), span_op: Span { start: SourceCodePositition(0), end: SourceCodePositition(1), code_source_id: 0 } })
         "###);
 
         // priority
@@ -3397,9 +3397,9 @@ mod tests {
             "1 +\x20
             2 + 3"), @r###"
         Successfully parsed:
-        Expression(BinaryOperator { op: Add, lhs: Scalar(Span { start: SourceCodePositition { byte: 17, line: 2, position: 13 }, end: SourceCodePositition { byte: 18, line: 2, position: 14 }, code_source_id: 0 }, Number(2.0)), rhs: Scalar(Span { start: SourceCodePositition { byte: 21, line: 2, position: 17 }, end: SourceCodePositition { byte: 22, line: 2, position: 18 }, code_source_id: 0 }, Number(3.0)), span_op: Some(Span { start: SourceCodePositition { byte: 19, line: 2, position: 15 }, end: SourceCodePositition { byte: 20, line: 2, position: 16 }, code_source_id: 0 }) })
+        Expression(BinaryOperator { op: Add, lhs: Scalar(Span { start: SourceCodePositition(17), end: SourceCodePositition(18), code_source_id: 0 }, Number(2.0)), rhs: Scalar(Span { start: SourceCodePositition(21), end: SourceCodePositition(22), code_source_id: 0 }, Number(3.0)), span_op: Some(Span { start: SourceCodePositition(19), end: SourceCodePositition(20), code_source_id: 0 }) })
         Errors encountered:
-        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 4, line: 1, position: 5 }, end: SourceCodePositition { byte: 5, line: 1, position: 6 }, code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition(4), end: SourceCodePositition(5), code_source_id: 0 } }
         "###);
         // error in the middle of something
         assert_snapshot!(snap_parse(
@@ -3409,11 +3409,11 @@ mod tests {
             assert_eq(tamo + cool == 80)
             30m"), @r###"
         Successfully parsed:
-        DefineVariable(DefineVariable { identifier_span: Span { start: SourceCodePositition { byte: 17, line: 2, position: 17 }, end: SourceCodePositition { byte: 21, line: 2, position: 21 }, code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: SourceCodePositition { byte: 24, line: 2, position: 24 }, end: SourceCodePositition { byte: 26, line: 2, position: 26 }, code_source_id: 0 }, Number(50.0)), type_annotation: None, decorators: [] })
-        ProcedureCall(Span { start: SourceCodePositition { byte: 68, line: 4, position: 13 }, end: SourceCodePositition { byte: 77, line: 4, position: 22 }, code_source_id: 0 }, AssertEq, [BinaryOperator { op: Equal, lhs: BinaryOperator { op: Add, lhs: Identifier(Span { start: SourceCodePositition { byte: 78, line: 4, position: 23 }, end: SourceCodePositition { byte: 82, line: 4, position: 27 }, code_source_id: 0 }, "tamo"), rhs: Identifier(Span { start: SourceCodePositition { byte: 85, line: 4, position: 30 }, end: SourceCodePositition { byte: 89, line: 4, position: 34 }, code_source_id: 0 }, "cool"), span_op: Some(Span { start: SourceCodePositition { byte: 83, line: 4, position: 28 }, end: SourceCodePositition { byte: 84, line: 4, position: 29 }, code_source_id: 0 }) }, rhs: Scalar(Span { start: SourceCodePositition { byte: 93, line: 4, position: 38 }, end: SourceCodePositition { byte: 95, line: 4, position: 40 }, code_source_id: 0 }, Number(80.0)), span_op: Some(Span { start: SourceCodePositition { byte: 90, line: 4, position: 35 }, end: SourceCodePositition { byte: 92, line: 4, position: 37 }, code_source_id: 0 }) }])
-        Expression(BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition { byte: 109, line: 5, position: 13 }, end: SourceCodePositition { byte: 111, line: 5, position: 15 }, code_source_id: 0 }, Number(30.0)), rhs: Identifier(Span { start: SourceCodePositition { byte: 111, line: 5, position: 15 }, end: SourceCodePositition { byte: 112, line: 5, position: 16 }, code_source_id: 0 }, "m"), span_op: None })
+        DefineVariable(DefineVariable { identifier_span: Span { start: SourceCodePositition(17), end: SourceCodePositition(21), code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: SourceCodePositition(24), end: SourceCodePositition(26), code_source_id: 0 }, Number(50.0)), type_annotation: None, decorators: [] })
+        ProcedureCall(Span { start: SourceCodePositition(68), end: SourceCodePositition(77), code_source_id: 0 }, AssertEq, [BinaryOperator { op: Equal, lhs: BinaryOperator { op: Add, lhs: Identifier(Span { start: SourceCodePositition(78), end: SourceCodePositition(82), code_source_id: 0 }, "tamo"), rhs: Identifier(Span { start: SourceCodePositition(85), end: SourceCodePositition(89), code_source_id: 0 }, "cool"), span_op: Some(Span { start: SourceCodePositition(83), end: SourceCodePositition(84), code_source_id: 0 }) }, rhs: Scalar(Span { start: SourceCodePositition(93), end: SourceCodePositition(95), code_source_id: 0 }, Number(80.0)), span_op: Some(Span { start: SourceCodePositition(90), end: SourceCodePositition(92), code_source_id: 0 }) }])
+        Expression(BinaryOperator { op: Mul, lhs: Scalar(Span { start: SourceCodePositition(109), end: SourceCodePositition(111), code_source_id: 0 }, Number(30.0)), rhs: Identifier(Span { start: SourceCodePositition(111), end: SourceCodePositition(112), code_source_id: 0 }, "m"), span_op: None })
         Errors encountered:
-        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 50, line: 3, position: 24 }, end: SourceCodePositition { byte: 51, line: 3, position: 25 }, code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition(50), end: SourceCodePositition(51), code_source_id: 0 } }
         "###);
         // error on a multiline let
         assert_snapshot!(snap_parse(
@@ -3423,7 +3423,7 @@ mod tests {
             "), @r###"
         Successfully parsed:
         Errors encountered:
-        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 40, line: 3, position: 17 }, end: SourceCodePositition { byte: 41, line: 3, position: 18 }, code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition(40), end: SourceCodePositition(41), code_source_id: 0 } }
         "###);
         // error on a multiline if
         assert_snapshot!(snap_parse(
@@ -3434,18 +3434,18 @@ mod tests {
             "), @r###"
         Successfully parsed:
         Errors encountered:
-        Expected 'then' in if-then-else condition - ParseError { kind: ExpectedThen, span: Span { start: SourceCodePositition { byte: 18, line: 2, position: 18 }, end: SourceCodePositition { byte: 19, line: 2, position: 19 }, code_source_id: 0 } }
-        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 36, line: 3, position: 17 }, end: SourceCodePositition { byte: 40, line: 3, position: 21 }, code_source_id: 0 } }
-        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition { byte: 63, line: 4, position: 17 }, end: SourceCodePositition { byte: 67, line: 4, position: 21 }, code_source_id: 0 } }
+        Expected 'then' in if-then-else condition - ParseError { kind: ExpectedThen, span: Span { start: SourceCodePositition(18), end: SourceCodePositition(19), code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition(36), end: SourceCodePositition(40), code_source_id: 0 } }
+        Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: SourceCodePositition(63), end: SourceCodePositition(67), code_source_id: 0 } }
         "###);
 
         // #260
         assert_snapshot!(snap_parse(
             "x = 3"), @r###"
         Successfully parsed:
-        Expression(Identifier(Span { start: SourceCodePositition { byte: 0, line: 1, position: 1 }, end: SourceCodePositition { byte: 1, line: 1, position: 2 }, code_source_id: 0 }, "x"))
+        Expression(Identifier(Span { start: SourceCodePositition(0), end: SourceCodePositition(1), code_source_id: 0 }, "x"))
         Errors encountered:
-        Trailing '=' sign. Use `let x = …` if you intended to define a new constant. - ParseError { kind: TrailingEqualSign("x"), span: Span { start: SourceCodePositition { byte: 2, line: 1, position: 3 }, end: SourceCodePositition { byte: 3, line: 1, position: 4 }, code_source_id: 0 } }
+        Trailing '=' sign. Use `let x = …` if you intended to define a new constant. - ParseError { kind: TrailingEqualSign("x"), span: Span { start: SourceCodePositition(2), end: SourceCodePositition(3), code_source_id: 0 } }
         "###);
     }
 }
