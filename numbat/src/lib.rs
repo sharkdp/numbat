@@ -94,7 +94,7 @@ pub enum NumbatError {
     RuntimeError(RuntimeError),
 }
 
-type Result<T> = std::result::Result<T, NumbatError>;
+type Result<T> = std::result::Result<T, Box<NumbatError>>;
 
 #[derive(Clone)]
 pub struct Context {
@@ -585,7 +585,7 @@ impl Context {
         let result = self
             .typechecker
             .check(transformed_statements)
-            .map_err(NumbatError::TypeCheckError);
+            .map_err(|err| NumbatError::TypeCheckError(*err));
 
         if result.is_err() {
             // Reset the state of the prefix transformer to what we had before. This is necessary
@@ -771,9 +771,9 @@ impl Context {
                             let erc = ExchangeRatesCache::fetch();
 
                             if erc.is_none() {
-                                return Err(NumbatError::RuntimeError(
+                                return Err(Box::new(NumbatError::RuntimeError(
                                     RuntimeError::CouldNotLoadExchangeRates,
-                                ));
+                                )));
                             }
                         }
 
@@ -822,7 +822,7 @@ impl Context {
             self.interpreter = interpreter_old;
         }
 
-        let result = result.map_err(NumbatError::RuntimeError)?;
+        let result = result.map_err(|err| NumbatError::RuntimeError(*err))?;
 
         Ok((typed_statements, result))
     }

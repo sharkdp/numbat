@@ -45,7 +45,10 @@ use type_scheme::TypeScheme;
 fn dtype(e: &Expression) -> Result<DType> {
     match e.get_type() {
         Type::Dimension(dtype) => Ok(dtype),
-        t => Err(TypeCheckError::ExpectedDimensionType(e.full_span(), t)),
+        t => Err(Box::new(TypeCheckError::ExpectedDimensionType(
+            e.full_span(),
+            t,
+        ))),
     }
 }
 
@@ -94,7 +97,10 @@ impl TypeChecker {
             .add(Constraint::IsDType(type_.clone()))
             .is_trivially_violated()
         {
-            return Err(TypeCheckError::ExpectedDimensionType(span, type_.clone()));
+            return Err(Box::new(TypeCheckError::ExpectedDimensionType(
+                span,
+                type_.clone(),
+            )));
         }
 
         Ok(())
@@ -153,7 +159,7 @@ impl TypeChecker {
     }
 
     fn identifier_type(&self, span: Span, name: &str) -> Result<TypeScheme> {
-        self.env.get_identifier_type(name).ok_or_else(|| {
+        Ok(self.env.get_identifier_type(name).ok_or_else(|| {
             let suggestion = suggestion::did_you_mean(
                 self.env
                     .iter_identifiers()
@@ -163,7 +169,7 @@ impl TypeChecker {
                 name,
             );
             TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
-        })
+        })?)
     }
 
     fn get_proper_function_reference(
@@ -221,13 +227,13 @@ impl TypeChecker {
         let arity_range = parameters.len()..=parameters.len();
 
         if !arity_range.contains(&arguments.len()) {
-            return Err(TypeCheckError::WrongArity {
+            return Err(Box::new(TypeCheckError::WrongArity {
                 callable_span: *span,
                 callable_name: function_name.to_owned(),
                 callable_definition_span: Some(*definition_span),
                 arity: arity_range,
                 num_args: arguments.len(),
-            });
+            }));
         }
 
         for (idx, ((parameter_span, parameter_type), argument_type)) in parameters
@@ -243,7 +249,7 @@ impl TypeChecker {
             {
                 match (parameter_type, &argument_type) {
                     (Type::Dimension(parameter_dtype), Type::Dimension(argument_dtype)) => {
-                        return Err(TypeCheckError::IncompatibleDimensions(
+                        return Err(Box::new(TypeCheckError::IncompatibleDimensions(
                             IncompatibleDimensionsError {
                                 span_operation: *span,
                                 operation: format!(
@@ -265,15 +271,15 @@ impl TypeChecker {
                                 ),
                                 actual_type: argument_dtype.to_base_representation(),
                             },
-                        ));
+                        )));
                     }
                     _ => {
-                        return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                        return Err(Box::new(TypeCheckError::IncompatibleTypesInFunctionCall(
                             Some(parameter_span),
                             parameter_type.clone(),
                             arguments[idx].full_span(),
                             argument_type.clone(),
-                        ));
+                        )));
                     }
                 }
             }
@@ -348,10 +354,10 @@ impl TypeChecker {
                             .add_equal_constraint(&type_, &Type::scalar())
                             .is_trivially_violated()
                         {
-                            return Err(TypeCheckError::NonScalarFactorialArgument(
+                            return Err(Box::new(TypeCheckError::NonScalarFactorialArgument(
                                 expr.full_span(),
                                 type_,
-                            ));
+                            )));
                         }
                     }
                     ast::UnaryOperator::Negate => {
@@ -362,7 +368,7 @@ impl TypeChecker {
                             .add_equal_constraint(&type_, &Type::Boolean)
                             .is_trivially_violated()
                         {
-                            return Err(TypeCheckError::ExpectedBool(expr.full_span()));
+                            return Err(Box::new(TypeCheckError::ExpectedBool(expr.full_span())));
                         }
                     }
                 }
@@ -393,25 +399,25 @@ impl TypeChecker {
                     };
                     // make sure that there is just one paramter (return arity error otherwise)
                     if parameter_types.len() != 1 {
-                        return Err(TypeCheckError::WrongArity {
+                        return Err(Box::new(TypeCheckError::WrongArity {
                             callable_span: rhs.full_span(),
                             callable_name: "function".into(),
                             callable_definition_span: None,
                             arity: 1..=1,
                             num_args: parameter_types.len(),
-                        });
+                        }));
                     }
 
                     if self
                         .add_equal_constraint(&lhs_type, &parameter_types[0])
                         .is_trivially_violated()
                     {
-                        return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                        return Err(Box::new(TypeCheckError::IncompatibleTypesInFunctionCall(
                             None,
                             parameter_types[0].clone(),
                             lhs.full_span(),
                             lhs_type,
-                        ));
+                        )));
                     }
 
                     typed_ast::Expression::CallableCall(
@@ -452,7 +458,7 @@ impl TypeChecker {
                             TypeScheme::concrete(Type::DateTime),
                         )
                     } else {
-                        return Err(TypeCheckError::IncompatibleTypesInOperator(
+                        return Err(Box::new(TypeCheckError::IncompatibleTypesInOperator(
                             span_op.unwrap_or_else(|| {
                                 ast::Expression::BinaryOperator {
                                     op: *op,
@@ -467,7 +473,7 @@ impl TypeChecker {
                             lhs.full_span(),
                             rhs_type,
                             rhs.full_span(),
-                        ));
+                        )));
                     }
                 } else {
                     let mut get_type_and_assert_equal_dtypes = || -> Result<Type> {
@@ -487,7 +493,7 @@ impl TypeChecker {
                                 span_op: *span_op,
                             }
                             .full_span();
-                            return Err(TypeCheckError::IncompatibleDimensions(
+                            return Err(Box::new(TypeCheckError::IncompatibleDimensions(
                                 IncompatibleDimensionsError {
                                     span_operation: span_op.unwrap_or(full_span),
                                     operation: match op {
@@ -524,7 +530,7 @@ impl TypeChecker {
                                     ),
                                     actual_type: rhs_dtype.to_base_representation(),
                                 },
-                            ));
+                            )));
                         }
 
                         self.enforce_dtype(&lhs_type, lhs.full_span())?;
@@ -640,10 +646,10 @@ impl TypeChecker {
                                         )
                                         .is_trivially_violated()
                                     {
-                                        return Err(TypeCheckError::NonScalarExponent(
+                                        return Err(Box::new(TypeCheckError::NonScalarExponent(
                                             rhs.full_span(),
                                             type_exponent_inferred,
-                                        ));
+                                        )));
                                     }
 
                                     Type::Dimension(base_dtype)
@@ -678,13 +684,13 @@ impl TypeChecker {
 
                                         type_result
                                     } else {
-                                        return Err(
+                                        return Err(Box::new(
                                             TypeCheckError::ExponentiationNeedsTypeAnnotation(
                                                 lhs_checked
                                                     .full_span()
                                                     .extend(&rhs_checked.full_span()),
                                             ),
-                                        );
+                                        ));
                                     }
                                 }
                             }
@@ -705,12 +711,14 @@ impl TypeChecker {
                                     || lhs_type.is_fn_type()
                                     || rhs_type.is_fn_type()
                                 {
-                                    return Err(TypeCheckError::IncompatibleTypesInComparison(
-                                        span_op.unwrap(),
-                                        lhs_type,
-                                        lhs.full_span(),
-                                        rhs_type,
-                                        rhs.full_span(),
+                                    return Err(Box::new(
+                                        TypeCheckError::IncompatibleTypesInComparison(
+                                            span_op.unwrap(),
+                                            lhs_type,
+                                            lhs.full_span(),
+                                            rhs_type,
+                                            rhs.full_span(),
+                                        ),
                                     ));
                                 }
                             } else {
@@ -725,13 +733,17 @@ impl TypeChecker {
                                 .add_equal_constraint(&lhs_type, &Type::Boolean)
                                 .is_trivially_violated()
                             {
-                                return Err(TypeCheckError::ExpectedBool(lhs.full_span()));
+                                return Err(Box::new(TypeCheckError::ExpectedBool(
+                                    lhs.full_span(),
+                                )));
                             }
                             if self
                                 .add_equal_constraint(&rhs_type, &Type::Boolean)
                                 .is_trivially_violated()
                             {
-                                return Err(TypeCheckError::ExpectedBool(rhs.full_span()));
+                                return Err(Box::new(TypeCheckError::ExpectedBool(
+                                    rhs.full_span(),
+                                )));
                             }
 
                             Type::Boolean
@@ -795,13 +807,13 @@ impl TypeChecker {
                                 let num_arguments = arguments_checked.len();
 
                                 if num_parameters != num_arguments {
-                                    return Err(TypeCheckError::WrongArity {
+                                    return Err(Box::new(TypeCheckError::WrongArity {
                                         callable_span: *span,
                                         callable_name: "function".into(),
                                         callable_definition_span: None,
                                         arity: num_parameters..=num_parameters,
                                         num_args: num_arguments,
-                                    });
+                                    }));
                                 }
 
                                 // for (param_type, arg_checked) in
@@ -820,8 +832,10 @@ impl TypeChecker {
                                 // }
                             }
                             _ => {
-                                return Err(TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
-                                    callable.full_span(),
+                                return Err(Box::new(
+                                    TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
+                                        callable.full_span(),
+                                    ),
                                 ));
                             }
                         }
@@ -836,12 +850,12 @@ impl TypeChecker {
                             .add_equal_constraint(argument_type, parameter_type)
                             .is_trivially_violated()
                         {
-                            return Err(TypeCheckError::IncompatibleTypesInFunctionCall(
+                            return Err(Box::new(TypeCheckError::IncompatibleTypesInFunctionCall(
                                 Some(arguments_checked.full_span()),
                                 argument_type.clone(),
                                 callable.full_span(),
                                 parameter_type.clone(),
-                            ));
+                            )));
                         }
                     }
 
@@ -879,7 +893,9 @@ impl TypeChecker {
                     .add_equal_constraint(&condition.get_type(), &Type::Boolean)
                     .is_trivially_violated()
                 {
-                    return Err(TypeCheckError::ExpectedBool(condition.full_span()));
+                    return Err(Box::new(TypeCheckError::ExpectedBool(
+                        condition.full_span(),
+                    )));
                 }
 
                 let then = self.elaborate_expression(then)?;
@@ -892,13 +908,13 @@ impl TypeChecker {
                     .add_equal_constraint(&then_type, &else_type)
                     .is_trivially_violated()
                 {
-                    return Err(TypeCheckError::IncompatibleTypesInCondition(
+                    return Err(Box::new(TypeCheckError::IncompatibleTypesInCondition(
                         *span,
                         then_type,
                         then.full_span(),
                         else_type,
                         else_.full_span(),
-                    ));
+                    )));
                 }
 
                 typed_ast::Expression::Condition(
@@ -920,7 +936,10 @@ impl TypeChecker {
                     .collect::<Result<Vec<_>>>()?;
 
                 let Some(struct_info) = self.structs.get(name).cloned() else {
-                    return Err(TypeCheckError::UnknownStruct(*ident_span, name.clone()));
+                    return Err(Box::new(TypeCheckError::UnknownStruct(
+                        *ident_span,
+                        name.clone(),
+                    )));
                 };
 
                 let mut seen_fields = HashMap::new();
@@ -929,21 +948,23 @@ impl TypeChecker {
                     fields_checked.iter().zip(fields.iter().map(|(s, _, _)| s))
                 {
                     if let Some(other_span) = seen_fields.get(field) {
-                        return Err(TypeCheckError::DuplicateFieldInStructInstantiation(
-                            *span,
-                            *other_span,
-                            field.to_string(),
+                        return Err(Box::new(
+                            TypeCheckError::DuplicateFieldInStructInstantiation(
+                                *span,
+                                *other_span,
+                                field.to_string(),
+                            ),
                         ));
                     }
 
                     let Some((expected_field_span, expected_type)) = struct_info.fields.get(field)
                     else {
-                        return Err(TypeCheckError::UnknownFieldInStructInstantiation(
+                        return Err(Box::new(TypeCheckError::UnknownFieldInStructInstantiation(
                             *span,
                             struct_info.definition_span,
                             field.clone(),
                             struct_info.name.clone(),
-                        ));
+                        )));
                     };
 
                     let found_type = &expr.get_type();
@@ -951,12 +972,12 @@ impl TypeChecker {
                         .add_equal_constraint(found_type, expected_type)
                         .is_trivially_violated()
                     {
-                        return Err(TypeCheckError::IncompatibleTypesForStructField(
+                        return Err(Box::new(TypeCheckError::IncompatibleTypesForStructField(
                             *expected_field_span,
                             expected_type.clone(),
                             expr.full_span(),
                             found_type.clone(),
-                        ));
+                        )));
                     }
 
                     seen_fields.insert(field, *span);
@@ -969,10 +990,12 @@ impl TypeChecker {
                 };
 
                 if !missing_fields.is_empty() {
-                    return Err(TypeCheckError::MissingFieldsInStructInstantiation(
-                        *full_span,
-                        struct_info.definition_span,
-                        missing_fields,
+                    return Err(Box::new(
+                        TypeCheckError::MissingFieldsInStructInstantiation(
+                            *full_span,
+                            struct_info.definition_span,
+                            missing_fields,
+                        ),
                     ));
                 }
 
@@ -989,21 +1012,21 @@ impl TypeChecker {
 
                 let field_type = if type_.is_closed() {
                     let Type::Struct(ref struct_info) = type_ else {
-                        return Err(TypeCheckError::FieldAccessOfNonStructType(
+                        return Err(Box::new(TypeCheckError::FieldAccessOfNonStructType(
                             *ident_span,
                             expr.full_span(),
                             field_name.to_string(),
                             type_.clone(),
-                        ));
+                        )));
                     };
 
                     let Some((_, field_type)) = struct_info.fields.get(field_name) else {
-                        return Err(TypeCheckError::UnknownFieldAccess(
+                        return Err(Box::new(TypeCheckError::UnknownFieldAccess(
                             *ident_span,
                             expr.full_span(),
                             field_name.to_string(),
                             type_.clone(),
-                        ));
+                        )));
                     };
 
                     field_type.clone()
@@ -1057,12 +1080,12 @@ impl TypeChecker {
                             .add_equal_constraint(&result_element_type, type_of_subsequent_element)
                             .is_trivially_violated()
                         {
-                            return Err(TypeCheckError::IncompatibleTypesInList(
+                            return Err(Box::new(TypeCheckError::IncompatibleTypesInList(
                                 elements_checked[0].full_span(),
                                 result_element_type.clone(),
                                 subsequent_element.full_span(),
                                 type_of_subsequent_element.clone(),
-                            ));
+                            )));
                         }
                     }
                 }
@@ -1110,7 +1133,7 @@ impl TypeChecker {
                     if type_deduced.is_closed() && type_annotated.is_closed() =>
                 {
                     if dexpr_deduced != dexpr_specified {
-                        return Err(TypeCheckError::IncompatibleDimensions(
+                        return Err(Box::new(TypeCheckError::IncompatibleDimensions(
                             IncompatibleDimensionsError {
                                 span_operation: identifier_span,
                                 operation: operation.into(),
@@ -1128,7 +1151,7 @@ impl TypeChecker {
                                 ),
                                 actual_type: dexpr_deduced.to_base_representation(),
                             },
-                        ));
+                        )));
                     }
                 }
                 (deduced, annotated) => {
@@ -1136,14 +1159,14 @@ impl TypeChecker {
                         .add_equal_constraint(deduced, annotated)
                         .is_trivially_violated()
                     {
-                        return Err(TypeCheckError::IncompatibleTypesInAnnotation(
+                        return Err(Box::new(TypeCheckError::IncompatibleTypesInAnnotation(
                             elaboration_kind.into(),
                             identifier_span,
                             annotated.clone(),
                             type_annotation.full_span(),
                             deduced.clone(),
                             expr_checked.full_span(),
-                        ));
+                        )));
                     }
                 }
             }
@@ -1180,11 +1203,13 @@ impl TypeChecker {
             self.env
                 .add(name.clone(), type_deduced.clone(), *identifier_span, false);
 
-            self.value_namespace.add_identifier_allow_override(
-                name.clone(),
-                *identifier_span,
-                "constant".to_owned(),
-            )?;
+            self.value_namespace
+                .add_identifier_allow_override(
+                    name.clone(),
+                    *identifier_span,
+                    "constant".to_owned(),
+                )
+                .map_err(|err| Box::new(err.into()))?;
         }
 
         Ok(typed_ast::DefineVariable(
@@ -1223,10 +1248,10 @@ impl TypeChecker {
                         .into();
 
                     if dtype.is_scalar() {
-                        return Err(TypeCheckError::NoDimensionlessBaseUnit(
+                        return Err(Box::new(TypeCheckError::NoDimensionlessBaseUnit(
                             *span,
                             unit_name.into(),
-                        ));
+                        )));
                     }
 
                     dtype
@@ -1301,17 +1326,21 @@ impl TypeChecker {
                 decorators,
             } => {
                 if body.is_none() {
-                    self.value_namespace.add_identifier(
-                        function_name.clone(),
-                        *function_name_span,
-                        "foreign function".to_owned(),
-                    )?;
+                    self.value_namespace
+                        .add_identifier(
+                            function_name.clone(),
+                            *function_name_span,
+                            "foreign function".to_owned(),
+                        )
+                        .map_err(|err| Box::new(err.into()))?;
                 } else {
-                    self.value_namespace.add_identifier_allow_override(
-                        function_name.clone(),
-                        *function_name_span,
-                        "function".to_owned(),
-                    )?;
+                    self.value_namespace
+                        .add_identifier_allow_override(
+                            function_name.clone(),
+                            *function_name_span,
+                            "function".to_owned(),
+                        )
+                        .map_err(|err| Box::new(err.into()))?;
                 }
 
                 // Save the environment and namespaces to avoid polluting
@@ -1324,10 +1353,10 @@ impl TypeChecker {
 
                 for (span, type_parameter, bound) in type_parameters {
                     if self.type_namespace.has_identifier(type_parameter) {
-                        return Err(TypeCheckError::TypeParameterNameClash(
+                        return Err(Box::new(TypeCheckError::TypeParameterNameClash(
                             *span,
                             type_parameter.clone(),
-                        ));
+                        )));
                     }
 
                     self.type_namespace
@@ -1362,9 +1391,11 @@ impl TypeChecker {
                     };
 
                     if is_ffi_function && annotated_type.is_none() {
-                        return Err(TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
-                            *parameter_span,
-                            parameter.clone(),
+                        return Err(Box::new(
+                            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
+                                *parameter_span,
+                                parameter.clone(),
+                            ),
                         ));
                     }
 
@@ -1446,7 +1477,7 @@ impl TypeChecker {
                                     Type::Dimension(dtype_deduced),
                                     Type::Dimension(dtype_specified),
                                 ) => {
-                                    return Err(TypeCheckError::IncompatibleDimensions(
+                                    return Err(Box::new(TypeCheckError::IncompatibleDimensions(
                                         IncompatibleDimensionsError {
                                             span_operation: *function_name_span,
                                             operation: "function return type".into(),
@@ -1474,16 +1505,18 @@ impl TypeChecker {
                                                 ),
                                             actual_type: dtype_deduced.to_base_representation(),
                                         },
-                                    ));
+                                    )));
                                 }
                                 (return_type_inferred, type_specified) => {
-                                    return Err(TypeCheckError::IncompatibleTypesInAnnotation(
-                                        "function definition".into(),
-                                        *function_name_span,
-                                        type_specified,
-                                        return_type_annotation.as_ref().unwrap().full_span(),
-                                        return_type_inferred.clone(),
-                                        body.as_ref().map(|b| b.full_span()).unwrap(),
+                                    return Err(Box::new(
+                                        TypeCheckError::IncompatibleTypesInAnnotation(
+                                            "function definition".into(),
+                                            *function_name_span,
+                                            type_specified,
+                                            return_type_annotation.as_ref().unwrap().full_span(),
+                                            return_type_inferred.clone(),
+                                            body.as_ref().map(|b| b.full_span()).unwrap(),
+                                        ),
                                     ));
                                 }
                             }
@@ -1492,10 +1525,10 @@ impl TypeChecker {
                     return_type_inferred
                 } else {
                     if !ffi::functions().contains_key(function_name.as_str()) {
-                        return Err(TypeCheckError::UnknownForeignFunction(
+                        return Err(Box::new(TypeCheckError::UnknownForeignFunction(
                             *function_name_span,
                             function_name.clone(),
-                        ));
+                        )));
                     }
 
                     annotated_return_type.ok_or_else(|| {
@@ -1548,11 +1581,9 @@ impl TypeChecker {
                 )
             }
             ast::Statement::DefineDimension(name_span, name, dexprs) => {
-                self.type_namespace.add_identifier(
-                    name.clone(),
-                    *name_span,
-                    "dimension".to_owned(),
-                )?;
+                self.type_namespace
+                    .add_identifier(name.clone(), *name_span, "dimension".to_owned())
+                    .map_err(|err| Box::new(err.into()))?;
 
                 if let Some(dexpr) = dexprs.first() {
                     self.registry
@@ -1570,7 +1601,7 @@ impl TypeChecker {
                             .get_base_representation(alternative_expr)
                             .map_err(TypeCheckError::RegistryError)?;
                         if alternative_base_representation != base_representation {
-                            return Err(
+                            return Err(Box::new(
                                 TypeCheckError::IncompatibleAlternativeDimensionExpression(
                                     name.clone(),
                                     dexpr.full_span(),
@@ -1578,7 +1609,7 @@ impl TypeChecker {
                                     alternative_expr.full_span(),
                                     alternative_base_representation,
                                 ),
-                            );
+                            ));
                         }
                     }
                 } else {
@@ -1590,13 +1621,13 @@ impl TypeChecker {
             }
             ast::Statement::ProcedureCall(span, kind @ ProcedureKind::Type, args) => {
                 if args.len() != 1 {
-                    return Err(TypeCheckError::WrongArity {
+                    return Err(Box::new(TypeCheckError::WrongArity {
                         callable_span: *span,
                         callable_name: "type".into(),
                         callable_definition_span: None,
                         arity: 1..=1,
                         num_args: args.len(),
-                    });
+                    }));
                 }
 
                 let checked_args = args
@@ -1609,13 +1640,13 @@ impl TypeChecker {
             ast::Statement::ProcedureCall(span, kind, args) => {
                 let procedure = ffi::procedures().get(kind).unwrap();
                 if !procedure.arity.contains(&args.len()) {
-                    return Err(TypeCheckError::WrongArity {
+                    return Err(Box::new(TypeCheckError::WrongArity {
                         callable_span: *span,
                         callable_name: procedure.name.to_owned(),
                         callable_definition_span: None,
                         arity: procedure.arity.clone(),
                         num_args: args.len(),
-                    });
+                    }));
                 }
 
                 let checked_args = args
@@ -1632,11 +1663,11 @@ impl TypeChecker {
                             .add_equal_constraint(&checked_args[0].get_type(), &Type::Boolean)
                             .is_trivially_violated()
                         {
-                            return Err(TypeCheckError::IncompatibleTypeInAssert(
+                            return Err(Box::new(TypeCheckError::IncompatibleTypeInAssert(
                                 *span,
                                 checked_args[0].get_type(),
                                 checked_args[0].full_span(),
-                            ));
+                            )));
                         }
                     }
                     ProcedureKind::AssertEq => {
@@ -1658,13 +1689,13 @@ impl TypeChecker {
                                 .add_equal_constraint(type_first, &type_arg)
                                 .is_trivially_violated()
                             {
-                                return Err(TypeCheckError::IncompatibleTypesInAssertEq(
+                                return Err(Box::new(TypeCheckError::IncompatibleTypesInAssertEq(
                                     *span,
                                     checked_args[0].get_type(),
                                     checked_args[0].full_span(),
                                     arg.get_type(),
                                     arg.full_span(),
-                                ));
+                                )));
                             }
                         }
                     }
@@ -1683,21 +1714,19 @@ impl TypeChecker {
                 struct_name,
                 fields,
             } => {
-                self.type_namespace.add_identifier(
-                    struct_name.clone(),
-                    *struct_name_span,
-                    "struct".to_owned(),
-                )?;
+                self.type_namespace
+                    .add_identifier(struct_name.clone(), *struct_name_span, "struct".to_owned())
+                    .map_err(|err| Box::new(err.into()))?;
 
                 let mut seen_fields = HashMap::new();
 
                 for (span, field, _) in fields {
                     if let Some(other_span) = seen_fields.get(field) {
-                        return Err(TypeCheckError::DuplicateFieldInStructDefinition(
+                        return Err(Box::new(TypeCheckError::DuplicateFieldInStructDefinition(
                             *span,
                             *other_span,
                             field.to_string(),
-                        ));
+                        )));
                     }
 
                     seen_fields.insert(field, *span);
@@ -1759,8 +1788,8 @@ impl TypeChecker {
             &elaborated_statement
         {
             if !type_.unsafe_as_concrete().is_closed() {
-                return Err(TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(
-                    expr.full_span(),
+                return Err(Box::new(
+                    TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(expr.full_span()),
                 ));
             }
         }
@@ -1778,7 +1807,7 @@ impl TypeChecker {
                         TypeVariable::Named(name) => name == type_parameter,
                         _ => false,
                     }) {
-                        return Err(TypeCheckError::MissingDimBound(*span));
+                        return Err(Box::new(TypeCheckError::MissingDimBound(*span)));
                     }
                 }
             }
@@ -1814,7 +1843,7 @@ impl TypeChecker {
 
         // Check if there is a typed hole in the statement
         if let Some((span, type_of_hole)) = elaborated_statement.find_typed_hole()? {
-            return Err(TypeCheckError::TypedHoleInStatement(
+            return Err(Box::new(TypeCheckError::TypedHoleInStatement(
                 span,
                 type_of_hole
                     .to_readable_type(&self.registry, true)
@@ -1827,7 +1856,7 @@ impl TypeChecker {
                     .map(|(n, _)| n)
                     .cloned()
                     .collect(),
-            ));
+            )));
         }
 
         Ok(elaborated_statement)

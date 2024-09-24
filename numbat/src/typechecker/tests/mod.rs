@@ -52,7 +52,9 @@ fn type_c() -> DType {
 fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
     let code = &format!("{TEST_PRELUDE}\n{input}");
     let statements = parse(code, 0).expect("No parse errors for inputs in this test suite");
-    let transformed_statements = Transformer::new().transform(statements)?;
+    let transformed_statements = Transformer::new()
+        .transform(statements)
+        .map_err(|err| Box::new(err.into()))?;
 
     TypeChecker::default()
         .check(transformed_statements)
@@ -78,7 +80,7 @@ fn get_inferred_fn_type(input: &str) -> TypeScheme {
 #[track_caller]
 fn get_typecheck_error(input: &str) -> TypeCheckError {
     if let Err(err) = dbg!(run_typecheck(input)) {
-        err
+        *err
     } else {
         panic!("Input was expected to yield a type check error");
     }
