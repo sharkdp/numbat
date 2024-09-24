@@ -2,7 +2,7 @@ use std::str::{FromStr, SplitWhitespace};
 
 use crate::{
     parser::ParseErrorKind,
-    span::{SourceCodePositition, Span},
+    span::{ByteIndex, Span},
     ParseError,
 };
 
@@ -152,16 +152,8 @@ impl<'a> CommandParser<'a> {
     /// The only role of `&self` here is to provide the `code_source_id`
     fn span_from_boundary(&self, (start, end): (u32, u32)) -> Span {
         Span {
-            start: SourceCodePositition {
-                byte: start,
-                line: 1,
-                position: start,
-            },
-            end: SourceCodePositition {
-                byte: end,
-                line: 1,
-                position: end,
-            },
+            start: ByteIndex(start),
+            end: ByteIndex(end),
             code_source_id: self.code_source_id,
         }
     }
