@@ -99,9 +99,9 @@ pub fn show(args: Args) -> Result<Value> {
     // Dynamic dispatch hack since we don't have bounded polymorphism.
     // And no real support for generics in the FFI.
     let Value::StructInstance(info, _) = args.front().unwrap() else {
-        return Err(RuntimeError::UserError(format!(
-            "Unsupported argument to 'show'.",
-        )));
+        return Err(RuntimeError::UserError(
+            "Unsupported argument to 'show'.".into(),
+        ));
     };
 
     let plot = if info.name == "LinePlot" {
