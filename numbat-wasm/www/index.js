@@ -47,15 +47,15 @@ function interpret(input) {
         combined_input = "";
         updateUrlQuery(null);
         this.clear();
-    } else if (input_trimmed == "list" || input_trimmed == "ls") {
+    } else if (input_trimmed == "list") {
         output = numbat.print_environment();
-    } else if (input_trimmed == "list functions" || input_trimmed == "ls functions") {
+    } else if (input_trimmed == "list functions") {
         output = numbat.print_functions();
-    } else if (input_trimmed == "list dimensions" || input_trimmed == "ls dimensions") {
+    } else if (input_trimmed == "list dimensions") {
         output = numbat.print_dimensions();
-    } else if (input_trimmed == "list variables" || input_trimmed == "ls variables") {
+    } else if (input_trimmed == "list variables") {
         output = numbat.print_variables();
-    } else if (input_trimmed == "list units" || input_trimmed == "ls units") {
+    } else if (input_trimmed == "list units") {
         output = numbat.print_units();
     } else if (input_trimmed == "help" || input_trimmed == "?") {
         output = numbat.help();

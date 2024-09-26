@@ -4,6 +4,7 @@ mod ast;
 pub mod buffered_writer;
 mod bytecode_interpreter;
 mod column_formatter;
+pub mod command;
 mod currency;
 mod datetime;
 mod decorator;
@@ -32,6 +33,7 @@ mod product;
 mod quantity;
 mod registry;
 pub mod resolver;
+pub mod session_history;
 mod span;
 mod suggestion;
 mod tokenizer;
@@ -92,7 +94,7 @@ pub enum NumbatError {
     RuntimeError(RuntimeError),
 }
 
-type Result<T> = std::result::Result<T, NumbatError>;
+type Result<T> = std::result::Result<T, Box<NumbatError>>;
 
 #[derive(Clone)]
 pub struct Context {
@@ -533,7 +535,11 @@ impl Context {
         &self.resolver
     }
 
-    pub fn interpret<'a>(
+    pub fn resolver_mut(&mut self) -> &mut Resolver {
+        &mut self.resolver
+    }
+
+    pub fn interpret(
         &mut self,
         code: &'a str,
         code_source: CodeSource,
@@ -579,7 +585,7 @@ impl Context {
         let result = self
             .typechecker
             .check(transformed_statements)
-            .map_err(NumbatError::TypeCheckError);
+            .map_err(|err| NumbatError::TypeCheckError(*err));
 
         if result.is_err() {
             // Reset the state of the prefix transformer to what we had before. This is necessary
@@ -606,20 +612,25 @@ impl Context {
                     const CURRENCY_IDENTIFIERS: &[&str] = &[
                         "$",
                         "USD",
+                        "usd",
                         "dollar",
                         "dollars",
                         "A$",
                         "AUD",
+                        "aud",
                         "australian_dollar",
                         "australian_dollars",
                         "C$",
                         "CAD",
+                        "cad",
                         "canadian_dollar",
                         "canadian_dollars",
                         "CHF",
+                        "chf",
                         "swiss_franc",
                         "swiss_francs",
                         "CNY",
+                        "cny",
                         "yuan",
                         "renminbi",
                         "元",
@@ -628,10 +639,12 @@ impl Context {
                         "euros",
                         "€",
                         "GBP",
+                        "gbp",
                         "british_pound",
                         "pound_sterling",
                         "£",
                         "JPY",
+                        "jpy",
                         "yen",
                         "yens",
                         "¥",
@@ -639,45 +652,57 @@ impl Context {
                         "bulgarian_lev",
                         "bulgarian_leva",
                         "BGN",
+                        "bgn",
                         "czech_koruna",
                         "czech_korunas",
                         "CZK",
+                        "czk",
                         "Kč",
                         "hungarian_forint",
                         "hungarian_forints",
                         "HUF",
+                        "huf",
                         "Ft",
                         "polish_zloty",
                         "polish_zlotys",
                         "PLN",
+                        "pln",
                         "zł",
                         "romanian_leu",
                         "romanian_leus",
                         "RON",
+                        "ron",
                         "lei",
                         "turkish_lira",
                         "turkish_liras",
                         "TRY",
+                        "try",
                         "₺",
                         "brazilian_real",
                         "brazilian_reals",
                         "BRL",
+                        "brl",
                         "R$",
                         "hong_kong_dollar",
                         "hong_kong_dollars",
                         "HKD",
+                        "hkd",
                         "HK$",
+                        "hk$",
                         "indonesian_rupiah",
                         "indonesian_rupiahs",
                         "IDR",
+                        "idr",
                         "Rp",
                         "indian_rupee",
                         "indian_rupees",
                         "INR",
+                        "inr",
                         "₹",
                         "south_korean_won",
                         "south_korean_wons",
                         "KRW",
+                        "krw",
                         "₩",
                         "malaysian_ringgit",
                         "malaysian_ringgits",
@@ -686,38 +711,50 @@ impl Context {
                         "new_zealand_dollar",
                         "new_zealand_dollars",
                         "NZD",
+                        "nzd",
                         "NZ$",
+                        "nz$",
                         "philippine_peso",
                         "philippine_pesos",
                         "PHP",
+                        "php",
                         "₱",
                         "singapore_dollar",
                         "singapore_dollars",
                         "SGD",
+                        "sgd",
                         "S$",
                         "thai_baht",
                         "thai_bahts",
                         "THB",
+                        "thb",
                         "฿",
                         "danish_krone",
                         "danish_kroner",
                         "DKK",
+                        "dkk",
                         "swedish_krona",
                         "swedish_kronor",
                         "SEK",
+                        "sek",
                         "icelandic_króna",
                         "icelandic_krónur",
                         "ISK",
+                        "isk",
                         "norwegian_krone",
                         "norwegian_kroner",
                         "NOK",
+                        "nok",
                         "israeli_new_shekel",
                         "israeli_new_shekels",
                         "ILS",
+                        "ils",
                         "₪",
                         "NIS",
+                        "nis",
                         "south_african_rand",
                         "ZAR",
+                        "zar",
                     ];
                     if CURRENCY_IDENTIFIERS.contains(&identifier.as_str()) {
                         let mut no_print_settings = InterpreterSettings {
@@ -734,9 +771,9 @@ impl Context {
                             let erc = ExchangeRatesCache::fetch();
 
                             if erc.is_none() {
-                                return Err(NumbatError::RuntimeError(
+                                return Err(Box::new(NumbatError::RuntimeError(
                                     RuntimeError::CouldNotLoadExchangeRates,
-                                ));
+                                )));
                             }
                         }
 
@@ -785,7 +822,7 @@ impl Context {
             self.interpreter = interpreter_old;
         }
 
-        let result = result.map_err(NumbatError::RuntimeError)?;
+        let result = result.map_err(|err| NumbatError::RuntimeError(*err))?;
 
         Ok((typed_statements, result))
     }

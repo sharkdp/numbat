@@ -7,7 +7,7 @@ use crate::value::Value;
 use crate::RuntimeError;
 
 pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
-    use crate::span::{SourceCodePositition, Span};
+    use crate::span::{ByteIndex, Span};
     use crate::typed_ast::StructInfo;
     use crate::typed_ast::Type;
     use indexmap::IndexMap;
@@ -21,8 +21,8 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
         .find(|e| e.name().to_lowercase() == pattern || e.symbol().to_lowercase() == pattern)
     {
         let unknown_span = Span {
-            start: SourceCodePositition::start(),
-            end: SourceCodePositition::start(),
+            start: ByteIndex(0),
+            end: ByteIndex(0),
             code_source_id: 0,
         };
 

@@ -65,7 +65,7 @@ impl Resolver {
         }
     }
 
-    fn add_code_source(&mut self, code_source: CodeSource, content: &str) -> usize {
+    pub fn add_code_source(&mut self, code_source: CodeSource, content: &str) -> usize {
         let code_source_name = match &code_source {
             CodeSource::Text => {
                 self.text_code_source_count += 1;

@@ -10,12 +10,14 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
+use numbat::command::{self, CommandParser, SourcelessCommandParser};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
 use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
+use numbat::session_history::{ParseEvaluationResult, SessionHistory, SessionHistoryOptions};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -91,6 +93,11 @@ struct Args {
     /// Turn on debug mode and print disassembler output (hidden, mainly for development)
     #[arg(long, short, hide = true)]
     debug: bool,
+}
+
+struct ParseEvaluationOutcome {
+    control_flow: ControlFlow,
+    result: ParseEvaluationResult,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -188,7 +195,7 @@ impl Cli {
                 ExecutionMode::Normal,
                 PrettyPrintMode::Never,
             );
-            if result.is_break() {
+            if result.control_flow.is_break() {
                 bail!("Interpreter error in Prelude code")
             }
         }
@@ -203,7 +210,7 @@ impl Cli {
                     ExecutionMode::Normal,
                     PrettyPrintMode::Never,
                 );
-                if result.is_break() {
+                if result.control_flow.is_break() {
                     bail!("Interpreter error in user initialization code")
                 }
             }
@@ -245,7 +252,7 @@ impl Cli {
                     self.config.pretty_print,
                 );
 
-                let result_status = match result {
+                let result_status = match result.control_flow {
                     std::ops::ControlFlow::Continue(()) => Ok(()),
                     std::ops::ControlFlow::Break(_) => {
                         bail!("Interpreter stopped")
@@ -340,6 +347,8 @@ impl Cli {
         rl: &mut Editor<NumbatHelper, DefaultHistory>,
         interactive: bool,
     ) -> Result<()> {
+        let mut session_history = SessionHistory::default();
+
         loop {
             let readline = rl.readline(&self.config.prompt);
             match readline {
@@ -347,95 +356,113 @@ impl Cli {
                     if !line.trim().is_empty() {
                         rl.add_history_entry(&line)?;
 
-                        match line.trim() {
-                            "list" | "ls" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(
-                                        &self.context.lock().unwrap().print_environment(),
-                                        false
-                                    )
-                                );
-                            }
-                            "list functions" | "ls functions" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(
-                                        &self.context.lock().unwrap().print_functions(),
-                                        false
-                                    )
-                                );
-                            }
-                            "list dimensions" | "ls dimensions" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(
-                                        &self.context.lock().unwrap().print_dimensions(),
-                                        false
-                                    )
-                                );
-                            }
-                            "list variables" | "ls variables" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(
-                                        &self.context.lock().unwrap().print_variables(),
-                                        false
-                                    )
-                                );
-                            }
-                            "list units" | "ls units" => {
-                                println!(
-                                    "{}",
-                                    ansi_format(&self.context.lock().unwrap().print_units(), false)
-                                );
-                            }
-                            "clear" => {
-                                rl.clear_screen()?;
-                            }
-                            "quit" | "exit" => {
-                                return Ok(());
-                            }
-                            "help" | "?" => {
-                                let help = help_markup();
-                                print!("{}", ansi_format(&help, true));
-                                // currently, the ansi formatter adds indents
-                                // _after_ each newline and so we need to manually
-                                // add an extra blank line to absorb this indent
-                                println!();
-                            }
-                            _ => {
-                                if let Some(keyword) = line.strip_prefix("info ") {
-                                    let help = self
-                                        .context
-                                        .lock()
-                                        .unwrap()
-                                        .print_info_for_keyword(keyword.trim());
-                                    println!("{}", ansi_format(&help, true));
+                        // if we enter here, the line looks like a command
+                        if let Some(sourceless_parser) = SourcelessCommandParser::new(&line) {
+                            let mut parser = CommandParser::new(
+                                sourceless_parser,
+                                self.context
+                                    .lock()
+                                    .unwrap()
+                                    .resolver_mut()
+                                    .add_code_source(CodeSource::Text, &line),
+                            );
+
+                            match parser.parse_command() {
+                                Ok(command) => match command {
+                                    command::Command::Help => {
+                                        let help = help_markup();
+                                        print!("{}", ansi_format(&help, true));
+                                        // currently, the ansi formatter adds indents
+                                        // _after_ each newline and so we need to manually
+                                        // add an extra blank line to absorb this indent
+                                        println!();
+                                    }
+                                    command::Command::Info { item } => {
+                                        let help = self
+                                            .context
+                                            .lock()
+                                            .unwrap()
+                                            .print_info_for_keyword(item);
+                                        println!("{}", ansi_format(&help, true));
+                                    }
+                                    command::Command::List { items } => {
+                                        let context = self.context.lock().unwrap();
+                                        let m = match items {
+                                            None => context.print_environment(),
+                                            Some(command::ListItems::Functions) => {
+                                                context.print_functions()
+                                            }
+                                            Some(command::ListItems::Dimensions) => {
+                                                context.print_dimensions()
+                                            }
+                                            Some(command::ListItems::Variables) => {
+                                                context.print_variables()
+                                            }
+                                            Some(command::ListItems::Units) => {
+                                                context.print_units()
+                                            }
+                                        };
+                                        println!("{}", ansi_format(&m, false));
+                                    }
+                                    command::Command::Clear => rl.clear_screen()?,
+                                    command::Command::Save { dst } => {
+                                        let save_result = session_history.save(
+                                            dst,
+                                            SessionHistoryOptions {
+                                                include_err_lines: false,
+                                                trim_lines: true,
+                                            },
+                                        );
+                                        match save_result {
+                                            Ok(_) => {
+                                                let m = m::text(
+                                                    "successfully saved session history to",
+                                                ) + m::space()
+                                                    + m::string(dst);
+                                                println!("{}", ansi_format(&m, interactive));
+                                            }
+                                            Err(err) => {
+                                                self.print_diagnostic(*err);
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                    command::Command::Quit => return Ok(()),
+                                },
+                                Err(e) => {
+                                    self.print_diagnostic(e);
                                     continue;
                                 }
-                                let result = self.parse_and_evaluate(
-                                    &line,
-                                    CodeSource::Text,
-                                    if interactive {
-                                        ExecutionMode::Interactive
-                                    } else {
-                                        ExecutionMode::Normal
-                                    },
-                                    self.config.pretty_print,
-                                );
+                            }
 
-                                match result {
-                                    std::ops::ControlFlow::Continue(()) => {}
-                                    std::ops::ControlFlow::Break(ExitStatus::Success) => {
-                                        return Ok(());
-                                    }
-                                    std::ops::ControlFlow::Break(ExitStatus::Error) => {
-                                        bail!("Interpreter stopped due to error")
-                                    }
-                                }
+                            continue;
+                        }
+
+                        let ParseEvaluationOutcome {
+                            control_flow,
+                            result,
+                        } = self.parse_and_evaluate(
+                            &line,
+                            CodeSource::Text,
+                            if interactive {
+                                ExecutionMode::Interactive
+                            } else {
+                                ExecutionMode::Normal
+                            },
+                            self.config.pretty_print,
+                        );
+
+                        match control_flow {
+                            std::ops::ControlFlow::Continue(()) => {}
+                            std::ops::ControlFlow::Break(ExitStatus::Success) => {
+                                return Ok(());
+                            }
+                            std::ops::ControlFlow::Break(ExitStatus::Error) => {
+                                bail!("Interpreter stopped due to error")
                             }
                         }
+
+                        session_history.push(line, result);
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}
@@ -456,7 +483,7 @@ impl Cli {
         code_source: CodeSource,
         execution_mode: ExecutionMode,
         pretty_print_mode: PrettyPrintMode,
-    ) -> ControlFlow {
+    ) -> ParseEvaluationOutcome {
         let to_be_printed: Arc<Mutex<Vec<m::Markup>>> = Arc::new(Mutex::new(vec![]));
         let to_be_printed_c = to_be_printed.clone();
         let mut settings = InterpreterSettings {
@@ -465,7 +492,7 @@ impl Cli {
             }),
         };
 
-        let result =
+        let interpretation_result =
             self.context
                 .lock()
                 .unwrap()
@@ -479,7 +506,12 @@ impl Cli {
             PrettyPrintMode::Auto => interactive,
         };
 
-        match result {
+        let parse_eval_result = match &interpretation_result {
+            Ok(_) => Ok(()),
+            Err(_) => Err(()),
+        };
+
+        let control_flow = match interpretation_result.map_err(|b| *b) {
             Ok((statements, interpreter_result)) => {
                 if interactive || pretty_print {
                     println!();
@@ -518,7 +550,7 @@ impl Cli {
                 ControlFlow::Continue(())
             }
             Err(NumbatError::ResolverError(e)) => {
-                self.print_diagnostic(e.clone());
+                self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::NameResolutionError(
@@ -536,6 +568,11 @@ impl Cli {
                 self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
+        };
+
+        ParseEvaluationOutcome {
+            control_flow,
+            result: parse_eval_result,
         }
     }
 

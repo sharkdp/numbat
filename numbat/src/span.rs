@@ -1,34 +1,50 @@
 use codespan_reporting::diagnostic::{Label, LabelStyle};
+use std::ops::{Add, AddAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SourceCodePositition {
-    pub byte: u32,
-    pub line: u32,
-    pub position: u32,
+pub struct ByteIndex(pub u32);
+
+impl From<u32> for ByteIndex {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
 }
 
-impl SourceCodePositition {
-    pub fn start() -> Self {
-        Self {
-            byte: 0,
-            line: 1,
-            position: 1,
-        }
-    }
+impl Add<u32> for ByteIndex {
+    type Output = Self;
 
-    pub fn single_character_span(&self, code_source_id: usize) -> Span {
+    fn add(self, rhs: u32) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
+
+impl AddAssign<u32> for ByteIndex {
+    fn add_assign(&mut self, rhs: u32) {
+        self.0 += rhs;
+    }
+}
+
+impl ByteIndex {
+    pub fn single_character_span(self, code_source_id: usize) -> Span {
         Span {
-            start: *self,
-            end: *self,
+            start: self,
+            end: self,
             code_source_id,
         }
     }
+
+    pub fn as_usize(self) -> usize {
+        self.0 as usize
+    }
 }
 
+/// The span of text from `start` to `end`, associated with `code_source_id`. `start`
+/// and `end` are both inclusive byte indices (so that if `start == end` we get a
+/// one-byte span).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
-    pub start: SourceCodePositition,
-    pub end: SourceCodePositition,
+    pub start: ByteIndex,
+    pub end: ByteIndex,
     pub code_source_id: usize,
 }
 
@@ -46,15 +62,15 @@ impl Span {
         Label::new(
             style,
             self.code_source_id,
-            (self.start.byte as usize)..(self.end.byte as usize),
+            (self.start.as_usize())..(self.end.as_usize()),
         )
     }
 
     #[cfg(test)]
     pub fn dummy() -> Span {
         Self {
-            start: SourceCodePositition::start(),
-            end: SourceCodePositition::start(),
+            start: ByteIndex(0),
+            end: ByteIndex(0),
             code_source_id: 0,
         }
     }

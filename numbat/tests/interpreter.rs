@@ -44,7 +44,7 @@ fn fail(code: &str) -> NumbatError {
     let mut ctx = get_test_context();
     let ret = ctx.interpret(code, CodeSource::Internal);
     match ret {
-        Err(e) => e,
+        Err(e) => *e,
         Ok((_stmts, ret)) => {
             if let InterpreterResult::Value(val) = ret {
                 let fmt = PlainTextFormatter {};
