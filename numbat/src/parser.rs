@@ -505,7 +505,7 @@ impl<'a> Parser<'a> {
                         };
 
                         let span = self.last(tokens).unwrap().span;
-                        type_parameters.push((span, type_parameter_name.lexeme.to_string(), bound));
+                        type_parameters.push((span, type_parameter_name.lexeme, bound));
 
                         if self.match_exact(tokens, TokenKind::Comma).is_none()
                             && self.peek(tokens).kind != TokenKind::GreaterThan
@@ -544,7 +544,7 @@ impl<'a> Parser<'a> {
                         None
                     };
 
-                    parameters.push((span, param_name.lexeme.to_string(), param_type_dexpr));
+                    parameters.push((span, param_name.lexeme, param_type_dexpr));
 
                     parameter_span = parameter_span.extend(&self.last(tokens).unwrap().span);
 
@@ -630,7 +630,7 @@ impl<'a> Parser<'a> {
 
             Ok(Statement::DefineFunction {
                 function_name_span,
-                function_name: fn_name.lexeme.to_owned(),
+                function_name: fn_name.lexeme,
                 type_parameters,
                 parameters,
                 body,
@@ -666,13 +666,13 @@ impl<'a> Parser<'a> {
 
                 Ok(Statement::DefineDimension(
                     identifier.span,
-                    identifier.lexeme.to_owned(),
+                    identifier.lexeme,
                     dexprs,
                 ))
             } else {
                 Ok(Statement::DefineDimension(
                     identifier.span,
-                    identifier.lexeme.to_owned(),
+                    identifier.lexeme,
                     vec![],
                 ))
             }
@@ -763,7 +763,7 @@ impl<'a> Parser<'a> {
                     (None, None)
                 };
 
-            let unit_name = identifier.lexeme.to_owned();
+            let unit_name = identifier.lexeme;
 
             let mut decorators = vec![];
             std::mem::swap(&mut decorators, &mut self.decorator_stack);
@@ -883,12 +883,12 @@ impl<'a> Parser<'a> {
                 });
             }
 
-            fields.push((field_name.span, field_name.lexeme.to_owned(), attr_type));
+            fields.push((field_name.span, field_name.lexeme, attr_type));
         }
 
         Ok(Statement::DefineStruct {
             struct_name_span: name_span,
-            struct_name: name.to_owned(),
+            struct_name: name,
             fields,
         })
     }
@@ -2459,7 +2459,7 @@ mod tests {
     fn dimension_definition() {
         parse_as(
             &["dimension px"],
-            Statement::DefineDimension(Span::dummy(), "px".into(), vec![]),
+            Statement::DefineDimension(Span::dummy(), "px", vec![]),
         );
 
         parse_as(
@@ -2470,7 +2470,7 @@ mod tests {
             ],
             Statement::DefineDimension(
                 Span::dummy(),
-                "Area".into(),
+                "Area",
                 vec![TypeExpression::Multiply(
                     Span::dummy(),
                     Box::new(TypeExpression::TypeIdentifier(
@@ -2489,7 +2489,7 @@ mod tests {
             &["dimension Velocity = Length / Time"],
             Statement::DefineDimension(
                 Span::dummy(),
-                "Velocity".into(),
+                "Velocity",
                 vec![TypeExpression::Divide(
                     Span::dummy(),
                     Box::new(TypeExpression::TypeIdentifier(
@@ -2505,7 +2505,7 @@ mod tests {
             &["dimension Area = Length^2"],
             Statement::DefineDimension(
                 Span::dummy(),
-                "Area".into(),
+                "Area",
                 vec![TypeExpression::Power(
                     Some(Span::dummy()),
                     Box::new(TypeExpression::TypeIdentifier(
@@ -2522,7 +2522,7 @@ mod tests {
             &["dimension Energy = Mass * Length^2 / Time^2"],
             Statement::DefineDimension(
                 Span::dummy(),
-                "Energy".into(),
+                "Energy",
                 vec![TypeExpression::Divide(
                     Span::dummy(),
                     Box::new(TypeExpression::Multiply(
@@ -2552,7 +2552,7 @@ mod tests {
             &["dimension X = Length^(12345/67890)"],
             Statement::DefineDimension(
                 Span::dummy(),
-                "X".into(),
+                "X",
                 vec![TypeExpression::Power(
                     Some(Span::dummy()),
                     Box::new(TypeExpression::TypeIdentifier(
@@ -2578,7 +2578,7 @@ mod tests {
             &["fn foo() = 1", "fn foo() =\n  1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
+                function_name: "foo",
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
@@ -2592,7 +2592,7 @@ mod tests {
             &["fn foo() -> Scalar = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
+                function_name: "foo",
                 type_parameters: vec![],
                 parameters: vec![],
                 body: Some(scalar!(1.0)),
@@ -2608,9 +2608,9 @@ mod tests {
             &["fn foo(x) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
+                function_name: "foo",
                 type_parameters: vec![],
-                parameters: vec![(Span::dummy(), "x".into(), None)],
+                parameters: vec![(Span::dummy(), "x", None)],
                 body: Some(scalar!(1.0)),
                 local_variables: vec![],
                 return_type_annotation: None,
@@ -2622,9 +2622,9 @@ mod tests {
             &["fn foo(x,) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
+                function_name: "foo",
                 type_parameters: vec![],
-                parameters: vec![(Span::dummy(), "x".into(), None)],
+                parameters: vec![(Span::dummy(), "x", None)],
                 body: Some(scalar!(1.0)),
                 local_variables: vec![],
                 return_type_annotation: None,
@@ -2639,12 +2639,9 @@ mod tests {
             ) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
+                function_name: "foo",
                 type_parameters: vec![],
-                parameters: vec![
-                    (Span::dummy(), "x".into(), None),
-                    (Span::dummy(), "y".into(), None),
-                ],
+                parameters: vec![(Span::dummy(), "x", None), (Span::dummy(), "y", None)],
                 body: Some(scalar!(1.0)),
                 local_variables: vec![],
                 return_type_annotation: None,
@@ -2656,12 +2653,12 @@ mod tests {
             &["fn foo(x, y, z) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
+                function_name: "foo",
                 type_parameters: vec![],
                 parameters: vec![
-                    (Span::dummy(), "x".into(), None),
-                    (Span::dummy(), "y".into(), None),
-                    (Span::dummy(), "z".into(), None),
+                    (Span::dummy(), "x", None),
+                    (Span::dummy(), "y", None),
+                    (Span::dummy(), "z", None),
                 ],
                 body: Some(scalar!(1.0)),
                 local_variables: vec![],
@@ -2674,26 +2671,26 @@ mod tests {
             &["fn foo(x: Length, y: Time, z: Length^3 · Time^2) -> Scalar = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
+                function_name: "foo",
                 type_parameters: vec![],
                 parameters: vec![
                     (
                         Span::dummy(),
-                        "x".into(),
+                        "x",
                         Some(TypeAnnotation::TypeExpression(
                             TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
                         )),
                     ),
                     (
                         Span::dummy(),
-                        "y".into(),
+                        "y",
                         Some(TypeAnnotation::TypeExpression(
                             TypeExpression::TypeIdentifier(Span::dummy(), "Time".into()),
                         )),
                     ),
                     (
                         Span::dummy(),
-                        "z".into(),
+                        "z",
                         Some(TypeAnnotation::TypeExpression(TypeExpression::Multiply(
                             Span::dummy(),
                             Box::new(TypeExpression::Power(
@@ -2730,11 +2727,11 @@ mod tests {
             &["fn foo<X>(x: X) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
-                type_parameters: vec![(Span::dummy(), "X".into(), None)],
+                function_name: "foo",
+                type_parameters: vec![(Span::dummy(), "X", None)],
                 parameters: vec![(
                     Span::dummy(),
-                    "x".into(),
+                    "x",
                     Some(TypeAnnotation::TypeExpression(
                         TypeExpression::TypeIdentifier(Span::dummy(), "X".into()),
                     )),
@@ -2750,11 +2747,11 @@ mod tests {
             &["fn foo<X: Dim>(x: X) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "foo".into(),
-                type_parameters: vec![(Span::dummy(), "X".into(), Some(TypeParameterBound::Dim))],
+                function_name: "foo",
+                type_parameters: vec![(Span::dummy(), "X", Some(TypeParameterBound::Dim))],
                 parameters: vec![(
                     Span::dummy(),
-                    "x".into(),
+                    "x",
                     Some(TypeAnnotation::TypeExpression(
                         TypeExpression::TypeIdentifier(Span::dummy(), "X".into()),
                     )),
@@ -2770,9 +2767,9 @@ mod tests {
             &["@name(\"Some function\") @description(\"This is a description of some_function.\") fn some_function(x) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "some_function".into(),
+                function_name: "some_function",
                 type_parameters: vec![],
-                parameters: vec![(Span::dummy(), "x".into(), None)],
+                parameters: vec![(Span::dummy(), "x", None)],
                 body: Some(scalar!(1.0)),
                 local_variables: vec![],
                 return_type_annotation: None,
@@ -2789,9 +2786,9 @@ mod tests {
             &["fn double_kef(x) = y where y = x * 2"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "double_kef".into(),
+                function_name: "double_kef",
                 type_parameters: vec![],
-                parameters: vec![(Span::dummy(), "x".into(), None)],
+                parameters: vec![(Span::dummy(), "x", None)],
                 body: Some(identifier!("y")),
                 local_variables: vec![DefineVariable {
                     identifier_span: Span::dummy(),
@@ -2811,9 +2808,9 @@ mod tests {
                    and z = y + x"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "kefirausaure".into(),
+                function_name: "kefirausaure",
                 type_parameters: vec![],
-                parameters: vec![(Span::dummy(), "x".into(), None)],
+                parameters: vec![(Span::dummy(), "x", None)],
                 body: Some(binop!(identifier!("z"), Add, identifier!("y"))),
                 local_variables: vec![
                     DefineVariable {
@@ -3294,11 +3291,11 @@ mod tests {
             &["struct Foo { foo: Scalar, bar: Scalar }"],
             Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
-                struct_name: "Foo".to_owned(),
+                struct_name: "Foo",
                 fields: vec![
                     (
                         Span::dummy(),
-                        "foo".to_owned(),
+                        "foo",
                         TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
                             Span::dummy(),
                             "Scalar".to_owned(),
@@ -3306,7 +3303,7 @@ mod tests {
                     ),
                     (
                         Span::dummy(),
-                        "bar".to_owned(),
+                        "bar",
                         TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
                             Span::dummy(),
                             "Scalar".to_owned(),

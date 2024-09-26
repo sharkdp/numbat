@@ -413,10 +413,10 @@ pub enum Statement<'a> {
     DefineVariable(DefineVariable<'a>),
     DefineFunction {
         function_name_span: Span,
-        function_name: String,
-        type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
+        function_name: &'a str,
+        type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
         /// Parameters, optionally with type annotations.
-        parameters: Vec<(Span, String, Option<TypeAnnotation>)>,
+        parameters: Vec<(Span, &'a str, Option<TypeAnnotation>)>,
         /// Function body. If it is absent, the function is implemented via FFI
         body: Option<Expression<'a>>,
         /// Local variables
@@ -425,11 +425,11 @@ pub enum Statement<'a> {
         return_type_annotation: Option<TypeAnnotation>,
         decorators: Vec<Decorator<'a>>,
     },
-    DefineDimension(Span, String, Vec<TypeExpression>),
-    DefineBaseUnit(Span, String, Option<TypeExpression>, Vec<Decorator<'a>>),
+    DefineDimension(Span, &'a str, Vec<TypeExpression>),
+    DefineBaseUnit(Span, &'a str, Option<TypeExpression>, Vec<Decorator<'a>>),
     DefineDerivedUnit {
         identifier_span: Span,
-        identifier: String,
+        identifier: &'a str,
         expr: Expression<'a>,
         type_annotation_span: Option<Span>,
         type_annotation: Option<TypeAnnotation>,
@@ -439,8 +439,8 @@ pub enum Statement<'a> {
     ModuleImport(Span, ModulePath),
     DefineStruct {
         struct_name_span: Span,
-        struct_name: String,
-        fields: Vec<(Span, String, TypeAnnotation)>,
+        struct_name: &'a str,
+        fields: Vec<(Span, &'a str, TypeAnnotation)>,
     },
 }
 
@@ -615,17 +615,17 @@ impl ReplaceSpans for Statement<'_> {
                 decorators,
             } => Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: function_name.clone(),
+                function_name,
                 type_parameters: type_parameters
                     .iter()
-                    .map(|(_, name, bound)| (Span::dummy(), name.clone(), bound.clone()))
+                    .map(|(_, name, bound)| (Span::dummy(), *name, bound.clone()))
                     .collect(),
                 parameters: parameters
                     .iter()
                     .map(|(_, name, type_)| {
                         (
                             Span::dummy(),
-                            name.clone(),
+                            *name,
                             type_.as_ref().map(|t| t.replace_spans()),
                         )
                     })
@@ -640,12 +640,12 @@ impl ReplaceSpans for Statement<'_> {
             },
             Statement::DefineDimension(_, name, dexprs) => Statement::DefineDimension(
                 Span::dummy(),
-                name.clone(),
+                name,
                 dexprs.iter().map(|t| t.replace_spans()).collect(),
             ),
             Statement::DefineBaseUnit(_, name, type_, decorators) => Statement::DefineBaseUnit(
                 Span::dummy(),
-                name.clone(),
+                name,
                 type_.as_ref().map(|t| t.replace_spans()),
                 decorators.clone(),
             ),
@@ -658,7 +658,7 @@ impl ReplaceSpans for Statement<'_> {
                 decorators,
             } => Statement::DefineDerivedUnit {
                 identifier_span: Span::dummy(),
-                identifier: identifier.clone(),
+                identifier,
                 expr: expr.replace_spans(),
                 type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
@@ -678,12 +678,10 @@ impl ReplaceSpans for Statement<'_> {
                 ..
             } => Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
-                struct_name: struct_name.clone(),
+                struct_name,
                 fields: fields
                     .iter()
-                    .map(|(_span, name, type_)| {
-                        (Span::dummy(), name.clone(), type_.replace_spans())
-                    })
+                    .map(|(_span, name, type_)| (Span::dummy(), *name, type_.replace_spans()))
                     .collect(),
             },
         }

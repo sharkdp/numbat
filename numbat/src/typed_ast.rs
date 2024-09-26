@@ -669,7 +669,7 @@ impl Statement<'_> {
                 readable_return_type,
             ) => {
                 let (fn_type, _) = fn_type.instantiate_for_printing(Some(
-                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
+                    type_parameters.iter().map(|(n, _)| n.as_str()),
                 ));
 
                 for DefineVariable(_, _, _, type_annotation, type_, readable_type) in
@@ -868,14 +868,14 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
     markup_decorators
 }
 
-pub fn pretty_print_function_signature(
+pub fn pretty_print_function_signature<'a>(
     function_name: &str,
     fn_type: &QualifiedType,
     type_parameters: &[TypeVariable],
     parameters: impl Iterator<
         Item = (
-            String, // parameter name
-            Markup, // readable parameter type
+            &'a str, // parameter name
+            Markup,  // readable parameter type
         ),
     >,
     readable_return_type: &Markup,
@@ -954,7 +954,7 @@ impl PrettyPrint for Statement<'_> {
                 readable_return_type,
             ) => {
                 let (fn_type, type_parameters) = fn_type.instantiate_for_printing(Some(
-                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
+                    type_parameters.iter().map(|(n, _)| n.as_str()),
                 ));
 
                 let mut pretty_local_variables = None;
@@ -998,7 +998,7 @@ impl PrettyPrint for Statement<'_> {
                     &type_parameters,
                     parameters
                         .iter()
-                        .map(|(_, name, _, type_)| (name.clone(), type_.clone())),
+                        .map(|(_, name, _, type_)| (name.as_str(), type_.clone())),
                     readable_return_type,
                 ) + body
                     .as_ref()

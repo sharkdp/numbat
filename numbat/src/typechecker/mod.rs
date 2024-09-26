@@ -1234,7 +1234,7 @@ impl TypeChecker {
                     if dtype.is_scalar() {
                         return Err(TypeCheckError::NoDimensionlessBaseUnit(
                             *span,
-                            unit_name.into(),
+                            unit_name.to_string(),
                         ));
                     }
 
@@ -1259,7 +1259,7 @@ impl TypeChecker {
                 }
 
                 typed_ast::Statement::DefineBaseUnit(
-                    unit_name.clone(),
+                    unit_name.to_string(),
                     decorators.clone(),
                     type_annotation.clone().map(TypeAnnotation::TypeExpression),
                     TypeScheme::concrete(Type::Dimension(type_specified)),
@@ -1295,7 +1295,7 @@ impl TypeChecker {
                     );
                 }
                 typed_ast::Statement::DefineDerivedUnit(
-                    identifier.clone(),
+                    identifier.to_string(),
                     expr_checked,
                     decorators.clone(),
                     type_annotation.clone(),
@@ -1315,13 +1315,13 @@ impl TypeChecker {
             } => {
                 if body.is_none() {
                     self.value_namespace.add_identifier(
-                        function_name.clone(),
+                        function_name.to_string(),
                         *function_name_span,
                         "foreign function".to_owned(),
                     )?;
                 } else {
                     self.value_namespace.add_identifier_allow_override(
-                        function_name.clone(),
+                        function_name.to_string(),
                         *function_name_span,
                         "function".to_owned(),
                     )?;
@@ -1339,23 +1339,27 @@ impl TypeChecker {
                     if self.type_namespace.has_identifier(type_parameter) {
                         return Err(TypeCheckError::TypeParameterNameClash(
                             *span,
-                            type_parameter.clone(),
+                            type_parameter.to_string(),
                         ));
                     }
 
                     self.type_namespace
-                        .add_identifier(type_parameter.clone(), *span, "type parameter".to_owned())
+                        .add_identifier(
+                            type_parameter.to_string(),
+                            *span,
+                            "type parameter".to_owned(),
+                        )
                         .ok(); // TODO: is this call even correct?
 
                     self.registry.introduced_type_parameters.push((
                         *span,
-                        type_parameter.clone(),
+                        type_parameter.to_string(),
                         bound.clone(),
                     ));
 
                     match bound {
                         Some(TypeParameterBound::Dim) => {
-                            self.add_dtype_constraint(&Type::TPar(type_parameter.clone()))
+                            self.add_dtype_constraint(&Type::TPar(type_parameter.to_string()))
                                 .ok();
                         }
                         None => {}
@@ -1377,19 +1381,19 @@ impl TypeChecker {
                     if is_ffi_function && annotated_type.is_none() {
                         return Err(TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
                             *parameter_span,
-                            parameter.clone(),
+                            parameter.to_string(),
                         ));
                     }
 
                     self.env.add_scheme(
-                        parameter.clone(),
+                        parameter.to_string(),
                         TypeScheme::make_quantified(parameter_type.clone()),
                         *parameter_span,
                         false,
                     );
                     typed_parameters.push((
                         *parameter_span,
-                        parameter.clone(),
+                        parameter.to_string(),
                         parameter_type,
                         type_annotation,
                     ));
@@ -1420,11 +1424,14 @@ impl TypeChecker {
                     TypeScheme::Concrete(Type::Fn(parameter_types, Box::new(return_type.clone())));
 
                 self.env.add_function(
-                    function_name.clone(),
+                    function_name.to_string(),
                     FunctionSignature {
-                        name: function_name.clone(),
+                        name: function_name.to_string(),
                         definition_span: *function_name_span,
-                        type_parameters: type_parameters.clone(),
+                        type_parameters: type_parameters
+                            .iter()
+                            .map(|(span, name, tpb)| (*span, name.to_string(), tpb.clone()).clone())
+                            .collect(),
                         parameters,
                         return_type_annotation: return_type_annotation.clone(),
                         fn_type: fn_type.clone(),
@@ -1504,17 +1511,17 @@ impl TypeChecker {
                     }
                     return_type_inferred
                 } else {
-                    if !ffi::functions().contains_key(function_name.as_str()) {
+                    if !ffi::functions().contains_key(*function_name) {
                         return Err(TypeCheckError::UnknownForeignFunction(
                             *function_name_span,
-                            function_name.clone(),
+                            function_name.to_string(),
                         ));
                     }
 
                     annotated_return_type.ok_or_else(|| {
                         TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
                             *function_name_span,
-                            function_name.clone(),
+                            function_name.to_string(),
                         )
                     })?
                 };
@@ -1532,15 +1539,18 @@ impl TypeChecker {
                 self.value_namespace.restore();
                 self.type_namespace.restore();
                 self.env.restore();
-                self.env
-                    .add_function(function_name.clone(), signature.clone(), metadata.clone());
+                self.env.add_function(
+                    function_name.to_string(),
+                    signature.clone(),
+                    metadata.clone(),
+                );
 
                 typed_ast::Statement::DefineFunction(
-                    function_name.clone(),
+                    function_name.to_string(),
                     decorators.clone(),
                     type_parameters
                         .iter()
-                        .map(|(_, name, bound)| (name.clone(), bound.clone()))
+                        .map(|(_, name, bound)| (name.to_string(), bound.clone()))
                         .collect(),
                     typed_parameters
                         .iter()
@@ -1562,7 +1572,7 @@ impl TypeChecker {
             }
             ast::Statement::DefineDimension(name_span, name, dexprs) => {
                 self.type_namespace.add_identifier(
-                    name.clone(),
+                    name.to_string(),
                     *name_span,
                     "dimension".to_owned(),
                 )?;
@@ -1585,7 +1595,7 @@ impl TypeChecker {
                         if alternative_base_representation != base_representation {
                             return Err(
                                 TypeCheckError::IncompatibleAlternativeDimensionExpression(
-                                    name.clone(),
+                                    name.to_string(),
                                     dexpr.full_span(),
                                     base_representation,
                                     alternative_expr.full_span(),
@@ -1599,7 +1609,7 @@ impl TypeChecker {
                         .add_base_dimension(name)
                         .map_err(TypeCheckError::RegistryError)?;
                 }
-                typed_ast::Statement::DefineDimension(name.clone(), dexprs.clone())
+                typed_ast::Statement::DefineDimension(name.to_string(), dexprs.clone())
             }
             ast::Statement::ProcedureCall(span, kind @ ProcedureKind::Type, args) => {
                 if args.len() != 1 {
@@ -1697,7 +1707,7 @@ impl TypeChecker {
                 fields,
             } => {
                 self.type_namespace.add_identifier(
-                    struct_name.clone(),
+                    struct_name.to_string(),
                     *struct_name_span,
                     "struct".to_owned(),
                 )?;
@@ -1718,16 +1728,16 @@ impl TypeChecker {
 
                 let struct_info = StructInfo {
                     definition_span: *struct_name_span,
-                    name: struct_name.clone(),
+                    name: struct_name.to_string(),
                     fields: fields
                         .iter()
                         .map(|(span, name, type_)| {
-                            Ok((name.clone(), (*span, self.type_from_annotation(type_)?)))
+                            Ok((name.to_string(), (*span, self.type_from_annotation(type_)?)))
                         })
                         .collect::<Result<_>>()?,
                 };
                 self.structs
-                    .insert(struct_name.clone(), struct_info.clone());
+                    .insert(struct_name.to_string(), struct_info.clone());
 
                 typed_ast::Statement::DefineStruct(struct_info)
             }

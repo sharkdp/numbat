@@ -12,7 +12,7 @@ pub enum Decorator<'a> {
 
 pub fn name_and_aliases<'a>(
     name: &'a str,
-    decorators: &'a [Decorator<'a>],
+    decorators: &[Decorator<'a>],
 ) -> Box<dyn Iterator<Item = (&'a str, AcceptsPrefix)> + 'a> {
     let aliases = {
         let mut aliases_vec = vec![];
