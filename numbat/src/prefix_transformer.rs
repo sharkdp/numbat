@@ -284,11 +284,9 @@ impl Transformer {
         &mut self,
         statements: impl IntoIterator<Item = Statement<'a>>,
     ) -> Result<Vec<Statement<'a>>> {
-        let statements = statements.into_iter();
-        let mut ans = Vec::with_capacity(statements.size_hint().1.unwrap_or(0));
-        for s in statements {
-            ans.push(self.transform_statement(s)?);
-        }
-        Ok(ans)
+        statements
+            .into_iter()
+            .map(|statement| self.transform_statement(statement))
+            .collect()
     }
 }
