@@ -1345,7 +1345,7 @@ impl TypeChecker {
                             *function_name_span,
                             "foreign function".to_owned(),
                         )
-                        .map_err(|err| Box::new(err.into()))??;
+                        .map_err(|err| Box::new(err.into()))?;
                 } else {
                     self.value_namespace
                         .add_identifier_allow_override(
@@ -1353,7 +1353,7 @@ impl TypeChecker {
                             *function_name_span,
                             "function".to_owned(),
                         )
-                        .map_err(|err| Box::new(err.into()))??;
+                        .map_err(|err| Box::new(err.into()))?;
                 }
 
                 // Save the environment and namespaces to avoid polluting
@@ -1408,9 +1408,11 @@ impl TypeChecker {
                     };
 
                     if is_ffi_function && annotated_type.is_none() {
-                        return Err(TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
-                            *parameter_span,
-                            parameter.to_string(),
+                        return Err(Box::new(
+                            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
+                                *parameter_span,
+                                parameter.to_string(),
+                            ),
                         ));
                     }
 
@@ -1543,10 +1545,10 @@ impl TypeChecker {
                     return_type_inferred
                 } else {
                     if !ffi::functions().contains_key(*function_name) {
-                        return Err(TypeCheckError::UnknownForeignFunction(
+                        return Err(Box::new(TypeCheckError::UnknownForeignFunction(
                             *function_name_span,
                             function_name.to_string(),
-                        ));
+                        )));
                     }
 
                     annotated_return_type.ok_or_else(|| {

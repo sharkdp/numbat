@@ -539,7 +539,7 @@ impl Context {
         &mut self.resolver
     }
 
-    pub fn interpret(
+    pub fn interpret<'a>(
         &mut self,
         code: &'a str,
         code_source: CodeSource,
