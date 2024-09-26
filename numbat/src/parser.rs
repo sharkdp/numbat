@@ -252,7 +252,7 @@ impl ParseError {
 }
 
 type Result<T, E = ParseError> = std::result::Result<T, E>;
-type ParseResult = Result<Vec<Statement>, (Vec<Statement>, Vec<ParseError>)>;
+type ParseResult<'a> = Result<Vec<Statement<'a>>, (Vec<Statement<'a>>, Vec<ParseError>)>;
 
 static PROCEDURES: &[TokenKind] = &[
     TokenKind::ProcedurePrint,
@@ -261,12 +261,12 @@ static PROCEDURES: &[TokenKind] = &[
     TokenKind::ProcedureType,
 ];
 
-struct Parser {
+struct Parser<'a> {
     current: usize,
-    decorator_stack: Vec<Decorator>,
+    decorator_stack: Vec<Decorator<'a>>,
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub(crate) fn new() -> Self {
         Parser {
             current: 0,
@@ -274,7 +274,7 @@ impl Parser {
         }
     }
 
-    fn skip_empty_lines(&mut self, tokens: &[Token]) {
+    fn skip_empty_lines(&mut self, tokens: &[Token<'a>]) {
         while self.match_exact(tokens, TokenKind::Newline).is_some() {}
     }
 
@@ -283,7 +283,7 @@ impl Parser {
     /// will try to recover from the error and parse as many statements as possible
     /// while stacking all the errors in a `Vec`. At the end, it returns the complete
     /// list of statements parsed + the list of errors accumulated.
-    fn parse(&mut self, tokens: &[Token]) -> ParseResult {
+    fn parse(&mut self, tokens: &[Token<'a>]) -> ParseResult<'a> {
         let mut statements = vec![];
         let mut errors = vec![];
 
@@ -342,7 +342,7 @@ impl Parser {
         }
     }
 
-    fn accepts_prefix(&mut self, tokens: &[Token]) -> Result<Option<AcceptsPrefix>> {
+    fn accepts_prefix(&mut self, tokens: &[Token<'a>]) -> Result<Option<AcceptsPrefix>> {
         if self.match_exact(tokens, TokenKind::Colon).is_some() {
             if self.match_exact(tokens, TokenKind::Long).is_some() {
                 Ok(Some(AcceptsPrefix::only_long()))
@@ -365,14 +365,13 @@ impl Parser {
 
     fn list_of_aliases(
         &mut self,
-        tokens: &[Token],
-    ) -> Result<Vec<(String, Option<AcceptsPrefix>)>> {
+        tokens: &[Token<'a>],
+    ) -> Result<Vec<(&'a str, Option<AcceptsPrefix>)>> {
         if self.match_exact(tokens, TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
-        let mut identifiers: Vec<(String, Option<AcceptsPrefix>)> =
-            vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?)];
+        let mut identifiers = vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?)];
         while self.match_exact(tokens, TokenKind::Comma).is_some() {
             identifiers.push((self.identifier(tokens)?, self.accepts_prefix(tokens)?));
         }
@@ -387,7 +386,7 @@ impl Parser {
         Ok(identifiers)
     }
 
-    fn statement(&mut self, tokens: &[Token]) -> Result<Statement> {
+    fn statement(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if !(self.peek(tokens).kind == TokenKind::At
             || self.peek(tokens).kind == TokenKind::Unit
             || self.peek(tokens).kind == TokenKind::Let
@@ -424,9 +423,9 @@ impl Parser {
 
     fn parse_variable(
         &mut self,
-        tokens: &[Token],
+        tokens: &[Token<'a>],
         flush_decorators: bool,
-    ) -> Result<DefineVariable> {
+    ) -> Result<DefineVariable<'a>> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             let identifier_span = self.last(tokens).unwrap().span;
 
@@ -458,7 +457,7 @@ impl Parser {
 
                 Ok(DefineVariable {
                     identifier_span,
-                    identifier: identifier.lexeme.to_owned(),
+                    identifier: identifier.lexeme,
                     expr,
                     type_annotation,
                     decorators,
@@ -472,7 +471,7 @@ impl Parser {
         }
     }
 
-    fn parse_function_declaration(&mut self, tokens: &[Token]) -> Result<Statement> {
+    fn parse_function_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if let Some(fn_name) = self.match_exact(tokens, TokenKind::Identifier) {
             let function_name_span = self.last(tokens).unwrap().span;
             let mut type_parameters = vec![];
@@ -647,7 +646,7 @@ impl Parser {
         }
     }
 
-    fn parse_dimension_declaration(&mut self, tokens: &[Token]) -> Result<Statement> {
+    fn parse_dimension_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             if identifier.lexeme.starts_with("__") {
                 return Err(ParseError::new(
@@ -685,7 +684,7 @@ impl Parser {
         }
     }
 
-    fn parse_decorators(&mut self, tokens: &[Token]) -> Result<Statement> {
+    fn parse_decorators(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if let Some(decorator) = self.match_exact(tokens, TokenKind::Identifier) {
             let decorator = match decorator.lexeme {
                 "metric_prefixes" => Decorator::MetricPrefixes,
@@ -753,7 +752,7 @@ impl Parser {
         }
     }
 
-    fn parse_unit_declaration(&mut self, tokens: &[Token]) -> Result<Statement> {
+    fn parse_unit_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             let identifier_span = self.last(tokens).unwrap().span;
             let (type_annotation_span, dexpr) =
@@ -808,7 +807,7 @@ impl Parser {
         }
     }
 
-    fn parse_use(&mut self, tokens: &[Token]) -> Result<Statement> {
+    fn parse_use(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         let mut span = self.peek(tokens).span;
 
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
@@ -835,7 +834,7 @@ impl Parser {
         }
     }
 
-    fn parse_struct(&mut self, tokens: &[Token]) -> Result<Statement> {
+    fn parse_struct(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         let name = self.identifier(tokens)?;
         let name_span = self.last(tokens).unwrap().span;
 
@@ -889,12 +888,12 @@ impl Parser {
 
         Ok(Statement::DefineStruct {
             struct_name_span: name_span,
-            struct_name: name,
+            struct_name: name.to_owned(),
             fields,
         })
     }
 
-    fn parse_procedure(&mut self, tokens: &[Token]) -> Result<Statement> {
+    fn parse_procedure(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         let span = self.last(tokens).unwrap().span;
         let procedure_kind = match self.last(tokens).unwrap().kind {
             TokenKind::ProcedurePrint => ProcedureKind::Print,
@@ -924,11 +923,11 @@ impl Parser {
     /// - arg `next` specifiy the next parser to call between each symbols
     fn parse_binop(
         &mut self,
-        tokens: &[Token],
+        tokens: &[Token<'a>],
         op_symbol: &[TokenKind],
         op: impl Fn(TokenKind) -> BinaryOperator,
-        next_parser: impl Fn(&mut Self) -> Result<Expression>,
-    ) -> Result<Expression> {
+        next_parser: impl Fn(&mut Self) -> Result<Expression<'a>>,
+    ) -> Result<Expression<'a>> {
         let mut expr = next_parser(self)?;
         while let Some(matched) = self.match_any(tokens, op_symbol) {
             let span_op = Some(self.last(tokens).unwrap().span);
@@ -944,13 +943,13 @@ impl Parser {
         Ok(expr)
     }
 
-    pub fn expression(&mut self, tokens: &[Token]) -> Result<Expression> {
+    pub fn expression(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         self.postfix_apply(tokens)
     }
 
-    fn identifier(&mut self, tokens: &[Token]) -> Result<String> {
+    fn identifier(&mut self, tokens: &[Token<'a>]) -> Result<&'a str> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
-            Ok(identifier.lexeme.to_owned())
+            Ok(identifier.lexeme)
         } else {
             Err(ParseError::new(
                 ParseErrorKind::ExpectedIdentifier,
@@ -959,7 +958,7 @@ impl Parser {
         }
     }
 
-    pub fn postfix_apply(&mut self, tokens: &[Token]) -> Result<Expression> {
+    pub fn postfix_apply(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         let mut expr = self.condition(tokens)?;
         let mut full_span = expr.full_span();
         while self.match_exact(tokens, TokenKind::PostfixApply).is_some() {
@@ -992,7 +991,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn condition(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn condition(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         if self.match_exact(tokens, TokenKind::If).is_some() {
             let span_if = self.last(tokens).unwrap().span;
             let condition_expr = self.conversion(tokens)?;
@@ -1034,7 +1033,7 @@ impl Parser {
         }
     }
 
-    fn conversion(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn conversion(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         self.parse_binop(
             tokens,
             &[TokenKind::Arrow, TokenKind::To],
@@ -1043,7 +1042,7 @@ impl Parser {
         )
     }
 
-    fn logical_or(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn logical_or(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         self.parse_binop(
             tokens,
             &[TokenKind::LogicalOr],
@@ -1052,7 +1051,7 @@ impl Parser {
         )
     }
 
-    fn logical_and(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn logical_and(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         self.parse_binop(
             tokens,
             &[TokenKind::LogicalAnd],
@@ -1061,7 +1060,7 @@ impl Parser {
         )
     }
 
-    fn logical_neg(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn logical_neg(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         if self
             .match_exact(tokens, TokenKind::ExclamationMark)
             .is_some()
@@ -1079,7 +1078,7 @@ impl Parser {
         }
     }
 
-    fn comparison(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn comparison(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         self.parse_binop(
             tokens,
             &[
@@ -1103,7 +1102,7 @@ impl Parser {
         )
     }
 
-    fn term(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn term(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         self.parse_binop(
             tokens,
             &[TokenKind::Plus, TokenKind::Minus],
@@ -1116,7 +1115,7 @@ impl Parser {
         )
     }
 
-    fn factor(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn factor(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         self.parse_binop(
             tokens,
             &[TokenKind::Multiply, TokenKind::Divide],
@@ -1129,7 +1128,7 @@ impl Parser {
         )
     }
 
-    fn per_factor(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn per_factor(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         self.parse_binop(
             tokens,
             &[TokenKind::Per],
@@ -1138,7 +1137,7 @@ impl Parser {
         )
     }
 
-    fn unary(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn unary(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         if self.match_exact(tokens, TokenKind::Minus).is_some() {
             let span = self.last(tokens).unwrap().span;
             let rhs = self.unary(tokens)?;
@@ -1157,7 +1156,7 @@ impl Parser {
         }
     }
 
-    fn ifactor(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn ifactor(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         let mut expr = self.power(tokens)?;
 
         while self.next_token_could_start_power_expression(tokens) {
@@ -1173,7 +1172,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn power(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn power(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         let mut expr = self.factorial(tokens)?;
 
         if self.match_exact(tokens, TokenKind::Power).is_some() {
@@ -1208,7 +1207,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn factorial(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn factorial(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         let mut expr = self.unicode_power(tokens)?;
 
         while self
@@ -1253,7 +1252,7 @@ impl Parser {
         }
     }
 
-    fn unicode_power(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn unicode_power(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         let mut expr = self.call(tokens)?;
 
         if let Some(exponent) = self.match_exact(tokens, TokenKind::UnicodeExponent) {
@@ -1273,7 +1272,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn call(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn call(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         let mut expr = self.primary(tokens)?;
 
         loop {
@@ -1297,13 +1296,13 @@ impl Parser {
         }
     }
 
-    fn arguments(&mut self, tokens: &[Token]) -> Result<Vec<Expression>> {
+    fn arguments(&mut self, tokens: &[Token<'a>]) -> Result<Vec<Expression<'a>>> {
         self.skip_empty_lines(tokens);
         if self.match_exact(tokens, TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
-        let mut args: Vec<Expression> = vec![self.expression(tokens)?];
+        let mut args = vec![self.expression(tokens)?];
         loop {
             self.skip_empty_lines(tokens);
 
@@ -1334,7 +1333,7 @@ impl Parser {
         Ok(args)
     }
 
-    fn primary(&mut self, tokens: &[Token]) -> Result<Expression> {
+    fn primary(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         // This function needs to be kept in sync with `next_token_could_start_power_expression` below.
 
         let overflow_error = |span| {
@@ -1455,7 +1454,7 @@ impl Parser {
                         });
                     }
 
-                    fields.push((field_name.span, field_name.lexeme.to_owned(), expr));
+                    fields.push((field_name.span, field_name.lexeme, expr));
                 }
 
                 let full_span = span.extend(&self.last(tokens).unwrap().span);
@@ -1463,12 +1462,12 @@ impl Parser {
                 return Ok(Expression::InstantiateStruct {
                     full_span,
                     ident_span: span,
-                    name: identifier.lexeme.to_owned(),
+                    name: identifier.lexeme,
                     fields,
                 });
             }
 
-            Ok(Expression::Identifier(span, identifier.lexeme.to_owned()))
+            Ok(Expression::Identifier(span, identifier.lexeme))
         } else if let Some(inner) = self.match_any(tokens, &[TokenKind::True, TokenKind::False]) {
             Ok(Expression::Boolean(
                 inner.span,
@@ -1566,9 +1565,9 @@ impl Parser {
 
     fn interpolation(
         &mut self,
-        tokens: &[Token],
-        parts: &mut Vec<StringPart>,
-        token: &Token,
+        tokens: &[Token<'a>],
+        parts: &mut Vec<StringPart<'a>>,
+        token: Token<'a>,
     ) -> Result<()> {
         parts.push(StringPart::Fixed(strip_and_escape(token.lexeme)));
 
@@ -1601,7 +1600,7 @@ impl Parser {
         )
     }
 
-    fn type_annotation(&mut self, tokens: &[Token]) -> Result<TypeAnnotation> {
+    fn type_annotation(&mut self, tokens: &[Token<'a>]) -> Result<TypeAnnotation> {
         if let Some(token) = self.match_exact(tokens, TokenKind::Bool) {
             Ok(TypeAnnotation::Bool(token.span))
         } else if let Some(token) = self.match_exact(tokens, TokenKind::String) {
@@ -1686,11 +1685,11 @@ impl Parser {
         }
     }
 
-    fn dimension_expression(&mut self, tokens: &[Token]) -> Result<TypeExpression> {
+    fn dimension_expression(&mut self, tokens: &[Token<'a>]) -> Result<TypeExpression> {
         self.dimension_factor(tokens)
     }
 
-    fn dimension_factor(&mut self, tokens: &[Token]) -> Result<TypeExpression> {
+    fn dimension_factor(&mut self, tokens: &[Token<'a>]) -> Result<TypeExpression> {
         let mut expr = self.dimension_power(tokens)?;
         while let Some(operator_token) =
             self.match_any(tokens, &[TokenKind::Multiply, TokenKind::Divide])
@@ -1707,7 +1706,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn dimension_power(&mut self, tokens: &[Token]) -> Result<TypeExpression> {
+    fn dimension_power(&mut self, tokens: &[Token<'a>]) -> Result<TypeExpression> {
         let expr = self.dimension_primary(tokens)?;
 
         if self.match_exact(tokens, TokenKind::Power).is_some() {
@@ -1735,7 +1734,7 @@ impl Parser {
         }
     }
 
-    fn dimension_exponent(&mut self, tokens: &[Token]) -> Result<(Span, Exponent)> {
+    fn dimension_exponent(&mut self, tokens: &[Token<'a>]) -> Result<(Span, Exponent)> {
         if let Some(token) = self.match_exact(tokens, TokenKind::Number) {
             let span = self.last(tokens).unwrap().span;
             let num_str = token.lexeme.replace('_', "");
@@ -1797,7 +1796,7 @@ impl Parser {
         }
     }
 
-    fn dimension_primary(&mut self, tokens: &[Token]) -> Result<TypeExpression> {
+    fn dimension_primary(&mut self, tokens: &[Token<'a>]) -> Result<TypeExpression> {
         let e = Err(ParseError::new(
             ParseErrorKind::ExpectedDimensionPrimary,
             self.peek(tokens).span,
@@ -1835,11 +1834,7 @@ impl Parser {
         }
     }
 
-    fn match_exact<'a>(
-        &mut self,
-        tokens: &'a [Token<'a>],
-        token_kind: TokenKind,
-    ) -> Option<&'a Token<'a>> {
+    fn match_exact(&mut self, tokens: &[Token<'a>], token_kind: TokenKind) -> Option<Token<'a>> {
         let token = self.peek(tokens);
         if token.kind == token_kind {
             self.advance(tokens);
@@ -1862,22 +1857,18 @@ impl Parser {
 
     /// Same as 'match_exact', but skips empty lines before matching. Note that this
     /// does *not* skip empty lines in case there is no match.
-    fn match_exact_beyond_linebreaks<'a>(
+    fn match_exact_beyond_linebreaks(
         &mut self,
-        tokens: &'a [Token<'a>],
+        tokens: &[Token<'a>],
         token_kind: TokenKind,
-    ) -> Option<&'a Token<'a>> {
+    ) -> Option<Token<'a>> {
         if self.look_ahead_beyond_linebreak(tokens, token_kind) {
             self.skip_empty_lines(tokens);
         }
         self.match_exact(tokens, token_kind)
     }
 
-    fn match_any<'a>(
-        &mut self,
-        tokens: &'a [Token<'a>],
-        kinds: &[TokenKind],
-    ) -> Option<&'a Token<'a>> {
+    fn match_any(&mut self, tokens: &[Token<'a>], kinds: &[TokenKind]) -> Option<Token<'a>> {
         for kind in kinds {
             if let result @ Some(..) = self.match_exact(tokens, *kind) {
                 return result;
@@ -1892,15 +1883,15 @@ impl Parser {
         }
     }
 
-    fn peek<'a>(&self, tokens: &'a [Token<'a>]) -> &'a Token<'a> {
-        &tokens[self.current]
+    fn peek(&self, tokens: &[Token<'a>]) -> Token<'a> {
+        tokens[self.current]
     }
 
-    fn last<'a>(&self, tokens: &'a [Token<'a>]) -> Option<&'a Token<'a>> {
+    fn last(&self, tokens: &[Token<'a>]) -> Option<Token<'a>> {
         if self.current == 0 {
             None
         } else {
-            tokens.get(self.current - 1)
+            tokens.get(self.current - 1).copied()
         }
     }
 
@@ -1954,7 +1945,7 @@ fn strip_and_escape(s: &str) -> String {
 /// will try to recover from the error and parse as many statements as possible
 /// while stacking all the errors in a `Vec`. At the end, it returns the complete
 /// list of statements parsed + the list of errors accumulated.
-pub fn parse(input: &str, code_source_id: usize) -> ParseResult {
+pub fn parse(input: &str, code_source_id: usize) -> ParseResult<'_> {
     use crate::tokenizer::tokenize;
 
     let tokens = tokenize(input, code_source_id)
@@ -1962,8 +1953,10 @@ pub fn parse(input: &str, code_source_id: usize) -> ParseResult {
             ParseError::new(ParseErrorKind::TokenizerError(kind), span)
         })
         .map_err(|e| (Vec::new(), vec![e]))?;
+    let tokens = &tokens;
+
     let mut parser = Parser::new();
-    parser.parse(&tokens)
+    parser.parse(tokens)
 }
 
 #[cfg(test)]
@@ -2402,7 +2395,7 @@ mod tests {
             &["let foo = 1", "let foo=1"],
             Statement::DefineVariable(DefineVariable {
                 identifier_span: Span::dummy(),
-                identifier: "foo".into(),
+                identifier: "foo",
                 expr: scalar!(1.0),
                 type_annotation: None,
                 decorators: Vec::new(),
@@ -2413,7 +2406,7 @@ mod tests {
             &["let x: Length = 1 * meter"],
             Statement::DefineVariable(DefineVariable {
                 identifier_span: Span::dummy(),
-                identifier: "x".into(),
+                identifier: "x",
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
                 type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
@@ -2427,14 +2420,14 @@ mod tests {
             &["@name(\"myvar\") @aliases(foo, bar) let x: Length = 1 * meter"],
             Statement::DefineVariable(DefineVariable {
                 identifier_span: Span::dummy(),
-                identifier: "x".into(),
+                identifier: "x",
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
                 type_annotation: Some(TypeAnnotation::TypeExpression(
                     TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
                 )),
                 decorators: vec![
                     decorator::Decorator::Name("myvar".into()),
-                    decorator::Decorator::Aliases(vec![("foo".into(), None), ("bar".into(), None)]),
+                    decorator::Decorator::Aliases(vec![("foo", None), ("bar", None)]),
                 ],
             }),
         );
@@ -2802,7 +2795,7 @@ mod tests {
                 body: Some(identifier!("y")),
                 local_variables: vec![DefineVariable {
                     identifier_span: Span::dummy(),
-                    identifier: String::from("y"),
+                    identifier: "y",
                     expr: binop!(identifier!("x"), Mul, scalar!(2.0)),
                     type_annotation: None,
                     decorators: vec![],
@@ -2825,14 +2818,14 @@ mod tests {
                 local_variables: vec![
                     DefineVariable {
                         identifier_span: Span::dummy(),
-                        identifier: String::from("y"),
+                        identifier: "y",
                         expr: binop!(identifier!("x"), Add, identifier!("x")),
                         type_annotation: None,
                         decorators: vec![],
                     },
                     DefineVariable {
                         identifier_span: Span::dummy(),
-                        identifier: String::from("z"),
+                        identifier: "z",
                         expr: binop!(identifier!("y"), Add, identifier!("x")),
                         type_annotation: None,
                         decorators: vec![],
@@ -3342,7 +3335,7 @@ mod tests {
                     foo: scalar!(1.0),
                     bar: scalar!(2.0)
                 }),
-                "foo".to_owned(),
+                "foo",
             ),
         );
     }

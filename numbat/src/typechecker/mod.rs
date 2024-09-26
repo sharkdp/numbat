@@ -64,7 +64,7 @@ pub struct TypeChecker {
 
 struct ElaborationDefinitionArgs<'a> {
     identifier_span: Span,
-    expr: &'a ast::Expression,
+    expr: &'a ast::Expression<'a>,
     type_annotation_span: Option<Span>,
     type_annotation: Option<&'a TypeAnnotation>,
     operation: &'a str,
@@ -174,7 +174,7 @@ impl TypeChecker {
             ast::Expression::Identifier(_, name) => self
                 .env
                 .get_function_info(name)
-                .map(|(signature, _)| (name.clone(), signature)),
+                .map(|(signature, _)| (name.to_string(), signature)),
             _ => None,
         }
     }
@@ -319,7 +319,7 @@ impl TypeChecker {
                     }
                 };
 
-                typed_ast::Expression::Identifier(*span, name.clone(), TypeScheme::concrete(ty))
+                typed_ast::Expression::Identifier(*span, name.to_string(), TypeScheme::concrete(ty))
             }
             ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
                 let type_scheme = self.identifier_type(*span, name)?.clone();
@@ -914,13 +914,14 @@ impl TypeChecker {
                 name,
                 fields,
             } => {
+                let name = *name;
                 let fields_checked = fields
                     .iter()
                     .map(|(_, n, v)| Ok((n.to_string(), self.elaborate_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
                 let Some(struct_info) = self.structs.get(name).cloned() else {
-                    return Err(TypeCheckError::UnknownStruct(*ident_span, name.clone()));
+                    return Err(TypeCheckError::UnknownStruct(*ident_span, name.to_owned()));
                 };
 
                 let mut seen_fields = HashMap::new();
@@ -983,6 +984,7 @@ impl TypeChecker {
                 )
             }
             ast::Expression::AccessField(full_span, ident_span, expr, field_name) => {
+                let field_name = *field_name;
                 let expr_checked = self.elaborate_expression(expr)?;
 
                 let type_ = expr_checked.get_type();
@@ -1013,7 +1015,7 @@ impl TypeChecker {
                     self.constraints
                         .add(Constraint::HasField(
                             type_.clone(),
-                            field_name.clone(),
+                            field_name.to_owned(),
                             field_type.clone(),
                         ))
                         .ok();
@@ -1152,10 +1154,10 @@ impl TypeChecker {
         Ok((expr_checked, type_deduced))
     }
 
-    fn elaborate_define_variable(
+    fn elaborate_define_variable<'a>(
         &mut self,
-        define_variable: &ast::DefineVariable,
-    ) -> Result<typed_ast::DefineVariable> {
+        define_variable: &ast::DefineVariable<'a>,
+    ) -> Result<typed_ast::DefineVariable<'a>> {
         let DefineVariable {
             identifier_span,
             identifier,
@@ -1177,19 +1179,23 @@ impl TypeChecker {
         })?;
 
         for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-            self.env
-                .add(name.clone(), type_deduced.clone(), *identifier_span, false);
+            self.env.add(
+                name.to_owned(),
+                type_deduced.clone(),
+                *identifier_span,
+                false,
+            );
 
             self.value_namespace.add_identifier_allow_override(
-                name.clone(),
+                name.to_owned(),
                 *identifier_span,
                 "constant".to_owned(),
             )?;
         }
 
         Ok(typed_ast::DefineVariable(
-            identifier.clone(),
-            decorators.clone(),
+            identifier.to_string(),
+            decorators.to_owned(),
             expr_checked,
             type_annotation.clone(),
             TypeScheme::concrete(type_deduced),
@@ -1197,7 +1203,10 @@ impl TypeChecker {
         ))
     }
 
-    fn elaborate_statement(&mut self, ast: &ast::Statement) -> Result<typed_ast::Statement> {
+    fn elaborate_statement<'a>(
+        &mut self,
+        ast: &ast::Statement<'a>,
+    ) -> Result<typed_ast::Statement<'a>> {
         Ok(match ast {
             ast::Statement::Expression(expr) => {
                 let checked_expr = self.elaborate_expression(expr)?;
@@ -1242,7 +1251,7 @@ impl TypeChecker {
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.env.add(
-                        name.clone(),
+                        name.to_string(),
                         Type::Dimension(type_specified.clone()),
                         *span,
                         true,
@@ -1278,8 +1287,12 @@ impl TypeChecker {
                     })?;
 
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-                    self.env
-                        .add(name.clone(), type_deduced.clone(), *identifier_span, true);
+                    self.env.add(
+                        name.to_string(),
+                        type_deduced.clone(),
+                        *identifier_span,
+                        true,
+                    );
                 }
                 typed_ast::Statement::DefineDerivedUnit(
                     identifier.clone(),
@@ -1417,8 +1430,8 @@ impl TypeChecker {
                         fn_type: fn_type.clone(),
                     },
                     FunctionMetadata {
-                        name: crate::decorator::name(decorators),
-                        url: crate::decorator::url(decorators),
+                        name: crate::decorator::name(decorators).map(ToOwned::to_owned),
+                        url: crate::decorator::url(decorators).map(ToOwned::to_owned),
                         description: crate::decorator::description(decorators),
                     },
                 );
@@ -1721,7 +1734,10 @@ impl TypeChecker {
         })
     }
 
-    fn check_statement(&mut self, statement: &ast::Statement) -> Result<typed_ast::Statement> {
+    fn check_statement<'a>(
+        &mut self,
+        statement: &ast::Statement<'a>,
+    ) -> Result<typed_ast::Statement<'a>> {
         self.constraints.clear();
         self.registry.introduced_type_parameters.clear();
 
@@ -1833,10 +1849,10 @@ impl TypeChecker {
         Ok(elaborated_statement)
     }
 
-    pub fn check(
+    pub fn check<'a>(
         &mut self,
-        statements: impl IntoIterator<Item = ast::Statement>,
-    ) -> Result<Vec<typed_ast::Statement>> {
+        statements: impl IntoIterator<Item = ast::Statement<'a>>,
+    ) -> Result<Vec<typed_ast::Statement<'a>>> {
         let mut checked_statements = vec![];
 
         for statement in statements.into_iter() {

@@ -29,7 +29,7 @@ impl Transformer {
         }
     }
 
-    fn transform_expression(&self, expression: Expression) -> Expression {
+    fn transform_expression<'a>(&self, expression: Expression<'a>) -> Expression<'a> {
         match expression {
             expr @ Expression::Scalar(..) => expr,
             Expression::Identifier(span, identifier) => {
@@ -38,7 +38,7 @@ impl Transformer {
                     prefix,
                     unit_name,
                     full_name,
-                ) = self.prefix_parser.parse(&identifier)
+                ) = self.prefix_parser.parse(identifier)
                 {
                     Expression::UnitIdentifier(span, prefix, unit_name, full_name)
                 } else {
@@ -159,10 +159,10 @@ impl Transformer {
         Ok(())
     }
 
-    fn transform_define_variable(
+    fn transform_define_variable<'a>(
         &mut self,
-        define_variable: DefineVariable,
-    ) -> Result<DefineVariable> {
+        define_variable: DefineVariable<'a>,
+    ) -> Result<DefineVariable<'a>> {
         let DefineVariable {
             identifier_span,
             identifier,
@@ -171,11 +171,11 @@ impl Transformer {
             decorators,
         } = define_variable;
 
-        for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
-            self.variable_names.push(name.clone());
+        for (name, _) in decorator::name_and_aliases(identifier, &decorators) {
+            self.variable_names.push(name.to_owned());
         }
         self.prefix_parser
-            .add_other_identifier(&identifier, identifier_span)?;
+            .add_other_identifier(identifier, identifier_span)?;
         Ok(DefineVariable {
             identifier_span,
             identifier,
@@ -185,7 +185,7 @@ impl Transformer {
         })
     }
 
-    fn transform_statement(&mut self, statement: Statement) -> Result<Statement> {
+    fn transform_statement<'a>(&mut self, statement: Statement<'a>) -> Result<Statement<'a>> {
         Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
             Statement::DefineBaseUnit(span, name, dexpr, decorators) => {
@@ -280,13 +280,15 @@ impl Transformer {
         })
     }
 
-    pub fn transform(
+    pub fn transform<'a>(
         &mut self,
-        statements: impl IntoIterator<Item = Statement>,
-    ) -> Result<Vec<Statement>> {
-        statements
-            .into_iter()
-            .map(|statement| self.transform_statement(statement))
-            .collect()
+        statements: impl IntoIterator<Item = Statement<'a>>,
+    ) -> Result<Vec<Statement<'a>>> {
+        let statements = statements.into_iter();
+        let mut ans = Vec::with_capacity(statements.size_hint().1.unwrap_or(0));
+        for s in statements {
+            ans.push(self.transform_statement(s)?);
+        }
+        Ok(ans)
     }
 }

@@ -24,7 +24,7 @@ impl DimensionRegistry {
                     .any(|(_, n, _)| n == name)
                 {
                     Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
-                        name.clone(),
+                        name.to_string(),
                         Exponent::from_integer(1),
                     )))
                 } else {

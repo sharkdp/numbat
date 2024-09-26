@@ -1,19 +1,19 @@
 use crate::{prefix_parser::AcceptsPrefix, unit::CanonicalName};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Decorator {
+pub enum Decorator<'a> {
     MetricPrefixes,
     BinaryPrefixes,
-    Aliases(Vec<(String, Option<AcceptsPrefix>)>),
+    Aliases(Vec<(&'a str, Option<AcceptsPrefix>)>),
     Url(String),
     Name(String),
     Description(String),
 }
 
 pub fn name_and_aliases<'a>(
-    name: &'a String,
-    decorators: &'a [Decorator],
-) -> Box<dyn Iterator<Item = (&'a String, AcceptsPrefix)> + 'a> {
+    name: &'a str,
+    decorators: &'a [Decorator<'a>],
+) -> Box<dyn Iterator<Item = (&'a str, AcceptsPrefix)> + 'a> {
     let aliases = {
         let mut aliases_vec = vec![];
         for decorator in decorators {
@@ -21,7 +21,7 @@ pub fn name_and_aliases<'a>(
                 aliases_vec = aliases
                     .iter()
                     .map(|(name, accepts_prefix)| {
-                        (name, accepts_prefix.unwrap_or(AcceptsPrefix::only_long()))
+                        (*name, accepts_prefix.unwrap_or(AcceptsPrefix::only_long()))
                     })
                     .collect();
             }
@@ -56,19 +56,19 @@ pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> Can
     }
 }
 
-pub fn name(decorators: &[Decorator]) -> Option<String> {
+pub fn name<'a>(decorators: &'a [Decorator<'a>]) -> Option<&'a str> {
     for decorator in decorators {
         if let Decorator::Name(name) = decorator {
-            return Some(name.clone());
+            return Some(name);
         }
     }
     None
 }
 
-pub fn url(decorators: &[Decorator]) -> Option<String> {
+pub fn url<'a>(decorators: &'a [Decorator<'a>]) -> Option<&'a str> {
     for decorator in decorators {
         if let Decorator::Url(url) = decorator {
-            return Some(url.clone());
+            return Some(url);
         }
     }
     None

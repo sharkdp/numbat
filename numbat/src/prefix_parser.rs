@@ -8,8 +8,8 @@ use crate::{name_resolution::NameResolutionError, prefix::Prefix};
 static PREFIXES: OnceLock<Vec<(&'static str, &'static [&'static str], Prefix)>> = OnceLock::new();
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum PrefixParserResult {
-    Identifier(String),
+pub enum PrefixParserResult<'a> {
+    Identifier(&'a str),
     /// Span, prefix, unit name in source (e.g. 'm'), full unit name (e.g. 'meter')
     UnitIdentifier(Span, Prefix, String, String),
 }
@@ -228,7 +228,7 @@ impl PrefixParser {
         Ok(())
     }
 
-    pub fn parse(&self, input: &str) -> PrefixParserResult {
+    pub fn parse<'a>(&self, input: &'a str) -> PrefixParserResult<'a> {
         if let Some(info) = self.units.get(input) {
             return PrefixParserResult::UnitIdentifier(
                 info.definition_span,
@@ -255,7 +255,7 @@ impl PrefixParser {
                     return PrefixParserResult::UnitIdentifier(
                         info.definition_span,
                         *prefix,
-                        unit_name.to_string(),
+                        unit_name.clone(),
                         info.full_name.clone(),
                     );
                 }
@@ -269,14 +269,14 @@ impl PrefixParser {
                     return PrefixParserResult::UnitIdentifier(
                         info.definition_span,
                         *prefix,
-                        unit_name.to_string(),
+                        unit_name.clone(),
                         info.full_name.clone(),
                     );
                 }
             }
         }
 
-        PrefixParserResult::Identifier(input.into())
+        PrefixParserResult::Identifier(input)
     }
 }
 
@@ -516,38 +516,38 @@ mod tests {
 
         assert_eq!(
             prefix_parser.parse("kilom"),
-            PrefixParserResult::Identifier("kilom".into())
+            PrefixParserResult::Identifier("kilom")
         );
         assert_eq!(
             prefix_parser.parse("kilome"),
-            PrefixParserResult::Identifier("kilome".into())
+            PrefixParserResult::Identifier("kilome")
         );
         assert_eq!(
             prefix_parser.parse("kme"),
-            PrefixParserResult::Identifier("kme".into())
+            PrefixParserResult::Identifier("kme")
         );
 
         assert_eq!(
             prefix_parser.parse("kilomete"),
-            PrefixParserResult::Identifier("kilomete".into())
+            PrefixParserResult::Identifier("kilomete")
         );
         assert_eq!(
             prefix_parser.parse("kilometerr"),
-            PrefixParserResult::Identifier("kilometerr".into())
+            PrefixParserResult::Identifier("kilometerr")
         );
 
         assert_eq!(
             prefix_parser.parse("foometer"),
-            PrefixParserResult::Identifier("foometer".into())
+            PrefixParserResult::Identifier("foometer")
         );
 
         assert_eq!(
             prefix_parser.parse("kibimeter"),
-            PrefixParserResult::Identifier("kibimeter".into())
+            PrefixParserResult::Identifier("kibimeter")
         );
         assert_eq!(
             prefix_parser.parse("Kim"),
-            PrefixParserResult::Identifier("Kim".into())
+            PrefixParserResult::Identifier("Kim")
         );
     }
 }
