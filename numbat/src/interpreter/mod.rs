@@ -60,6 +60,9 @@ pub enum RuntimeError {
 
     #[error("Empty list")]
     EmptyList,
+
+    #[error("Could not write to file: {0:?}")]
+    FileWrite(std::path::PathBuf),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -132,7 +135,7 @@ impl InterpreterResult {
     }
 }
 
-pub type Result<T> = std::result::Result<T, RuntimeError>;
+pub type Result<T> = std::result::Result<T, Box<RuntimeError>>;
 
 pub type PrintFunction = dyn FnMut(&Markup) + Send;
 
@@ -234,7 +237,7 @@ mod tests {
     #[track_caller]
     fn assert_runtime_error(input: &str, err_expected: RuntimeError) {
         if let Err(err_actual) = get_interpreter_result(input) {
-            assert_eq!(err_actual, err_expected);
+            assert_eq!(*err_actual, err_expected);
         } else {
             panic!();
         }

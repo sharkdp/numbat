@@ -24,12 +24,12 @@ There is a set of special commands that only work in the web version:
 
 | Command | Action |
 |---------|--------|
-| `list`, `ls` | List all constants, units, and dimensions |
+| `list` | List all functions, dimensions, variables and units |
 | `list <what>` | Where `<what>` can be `functions`, `dimensions`, `variables`, `units` |
-| `info <identifier>` | Get more information about units and variables |
+| `info <identifier>` | Get more information about units, variables, and functions |
+| `clear` | Clear screen |
 | `help`, `?` | View short help text |
 | `reset` | Reset state (clear constants, functions, units, …) |
-| `clear` | Clear screen |
 
 ## Key bindings
 

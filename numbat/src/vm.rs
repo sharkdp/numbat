@@ -810,9 +810,9 @@ impl Vm {
                         .to_f64();
 
                     if lhs < 0. {
-                        return Err(RuntimeError::FactorialOfNegativeNumber);
+                        return Err(Box::new(RuntimeError::FactorialOfNegativeNumber));
                     } else if lhs.fract() != 0. {
-                        return Err(RuntimeError::FactorialOfNonInteger);
+                        return Err(Box::new(RuntimeError::FactorialOfNonInteger));
                     }
 
                     self.push_quantity(Quantity::from_scalar(math::factorial(lhs)));
@@ -862,7 +862,7 @@ impl Vm {
                             match result {
                                 std::ops::ControlFlow::Continue(()) => {}
                                 std::ops::ControlFlow::Break(runtime_error) => {
-                                    return Err(runtime_error);
+                                    return Err(Box::new(runtime_error));
                                 }
                             }
                         }

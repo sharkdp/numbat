@@ -722,7 +722,9 @@ impl Statement {
         exponents
     }
 
-    pub(crate) fn find_typed_hole(&self) -> Result<Option<(Span, TypeScheme)>, TypeCheckError> {
+    pub(crate) fn find_typed_hole(
+        &self,
+    ) -> Result<Option<(Span, TypeScheme)>, Box<TypeCheckError>> {
         let mut hole = None;
         let mut found_multiple_holes = false;
         self.for_all_expressions(&mut |expr| {
@@ -735,7 +737,9 @@ impl Statement {
         });
 
         if found_multiple_holes {
-            Err(TypeCheckError::MultipleTypedHoles(hole.unwrap().0))
+            Err(Box::new(TypeCheckError::MultipleTypedHoles(
+                hole.unwrap().0,
+            )))
         } else {
             Ok(hole)
         }

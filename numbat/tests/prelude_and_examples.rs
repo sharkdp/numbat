@@ -30,7 +30,9 @@ fn assert_runs_without_prelude(code: &str) {
 
 fn assert_parse_error(code: &str) {
     assert!(matches!(
-        get_test_context().interpret(code, CodeSource::Internal),
+        get_test_context()
+            .interpret(code, CodeSource::Internal)
+            .map_err(|b| *b),
         Err(NumbatError::ResolverError(
             ResolverError::ParseErrors { .. }
         ))
@@ -39,21 +41,27 @@ fn assert_parse_error(code: &str) {
 
 fn assert_name_resolution_error(code: &str) {
     assert!(matches!(
-        get_test_context().interpret(code, CodeSource::Internal),
+        get_test_context()
+            .interpret(code, CodeSource::Internal)
+            .map_err(|b| *b),
         Err(NumbatError::NameResolutionError(_))
     ));
 }
 
 fn assert_typecheck_error(code: &str) {
     assert!(matches!(
-        get_test_context().interpret(code, CodeSource::Internal),
+        get_test_context()
+            .interpret(code, CodeSource::Internal)
+            .map_err(|b| *b),
         Err(NumbatError::TypeCheckError(_))
     ));
 }
 
 fn assert_runtime_error(code: &str) {
     assert!(matches!(
-        get_test_context().interpret(code, CodeSource::Internal),
+        get_test_context()
+            .interpret(code, CodeSource::Internal)
+            .map_err(|b| *b),
         Err(NumbatError::RuntimeError(_))
     ));
 }

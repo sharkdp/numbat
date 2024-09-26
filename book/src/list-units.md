@@ -122,36 +122,36 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Mass` | [Tonne](https://en.wikipedia.org/wiki/Tonne) | `metricton`, `ton`, `tonne`, `tonnes`, `tons` |
 | `Molality` | [Molal](https://en.wikipedia.org/wiki/Molality) | `molal` |
 | `Molarity` | [Molar](https://en.wikipedia.org/wiki/Molar_concentration) | `molar` |
-| `Money` | [Australian dollar](https://en.wikipedia.org/wiki/Australian_dollar) | `A$`, `AUD`, `australian_dollar`, `australian_dollars` |
-| `Money` | [Brazilian real](https://en.wikipedia.org/wiki/Brazilian_real) | `brazilian_real`, `brazilian_reals`, `BRL`, `R$` |
-| `Money` | [Pound sterling](https://en.wikipedia.org/wiki/Pound_sterling) | `british_pound`, `GBP`, `pound_sterling`, `£` |
-| `Money` | [Bulgarian lev](https://en.wikipedia.org/wiki/Bulgarian_lev) | `BGN`, `bulgarian_lev`, `bulgarian_leva` |
-| `Money` | [Canadian dollar](https://en.wikipedia.org/wiki/Canadian_dollar) | `C$`, `CAD`, `canadian_dollar`, `canadian_dollars` |
-| `Money` | [Czech koruna](https://en.wikipedia.org/wiki/Czech_koruna) | `czech_koruna`, `czech_korunas`, `CZK`, `Kč` |
-| `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `danish_krone`, `danish_kroner`, `DKK` |
-| `Money` | [US dollar](https://en.wikipedia.org/wiki/United_States_dollar) | `$`, `dollar`, `dollars`, `USD` |
+| `Money` | [Australian dollar](https://en.wikipedia.org/wiki/Australian_dollar) | `A$`, `AUD`, `aud`, `australian_dollar`, `australian_dollars` |
+| `Money` | [Brazilian real](https://en.wikipedia.org/wiki/Brazilian_real) | `brazilian_real`, `brazilian_reals`, `BRL`, `brl`, `R$`, `r$` |
+| `Money` | [Pound sterling](https://en.wikipedia.org/wiki/Pound_sterling) | `british_pound`, `GBP`, `gbp`, `pound_sterling`, `£` |
+| `Money` | [Bulgarian lev](https://en.wikipedia.org/wiki/Bulgarian_lev) | `BGN`, `bgn`, `bulgarian_lev`, `bulgarian_leva` |
+| `Money` | [Canadian dollar](https://en.wikipedia.org/wiki/Canadian_dollar) | `C$`, `c$`, `CAD`, `cad`, `canadian_dollar`, `canadian_dollars` |
+| `Money` | [Czech koruna](https://en.wikipedia.org/wiki/Czech_koruna) | `czech_koruna`, `czech_korunas`, `CZK`, `czk`, `Kč` |
+| `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `danish_krone`, `danish_kroner`, `DKK`, `dkk` |
+| `Money` | [US dollar](https://en.wikipedia.org/wiki/United_States_dollar) | `$`, `dollar`, `dollars`, `USD`, `usd` |
 | `Money` | [Euro](https://en.wikipedia.org/wiki/Euro) | `EUR`, `euro`, `euros`, `€` |
-| `Money` | [Hong Kong dollar](https://en.wikipedia.org/wiki/Hong_Kong_dollar) | `HK$`, `HKD`, `hong_kong_dollar`, `hong_kong_dollars` |
-| `Money` | [Hungarian forint](https://en.wikipedia.org/wiki/Hungarian_forint) | `Ft`, `HUF`, `hungarian_forint`, `hungarian_forints` |
-| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `icelandic_krona`, `icelandic_kronur`, `icelandic_króna`, `icelandic_krónur`, `ISK` |
-| `Money` | [Indian rupee](https://en.wikipedia.org/wiki/Indian_rupee) | `indian_rupee`, `indian_rupees`, `INR`, `₹` |
-| `Money` | [Indonesian rupiah](https://en.wikipedia.org/wiki/Indonesian_rupiah) | `IDR`, `indonesian_rupiah`, `indonesian_rupiahs`, `Rp` |
-| `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `ILS`, `israeli_new_shekel`, `israeli_new_shekels`, `NIS`, `₪` |
+| `Money` | [Hong Kong dollar](https://en.wikipedia.org/wiki/Hong_Kong_dollar) | `HK$`, `hk$`, `HKD`, `hkd`, `hong_kong_dollar`, `hong_kong_dollars` |
+| `Money` | [Hungarian forint](https://en.wikipedia.org/wiki/Hungarian_forint) | `Ft`, `HUF`, `huf`, `hungarian_forint`, `hungarian_forints` |
+| `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `icelandic_krona`, `icelandic_kronur`, `icelandic_króna`, `icelandic_krónur`, `ISK`, `isk` |
+| `Money` | [Indian rupee](https://en.wikipedia.org/wiki/Indian_rupee) | `indian_rupee`, `indian_rupees`, `INR`, `inr`, `₹` |
+| `Money` | [Indonesian rupiah](https://en.wikipedia.org/wiki/Indonesian_rupiah) | `IDR`, `idr`, `indonesian_rupiah`, `indonesian_rupiahs`, `Rp` |
+| `Money` | [Israeli new shekel](https://en.wikipedia.org/wiki/Israeli_new_shekel) | `ILS`, `ils`, `israeli_new_shekel`, `israeli_new_shekels`, `NIS`, `nis`, `₪` |
 | `Money` | [Malaysian ringgit](https://en.wikipedia.org/wiki/Malaysian_ringgit) | `malaysian_ringgit`, `malaysian_ringgits`, `MYR`, `RM` |
-| `Money` | [New Zealand dollar](https://en.wikipedia.org/wiki/New_Zealand_dollar) | `new_zealand_dollar`, `new_zealand_dollars`, `NZ$`, `NZD` |
-| `Money` | [Norwegian krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `norwegian_krone`, `norwegian_kroner` |
-| `Money` | [Philippine peso](https://en.wikipedia.org/wiki/Philippine_peso) | `philippine_peso`, `philippine_pesos`, `PHP`, `₱` |
-| `Money` | [Polish złoty](https://en.wikipedia.org/wiki/Polish_złoty) | `PLN`, `polish_zloty`, `polish_zlotys`, `zł` |
-| `Money` | [Chinese yuan](https://en.wikipedia.org/wiki/Renminbi) | `CNY`, `renminbi`, `yuan`, `元` |
-| `Money` | [Romanian leu](https://en.wikipedia.org/wiki/Romanian_leu) | `lei`, `romanian_leu`, `romanian_leus`, `RON` |
-| `Money` | [Singapore dollar](https://en.wikipedia.org/wiki/Singapore_dollar) | `S$`, `SGD`, `singapore_dollar`, `singapore_dollars` |
-| `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `south_african_rand`, `ZAR` |
-| `Money` | [South Korean won](https://en.wikipedia.org/wiki/South_Korean_won) | `KRW`, `south_korean_won`, `south_korean_wons`, `₩` |
-| `Money` | [Swedish krona](https://en.wikipedia.org/wiki/Swedish_krona) | `SEK`, `swedish_krona`, `swedish_kronor` |
-| `Money` | [Swiss franc](https://en.wikipedia.org/wiki/Swiss_franc) | `CHF`, `swiss_franc`, `swiss_francs` |
-| `Money` | [Thai baht](https://en.wikipedia.org/wiki/Thai_baht) | `thai_baht`, `thai_bahts`, `THB`, `฿` |
-| `Money` | [Turkish lira](https://en.wikipedia.org/wiki/Turkish_lira) | `TRY`, `turkish_lira`, `turkish_liras`, `₺` |
-| `Money` | [Japanese yen](https://en.wikipedia.org/wiki/Japanese_yen) | `JPY`, `yen`, `¥`, `円` |
+| `Money` | [New Zealand dollar](https://en.wikipedia.org/wiki/New_Zealand_dollar) | `new_zealand_dollar`, `new_zealand_dollars`, `NZ$`, `nz$`, `NZD`, `nzd` |
+| `Money` | [Norwegian krone](https://en.wikipedia.org/wiki/Norwegian_krone) | `NOK`, `nok`, `norwegian_krone`, `norwegian_kroner` |
+| `Money` | [Philippine peso](https://en.wikipedia.org/wiki/Philippine_peso) | `philippine_peso`, `philippine_pesos`, `PHP`, `php`, `₱` |
+| `Money` | [Polish złoty](https://en.wikipedia.org/wiki/Polish_złoty) | `PLN`, `pln`, `polish_zloty`, `polish_zlotys`, `zł` |
+| `Money` | [Chinese yuan](https://en.wikipedia.org/wiki/Renminbi) | `CNY`, `cny`, `renminbi`, `yuan`, `元` |
+| `Money` | [Romanian leu](https://en.wikipedia.org/wiki/Romanian_leu) | `lei`, `romanian_leu`, `romanian_leus`, `RON`, `ron` |
+| `Money` | [Singapore dollar](https://en.wikipedia.org/wiki/Singapore_dollar) | `S$`, `SGD`, `sgd`, `singapore_dollar`, `singapore_dollars` |
+| `Money` | [South African rand](https://en.wikipedia.org/wiki/South_African_rand) | `south_african_rand`, `ZAR`, `zar` |
+| `Money` | [South Korean won](https://en.wikipedia.org/wiki/South_Korean_won) | `KRW`, `krw`, `south_korean_won`, `south_korean_wons`, `₩` |
+| `Money` | [Swedish krona](https://en.wikipedia.org/wiki/Swedish_krona) | `SEK`, `sek`, `swedish_krona`, `swedish_kronor` |
+| `Money` | [Swiss franc](https://en.wikipedia.org/wiki/Swiss_franc) | `CHF`, `chf`, `swiss_franc`, `swiss_francs` |
+| `Money` | [Thai baht](https://en.wikipedia.org/wiki/Thai_baht) | `thai_baht`, `thai_bahts`, `THB`, `thb`, `฿` |
+| `Money` | [Turkish lira](https://en.wikipedia.org/wiki/Turkish_lira) | `TRY`, `try`, `turkish_lira`, `turkish_liras`, `₺` |
+| `Money` | [Japanese yen](https://en.wikipedia.org/wiki/Japanese_yen) | `JPY`, `jpy`, `yen`, `¥`, `円` |
 | `Person` | Person | `capita`, `people`, `person`, `persons` |
 | `Piece` | Piece | `piece`, `pieces` |
 | `Pixel` | [Pixel](https://en.wikipedia.org/wiki/Pixel) | `pixel`, `pixels`, `px` |
