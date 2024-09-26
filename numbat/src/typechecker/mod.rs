@@ -1587,7 +1587,7 @@ impl TypeChecker {
                         .collect(),
                     typed_parameters
                         .iter()
-                        .map(|(span, name, _, ref type_annotation)| {
+                        .map(|(span, name, _, type_annotation)| {
                             (
                                 *span,
                                 name.clone(),
