@@ -36,14 +36,16 @@ impl DTypeFactor {
     }
 }
 
+type DtypeFactorPower = (DTypeFactor, Exponent);
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DType {
     // Always in canonical form
-    pub factors: Vec<(DTypeFactor, Exponent)>, // TODO make this private
+    pub factors: Vec<DtypeFactorPower>, // TODO make this private
 }
 
 impl DType {
-    pub fn from_factors(factors: &[(DTypeFactor, Exponent)]) -> DType {
+    pub fn from_factors(factors: &[DtypeFactorPower]) -> DType {
         let mut dtype = DType {
             factors: factors.into(),
         };
@@ -201,9 +203,7 @@ impl DType {
             .contains(name)
     }
 
-    pub fn split_first_factor(
-        &self,
-    ) -> Option<(&(DTypeFactor, Exponent), &[(DTypeFactor, Exponent)])> {
+    pub fn split_first_factor(&self) -> Option<(&DtypeFactorPower, &[DtypeFactorPower])> {
         self.factors.split_first()
     }
 
