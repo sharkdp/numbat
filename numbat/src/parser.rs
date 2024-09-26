@@ -277,7 +277,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn skip_empty_lines(&mut self, tokens: &[Token<'a>]) {
+    fn skip_empty_lines<'b>(&mut self, tokens: &'b [Token<'a>]) {
         while self.match_exact(tokens, TokenKind::Newline).is_some() {}
     }
 
@@ -1570,7 +1570,7 @@ impl<'a> Parser<'a> {
         &mut self,
         tokens: &[Token<'a>],
         parts: &mut Vec<StringPart<'a>>,
-        token: Token<'a>,
+        token: &Token<'a>,
     ) -> Result<()> {
         parts.push(StringPart::Fixed(strip_and_escape(token.lexeme)));
 
@@ -1837,7 +1837,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn match_exact(&mut self, tokens: &[Token<'a>], token_kind: TokenKind) -> Option<Token<'a>> {
+    fn match_exact<'b>(
+        &mut self,
+        tokens: &'b [Token<'a>],
+        token_kind: TokenKind,
+    ) -> Option<&'b Token<'a>> {
         let token = self.peek(tokens);
         if token.kind == token_kind {
             self.advance(tokens);
@@ -1860,18 +1864,22 @@ impl<'a> Parser<'a> {
 
     /// Same as 'match_exact', but skips empty lines before matching. Note that this
     /// does *not* skip empty lines in case there is no match.
-    fn match_exact_beyond_linebreaks(
+    fn match_exact_beyond_linebreaks<'b>(
         &mut self,
-        tokens: &[Token<'a>],
+        tokens: &'b [Token<'a>],
         token_kind: TokenKind,
-    ) -> Option<Token<'a>> {
+    ) -> Option<&'b Token<'a>> {
         if self.look_ahead_beyond_linebreak(tokens, token_kind) {
             self.skip_empty_lines(tokens);
         }
         self.match_exact(tokens, token_kind)
     }
 
-    fn match_any(&mut self, tokens: &[Token<'a>], kinds: &[TokenKind]) -> Option<Token<'a>> {
+    fn match_any<'b>(
+        &mut self,
+        tokens: &'b [Token<'a>],
+        kinds: &[TokenKind],
+    ) -> Option<&'b Token<'a>> {
         for kind in kinds {
             if let result @ Some(..) = self.match_exact(tokens, *kind) {
                 return result;
@@ -1886,15 +1894,15 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn peek(&self, tokens: &[Token<'a>]) -> Token<'a> {
-        tokens[self.current]
+    fn peek<'b>(&self, tokens: &'b [Token<'a>]) -> &'b Token<'a> {
+        &tokens[self.current]
     }
 
-    fn last(&self, tokens: &[Token<'a>]) -> Option<Token<'a>> {
+    fn last<'b>(&self, tokens: &'b [Token<'a>]) -> Option<&'b Token<'a>> {
         if self.current == 0 {
             None
         } else {
-            tokens.get(self.current - 1).copied()
+            tokens.get(self.current - 1)
         }
     }
 
