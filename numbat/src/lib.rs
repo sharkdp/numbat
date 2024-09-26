@@ -635,6 +635,7 @@ impl Context {
                         "renminbi",
                         "元",
                         "EUR",
+                        "eur",
                         "euro",
                         "euros",
                         "€",
