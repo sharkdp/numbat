@@ -49,9 +49,12 @@ fn type_c() -> DType {
     DType::base_dimension("A").multiply(&DType::base_dimension("B"))
 }
 
-fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
-    let code = &format!("{TEST_PRELUDE}\n{input}");
-    let statements = parse(code, 0).expect("No parse errors for inputs in this test suite");
+fn run_typecheck(input: &str) -> Result<typed_ast::Statement<'_>> {
+    let statements = parse(TEST_PRELUDE, 0)
+        .expect("No parse errors for inputs in this test suite")
+        .into_iter()
+        .chain(parse(input, 0).expect("No parse errors for inputs in this test suite"));
+
     let transformed_statements = Transformer::new()
         .transform(statements)
         .map_err(|err| Box::new(err.into()))?;

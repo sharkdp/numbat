@@ -569,9 +569,9 @@ impl Expression {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct DefineVariable(
+pub struct DefineVariable<'a>(
     pub String,
-    pub Vec<Decorator>,
+    pub Vec<Decorator<'a>>,
     pub Expression,
     pub Option<TypeAnnotation>,
     pub TypeScheme,
@@ -579,12 +579,12 @@ pub struct DefineVariable(
 );
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Statement {
+pub enum Statement<'a> {
     Expression(Expression),
-    DefineVariable(DefineVariable),
+    DefineVariable(DefineVariable<'a>),
     DefineFunction(
         String,
-        Vec<Decorator>,                            // decorators
+        Vec<Decorator<'a>>,                        // decorators
         Vec<(String, Option<TypeParameterBound>)>, // type parameters
         Vec<(
             // parameters:
@@ -593,18 +593,23 @@ pub enum Statement {
             Option<TypeAnnotation>, // parameter type annotation
             Markup,                 // readable parameter type
         )>,
-        Option<Expression>,     // function body
-        Vec<DefineVariable>,    // local variables
-        TypeScheme,             // function type
-        Option<TypeAnnotation>, // return type annotation
-        Markup,                 // readable return type
+        Option<Expression>,      // function body
+        Vec<DefineVariable<'a>>, // local variables
+        TypeScheme,              // function type
+        Option<TypeAnnotation>,  // return type annotation
+        Markup,                  // readable return type
     ),
     DefineDimension(String, Vec<TypeExpression>),
-    DefineBaseUnit(String, Vec<Decorator>, Option<TypeAnnotation>, TypeScheme),
+    DefineBaseUnit(
+        String,
+        Vec<Decorator<'a>>,
+        Option<TypeAnnotation>,
+        TypeScheme,
+    ),
     DefineDerivedUnit(
         String,
         Expression,
-        Vec<Decorator>,
+        Vec<Decorator<'a>>,
         Option<TypeAnnotation>,
         TypeScheme,
         Markup,
@@ -613,7 +618,7 @@ pub enum Statement {
     DefineStruct(StructInfo),
 }
 
-impl Statement {
+impl Statement<'_> {
     pub fn as_expression(&self) -> Option<&Expression> {
         if let Self::Expression(v) = self {
             Some(v)
@@ -664,7 +669,7 @@ impl Statement {
                 readable_return_type,
             ) => {
                 let (fn_type, _) = fn_type.instantiate_for_printing(Some(
-                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
+                    type_parameters.iter().map(|(n, _)| n.as_str()),
                 ));
 
                 for DefineVariable(_, _, _, type_annotation, type_, readable_type) in
@@ -867,14 +872,14 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
     markup_decorators
 }
 
-pub fn pretty_print_function_signature(
+pub fn pretty_print_function_signature<'a>(
     function_name: &str,
     fn_type: &QualifiedType,
     type_parameters: &[TypeVariable],
     parameters: impl Iterator<
         Item = (
-            String, // parameter name
-            Markup, // readable parameter type
+            &'a str, // parameter name
+            Markup,  // readable parameter type
         ),
     >,
     readable_return_type: &Markup,
@@ -919,7 +924,7 @@ pub fn pretty_print_function_signature(
         + markup_return_type
 }
 
-impl PrettyPrint for Statement {
+impl PrettyPrint for Statement<'_> {
     fn pretty_print(&self) -> Markup {
         match self {
             Statement::DefineVariable(DefineVariable(
@@ -953,7 +958,7 @@ impl PrettyPrint for Statement {
                 readable_return_type,
             ) => {
                 let (fn_type, type_parameters) = fn_type.instantiate_for_printing(Some(
-                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
+                    type_parameters.iter().map(|(n, _)| n.as_str()),
                 ));
 
                 let mut pretty_local_variables = None;
@@ -997,7 +1002,7 @@ impl PrettyPrint for Statement {
                     &type_parameters,
                     parameters
                         .iter()
-                        .map(|(_, name, _, type_)| (name.clone(), type_.clone())),
+                        .map(|(_, name, _, type_)| (name.as_str(), type_.clone())),
                     readable_return_type,
                 ) + body
                     .as_ref()
@@ -1341,8 +1346,7 @@ mod tests {
 
     fn parse(code: &str) -> Statement {
         let statements = crate::parser::parse(
-            &format!(
-                "dimension Scalar = 1
+            "dimension Scalar = 1
                  dimension Length
                  dimension Time
                  dimension Mass
@@ -1380,7 +1384,7 @@ mod tests {
                  @metric_prefixes
                  unit points
 
-                 struct Foo {{foo: Length, bar: Time}}
+                 struct Foo {foo: Length, bar: Time}
 
                  let a = 1
                  let b = 1
@@ -1395,13 +1399,12 @@ mod tests {
                  let länge = 1
                  let x_2 = 1
                  let µ = 1
-                 let _prefixed = 1
-
-                 {code}"
-            ),
+                 let _prefixed = 1",
             0,
         )
-        .unwrap();
+        .unwrap()
+        .into_iter()
+        .chain(crate::parser::parse(code, 0).unwrap());
 
         let mut transformer = Transformer::new();
         let transformed_statements = transformer.transform(statements).unwrap().replace_spans();

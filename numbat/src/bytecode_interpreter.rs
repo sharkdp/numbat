@@ -283,12 +283,11 @@ impl BytecodeInterpreter {
 
         // For variables, we ignore the prefix info and only use the names
         let aliases = crate::decorator::name_and_aliases(identifier, decorators)
-            .map(|(name, _)| name)
-            .cloned()
+            .map(|(name, _)| name.to_owned())
             .collect::<Vec<_>>();
         let metadata = LocalMetadata {
-            name: crate::decorator::name(decorators),
-            url: crate::decorator::url(decorators),
+            name: crate::decorator::name(decorators).map(ToOwned::to_owned),
+            url: crate::decorator::url(decorators).map(ToOwned::to_owned),
             description: crate::decorator::description(decorators),
             aliases: aliases.clone(),
         };
@@ -380,7 +379,7 @@ impl BytecodeInterpreter {
             }
             Statement::DefineBaseUnit(unit_name, decorators, annotation, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
-                    .map(|(name, ap)| (name.clone(), ap))
+                    .map(|(name, ap)| (name.to_owned(), ap))
                     .collect();
 
                 self.vm
@@ -394,11 +393,11 @@ impl BytecodeInterpreter {
                                 .map(|a| a.pretty_print())
                                 .unwrap_or(type_.to_readable_type(dimension_registry, false)),
                             aliases,
-                            name: decorator::name(decorators),
+                            name: decorator::name(decorators).map(ToOwned::to_owned),
                             canonical_name: decorator::get_canonical_unit_name(
                                 unit_name, decorators,
                             ),
-                            url: decorator::url(decorators),
+                            url: decorator::url(decorators).map(ToOwned::to_owned),
                             description: decorator::description(decorators),
                             binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                             metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
@@ -424,7 +423,7 @@ impl BytecodeInterpreter {
                 _readable_type,
             ) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
-                    .map(|(name, ap)| (name.clone(), ap))
+                    .map(|(name, ap)| (name.to_owned(), ap))
                     .collect();
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
@@ -450,9 +449,9 @@ impl BytecodeInterpreter {
                             .map(|a| a.pretty_print())
                             .unwrap_or(type_.to_readable_type(dimension_registry, false)),
                         aliases,
-                        name: decorator::name(decorators),
+                        name: decorator::name(decorators).map(ToOwned::to_owned),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
-                        url: decorator::url(decorators),
+                        url: decorator::url(decorators).map(ToOwned::to_owned),
                         description: decorator::description(decorators),
                         binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                         metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),

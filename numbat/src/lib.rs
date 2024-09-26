@@ -539,20 +539,20 @@ impl Context {
         &mut self.resolver
     }
 
-    pub fn interpret(
+    pub fn interpret<'a>(
         &mut self,
-        code: &str,
+        code: &'a str,
         code_source: CodeSource,
-    ) -> Result<(Vec<typed_ast::Statement>, InterpreterResult)> {
+    ) -> Result<(Vec<typed_ast::Statement<'a>>, InterpreterResult)> {
         self.interpret_with_settings(&mut InterpreterSettings::default(), code, code_source)
     }
 
-    pub fn interpret_with_settings(
+    pub fn interpret_with_settings<'a>(
         &mut self,
         settings: &mut InterpreterSettings,
-        code: &str,
+        code: &'a str,
         code_source: CodeSource,
-    ) -> Result<(Vec<typed_ast::Statement>, InterpreterResult)> {
+    ) -> Result<(Vec<typed_ast::Statement<'a>>, InterpreterResult)> {
         let statements = self
             .resolver
             .resolve(code, code_source.clone())
