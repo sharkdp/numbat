@@ -29,7 +29,7 @@ impl Transformer {
         }
     }
 
-    fn transform_expression(&self, expression: Expression) -> Expression {
+    fn transform_expression<'a>(&self, expression: Expression<'a>) -> Expression<'a> {
         match expression {
             expr @ Expression::Scalar(..) => expr,
             Expression::Identifier(span, identifier) => {
@@ -38,7 +38,7 @@ impl Transformer {
                     prefix,
                     unit_name,
                     full_name,
-                ) = self.prefix_parser.parse(&identifier)
+                ) = self.prefix_parser.parse(identifier)
                 {
                     Expression::UnitIdentifier(span, prefix, unit_name, full_name)
                 } else {
@@ -134,7 +134,7 @@ impl Transformer {
 
     pub(crate) fn register_name_and_aliases(
         &mut self,
-        name: &String,
+        name: &str,
         name_span: Span,
         decorators: &[Decorator],
     ) -> Result<()> {
@@ -165,10 +165,10 @@ impl Transformer {
         Ok(())
     }
 
-    fn transform_define_variable(
+    fn transform_define_variable<'a>(
         &mut self,
-        define_variable: DefineVariable,
-    ) -> Result<DefineVariable> {
+        define_variable: DefineVariable<'a>,
+    ) -> Result<DefineVariable<'a>> {
         let DefineVariable {
             identifier_span,
             identifier,
@@ -177,11 +177,11 @@ impl Transformer {
             decorators,
         } = define_variable;
 
-        for (name, _) in decorator::name_and_aliases(&identifier, &decorators) {
-            self.variable_names.push(name.clone());
+        for (name, _) in decorator::name_and_aliases(identifier, &decorators) {
+            self.variable_names.push(name.to_owned());
         }
         self.prefix_parser
-            .add_other_identifier(&identifier, identifier_span)?;
+            .add_other_identifier(identifier, identifier_span)?;
         Ok(DefineVariable {
             identifier_span,
             identifier,
@@ -191,11 +191,11 @@ impl Transformer {
         })
     }
 
-    fn transform_statement(&mut self, statement: Statement) -> Result<Statement> {
+    fn transform_statement<'a>(&mut self, statement: Statement<'a>) -> Result<Statement<'a>> {
         Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
             Statement::DefineBaseUnit(span, name, dexpr, decorators) => {
-                self.register_name_and_aliases(&name, span, &decorators)?;
+                self.register_name_and_aliases(name, span, &decorators)?;
                 Statement::DefineBaseUnit(span, name, dexpr, decorators)
             }
             Statement::DefineDerivedUnit {
@@ -206,7 +206,7 @@ impl Transformer {
                 type_annotation,
                 decorators,
             } => {
-                self.register_name_and_aliases(&identifier, identifier_span, &decorators)?;
+                self.register_name_and_aliases(identifier, identifier_span, &decorators)?;
                 Statement::DefineDerivedUnit {
                     identifier_span,
                     identifier,
@@ -229,9 +229,9 @@ impl Transformer {
                 return_type_annotation,
                 decorators,
             } => {
-                self.function_names.push(function_name.clone());
+                self.function_names.push(function_name.to_owned());
                 self.prefix_parser
-                    .add_other_identifier(&function_name, function_name_span)?;
+                    .add_other_identifier(function_name, function_name_span)?;
 
                 // We create a clone of the full transformer for the purpose
                 // of checking/transforming the function body. The reason for this
@@ -272,7 +272,7 @@ impl Transformer {
                 fields,
             },
             Statement::DefineDimension(name_span, name, dexprs) => {
-                self.dimension_names.push(name.clone());
+                self.dimension_names.push(name.to_owned());
                 Statement::DefineDimension(name_span, name, dexprs)
             }
             Statement::ProcedureCall(span, procedure, args) => Statement::ProcedureCall(
@@ -286,10 +286,10 @@ impl Transformer {
         })
     }
 
-    pub fn transform(
+    pub fn transform<'a>(
         &mut self,
-        statements: impl IntoIterator<Item = Statement>,
-    ) -> Result<Vec<Statement>> {
+        statements: impl IntoIterator<Item = Statement<'a>>,
+    ) -> Result<Vec<Statement<'a>>> {
         statements
             .into_iter()
             .map(|statement| self.transform_statement(statement))

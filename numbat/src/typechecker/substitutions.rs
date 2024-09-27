@@ -210,7 +210,7 @@ impl ApplySubstitution for Expression {
     }
 }
 
-impl ApplySubstitution for Statement {
+impl ApplySubstitution for Statement<'_> {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
             Statement::Expression(e) => e.apply(s),

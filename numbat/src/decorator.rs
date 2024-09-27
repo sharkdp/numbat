@@ -1,10 +1,10 @@
 use crate::{prefix_parser::AcceptsPrefix, span::Span, unit::CanonicalName};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Decorator {
+pub enum Decorator<'a> {
     MetricPrefixes,
     BinaryPrefixes,
-    Aliases(Vec<(String, Option<AcceptsPrefix>, Span)>),
+    Aliases(Vec<(&'a str, Option<AcceptsPrefix>, Span)>),
     Url(String),
     Name(String),
     Description(String),
@@ -19,9 +19,9 @@ pub enum Decorator {
 /// decide whether to yield `(&'a String, AcceptsPrefix)` or a `(&'a String,
 /// AcceptsPrefix, Span)`.
 fn name_and_aliases_inner<'a, T: 'a>(
-    name: &'a String,
+    name: &'a str,
     decorators: &'a [Decorator],
-    f: impl 'a + Fn(&'a String, AcceptsPrefix, Option<Span>) -> T,
+    f: impl 'a + Fn(&'a str, AcceptsPrefix, Option<Span>) -> T,
 ) -> impl 'a + Iterator<Item = T> {
     // contains all the aliases of `name`, starting with `name` itself
     let mut aliases_vec = vec![f(name, AcceptsPrefix::only_long(), None)];
@@ -30,7 +30,7 @@ fn name_and_aliases_inner<'a, T: 'a>(
         if let Decorator::Aliases(aliases) = decorator {
             for (n, ap, span) in aliases {
                 let ap = ap.unwrap_or(AcceptsPrefix::only_long());
-                if n == name {
+                if *n == name {
                     // use the AcceptsPrefix from the alias, but the span from `name`
                     // itself; this way we always report a conflicting `name` first
                     // before reporting any of its aliases. in effect we swallow aliases
@@ -48,18 +48,18 @@ fn name_and_aliases_inner<'a, T: 'a>(
 
 /// Returns iterator of `(name_or_alias, accepts_prefix)` for the given name
 pub fn name_and_aliases<'a>(
-    name: &'a String,
+    name: &'a str,
     decorators: &'a [Decorator],
-) -> impl 'a + Iterator<Item = (&'a String, AcceptsPrefix)> {
+) -> impl 'a + Iterator<Item = (&'a str, AcceptsPrefix)> {
     name_and_aliases_inner(name, decorators, |n, accepts_prefix, _| (n, accepts_prefix))
 }
 
 /// Returns iterator of `(name_or_alias, accepts_prefix, span)` for the given name
 pub fn name_and_aliases_spans<'a>(
-    name: &'a String,
+    name: &'a str,
     name_span: Span,
     decorators: &'a [Decorator],
-) -> impl 'a + Iterator<Item = (&'a String, AcceptsPrefix, Span)> {
+) -> impl 'a + Iterator<Item = (&'a str, AcceptsPrefix, Span)> {
     name_and_aliases_inner(name, decorators, move |n, accepts_prefix, span| {
         (n, accepts_prefix, span.unwrap_or(name_span))
     })
@@ -84,19 +84,19 @@ pub fn get_canonical_unit_name(unit_name: &str, decorators: &[Decorator]) -> Can
     }
 }
 
-pub fn name(decorators: &[Decorator]) -> Option<String> {
+pub fn name<'a>(decorators: &'a [Decorator<'a>]) -> Option<&'a str> {
     for decorator in decorators {
         if let Decorator::Name(name) = decorator {
-            return Some(name.clone());
+            return Some(name);
         }
     }
     None
 }
 
-pub fn url(decorators: &[Decorator]) -> Option<String> {
+pub fn url<'a>(decorators: &'a [Decorator<'a>]) -> Option<&'a str> {
     for decorator in decorators {
         if let Decorator::Url(url) = decorator {
-            return Some(url.clone());
+            return Some(url);
         }
     }
     None

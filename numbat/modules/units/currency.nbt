@@ -3,7 +3,7 @@ dimension Money
 
 @name("Euro")
 @url("https://en.wikipedia.org/wiki/Euro")
-@aliases(euros, EUR, €: short)
+@aliases(euros, EUR, eur, €: short)
 unit euro: Money
 
 # See currencies.nbt for non-Euro currencies
