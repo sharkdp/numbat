@@ -1994,7 +1994,7 @@ mod tests {
             binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
             struct_, ReplaceSpans,
         },
-        span::SourceCodePositition,
+        span::ByteIndex,
     };
 
     #[track_caller]
@@ -2448,16 +2448,8 @@ mod tests {
                             "foo".into(),
                             None,
                             Span {
-                                start: SourceCodePositition {
-                                    byte: 24,
-                                    line: 1,
-                                    position: 25,
-                                },
-                                end: SourceCodePositition {
-                                    byte: 27,
-                                    line: 1,
-                                    position: 28,
-                                },
+                                start: ByteIndex(24),
+                                end: ByteIndex(27),
                                 code_source_id: 0,
                             },
                         ),
@@ -2465,16 +2457,8 @@ mod tests {
                             "bar".into(),
                             None,
                             Span {
-                                start: SourceCodePositition {
-                                    byte: 29,
-                                    line: 1,
-                                    position: 30,
-                                },
-                                end: SourceCodePositition {
-                                    byte: 32,
-                                    line: 1,
-                                    position: 33,
-                                },
+                                start: ByteIndex(29),
+                                end: ByteIndex(32),
                                 code_source_id: 0,
                             },
                         ),
