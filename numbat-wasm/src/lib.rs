@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 
 use numbat::buffered_writer::BufferedWriter;
+use numbat::command::HelpKind;
 use numbat::diagnostic::{ErrorDiagnostic, ResolverDiagnostic};
 use numbat::help::help_markup;
 use numbat::html_formatter::{HtmlFormatter, HtmlWriter};
@@ -171,7 +172,7 @@ impl Numbat {
     }
 
     pub fn help(&self) -> JsValue {
-        self.format(&help_markup(), true).into()
+        self.format(&help_markup(HelpKind::BasicHelp), true).into()
     }
 
     pub fn print_info(&mut self, keyword: &str) -> JsValue {
