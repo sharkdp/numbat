@@ -36,7 +36,7 @@ impl PrettyPrint for BinaryOperator {
     fn pretty_print(&self) -> Markup {
         use BinaryOperator::*;
 
-        let operator = match self {
+        let operator = m::operator(match self {
             Add => "+",
             Sub => "-",
             Mul => "×",
@@ -51,11 +51,11 @@ impl PrettyPrint for BinaryOperator {
             NotEqual => "≠",
             LogicalAnd => "&&",
             LogicalOr => "||",
-        };
+        });
 
         match self {
-            Power => m::operator("^"),
-            _ => m::space() + m::operator(operator) + m::space(),
+            Power => operator,
+            _ => m::space() + operator + m::space(),
         }
     }
 }
