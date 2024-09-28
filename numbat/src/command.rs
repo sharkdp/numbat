@@ -22,12 +22,15 @@ pub enum ListItems {
     Units,
 }
 
-enum QuitAlias {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum QuitAlias {
     Quit,
     Exit,
 }
 
-enum CommandKind {
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CommandKind {
     Help,
     Info,
     List,
@@ -54,6 +57,12 @@ impl FromStr for CommandKind {
             _ => return Err(()),
         })
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HelpKind {
+    BasicHelp,
+    AllCommands,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -97,6 +106,7 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, CommandError> {
 
 enum Command<'session, 'input, Editor> {
     Help {
+        help_kind: HelpKind,
         print_fn: fn(&Markup),
     },
     Info {
@@ -238,11 +248,32 @@ impl<Editor> CommandRunner<Editor> {
                     return Ok(None);
                 };
 
-                parser
-                    .ensure_zero_args("help", "; use `info <item>` for information about an item")
-                    .map_err(|err| Box::new(err.into()))?;
+                let help_arg = parser.args.next();
 
-                Command::Help { print_fn }
+                if parser.args.next().is_some() {
+                    return Err(Box::new(
+                        parser
+                            .err_through_end_from(2, "`help` takes at most one argument")
+                            .into(),
+                    ));
+                }
+
+                let help_kind = match help_arg {
+                    None => HelpKind::BasicHelp,
+                    Some("commands") => HelpKind::AllCommands,
+                    _ => {
+                        return Err(Box::new(
+                            parser
+                                .err_at_idx(
+                                    1,
+                                    "if provided, the argument to `help` must be \"commands\"",
+                                )
+                                .into(),
+                        ));
+                    }
+                };
+
+                Command::Help { help_kind, print_fn }
             }
             CommandKind::Info => {
                 let &Some(print_fn) = print_markup else {
@@ -387,8 +418,8 @@ impl<Editor> CommandRunner<Editor> {
         };
 
         Ok(match output {
-            Command::Help { print_fn } => {
-                print_fn(&help_markup());
+            Command::Help { help_kind, print_fn } => {
+                print_fn(&help_markup(help_kind));
                 CommandControlFlow::Continue
             }
             Command::Info { item, print_fn } => {
@@ -539,7 +570,7 @@ mod test {
 
     #[derive(Debug, Clone, PartialEq)]
     pub enum BareCommand<'a> {
-        Help,
+        Help { help_kind: HelpKind },
         Info { item: &'a str },
         List { items: Option<ListItems> },
         Clear,
@@ -551,7 +582,7 @@ mod test {
     impl<'b, Editor> Command<'_, 'b, Editor> {
         fn into_bare(self) -> BareCommand<'b> {
             match self {
-                Command::Help { print_fn: _ } => BareCommand::Help,
+                Command::Help { help_kind, .. } => BareCommand::Help { help_kind },
                 Command::Info { item, .. } => BareCommand::Info { item },
                 Command::List { items, .. } => BareCommand::List { items },
                 Command::Clear { clear_fn: _ } => BareCommand::Clear,
@@ -761,7 +792,22 @@ mod test {
         let mut ctx = Context::new_without_importer();
         let runner = new_runner();
 
-        expect_ok(&runner, &mut ctx, "help", BareCommand::Help);
+        expect_ok(
+            &runner,
+            &mut ctx,
+            "help",
+            BareCommand::Help {
+                help_kind: HelpKind::BasicHelp,
+            },
+        );
+        expect_ok(
+            &runner,
+            &mut ctx,
+            "help commands",
+            BareCommand::Help {
+                help_kind: HelpKind::AllCommands,
+            },
+        );
         expect_fail(&runner, &mut ctx, "help arg");
         expect_fail(&runner, &mut ctx, "help arg1 arg2");
 
@@ -879,4 +925,5 @@ mod test {
         test_case(&runner, &mut ctx, "quit", CommandControlFlow::Return);
         test_case(&runner, &mut ctx, "exit", CommandControlFlow::Return);
     }
+
 }
