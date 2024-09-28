@@ -43,10 +43,9 @@ impl Display for Markup {
 impl std::ops::Add for Markup {
     type Output = Markup;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut res = self.0;
-        res.extend_from_slice(&rhs.0);
-        Markup(res)
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self.0.extend(rhs.0);
+        self
     }
 }
 
