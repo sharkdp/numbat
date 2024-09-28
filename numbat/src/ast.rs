@@ -36,21 +36,26 @@ impl PrettyPrint for BinaryOperator {
     fn pretty_print(&self) -> Markup {
         use BinaryOperator::*;
 
+        let operator = match self {
+            Add => "+",
+            Sub => "-",
+            Mul => "×",
+            Div => "/",
+            Power => "^",
+            ConvertTo => "➞",
+            LessThan => "<",
+            GreaterThan => ">",
+            LessOrEqual => "≤",
+            GreaterOrEqual => "≥",
+            Equal => "==",
+            NotEqual => "≠",
+            LogicalAnd => "&&",
+            LogicalOr => "||",
+        };
+
         match self {
-            Add => m::space() + m::operator("+") + m::space(),
-            Sub => m::space() + m::operator("-") + m::space(),
-            Mul => m::space() + m::operator("×") + m::space(),
-            Div => m::space() + m::operator("/") + m::space(),
             Power => m::operator("^"),
-            ConvertTo => m::space() + m::operator("➞") + m::space(),
-            LessThan => m::space() + m::operator("<") + m::space(),
-            GreaterThan => m::space() + m::operator(">") + m::space(),
-            LessOrEqual => m::space() + m::operator("≤") + m::space(),
-            GreaterOrEqual => m::space() + m::operator("≥") + m::space(),
-            Equal => m::space() + m::operator("==") + m::space(),
-            NotEqual => m::space() + m::operator("≠") + m::space(),
-            LogicalAnd => m::space() + m::operator("&&") + m::space(),
-            LogicalOr => m::space() + m::operator("||") + m::space(),
+            _ => m::space() + m::operator(operator) + m::space(),
         }
     }
 }
