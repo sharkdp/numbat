@@ -365,7 +365,7 @@ impl PrettyPrint for TypeExpression {
     fn pretty_print(&self) -> Markup {
         match self {
             TypeExpression::Unity(_) => m::type_identifier("1"),
-            TypeExpression::TypeIdentifier(_, ident) => m::type_identifier(ident),
+            TypeExpression::TypeIdentifier(_, ident) => m::type_identifier(ident.clone()),
             TypeExpression::Multiply(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
             }
