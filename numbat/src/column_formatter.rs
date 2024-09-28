@@ -37,8 +37,9 @@ impl ColumnFormatter {
 
             if min_num_columns < 1 {
                 for entry in entries {
-                    result += Markup::from(FormattedString(OutputType::Normal, format, entry.into()))
-                        + m::whitespace(" ".repeat(self.padding));
+                    result +=
+                        Markup::from(FormattedString(OutputType::Normal, format, entry.into()))
+                            + m::whitespace(" ".repeat(self.padding));
                 }
                 return result;
             }
