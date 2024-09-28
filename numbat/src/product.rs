@@ -54,7 +54,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
                     + m::Markup::from(m::FormattedString(
                         m::OutputType::Normal,
                         format_type,
-                        factor.to_string(),
+                        factor.to_string().into(),
                     ))
                     + if i == num_factors - 1 {
                         m::empty()
