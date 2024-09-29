@@ -1,6 +1,7 @@
 use numbat::{
     markup::Markup, num_format::CustomFormat, num_format::Grouping, pretty_dtoa::FmtFloatConfig,
     pretty_print::PrettyPrint, value::Value, FloatDisplayConfigSource, RuntimeError,
+    UnitDisplayOptions,
 };
 use serde::{Deserialize, Serialize};
 
@@ -58,6 +59,26 @@ impl Default for FloatDisplayConfig {
     }
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+pub struct UnitDisplayConfig {
+    fancy_exponents: bool,
+    multiplication_operator: char,
+    division_operator: char,
+    space_btwn_operators: bool,
+}
+
+impl Default for UnitDisplayConfig {
+    fn default() -> Self {
+        Self {
+            fancy_exponents: false,
+            multiplication_operator: '·',
+            division_operator: '/',
+            space_btwn_operators: false,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Eq, Default, Debug, Clone)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct NumericDisplayConfig {
@@ -65,6 +86,8 @@ pub struct NumericDisplayConfig {
     pub int_config: Option<IntDisplayConfig>,
     #[serde(serialize_with = "serialize_option_config")]
     pub float_config: Option<FloatDisplayConfig>,
+    #[serde(serialize_with = "serialize_option_config")]
+    pub unit_config: Option<UnitDisplayConfig>,
 }
 
 fn serialize_option_config<S, T: Serialize + Default>(
@@ -89,6 +112,7 @@ pub(crate) fn pretty_print_value(
             let NumericDisplayConfig {
                 int_config,
                 float_config,
+                unit_config,
             } = config;
 
             let float_options = float_config.as_ref().map(|c| {
@@ -139,12 +163,28 @@ pub(crate) fn pretty_print_value(
                 })
                 .transpose()?;
 
+            let unit_options = unit_config.as_ref().map(|c| {
+                let &UnitDisplayConfig {
+                    fancy_exponents,
+                    multiplication_operator,
+                    division_operator,
+                    space_btwn_operators,
+                } = c;
+                UnitDisplayOptions {
+                    fancy_exponents,
+                    multiplication_operator,
+                    division_operator,
+                    space_btwn_operators,
+                }
+            });
+
             q.pretty_print_with_options(
                 match float_options {
                     Some(o) => FloatDisplayConfigSource::UserConfig(o),
                     None => FloatDisplayConfigSource::Numbat(None),
                 },
                 int_options,
+                unit_options,
             )
         }
 

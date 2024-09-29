@@ -1,4 +1,5 @@
 use crate::arithmetic::{Exponent, Power, Rational};
+use crate::markup::{Formatter, PlainTextFormatter};
 use crate::number::Number;
 use crate::pretty_print::PrettyPrint;
 use crate::unit::{is_multiple_of, Unit, UnitFactor};
@@ -342,7 +343,7 @@ impl PartialOrd for Quantity {
 
 impl PrettyPrint for Quantity {
     fn pretty_print(&self) -> crate::markup::Markup {
-        self.pretty_print_with_options(FloatDisplayConfigSource::Numbat(None), None)
+        self.pretty_print_with_options(FloatDisplayConfigSource::Numbat(None), None, None)
     }
 }
 
@@ -353,6 +354,7 @@ impl Quantity {
         &self,
         float_options: FloatDisplayConfigSource,
         int_options: Option<num_format::CustomFormat>,
+        unit_options: Option<UnitDisplayOptions>,
     ) -> crate::markup::Markup {
         use crate::markup;
 
@@ -360,7 +362,32 @@ impl Quantity {
             .unsafe_value()
             .pretty_print_with_options(float_options, int_options);
 
-        let unit_str = format!("{}", self.unit());
+        let unit_str = if let Some(UnitDisplayOptions {
+            fancy_exponents,
+            multiplication_operator,
+            division_operator,
+            space_btwn_operators,
+        }) = unit_options
+        {
+            let m = self.unit().pretty_print_with(
+                |f| f.exponent,
+                multiplication_operator,
+                division_operator,
+                space_btwn_operators,
+                Some(|unit: &UnitFactor| {
+                    if fancy_exponents {
+                        unit.to_string()
+                    } else {
+                        unit.to_ugly_string()
+                    }
+                }),
+                None,
+            );
+
+            PlainTextFormatter.format(&m, false)
+        } else {
+            format!("{}", self.unit())
+        };
 
         markup::value(formatted_number)
             + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {
@@ -380,7 +407,7 @@ impl Quantity {
             .add_point_zero(false)
             .force_no_e_notation()
             .round();
-        self.pretty_print_with_options(FloatDisplayConfigSource::Numbat(Some(options)), None)
+        self.pretty_print_with_options(FloatDisplayConfigSource::Numbat(Some(options)), None, None)
     }
 
     pub fn unsafe_value_as_string(&self) -> String {
@@ -396,6 +423,13 @@ impl std::fmt::Display for Quantity {
         let formatter = PlainTextFormatter {};
         write!(f, "{}", formatter.format(&markup, false).trim())
     }
+}
+
+pub struct UnitDisplayOptions {
+    pub fancy_exponents: bool,
+    pub multiplication_operator: char,
+    pub division_operator: char,
+    pub space_btwn_operators: bool,
 }
 
 #[cfg(test)]

@@ -77,7 +77,14 @@ impl PrettyPrint for BaseRepresentation {
         if self.iter().count() == 0 {
             crate::markup::type_identifier("Scalar")
         } else {
-            self.pretty_print_with(|f| f.1, '×', '/', true, None)
+            self.pretty_print_with(
+                |f| f.1,
+                '×',
+                '/',
+                true,
+                None::<fn(&BaseRepresentationFactor) -> String>,
+                None,
+            )
         }
     }
 }

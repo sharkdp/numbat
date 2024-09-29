@@ -34,6 +34,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
         times_separator: char,
         over_separator: char,
         separator_padding: bool,
+        factor_to_string: Option<impl Fn(&Factor) -> String>,
         format_type: Option<m::FormatType>,
     ) -> m::Markup
     where
@@ -54,7 +55,11 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
                     + m::Markup::from(m::FormattedString(
                         m::OutputType::Normal,
                         format_type,
-                        factor.to_string(),
+                        if let Some(factor_to_string) = &factor_to_string {
+                            factor_to_string(factor)
+                        } else {
+                            factor.to_string()
+                        },
                     ))
                     + if i == num_factors - 1 {
                         m::empty()
@@ -117,6 +122,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
                 times_separator,
                 over_separator,
                 separator_padding,
+                None::<fn(&Factor) -> String>, // need to specify type
                 None,
             ),
             false,
