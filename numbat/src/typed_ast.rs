@@ -846,7 +846,7 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                     m::decorator("@aliases")
                         + m::operator("(")
                         + Itertools::intersperse(
-                            names.iter().map(|(name, accepts_prefix)| {
+                            names.iter().map(|(name, accepts_prefix, _)| {
                                 m::unit(name) + accepts_prefix_markup(accepts_prefix)
                             }),
                             m::operator(", "),
