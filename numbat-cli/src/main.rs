@@ -1,25 +1,28 @@
 mod ansi_formatter;
 mod completer;
 mod config;
+mod copy_to_clipboard;
 mod highlighter;
 
 use ansi_formatter::ansi_format;
 use colored::control::SHOULD_COLORIZE;
 use completer::NumbatCompleter;
 use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode};
+use copy_to_clipboard::pretty_print_value;
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::command::{self, CommandParser, SourcelessCommandParser};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
-use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::session_history::{ParseEvaluationResult, SessionHistory, SessionHistoryOptions};
+use numbat::session_history::{SessionHistory, SessionHistoryOptions};
+use numbat::value::Value;
+use numbat::InterpreterSettings;
+use numbat::{markup as m, InterpreterResult};
 use numbat::{Context, NumbatError};
-use numbat::{InterpreterSettings, NameResolutionError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
@@ -97,7 +100,7 @@ struct Args {
 
 struct ParseEvaluationOutcome {
     control_flow: ControlFlow,
-    result: ParseEvaluationResult,
+    result: Result<InterpreterResult, ()>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -348,9 +351,11 @@ impl Cli {
         interactive: bool,
     ) -> Result<()> {
         let mut session_history = SessionHistory::default();
+        let mut last_value = None::<Value>;
 
         loop {
             let readline = rl.readline(&self.config.prompt);
+
             match readline {
                 Ok(line) => {
                     if !line.trim().is_empty() {
@@ -404,6 +409,22 @@ impl Cli {
                                         };
                                         println!("{}", ansi_format(&m, false));
                                     }
+                                    command::Command::Copy => match &last_value {
+                                        Some(v) => {
+                                            let m = match pretty_print_value(
+                                                v,
+                                                &self.config.copy_output_config,
+                                            ) {
+                                                Ok(m) => m,
+                                                Err(err) => {
+                                                    self.print_diagnostic(*err);
+                                                    continue;
+                                                }
+                                            };
+                                            println!("{}", ansi_format(&m, false));
+                                        }
+                                        None => println!("error: no value to copy"),
+                                    },
                                     command::Command::Clear => rl.clear_screen()?,
                                     command::Command::Save { dst } => {
                                         let save_result = session_history.save(
@@ -462,7 +483,15 @@ impl Cli {
                             }
                         }
 
-                        session_history.push(line, result);
+                        match result {
+                            Ok(result) => {
+                                session_history.push(line, Ok(()));
+                                if let InterpreterResult::Value(value) = result {
+                                    last_value = Some(value);
+                                }
+                            }
+                            Err(_) => session_history.push(line, Err(())),
+                        }
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}
@@ -506,12 +535,7 @@ impl Cli {
             PrettyPrintMode::Auto => interactive,
         };
 
-        let parse_eval_result = match &interpretation_result {
-            Ok(_) => Ok(()),
-            Err(_) => Err(()),
-        };
-
-        let control_flow = match interpretation_result.map_err(|b| *b) {
+        let (control_flow, result) = match interpretation_result.map_err(|b| *b) {
             Ok((statements, interpreter_result)) => {
                 if interactive || pretty_print {
                     println!();
@@ -547,32 +571,23 @@ impl Cli {
                     println!();
                 }
 
-                ControlFlow::Continue(())
+                (ControlFlow::Continue(()), Ok(interpreter_result))
             }
-            Err(NumbatError::ResolverError(e)) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
-            }
-            Err(NumbatError::NameResolutionError(
-                e @ (NameResolutionError::IdentifierClash { .. }
-                | NameResolutionError::ReservedIdentifier(_)),
-            )) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
-            }
-            Err(NumbatError::TypeCheckError(e)) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
-            }
-            Err(NumbatError::RuntimeError(e)) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
+            Err(err) => {
+                match err {
+                    NumbatError::ResolverError(e) => self.print_diagnostic(e),
+                    NumbatError::NameResolutionError(e) => self.print_diagnostic(e),
+                    NumbatError::TypeCheckError(e) => self.print_diagnostic(e),
+                    NumbatError::RuntimeError(e) => self.print_diagnostic(e),
+                }
+
+                (execution_mode.exit_status_in_case_of_error(), Err(()))
             }
         };
 
         ParseEvaluationOutcome {
             control_flow,
-            result: parse_eval_result,
+            result,
         }
     }
 

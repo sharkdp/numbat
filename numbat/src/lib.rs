@@ -82,6 +82,11 @@ use unit_registry::UnitMetadata;
 use crate::prefix_parser::PrefixParserResult;
 use crate::unicode_input::UNICODE_INPUT;
 
+pub use number::FloatDisplayConfigSource;
+
+pub use num_format;
+pub use pretty_dtoa;
+
 #[derive(Debug, Clone, Error)]
 pub enum NumbatError {
     #[error("{0}")]

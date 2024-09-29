@@ -63,6 +63,9 @@ pub enum RuntimeError {
 
     #[error("Could not write to file: {0:?}")]
     FileWrite(std::path::PathBuf),
+
+    #[error("Invalid integer display config: {0}. Originated from: {1}")]
+    IntegerDisplayConfig(String, String),
 }
 
 #[derive(Debug, PartialEq, Eq)]
