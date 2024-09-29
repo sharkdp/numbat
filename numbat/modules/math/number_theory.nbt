@@ -4,7 +4,7 @@ use core::functions
 @name("Greatest common divisor")
 @description("The largest positive integer that divides each of the integers $a$ and $b$.")
 @url("https://en.wikipedia.org/wiki/Greatest_common_divisor")
-@example("gcd(60,42)")
+@example("gcd(60, 42)")
 fn gcd(a: Scalar, b: Scalar) -> Scalar =
   if b == 0
     then abs(a)

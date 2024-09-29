@@ -78,7 +78,7 @@ fn map<A, B>(f: Fn[(A) -> B], xs: List<A>) -> List<B> =
     else cons(f(head(xs)), map(f, tail(xs)))
 
 @description("Filter a list by a predicate")
-@example("fn filter_fn(x) = x > 1\nfilter(filter_fn, [3, 2, 1, 0])", "Filter all elements greater than $1$.")
+@example("filter(is_finite, [0, 1e10, NaN, -inf])")
 fn filter<A>(p: Fn[(A) -> Bool], xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
@@ -104,7 +104,7 @@ fn _merge(xs, ys, cmp) =
 
 
 @description("Sort a list of elements, using the given key function that maps the element to a quantity")
-@example("fn map_fn(x) = mod(x, 10)\nsort_by_key(map_fn, [701, 313, 9999, 4])","Sort by last digit.")
+@example("fn last_digit(x) = mod(x, 10)\nsort_by_key(last_digit, [701, 313, 9999, 4])","Sort by last digit.")
 fn sort_by_key<A, D: Dim>(key: Fn[(A) -> D], xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
@@ -129,7 +129,7 @@ fn intersperse<A>(sep: A, xs: List<A>) -> List<A> =
 
 fn _add(x, y) = x + y # TODO: replace this with a local function once we support them
 @description("Sum all elements of a list")
-@example("sum([3, 2, 1])")
+@example("sum([3 m, 200 cm, 1000 mm])")
 fn sum<D: Dim>(xs: List<D>) -> D = foldl(_add, 0, xs)
 
 # TODO: implement linspace using `map` or similar once we have closures. This is ugly.

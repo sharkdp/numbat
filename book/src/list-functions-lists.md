@@ -309,18 +309,14 @@ fn filter<A>(p: Fn[(A) -> Bool], xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* Filter all elements greater than \\( 1 \\).
+* <a href="https://numbat.dev/?q=filter%28is%5Ffinite%2C%20%5B0%2C%201e10%2C%20NaN%2C%20%2Dinf%5D%29"><i class="fa fa-play"></i> Run this example</a>
 
-  <a href="https://numbat.dev/?q=fn%20filter%5Ffn%28x%29%20%3D%20x%20%3E%201%0Afilter%28filter%5Ffn%2C%20%5B3%2C%202%2C%201%2C%200%5D%29"><i class="fa fa-play"></i> Run this example</a>
   ```nbt
-    >>> fn filter_fn(x) = x > 1
-    filter(filter_fn, [3, 2, 1, 0])
+    >>> filter(is_finite, [0, 1e10, NaN, -inf])
     
-      fn filter_fn(x: Scalar) -> Bool = x > 1
+      filter(is_finite, [0, 10_000_000_000, NaN, -inf])
     
-      filter(filter_fn, [3, 2, 1, 0])
-    
-        = [3, 2]    [List<Scalar>]
+        = [0, 10_000_000_000]    [List<Scalar>]
     
   ```
 </details>
@@ -360,14 +356,14 @@ fn sort_by_key<A, D: Dim>(key: Fn[(A) -> D], xs: List<A>) -> List<A>
 
 * Sort by last digit.
 
-  <a href="https://numbat.dev/?q=fn%20map%5Ffn%28x%29%20%3D%20mod%28x%2C%2010%29%0Asort%5Fby%5Fkey%28map%5Ffn%2C%20%5B701%2C%20313%2C%209999%2C%204%5D%29"><i class="fa fa-play"></i> Run this example</a>
+  <a href="https://numbat.dev/?q=fn%20last%5Fdigit%28x%29%20%3D%20mod%28x%2C%2010%29%0Asort%5Fby%5Fkey%28last%5Fdigit%2C%20%5B701%2C%20313%2C%209999%2C%204%5D%29"><i class="fa fa-play"></i> Run this example</a>
   ```nbt
-    >>> fn map_fn(x) = mod(x, 10)
-    sort_by_key(map_fn, [701, 313, 9999, 4])
+    >>> fn last_digit(x) = mod(x, 10)
+    sort_by_key(last_digit, [701, 313, 9999, 4])
     
-      fn map_fn(x: Scalar) -> Scalar = mod(x, 10)
+      fn last_digit(x: Scalar) -> Scalar = mod(x, 10)
     
-      sort_by_key(map_fn, [701, 313, 9999, 4])
+      sort_by_key(last_digit, [701, 313, 9999, 4])
     
         = [701, 313, 4, 9999]    [List<Scalar>]
     
@@ -428,14 +424,14 @@ fn sum<D: Dim>(xs: List<D>) -> D
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=sum%28%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=sum%28%5B3%20m%2C%20200%20cm%2C%201000%20mm%5D%29"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> sum([3, 2, 1])
+    >>> sum([3 m, 200 cm, 1000 mm])
     
-      sum([3, 2, 1])
+      sum([3 metre, 200 centimetre, 1000 millimetre])
     
-        = 6
+        = 6 m    [Length]
     
   ```
 </details>

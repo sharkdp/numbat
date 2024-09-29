@@ -267,7 +267,7 @@ fn ceil(x: Scalar) -> Scalar
 </details>
 
 ### `ceil_in` (Ceil function)
-Returns the smallest integer multuple of `base` greater than or equal to `value`.
+Returns the smallest integer multiple of `base` greater than or equal to `value`.
 
 ```nbt
 fn ceil_in<D: Dim>(base: D, value: D) -> D
@@ -859,10 +859,10 @@ fn gcd(a: Scalar, b: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=gcd%2860%2C42%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=gcd%2860%2C%2042%29"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> gcd(60,42)
+    >>> gcd(60, 42)
     
       gcd(60, 42)
     
@@ -909,11 +909,11 @@ fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X) -> Y / X
 <details>
 <summary>Examples</summary>
 
-* Compute the drivative of \\( f(x) = x² -x -1 \\) at \\( x=1 \\).
+* Compute the derivative of \\( f(x) = x² -x -1 \\) at \\( x=1 \\).
 
-  <a href="https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2Dx%20%2D1%0Adiff%28polynomial%2C%201%29"><i class="fa fa-play"></i> Run this example</a>
+  <a href="https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2D%20x%20%2D%201%0Adiff%28polynomial%2C%201%29"><i class="fa fa-play"></i> Run this example</a>
   ```nbt
-    >>> fn polynomial(x) = x² -x -1
+    >>> fn polynomial(x) = x² - x - 1
     diff(polynomial, 1)
     
       fn polynomial(x: Scalar) -> Scalar = (x² - x) - 1
@@ -921,6 +921,23 @@ fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X) -> Y / X
       diff(polynomial, 1)
     
         = 1.0
+    
+  ```
+* Compute the free fall velocity after \\( t=2 s \\).
+
+  <a href="https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%29%0Avelocity%282%20s%29"><i class="fa fa-play"></i> Run this example</a>
+  ```nbt
+    >>> fn distance(t) = 0.5 g0 t²
+    fn velocity(t) = diff(distance, t)
+    velocity(2 s)
+    
+      fn distance<A: Dim>(t: A) -> A² × Length / Time² = 0.5 g0 × t²
+    
+      fn velocity<A: Dim>(t: A) -> A × Length / Time² = diff(distance, t)
+    
+      velocity(2 second)
+    
+        = 19.6133 m/s    [Velocity]
     
   ```
 </details>
@@ -1023,14 +1040,14 @@ fn hypot2<T: Dim>(x: T, y: T) -> T
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=hypot2%283%2C%204%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=hypot2%283%20m%2C%204%20m%29"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> hypot2(3, 4)
+    >>> hypot2(3 m, 4 m)
     
-      hypot2(3, 4)
+      hypot2(3 metre, 4 metre)
     
-        = 5
+        = 5 m    [Length]
     
   ```
 </details>
@@ -1045,14 +1062,14 @@ fn hypot3<T: Dim>(x: T, y: T, z: T) -> T
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=hypot3%284%2C%201%2C%204%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=hypot3%288%2C%209%2C%2012%29"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> hypot3(4, 1, 4)
+    >>> hypot3(8, 9, 12)
     
-      hypot3(4, 1, 4)
+      hypot3(8, 9, 12)
     
-        = 5.74456
+        = 17
     
   ```
 </details>

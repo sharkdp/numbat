@@ -5,13 +5,13 @@ use units::imperial
 @name("Degrees, minutes, seconds")
 @description("Convert an angle to a mixed degrees, (arc)minutes, and (arc)seconds representation. Also called sexagesimal degree notation.")
 @url("https://en.wikipedia.org/wiki/Sexagesimal_degree")
-@example("DMS(46.5858°)")
+@example("46.5858° -> DMS")
 fn DMS(alpha: Angle) -> String =
   _mixed_units(alpha, [deg, arcmin, arcsec], ["° ", "′ ", "″"], true)
 
 @name("Degrees, decimal minutes")
 @description("Convert an angle to a mixed degrees and decimal minutes representation.")
-@example("DM(46.5858°)")
+@example("46.5858° -> DM")
 @url("https://en.wikipedia.org/wiki/Decimal_degrees")
 fn DM(alpha: Angle) -> String =
   _mixed_units(alpha, [deg, arcmin], ["° ", "′"], false)
@@ -19,13 +19,13 @@ fn DM(alpha: Angle) -> String =
 @name("Feet and inches")
 @description("Convert a length to a mixed feet and inches representation.")
 @url("https://en.wikipedia.org/wiki/Foot_(unit)")
-@example("feet_and_inches(180cm)")
+@example("180 cm -> feet_and_inches")
 fn feet_and_inches(length: Length) -> String =
   _mixed_units(length, [foot, inch], [" ft ", " in"], false)
 
 @name("Pounds and ounces")
 @description("Convert a mass to a mixed pounds and ounces representation.")
 @url("https://en.wikipedia.org/wiki/Pound_(mass)")
-@example("pounds_and_ounces(1kg)")
+@example("1 kg -> pounds_and_ounces")
 fn pounds_and_ounces(mass: Mass) -> String =
   _mixed_units(mass, [pound, ounce], [" lb ", " oz"], false)

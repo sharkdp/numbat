@@ -7,7 +7,7 @@ use core::error
 fn str_length(s: String) -> Scalar
 
 @description("Subslice of a string")
-@example("str_slice(\"Numbat\", 0, 2)")
+@example("str_slice(\"Numbat\", 3, 6)")
 fn str_slice(s: String, start: Scalar, end: Scalar) -> String
 
 @description("Get a single-character string from a Unicode code point.")

@@ -60,7 +60,7 @@ fn floor_in<D: Dim>(base: D, value: D) -> D = floor(value / base) × base
 fn ceil(x: Scalar) -> Scalar
 
 @name("Ceil function")
-@description("Returns the smallest integer multuple of `base` greater than or equal to `value`.")
+@description("Returns the smallest integer multiple of `base` greater than or equal to `value`.")
 @example("ceil_in(m, 5.3 m)", "Ceil in meters.")
 @example("ceil_in(cm, 5.3 m)", "Ceil in centimeters.")
 

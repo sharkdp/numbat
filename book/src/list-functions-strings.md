@@ -34,14 +34,14 @@ fn str_slice(s: String, start: Scalar, end: Scalar) -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=str%5Fslice%28%22Numbat%22%2C%200%2C%202%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=str%5Fslice%28%22Numbat%22%2C%203%2C%206%29"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> str_slice("Numbat", 0, 2)
+    >>> str_slice("Numbat", 3, 6)
     
-      str_slice("Numbat", 0, 2)
+      str_slice("Numbat", 3, 6)
     
-        = "Nu"    [String]
+        = "bat"    [String]
     
   ```
 </details>

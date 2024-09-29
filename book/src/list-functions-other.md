@@ -216,10 +216,10 @@ fn DMS(alpha: Angle) -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=DMS%2846%2E5858%C2%B0%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=46%2E5858%C2%B0%20%2D%3E%20DMS"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> DMS(46.5858°)
+    >>> 46.5858° -> DMS
     
       DMS(46.5858 degree)
     
@@ -239,10 +239,10 @@ fn DM(alpha: Angle) -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=DM%2846%2E5858%C2%B0%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=46%2E5858%C2%B0%20%2D%3E%20DM"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> DM(46.5858°)
+    >>> 46.5858° -> DM
     
       DM(46.5858 degree)
     
@@ -262,10 +262,10 @@ fn feet_and_inches(length: Length) -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=feet%5Fand%5Finches%28180cm%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=180%20cm%20%2D%3E%20feet%5Fand%5Finches"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> feet_and_inches(180cm)
+    >>> 180 cm -> feet_and_inches
     
       feet_and_inches(180 centimetre)
     
@@ -285,10 +285,10 @@ fn pounds_and_ounces(mass: Mass) -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=pounds%5Fand%5Founces%281kg%29"><i class="fa fa-play"></i> Run this example</a>
+* <a href="https://numbat.dev/?q=1%20kg%20%2D%3E%20pounds%5Fand%5Founces"><i class="fa fa-play"></i> Run this example</a>
 
   ```nbt
-    >>> pounds_and_ounces(1kg)
+    >>> 1 kg -> pounds_and_ounces
     
       pounds_and_ounces(1 kilogram)
     
@@ -312,7 +312,7 @@ fn from_celsius(t_celsius: Scalar) -> Temperature
 <details>
 <summary>Examples</summary>
 
-* \\( 300 °C \\) in Kelvin.
+* 300 °C in Kelvin.
 
   <a href="https://numbat.dev/?q=from%5Fcelsius%28300%29"><i class="fa fa-play"></i> Run this example</a>
   ```nbt
@@ -336,7 +336,7 @@ fn celsius(t_kelvin: Temperature) -> Scalar
 <details>
 <summary>Examples</summary>
 
-* \\( 300K \\) in degree Celsius.
+* 300 K in degree Celsius.
 
   <a href="https://numbat.dev/?q=300K%20%2D%3E%20celsius"><i class="fa fa-play"></i> Run this example</a>
   ```nbt
@@ -360,7 +360,7 @@ fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature
 <details>
 <summary>Examples</summary>
 
-* \\( 300 °F \\) in Kelvin.
+* 300 °F in Kelvin.
 
   <a href="https://numbat.dev/?q=from%5Ffahrenheit%28300%29"><i class="fa fa-play"></i> Run this example</a>
   ```nbt
@@ -384,7 +384,7 @@ fn fahrenheit(t_kelvin: Temperature) -> Scalar
 <details>
 <summary>Examples</summary>
 
-* \\( 300K \\) in degree Fahrenheit.
+* 300 K in degree Fahrenheit.
 
   <a href="https://numbat.dev/?q=300K%20%2D%3E%20fahrenheit"><i class="fa fa-play"></i> Run this example</a>
   ```nbt
