@@ -12,39 +12,50 @@ fn _prettier(str: String) -> String =
   else if str_slice(str, 0, 2) == "1 " then str_slice(str, 0, str_length(str) - 1)
   else str
 
+fn _remove_trailing_zero(str: String) -> String =
+  str_replace(str, ".0 ", " ")
+
 fn _human_years(time: Time)   -> String = "{(time -> years)   /  year   // floor} years"   -> _prettier
 fn _human_months(time: Time)  -> String = "{(time -> months)  /  month  // floor} months"  -> _prettier
 fn _human_days(time: Time)    -> String = "{(time -> days)    /  day    // floor} days"    -> _prettier
 fn _human_hours(time: Time)   -> String = "{(time -> hours)   /  hour   // floor} hours"   -> _prettier
 fn _human_minutes(time: Time) -> String = "{(time -> minutes) /  minute // floor} minutes" -> _prettier
-fn _human_seconds(time: Time) -> String = str_replace("{(time -> seconds) /  second} seconds", ".0 ", " ") -> _prettier
+
+fn _precise_human_months(time: Time)  -> String = "{(time -> months)  /  month } months"  -> _remove_trailing_zero -> _prettier
+fn _precise_human_days(time: Time)    -> String = "{(time -> days)    /  day   } days"    -> _remove_trailing_zero -> _prettier
+fn _precise_human_seconds(time: Time) -> String = "{(time -> seconds) /  second} seconds" -> _remove_trailing_zero -> _prettier
 
 fn _human_recurse(t: Time, result: String, time_unit: String) -> String =
-  if time_unit == "year"
-    then _human_recurse(t - (t -> year  // floor) -> ms // round, _human_join(result, t -> _human_years),   "month")
-  else if time_unit == "month"
-    then _human_recurse(t - (t -> month // floor) -> ms // round, _human_join(result, t -> _human_months),  "day")
-  else if time_unit == "day"
+  if time_unit == "day"
     then _human_recurse(t - (t -> day   // floor) -> ms // round, _human_join(result, t -> _human_days),    "hour")
   else if time_unit == "hour"
     then _human_recurse(t - (t -> hour  // floor) -> ms // round, _human_join(result, t -> _human_hours),   "minute")
   else if time_unit == "minute"
     then _human_recurse(t - (t -> min   // floor) -> ms // round, _human_join(result, t -> _human_minutes), "second")
-  else _human_join(result, (t -> ms // round) -> _human_seconds)
+  else _human_join(result, (t -> ms // round) -> _precise_human_seconds)
+
+fn _human_approx_recurse(t: Time, result: String, time_unit: String) -> String =
+  if time_unit == "year"
+    then _human_approx_recurse(t - (t -> year  // floor) -> ms // round, _human_join(result, t -> _human_years),   "month")
+  else _human_join(result, t -> _human_months)
 
 fn _human_manage_past(str: String, time: Time) = str_append(str, if time < 0 s then " ago" else "")
-
-fn _human_with_biggest_unit(time: Time, biggest_unit: String) -> String =
-  _human_manage_past(_human_recurse(abs(time), "", biggest_unit), time)
 
 fn _human_for_long_duration(human_days: String, human_years: String) -> String =
   "{human_days} (approx. {human_years})"
 
+fn _abs_human(time: Time) -> String =
+  if time == 0 s then "0 seconds"
+  else if time < 60 seconds then time -> _precise_human_seconds
+  else if time < 2 months then _human_recurse(time, "",  "day")
+  else if time < 1 year
+    then _human_for_long_duration(time -> _precise_human_days, ((time -> months) * 10 // round) / 10 -> _precise_human_months)
+  else if time < 100 years
+    then _human_for_long_duration(time -> _precise_human_days, _human_approx_recurse(time, "", "year"))
+  else
+    _human_for_long_duration(time -> _precise_human_days, time -> _human_years)
+
 @name("Human-readable time duration")
 @url("https://numbat.dev/doc/date-and-time.html")
 @description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
-fn human(time: Time) -> String =
-  if time == 0 s then "0 seconds"
-  else if abs(time) < 60 seconds then _human_manage_past(abs(time) -> _human_seconds, time)
-  else if abs(time) < 2 months then _human_with_biggest_unit(time,  "day")
-  else _human_for_long_duration(_human_with_biggest_unit(time, "day"), _human_with_biggest_unit(time, "year"))
+fn human(time: Time) -> String = _human_manage_past(abs(time) -> _abs_human, time)
