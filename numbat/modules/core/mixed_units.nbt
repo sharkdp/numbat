@@ -3,30 +3,6 @@ use core::lists
 
 # Helper functions for mixed-unit conversions. See units::mixed for more.
 
-fn _mixed_units_helper<D: Dim>(q: D, units: List<D>, names: List<String>, round_last: Bool) -> List<String> =
-  if is_empty(units)
-    then
-      []
-    else
-      cons(
-        if len(units) == 1
-          then
-            if round_last
-              then "{round(q / head(units))}{head(names)}"
-              else "{q / head(units)}{head(names)}"
-          else "{trunc(q / head(units))}{head(names)}",
-        _mixed_units_helper(
-          q - trunc(q / head(units)) * head(units),
-          tail(units),
-          tail(names),
-          round_last))
-
-fn _mixed_units<D: Dim>(q: D, units: List<D>, names: List<String>, round_last: Bool) -> String =
-  if q < 0
-    then str_append("-", _mixed_units(-q, units, names, round_last))
-    else join(_mixed_units_helper(q, units, names, round_last), "")
-
-
 fn _zero_length<A: Dim>(val: A) -> A = val * 0 -> val
 
 fn _mixed_unit_list<D: Dim>(val: D, units: List<D>, acc: List<D>) -> List<D> =
