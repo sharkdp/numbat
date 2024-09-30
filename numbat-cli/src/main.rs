@@ -309,6 +309,8 @@ impl Cli {
         );
         rl.load_history(&history_path).ok();
 
+        std::thread::spawn(help_markup);
+
         if interactive {
             match self.config.intro_banner {
                 IntroBanner::Long => {
@@ -371,7 +373,7 @@ impl Cli {
                                 Ok(command) => match command {
                                     command::Command::Help => {
                                         let help = help_markup();
-                                        print!("{}", ansi_format(&help, true));
+                                        print!("{}", ansi_format(help, true));
                                         // currently, the ansi formatter adds indents
                                         // _after_ each newline and so we need to manually
                                         // add an extra blank line to absorb this indent
