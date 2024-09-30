@@ -15,14 +15,15 @@ use itertools::Itertools;
 use numbat::command::{self, CommandParser, SourcelessCommandParser};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
+use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::session_history::{SessionHistory, SessionHistoryOptions};
 use numbat::value::Value;
-use numbat::InterpreterSettings;
 use numbat::{markup as m, InterpreterResult};
 use numbat::{Context, NumbatError};
+use numbat::{InterpreterSettings, RuntimeError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
@@ -421,7 +422,24 @@ impl Cli {
                                                     continue;
                                                 }
                                             };
-                                            println!("{}", ansi_format(&m, false));
+
+                                            if let Err(e) =
+                                                arboard::Clipboard::new().and_then(|mut cb| {
+                                                    cb.set_text(
+                                                        PlainTextFormatter.format(&m, false),
+                                                    )
+                                                })
+                                            {
+                                                self.print_diagnostic(
+                                                    RuntimeError::ClipboardError(e.to_string()),
+                                                );
+                                                continue;
+                                            }
+
+                                            println!(
+                                                "{} was copied to the clipboard",
+                                                ansi_format(&m, false)
+                                            );
                                         }
                                         None => println!("error: no value to copy"),
                                     },

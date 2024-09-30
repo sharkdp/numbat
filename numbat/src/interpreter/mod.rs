@@ -66,6 +66,8 @@ pub enum RuntimeError {
 
     #[error("Invalid integer display config: {0}. Originated from: {1}")]
     IntegerDisplayConfig(String, String),
+    #[error("Could not access the clipboard. Original error: {0}")]
+    ClipboardError(String),
 }
 
 #[derive(Debug, PartialEq, Eq)]
