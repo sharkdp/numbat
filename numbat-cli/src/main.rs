@@ -457,7 +457,7 @@ impl Cli {
                                                 let m = m::text(
                                                     "successfully saved session history to",
                                                 ) + m::space()
-                                                    + m::string(dst);
+                                                    + m::string(dst.to_string());
                                                 println!("{}", ansi_format(&m, interactive));
                                             }
                                             Err(err) => {

@@ -156,7 +156,7 @@ impl PrettyPrint for Value {
             Value::String(s) => s.pretty_print(),
             Value::DateTime(dt) => crate::markup::string(crate::datetime::to_string(dt)),
             Value::FunctionReference(r) => crate::markup::string(r.to_string()),
-            Value::FormatSpecifiers(Some(s)) => crate::markup::string(s),
+            Value::FormatSpecifiers(Some(s)) => crate::markup::string(s.clone()),
             Value::FormatSpecifiers(None) => crate::markup::empty(),
             Value::StructInstance(struct_info, values) => {
                 crate::markup::type_identifier(struct_info.name.clone())
@@ -168,7 +168,7 @@ impl PrettyPrint for Value {
                         crate::markup::space()
                             + itertools::Itertools::intersperse(
                                 struct_info.fields.keys().zip(values).map(|(name, val)| {
-                                    crate::markup::identifier(name)
+                                    crate::markup::identifier(name.clone())
                                         + crate::markup::operator(":")
                                         + crate::markup::space()
                                         + val.pretty_print()

@@ -369,14 +369,17 @@ impl<'a> Parser<'a> {
     fn list_of_aliases(
         &mut self,
         tokens: &[Token<'a>],
-    ) -> Result<Vec<(&'a str, Option<AcceptsPrefix>)>> {
+    ) -> Result<Vec<(&'a str, Option<AcceptsPrefix>, Span)>> {
         if self.match_exact(tokens, TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
-        let mut identifiers = vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?)];
+        let span = self.peek(tokens).span;
+        let mut identifiers = vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?, span)];
+
         while self.match_exact(tokens, TokenKind::Comma).is_some() {
-            identifiers.push((self.identifier(tokens)?, self.accepts_prefix(tokens)?));
+            let span = self.peek(tokens).span;
+            identifiers.push((self.identifier(tokens)?, self.accepts_prefix(tokens)?, span));
         }
 
         if self.match_exact(tokens, TokenKind::RightParen).is_none() {
@@ -1987,9 +1990,12 @@ mod tests {
     use std::fmt::Write;
 
     use super::*;
-    use crate::ast::{
-        binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
-        struct_, ReplaceSpans,
+    use crate::{
+        ast::{
+            binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
+            struct_, ReplaceSpans,
+        },
+        span::ByteIndex,
     };
 
     #[track_caller]
@@ -2438,7 +2444,26 @@ mod tests {
                 )),
                 decorators: vec![
                     decorator::Decorator::Name("myvar".into()),
-                    decorator::Decorator::Aliases(vec![("foo", None), ("bar", None)]),
+                    decorator::Decorator::Aliases(vec![
+                        (
+                            "foo",
+                            None,
+                            Span {
+                                start: ByteIndex(24),
+                                end: ByteIndex(27),
+                                code_source_id: 0,
+                            },
+                        ),
+                        (
+                            "bar",
+                            None,
+                            Span {
+                                start: ByteIndex(29),
+                                end: ByteIndex(32),
+                                code_source_id: 0,
+                            },
+                        ),
+                    ]),
                 ],
             }),
         );

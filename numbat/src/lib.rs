@@ -343,7 +343,8 @@ impl Context {
                 .ok()
                 .map(|(_, md)| md)
             {
-                let mut help = m::text("Unit: ") + m::unit(md.name.as_deref().unwrap_or(keyword));
+                let mut help =
+                    m::text("Unit: ") + m::unit(md.name.unwrap_or_else(|| keyword.to_string()));
                 if let Some(url) = &md.url {
                     help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
                 }
@@ -364,12 +365,13 @@ impl Context {
                     let desc = "Description: ";
                     let mut lines = description.lines();
                     help += m::text(desc)
-                        + m::text(lines.by_ref().next().unwrap_or("").trim())
+                        + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
                         + m::nl();
 
                     for line in lines {
-                        help +=
-                            m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                        help += m::whitespace(" ".repeat(desc.len()))
+                            + m::text(line.trim().to_string())
+                            + m::nl();
                     }
                 }
 
@@ -392,17 +394,17 @@ impl Context {
                     if !prefix.is_none() {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::unit(keyword)
+                            + m::unit(keyword.to_string())
                             + m::text(" = ")
                             + m::value(prefix.factor().pretty_print())
                             + m::space()
-                            + m::unit(&full_name);
+                            + m::unit(full_name.clone());
                     }
 
                     if let Some(BaseUnitAndFactor(prod, num)) = x {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::unit(&full_name)
+                            + m::unit(full_name.clone())
                             + m::text(" = ")
                             + m::value(num.pretty_print())
                             + m::space()
@@ -415,7 +417,7 @@ impl Context {
                                 Some(m::FormatType::Unit),
                             );
                     } else {
-                        help += m::nl() + m::unit(&full_name) + m::text(" is a base unit");
+                        help += m::nl() + m::unit(full_name.clone()) + m::text(" is a base unit");
                     }
                 };
 
@@ -428,9 +430,9 @@ impl Context {
         if let Some(l) = self.interpreter.lookup_global(keyword) {
             let mut help = m::text("Variable: ");
             if let Some(name) = &l.metadata.name {
-                help += m::text(name);
+                help += m::text(name.clone());
             } else {
-                help += m::identifier(keyword);
+                help += m::identifier(keyword.to_string());
             }
             if let Some(url) = &l.metadata.url {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
@@ -440,11 +442,14 @@ impl Context {
             if let Some(description) = &l.metadata.description {
                 let desc = "Description: ";
                 let mut lines = description.lines();
-                help +=
-                    m::text(desc) + m::text(lines.by_ref().next().unwrap_or("").trim()) + m::nl();
+                help += m::text(desc)
+                    + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                    + m::nl();
 
                 for line in lines {
-                    help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                    help += m::whitespace(" ".repeat(desc.len()))
+                        + m::text(line.trim().to_string())
+                        + m::nl();
                 }
             }
 
@@ -473,9 +478,9 @@ impl Context {
 
             let mut help = m::text("Function:    ");
             if let Some(name) = &metadata.name {
-                help += m::text(name);
+                help += m::text(name.to_string());
             } else {
-                help += m::identifier(keyword);
+                help += m::identifier(keyword.to_string());
             }
             if let Some(url) = &metadata.url {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
@@ -490,11 +495,14 @@ impl Context {
             if let Some(description) = &metadata.description {
                 let desc = "Description: ";
                 let mut lines = description.lines();
-                help +=
-                    m::text(desc) + m::text(lines.by_ref().next().unwrap_or("").trim()) + m::nl();
+                help += m::text(desc)
+                    + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                    + m::nl();
 
                 for line in lines {
-                    help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                    help += m::whitespace(" ".repeat(desc.len()))
+                        + m::text(line.trim().to_string())
+                        + m::nl();
                 }
             }
 

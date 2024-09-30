@@ -36,21 +36,26 @@ impl PrettyPrint for BinaryOperator {
     fn pretty_print(&self) -> Markup {
         use BinaryOperator::*;
 
+        let operator = m::operator(match self {
+            Add => "+",
+            Sub => "-",
+            Mul => "×",
+            Div => "/",
+            Power => "^",
+            ConvertTo => "➞",
+            LessThan => "<",
+            GreaterThan => ">",
+            LessOrEqual => "≤",
+            GreaterOrEqual => "≥",
+            Equal => "==",
+            NotEqual => "≠",
+            LogicalAnd => "&&",
+            LogicalOr => "||",
+        });
+
         match self {
-            Add => m::space() + m::operator("+") + m::space(),
-            Sub => m::space() + m::operator("-") + m::space(),
-            Mul => m::space() + m::operator("×") + m::space(),
-            Div => m::space() + m::operator("/") + m::space(),
-            Power => m::operator("^"),
-            ConvertTo => m::space() + m::operator("➞") + m::space(),
-            LessThan => m::space() + m::operator("<") + m::space(),
-            GreaterThan => m::space() + m::operator(">") + m::space(),
-            LessOrEqual => m::space() + m::operator("≤") + m::space(),
-            GreaterOrEqual => m::space() + m::operator("≥") + m::space(),
-            Equal => m::space() + m::operator("==") + m::space(),
-            NotEqual => m::space() + m::operator("≠") + m::space(),
-            LogicalAnd => m::space() + m::operator("&&") + m::space(),
-            LogicalOr => m::space() + m::operator("||") + m::space(),
+            Power => operator,
+            _ => m::space() + operator + m::space(),
         }
     }
 }
@@ -365,7 +370,7 @@ impl PrettyPrint for TypeExpression {
     fn pretty_print(&self) -> Markup {
         match self {
             TypeExpression::Unity(_) => m::type_identifier("1"),
-            TypeExpression::TypeIdentifier(_, ident) => m::type_identifier(ident),
+            TypeExpression::TypeIdentifier(_, ident) => m::type_identifier(ident.clone()),
             TypeExpression::Multiply(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
             }

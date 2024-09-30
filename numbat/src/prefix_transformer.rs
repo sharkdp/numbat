@@ -2,7 +2,7 @@ use crate::{
     ast::{DefineVariable, Expression, Statement, StringPart},
     decorator::{self, Decorator},
     name_resolution::NameResolutionError,
-    prefix_parser::{PrefixParser, PrefixParserResult},
+    prefix_parser::{AliasSpanInfo, PrefixParser, PrefixParserResult},
     span::Span,
 };
 
@@ -135,20 +135,26 @@ impl Transformer {
     pub(crate) fn register_name_and_aliases(
         &mut self,
         name: &str,
+        name_span: Span,
         decorators: &[Decorator],
-        conflict_span: Span,
     ) -> Result<()> {
         let mut unit_names = vec![];
         let metric_prefixes = Self::has_decorator(decorators, Decorator::MetricPrefixes);
         let binary_prefixes = Self::has_decorator(decorators, Decorator::BinaryPrefixes);
-        for (alias, accepts_prefix) in decorator::name_and_aliases(name, decorators) {
+
+        for (alias, accepts_prefix, alias_span) in
+            decorator::name_and_aliases_spans(name, name_span, decorators)
+        {
             self.prefix_parser.add_unit(
                 alias,
                 accepts_prefix,
                 metric_prefixes,
                 binary_prefixes,
                 name,
-                conflict_span,
+                AliasSpanInfo {
+                    name_span,
+                    alias_span,
+                },
             )?;
             unit_names.push(alias.to_string());
         }
@@ -189,7 +195,7 @@ impl Transformer {
         Ok(match statement {
             Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
             Statement::DefineBaseUnit(span, name, dexpr, decorators) => {
-                self.register_name_and_aliases(name, &decorators, span)?;
+                self.register_name_and_aliases(name, span, &decorators)?;
                 Statement::DefineBaseUnit(span, name, dexpr, decorators)
             }
             Statement::DefineDerivedUnit {
@@ -200,7 +206,7 @@ impl Transformer {
                 type_annotation,
                 decorators,
             } => {
-                self.register_name_and_aliases(identifier, &decorators, identifier_span)?;
+                self.register_name_and_aliases(identifier, identifier_span, &decorators)?;
                 Statement::DefineDerivedUnit {
                     identifier_span,
                     identifier,
