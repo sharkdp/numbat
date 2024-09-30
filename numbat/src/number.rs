@@ -51,10 +51,11 @@ impl Number {
         // [1] https://stackoverflow.com/a/43656339
         //
         // Skip special format handling for integers if options is not None.
-        if !matches!(float_options, FloatDisplayConfigSource::Numbat(_))
+        if !matches!(float_options, FloatDisplayConfigSource::Numbat(Some(_)))
             && self.is_integer()
             && self.0.abs() < 1e15
         {
+            println!("{int_options:?}");
             use num_format::{CustomFormat, Grouping, ToFormattedString};
 
             let format = int_options.unwrap_or_else(|| {
