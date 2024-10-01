@@ -74,7 +74,7 @@ pub enum StringPart<'a> {
 pub enum Expression<'a> {
     Scalar(Span, Number),
     Identifier(Span, &'a str),
-    UnitIdentifier(Span, Prefix, String, String),
+    UnitIdentifier(Span, Prefix, String, String), // can't easily be made &'a str
     TypedHole(Span),
     UnaryOperator {
         op: UnaryOperator,
