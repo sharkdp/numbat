@@ -592,7 +592,7 @@ impl Context {
 
         let result = self
             .typechecker
-            .check(transformed_statements)
+            .check(&transformed_statements)
             .map_err(|err| NumbatError::TypeCheckError(*err));
 
         if result.is_err() {

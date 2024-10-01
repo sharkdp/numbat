@@ -584,13 +584,13 @@ pub enum Statement<'a> {
     Expression(Expression),
     DefineVariable(DefineVariable<'a>),
     DefineFunction(
-        String,
+        &'a str,
         Vec<Decorator<'a>>,                        // decorators
         Vec<(String, Option<TypeParameterBound>)>, // type parameters
         Vec<(
             // parameters:
             Span,                   // span of the parameter
-            String,                 // parameter name
+            &'a str,                // parameter name
             Option<TypeAnnotation>, // parameter type annotation
             Markup,                 // readable parameter type
         )>,
@@ -602,13 +602,13 @@ pub enum Statement<'a> {
     ),
     DefineDimension(String, Vec<TypeExpression>),
     DefineBaseUnit(
-        String,
+        &'a str,
         Vec<Decorator<'a>>,
         Option<TypeAnnotation>,
         TypeScheme,
     ),
     DefineDerivedUnit(
-        String,
+        &'a str,
         Expression,
         Vec<Decorator<'a>>,
         Option<TypeAnnotation>,
@@ -1009,7 +1009,7 @@ impl PrettyPrint for Statement<'_> {
                     &type_parameters,
                     parameters
                         .iter()
-                        .map(|(_, name, _, type_)| (name.as_str(), type_.clone())),
+                        .map(|(_, name, _, type_)| (*name, type_.clone())),
                     readable_return_type,
                 ) + body
                     .as_ref()
@@ -1038,7 +1038,7 @@ impl PrettyPrint for Statement<'_> {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
-                    + m::unit(identifier.clone())
+                    + m::unit(identifier.to_string())
                     + m::operator(":")
                     + m::space()
                     + annotation
@@ -1057,7 +1057,7 @@ impl PrettyPrint for Statement<'_> {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
-                    + m::unit(identifier.clone())
+                    + m::unit(identifier.to_string())
                     + m::operator(":")
                     + m::space()
                     + readable_type.clone()
@@ -1417,7 +1417,7 @@ mod tests {
         let transformed_statements = transformer.transform(statements).unwrap().replace_spans();
 
         crate::typechecker::TypeChecker::default()
-            .check(transformed_statements)
+            .check(&transformed_statements)
             .unwrap()
             .last()
             .unwrap()
