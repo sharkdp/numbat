@@ -600,7 +600,7 @@ pub enum Statement<'a> {
         Option<TypeAnnotation>,  // return type annotation
         Markup,                  // readable return type
     ),
-    DefineDimension(String, Vec<TypeExpression>),
+    DefineDimension(&'a str, Vec<TypeExpression>),
     DefineBaseUnit(
         &'a str,
         Vec<Decorator<'a>>,
@@ -1017,12 +1017,12 @@ impl PrettyPrint for Statement<'_> {
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DefineDimension(identifier, dexprs) if dexprs.is_empty() => {
-                m::keyword("dimension") + m::space() + m::type_identifier(identifier.clone())
+                m::keyword("dimension") + m::space() + m::type_identifier(identifier.to_string())
             }
             Statement::DefineDimension(identifier, dexprs) => {
                 m::keyword("dimension")
                     + m::space()
-                    + m::type_identifier(identifier.clone())
+                    + m::type_identifier(identifier.to_string())
                     + m::space()
                     + m::operator("=")
                     + m::space()

@@ -1444,7 +1444,7 @@ impl TypeChecker {
 
                 let parameters: Vec<_> = typed_parameters
                     .iter()
-                    .map(|(span, name, _, annotation)| (*span, name.clone(), (*annotation).clone()))
+                    .map(|(span, name, _, annotation)| (*span, name, (*annotation).clone()))
                     .collect();
                 let parameter_types = typed_parameters
                     .iter()
@@ -1643,7 +1643,7 @@ impl TypeChecker {
                         .add_base_dimension(name)
                         .map_err(TypeCheckError::RegistryError)?;
                 }
-                typed_ast::Statement::DefineDimension(name.to_string(), dexprs.clone())
+                typed_ast::Statement::DefineDimension(name, dexprs.clone())
             }
             ast::Statement::ProcedureCall(span, kind @ ProcedureKind::Type, args) => {
                 if args.len() != 1 {
