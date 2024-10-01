@@ -1219,7 +1219,7 @@ impl TypeChecker {
         }
 
         Ok(typed_ast::DefineVariable(
-            identifier.to_string(),
+            identifier,
             decorators.to_owned(),
             expr_checked,
             type_annotation.clone(),

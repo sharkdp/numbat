@@ -571,7 +571,7 @@ impl Expression {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DefineVariable<'a>(
-    pub String,
+    pub &'a str,
     pub Vec<Decorator<'a>>,
     pub Expression,
     pub Option<TypeAnnotation>,
@@ -991,7 +991,7 @@ impl PrettyPrint for Statement<'_> {
                         plv += m::nl()
                             + introducer_keyword
                             + m::space()
-                            + m::identifier(identifier.clone())
+                            + m::identifier(identifier.to_string())
                             + m::operator(":")
                             + m::space()
                             + readable_type.clone()
