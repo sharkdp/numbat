@@ -55,7 +55,6 @@ impl Number {
             && self.is_integer()
             && self.0.abs() < 1e15
         {
-            println!("{int_options:?}");
             use num_format::{CustomFormat, Grouping, ToFormattedString};
 
             let format = int_options.unwrap_or_else(|| {
