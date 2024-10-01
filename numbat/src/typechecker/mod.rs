@@ -1586,7 +1586,7 @@ impl TypeChecker {
                     decorators.clone(),
                     type_parameters
                         .iter()
-                        .map(|(_, name, bound)| (name.to_string(), bound.clone()))
+                        .map(|(_, name, bound)| (*name, bound.clone()))
                         .collect(),
                     typed_parameters
                         .iter()

@@ -585,8 +585,8 @@ pub enum Statement<'a> {
     DefineVariable(DefineVariable<'a>),
     DefineFunction(
         &'a str,
-        Vec<Decorator<'a>>,                        // decorators
-        Vec<(String, Option<TypeParameterBound>)>, // type parameters
+        Vec<Decorator<'a>>,                         // decorators
+        Vec<(&'a str, Option<TypeParameterBound>)>, // type parameters
         Vec<(
             // parameters:
             Span,                   // span of the parameter
@@ -669,9 +669,8 @@ impl Statement<'_> {
                 return_type_annotation,
                 readable_return_type,
             ) => {
-                let (fn_type, _) = fn_type.instantiate_for_printing(Some(
-                    type_parameters.iter().map(|(n, _)| n.as_str()),
-                ));
+                let (fn_type, _) =
+                    fn_type.instantiate_for_printing(Some(type_parameters.iter().map(|(n, _)| *n)));
 
                 for DefineVariable(_, _, _, type_annotation, type_, readable_type) in
                     local_variables
@@ -964,9 +963,8 @@ impl PrettyPrint for Statement<'_> {
                 _return_type_annotation,
                 readable_return_type,
             ) => {
-                let (fn_type, type_parameters) = fn_type.instantiate_for_printing(Some(
-                    type_parameters.iter().map(|(n, _)| n.as_str()),
-                ));
+                let (fn_type, type_parameters) =
+                    fn_type.instantiate_for_printing(Some(type_parameters.iter().map(|(n, _)| *n)));
 
                 let mut pretty_local_variables = None;
                 let mut first = true;
