@@ -6,7 +6,6 @@ use crate::resolver::CodeSource;
 use crate::Context;
 use crate::InterpreterSettings;
 
-use std::sync::OnceLock;
 use std::sync::{Arc, Mutex};
 
 fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
@@ -40,38 +39,31 @@ fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
     markup
 }
 
-static HELP_MARKUP: OnceLock<m::Markup> = OnceLock::new();
-pub fn help_markup() -> &'static m::Markup {
-    HELP_MARKUP.get_or_init(|| {
-        let mut output = m::nl()
-            + m::text(
-                "Numbat is a statically typed programming language for scientific computations",
-            )
-            + m::nl()
-            + m::text(
-                "with first class support for physical dimensions and units. Please refer to",
-            )
-            + m::nl()
-            + m::text("the full documentation online at ")
-            + m::string("https://numbat.dev/doc/")
-            + m::text(" or try one of these ")
-            + m::nl()
-            + m::text("examples:")
-            + m::nl()
-            + m::nl();
+pub fn help_markup() -> m::Markup {
+    let mut output = m::nl()
+        + m::text("Numbat is a statically typed programming language for scientific computations")
+        + m::nl()
+        + m::text("with first class support for physical dimensions and units. Please refer to")
+        + m::nl()
+        + m::text("the full documentation online at ")
+        + m::string("https://numbat.dev/doc/")
+        + m::text(" or try one of these ")
+        + m::nl()
+        + m::text("examples:")
+        + m::nl()
+        + m::nl();
 
-        let examples = [
-            "8 km / (1 h + 25 min)",
-            "atan2(30 cm, 1 m) -> deg",
-            "let ω = 2 π c / 660 nm",
-            r#"print("Energy of red photons: {ℏ ω -> eV}")"#,
-        ];
-        let mut example_context = Context::new(BuiltinModuleImporter::default());
-        let _use_prelude_output = evaluate_example(&mut example_context, "use prelude");
-        for example in examples.iter() {
-            output += m::text(">>> ") + m::text(*example) + m::nl();
-            output += evaluate_example(&mut example_context, example) + m::nl();
-        }
-        output
-    })
+    let examples = [
+        "8 km / (1 h + 25 min)",
+        "atan2(30 cm, 1 m) -> deg",
+        "let ω = 2 π c / 660 nm",
+        r#"print("Energy of red photons: {ℏ ω -> eV}")"#,
+    ];
+    let mut example_context = Context::new(BuiltinModuleImporter::default());
+    let _use_prelude_output = evaluate_example(&mut example_context, "use prelude");
+    for example in examples.iter() {
+        output += m::text(">>> ") + m::text(*example) + m::nl();
+        output += evaluate_example(&mut example_context, example) + m::nl();
+    }
+    output
 }
