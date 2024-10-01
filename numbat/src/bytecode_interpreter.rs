@@ -69,15 +69,15 @@ impl BytecodeInterpreter {
                     .rposition(|l| &l.identifier == identifier)
                 {
                     self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
-                } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
+                } else if LAST_RESULT_IDENTIFIERS.contains(identifier) {
                     self.vm.add_op(Op::GetLastResult);
-                } else if let Some(is_foreign) = self.functions.get(identifier) {
+                } else if let Some(is_foreign) = self.functions.get(*identifier) {
                     let index = self
                         .vm
                         .add_constant(Constant::FunctionReference(if *is_foreign {
-                            FunctionReference::Foreign(identifier.clone())
+                            FunctionReference::Foreign(identifier.to_string())
                         } else {
-                            FunctionReference::Normal(identifier.clone())
+                            FunctionReference::Normal(identifier.to_string())
                         }));
                     self.vm.add_op1(Op::LoadConstant, index);
                 } else {
@@ -178,7 +178,7 @@ impl BytecodeInterpreter {
 
                 let sorted_exprs = exprs
                     .iter()
-                    .sorted_by_key(|(n, _)| struct_info.fields.get_index_of(n).unwrap());
+                    .sorted_by_key(|(n, _)| struct_info.fields.get_index_of(*n).unwrap());
 
                 for (_, expr) in sorted_exprs.rev() {
                     self.compile_expression(expr)?;
@@ -198,7 +198,7 @@ impl BytecodeInterpreter {
                     );
                 };
 
-                let idx = struct_info.fields.get_index_of(attr).unwrap();
+                let idx = struct_info.fields.get_index_of(*attr).unwrap();
 
                 self.vm.add_op1(Op::AccessStructField, idx as u16);
             }
@@ -221,7 +221,7 @@ impl BytecodeInterpreter {
                 for part in string_parts {
                     match part {
                         StringPart::Fixed(s) => {
-                            let index = self.vm.add_constant(Constant::String(s.clone()));
+                            let index = self.vm.add_constant(Constant::String(s.to_string()));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
                         StringPart::Interpolation {
@@ -231,7 +231,7 @@ impl BytecodeInterpreter {
                         } => {
                             self.compile_expression(expr)?;
                             let index = self.vm.add_constant(Constant::FormatSpecifiers(
-                                format_specifiers.clone(),
+                                format_specifiers.map(|s| s.to_string()),
                             ));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }

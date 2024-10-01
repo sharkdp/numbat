@@ -65,16 +65,16 @@ pub struct TypeChecker {
     constraints: ConstraintSet,
 }
 
-struct ElaborationDefinitionArgs<'a> {
+struct ElaborationDefinitionArgs<'a, 'b> {
     identifier_span: Span,
-    expr: &'a ast::Expression<'a>,
+    expr: &'b ast::Expression<'a>,
     type_annotation_span: Option<Span>,
-    type_annotation: Option<&'a TypeAnnotation>,
-    operation: &'a str,
+    type_annotation: Option<&'b TypeAnnotation>,
+    operation: &'b str,
     expected_name: &'static str,
     actual_name: &'static str,
     actual_name_for_fix: &'static str,
-    elaboration_kind: &'a str,
+    elaboration_kind: &'b str,
 }
 
 impl TypeChecker {
@@ -172,28 +172,28 @@ impl TypeChecker {
         })?)
     }
 
-    fn get_proper_function_reference(
+    fn get_proper_function_reference<'a>(
         &self,
-        expr: &ast::Expression,
-    ) -> Option<(String, &FunctionSignature)> {
+        expr: &ast::Expression<'a>,
+    ) -> Option<(&'a str, &FunctionSignature)> {
         match expr {
             ast::Expression::Identifier(_, name) => self
                 .env
                 .get_function_info(name)
-                .map(|(signature, _)| (name.to_string(), signature)),
+                .map(|(signature, _)| (*name, signature)),
             _ => None,
         }
     }
 
-    fn proper_function_call(
+    fn proper_function_call<'a>(
         &mut self,
         span: &Span,
         full_span: &Span,
-        function_name: &str,
+        function_name: &'a str,
         signature: &FunctionSignature,
-        arguments: Vec<typed_ast::Expression>,
+        arguments: Vec<typed_ast::Expression<'a>>,
         argument_types: Vec<Type>,
-    ) -> Result<typed_ast::Expression> {
+    ) -> Result<typed_ast::Expression<'a>> {
         let FunctionSignature {
             name: _,
             definition_span,
@@ -288,13 +288,16 @@ impl TypeChecker {
         Ok(typed_ast::Expression::FunctionCall(
             *span,
             *full_span,
-            function_name.into(),
+            function_name,
             arguments,
             TypeScheme::concrete(return_type.as_ref().clone()),
         ))
     }
 
-    fn elaborate_expression(&mut self, ast: &ast::Expression) -> Result<typed_ast::Expression> {
+    fn elaborate_expression<'a>(
+        &mut self,
+        ast: &ast::Expression<'a>,
+    ) -> Result<typed_ast::Expression<'a>> {
         Ok(match ast {
             ast::Expression::Scalar(span, n)
                 if n.to_f64().is_zero() || n.to_f64().is_infinite() || n.to_f64().is_nan() =>
@@ -325,7 +328,7 @@ impl TypeChecker {
                     }
                 };
 
-                typed_ast::Expression::Identifier(*span, name.to_string(), TypeScheme::concrete(ty))
+                typed_ast::Expression::Identifier(*span, name, TypeScheme::concrete(ty))
             }
             ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
                 let type_scheme = self.identifier_type(*span, name)?.clone();
@@ -780,7 +783,7 @@ impl TypeChecker {
                     self.proper_function_call(
                         span,
                         full_span,
-                        &name,
+                        name,
                         &signature,
                         arguments_checked,
                         argument_types,
@@ -880,7 +883,7 @@ impl TypeChecker {
                             format_specifiers,
                         } => Ok(typed_ast::StringPart::Interpolation {
                             span: *span,
-                            format_specifiers: format_specifiers.clone(),
+                            format_specifiers: format_specifiers.as_ref().copied(),
                             expr: Box::new(self.elaborate_expression(expr)?),
                         }),
                     })
@@ -933,7 +936,7 @@ impl TypeChecker {
                 let name = *name;
                 let fields_checked = fields
                     .iter()
-                    .map(|(_, n, v)| Ok((n.to_string(), self.elaborate_expression(v)?)))
+                    .map(|(_, n, v)| Ok((*n, self.elaborate_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
                 let Some(struct_info) = self.structs.get(name).cloned() else {
@@ -958,12 +961,12 @@ impl TypeChecker {
                         ));
                     }
 
-                    let Some((expected_field_span, expected_type)) = struct_info.fields.get(field)
+                    let Some((expected_field_span, expected_type)) = struct_info.fields.get(*field)
                     else {
                         return Err(Box::new(TypeCheckError::UnknownFieldInStructInstantiation(
                             *span,
                             struct_info.definition_span,
-                            field.clone(),
+                            field.to_string(),
                             struct_info.name.clone(),
                         )));
                     };
@@ -986,7 +989,7 @@ impl TypeChecker {
 
                 let missing_fields = {
                     let mut fields = struct_info.fields.clone();
-                    fields.retain(|f, _| !seen_fields.contains_key(f));
+                    fields.retain(|f, _| !seen_fields.contains_key(&f.as_str()));
                     fields.into_iter().map(|(n, (_, t))| (n, t)).collect_vec()
                 };
 
@@ -1050,7 +1053,7 @@ impl TypeChecker {
                     *ident_span,
                     *full_span,
                     Box::new(expr_checked),
-                    field_name.to_owned(),
+                    field_name,
                     TypeScheme::concrete(type_),
                     TypeScheme::concrete(field_type),
                 )
@@ -1105,10 +1108,10 @@ impl TypeChecker {
         })
     }
 
-    fn _elaborate_inner(
+    fn _elaborate_inner<'a>(
         &mut self,
-        definition: ElaborationDefinitionArgs,
-    ) -> Result<(typed_ast::Expression, typed_ast::Type)> {
+        definition: ElaborationDefinitionArgs<'a, '_>,
+    ) -> Result<(typed_ast::Expression<'a>, typed_ast::Type)> {
         let ElaborationDefinitionArgs {
             identifier_span,
             expr,
@@ -1220,7 +1223,7 @@ impl TypeChecker {
 
         Ok(typed_ast::DefineVariable(
             identifier,
-            decorators.to_owned(),
+            decorators.clone(),
             expr_checked,
             type_annotation.clone(),
             TypeScheme::concrete(type_deduced),

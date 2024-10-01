@@ -1581,7 +1581,7 @@ impl<'a> Parser<'a> {
 
         let format_specifiers = self
             .match_exact(tokens, TokenKind::StringInterpolationSpecifiers)
-            .map(|token| token.lexeme.to_owned());
+            .map(|token| token.lexeme);
 
         parts.push(StringPart::Interpolation {
             span: expr.full_span(),
@@ -3304,7 +3304,7 @@ mod tests {
                     StringPart::Interpolation {
                         span: Span::dummy(),
                         expr: Box::new(binop!(scalar!(1.0), Add, scalar!(2.0))),
-                        format_specifiers: Some(":0.2".to_string()),
+                        format_specifiers: Some(":0.2"),
                     },
                 ],
             ),

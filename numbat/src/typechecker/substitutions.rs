@@ -148,7 +148,7 @@ impl ApplySubstitution for StructInfo {
     }
 }
 
-impl ApplySubstitution for Expression {
+impl ApplySubstitution for Expression<'_> {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
             Expression::Scalar(_, _, type_) => type_.apply(s),
