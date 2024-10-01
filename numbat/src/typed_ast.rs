@@ -452,16 +452,16 @@ impl Type {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum StringPart {
+pub enum StringPart<'a> {
     Fixed(String),
     Interpolation {
         span: Span,
-        expr: Box<Expression>,
-        format_specifiers: Option<String>,
+        expr: Box<Expression<'a>>,
+        format_specifiers: Option<&'a str>,
     },
 }
 
-impl PrettyPrint for StringPart {
+impl PrettyPrint for StringPart<'_> {
     fn pretty_print(&self) -> Markup {
         match self {
             StringPart::Fixed(s) => m::string(escape_numbat_string(s)),
@@ -473,7 +473,7 @@ impl PrettyPrint for StringPart {
                 let mut markup = m::operator("{") + expr.pretty_print();
 
                 if let Some(format_specifiers) = format_specifiers {
-                    markup += m::text(format_specifiers.clone());
+                    markup += m::text(format_specifiers.to_string());
                 }
 
                 markup += m::operator("}");
@@ -484,23 +484,23 @@ impl PrettyPrint for StringPart {
     }
 }
 
-impl PrettyPrint for &Vec<StringPart> {
+impl PrettyPrint for &Vec<StringPart<'_>> {
     fn pretty_print(&self) -> Markup {
         m::operator("\"") + self.iter().map(|p| p.pretty_print()).sum() + m::operator("\"")
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Expression {
+pub enum Expression<'a> {
     Scalar(Span, Number, TypeScheme),
-    Identifier(Span, String, TypeScheme),
+    Identifier(Span, &'a str, TypeScheme),
     UnitIdentifier(Span, Prefix, String, String, TypeScheme),
-    UnaryOperator(Span, UnaryOperator, Box<Expression>, TypeScheme),
+    UnaryOperator(Span, UnaryOperator, Box<Expression<'a>>, TypeScheme),
     BinaryOperator(
         Option<Span>,
         BinaryOperator,
-        Box<Expression>,
-        Box<Expression>,
+        Box<Expression<'a>>,
+        Box<Expression<'a>>,
         TypeScheme,
     ),
     /// A special binary operator that has a DateTime as one (or both) of the operands
@@ -508,32 +508,37 @@ pub enum Expression {
         Option<Span>,
         BinaryOperator,
         /// LHS must evaluate to a DateTime
-        Box<Expression>,
+        Box<Expression<'a>>,
         /// RHS can evaluate to a DateTime or a quantity of type Time
-        Box<Expression>,
+        Box<Expression<'a>>,
         TypeScheme,
     ),
     // A 'proper' function call
-    FunctionCall(Span, Span, String, Vec<Expression>, TypeScheme),
+    FunctionCall(Span, Span, &'a str, Vec<Expression<'a>>, TypeScheme),
     // A call via a function object
-    CallableCall(Span, Box<Expression>, Vec<Expression>, TypeScheme),
+    CallableCall(Span, Box<Expression<'a>>, Vec<Expression<'a>>, TypeScheme),
     Boolean(Span, bool),
-    Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
-    String(Span, Vec<StringPart>),
-    InstantiateStruct(Span, Vec<(String, Expression)>, StructInfo),
+    Condition(
+        Span,
+        Box<Expression<'a>>,
+        Box<Expression<'a>>,
+        Box<Expression<'a>>,
+    ),
+    String(Span, Vec<StringPart<'a>>),
+    InstantiateStruct(Span, Vec<(&'a str, Expression<'a>)>, StructInfo),
     AccessField(
         Span,
         Span,
-        Box<Expression>,
-        String,     // field name
+        Box<Expression<'a>>,
+        &'a str,    // field name
         TypeScheme, // struct type
         TypeScheme, // resulting field type
     ),
-    List(Span, Vec<Expression>, TypeScheme),
+    List(Span, Vec<Expression<'a>>, TypeScheme),
     TypedHole(Span, TypeScheme),
 }
 
-impl Expression {
+impl Expression<'_> {
     pub fn full_span(&self) -> Span {
         match self {
             Expression::Scalar(span, ..) => *span,
@@ -573,7 +578,7 @@ impl Expression {
 pub struct DefineVariable<'a>(
     pub &'a str,
     pub Vec<Decorator<'a>>,
-    pub Expression,
+    pub Expression<'a>,
     pub Option<TypeAnnotation>,
     pub TypeScheme,
     pub Markup,
@@ -581,7 +586,7 @@ pub struct DefineVariable<'a>(
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement<'a> {
-    Expression(Expression),
+    Expression(Expression<'a>),
     DefineVariable(DefineVariable<'a>),
     DefineFunction(
         &'a str,
@@ -594,7 +599,7 @@ pub enum Statement<'a> {
             Option<TypeAnnotation>, // parameter type annotation
             Markup,                 // readable parameter type
         )>,
-        Option<Expression>,      // function body
+        Option<Expression<'a>>,  // function body
         Vec<DefineVariable<'a>>, // local variables
         TypeScheme,              // function type
         Option<TypeAnnotation>,  // return type annotation
@@ -609,13 +614,13 @@ pub enum Statement<'a> {
     ),
     DefineDerivedUnit(
         &'a str,
-        Expression,
+        Expression<'a>,
         Vec<Decorator<'a>>,
         Option<TypeAnnotation>,
         TypeScheme,
         Markup,
     ),
-    ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
+    ProcedureCall(crate::ast::ProcedureKind, Vec<Expression<'a>>),
     DefineStruct(StructInfo),
 }
 
@@ -751,7 +756,7 @@ impl Statement<'_> {
     }
 }
 
-impl Expression {
+impl Expression<'_> {
     pub fn get_type(&self) -> Type {
         match self {
             Expression::Scalar(_, _, type_) => type_.unsafe_as_concrete(),
@@ -1163,7 +1168,7 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             }
             (Expression::Scalar(_, s, _), Expression::Identifier(_, name, _type)) => {
                 // Fuse multiplication of a scalar and identifier
-                pretty_scalar(*s) + m::space() + m::identifier(name.clone())
+                pretty_scalar(*s) + m::space() + m::identifier(name.to_string())
             }
             _ => {
                 let add_parens_if_needed = |expr: &Expression| {
@@ -1247,13 +1252,13 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
     }
 }
 
-impl PrettyPrint for Expression {
+impl PrettyPrint for Expression<'_> {
     fn pretty_print(&self) -> Markup {
         use Expression::*;
 
         match self {
             Scalar(_, n, _) => pretty_scalar(*n),
-            Identifier(_, name, _type) => m::identifier(name.clone()),
+            Identifier(_, name, _type) => m::identifier(name.to_string()),
             UnitIdentifier(_, prefix, _name, full_name, _type) => {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
@@ -1269,7 +1274,7 @@ impl PrettyPrint for Expression {
             BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             BinaryOperatorForDate(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(_, _, name, args, _type) => {
-                m::identifier(name.clone())
+                m::identifier(name.to_string())
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
                         args.iter().map(|e| e.pretty_print()),
@@ -1313,7 +1318,7 @@ impl PrettyPrint for Expression {
                         m::space()
                             + itertools::Itertools::intersperse(
                                 exprs.iter().map(|(n, e)| {
-                                    m::identifier(n.clone())
+                                    m::identifier(n.to_string())
                                         + m::operator(":")
                                         + m::space()
                                         + e.pretty_print()
@@ -1326,7 +1331,7 @@ impl PrettyPrint for Expression {
                     + m::operator("}")
             }
             AccessField(_, _, expr, attr, _, _) => {
-                expr.pretty_print() + m::operator(".") + m::identifier(attr.clone())
+                expr.pretty_print() + m::operator(".") + m::identifier(attr.to_string())
             }
             List(_, elements, _) => {
                 m::operator("[")

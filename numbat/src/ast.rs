@@ -66,7 +66,7 @@ pub enum StringPart<'a> {
     Interpolation {
         span: Span,
         expr: Box<Expression<'a>>,
-        format_specifiers: Option<String>,
+        format_specifiers: Option<&'a str>,
     },
 }
 
@@ -512,7 +512,7 @@ impl ReplaceSpans for StringPart<'_> {
             } => StringPart::Interpolation {
                 span: Span::dummy(),
                 expr: Box::new(expr.replace_spans()),
-                format_specifiers: format_specifiers.clone(),
+                format_specifiers: *format_specifiers,
             },
         }
     }

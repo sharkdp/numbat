@@ -255,7 +255,7 @@ impl PrefixParser {
             return PrefixParserResult::UnitIdentifier(
                 info.definition_span,
                 Prefix::none(),
-                input.into(),
+                input.to_string(),
                 info.full_name.clone(),
             );
         }
