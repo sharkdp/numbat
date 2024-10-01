@@ -1284,7 +1284,7 @@ impl TypeChecker {
                 }
 
                 typed_ast::Statement::DefineBaseUnit(
-                    unit_name.to_string(),
+                    unit_name,
                     decorators.clone(),
                     type_annotation.clone().map(TypeAnnotation::TypeExpression),
                     TypeScheme::concrete(Type::Dimension(type_specified)),
@@ -1320,7 +1320,7 @@ impl TypeChecker {
                     );
                 }
                 typed_ast::Statement::DefineDerivedUnit(
-                    identifier.to_string(),
+                    identifier,
                     expr_checked,
                     decorators.clone(),
                     type_annotation.clone(),
@@ -1424,7 +1424,7 @@ impl TypeChecker {
                     );
                     typed_parameters.push((
                         *parameter_span,
-                        parameter.to_string(),
+                        *parameter,
                         parameter_type,
                         type_annotation,
                     ));
@@ -1463,7 +1463,10 @@ impl TypeChecker {
                             .iter()
                             .map(|(span, name, tpb)| (*span, name.to_string(), tpb.clone()).clone())
                             .collect(),
-                        parameters,
+                        parameters: parameters
+                            .into_iter()
+                            .map(|(span, s, o)| (span, s.to_string(), o))
+                            .collect(),
                         return_type_annotation: return_type_annotation.clone(),
                         fn_type: fn_type.clone(),
                     },
@@ -1579,7 +1582,7 @@ impl TypeChecker {
                 );
 
                 typed_ast::Statement::DefineFunction(
-                    function_name.to_string(),
+                    function_name,
                     decorators.clone(),
                     type_parameters
                         .iter()
@@ -1590,7 +1593,7 @@ impl TypeChecker {
                         .map(|(span, name, _, type_annotation)| {
                             (
                                 *span,
-                                name.clone(),
+                                *name,
                                 (*type_annotation).clone(),
                                 crate::markup::empty(),
                             )
@@ -1894,12 +1897,12 @@ impl TypeChecker {
 
     pub fn check<'a>(
         &mut self,
-        statements: impl IntoIterator<Item = ast::Statement<'a>>,
+        statements: &[ast::Statement<'a>],
     ) -> Result<Vec<typed_ast::Statement<'a>>> {
         let mut checked_statements = vec![];
 
-        for statement in statements.into_iter() {
-            checked_statements.push(self.check_statement(&statement)?);
+        for statement in statements {
+            checked_statements.push(self.check_statement(statement)?);
         }
 
         Ok(checked_statements)

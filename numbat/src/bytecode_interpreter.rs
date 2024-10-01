@@ -335,7 +335,7 @@ impl BytecodeInterpreter {
                 let current_depth = self.current_depth();
                 for parameter in parameters {
                     self.locals[current_depth].push(Local {
-                        identifier: parameter.1.clone(),
+                        identifier: parameter.1.to_string(),
                         depth: current_depth,
                         metadata: LocalMetadata::default(),
                     });
@@ -352,7 +352,7 @@ impl BytecodeInterpreter {
 
                 self.vm.end_function();
 
-                self.functions.insert(name.clone(), false);
+                self.functions.insert(name.to_string(), false);
             }
             Statement::DefineFunction(
                 name,
@@ -371,7 +371,7 @@ impl BytecodeInterpreter {
                 self.vm
                     .add_foreign_function(name, parameters.len()..=parameters.len());
 
-                self.functions.insert(name.clone(), true);
+                self.functions.insert(name.to_string(), true);
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
@@ -407,7 +407,7 @@ impl BytecodeInterpreter {
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
                     unit_name,
-                    crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
+                    crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]),
                 )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
@@ -436,11 +436,7 @@ impl BytecodeInterpreter {
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
                     Some(
-                        &crate::decorator::get_canonical_unit_name(
-                            unit_name.as_str(),
-                            &decorators[..],
-                        )
-                        .name,
+                        &crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]).name,
                     ),
                     UnitMetadata {
                         type_: type_.to_concrete_type(), // We guarantee that derived-unit definitions do not contain generics, so no TGen(..)s can escape
