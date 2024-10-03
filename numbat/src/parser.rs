@@ -96,6 +96,9 @@ pub enum ParseErrorKind {
     #[error("Trailing '=' sign. Use `let {0} = …` if you intended to define a new constant.")]
     TrailingEqualSign(String),
 
+    #[error("Trailing '=' sign. Use `fn {0} = …` if you intended to define a function.")]
+    TrailingEqualSignFunction(String),
+
     #[error("Expected identifier after 'let' keyword")]
     ExpectedIdentifierAfterLet,
 
@@ -310,12 +313,22 @@ impl<'a> Parser<'a> {
                     break;
                 }
                 TokenKind::Equal => {
+                    let last_token = self.last(tokens).unwrap();
+
+                    let mut input = String::new();
+                    for token in tokens.iter().take(self.current) {
+                        input.push_str(token.lexeme);
+                    }
+
                     errors.push(ParseError {
-                        kind: ParseErrorKind::TrailingEqualSign(
-                            self.last(tokens).unwrap().lexeme.to_owned(),
-                        ),
+                        kind: if last_token.kind == TokenKind::RightParen {
+                            ParseErrorKind::TrailingEqualSignFunction(input)
+                        } else {
+                            ParseErrorKind::TrailingEqualSign(input)
+                        },
                         span: self.peek(tokens).span,
                     });
+
                     self.recover_from_error(tokens);
                 }
                 _ => {
