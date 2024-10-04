@@ -21,36 +21,21 @@ fn datetime(input: String) -> DateTime
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=datetime%28%222022%2D07%2D20T21%3A52%2B0200%22%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=datetime%28%222022%2D07%2D20T21%3A52%2B0200%22%29')""></button></div><code class="language-nbt hljs numbat">>>> datetime("2022-07-20T21:52+0200")
 
-  ```nbt
-    >>> datetime("2022-07-20T21:52+0200")
-    
-      datetime("2022-07-20T21:52+0200")
-    
-        = 2022-07-20 19:52:00 UTC    [DateTime]
-    
-  ```
-* <a href="https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20Europe%2FBerlin%22%29"><i class="fa fa-play"></i> Run this example</a>
+    = 2022-07-20 19:52:00 UTC    [DateTime]
+</code></pre>
 
-  ```nbt
-    >>> datetime("2022-07-20 21:52 Europe/Berlin")
-    
-      datetime("2022-07-20 21:52 Europe/Berlin")
-    
-        = 2022-07-20 21:52:00 CEST (UTC +02), Europe/Berlin    [DateTime]
-    
-  ```
-* <a href="https://numbat.dev/?q=datetime%28%222022%2F07%2F20%2009%3A52%20PM%20%2B0200%22%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20Europe%2FBerlin%22%29')""></button></div><code class="language-nbt hljs numbat">>>> datetime("2022-07-20 21:52 Europe/Berlin")
 
-  ```nbt
-    >>> datetime("2022/07/20 09:52 PM +0200")
-    
-      datetime("2022/07/20 09:52 PM +0200")
-    
-        = 2022-07-20 21:52:00 (UTC +02)    [DateTime]
-    
-  ```
+    = 2022-07-20 21:52:00 CEST (UTC +02), Europe/Berlin    [DateTime]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=datetime%28%222022%2F07%2F20%2009%3A52%20PM%20%2B0200%22%29')""></button></div><code class="language-nbt hljs numbat">>>> datetime("2022/07/20 09:52 PM +0200")
+
+    = 2022-07-20 21:52:00 (UTC +02)    [DateTime]
+</code></pre>
+
 </details>
 
 ### `format_datetime`
@@ -63,16 +48,11 @@ fn format_datetime(format: String, input: DateTime) -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=format%5Fdatetime%28%22This%20is%20a%20date%20in%20%25B%20in%20the%20year%20%25Y%2E%22%2C%20datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=format%5Fdatetime%28%22This%20is%20a%20date%20in%20%25B%20in%20the%20year%20%25Y%2E%22%2C%20datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29')""></button></div><code class="language-nbt hljs numbat">>>> format_datetime("This is a date in %B in the year %Y.", datetime("2022-07-20 21:52 +0200"))
 
-  ```nbt
-    >>> format_datetime("This is a date in %B in the year %Y.", datetime("2022-07-20 21:52 +0200"))
-    
-      format_datetime("This is a date in %B in the year %Y.", datetime("2022-07-20 21:52 +0200"))
-    
-        = "This is a date in July in the year 2022."    [String]
-    
-  ```
+    = "This is a date in July in the year 2022."    [String]
+</code></pre>
+
 </details>
 
 ### `get_local_timezone`
@@ -85,16 +65,11 @@ fn get_local_timezone() -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=get%5Flocal%5Ftimezone%28%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=get%5Flocal%5Ftimezone%28%29')""></button></div><code class="language-nbt hljs numbat">>>> get_local_timezone()
 
-  ```nbt
-    >>> get_local_timezone()
-    
-      get_local_timezone()
-    
-        = "UTC"    [String]
-    
-  ```
+    = "UTC"    [String]
+</code></pre>
+
 </details>
 
 ### `tz`
@@ -107,26 +82,16 @@ fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20tz%28%22Europe%2FAmsterdam%22%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20tz%28%22Europe%2FAmsterdam%22%29')""></button></div><code class="language-nbt hljs numbat">>>> datetime("2022-07-20 21:52 +0200") -> tz("Europe/Amsterdam")
 
-  ```nbt
-    >>> datetime("2022-07-20 21:52 +0200") -> tz("Europe/Amsterdam")
-    
-      tz("Europe/Amsterdam")(datetime("2022-07-20 21:52 +0200"))
-    
-        = 2022-07-20 21:52:00 CEST (UTC +02), Europe/Amsterdam    [DateTime]
-    
-  ```
-* <a href="https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20tz%28%22Asia%2FTaipei%22%29"><i class="fa fa-play"></i> Run this example</a>
+    = 2022-07-20 21:52:00 CEST (UTC +02), Europe/Amsterdam    [DateTime]
+</code></pre>
 
-  ```nbt
-    >>> datetime("2022-07-20 21:52 +0200") -> tz("Asia/Taipei")
-    
-      tz("Asia/Taipei")(datetime("2022-07-20 21:52 +0200"))
-    
-        = 2022-07-21 03:52:00 CST (UTC +08), Asia/Taipei    [DateTime]
-    
-  ```
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20tz%28%22Asia%2FTaipei%22%29')""></button></div><code class="language-nbt hljs numbat">>>> datetime("2022-07-20 21:52 +0200") -> tz("Asia/Taipei")
+
+    = 2022-07-21 03:52:00 CST (UTC +08), Asia/Taipei    [DateTime]
+</code></pre>
+
 </details>
 
 ### `unixtime`
@@ -139,16 +104,11 @@ fn unixtime(input: DateTime) -> Scalar
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20unixtime"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20unixtime')""></button></div><code class="language-nbt hljs numbat">>>> datetime("2022-07-20 21:52 +0200") -> unixtime
 
-  ```nbt
-    >>> datetime("2022-07-20 21:52 +0200") -> unixtime
-    
-      unixtime(datetime("2022-07-20 21:52 +0200"))
-    
-        = 1_658_346_720
-    
-  ```
+    = 1_658_346_720
+</code></pre>
+
 </details>
 
 ### `from_unixtime`
@@ -161,16 +121,11 @@ fn from_unixtime(input: Scalar) -> DateTime
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=from%5Funixtime%282%5E31%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=from%5Funixtime%282%5E31%29')""></button></div><code class="language-nbt hljs numbat">>>> from_unixtime(2^31)
 
-  ```nbt
-    >>> from_unixtime(2^31)
-    
-      from_unixtime(2^31)
-    
-        = 2038-01-19 03:14:08 UTC    [DateTime]
-    
-  ```
+    = 2038-01-19 03:14:08 UTC    [DateTime]
+</code></pre>
+
 </details>
 
 ### `today`
@@ -190,16 +145,11 @@ fn date(input: String) -> DateTime
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=date%28%222022%2D07%2D20%22%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=date%28%222022%2D07%2D20%22%29')""></button></div><code class="language-nbt hljs numbat">>>> date("2022-07-20")
 
-  ```nbt
-    >>> date("2022-07-20")
-    
-      date("2022-07-20")
-    
-        = 2022-07-20 00:00:00 UTC    [DateTime]
-    
-  ```
+    = 2022-07-20 00:00:00 UTC    [DateTime]
+</code></pre>
+
 </details>
 
 ### `time`
@@ -219,16 +169,11 @@ fn calendar_add(dt: DateTime, span: Time) -> DateTime
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=calendar%5Fadd%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%2C%202%20years%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=calendar%5Fadd%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%2C%202%20years%29')""></button></div><code class="language-nbt hljs numbat">>>> calendar_add(datetime("2022-07-20 21:52 +0200"), 2 years)
 
-  ```nbt
-    >>> calendar_add(datetime("2022-07-20 21:52 +0200"), 2 years)
-    
-      calendar_add(datetime("2022-07-20 21:52 +0200"), 2 year)
-    
-        = 2024-07-20 21:52:00 (UTC +02)    [DateTime]
-    
-  ```
+    = 2024-07-20 21:52:00 (UTC +02)    [DateTime]
+</code></pre>
+
 </details>
 
 ### `calendar_sub`
@@ -241,16 +186,11 @@ fn calendar_sub(dt: DateTime, span: Time) -> DateTime
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=calendar%5Fsub%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%2C%203%20years%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=calendar%5Fsub%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%2C%203%20years%29')""></button></div><code class="language-nbt hljs numbat">>>> calendar_sub(datetime("2022-07-20 21:52 +0200"), 3 years)
 
-  ```nbt
-    >>> calendar_sub(datetime("2022-07-20 21:52 +0200"), 3 years)
-    
-      calendar_sub(datetime("2022-07-20 21:52 +0200"), 3 year)
-    
-        = 2019-07-20 21:52:00 (UTC +02)    [DateTime]
-    
-  ```
+    = 2019-07-20 21:52:00 (UTC +02)    [DateTime]
+</code></pre>
+
 </details>
 
 ### `weekday`
@@ -263,16 +203,11 @@ fn weekday(dt: DateTime) -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=weekday%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=weekday%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29')""></button></div><code class="language-nbt hljs numbat">>>> weekday(datetime("2022-07-20 21:52 +0200"))
 
-  ```nbt
-    >>> weekday(datetime("2022-07-20 21:52 +0200"))
-    
-      weekday(datetime("2022-07-20 21:52 +0200"))
-    
-        = "Wednesday"    [String]
-    
-  ```
+    = "Wednesday"    [String]
+</code></pre>
+
 </details>
 
 ### `julian_date` (Julian date)
@@ -286,16 +221,11 @@ fn julian_date(dt: DateTime) -> Time
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=julian%5Fdate%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=julian%5Fdate%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29')""></button></div><code class="language-nbt hljs numbat">>>> julian_date(datetime("2022-07-20 21:52 +0200"))
 
-  ```nbt
-    >>> julian_date(datetime("2022-07-20 21:52 +0200"))
-    
-      julian_date(datetime("2022-07-20 21:52 +0200"))
-    
-        = 2.45978e+6 day    [Time]
-    
-  ```
+    = 2.45978e+6 day    [Time]
+</code></pre>
+
 </details>
 
 ### `human` (Human-readable time duration)
@@ -309,16 +239,11 @@ fn human(time: Time) -> String
 <details>
 <summary>Examples</summary>
 
-* How long is a microcentury?
+How long is a microcentury?
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=century%2F1e6%20%2D%3E%20human')""></button></div><code class="language-nbt hljs numbat">>>> century/1e6 -> human
 
-  <a href="https://numbat.dev/?q=century%2F1e6%20%2D%3E%20human"><i class="fa fa-play"></i> Run this example</a>
-  ```nbt
-    >>> century/1e6 -> human
-    
-      human(century / 1_000_000)
-    
-        = "52 minutes + 35.692505184 seconds"    [String]
-    
-  ```
+    = "52 minutes + 35.692505184 seconds"    [String]
+</code></pre>
+
 </details>
 

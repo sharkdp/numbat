@@ -12,16 +12,11 @@ fn len<A>(xs: List<A>) -> Scalar
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=len%28%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=len%28%5B3%2C%202%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> len([3, 2, 1])
 
-  ```nbt
-    >>> len([3, 2, 1])
-    
-      len([3, 2, 1])
-    
-        = 3
-    
-  ```
+    = 3
+</code></pre>
+
 </details>
 
 ### `head`
@@ -34,16 +29,11 @@ fn head<A>(xs: List<A>) -> A
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=head%28%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=head%28%5B3%2C%202%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> head([3, 2, 1])
 
-  ```nbt
-    >>> head([3, 2, 1])
-    
-      head([3, 2, 1])
-    
-        = 3
-    
-  ```
+    = 3
+</code></pre>
+
 </details>
 
 ### `tail`
@@ -56,16 +46,11 @@ fn tail<A>(xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=tail%28%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=tail%28%5B3%2C%202%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> tail([3, 2, 1])
 
-  ```nbt
-    >>> tail([3, 2, 1])
-    
-      tail([3, 2, 1])
-    
-        = [2, 1]    [List<Scalar>]
-    
-  ```
+    = [2, 1]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `cons`
@@ -78,16 +63,11 @@ fn cons<A>(x: A, xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=cons%2877%2C%20%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=cons%2877%2C%20%5B3%2C%202%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> cons(77, [3, 2, 1])
 
-  ```nbt
-    >>> cons(77, [3, 2, 1])
-    
-      cons(77, [3, 2, 1])
-    
-        = [77, 3, 2, 1]    [List<Scalar>]
-    
-  ```
+    = [77, 3, 2, 1]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `cons_end`
@@ -100,16 +80,11 @@ fn cons_end<A>(x: A, xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=cons%5Fend%2877%2C%20%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=cons%5Fend%2877%2C%20%5B3%2C%202%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> cons_end(77, [3, 2, 1])
 
-  ```nbt
-    >>> cons_end(77, [3, 2, 1])
-    
-      cons_end(77, [3, 2, 1])
-    
-        = [3, 2, 1, 77]    [List<Scalar>]
-    
-  ```
+    = [3, 2, 1, 77]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `is_empty`
@@ -122,26 +97,16 @@ fn is_empty<A>(xs: List<A>) -> Bool
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=is%5Fempty%28%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fempty%28%5B3%2C%202%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> is_empty([3, 2, 1])
 
-  ```nbt
-    >>> is_empty([3, 2, 1])
-    
-      is_empty([3, 2, 1])
-    
-        = false    [Bool]
-    
-  ```
-* <a href="https://numbat.dev/?q=is%5Fempty%28%5B%5D%29"><i class="fa fa-play"></i> Run this example</a>
+    = false    [Bool]
+</code></pre>
 
-  ```nbt
-    >>> is_empty([])
-    
-      is_empty([])
-    
-        = true    [Bool]
-    
-  ```
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fempty%28%5B%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> is_empty([])
+
+    = true    [Bool]
+</code></pre>
+
 </details>
 
 ### `concat`
@@ -154,16 +119,11 @@ fn concat<A>(xs1: List<A>, xs2: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=concat%28%5B3%2C%202%2C%201%5D%2C%20%5B10%2C%2011%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=concat%28%5B3%2C%202%2C%201%5D%2C%20%5B10%2C%2011%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> concat([3, 2, 1], [10, 11])
 
-  ```nbt
-    >>> concat([3, 2, 1], [10, 11])
-    
-      concat([3, 2, 1], [10, 11])
-    
-        = [3, 2, 1, 10, 11]    [List<Scalar>]
-    
-  ```
+    = [3, 2, 1, 10, 11]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `take`
@@ -176,16 +136,11 @@ fn take<A>(n: Scalar, xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=take%282%2C%20%5B3%2C%202%2C%201%2C%200%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=take%282%2C%20%5B3%2C%202%2C%201%2C%200%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> take(2, [3, 2, 1, 0])
 
-  ```nbt
-    >>> take(2, [3, 2, 1, 0])
-    
-      take(2, [3, 2, 1, 0])
-    
-        = [3, 2]    [List<Scalar>]
-    
-  ```
+    = [3, 2]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `drop`
@@ -198,16 +153,11 @@ fn drop<A>(n: Scalar, xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=drop%282%2C%20%5B3%2C%202%2C%201%2C%200%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=drop%282%2C%20%5B3%2C%202%2C%201%2C%200%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> drop(2, [3, 2, 1, 0])
 
-  ```nbt
-    >>> drop(2, [3, 2, 1, 0])
-    
-      drop(2, [3, 2, 1, 0])
-    
-        = [1, 0]    [List<Scalar>]
-    
-  ```
+    = [1, 0]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `element_at`
@@ -220,16 +170,11 @@ fn element_at<A>(i: Scalar, xs: List<A>) -> A
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=element%5Fat%282%2C%20%5B3%2C%202%2C%201%2C%200%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=element%5Fat%282%2C%20%5B3%2C%202%2C%201%2C%200%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> element_at(2, [3, 2, 1, 0])
 
-  ```nbt
-    >>> element_at(2, [3, 2, 1, 0])
-    
-      element_at(2, [3, 2, 1, 0])
-    
-        = 1
-    
-  ```
+    = 1
+</code></pre>
+
 </details>
 
 ### `range`
@@ -242,16 +187,11 @@ fn range(start: Scalar, end: Scalar) -> List<Scalar>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=range%282%2C%2012%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=range%282%2C%2012%29')""></button></div><code class="language-nbt hljs numbat">>>> range(2, 12)
 
-  ```nbt
-    >>> range(2, 12)
-    
-      range(2, 12)
-    
-        = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]    [List<Scalar>]
-    
-  ```
+    = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `reverse`
@@ -264,16 +204,11 @@ fn reverse<A>(xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=reverse%28%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=reverse%28%5B3%2C%202%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> reverse([3, 2, 1])
 
-  ```nbt
-    >>> reverse([3, 2, 1])
-    
-      reverse([3, 2, 1])
-    
-        = [1, 2, 3]    [List<Scalar>]
-    
-  ```
+    = [1, 2, 3]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `map`
@@ -286,17 +221,12 @@ fn map<A, B>(f: Fn[(A) -> B], xs: List<A>) -> List<B>
 <details>
 <summary>Examples</summary>
 
-* Square all elements of a list.
+Square all elements of a list.
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=map%28sqr%2C%20%5B3%2C%202%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> map(sqr, [3, 2, 1])
 
-  <a href="https://numbat.dev/?q=map%28sqr%2C%20%5B3%2C%202%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
-  ```nbt
-    >>> map(sqr, [3, 2, 1])
-    
-      map(sqr, [3, 2, 1])
-    
-        = [9, 4, 1]    [List<Scalar>]
-    
-  ```
+    = [9, 4, 1]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `filter`
@@ -309,16 +239,11 @@ fn filter<A>(p: Fn[(A) -> Bool], xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=filter%28is%5Ffinite%2C%20%5B0%2C%201e10%2C%20NaN%2C%20%2Dinf%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=filter%28is%5Ffinite%2C%20%5B0%2C%201e10%2C%20NaN%2C%20%2Dinf%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> filter(is_finite, [0, 1e10, NaN, -inf])
 
-  ```nbt
-    >>> filter(is_finite, [0, 1e10, NaN, -inf])
-    
-      filter(is_finite, [0, 10_000_000_000, NaN, -inf])
-    
-        = [0, 10_000_000_000]    [List<Scalar>]
-    
-  ```
+    = [0, 10_000_000_000]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `foldl`
@@ -331,17 +256,12 @@ fn foldl<A, B>(f: Fn[(A, B) -> A], acc: A, xs: List<B>) -> A
 <details>
 <summary>Examples</summary>
 
-* Join a list of strings by folding.
+Join a list of strings by folding.
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=foldl%28str%5Fappend%2C%20%22%22%2C%20%5B%22Num%22%2C%20%22bat%22%2C%20%22%21%22%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> foldl(str_append, "", ["Num", "bat", "!"])
 
-  <a href="https://numbat.dev/?q=foldl%28str%5Fappend%2C%20%22%22%2C%20%5B%22Num%22%2C%20%22bat%22%2C%20%22%21%22%5D%29"><i class="fa fa-play"></i> Run this example</a>
-  ```nbt
-    >>> foldl(str_append, "", ["Num", "bat", "!"])
-    
-      foldl(str_append, "", ["Num", "bat", "!"])
-    
-        = "Numbat!"    [String]
-    
-  ```
+    = "Numbat!"    [String]
+</code></pre>
+
 </details>
 
 ### `sort_by_key`
@@ -354,20 +274,13 @@ fn sort_by_key<A, D: Dim>(key: Fn[(A) -> D], xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* Sort by last digit.
+Sort by last digit.
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fn%20last%5Fdigit%28x%29%20%3D%20mod%28x%2C%2010%29%0Asort%5Fby%5Fkey%28last%5Fdigit%2C%20%5B701%2C%20313%2C%209999%2C%204%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> fn last_digit(x) = mod(x, 10)
+sort_by_key(last_digit, [701, 313, 9999, 4])
 
-  <a href="https://numbat.dev/?q=fn%20last%5Fdigit%28x%29%20%3D%20mod%28x%2C%2010%29%0Asort%5Fby%5Fkey%28last%5Fdigit%2C%20%5B701%2C%20313%2C%209999%2C%204%5D%29"><i class="fa fa-play"></i> Run this example</a>
-  ```nbt
-    >>> fn last_digit(x) = mod(x, 10)
-    sort_by_key(last_digit, [701, 313, 9999, 4])
-    
-      fn last_digit(x: Scalar) -> Scalar = mod(x, 10)
-    
-      sort_by_key(last_digit, [701, 313, 9999, 4])
-    
-        = [701, 313, 4, 9999]    [List<Scalar>]
-    
-  ```
+    = [701, 313, 4, 9999]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `sort`
@@ -380,16 +293,11 @@ fn sort<D: Dim>(xs: List<D>) -> List<D>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=sort%28%5B3%2C%202%2C%207%2C%208%2C%20%2D4%2C%200%2C%20%2D5%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=sort%28%5B3%2C%202%2C%207%2C%208%2C%20%2D4%2C%200%2C%20%2D5%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> sort([3, 2, 7, 8, -4, 0, -5])
 
-  ```nbt
-    >>> sort([3, 2, 7, 8, -4, 0, -5])
-    
-      sort([3, 2, 7, 8, -4, 0, -5])
-    
-        = [-5, -4, 0, 2, 3, 7, 8]    [List<Scalar>]
-    
-  ```
+    = [-5, -4, 0, 2, 3, 7, 8]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `intersperse`
@@ -402,16 +310,11 @@ fn intersperse<A>(sep: A, xs: List<A>) -> List<A>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=intersperse%280%2C%20%5B1%2C%201%2C%201%2C%201%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=intersperse%280%2C%20%5B1%2C%201%2C%201%2C%201%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> intersperse(0, [1, 1, 1, 1])
 
-  ```nbt
-    >>> intersperse(0, [1, 1, 1, 1])
-    
-      intersperse(0, [1, 1, 1, 1])
-    
-        = [1, 0, 1, 0, 1, 0, 1]    [List<Scalar>]
-    
-  ```
+    = [1, 0, 1, 0, 1, 0, 1]    [List<Scalar>]
+</code></pre>
+
 </details>
 
 ### `sum`
@@ -424,16 +327,11 @@ fn sum<D: Dim>(xs: List<D>) -> D
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=sum%28%5B3%20m%2C%20200%20cm%2C%201000%20mm%5D%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=sum%28%5B3%20m%2C%20200%20cm%2C%201000%20mm%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> sum([3 m, 200 cm, 1000 mm])
 
-  ```nbt
-    >>> sum([3 m, 200 cm, 1000 mm])
-    
-      sum([3 metre, 200 centimetre, 1000 millimetre])
-    
-        = 6 m    [Length]
-    
-  ```
+    = 6 m    [Length]
+</code></pre>
+
 </details>
 
 ### `linspace`
@@ -446,16 +344,11 @@ fn linspace<D: Dim>(start: D, end: D, n_steps: Scalar) -> List<D>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=linspace%28%2D5%20m%2C%205%20m%2C%2011%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=linspace%28%2D5%20m%2C%205%20m%2C%2011%29')""></button></div><code class="language-nbt hljs numbat">>>> linspace(-5 m, 5 m, 11)
 
-  ```nbt
-    >>> linspace(-5 m, 5 m, 11)
-    
-      linspace(-(5 metre), 5 metre, 11)
-    
-        = [-5 m, -4 m, -3 m, -2 m, -1 m, 0 m, 1 m, 2 m, 3 m, 4 m, 5 m]    [List<Length>]
-    
-  ```
+    = [-5 m, -4 m, -3 m, -2 m, -1 m, 0 m, 1 m, 2 m, 3 m, 4 m, 5 m]    [List<Length>]
+</code></pre>
+
 </details>
 
 ### `join`
@@ -468,16 +361,11 @@ fn join(xs: List<String>, sep: String) -> String
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=join%28%5B%22snake%22%2C%20%22case%22%5D%2C%20%22%5F%22%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=join%28%5B%22snake%22%2C%20%22case%22%5D%2C%20%22%5F%22%29')""></button></div><code class="language-nbt hljs numbat">>>> join(["snake", "case"], "_")
 
-  ```nbt
-    >>> join(["snake", "case"], "_")
-    
-      join(["snake", "case"], "_")
-    
-        = "snake_case"    [String]
-    
-  ```
+    = "snake_case"    [String]
+</code></pre>
+
 </details>
 
 ### `split`
@@ -490,15 +378,10 @@ fn split(input: String, separator: String) -> List<String>
 <details>
 <summary>Examples</summary>
 
-* <a href="https://numbat.dev/?q=split%28%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%2C%20%22%20%22%29"><i class="fa fa-play"></i> Run this example</a>
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=split%28%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%2C%20%22%20%22%29')""></button></div><code class="language-nbt hljs numbat">>>> split("Numbat is a statically typed programming language.", " ")
 
-  ```nbt
-    >>> split("Numbat is a statically typed programming language.", " ")
-    
-      split("Numbat is a statically typed programming language.", " ")
-    
-        = ["Numbat", "is", "a", "statically", "typed", "programming", "language."]    [List<String>]
-    
-  ```
+    = ["Numbat", "is", "a", "statically", "typed", "programming", "language."]    [List<String>]
+</code></pre>
+
 </details>
 

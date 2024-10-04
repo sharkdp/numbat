@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
-use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::Context;
 use percent_encoding;
@@ -117,48 +116,36 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     );
 
                     //Assemble the example output
-                    let mut example_output = String::new();
-                    example_output += "\n";
-
-                    for statement in &statements {
-                        example_output += &plain_text_format(&statement.pretty_print(), true);
-                        example_output += "\n\n";
-                    }
-
                     let result_markup = results.to_markup(
                         statements.last(),
                         &example_ctx.dimension_registry(),
                         true,
                         true,
                     );
-                    example_output += &plain_text_format(&result_markup, false);
-
-                    if results.is_value() {
-                        example_output += "\n";
-                    }
+                    let example_output = &plain_text_format(&result_markup, false);
 
                     //Print the example
                     if let Some(example_description) = example_description {
-                        println!(
-                        "* {}\n\n  <a href=\"{}\"><i class=\"fa fa-play\"></i> Run this example</a>",
-                        replace_equation_delimiters(example_description),
-                        example_url
-                    );
-                    } else {
-                        println!(
-                            "* <a href=\"{}\"><i class=\"fa fa-play\"></i> Run this example</a>\n",
-                            example_url
-                        );
+                        println!("{}", replace_equation_delimiters(example_description));
                     }
 
-                    println!("  ```nbt");
+                    print!("<pre>");
+                    print!("<div class=\"buttons\">");
+                    print!("<button class=\"fa fa-play play-button\" title=\"{}\" aria-label=\"{}\"  onclick=\" window.open('{}')\"\"></button>",
+                        "Run this code",
+                        "Run this code",
+                        example_url);
+                    print!("</div>");
+                    print!("<code class=\"language-nbt hljs numbat\">");
                     for l in example_input.lines() {
-                        println!("    {}", l);
+                        println!("{}", l);
                     }
+                    println!();
                     for l in example_output.lines() {
-                        println!("    {}", l);
+                        println!("{}", l);
                     }
-                    println!("  ```");
+                    println!("</code></pre>");
+                    println!();
                 } else {
                     eprintln!(
                         "Warning: Example \"{example_code}\" of function {fn_name} did not run successfully."
