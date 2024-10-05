@@ -73,21 +73,21 @@ impl std::io::Write for HtmlWriter {
         if let Some(color) = &self.color {
             if color.fg() == Some(&Color::Red) {
                 self.buffer
-                    .write("<span class=\"numbat-diagnostic-red\">".as_bytes())?;
+                    .write_all("<span class=\"numbat-diagnostic-red\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("</span>".as_bytes())?;
+                self.buffer.write_all("</span>".as_bytes())?;
                 Ok(size)
             } else if color.fg() == Some(&Color::Blue) {
                 self.buffer
-                    .write("<span class=\"numbat-diagnostic-blue\">".as_bytes())?;
+                    .write_all("<span class=\"numbat-diagnostic-blue\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("</span>".as_bytes())?;
+                self.buffer.write_all("</span>".as_bytes())?;
                 Ok(size)
             } else if color.bold() {
                 self.buffer
-                    .write("<span class=\"numbat-diagnostic-bold\">".as_bytes())?;
+                    .write_all("<span class=\"numbat-diagnostic-bold\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("</span>".as_bytes())?;
+                self.buffer.write_all("</span>".as_bytes())?;
                 Ok(size)
             } else {
                 self.buffer.write(buf)

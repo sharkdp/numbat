@@ -5,10 +5,7 @@ members = [
     "numbat",
     "numbat-exchange-rates",
     "numbat-cli",
-]
-
-exclude = [
-    "numbat-wasm"
+    "numbat-wasm",
 ]
 
 [profile.release]
