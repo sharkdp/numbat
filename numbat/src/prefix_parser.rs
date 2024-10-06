@@ -1,5 +1,5 @@
+use indexmap::IndexMap;
 use std::collections::HashMap;
-
 use std::sync::OnceLock;
 
 use crate::span::Span;
@@ -82,10 +82,7 @@ struct UnitInfo {
 
 #[derive(Debug, Clone)]
 pub struct PrefixParser {
-    units: HashMap<String, UnitInfo>,
-    // This is the exact same information as in the "units" hashmap, only faster to iterate over.
-    // TODO: maybe use an external crate for this (e.g. indexmap?)
-    units_vec: Vec<(String, UnitInfo)>,
+    units: IndexMap<String, UnitInfo>,
 
     other_identifiers: HashMap<String, Span>,
 
@@ -95,8 +92,7 @@ pub struct PrefixParser {
 impl PrefixParser {
     pub fn new() -> Self {
         Self {
-            units: HashMap::new(),
-            units_vec: Vec::new(),
+            units: IndexMap::new(),
             other_identifiers: HashMap::new(),
             reserved_identifiers: &["_", "ans"],
         }
@@ -237,7 +233,6 @@ impl PrefixParser {
             full_name: full_name.into(),
         };
         self.units.insert(unit_name.into(), unit_info.clone());
-        self.units_vec.push((unit_name.into(), unit_info));
 
         Ok(())
     }
@@ -260,7 +255,7 @@ impl PrefixParser {
             );
         }
 
-        for (unit_name, info) in &self.units_vec {
+        for (unit_name, info) in &self.units {
             if !input.ends_with(unit_name.as_str()) {
                 continue;
             }

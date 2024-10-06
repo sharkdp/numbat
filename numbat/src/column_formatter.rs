@@ -45,9 +45,7 @@ impl ColumnFormatter {
             }
 
             for num_columns in min_num_columns..=self.terminal_width {
-                // TODO: once we have Rust 1.73, use the div_ceil implementation:
-                // let num_rows = entries.len().div_ceil(num_columns);
-                let num_rows = (entries.len() + num_columns - 1) / num_columns;
+                let num_rows = entries.len().div_ceil(num_columns);
 
                 let mut table: Vec<Vec<Option<&str>>> = vec![vec![None; num_columns]; num_rows];
                 for (idx, entry) in entries.iter().enumerate() {

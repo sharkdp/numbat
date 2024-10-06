@@ -92,7 +92,7 @@ impl ApplySubstitution for Type {
 impl ApplySubstitution for DType {
     fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
         let mut new_dtype = self.clone();
-        for (f, power) in &self.factors {
+        for (f, power) in self.factors() {
             match f {
                 DTypeFactor::TVar(tv) => {
                     if let Some(type_) = substitution.lookup(tv) {

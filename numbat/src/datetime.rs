@@ -37,7 +37,7 @@ pub fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
 
     for format in FORMATS {
         // Try to match the given format plus an additional UTC offset (%z)
-        if let Ok(dt) = Zoned::strptime(&format!("{format} %z"), input) {
+        if let Ok(dt) = Zoned::strptime(format!("{format} %z"), input) {
             return Ok(dt);
         }
 
