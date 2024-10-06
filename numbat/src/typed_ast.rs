@@ -41,10 +41,22 @@ type DtypeFactorPower = (DTypeFactor, Exponent);
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DType {
     // Always in canonical form
-    pub factors: Vec<DtypeFactorPower>, // TODO make this private
+    factors: Vec<DtypeFactorPower>,
 }
 
 impl DType {
+    pub fn new(factors: Vec<DtypeFactorPower>) -> Self {
+        Self { factors }
+    }
+
+    pub fn factors(&self) -> &[DtypeFactorPower] {
+        &self.factors
+    }
+
+    pub fn factors_mut(&mut self) -> &mut [DtypeFactorPower] {
+        &mut self.factors
+    }
+
     pub fn from_factors(factors: &[DtypeFactorPower]) -> DType {
         let mut dtype = DType {
             factors: factors.into(),

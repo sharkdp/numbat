@@ -125,7 +125,7 @@ impl TypeChecker {
                     .map_err(TypeCheckError::RegistryError)?;
 
                 // Replace BaseDimension("D") with TVar("D") for all type parameters
-                for (factor, _) in dtype.factors.iter_mut() {
+                for (factor, _) in dtype.factors_mut() {
                     *factor = match factor {
                         DTypeFactor::BaseDimension(ref n)
                             if self

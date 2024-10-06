@@ -192,7 +192,8 @@ impl Quantity {
             let group_representative = group_as_unit
                 .iter()
                 .max_by(|&f1, &f2| {
-                    // TODO: describe this heuristic
+                    // prefer base units over non-base. if multiple base units, prefer
+                    // those with a larger exponent
                     (f1.unit_id.is_base().cmp(&f2.unit_id.is_base()))
                         .then(f1.exponent.cmp(&f2.exponent))
                 })

@@ -160,6 +160,7 @@ pub enum TrivialResolution {
 }
 
 impl TrivialResolution {
+    #[allow(clippy::wrong_self_convention)]
     pub fn is_trivially_violated(self) -> bool {
         matches!(self, TrivialResolution::Violated)
     }
