@@ -270,23 +270,22 @@ impl Unit {
 
     pub fn to_base_unit_representation(&self) -> (Self, ConversionFactor) {
         // TODO: reduce wrapping/unwrapping
-        let (mut base_unit_representation, factor) = self.iter().fold(
-            (Product::unity(), Number::from_f64(1.0)),
-            |(acc_product, acc_factor),
-             UnitFactor {
-                 unit_id: base_unit,
-                 prefix,
-                 exponent,
-             }| {
-                (
-                    acc_product * base_unit.base_unit_and_factor().0.power(*exponent),
-                    acc_factor
-                        * (prefix.factor() * base_unit.base_unit_and_factor().1)
-                            // TODO do we want to use exponent.to_f64?
-                            .pow(&Number::from_f64(exponent.to_f64().unwrap())),
-                )
-            },
-        );
+        let mut base_unit_representation = Product::unity();
+        let mut factor = Number::from_f64(1.0);
+
+        for UnitFactor {
+            unit_id: base_unit,
+            prefix,
+            exponent,
+        } in self.iter()
+        {
+            base_unit_representation =
+                base_unit_representation * base_unit.base_unit_and_factor().0.power(*exponent);
+            factor = factor
+                * (prefix.factor() * base_unit.base_unit_and_factor().1)
+                    // TODO do we want to use exponent.to_f64?
+                    .pow(&Number::from_f64(exponent.to_f64().unwrap()));
+        }
 
         base_unit_representation.canonicalize();
 
