@@ -118,14 +118,15 @@ impl TypeChecker {
                     }
                 }
 
-                let mut dtype: DType = self
+                let mut factors = self
                     .registry
                     .get_base_representation(dexpr)
-                    .map(|br| br.into())
-                    .map_err(TypeCheckError::RegistryError)?;
+                    .map(DType::from)
+                    .map_err(TypeCheckError::RegistryError)?
+                    .into_factors();
 
                 // Replace BaseDimension("D") with TVar("D") for all type parameters
-                for (factor, _) in dtype.factors_mut() {
+                for (factor, _) in &mut factors {
                     *factor = match factor {
                         DTypeFactor::BaseDimension(ref n)
                             if self
@@ -140,7 +141,7 @@ impl TypeChecker {
                     }
                 }
 
-                Ok(Type::Dimension(dtype))
+                Ok(Type::Dimension(DType::from_factors(factors)))
             }
             TypeAnnotation::Bool(_) => Ok(Type::Boolean),
             TypeAnnotation::String(_) => Ok(Type::String),
