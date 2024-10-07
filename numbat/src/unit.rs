@@ -269,33 +269,26 @@ impl Unit {
     }
 
     pub fn to_base_unit_representation(&self) -> (Self, ConversionFactor) {
-        // TODO: reduce wrapping/unwrapping and duplication.
+        // TODO: reduce wrapping/unwrapping
+        let (mut base_unit_representation, factor) = self.iter().fold(
+            (Product::unity(), Number::from_f64(1.0)),
+            |(acc_product, acc_factor),
+             UnitFactor {
+                 unit_id: base_unit,
+                 prefix,
+                 exponent,
+             }| {
+                (
+                    acc_product * base_unit.base_unit_and_factor().0.power(*exponent),
+                    acc_factor
+                        * (prefix.factor() * base_unit.base_unit_and_factor().1)
+                            // TODO do we want to use exponent.to_f64?
+                            .pow(&Number::from_f64(exponent.to_f64().unwrap())),
+                )
+            },
+        );
 
-        let base_unit_representation = self
-            .iter()
-            .map(
-                |UnitFactor {
-                     prefix: _,
-                     unit_id: base_unit,
-                     exponent,
-                 }| { base_unit.base_unit_and_factor().0.power(*exponent) },
-            )
-            .product::<Self>()
-            .canonicalized();
-
-        let factor = self
-            .iter()
-            .map(
-                |UnitFactor {
-                     prefix,
-                     unit_id: base_unit,
-                     exponent,
-                 }| {
-                    (prefix.factor() * base_unit.base_unit_and_factor().1)
-                        .pow(&Number::from_f64(exponent.to_f64().unwrap())) // TODO do we want to use exponent.to_f64?
-                },
-            )
-            .product();
+        base_unit_representation.canonicalize();
 
         (base_unit_representation, factor)
     }
