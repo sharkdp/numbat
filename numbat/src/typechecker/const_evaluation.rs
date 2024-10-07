@@ -13,24 +13,21 @@ fn to_rational_exponent(exponent_f64: f64) -> Option<Exponent> {
 /// support type checking of expressions like `(2 * meter)^(2*3 - 4)` where we
 /// need to know not just the *type* but also the *value* of the exponent.
 pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
-    match expr {
+    let name = match expr {
         typed_ast::Expression::Scalar(span, n, _type) => {
-            Ok(to_rational_exponent(n.to_f64())
+            return Ok(to_rational_exponent(n.to_f64())
                 .ok_or(TypeCheckError::NonRationalExponent(*span))?)
         }
         typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Negate, ref expr, _) => {
-            Ok(-evaluate_const_expr(expr)?)
+            return Ok(-evaluate_const_expr(expr)?)
         }
-        e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "factorial"),
-        ),
-        e @ typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::LogicalNeg, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "logical"),
-        ),
+        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial, _, _) => "factorial",
+        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::LogicalNeg, _, _) => "logical",
+
         e @ typed_ast::Expression::BinaryOperator(_span_op, op, lhs_expr, rhs_expr, _) => {
             let lhs = evaluate_const_expr(lhs_expr)?;
             let rhs = evaluate_const_expr(rhs_expr)?;
-            match op {
+            return match op {
                 typed_ast::BinaryOperator::Add => Ok(lhs
                     .checked_add(&rhs)
                     .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?),
@@ -42,8 +39,8 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                     .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?),
                 typed_ast::BinaryOperator::Div => {
                     if rhs == Rational::zero() {
-                        Err(TypeCheckError::DivisionByZeroInConstEvalExpression(
-                            e.full_span(),
+                        Err(Box::new(
+                            TypeCheckError::DivisionByZeroInConstEvalExpression(e.full_span()),
                         ))
                     } else {
                         Ok(lhs
@@ -61,69 +58,47 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                         )
                         .ok_or_else(|| TypeCheckError::OverflowInConstExpr(expr.full_span()))?)
                     } else {
-                        Err(TypeCheckError::UnsupportedConstEvalExpression(
+                        Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
                             e.full_span(),
                             "exponentiation with non-integer exponent",
-                        ))
+                        )))
                     }
                 }
-                typed_ast::BinaryOperator::ConvertTo => Err(
+                typed_ast::BinaryOperator::ConvertTo => Err(Box::new(
                     TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "conversion"),
-                ),
+                )),
                 typed_ast::BinaryOperator::LessThan
                 | typed_ast::BinaryOperator::GreaterThan
                 | typed_ast::BinaryOperator::LessOrEqual
                 | typed_ast::BinaryOperator::GreaterOrEqual
                 | typed_ast::BinaryOperator::Equal
-                | typed_ast::BinaryOperator::NotEqual => Err(
+                | typed_ast::BinaryOperator::NotEqual => Err(Box::new(
                     TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "comparison"),
-                ),
+                )),
                 typed_ast::BinaryOperator::LogicalAnd | typed_ast::BinaryOperator::LogicalOr => {
-                    Err(TypeCheckError::UnsupportedConstEvalExpression(
+                    Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
                         e.full_span(),
                         "logical",
-                    ))
+                    )))
                 }
-            }
+            };
         }
-        e @ typed_ast::Expression::Identifier(..) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "variable"),
-        ),
-        e @ typed_ast::Expression::UnitIdentifier(..) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "unit identifier"),
-        ),
-        e @ typed_ast::Expression::FunctionCall(_, _, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
-        ),
-        e @ &typed_ast::Expression::CallableCall(_, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "function call"),
-        ),
-        e @ typed_ast::Expression::Boolean(_, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Boolean value"),
-        ),
-        e @ typed_ast::Expression::String(_, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "String"),
-        ),
-        e @ typed_ast::Expression::Condition(..) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "Conditional"),
-        ),
-        e @ typed_ast::Expression::BinaryOperatorForDate(..) => {
-            Err(TypeCheckError::UnsupportedConstEvalExpression(
-                e.full_span(),
-                "binary operator for datetimes",
-            ))
-        }
-        e @ typed_ast::Expression::InstantiateStruct(_, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "instantiate struct"),
-        ),
-        e @ typed_ast::Expression::AccessField(_, _, _, _, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "access field of struct"),
-        ),
-        e @ typed_ast::Expression::List(_, _, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "lists"),
-        ),
-        e @ typed_ast::Expression::TypedHole(_, _) => Err(
-            TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "typed hole"),
-        ),
-    }
+        typed_ast::Expression::Identifier(..) => "variable",
+        typed_ast::Expression::UnitIdentifier(..) => "unit identifier",
+        typed_ast::Expression::FunctionCall(_, _, _, _, _) => "function call",
+        typed_ast::Expression::CallableCall(_, _, _, _) => "function call",
+        typed_ast::Expression::Boolean(_, _) => "Boolean value",
+        typed_ast::Expression::String(_, _) => "String",
+        typed_ast::Expression::Condition(..) => "Conditional",
+        typed_ast::Expression::BinaryOperatorForDate(..) => "binary operator for datetimes",
+        typed_ast::Expression::InstantiateStruct(_, _, _) => "instantiate struct",
+        typed_ast::Expression::AccessField(_, _, _, _, _, _) => "access field of struct",
+        typed_ast::Expression::List(_, _, _) => "lists",
+        typed_ast::Expression::TypedHole(_, _) => "typed hole",
+    };
+
+    Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
+        expr.full_span(),
+        name,
+    )))
 }

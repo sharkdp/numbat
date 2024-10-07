@@ -418,7 +418,7 @@ impl Cli {
                                                 let m = m::text(
                                                     "successfully saved session history to",
                                                 ) + m::space()
-                                                    + m::string(dst);
+                                                    + m::string(dst.to_string());
                                                 println!("{}", ansi_format(&m, interactive));
                                             }
                                             Err(err) => {
@@ -511,7 +511,7 @@ impl Cli {
             Err(_) => Err(()),
         };
 
-        let control_flow = match interpretation_result {
+        let control_flow = match interpretation_result.map_err(|b| *b) {
             Ok((statements, interpreter_result)) => {
                 if interactive || pretty_print {
                     println!();
@@ -550,7 +550,7 @@ impl Cli {
                 ControlFlow::Continue(())
             }
             Err(NumbatError::ResolverError(e)) => {
-                self.print_diagnostic(e.clone());
+                self.print_diagnostic(e);
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::NameResolutionError(

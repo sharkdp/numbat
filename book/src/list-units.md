@@ -130,7 +130,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Money` | [Czech koruna](https://en.wikipedia.org/wiki/Czech_koruna) | `czech_koruna`, `czech_korunas`, `CZK`, `czk`, `Kč` |
 | `Money` | [Danish krone](https://en.wikipedia.org/wiki/Danish_krone) | `danish_krone`, `danish_kroner`, `DKK`, `dkk` |
 | `Money` | [US dollar](https://en.wikipedia.org/wiki/United_States_dollar) | `$`, `dollar`, `dollars`, `USD`, `usd` |
-| `Money` | [Euro](https://en.wikipedia.org/wiki/Euro) | `EUR`, `euro`, `euros`, `€` |
+| `Money` | [Euro](https://en.wikipedia.org/wiki/Euro) | `EUR`, `eur`, `euro`, `euros`, `€` |
 | `Money` | [Hong Kong dollar](https://en.wikipedia.org/wiki/Hong_Kong_dollar) | `HK$`, `hk$`, `HKD`, `hkd`, `hong_kong_dollar`, `hong_kong_dollars` |
 | `Money` | [Hungarian forint](https://en.wikipedia.org/wiki/Hungarian_forint) | `Ft`, `HUF`, `huf`, `hungarian_forint`, `hungarian_forints` |
 | `Money` | [Icelandic króna](https://en.wikipedia.org/wiki/Icelandic_króna) | `icelandic_krona`, `icelandic_kronur`, `icelandic_króna`, `icelandic_krónur`, `ISK`, `isk` |

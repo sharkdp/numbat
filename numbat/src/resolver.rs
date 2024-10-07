@@ -96,11 +96,11 @@ impl Resolver {
         self.codesources.get(&id).cloned().unwrap()
     }
 
-    fn parse(&self, code: &str, code_source_id: usize) -> Result<Vec<Statement>> {
+    fn parse<'a>(&self, code: &'a str, code_source_id: usize) -> Result<Vec<Statement<'a>>> {
         parse(code, code_source_id).map_err(|e| ResolverError::ParseErrors(e.1))
     }
 
-    fn inlining_pass(&mut self, program: &[Statement]) -> Result<Vec<Statement>> {
+    fn inlining_pass<'a>(&mut self, program: &[Statement<'a>]) -> Result<Vec<Statement<'a>>> {
         let mut new_program = vec![];
 
         for statement in program {
@@ -108,13 +108,14 @@ impl Resolver {
                 Statement::ModuleImport(span, module_path) => {
                     if !self.imported_modules.contains(module_path) {
                         if let Some((code, filesystem_path)) = self.importer.import(module_path) {
+                            let code: &'static str = Box::leak(code.into_boxed_str());
                             self.imported_modules.push(module_path.clone());
                             let code_source_id = self.add_code_source(
                                 CodeSource::Module(module_path.clone(), filesystem_path),
-                                &code,
+                                code,
                             );
 
-                            let imported_program = self.parse(&code, code_source_id)?;
+                            let imported_program = self.parse(code, code_source_id)?;
                             let inlined_program = self.inlining_pass(&imported_program)?;
                             for statement in inlined_program {
                                 new_program.push(statement);
@@ -131,7 +132,11 @@ impl Resolver {
         Ok(new_program)
     }
 
-    pub fn resolve(&mut self, code: &str, code_source: CodeSource) -> Result<Vec<Statement>> {
+    pub fn resolve<'a>(
+        &mut self,
+        code: &'a str,
+        code_source: CodeSource,
+    ) -> Result<Vec<Statement<'a>>> {
         let code_source_id = self.add_code_source(code_source, code);
         let statements = self.parse(code, code_source_id)?;
 
@@ -194,12 +199,12 @@ mod tests {
             &[
                 Statement::DefineVariable(DefineVariable {
                     identifier_span: Span::dummy(),
-                    identifier: "a".into(),
+                    identifier: "a",
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
                     type_annotation: None,
                     decorators: Vec::new(),
                 }),
-                Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
+                Statement::Expression(Expression::Identifier(Span::dummy(), "a"))
             ]
         );
     }
@@ -224,12 +229,12 @@ mod tests {
             &[
                 Statement::DefineVariable(DefineVariable {
                     identifier_span: Span::dummy(),
-                    identifier: "a".into(),
+                    identifier: "a",
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
                     type_annotation: None,
                     decorators: Vec::new(),
                 }),
-                Statement::Expression(Expression::Identifier(Span::dummy(), "a".into()))
+                Statement::Expression(Expression::Identifier(Span::dummy(), "a"))
             ]
         );
     }
@@ -253,15 +258,15 @@ mod tests {
             &[
                 Statement::DefineVariable(DefineVariable {
                     identifier_span: Span::dummy(),
-                    identifier: "y".into(),
+                    identifier: "y",
                     expr: Expression::Scalar(Span::dummy(), Number::from_f64(1.0)),
                     type_annotation: None,
                     decorators: Vec::new(),
                 }),
                 Statement::DefineVariable(DefineVariable {
                     identifier_span: Span::dummy(),
-                    identifier: "x".into(),
-                    expr: Expression::Identifier(Span::dummy(), "y".into()),
+                    identifier: "x",
+                    expr: Expression::Identifier(Span::dummy(), "y"),
                     type_annotation: None,
                     decorators: Vec::new(),
                 }),

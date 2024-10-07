@@ -36,67 +36,77 @@ impl PrettyPrint for BinaryOperator {
     fn pretty_print(&self) -> Markup {
         use BinaryOperator::*;
 
+        let operator = m::operator(match self {
+            Add => "+",
+            Sub => "-",
+            Mul => "×",
+            Div => "/",
+            Power => "^",
+            ConvertTo => "➞",
+            LessThan => "<",
+            GreaterThan => ">",
+            LessOrEqual => "≤",
+            GreaterOrEqual => "≥",
+            Equal => "==",
+            NotEqual => "≠",
+            LogicalAnd => "&&",
+            LogicalOr => "||",
+        });
+
         match self {
-            Add => m::space() + m::operator("+") + m::space(),
-            Sub => m::space() + m::operator("-") + m::space(),
-            Mul => m::space() + m::operator("×") + m::space(),
-            Div => m::space() + m::operator("/") + m::space(),
-            Power => m::operator("^"),
-            ConvertTo => m::space() + m::operator("➞") + m::space(),
-            LessThan => m::space() + m::operator("<") + m::space(),
-            GreaterThan => m::space() + m::operator(">") + m::space(),
-            LessOrEqual => m::space() + m::operator("≤") + m::space(),
-            GreaterOrEqual => m::space() + m::operator("≥") + m::space(),
-            Equal => m::space() + m::operator("==") + m::space(),
-            NotEqual => m::space() + m::operator("≠") + m::space(),
-            LogicalAnd => m::space() + m::operator("&&") + m::space(),
-            LogicalOr => m::space() + m::operator("||") + m::space(),
+            Power => operator,
+            _ => m::space() + operator + m::space(),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum StringPart {
+pub enum StringPart<'a> {
     Fixed(String),
     Interpolation {
         span: Span,
-        expr: Box<Expression>,
-        format_specifiers: Option<String>,
+        expr: Box<Expression<'a>>,
+        format_specifiers: Option<&'a str>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Expression {
+pub enum Expression<'a> {
     Scalar(Span, Number),
-    Identifier(Span, String),
-    UnitIdentifier(Span, Prefix, String, String),
+    Identifier(Span, &'a str),
+    UnitIdentifier(Span, Prefix, String, String), // can't easily be made &'a str
     TypedHole(Span),
     UnaryOperator {
         op: UnaryOperator,
-        expr: Box<Expression>,
+        expr: Box<Expression<'a>>,
         span_op: Span,
     },
     BinaryOperator {
         op: BinaryOperator,
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
+        lhs: Box<Expression<'a>>,
+        rhs: Box<Expression<'a>>,
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
-    FunctionCall(Span, Span, Box<Expression>, Vec<Expression>),
+    FunctionCall(Span, Span, Box<Expression<'a>>, Vec<Expression<'a>>),
     Boolean(Span, bool),
-    String(Span, Vec<StringPart>),
-    Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
+    String(Span, Vec<StringPart<'a>>),
+    Condition(
+        Span,
+        Box<Expression<'a>>,
+        Box<Expression<'a>>,
+        Box<Expression<'a>>,
+    ),
     InstantiateStruct {
         full_span: Span,
         ident_span: Span,
-        name: String,
-        fields: Vec<(Span, String, Expression)>,
+        name: &'a str,
+        fields: Vec<(Span, &'a str, Expression<'a>)>,
     },
-    AccessField(Span, Span, Box<Expression>, String),
-    List(Span, Vec<Expression>),
+    AccessField(Span, Span, Box<Expression<'a>>, &'a str),
+    List(Span, Vec<Expression<'a>>),
 }
 
-impl Expression {
+impl Expression<'_> {
     pub fn full_span(&self) -> Span {
         match self {
             Expression::Scalar(span, _) => *span,
@@ -217,9 +227,9 @@ macro_rules! struct_ {
         crate::ast::Expression::InstantiateStruct {
             full_span: Span::dummy(),
             ident_span: Span::dummy(),
-            name: stringify!($name).to_owned(),
+            name: stringify!($name),
             fields: vec![
-                $((Span::dummy(), stringify!($field).to_owned(), $val)),*
+                $((Span::dummy(), stringify!($field), $val)),*
             ]
         }
     }};
@@ -360,7 +370,7 @@ impl PrettyPrint for TypeExpression {
     fn pretty_print(&self) -> Markup {
         match self {
             TypeExpression::Unity(_) => m::type_identifier("1"),
-            TypeExpression::TypeIdentifier(_, ident) => m::type_identifier(ident),
+            TypeExpression::TypeIdentifier(_, ident) => m::type_identifier(ident.clone()),
             TypeExpression::Multiply(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
             }
@@ -394,48 +404,48 @@ pub enum TypeParameterBound {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct DefineVariable {
+pub struct DefineVariable<'a> {
     pub identifier_span: Span,
-    pub identifier: String,
-    pub expr: Expression,
+    pub identifier: &'a str,
+    pub expr: Expression<'a>,
     pub type_annotation: Option<TypeAnnotation>,
-    pub decorators: Vec<Decorator>,
+    pub decorators: Vec<Decorator<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Statement {
-    Expression(Expression),
-    DefineVariable(DefineVariable),
+pub enum Statement<'a> {
+    Expression(Expression<'a>),
+    DefineVariable(DefineVariable<'a>),
     DefineFunction {
         function_name_span: Span,
-        function_name: String,
-        type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
+        function_name: &'a str,
+        type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
         /// Parameters, optionally with type annotations.
-        parameters: Vec<(Span, String, Option<TypeAnnotation>)>,
+        parameters: Vec<(Span, &'a str, Option<TypeAnnotation>)>,
         /// Function body. If it is absent, the function is implemented via FFI
-        body: Option<Expression>,
+        body: Option<Expression<'a>>,
         /// Local variables
-        local_variables: Vec<DefineVariable>,
+        local_variables: Vec<DefineVariable<'a>>,
         /// Optional annotated return type
         return_type_annotation: Option<TypeAnnotation>,
-        decorators: Vec<Decorator>,
+        decorators: Vec<Decorator<'a>>,
     },
-    DefineDimension(Span, String, Vec<TypeExpression>),
-    DefineBaseUnit(Span, String, Option<TypeExpression>, Vec<Decorator>),
+    DefineDimension(Span, &'a str, Vec<TypeExpression>),
+    DefineBaseUnit(Span, &'a str, Option<TypeExpression>, Vec<Decorator<'a>>),
     DefineDerivedUnit {
         identifier_span: Span,
-        identifier: String,
-        expr: Expression,
+        identifier: &'a str,
+        expr: Expression<'a>,
         type_annotation_span: Option<Span>,
         type_annotation: Option<TypeAnnotation>,
-        decorators: Vec<Decorator>,
+        decorators: Vec<Decorator<'a>>,
     },
-    ProcedureCall(Span, ProcedureKind, Vec<Expression>),
+    ProcedureCall(Span, ProcedureKind, Vec<Expression<'a>>),
     ModuleImport(Span, ModulePath),
     DefineStruct {
         struct_name_span: Span,
-        struct_name: String,
-        fields: Vec<(Span, String, TypeAnnotation)>,
+        struct_name: &'a str,
+        fields: Vec<(Span, &'a str, TypeAnnotation)>,
     },
 }
 
@@ -491,7 +501,7 @@ impl ReplaceSpans for TypeExpression {
 }
 
 #[cfg(test)]
-impl ReplaceSpans for StringPart {
+impl ReplaceSpans for StringPart<'_> {
     fn replace_spans(&self) -> Self {
         match self {
             f @ StringPart::Fixed(_) => f.clone(),
@@ -502,18 +512,18 @@ impl ReplaceSpans for StringPart {
             } => StringPart::Interpolation {
                 span: Span::dummy(),
                 expr: Box::new(expr.replace_spans()),
-                format_specifiers: format_specifiers.clone(),
+                format_specifiers: *format_specifiers,
             },
         }
     }
 }
 
 #[cfg(test)]
-impl ReplaceSpans for Expression {
+impl ReplaceSpans for Expression<'_> {
     fn replace_spans(&self) -> Self {
         match self {
             Expression::Scalar(_, name) => Expression::Scalar(Span::dummy(), *name),
-            Expression::Identifier(_, name) => Expression::Identifier(Span::dummy(), name.clone()),
+            Expression::Identifier(_, name) => Expression::Identifier(Span::dummy(), name),
             Expression::UnitIdentifier(_, prefix, name, full_name) => {
                 Expression::UnitIdentifier(Span::dummy(), *prefix, name.clone(), full_name.clone())
             }
@@ -557,17 +567,17 @@ impl ReplaceSpans for Expression {
             Expression::InstantiateStruct { name, fields, .. } => Expression::InstantiateStruct {
                 full_span: Span::dummy(),
                 ident_span: Span::dummy(),
-                name: name.clone(),
+                name,
                 fields: fields
                     .iter()
-                    .map(|(_, n, v)| (Span::dummy(), n.clone(), v.replace_spans()))
+                    .map(|(_, n, v)| (Span::dummy(), *n, v.replace_spans()))
                     .collect(),
             },
             Expression::AccessField(_, _, expr, attr) => Expression::AccessField(
                 Span::dummy(),
                 Span::dummy(),
                 Box::new(expr.replace_spans()),
-                attr.clone(),
+                attr,
             ),
             Expression::List(_, elements) => Expression::List(
                 Span::dummy(),
@@ -579,11 +589,11 @@ impl ReplaceSpans for Expression {
 }
 
 #[cfg(test)]
-impl ReplaceSpans for DefineVariable {
+impl ReplaceSpans for DefineVariable<'_> {
     fn replace_spans(&self) -> Self {
         Self {
             identifier_span: Span::dummy(),
-            identifier: self.identifier.clone(),
+            identifier: self.identifier,
             expr: self.expr.replace_spans(),
             type_annotation: self.type_annotation.as_ref().map(|t| t.replace_spans()),
             decorators: self.decorators.clone(),
@@ -592,7 +602,7 @@ impl ReplaceSpans for DefineVariable {
 }
 
 #[cfg(test)]
-impl ReplaceSpans for Statement {
+impl ReplaceSpans for Statement<'_> {
     fn replace_spans(&self) -> Self {
         match self {
             Statement::Expression(expr) => Statement::Expression(expr.replace_spans()),
@@ -610,17 +620,17 @@ impl ReplaceSpans for Statement {
                 decorators,
             } => Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: function_name.clone(),
+                function_name,
                 type_parameters: type_parameters
                     .iter()
-                    .map(|(_, name, bound)| (Span::dummy(), name.clone(), bound.clone()))
+                    .map(|(_, name, bound)| (Span::dummy(), *name, bound.clone()))
                     .collect(),
                 parameters: parameters
                     .iter()
                     .map(|(_, name, type_)| {
                         (
                             Span::dummy(),
-                            name.clone(),
+                            *name,
                             type_.as_ref().map(|t| t.replace_spans()),
                         )
                     })
@@ -635,12 +645,12 @@ impl ReplaceSpans for Statement {
             },
             Statement::DefineDimension(_, name, dexprs) => Statement::DefineDimension(
                 Span::dummy(),
-                name.clone(),
+                name,
                 dexprs.iter().map(|t| t.replace_spans()).collect(),
             ),
             Statement::DefineBaseUnit(_, name, type_, decorators) => Statement::DefineBaseUnit(
                 Span::dummy(),
-                name.clone(),
+                name,
                 type_.as_ref().map(|t| t.replace_spans()),
                 decorators.clone(),
             ),
@@ -653,7 +663,7 @@ impl ReplaceSpans for Statement {
                 decorators,
             } => Statement::DefineDerivedUnit {
                 identifier_span: Span::dummy(),
-                identifier: identifier.clone(),
+                identifier,
                 expr: expr.replace_spans(),
                 type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
@@ -673,12 +683,10 @@ impl ReplaceSpans for Statement {
                 ..
             } => Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
-                struct_name: struct_name.clone(),
+                struct_name,
                 fields: fields
                     .iter()
-                    .map(|(_span, name, type_)| {
-                        (Span::dummy(), name.clone(), type_.replace_spans())
-                    })
+                    .map(|(_span, name, type_)| (Span::dummy(), *name, type_.replace_spans()))
                     .collect(),
             },
         }
@@ -686,7 +694,7 @@ impl ReplaceSpans for Statement {
 }
 
 #[cfg(test)]
-impl ReplaceSpans for Vec<Statement> {
+impl ReplaceSpans for Vec<Statement<'_>> {
     fn replace_spans(&self) -> Self {
         self.iter().map(|s| s.replace_spans()).collect()
     }

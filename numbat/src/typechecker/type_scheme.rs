@@ -40,9 +40,9 @@ impl TypeScheme {
         }
     }
 
-    pub fn instantiate_for_printing(
+    pub fn instantiate_for_printing<'a, I: Iterator<Item = &'a str> + ExactSizeIterator>(
         &self,
-        type_parameters: Option<Vec<String>>,
+        type_parameters: Option<I>,
     ) -> (QualifiedType, Vec<TypeVariable>) {
         match self {
             TypeScheme::Concrete(t) => {
@@ -53,9 +53,7 @@ impl TypeScheme {
             TypeScheme::Quantified(n_gen, _) => {
                 // TODO: is this a good idea? we don't take care of name clashes here
                 let type_parameters = match type_parameters {
-                    Some(tp) if tp.len() == *n_gen => {
-                        tp.iter().map(|s| TypeVariable::new(s.clone())).collect()
-                    }
+                    Some(tp) if tp.len() == *n_gen => tp.map(TypeVariable::new).collect(),
                     _ => {
                         if *n_gen <= 26 {
                             (0..*n_gen)
@@ -111,7 +109,8 @@ impl TypeScheme {
         registry: &crate::dimension::DimensionRegistry,
         with_quantifiers: bool,
     ) -> crate::markup::Markup {
-        let (instantiated_type, type_parameters) = self.instantiate_for_printing(None);
+        let (instantiated_type, type_parameters) =
+            self.instantiate_for_printing::<<Vec<&str> as IntoIterator>::IntoIter>(None);
 
         let mut markup = m::empty();
 
@@ -124,7 +123,7 @@ impl TypeScheme {
 
             for type_parameter in &type_parameters {
                 markup += m::space();
-                markup += m::type_identifier(type_parameter.unsafe_name());
+                markup += m::type_identifier(type_parameter.unsafe_name().to_string());
 
                 if instantiated_type.bounds.is_dtype_bound(type_parameter) {
                     markup += m::operator(":");
@@ -220,7 +219,7 @@ impl PrettyPrint for TypeScheme {
                 for type_parameter in &type_parameters {
                     markup += m::keyword("forall");
                     markup += m::space();
-                    markup += m::type_identifier(type_parameter.unsafe_name());
+                    markup += m::type_identifier(type_parameter.unsafe_name().to_string());
 
                     if instantiated_type.bounds.is_dtype_bound(type_parameter) {
                         markup += m::operator(":");

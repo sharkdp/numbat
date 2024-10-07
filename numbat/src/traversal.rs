@@ -11,7 +11,7 @@ impl ForAllTypeSchemes for StructInfo {
     }
 }
 
-impl ForAllTypeSchemes for Expression {
+impl ForAllTypeSchemes for Expression<'_> {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
         match self {
             Expression::Scalar(_, _, type_) => f(type_),
@@ -75,7 +75,7 @@ impl ForAllTypeSchemes for Expression {
     }
 }
 
-impl ForAllTypeSchemes for Statement {
+impl ForAllTypeSchemes for Statement<'_> {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
         match self {
             Statement::Expression(expr) => expr.for_all_type_schemes(f),
@@ -115,7 +115,7 @@ pub trait ForAllExpressions {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression));
 }
 
-impl ForAllExpressions for Statement {
+impl ForAllExpressions for Statement<'_> {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
         match self {
             Statement::Expression(expr) => expr.for_all_expressions(f),
@@ -143,7 +143,7 @@ impl ForAllExpressions for Statement {
     }
 }
 
-impl ForAllExpressions for Expression {
+impl ForAllExpressions for Expression<'_> {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
         f(self);
         match self {

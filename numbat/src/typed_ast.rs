@@ -36,14 +36,16 @@ impl DTypeFactor {
     }
 }
 
+type DtypeFactorPower = (DTypeFactor, Exponent);
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DType {
     // Always in canonical form
-    pub factors: Vec<(DTypeFactor, Exponent)>, // TODO make this private
+    pub factors: Vec<DtypeFactorPower>, // TODO make this private
 }
 
 impl DType {
-    pub fn from_factors(factors: &[(DTypeFactor, Exponent)]) -> DType {
+    pub fn from_factors(factors: &[DtypeFactorPower]) -> DType {
         let mut dtype = DType {
             factors: factors.into(),
         };
@@ -74,11 +76,12 @@ impl DType {
         names.extend(registry.get_derived_entry_names_for(&base_representation));
         match &names[..] {
             [] => self.pretty_print(),
-            [single] => m::type_identifier(single),
-            multiple => {
-                Itertools::intersperse(multiple.iter().map(m::type_identifier), m::dimmed(" or "))
-                    .sum()
-            }
+            [single] => m::type_identifier(single.to_string()),
+            multiple => Itertools::intersperse(
+                multiple.iter().cloned().map(m::type_identifier),
+                m::dimmed(" or "),
+            )
+            .sum(),
         }
     }
 
@@ -201,9 +204,7 @@ impl DType {
             .contains(name)
     }
 
-    pub fn split_first_factor(
-        &self,
-    ) -> Option<(&(DTypeFactor, Exponent), &[(DTypeFactor, Exponent)])> {
+    pub fn split_first_factor(&self) -> Option<(&DtypeFactorPower, &[DtypeFactorPower])> {
         self.factors.split_first()
     }
 
@@ -325,11 +326,11 @@ impl std::fmt::Display for Type {
 impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
-            Type::TVar(TypeVariable::Named(name)) => m::type_identifier(name),
+            Type::TVar(TypeVariable::Named(name)) => m::type_identifier(name.clone()),
             Type::TVar(TypeVariable::Quantified(_)) => {
                 unreachable!("Quantified types should not be printed")
             }
-            Type::TPar(name) => m::type_identifier(name),
+            Type::TPar(name) => m::type_identifier(name.clone()),
             Type::Dimension(d) => d.pretty_print(),
             Type::Boolean => m::type_identifier("Bool"),
             Type::String => m::type_identifier("String"),
@@ -349,7 +350,7 @@ impl PrettyPrint for Type {
                     + return_type.pretty_print()
                     + m::operator("]")
             }
-            Type::Struct(info) => m::type_identifier(&info.name),
+            Type::Struct(info) => m::type_identifier(info.name.clone()),
             Type::List(element_type) => {
                 m::type_identifier("List")
                     + m::operator("<")
@@ -451,16 +452,16 @@ impl Type {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum StringPart {
+pub enum StringPart<'a> {
     Fixed(String),
     Interpolation {
         span: Span,
-        expr: Box<Expression>,
-        format_specifiers: Option<String>,
+        expr: Box<Expression<'a>>,
+        format_specifiers: Option<&'a str>,
     },
 }
 
-impl PrettyPrint for StringPart {
+impl PrettyPrint for StringPart<'_> {
     fn pretty_print(&self) -> Markup {
         match self {
             StringPart::Fixed(s) => m::string(escape_numbat_string(s)),
@@ -472,7 +473,7 @@ impl PrettyPrint for StringPart {
                 let mut markup = m::operator("{") + expr.pretty_print();
 
                 if let Some(format_specifiers) = format_specifiers {
-                    markup += m::text(format_specifiers);
+                    markup += m::text(format_specifiers.to_string());
                 }
 
                 markup += m::operator("}");
@@ -483,23 +484,23 @@ impl PrettyPrint for StringPart {
     }
 }
 
-impl PrettyPrint for &Vec<StringPart> {
+impl PrettyPrint for &Vec<StringPart<'_>> {
     fn pretty_print(&self) -> Markup {
         m::operator("\"") + self.iter().map(|p| p.pretty_print()).sum() + m::operator("\"")
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Expression {
+pub enum Expression<'a> {
     Scalar(Span, Number, TypeScheme),
-    Identifier(Span, String, TypeScheme),
+    Identifier(Span, &'a str, TypeScheme),
     UnitIdentifier(Span, Prefix, String, String, TypeScheme),
-    UnaryOperator(Span, UnaryOperator, Box<Expression>, TypeScheme),
+    UnaryOperator(Span, UnaryOperator, Box<Expression<'a>>, TypeScheme),
     BinaryOperator(
         Option<Span>,
         BinaryOperator,
-        Box<Expression>,
-        Box<Expression>,
+        Box<Expression<'a>>,
+        Box<Expression<'a>>,
         TypeScheme,
     ),
     /// A special binary operator that has a DateTime as one (or both) of the operands
@@ -507,32 +508,37 @@ pub enum Expression {
         Option<Span>,
         BinaryOperator,
         /// LHS must evaluate to a DateTime
-        Box<Expression>,
+        Box<Expression<'a>>,
         /// RHS can evaluate to a DateTime or a quantity of type Time
-        Box<Expression>,
+        Box<Expression<'a>>,
         TypeScheme,
     ),
     // A 'proper' function call
-    FunctionCall(Span, Span, String, Vec<Expression>, TypeScheme),
+    FunctionCall(Span, Span, &'a str, Vec<Expression<'a>>, TypeScheme),
     // A call via a function object
-    CallableCall(Span, Box<Expression>, Vec<Expression>, TypeScheme),
+    CallableCall(Span, Box<Expression<'a>>, Vec<Expression<'a>>, TypeScheme),
     Boolean(Span, bool),
-    Condition(Span, Box<Expression>, Box<Expression>, Box<Expression>),
-    String(Span, Vec<StringPart>),
-    InstantiateStruct(Span, Vec<(String, Expression)>, StructInfo),
+    Condition(
+        Span,
+        Box<Expression<'a>>,
+        Box<Expression<'a>>,
+        Box<Expression<'a>>,
+    ),
+    String(Span, Vec<StringPart<'a>>),
+    InstantiateStruct(Span, Vec<(&'a str, Expression<'a>)>, StructInfo),
     AccessField(
         Span,
         Span,
-        Box<Expression>,
-        String,     // field name
+        Box<Expression<'a>>,
+        &'a str,    // field name
         TypeScheme, // struct type
         TypeScheme, // resulting field type
     ),
-    List(Span, Vec<Expression>, TypeScheme),
+    List(Span, Vec<Expression<'a>>, TypeScheme),
     TypedHole(Span, TypeScheme),
 }
 
-impl Expression {
+impl Expression<'_> {
     pub fn full_span(&self) -> Span {
         match self {
             Expression::Scalar(span, ..) => *span,
@@ -569,51 +575,56 @@ impl Expression {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct DefineVariable(
-    pub String,
-    pub Vec<Decorator>,
-    pub Expression,
+pub struct DefineVariable<'a>(
+    pub &'a str,
+    pub Vec<Decorator<'a>>,
+    pub Expression<'a>,
     pub Option<TypeAnnotation>,
     pub TypeScheme,
     pub Markup,
 );
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Statement {
-    Expression(Expression),
-    DefineVariable(DefineVariable),
+pub enum Statement<'a> {
+    Expression(Expression<'a>),
+    DefineVariable(DefineVariable<'a>),
     DefineFunction(
-        String,
-        Vec<Decorator>,                            // decorators
-        Vec<(String, Option<TypeParameterBound>)>, // type parameters
+        &'a str,
+        Vec<Decorator<'a>>,                         // decorators
+        Vec<(&'a str, Option<TypeParameterBound>)>, // type parameters
         Vec<(
             // parameters:
             Span,                   // span of the parameter
-            String,                 // parameter name
+            &'a str,                // parameter name
             Option<TypeAnnotation>, // parameter type annotation
             Markup,                 // readable parameter type
         )>,
-        Option<Expression>,     // function body
-        Vec<DefineVariable>,    // local variables
-        TypeScheme,             // function type
-        Option<TypeAnnotation>, // return type annotation
-        Markup,                 // readable return type
+        Option<Expression<'a>>,  // function body
+        Vec<DefineVariable<'a>>, // local variables
+        TypeScheme,              // function type
+        Option<TypeAnnotation>,  // return type annotation
+        Markup,                  // readable return type
     ),
-    DefineDimension(String, Vec<TypeExpression>),
-    DefineBaseUnit(String, Vec<Decorator>, Option<TypeAnnotation>, TypeScheme),
+    DefineDimension(&'a str, Vec<TypeExpression>),
+    DefineBaseUnit(
+        &'a str,
+        Vec<Decorator<'a>>,
+        Option<TypeAnnotation>,
+        TypeScheme,
+    ),
     DefineDerivedUnit(
-        String,
-        Expression,
-        Vec<Decorator>,
+        &'a str,
+        Expression<'a>,
+        Vec<Decorator<'a>>,
         Option<TypeAnnotation>,
         TypeScheme,
         Markup,
     ),
-    ProcedureCall(crate::ast::ProcedureKind, Vec<Expression>),
+    ProcedureCall(crate::ast::ProcedureKind, Vec<Expression<'a>>),
     DefineStruct(StructInfo),
 }
 
-impl Statement {
+impl Statement<'_> {
     pub fn as_expression(&self) -> Option<&Expression> {
         if let Self::Expression(v) = self {
             Some(v)
@@ -663,9 +674,8 @@ impl Statement {
                 return_type_annotation,
                 readable_return_type,
             ) => {
-                let (fn_type, _) = fn_type.instantiate_for_printing(Some(
-                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
-                ));
+                let (fn_type, _) =
+                    fn_type.instantiate_for_printing(Some(type_parameters.iter().map(|(n, _)| *n)));
 
                 for DefineVariable(_, _, _, type_annotation, type_, readable_type) in
                     local_variables
@@ -722,7 +732,9 @@ impl Statement {
         exponents
     }
 
-    pub(crate) fn find_typed_hole(&self) -> Result<Option<(Span, TypeScheme)>, TypeCheckError> {
+    pub(crate) fn find_typed_hole(
+        &self,
+    ) -> Result<Option<(Span, TypeScheme)>, Box<TypeCheckError>> {
         let mut hole = None;
         let mut found_multiple_holes = false;
         self.for_all_expressions(&mut |expr| {
@@ -735,14 +747,16 @@ impl Statement {
         });
 
         if found_multiple_holes {
-            Err(TypeCheckError::MultipleTypedHoles(hole.unwrap().0))
+            Err(Box::new(TypeCheckError::MultipleTypedHoles(
+                hole.unwrap().0,
+            )))
         } else {
             Ok(hole)
         }
     }
 }
 
-impl Expression {
+impl Expression<'_> {
     pub fn get_type(&self) -> Type {
         match self {
             Expression::Scalar(_, _, type_) => type_.unsafe_as_concrete(),
@@ -837,8 +851,8 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                     m::decorator("@aliases")
                         + m::operator("(")
                         + Itertools::intersperse(
-                            names.iter().map(|(name, accepts_prefix)| {
-                                m::unit(name) + accepts_prefix_markup(accepts_prefix)
+                            names.iter().map(|(name, accepts_prefix, _)| {
+                                m::unit(name.to_string()) + accepts_prefix_markup(accepts_prefix)
                             }),
                             m::operator(", "),
                         )
@@ -846,23 +860,29 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         + m::operator(")")
                 }
                 Decorator::Url(url) => {
-                    m::decorator("@url") + m::operator("(") + m::string(url) + m::operator(")")
+                    m::decorator("@url")
+                        + m::operator("(")
+                        + m::string(url.clone())
+                        + m::operator(")")
                 }
                 Decorator::Name(name) => {
-                    m::decorator("@name") + m::operator("(") + m::string(name) + m::operator(")")
+                    m::decorator("@name")
+                        + m::operator("(")
+                        + m::string(name.clone())
+                        + m::operator(")")
                 }
                 Decorator::Description(description) => {
                     m::decorator("@description")
                         + m::operator("(")
-                        + m::string(description)
+                        + m::string(description.clone())
                         + m::operator(")")
                 }
                 Decorator::Example(example_code, example_description) => {
                     m::decorator("@example")
                         + m::operator("(")
-                        + m::string(example_code)
+                        + m::string(example_code.clone())
                         + if let Some(example_description) = example_description {
-                            m::operator(", ") + m::string(example_description)
+                            m::operator(", ") + m::string(example_description.clone())
                         } else {
                             m::empty()
                         }
@@ -874,14 +894,14 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
     markup_decorators
 }
 
-pub fn pretty_print_function_signature(
+pub fn pretty_print_function_signature<'a>(
     function_name: &str,
     fn_type: &QualifiedType,
     type_parameters: &[TypeVariable],
     parameters: impl Iterator<
         Item = (
-            String, // parameter name
-            Markup, // readable parameter type
+            &'a str, // parameter name
+            Markup,  // readable parameter type
         ),
     >,
     readable_return_type: &Markup,
@@ -892,7 +912,7 @@ pub fn pretty_print_function_signature(
         m::operator("<")
             + Itertools::intersperse(
                 type_parameters.iter().map(|tv| {
-                    m::type_identifier(tv.unsafe_name())
+                    m::type_identifier(tv.unsafe_name().to_string())
                         + if fn_type.bounds.is_dtype_bound(tv) {
                             m::operator(":") + m::space() + m::type_identifier("Dim")
                         } else {
@@ -907,7 +927,7 @@ pub fn pretty_print_function_signature(
 
     let markup_parameters = Itertools::intersperse(
         parameters.map(|(name, parameter_type)| {
-            m::identifier(name) + m::operator(":") + m::space() + parameter_type.clone()
+            m::identifier(name.to_string()) + m::operator(":") + m::space() + parameter_type
         }),
         m::operator(", "),
     )
@@ -918,7 +938,7 @@ pub fn pretty_print_function_signature(
 
     m::keyword("fn")
         + m::space()
-        + m::identifier(function_name)
+        + m::identifier(function_name.to_string())
         + markup_type_parameters
         + m::operator("(")
         + markup_parameters
@@ -926,7 +946,7 @@ pub fn pretty_print_function_signature(
         + markup_return_type
 }
 
-impl PrettyPrint for Statement {
+impl PrettyPrint for Statement<'_> {
     fn pretty_print(&self) -> Markup {
         match self {
             Statement::DefineVariable(DefineVariable(
@@ -939,7 +959,7 @@ impl PrettyPrint for Statement {
             )) => {
                 m::keyword("let")
                     + m::space()
-                    + m::identifier(identifier)
+                    + m::identifier(identifier.to_string())
                     + m::operator(":")
                     + m::space()
                     + readable_type.clone()
@@ -959,9 +979,8 @@ impl PrettyPrint for Statement {
                 _return_type_annotation,
                 readable_return_type,
             ) => {
-                let (fn_type, type_parameters) = fn_type.instantiate_for_printing(Some(
-                    type_parameters.iter().map(|(n, _)| n.clone()).collect(),
-                ));
+                let (fn_type, type_parameters) =
+                    fn_type.instantiate_for_printing(Some(type_parameters.iter().map(|(n, _)| *n)));
 
                 let mut pretty_local_variables = None;
                 let mut first = true;
@@ -986,7 +1005,7 @@ impl PrettyPrint for Statement {
                         plv += m::nl()
                             + introducer_keyword
                             + m::space()
-                            + m::identifier(identifier)
+                            + m::identifier(identifier.to_string())
                             + m::operator(":")
                             + m::space()
                             + readable_type.clone()
@@ -1004,7 +1023,7 @@ impl PrettyPrint for Statement {
                     &type_parameters,
                     parameters
                         .iter()
-                        .map(|(_, name, _, type_)| (name.clone(), type_.clone())),
+                        .map(|(_, name, _, type_)| (*name, type_.clone())),
                     readable_return_type,
                 ) + body
                     .as_ref()
@@ -1014,12 +1033,12 @@ impl PrettyPrint for Statement {
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DefineDimension(identifier, dexprs) if dexprs.is_empty() => {
-                m::keyword("dimension") + m::space() + m::type_identifier(identifier)
+                m::keyword("dimension") + m::space() + m::type_identifier(identifier.to_string())
             }
             Statement::DefineDimension(identifier, dexprs) => {
                 m::keyword("dimension")
                     + m::space()
-                    + m::type_identifier(identifier)
+                    + m::type_identifier(identifier.to_string())
                     + m::space()
                     + m::operator("=")
                     + m::space()
@@ -1033,7 +1052,7 @@ impl PrettyPrint for Statement {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
-                    + m::unit(identifier)
+                    + m::unit(identifier.to_string())
                     + m::operator(":")
                     + m::space()
                     + annotation
@@ -1052,7 +1071,7 @@ impl PrettyPrint for Statement {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
-                    + m::unit(identifier)
+                    + m::unit(identifier.to_string())
                     + m::operator(":")
                     + m::space()
                     + readable_type.clone()
@@ -1089,7 +1108,7 @@ impl PrettyPrint for Statement {
                         m::space()
                             + Itertools::intersperse(
                                 fields.iter().map(|(n, (_, t))| {
-                                    m::identifier(n)
+                                    m::identifier(n.clone())
                                         + m::operator(":")
                                         + m::space()
                                         + t.pretty_print()
@@ -1160,7 +1179,7 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             }
             (Expression::Scalar(_, s, _), Expression::Identifier(_, name, _type)) => {
                 // Fuse multiplication of a scalar and identifier
-                pretty_scalar(*s) + m::space() + m::identifier(name)
+                pretty_scalar(*s) + m::space() + m::identifier(name.to_string())
             }
             _ => {
                 let add_parens_if_needed = |expr: &Expression| {
@@ -1244,13 +1263,13 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
     }
 }
 
-impl PrettyPrint for Expression {
+impl PrettyPrint for Expression<'_> {
     fn pretty_print(&self) -> Markup {
         use Expression::*;
 
         match self {
             Scalar(_, n, _) => pretty_scalar(*n),
-            Identifier(_, name, _type) => m::identifier(name),
+            Identifier(_, name, _type) => m::identifier(name.to_string()),
             UnitIdentifier(_, prefix, _name, full_name, _type) => {
                 m::unit(format!("{}{}", prefix.as_string_long(), full_name))
             }
@@ -1266,7 +1285,7 @@ impl PrettyPrint for Expression {
             BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             BinaryOperatorForDate(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(_, _, name, args, _type) => {
-                m::identifier(name)
+                m::identifier(name.to_string())
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
                         args.iter().map(|e| e.pretty_print()),
@@ -1310,7 +1329,7 @@ impl PrettyPrint for Expression {
                         m::space()
                             + itertools::Itertools::intersperse(
                                 exprs.iter().map(|(n, e)| {
-                                    m::identifier(n)
+                                    m::identifier(n.to_string())
                                         + m::operator(":")
                                         + m::space()
                                         + e.pretty_print()
@@ -1323,7 +1342,7 @@ impl PrettyPrint for Expression {
                     + m::operator("}")
             }
             AccessField(_, _, expr, attr, _, _) => {
-                expr.pretty_print() + m::operator(".") + m::identifier(attr)
+                expr.pretty_print() + m::operator(".") + m::identifier(attr.to_string())
             }
             List(_, elements, _) => {
                 m::operator("[")
@@ -1348,8 +1367,7 @@ mod tests {
 
     fn parse(code: &str) -> Statement {
         let statements = crate::parser::parse(
-            &format!(
-                "dimension Scalar = 1
+            "dimension Scalar = 1
                  dimension Length
                  dimension Time
                  dimension Mass
@@ -1387,7 +1405,7 @@ mod tests {
                  @metric_prefixes
                  unit points
 
-                 struct Foo {{foo: Length, bar: Time}}
+                 struct Foo {foo: Length, bar: Time}
 
                  let a = 1
                  let b = 1
@@ -1402,19 +1420,18 @@ mod tests {
                  let länge = 1
                  let x_2 = 1
                  let µ = 1
-                 let _prefixed = 1
-
-                 {code}"
-            ),
+                 let _prefixed = 1",
             0,
         )
-        .unwrap();
+        .unwrap()
+        .into_iter()
+        .chain(crate::parser::parse(code, 0).unwrap());
 
         let mut transformer = Transformer::new();
         let transformed_statements = transformer.transform(statements).unwrap().replace_spans();
 
         crate::typechecker::TypeChecker::default()
-            .check(transformed_statements)
+            .check(&transformed_statements)
             .unwrap()
             .last()
             .unwrap()

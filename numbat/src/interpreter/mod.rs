@@ -135,7 +135,7 @@ impl InterpreterResult {
     }
 }
 
-pub type Result<T> = std::result::Result<T, RuntimeError>;
+pub type Result<T> = std::result::Result<T, Box<RuntimeError>>;
 
 pub type PrintFunction = dyn FnMut(&Markup) + Send;
 
@@ -210,7 +210,7 @@ mod tests {
             .expect("No name resolution errors for inputs in this test suite");
         let mut typechecker = crate::typechecker::TypeChecker::default();
         let statements_typechecked = typechecker
-            .check(statements_transformed)
+            .check(&statements_transformed)
             .expect("No type check errors for inputs in this test suite");
         BytecodeInterpreter::new().interpret_statements(
             &mut InterpreterSettings::default(),
@@ -237,7 +237,7 @@ mod tests {
     #[track_caller]
     fn assert_runtime_error(input: &str, err_expected: RuntimeError) {
         if let Err(err_actual) = get_interpreter_result(input) {
-            assert_eq!(err_actual, err_expected);
+            assert_eq!(*err_actual, err_expected);
         } else {
             panic!();
         }

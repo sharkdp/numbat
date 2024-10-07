@@ -47,6 +47,8 @@ mod unit_registry;
 pub mod value;
 mod vm;
 
+use std::borrow::Cow;
+
 use bytecode_interpreter::BytecodeInterpreter;
 use column_formatter::ColumnFormatter;
 use currency::ExchangeRatesCache;
@@ -94,7 +96,7 @@ pub enum NumbatError {
     RuntimeError(RuntimeError),
 }
 
-type Result<T> = std::result::Result<T, NumbatError>;
+type Result<T> = std::result::Result<T, Box<NumbatError>>;
 
 #[derive(Clone)]
 pub struct Context {
@@ -202,15 +204,6 @@ impl Context {
     }
 
     pub fn print_environment(&self) -> Markup {
-        let mut functions: Vec<_> = self.function_names().collect();
-        functions.sort();
-        let mut dimensions = Vec::from(self.dimension_names());
-        dimensions.sort();
-        let mut units = Vec::from(self.unit_names());
-        units.sort();
-        let mut variables: Vec<_> = self.variable_names().collect();
-        variables.sort();
-
         let mut output = m::empty();
 
         output += m::emphasized("List of functions:") + m::nl();
@@ -255,11 +248,11 @@ impl Context {
     /// Gets completions for the given word_part
     ///
     /// If `add_paren` is true, then an opening paren will be added to the end of function names
-    pub fn get_completions_for<'a>(
+    pub fn get_completions_for(
         &self,
-        word_part: &'a str,
+        word_part: &str,
         add_paren: bool,
-    ) -> impl Iterator<Item = String> + 'a {
+    ) -> impl Iterator<Item = String> {
         const COMMON_METRIC_PREFIXES: &[&str] = &[
             "pico", "nano", "micro", "milli", "centi", "kilo", "mega", "giga", "tera",
         ];
@@ -272,53 +265,60 @@ impl Context {
             })
             .collect();
 
-        let mut words: Vec<_> = KEYWORDS.iter().map(|k| k.to_string()).collect();
+        let mut words = Vec::new();
+
+        let mut add_if_valid = |word: Cow<'_, str>| {
+            if word.starts_with(word_part) {
+                words.push(word.into_owned());
+            }
+        };
+
+        for kw in KEYWORDS {
+            add_if_valid((*kw).into());
+        }
 
         for (patterns, _) in UNICODE_INPUT {
             for pattern in *patterns {
-                words.push(pattern.to_string());
+                add_if_valid((*pattern).into());
             }
         }
 
-        {
-            for variable in self.variable_names() {
-                words.push(variable.clone());
+        for variable in self.variable_names() {
+            add_if_valid(variable.into());
+        }
+
+        for mut function in self.function_names() {
+            if add_paren {
+                function.push('(');
             }
+            add_if_valid(function.into());
+        }
 
-            for function in self.function_names() {
-                if add_paren {
-                    words.push(format!("{function}("));
-                } else {
-                    words.push(function.to_string());
-                }
-            }
+        for dimension in self.dimension_names() {
+            add_if_valid(dimension.into());
+        }
 
-            for dimension in self.dimension_names() {
-                words.push(dimension.clone());
-            }
-
-            for (_, (_, meta)) in self.unit_representations() {
-                for (unit, accepts_prefix) in meta.aliases {
-                    words.push(unit.clone());
-
-                    // Add some of the common long prefixes for units that accept them.
-                    // We do not add all possible prefixes here in order to keep the
-                    // number of completions to a reasonable size. Also, we do not add
-                    // short prefixes for units that accept them, as that leads to lots
-                    // and lots of 2-3 character words.
-                    if accepts_prefix.long && meta.metric_prefixes {
-                        for prefix in &metric_prefixes {
-                            words.push(format!("{prefix}{unit}"));
-                        }
+        for (_, (_, meta)) in self.unit_representations() {
+            for (unit, accepts_prefix) in meta.aliases {
+                // Add some of the common long prefixes for units that accept them.
+                // We do not add all possible prefixes here in order to keep the
+                // number of completions to a reasonable size. Also, we do not add
+                // short prefixes for units that accept them, as that leads to lots
+                // and lots of 2-3 character words.
+                if accepts_prefix.long && meta.metric_prefixes {
+                    for prefix in &metric_prefixes {
+                        add_if_valid(format!("{prefix}{unit}").into());
                     }
                 }
+
+                add_if_valid(unit.into());
             }
         }
 
         words.sort();
         words.dedup();
 
-        words.into_iter().filter(move |w| w.starts_with(word_part))
+        words.into_iter()
     }
 
     pub fn print_info_for_keyword(&mut self, keyword: &str) -> Markup {
@@ -338,7 +338,8 @@ impl Context {
                 .ok()
                 .map(|(_, md)| md)
             {
-                let mut help = m::text("Unit: ") + m::unit(md.name.as_deref().unwrap_or(keyword));
+                let mut help =
+                    m::text("Unit: ") + m::unit(md.name.unwrap_or_else(|| keyword.to_string()));
                 if let Some(url) = &md.url {
                     help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
                 }
@@ -359,12 +360,13 @@ impl Context {
                     let desc = "Description: ";
                     let mut lines = description.lines();
                     help += m::text(desc)
-                        + m::text(lines.by_ref().next().unwrap_or("").trim())
+                        + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
                         + m::nl();
 
                     for line in lines {
-                        help +=
-                            m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                        help += m::whitespace(" ".repeat(desc.len()))
+                            + m::text(line.trim().to_string())
+                            + m::nl();
                     }
                 }
 
@@ -387,17 +389,17 @@ impl Context {
                     if !prefix.is_none() {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::unit(keyword)
+                            + m::unit(keyword.to_string())
                             + m::text(" = ")
                             + m::value(prefix.factor().pretty_print())
                             + m::space()
-                            + m::unit(&full_name);
+                            + m::unit(full_name.to_string());
                     }
 
                     if let Some(BaseUnitAndFactor(prod, num)) = x {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::unit(&full_name)
+                            + m::unit(full_name.to_string())
                             + m::text(" = ")
                             + m::value(num.pretty_print())
                             + m::space()
@@ -409,7 +411,8 @@ impl Context {
                                 Some(m::FormatType::Unit),
                             );
                     } else {
-                        help += m::nl() + m::unit(&full_name) + m::text(" is a base unit");
+                        help +=
+                            m::nl() + m::unit(full_name.to_string()) + m::text(" is a base unit");
                     }
                 };
 
@@ -422,9 +425,9 @@ impl Context {
         if let Some(l) = self.interpreter.lookup_global(keyword) {
             let mut help = m::text("Variable: ");
             if let Some(name) = &l.metadata.name {
-                help += m::text(name);
+                help += m::text(name.clone());
             } else {
-                help += m::identifier(keyword);
+                help += m::identifier(keyword.to_string());
             }
             if let Some(url) = &l.metadata.url {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
@@ -434,11 +437,14 @@ impl Context {
             if let Some(description) = &l.metadata.description {
                 let desc = "Description: ";
                 let mut lines = description.lines();
-                help +=
-                    m::text(desc) + m::text(lines.by_ref().next().unwrap_or("").trim()) + m::nl();
+                help += m::text(desc)
+                    + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                    + m::nl();
 
                 for line in lines {
-                    help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                    help += m::whitespace(" ".repeat(desc.len()))
+                        + m::text(line.trim().to_string())
+                        + m::nl();
                 }
             }
 
@@ -467,9 +473,9 @@ impl Context {
 
             let mut help = m::text("Function:    ");
             if let Some(name) = &metadata.name {
-                help += m::text(name);
+                help += m::text(name.to_string());
             } else {
-                help += m::identifier(keyword);
+                help += m::identifier(keyword.to_string());
             }
             if let Some(url) = &metadata.url {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
@@ -484,11 +490,14 @@ impl Context {
             if let Some(description) = &metadata.description {
                 let desc = "Description: ";
                 let mut lines = description.lines();
-                help +=
-                    m::text(desc) + m::text(lines.by_ref().next().unwrap_or("").trim()) + m::nl();
+                help += m::text(desc)
+                    + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                    + m::nl();
 
                 for line in lines {
-                    help += m::whitespace(" ".repeat(desc.len())) + m::text(line.trim()) + m::nl();
+                    help += m::whitespace(" ".repeat(desc.len()))
+                        + m::text(line.trim().to_string())
+                        + m::nl();
                 }
             }
 
@@ -541,20 +550,20 @@ impl Context {
         &mut self.resolver
     }
 
-    pub fn interpret(
+    pub fn interpret<'a>(
         &mut self,
-        code: &str,
+        code: &'a str,
         code_source: CodeSource,
-    ) -> Result<(Vec<typed_ast::Statement>, InterpreterResult)> {
+    ) -> Result<(Vec<typed_ast::Statement<'a>>, InterpreterResult)> {
         self.interpret_with_settings(&mut InterpreterSettings::default(), code, code_source)
     }
 
-    pub fn interpret_with_settings(
+    pub fn interpret_with_settings<'a>(
         &mut self,
         settings: &mut InterpreterSettings,
-        code: &str,
+        code: &'a str,
         code_source: CodeSource,
-    ) -> Result<(Vec<typed_ast::Statement>, InterpreterResult)> {
+    ) -> Result<(Vec<typed_ast::Statement<'a>>, InterpreterResult)> {
         let statements = self
             .resolver
             .resolve(code, code_source.clone())
@@ -586,8 +595,8 @@ impl Context {
 
         let result = self
             .typechecker
-            .check(transformed_statements)
-            .map_err(NumbatError::TypeCheckError);
+            .check(&transformed_statements)
+            .map_err(|err| NumbatError::TypeCheckError(*err));
 
         if result.is_err() {
             // Reset the state of the prefix transformer to what we had before. This is necessary
@@ -637,6 +646,7 @@ impl Context {
                         "renminbi",
                         "元",
                         "EUR",
+                        "eur",
                         "euro",
                         "euros",
                         "€",
@@ -773,9 +783,9 @@ impl Context {
                             let erc = ExchangeRatesCache::fetch();
 
                             if erc.is_none() {
-                                return Err(NumbatError::RuntimeError(
+                                return Err(Box::new(NumbatError::RuntimeError(
                                     RuntimeError::CouldNotLoadExchangeRates,
-                                ));
+                                )));
                             }
                         }
 
@@ -824,7 +834,7 @@ impl Context {
             self.interpreter = interpreter_old;
         }
 
-        let result = result.map_err(NumbatError::RuntimeError)?;
+        let result = result.map_err(|err| NumbatError::RuntimeError(*err))?;
 
         Ok((typed_statements, result))
     }

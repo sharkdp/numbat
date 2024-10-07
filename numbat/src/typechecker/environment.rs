@@ -28,8 +28,7 @@ impl FunctionSignature {
         let (fn_type, type_parameters) = self.fn_type.instantiate_for_printing(Some(
             self.type_parameters
                 .iter()
-                .map(|(_, name, _)| name.clone())
-                .collect(),
+                .map(|(_, name, _)| name.as_str()),
         ));
 
         let Type::Fn(ref parameter_types, ref return_type) = fn_type.inner else {
@@ -45,7 +44,7 @@ impl FunctionSignature {
                         Some(annotation) => annotation.pretty_print(),
                         None => type_.to_readable_type(registry),
                     };
-                    (name.clone(), readable_type)
+                    (name.as_str(), readable_type)
                 });
 
         let readable_return_type = match &self.return_type_annotation {

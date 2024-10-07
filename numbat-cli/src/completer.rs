@@ -131,7 +131,7 @@ impl Completer for NumbatCompleter {
             candidates
                 .map(|w| Pair {
                     display: w.to_string(),
-                    replacement: w.to_string(),
+                    replacement: w,
                 })
                 .collect(),
         ))

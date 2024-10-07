@@ -18,7 +18,7 @@ pub fn get_test_context_without_prelude() -> Context {
 }
 
 pub fn get_test_context() -> Context {
-    static CONTEXT: Lazy<Result<Context, NumbatError>> = Lazy::new(|| {
+    static CONTEXT: Lazy<Result<Context, Box<NumbatError>>> = Lazy::new(|| {
         let mut context = get_test_context_without_prelude();
 
         let _ = context.interpret("use prelude", CodeSource::Internal)?;

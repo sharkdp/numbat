@@ -103,6 +103,7 @@ impl Numbat {
         match self
             .ctx
             .interpret_with_settings(&mut settings, code, CodeSource::Text)
+            .map_err(|b| *b)
         {
             Ok((statements, result)) => {
                 // Pretty print

@@ -49,13 +49,18 @@ fn type_c() -> DType {
     DType::base_dimension("A").multiply(&DType::base_dimension("B"))
 }
 
-fn run_typecheck(input: &str) -> Result<typed_ast::Statement> {
-    let code = &format!("{TEST_PRELUDE}\n{input}");
-    let statements = parse(code, 0).expect("No parse errors for inputs in this test suite");
-    let transformed_statements = Transformer::new().transform(statements)?;
+fn run_typecheck(input: &str) -> Result<typed_ast::Statement<'_>> {
+    let statements = parse(TEST_PRELUDE, 0)
+        .expect("No parse errors for inputs in this test suite")
+        .into_iter()
+        .chain(parse(input, 0).expect("No parse errors for inputs in this test suite"));
+
+    let transformed_statements = Transformer::new()
+        .transform(statements)
+        .map_err(|err| Box::new(err.into()))?;
 
     TypeChecker::default()
-        .check(transformed_statements)
+        .check(&transformed_statements)
         .map(|mut statements_checked| statements_checked.pop().unwrap())
 }
 
@@ -78,7 +83,7 @@ fn get_inferred_fn_type(input: &str) -> TypeScheme {
 #[track_caller]
 fn get_typecheck_error(input: &str) -> TypeCheckError {
     if let Err(err) = dbg!(run_typecheck(input)) {
-        err
+        *err
     } else {
         panic!("Input was expected to yield a type check error");
     }

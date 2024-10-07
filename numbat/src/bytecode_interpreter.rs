@@ -69,15 +69,15 @@ impl BytecodeInterpreter {
                     .rposition(|l| &l.identifier == identifier)
                 {
                     self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
-                } else if LAST_RESULT_IDENTIFIERS.contains(&identifier.as_str()) {
+                } else if LAST_RESULT_IDENTIFIERS.contains(identifier) {
                     self.vm.add_op(Op::GetLastResult);
-                } else if let Some(is_foreign) = self.functions.get(identifier) {
+                } else if let Some(is_foreign) = self.functions.get(*identifier) {
                     let index = self
                         .vm
                         .add_constant(Constant::FunctionReference(if *is_foreign {
-                            FunctionReference::Foreign(identifier.clone())
+                            FunctionReference::Foreign(identifier.to_string())
                         } else {
-                            FunctionReference::Normal(identifier.clone())
+                            FunctionReference::Normal(identifier.to_string())
                         }));
                     self.vm.add_op1(Op::LoadConstant, index);
                 } else {
@@ -178,7 +178,7 @@ impl BytecodeInterpreter {
 
                 let sorted_exprs = exprs
                     .iter()
-                    .sorted_by_key(|(n, _)| struct_info.fields.get_index_of(n).unwrap());
+                    .sorted_by_key(|(n, _)| struct_info.fields.get_index_of(*n).unwrap());
 
                 for (_, expr) in sorted_exprs.rev() {
                     self.compile_expression(expr)?;
@@ -198,7 +198,7 @@ impl BytecodeInterpreter {
                     );
                 };
 
-                let idx = struct_info.fields.get_index_of(attr).unwrap();
+                let idx = struct_info.fields.get_index_of(*attr).unwrap();
 
                 self.vm.add_op1(Op::AccessStructField, idx as u16);
             }
@@ -221,7 +221,7 @@ impl BytecodeInterpreter {
                 for part in string_parts {
                     match part {
                         StringPart::Fixed(s) => {
-                            let index = self.vm.add_constant(Constant::String(s.clone()));
+                            let index = self.vm.add_constant(Constant::String(s.to_string()));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
                         StringPart::Interpolation {
@@ -231,7 +231,7 @@ impl BytecodeInterpreter {
                         } => {
                             self.compile_expression(expr)?;
                             let index = self.vm.add_constant(Constant::FormatSpecifiers(
-                                format_specifiers.clone(),
+                                format_specifiers.map(|s| s.to_string()),
                             ));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
@@ -283,12 +283,11 @@ impl BytecodeInterpreter {
 
         // For variables, we ignore the prefix info and only use the names
         let aliases = crate::decorator::name_and_aliases(identifier, decorators)
-            .map(|(name, _)| name)
-            .cloned()
+            .map(|(name, _)| name.to_owned())
             .collect::<Vec<_>>();
         let metadata = LocalMetadata {
-            name: crate::decorator::name(decorators),
-            url: crate::decorator::url(decorators),
+            name: crate::decorator::name(decorators).map(ToOwned::to_owned),
+            url: crate::decorator::url(decorators).map(ToOwned::to_owned),
             description: crate::decorator::description(decorators),
             aliases: aliases.clone(),
         };
@@ -336,7 +335,7 @@ impl BytecodeInterpreter {
                 let current_depth = self.current_depth();
                 for parameter in parameters {
                     self.locals[current_depth].push(Local {
-                        identifier: parameter.1.clone(),
+                        identifier: parameter.1.to_string(),
                         depth: current_depth,
                         metadata: LocalMetadata::default(),
                     });
@@ -353,7 +352,7 @@ impl BytecodeInterpreter {
 
                 self.vm.end_function();
 
-                self.functions.insert(name.clone(), false);
+                self.functions.insert(name.to_string(), false);
             }
             Statement::DefineFunction(
                 name,
@@ -372,7 +371,7 @@ impl BytecodeInterpreter {
                 self.vm
                     .add_foreign_function(name, parameters.len()..=parameters.len());
 
-                self.functions.insert(name.clone(), true);
+                self.functions.insert(name.to_string(), true);
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
@@ -380,7 +379,7 @@ impl BytecodeInterpreter {
             }
             Statement::DefineBaseUnit(unit_name, decorators, annotation, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
-                    .map(|(name, ap)| (name.clone(), ap))
+                    .map(|(name, ap)| (name.to_owned(), ap))
                     .collect();
 
                 self.vm
@@ -394,11 +393,11 @@ impl BytecodeInterpreter {
                                 .map(|a| a.pretty_print())
                                 .unwrap_or(type_.to_readable_type(dimension_registry, false)),
                             aliases,
-                            name: decorator::name(decorators),
+                            name: decorator::name(decorators).map(ToOwned::to_owned),
                             canonical_name: decorator::get_canonical_unit_name(
                                 unit_name, decorators,
                             ),
-                            url: decorator::url(decorators),
+                            url: decorator::url(decorators).map(ToOwned::to_owned),
                             description: decorator::description(decorators),
                             binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                             metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
@@ -408,7 +407,7 @@ impl BytecodeInterpreter {
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
                     unit_name,
-                    crate::decorator::get_canonical_unit_name(unit_name.as_str(), &decorators[..]),
+                    crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]),
                 )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
@@ -424,7 +423,7 @@ impl BytecodeInterpreter {
                 _readable_type,
             ) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
-                    .map(|(name, ap)| (name.clone(), ap))
+                    .map(|(name, ap)| (name.to_owned(), ap))
                     .collect();
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
@@ -437,11 +436,7 @@ impl BytecodeInterpreter {
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
                     Some(
-                        &crate::decorator::get_canonical_unit_name(
-                            unit_name.as_str(),
-                            &decorators[..],
-                        )
-                        .name,
+                        &crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]).name,
                     ),
                     UnitMetadata {
                         type_: type_.to_concrete_type(), // We guarantee that derived-unit definitions do not contain generics, so no TGen(..)s can escape
@@ -450,9 +445,9 @@ impl BytecodeInterpreter {
                             .map(|a| a.pretty_print())
                             .unwrap_or(type_.to_readable_type(dimension_registry, false)),
                         aliases,
-                        name: decorator::name(decorators),
+                        name: decorator::name(decorators).map(ToOwned::to_owned),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
-                        url: decorator::url(decorators),
+                        url: decorator::url(decorators).map(ToOwned::to_owned),
                         description: decorator::description(decorators),
                         binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                         metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),

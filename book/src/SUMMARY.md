@@ -21,7 +21,6 @@
     - [XKCD 687](./example-xkcd_687.md)
     - [XKCD 2585](./example-xkcd_2585.md)
     - [XKCD 2812](./example-xkcd_2812.md)
-- [IDE / editor integration](./editor-integration.md)
 
 # Numbat language reference
 
@@ -68,6 +67,11 @@
 # Notes for developers
 
 - [Type system](./type-system.md)
+
+# Other topics
+
+- [IDE / editor integration](./editor-integration.md)
+- [Comparison with other tools](./comparison.md)
 
 # Support
 
