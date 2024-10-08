@@ -24,9 +24,6 @@ pub type Result<T> = std::result::Result<T, RegistryError>;
 
 pub type BaseEntry = String;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BaseIndex(isize);
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BaseRepresentationFactor(pub BaseEntry, pub Exponent);
 

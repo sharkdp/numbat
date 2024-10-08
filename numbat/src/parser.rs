@@ -777,8 +777,8 @@ impl<'a> Parser<'a> {
                                     }
 
                                     Decorator::Example(
-                                        strip_and_escape(&token_code.lexeme),
-                                        Some(strip_and_escape(&token_description.lexeme)),
+                                        strip_and_escape(token_code.lexeme),
+                                        Some(strip_and_escape(token_description.lexeme)),
                                     )
                                 } else {
                                     return Err(ParseError {
@@ -795,7 +795,7 @@ impl<'a> Parser<'a> {
                                     ));
                                 }
 
-                                Decorator::Example(strip_and_escape(&token_code.lexeme), None)
+                                Decorator::Example(strip_and_escape(token_code.lexeme), None)
                             }
                         } else {
                             return Err(ParseError {
