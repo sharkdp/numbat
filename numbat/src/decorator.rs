@@ -125,7 +125,7 @@ pub fn examples(decorators: &[Decorator]) -> Vec<(String, Option<String>)> {
             examples.push((example_code.clone(), example_description.clone()));
         }
     }
-    return examples;
+    examples
 }
 
 pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
