@@ -102,15 +102,16 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                 if let Ok((statements, results)) =
                     example_ctx.interpret(&example_code, CodeSource::Internal)
                 {
+                    let code = extra_import + &example_code;
+
                     //Format the example input
-                    let example_input = format!(">>> {}", example_code);
+                    let example_input = format!(">>> {}", code);
 
                     //Encode the example url
-                    let url_code = extra_import + &example_code;
                     let example_url = format!(
                         "https://numbat.dev/?q={}",
                         percent_encoding::utf8_percent_encode(
-                            &url_code,
+                            &code,
                             percent_encoding::NON_ALPHANUMERIC
                         )
                     );
