@@ -185,7 +185,7 @@ fn DMS(alpha: Angle) -> List<Angle>
 
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=46%2E5858%C2%B0%20%2D%3E%20DMS')""></button></div><code class="language-nbt hljs numbat">>>> 46.5858° -> DMS
 
-    = [46°, 35 arcminute, 8.88 arcsecond]    [List<Scalar>]
+    = [46°, 35′, 8.88″]    [List<Scalar>]
 </code></pre>
 
 </details>
@@ -203,7 +203,7 @@ fn DM(alpha: Angle) -> List<Angle>
 
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=46%2E5858%C2%B0%20%2D%3E%20DM')""></button></div><code class="language-nbt hljs numbat">>>> 46.5858° -> DM
 
-    = [46°, 35.148 arcminute]    [List<Scalar>]
+    = [46°, 35.148′]    [List<Scalar>]
 </code></pre>
 
 </details>
