@@ -4,33 +4,48 @@
 assert_eq(38° + 53′ + 23″, 38.8897°, 1e-4°)
 assert_eq(-(77° + 0′ + 32″), -77.0089°, 1e-4°)
 
-assert_eq(38.8897° -> DMS, "38° 53′ 23″")
-assert_eq(-77.0089° -> DMS, "-77° 0′ 32″")
+assert_eq("{38.8897° -> DMS}", "{[38°, 53′, 22.92″]}")
+assert_eq("{-77.0089° -> DMS}", "{[-77°, -0′, -32.04″]}")
 
 ## Stuttgart
 assert_eq(48° + 46′ + 32″, 48.7756°, 1e-4°)
 assert_eq(9° + 10′ + 58″, 9.1828°, 1e-4°)
 
-assert_eq(48.7756° -> DMS, "48° 46′ 32″")
-assert_eq(9.1828° -> DMS, "9° 10′ 58″")
+assert_eq("{48.7756° -> DMS}", "{[48°, 46′, 32.16″]}")
+assert_eq("{9.1828° -> DMS}", "{[9°, 10′, 58.08″]}")
 
 # Degrees, decimal minutes (DM)
 
-assert_eq(38.8897° -> DM, "38° 53.382′")
-assert_eq(-77.0089° -> DM, "-77° 0.534′")
+assert_eq("{38.8897° -> DM}", "{[38°, 53.382′]}")
+assert_eq("{-77.0089° -> DM}", "{[-77°, -0.534′]}")
 
 # Feet and inches
 
-assert_eq(5.5 ft -> feet_and_inches, "5 ft 6 in")
-assert_eq(6.75 ft -> feet_and_inches, "6 ft 9 in")
-assert_eq(-5.5 ft -> feet_and_inches, "-5 ft 6 in")
-assert_eq(0 -> feet_and_inches, "0 ft 0 in")
-assert_eq(1 ft -> feet_and_inches, "1 ft 0 in")
-assert_eq(2.345 inch -> feet_and_inches, "0 ft 2.345 in")
+assert_eq("{5.5 ft -> feet_and_inches}", "{[5 ft, 6 in]}")
+assert_eq("{6.75 ft -> feet_and_inches}", "{[6 ft, 9 in]}")
+assert_eq("{-5.5 ft -> feet_and_inches}", "{[-5 ft, -6 in]}")
+assert_eq("{0 -> feet_and_inches}", "{[0 ft, 0 in]}")
+assert_eq("{1 ft -> feet_and_inches}", "{[1 ft, 0 in]}")
+assert_eq("{2.345 inch -> feet_and_inches}", "{[0 ft, 2.345 in]}")
 
 # Pounds and ounces
 
-assert_eq(5 lb -> pounds_and_ounces, "5 lb 0 oz")
-assert_eq(5.5 lb -> pounds_and_ounces, "5 lb 8 oz")
-assert_eq(6.75 lb -> pounds_and_ounces, "6 lb 12 oz")
-assert_eq(-5.5 lb -> pounds_and_ounces, "-5 lb 8 oz")
+assert_eq("{5 lb -> pounds_and_ounces}", "{[5 lb, 0 oz]}")
+assert_eq("{5.5 lb -> pounds_and_ounces}", "{[5 lb, 8 oz]}")
+assert_eq("{6.75 lb -> pounds_and_ounces}", "{[6 lb, 12 oz]}")
+assert_eq("{-5.5 lb -> pounds_and_ounces}", "{[-5 lb, -8 oz]}")
+
+# Unit list
+
+let test1 = 12 m + 34 cm + 5 mm + 678 µm
+assert_eq(test1 |> unit_list([m]) |> head, test1)
+assert_eq(test1 |> unit_list([m, cm]) |> sum, test1)
+assert_eq(test1 |> unit_list([m, cm, mm]) |> sum, test1)
+assert_eq(test1 |> unit_list([m, cm, mm, µm]) |> sum, test1)
+
+let test2 = 12 degree + 34 arcminute + 5 arcsec
+assert_eq(test2 |> unit_list([degree]) |> head, test2)
+assert_eq(test2 |> unit_list([degree, arcmin]) |> sum, test2)
+assert_eq(test2 |> unit_list([degree, arcmin, arcsec]) |> sum, test2)
+
+
