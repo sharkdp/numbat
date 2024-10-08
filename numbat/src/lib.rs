@@ -135,10 +135,6 @@ impl Context {
         self.load_currency_module_on_demand = yes;
     }
 
-    pub fn env(&self) -> &Environment {
-        &self.env
-    }
-
     /// Fill the currency exchange rate cache. This call is blocking.
     pub fn prefetch_exchange_rates() {
         let _unused = ExchangeRatesCache::fetch();
