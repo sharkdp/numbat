@@ -369,8 +369,8 @@ impl Cli {
 
                             match parser.parse_command() {
                                 Ok(command) => match command {
-                                    command::Command::Help => {
-                                        let help = help_markup();
+                                    command::Command::Help { help_kind } => {
+                                        let help = help_markup(help_kind);
                                         print!("{}", ansi_format(&help, true));
                                         // currently, the ansi formatter adds indents
                                         // _after_ each newline and so we need to manually
