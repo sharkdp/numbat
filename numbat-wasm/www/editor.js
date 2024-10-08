@@ -11,6 +11,7 @@ async function main() {
 
     initializeEditor();
     initializeSplit();
+    initializeThemeToggle();
 }
 
 main();
@@ -25,14 +26,29 @@ function interpret(input) {
         let num_newlines = res ? res.length : 0;
 
         let brs = "<br>".repeat(num_newlines);
+        let interpretOutput = numbat.interpret(part);
+        
+        let output = part.trim().length > 0 ? interpretOutput.output.trim() : "";
+        
+        if (interpretOutput.is_error) {
+            output = output.replace(/<(input:\d+)>/gm, "&lt;$1&gt;")
+        }
+        let result = "";
 
-        return brs + numbat.interpret(part).output;
+        if (output.trim().length === 0) {
+            result = brs + "<br>";
+        } else {
+            result = brs + "<div>" + output  + "</div>";
+        }
+
+        interpretOutput.free();
+        return result;
     });
 
-    return results.join("<br><br>");
+    return results.join("<br>");
 }
 
-ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.9.6/");
+ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.36.2/");
 
 ace.define(
     "ace/mode/numbat_highlight_rules",
@@ -134,7 +150,22 @@ function initializeEditor() {
         showGutter: true,
         highlightActiveLine: false,
         highlightGutterLine: false,
+        scrollPastEnd: 0,
     });
+
+    editor.insert(`8 km / (1 h + 25 min)
+
+atan2(30 cm, 1 m) -> deg
+
+let ω = 2π c / 660 nm
+ℏ ω -> eV
+
+
+fn braking_distance(v) = v t_reaction + v² / 2 µ g0
+  where t_reaction = 1 s # driver reaction time
+    and µ = 0.7          # coefficient of friction
+
+braking_distance(50 km/h) -> m`);
 
     function evaluate() {
         let code = editor.getValue();
@@ -157,4 +188,24 @@ function initializeSplit() {
     Split(['#editor', '#results'], {
         gutterSize: 15,
     });
+}
+
+function initializeThemeToggle() { 
+    const colorSchemeQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    let toggleImg = document.querySelector("#theme-toggle img");
+    toggleImg.src = colorSchemeQueryList.matches ? "assets/sun.svg" : "assets/moon.svg";
+
+    function toggleTheme() {
+        let classList = document.querySelector(":root").classList;
+        let isToggledOn = classList.toggle("alt-theme");
+
+        if (colorSchemeQueryList.matches) {
+            toggleImg.src = isToggledOn ? "assets/moon.svg" : "assets/sun.svg";
+        } else {
+            toggleImg.src = isToggledOn ? "assets/sun.svg" : "assets/moon.svg";
+        }
+    } 
+
+    document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 }

@@ -4,28 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Numbat</title>
+    <link rel="icon" type="image/png" href="numbat-196x196.png" sizes="196x196">
+    <link rel="icon" type="image/png" href="numbat-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="numbat-16x16.png" sizes="16x16">
     <link rel="stylesheet" href="editor.css">
 </head>
 <body>
+    <div id="theme-toggle"><img src="assets/sun.svg" /></div>
     <div class="split">
-        <div id="editor">8 km / (1 h + 25 min)
-
-atan2(30 cm, 1 m) -> deg
-
-let ω = 2π c / 660 nm
-ℏ ω -> eV
-
-
-fn braking_distance(v) = v t_reaction + v² / 2 µ g0
-  where t_reaction = 1 s # driver reaction time
-    and µ = 0.7          # coefficient of friction
-
-braking_distance(50 km/h) -> m</div>
+            <div id="editor"></div>
         <div id="results"></div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.9.6/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.36.2/ace.js"></script>
     <script type="module" src="editor.js"></script>
 </body>
 </html>
