@@ -4,6 +4,7 @@ use units::imperial
 
 @name("Unit list")
 @description("Convert a value to a mixed representation using the provided units.")
+@example("5500 m |> unit_list([miles, yards, feet, inches])")
 fn unit_list<D: Dim>(units: List<D>, value: D) -> List<D> = _mixed_unit_list(value, units, [])
 
 @name("Degrees, minutes, seconds")

@@ -162,6 +162,16 @@ Convert a value to a mixed representation using the provided units.
 fn unit_list<D: Dim>(units: List<D>, value: D) -> List<D>
 ```
 
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=5500%20m%20%7C%3E%20unit%5Flist%28%5Bmiles%2C%20yards%2C%20feet%2C%20inches%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> 5500 m |> unit_list([miles, yards, feet, inches])
+
+    = [3 mi, 734 yd, 2 ft, 7.43307 in]    [List<Length>]
+</code></pre>
+
+</details>
+
 ### `DMS` (Degrees, minutes, seconds)
 Convert an angle to a mixed degrees, (arc)minutes, and (arc)seconds representation. Also called sexagesimal degree notation.
 More information [here](https://en.wikipedia.org/wiki/Sexagesimal_degree).
@@ -175,7 +185,7 @@ fn DMS(alpha: Angle) -> List<Angle>
 
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=46%2E5858%C2%B0%20%2D%3E%20DMS')""></button></div><code class="language-nbt hljs numbat">>>> 46.5858° -> DMS
 
-    = "46° 35′ 9″"    [String]
+    = [46°, 35 arcminute, 8.88 arcsecond]    [List<Scalar>]
 </code></pre>
 
 </details>
@@ -193,7 +203,7 @@ fn DM(alpha: Angle) -> List<Angle>
 
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=46%2E5858%C2%B0%20%2D%3E%20DM')""></button></div><code class="language-nbt hljs numbat">>>> 46.5858° -> DM
 
-    = "46° 35.148′"    [String]
+    = [46°, 35.148 arcminute]    [List<Scalar>]
 </code></pre>
 
 </details>
@@ -211,7 +221,7 @@ fn feet_and_inches(length: Length) -> List<Length>
 
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=180%20cm%20%2D%3E%20feet%5Fand%5Finches')""></button></div><code class="language-nbt hljs numbat">>>> 180 cm -> feet_and_inches
 
-    = "5 ft 10.8661 in"    [String]
+    = [5 ft, 10.8661 in]    [List<Length>]
 </code></pre>
 
 </details>
@@ -229,7 +239,7 @@ fn pounds_and_ounces(mass: Mass) -> List<Mass>
 
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=1%20kg%20%2D%3E%20pounds%5Fand%5Founces')""></button></div><code class="language-nbt hljs numbat">>>> 1 kg -> pounds_and_ounces
 
-    = "2 lb 3.27396 oz"    [String]
+    = [2 lb, 3.27396 oz]    [List<Mass>]
 </code></pre>
 
 </details>
