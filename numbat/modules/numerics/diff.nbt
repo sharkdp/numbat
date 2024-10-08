@@ -3,6 +3,8 @@ use core::quantities
 @name("Numerical differentiation")
 @url("https://en.wikipedia.org/wiki/Numerical_differentiation")
 @description("Compute the numerical derivative of the function $f$ at point $x$ using the central difference method.")
+@example("fn polynomial(x) = x² - x - 1\ndiff(polynomial, 1)", "Compute the derivative of $f(x) = x² -x -1$ at $x=1$.")
+@example("fn distance(t) = 0.5 g0 t²\nfn velocity(t) = diff(distance, t)\nvelocity(2 s)", "Compute the free fall velocity after $t=2 s$.")
 fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X) -> Y / X =
   (f(x + Δx) - f(x - Δx)) / 2 Δx
   where

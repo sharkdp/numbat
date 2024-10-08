@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
 import urllib.parse
+import os
 
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -119,6 +120,8 @@ def list_of_functions(file_name, document):
                 print(
                     f"Generating list of functions for module '{module}'...", flush=True
                 )
+                env = os.environ.copy()
+                env["TZ"] = "UTC"
                 subprocess.run(
                     [
                         "cargo",
@@ -132,6 +135,7 @@ def list_of_functions(file_name, document):
                     ],
                     stdout=f,
                     text=True,
+                    env=env,
                 )
 
 

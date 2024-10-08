@@ -8,6 +8,7 @@ pub enum Decorator<'a> {
     Url(String),
     Name(String),
     Description(String),
+    Example(String, Option<String>),
 }
 
 /// Get an iterator of data computed from a name and/or its alias's `AcceptsPrefix` and
@@ -117,6 +118,16 @@ pub fn description(decorators: &[Decorator]) -> Option<String> {
     }
 }
 
+pub fn examples(decorators: &[Decorator]) -> Vec<(String, Option<String>)> {
+    let mut examples = Vec::new();
+    for decorator in decorators {
+        if let Decorator::Example(example_code, example_description) = decorator {
+            examples.push((example_code.clone(), example_description.clone()));
+        }
+    }
+    return examples;
+}
+
 pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
     for decorator in decorates {
         if let Decorator::Aliases(aliases) = decorator {
@@ -132,6 +143,16 @@ pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
 pub fn contains_aliases(decorators: &[Decorator]) -> bool {
     for decorator in decorators {
         if let Decorator::Aliases(_) = decorator {
+            return true;
+        }
+    }
+
+    false
+}
+
+pub fn contains_examples(decorators: &[Decorator]) -> bool {
+    for decorator in decorators {
+        if let Decorator::Example(_, _) = decorator {
             return true;
         }
     }

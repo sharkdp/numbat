@@ -1477,6 +1477,7 @@ impl TypeChecker {
                         name: crate::decorator::name(decorators).map(ToOwned::to_owned),
                         url: crate::decorator::url(decorators).map(ToOwned::to_owned),
                         description: crate::decorator::description(decorators),
+                        examples: crate::decorator::examples(decorators),
                     },
                 );
 

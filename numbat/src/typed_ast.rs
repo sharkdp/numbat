@@ -877,6 +877,17 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         + m::string(description.clone())
                         + m::operator(")")
                 }
+                Decorator::Example(example_code, example_description) => {
+                    m::decorator("@example")
+                        + m::operator("(")
+                        + m::string(example_code.clone())
+                        + if let Some(example_description) = example_description {
+                            m::operator(", ") + m::string(example_description.clone())
+                        } else {
+                            m::empty()
+                        }
+                        + m::operator(")")
+                }
             }
             + m::nl();
     }

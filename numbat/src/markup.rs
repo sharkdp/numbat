@@ -208,3 +208,7 @@ impl Formatter for PlainTextFormatter {
         text.to_string()
     }
 }
+
+pub fn plain_text_format(m: &Markup, indent: bool) -> String {
+    PlainTextFormatter {}.format(m, indent)
+}
