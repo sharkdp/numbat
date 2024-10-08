@@ -71,6 +71,39 @@ pub enum StringPart<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct Condition<'a> {
+    pub(crate) condition: Expression<'a>,
+    pub(crate) then_expr: Expression<'a>,
+    pub(crate) else_expr: Expression<'a>,
+}
+
+impl<'a> Condition<'a> {
+    pub fn new(
+        condition: Expression<'a>,
+        then_expr: Expression<'a>,
+        else_expr: Expression<'a>,
+    ) -> Box<Self> {
+        Box::new(Self {
+            condition,
+            then_expr,
+            else_expr,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BinOp<'a> {
+    pub(crate) lhs: Expression<'a>,
+    pub(crate) rhs: Expression<'a>,
+}
+
+impl<'a> BinOp<'a> {
+    pub fn new(lhs: Expression<'a>, rhs: Expression<'a>) -> Box<Self> {
+        Box::new(Self { lhs, rhs })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression<'a> {
     Scalar(Span, Number),
     Identifier(Span, &'a str),
@@ -83,19 +116,13 @@ pub enum Expression<'a> {
     },
     BinaryOperator {
         op: BinaryOperator,
-        lhs: Box<Expression<'a>>,
-        rhs: Box<Expression<'a>>,
+        bin_op: Box<BinOp<'a>>,
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
     FunctionCall(Span, Span, Box<Expression<'a>>, Vec<Expression<'a>>),
     Boolean(Span, bool),
     String(Span, Vec<StringPart<'a>>),
-    Condition(
-        Span,
-        Box<Expression<'a>>,
-        Box<Expression<'a>>,
-        Box<Expression<'a>>,
-    ),
+    Condition(Span, Box<Condition<'a>>),
     InstantiateStruct {
         full_span: Span,
         ident_span: Span,
@@ -119,10 +146,10 @@ impl Expression<'_> {
             } => span_op.extend(&expr.full_span()),
             Expression::BinaryOperator {
                 op: _,
-                lhs,
-                rhs,
+                bin_op,
                 span_op,
             } => {
+                let BinOp { lhs, rhs } = &**bin_op;
                 let mut span = lhs.full_span().extend(&rhs.full_span());
                 if let Some(span_op) = span_op {
                     span = span.extend(span_op);
@@ -131,9 +158,7 @@ impl Expression<'_> {
             }
             Expression::FunctionCall(_identifier_span, full_span, _, _) => *full_span,
             Expression::Boolean(span, _) => *span,
-            Expression::Condition(span_if, _, _, then_expr) => {
-                span_if.extend(&then_expr.full_span())
-            }
+            Expression::Condition(span_if, cond) => span_if.extend(&cond.then_expr.full_span()),
             Expression::String(span, _) => *span,
             Expression::InstantiateStruct { full_span, .. } => *full_span,
             Expression::AccessField(full_span, _ident_span, _, _) => *full_span,
@@ -202,8 +227,7 @@ macro_rules! binop {
     ( $lhs:expr, $op:ident, $rhs: expr ) => {{
         crate::ast::Expression::BinaryOperator {
             op: BinaryOperator::$op,
-            lhs: Box::new($lhs),
-            rhs: Box::new($rhs),
+            bin_op: $crate::ast::BinOp::new($lhs, $rhs),
             span_op: Some(Span::dummy()),
         }
     }};
@@ -214,9 +238,7 @@ macro_rules! conditional {
     ( $cond:expr, $lhs:expr, $rhs: expr ) => {{
         crate::ast::Expression::Condition(
             Span::dummy(),
-            Box::new($cond),
-            Box::new($lhs),
-            Box::new($rhs),
+            $crate::ast::Condition::new($cond, $lhs, $rhs),
         )
     }};
 }
@@ -538,15 +560,16 @@ impl ReplaceSpans for Expression<'_> {
             },
             Expression::BinaryOperator {
                 op,
-                lhs,
-                rhs,
+                bin_op,
                 span_op: _,
-            } => Expression::BinaryOperator {
-                op: *op,
-                lhs: Box::new(lhs.replace_spans()),
-                rhs: Box::new(rhs.replace_spans()),
-                span_op: Some(Span::dummy()),
-            },
+            } => {
+                let BinOp { lhs, rhs } = &**bin_op;
+                Expression::BinaryOperator {
+                    op: *op,
+                    bin_op: BinOp::new(lhs.replace_spans(), rhs.replace_spans()),
+                    span_op: Some(Span::dummy()),
+                }
+            }
             Expression::FunctionCall(_, _, callable, args) => Expression::FunctionCall(
                 Span::dummy(),
                 Span::dummy(),
@@ -554,12 +577,21 @@ impl ReplaceSpans for Expression<'_> {
                 args.iter().map(|a| a.replace_spans()).collect(),
             ),
             Expression::Boolean(_, val) => Expression::Boolean(Span::dummy(), *val),
-            Expression::Condition(_, condition, then, else_) => Expression::Condition(
-                Span::dummy(),
-                Box::new(condition.replace_spans()),
-                Box::new(then.replace_spans()),
-                Box::new(else_.replace_spans()),
-            ),
+            Expression::Condition(_, cond) => {
+                let Condition {
+                    condition,
+                    then_expr: then,
+                    else_expr: else_,
+                } = &**cond;
+                Expression::Condition(
+                    Span::dummy(),
+                    Condition::new(
+                        condition.replace_spans(),
+                        then.replace_spans(),
+                        else_.replace_spans(),
+                    ),
+                )
+            }
             Expression::String(_, parts) => Expression::String(
                 Span::dummy(),
                 parts.iter().map(|p| p.replace_spans()).collect(),

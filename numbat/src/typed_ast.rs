@@ -497,6 +497,28 @@ impl PrettyPrint for &Vec<StringPart<'_>> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+
+pub struct Condition<'a> {
+    pub(crate) condition: Expression<'a>,
+    pub(crate) then_expr: Expression<'a>,
+    pub(crate) else_expr: Expression<'a>,
+}
+
+impl<'a> Condition<'a> {
+    pub fn new(
+        condition: Expression<'a>,
+        then_expr: Expression<'a>,
+        else_expr: Expression<'a>,
+    ) -> Box<Self> {
+        Box::new(Self {
+            condition,
+            then_expr,
+            else_expr,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression<'a> {
     Scalar(Span, Number, TypeScheme),
     Identifier(Span, &'a str, TypeScheme),
@@ -524,12 +546,7 @@ pub enum Expression<'a> {
     // A call via a function object
     CallableCall(Span, Box<Expression<'a>>, Vec<Expression<'a>>, TypeScheme),
     Boolean(Span, bool),
-    Condition(
-        Span,
-        Box<Expression<'a>>,
-        Box<Expression<'a>>,
-        Box<Expression<'a>>,
-    ),
+    Condition(Span, Box<Condition<'a>>),
     String(Span, Vec<StringPart<'a>>),
     InstantiateStruct(Span, Vec<(&'a str, Expression<'a>)>, StructInfo),
     AccessField(
@@ -547,9 +564,19 @@ pub enum Expression<'a> {
 impl Expression<'_> {
     pub fn full_span(&self) -> Span {
         match self {
-            Expression::Scalar(span, ..) => *span,
-            Expression::Identifier(span, ..) => *span,
-            Expression::UnitIdentifier(span, ..) => *span,
+            Expression::Scalar(span, ..)
+            | Expression::Identifier(span, ..)
+            | Expression::UnitIdentifier(span, ..)
+            | Expression::Boolean(span, _)
+            | Expression::String(span, _)
+            | Expression::InstantiateStruct(span, _, _)
+            | Expression::TypedHole(span, _) => *span,
+
+            Expression::FunctionCall(_, full_span, _, _, _)
+            | Expression::CallableCall(full_span, _, _, _)
+            | Expression::AccessField(_, full_span, _, _, _, _)
+            | Expression::List(full_span, _, _) => *full_span,
+
             Expression::UnaryOperator(span, _, expr, _) => span.extend(&expr.full_span()),
             Expression::BinaryOperator(span_op, _op, lhs, rhs, _) => {
                 let mut span = lhs.full_span().extend(&rhs.full_span());
@@ -565,17 +592,7 @@ impl Expression<'_> {
                 }
                 span
             }
-            Expression::FunctionCall(_identifier_span, full_span, _, _, _) => *full_span,
-            Expression::CallableCall(full_span, _, _, _) => *full_span,
-            Expression::Boolean(span, _) => *span,
-            Expression::Condition(span_if, _, _, then_expr) => {
-                span_if.extend(&then_expr.full_span())
-            }
-            Expression::String(span, _) => *span,
-            Expression::InstantiateStruct(span, _, _) => *span,
-            Expression::AccessField(_span, full_span, _, _, _, _) => *full_span,
-            Expression::List(full_span, _, _) => *full_span,
-            Expression::TypedHole(span, _) => *span,
+            Expression::Condition(span_if, cond) => span_if.extend(&cond.then_expr.full_span()),
         }
     }
 }
@@ -765,16 +782,18 @@ impl Statement<'_> {
 impl Expression<'_> {
     pub fn get_type(&self) -> Type {
         match self {
-            Expression::Scalar(_, _, type_) => type_.unsafe_as_concrete(),
-            Expression::Identifier(_, _, type_) => type_.unsafe_as_concrete(),
-            Expression::UnitIdentifier(_, _, _, _, _type) => _type.unsafe_as_concrete(),
-            Expression::UnaryOperator(_, _, _, type_) => type_.unsafe_as_concrete(),
-            Expression::BinaryOperator(_, _, _, _, type_) => type_.unsafe_as_concrete(),
-            Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.unsafe_as_concrete(),
-            Expression::FunctionCall(_, _, _, _, type_) => type_.unsafe_as_concrete(),
-            Expression::CallableCall(_, _, _, type_) => type_.unsafe_as_concrete(),
+            Expression::Scalar(_, _, type_)
+            | Expression::Identifier(_, _, type_)
+            | Expression::UnitIdentifier(_, _, _, _, type_)
+            | Expression::UnaryOperator(_, _, _, type_)
+            | Expression::BinaryOperator(_, _, _, _, type_)
+            | Expression::BinaryOperatorForDate(_, _, _, _, type_, ..)
+            | Expression::FunctionCall(_, _, _, _, type_)
+            | Expression::CallableCall(_, _, _, type_)
+            | Expression::TypedHole(_, type_) => type_.unsafe_as_concrete(),
+
             Expression::Boolean(_, _) => Type::Boolean,
-            Expression::Condition(_, _, then_, _) => then_.get_type(),
+            Expression::Condition(_, cond) => cond.then_expr.get_type(),
             Expression::String(_, _) => Type::String,
             Expression::InstantiateStruct(_, _, info_) => Type::Struct(Box::new(info_.clone())),
             Expression::AccessField(_, _, _, _, _struct_type, field_type) => {
@@ -783,7 +802,6 @@ impl Expression<'_> {
             Expression::List(_, _, element_type) => {
                 Type::List(Box::new(element_type.unsafe_as_concrete()))
             }
-            Expression::TypedHole(_, type_) => type_.unsafe_as_concrete(),
         }
     }
 
@@ -798,7 +816,7 @@ impl Expression<'_> {
             Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
             Expression::CallableCall(_, _, _, type_) => type_.clone(),
             Expression::Boolean(_, _) => TypeScheme::make_quantified(Type::Boolean),
-            Expression::Condition(_, _, then_, _) => then_.get_type_scheme(),
+            Expression::Condition(_, cond) => cond.then_expr.get_type_scheme(),
             Expression::String(_, _) => TypeScheme::make_quantified(Type::String),
             Expression::InstantiateStruct(_, _, info_) => {
                 TypeScheme::make_quantified(Type::Struct(Box::new(info_.clone())))
@@ -1312,18 +1330,18 @@ impl PrettyPrint for Expression<'_> {
             }
             Boolean(_, val) => val.pretty_print(),
             String(_, parts) => parts.pretty_print(),
-            Condition(_, condition, then, else_) => {
+            Condition(_, cond) => {
                 m::keyword("if")
                     + m::space()
-                    + with_parens(condition)
+                    + with_parens(&cond.condition)
                     + m::space()
                     + m::keyword("then")
                     + m::space()
-                    + with_parens(then)
+                    + with_parens(&cond.then_expr)
                     + m::space()
                     + m::keyword("else")
                     + m::space()
-                    + with_parens(else_)
+                    + with_parens(&cond.else_expr)
             }
             InstantiateStruct(_, exprs, struct_info) => {
                 m::type_identifier(struct_info.name.clone())

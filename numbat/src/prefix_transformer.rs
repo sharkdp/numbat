@@ -1,5 +1,5 @@
 use crate::{
-    ast::{DefineVariable, Expression, Statement, StringPart},
+    ast::{BinOp, Condition, DefineVariable, Expression, Statement, StringPart},
     decorator::{self, Decorator},
     name_resolution::NameResolutionError,
     prefix_parser::{AliasSpanInfo, PrefixParser, PrefixParserResult},
@@ -55,15 +55,19 @@ impl Transformer {
             },
             Expression::BinaryOperator {
                 op,
-                lhs,
-                rhs,
+                bin_op,
                 span_op,
-            } => Expression::BinaryOperator {
-                op,
-                lhs: Box::new(self.transform_expression(*lhs)),
-                rhs: Box::new(self.transform_expression(*rhs)),
-                span_op,
-            },
+            } => {
+                let BinOp { lhs, rhs } = *bin_op;
+                Expression::BinaryOperator {
+                    op,
+                    bin_op: BinOp::new(
+                        self.transform_expression(lhs),
+                        self.transform_expression(rhs),
+                    ),
+                    span_op,
+                }
+            }
             Expression::FunctionCall(span, full_span, name, args) => Expression::FunctionCall(
                 span,
                 full_span,
@@ -73,12 +77,21 @@ impl Transformer {
                     .collect(),
             ),
             expr @ Expression::Boolean(_, _) => expr,
-            Expression::Condition(span, condition, then, else_) => Expression::Condition(
-                span,
-                Box::new(self.transform_expression(*condition)),
-                Box::new(self.transform_expression(*then)),
-                Box::new(self.transform_expression(*else_)),
-            ),
+            Expression::Condition(span, cond) => {
+                let Condition {
+                    condition,
+                    then_expr,
+                    else_expr,
+                } = *cond;
+                Expression::Condition(
+                    span,
+                    Condition::new(
+                        self.transform_expression(condition),
+                        self.transform_expression(then_expr),
+                        self.transform_expression(else_expr),
+                    ),
+                )
+            }
             Expression::String(span, parts) => Expression::String(
                 span,
                 parts

@@ -13,7 +13,7 @@ use crate::prefix::Prefix;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{
-    BinaryOperator, DefineVariable, Expression, Statement, StringPart, UnaryOperator,
+    BinaryOperator, Condition, DefineVariable, Expression, Statement, StringPart, UnaryOperator,
 };
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
@@ -239,7 +239,12 @@ impl BytecodeInterpreter {
                 }
                 self.vm.add_op1(Op::JoinString, string_parts.len() as u16); // TODO: this can overflow
             }
-            Expression::Condition(_, condition, then_expr, else_expr) => {
+            Expression::Condition(_, cond) => {
+                let Condition {
+                    condition,
+                    then_expr,
+                    else_expr,
+                } = &**cond;
                 self.compile_expression(condition)?;
 
                 let if_jump_offset = self.vm.current_offset() + 1; // +1 for the opcode
