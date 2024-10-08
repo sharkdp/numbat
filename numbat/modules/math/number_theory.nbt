@@ -4,6 +4,7 @@ use core::functions
 @name("Greatest common divisor")
 @description("The largest positive integer that divides each of the integers $a$ and $b$.")
 @url("https://en.wikipedia.org/wiki/Greatest_common_divisor")
+@example("gcd(60, 42)")
 fn gcd(a: Scalar, b: Scalar) -> Scalar =
   if b == 0
     then abs(a)
@@ -12,4 +13,5 @@ fn gcd(a: Scalar, b: Scalar) -> Scalar =
 @name("Least common multiple")
 @description("The smallest positive integer that is divisible by both $a$ and $b$.")
 @url("https://en.wikipedia.org/wiki/Least_common_multiple")
+@example("lcm(14, 4)")
 fn lcm(a: Scalar, b: Scalar) -> Scalar = abs(a * b) / gcd(a, b)

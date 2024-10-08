@@ -33,6 +33,7 @@ fn _human_readable_duration(time: Time, dt: DateTime, num_days: Scalar) -> Strin
 @name("Human-readable time duration")
 @url("https://numbat.dev/doc/date-and-time.html")
 @description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
+@example("century/1e6 -> human", "How long is a microcentury?")
 fn human(time: Time) =
   if _human_num_days(time) > 1000
     then "{_human_num_days(time)} days" 

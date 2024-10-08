@@ -3,48 +3,60 @@ use core::error
 use core::strings
 
 @description("Get the length of a list")
+@example("len([3, 2, 1])")
 fn len<A>(xs: List<A>) -> Scalar
 
 @description("Get the first element of a list. Yields a runtime error if the list is empty.")
+@example("head([3, 2, 1])")
 fn head<A>(xs: List<A>) -> A
 
 @description("Get everything but the first element of a list. Yields a runtime error if the list is empty.")
+@example("tail([3, 2, 1])")
 fn tail<A>(xs: List<A>) -> List<A>
 
 @description("Prepend an element to a list")
+@example("cons(77, [3, 2, 1])")
 fn cons<A>(x: A, xs: List<A>) -> List<A>
 
 @description("Append an element to the end of a list")
+@example("cons_end(77, [3, 2, 1])")
 fn cons_end<A>(x: A, xs: List<A>) -> List<A>
 
 @description("Check if a list is empty")
+@example("is_empty([3, 2, 1])")
+@example("is_empty([])")
 fn is_empty<A>(xs: List<A>) -> Bool = xs == []
 
 @description("Concatenate two lists")
+@example("concat([3, 2, 1], [10, 11])")
 fn concat<A>(xs1: List<A>, xs2: List<A>) -> List<A> =
   if is_empty(xs1)
     then xs2
     else cons(head(xs1), concat(tail(xs1), xs2))
 
 @description("Get the first `n` elements of a list")
+@example("take(2, [3, 2, 1, 0])")
 fn take<A>(n: Scalar, xs: List<A>) -> List<A> =
   if n == 0 || is_empty(xs)
     then []
     else cons(head(xs), take(n - 1, tail(xs)))
 
 @description("Get everything but the first `n` elements of a list")
+@example("drop(2, [3, 2, 1, 0])")
 fn drop<A>(n: Scalar, xs: List<A>) -> List<A> =
   if n == 0 || is_empty(xs)
     then xs
     else drop(n - 1, tail(xs))
 
 @description("Get the element at index `i` in a list")
+@example("element_at(2, [3, 2, 1, 0])")
 fn element_at<A>(i: Scalar, xs: List<A>) -> A =
   if i == 0
     then head(xs)
     else element_at(i - 1, tail(xs))
 
 @description("Generate a range of integer numbers from `start` to `end` (inclusive)")
+@example("range(2, 12)")
 fn range(start: Scalar, end: Scalar) -> List<Scalar> =
   if start > end
     then []
@@ -52,18 +64,21 @@ fn range(start: Scalar, end: Scalar) -> List<Scalar> =
 
 
 @description("Reverse the order of a list")
+@example("reverse([3, 2, 1])")
 fn reverse<A>(xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
     else cons_end(head(xs), reverse(tail(xs)))
 
 @description("Generate a new list by applying a function to each element of the input list")
+@example("map(sqr, [3, 2, 1])", "Square all elements of a list.")
 fn map<A, B>(f: Fn[(A) -> B], xs: List<A>) -> List<B> =
   if is_empty(xs)
     then []
     else cons(f(head(xs)), map(f, tail(xs)))
 
 @description("Filter a list by a predicate")
+@example("filter(is_finite, [0, 1e10, NaN, -inf])")
 fn filter<A>(p: Fn[(A) -> Bool], xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
@@ -72,6 +87,7 @@ fn filter<A>(p: Fn[(A) -> Bool], xs: List<A>) -> List<A> =
       else filter(p, tail(xs))
 
 @description("Fold a function over a list")
+@example("foldl(str_append, \"\", [\"Num\", \"bat\", \"!\"])", "Join a list of strings by folding.")
 fn foldl<A, B>(f: Fn[(A, B) -> A], acc: A, xs: List<B>) -> A =
   if is_empty(xs)
     then acc
@@ -88,6 +104,7 @@ fn _merge(xs, ys, cmp) =
 
 
 @description("Sort a list of elements, using the given key function that maps the element to a quantity")
+@example("fn last_digit(x) = mod(x, 10)\nsort_by_key(last_digit, [701, 313, 9999, 4])","Sort by last digit.")
 fn sort_by_key<A, D: Dim>(key: Fn[(A) -> D], xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
@@ -98,9 +115,11 @@ fn sort_by_key<A, D: Dim>(key: Fn[(A) -> D], xs: List<A>) -> List<A> =
                   key)
 
 @description("Sort a list of quantities")
+@example("sort([3, 2, 7, 8, -4, 0, -5])")
 fn sort<D: Dim>(xs: List<D>) -> List<D> = sort_by_key(id, xs)
 
 @description("Add an element between each pair of elements in a list")
+@example("intersperse(0, [1, 1, 1, 1])")
 fn intersperse<A>(sep: A, xs: List<A>) -> List<A> =
   if is_empty(xs)
     then []
@@ -110,6 +129,7 @@ fn intersperse<A>(sep: A, xs: List<A>) -> List<A> =
 
 fn _add(x, y) = x + y # TODO: replace this with a local function once we support them
 @description("Sum all elements of a list")
+@example("sum([3 m, 200 cm, 1000 mm])")
 fn sum<D: Dim>(xs: List<D>) -> D = foldl(_add, 0, xs)
 
 # TODO: implement linspace using `map` or similar once we have closures. This is ugly.
@@ -119,12 +139,14 @@ fn _linspace_helper(start, end, n_steps, i) =
     else cons(start + (end - start) * i / (n_steps - 1), _linspace_helper(start, end, n_steps, i + 1))
 
 @description("Generate a list of `n_steps` evenly spaced numbers from `start` to `end` (inclusive)")
+@example("linspace(-5 m, 5 m, 11)")
 fn linspace<D: Dim>(start: D, end: D, n_steps: Scalar) -> List<D> =
   if n_steps <= 1
     then error("Number of steps must be larger than 1")
     else _linspace_helper(start, end, n_steps, 0)
 
 @description("Convert a list of strings into a single string by concatenating them with a separator")
+@example("join([\"snake\", \"case\"], \"_\")")
 fn join(xs: List<String>, sep: String) =
   if is_empty(xs)
     then ""
@@ -133,6 +155,7 @@ fn join(xs: List<String>, sep: String) =
       else "{head(xs)}{sep}{join(tail(xs), sep)}"
 
 @description("Split a string into a list of strings using a separator")
+@example("split(\"Numbat is a statically typed programming language.\", \" \")")
 fn split(input: String, separator: String) -> List<String> =
   if input == ""
     then []

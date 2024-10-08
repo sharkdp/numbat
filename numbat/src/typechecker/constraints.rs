@@ -160,6 +160,7 @@ pub enum TrivialResolution {
 }
 
 impl TrivialResolution {
+    #[allow(clippy::wrong_self_convention)]
     pub fn is_trivially_violated(self) -> bool {
         matches!(self, TrivialResolution::Violated)
     }
@@ -296,10 +297,7 @@ impl Constraint {
             Constraint::EqualScalar(dtype) => match dtype.split_first_factor() {
                 Some(((DTypeFactor::TVar(tv), k), rest)) => {
                     let result = DType::from_factors(
-                        &rest
-                            .iter()
-                            .map(|(f, j)| (f.clone(), -j / k))
-                            .collect::<Vec<_>>(),
+                        rest.iter().map(|(f, j)| (f.clone(), -j / k)).collect(),
                     );
                     Some(Satisfied::with_substitution(Substitution::single(
                         tv.clone(),

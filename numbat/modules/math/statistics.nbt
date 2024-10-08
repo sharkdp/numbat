@@ -5,38 +5,44 @@ fn _max<D: Dim>(x: D, y: D) -> D = if x > y then x else y
 fn _min<D: Dim>(x: D, y: D) -> D = if x < y then x else y
 
 @name("Maxmimum")
-@description("Get the largest element of a list: `maximum([30 cm, 2 m]) = 2 m`.")
+@description("Get the largest element of a list.")
+@example("maximum([30 cm, 2 m])")
 fn maximum<D: Dim>(xs: List<D>) -> D =
   if len(xs) == 1
     then head(xs)
     else _max(head(xs), maximum(tail(xs)))
 
 @name("Minimum")
-@description("Get the smallest element of a list: `minimum([30 cm, 2 m]) = 30 cm`.")
+@description("Get the smallest element of a list.")
+@example("minimum([30 cm, 2 m])")
 fn minimum<D: Dim>(xs: List<D>) -> D =
   if len(xs) == 1
     then head(xs)
     else _min(head(xs), minimum(tail(xs)))
 
 @name("Arithmetic mean")
-@description("Calculate the arithmetic mean of a list of quantities: `mean([1 m, 2 m, 300 cm]) = 2 m`.")
+@description("Calculate the arithmetic mean of a list of quantities.")
+@example("mean([1 m, 2 m, 300 cm])")
 @url("https://en.wikipedia.org/wiki/Arithmetic_mean")
 fn mean<D: Dim>(xs: List<D>) -> D = if is_empty(xs) then 0 else sum(xs) / len(xs)
 
 @name("Variance")
 @url("https://en.wikipedia.org/wiki/Variance")
 @description("Calculate the population variance of a list of quantities")
+@example("variance([1 m, 2 m, 300 cm])")
 fn variance<D: Dim>(xs: List<D>) -> D^2 =
   mean(map(sqr, xs)) - sqr(mean(xs))
 
 @name("Standard deviation")
 @url("https://en.wikipedia.org/wiki/Standard_deviation")
 @description("Calculate the population standard deviation of a list of quantities")
+@example("stdev([1 m, 2 m, 300 cm])")
 fn stdev<D: Dim>(xs: List<D>) -> D = sqrt(variance(xs))
 
 @name("Median")
 @url("https://en.wikipedia.org/wiki/Median")
 @description("Calculate the median of a list of quantities")
+@example("median([1 m, 2 m, 400 cm])")
 fn median<D: Dim>(xs: List<D>) -> D =  # TODO: this is extremely inefficient
   if mod(n, 2) == 1
     then element_at((n - 1) / 2, sort(xs))

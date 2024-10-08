@@ -54,7 +54,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
                     + m::Markup::from(m::FormattedString(
                         m::OutputType::Normal,
                         format_type,
-                        factor.to_string(),
+                        factor.to_string().into(),
                     ))
                     + if i == num_factors - 1 {
                         m::empty()
@@ -145,10 +145,8 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Facto
         product
     }
 
-    pub fn iter(&self) -> ProductIter<Factor> {
-        ProductIter {
-            inner: self.factors.iter(),
-        }
+    pub fn iter(&self) -> std::slice::Iter<'_, Factor> {
+        self.factors.iter()
     }
 
     #[cfg(test)]
@@ -245,13 +243,11 @@ impl<Factor: Clone + Ord + Canonicalize + Eq, const CANONICALIZE: bool> Eq
 }
 
 impl<Factor, const CANONICALIZE: bool> IntoIterator for Product<Factor, CANONICALIZE> {
-    type IntoIter = ProductIntoIter<Factor>;
+    type IntoIter = <Vec<Factor> as IntoIterator>::IntoIter;
     type Item = Factor;
 
     fn into_iter(self) -> Self::IntoIter {
-        ProductIntoIter {
-            inner: self.factors.into_iter(),
-        }
+        self.factors.into_iter()
     }
 }
 
@@ -274,30 +270,6 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> std::iter::Pr
         I: Iterator<Item = Self>,
     {
         iter.fold(Product::unity(), |acc, prod| acc * prod)
-    }
-}
-
-pub struct ProductIter<'a, Factor> {
-    inner: std::slice::Iter<'a, Factor>,
-}
-
-impl<'a, Factor> Iterator for ProductIter<'a, Factor> {
-    type Item = &'a Factor;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
-    }
-}
-
-pub struct ProductIntoIter<Factor> {
-    inner: std::vec::IntoIter<Factor>,
-}
-
-impl<Factor> Iterator for ProductIntoIter<Factor> {
-    type Item = Factor;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
     }
 }
 

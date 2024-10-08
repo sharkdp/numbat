@@ -3,26 +3,31 @@ use core::scalar
 @name("Exponential function")
 @description("The exponential function, $e^x$.")
 @url("https://en.wikipedia.org/wiki/Exponential_function")
+@example("exp(4)")
 fn exp(x: Scalar) -> Scalar
 
 @name("Natural logarithm")
 @description("The natural logarithm with base $e$.")
 @url("https://en.wikipedia.org/wiki/Natural_logarithm")
+@example("ln(20)")
 fn ln(x: Scalar) -> Scalar
 
 @name("Natural logarithm")
 @description("The natural logarithm with base $e$.")
 @url("https://en.wikipedia.org/wiki/Natural_logarithm")
+@example("log(20)")
 fn log(x: Scalar) -> Scalar = ln(x)
 
 @name("Common logarithm")
 @description("The common logarithm with base $10$.")
 @url("https://en.wikipedia.org/wiki/Common_logarithm")
+@example("log10(100)")
 fn log10(x: Scalar) -> Scalar
 
 @name("Binary logarithm")
 @description("The binary logarithm with base $2$.")
 @url("https://en.wikipedia.org/wiki/Binary_logarithm")
+@example("log2(256)")
 fn log2(x: Scalar) -> Scalar
 
 @name("Gamma function")
