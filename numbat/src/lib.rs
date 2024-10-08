@@ -599,6 +599,7 @@ impl Context {
         let transformed_statements = result?;
 
         let typechecker_old = self.typechecker.clone();
+        let env_old = self.env.clone();
 
         let result = self
             .typechecker
@@ -618,6 +619,7 @@ impl Context {
             //
             self.prefix_transformer = prefix_transformer_old.clone();
             self.typechecker = typechecker_old.clone();
+            self.env = env_old.clone();
 
             if self.load_currency_module_on_demand {
                 if let Err(NumbatError::TypeCheckError(TypeCheckError::UnknownIdentifier(
@@ -838,6 +840,7 @@ impl Context {
             //
             self.prefix_transformer = prefix_transformer_old;
             self.typechecker = typechecker_old;
+            self.env = env_old;
             self.interpreter = interpreter_old;
         }
 

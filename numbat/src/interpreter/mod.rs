@@ -209,9 +209,9 @@ mod tests {
             .transform(statements)
             .expect("No name resolution errors for inputs in this test suite");
         let mut typechecker = crate::typechecker::TypeChecker::default();
-        let mut env = crate::Environment::default();
+
         let statements_typechecked = typechecker
-            .check(&mut env, &statements_transformed)
+            .check(&mut crate::Environment::default(), &statements_transformed)
             .expect("No type check errors for inputs in this test suite");
         BytecodeInterpreter::new().interpret_statements(
             &mut InterpreterSettings::default(),
