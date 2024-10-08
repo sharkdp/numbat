@@ -321,7 +321,8 @@ fn rgb(red: Scalar, green: Scalar, blue: Scalar) -> Color
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Argb%28125%2C%20128%2C%20218%29')""></button></div><code class="language-nbt hljs numbat">>>> rgb(125, 128, 218)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Argb%28125%2C%20128%2C%20218%29')""></button></div><code class="language-nbt hljs numbat">>>> use extra::color
+rgb(125, 128, 218)
 
     = Color { red: 125, green: 128, blue: 218 }    [Color]
 </code></pre>
@@ -338,7 +339,8 @@ fn color(rgb_hex: Scalar) -> Color
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Acolor%280xff7700%29')""></button></div><code class="language-nbt hljs numbat">>>> color(0xff7700)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Acolor%280xff7700%29')""></button></div><code class="language-nbt hljs numbat">>>> use extra::color
+color(0xff7700)
 
     = Color { red: 255, green: 119, blue: 0 }    [Color]
 </code></pre>
@@ -355,7 +357,8 @@ fn color_rgb(color: Color) -> String
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Acyan%20%2D%3E%20color%5Frgb')""></button></div><code class="language-nbt hljs numbat">>>> cyan -> color_rgb
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Acyan%20%2D%3E%20color%5Frgb')""></button></div><code class="language-nbt hljs numbat">>>> use extra::color
+cyan -> color_rgb
 
     = "rgb(0, 255, 255)"    [String]
 </code></pre>
@@ -372,7 +375,8 @@ fn color_rgb_float(color: Color) -> String
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Acyan%20%2D%3E%20color%5Frgb%5Ffloat')""></button></div><code class="language-nbt hljs numbat">>>> cyan -> color_rgb_float
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Acyan%20%2D%3E%20color%5Frgb%5Ffloat')""></button></div><code class="language-nbt hljs numbat">>>> use extra::color
+cyan -> color_rgb_float
 
     = "rgb(0.000, 1.000, 1.000)"    [String]
 </code></pre>
@@ -389,7 +393,8 @@ fn color_hex(color: Color) -> String
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Argb%28225%2C%2036%2C%20143%29%20%2D%3E%20color%5Fhex')""></button></div><code class="language-nbt hljs numbat">>>> rgb(225, 36, 143) -> color_hex
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Acolor%0Argb%28225%2C%2036%2C%20143%29%20%2D%3E%20color%5Fhex')""></button></div><code class="language-nbt hljs numbat">>>> use extra::color
+rgb(225, 36, 143) -> color_hex
 
     = "#e1248f"    [String]
 </code></pre>
