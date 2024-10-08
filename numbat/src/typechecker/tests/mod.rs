@@ -5,7 +5,7 @@ use crate::parser::parse;
 use crate::prefix_transformer::Transformer;
 use crate::typechecker::{Result, TypeCheckError};
 use crate::typed_ast::{self, DType};
-use crate::Statement;
+use crate::{Environment, Statement};
 
 use super::type_scheme::TypeScheme;
 use super::TypeChecker;
@@ -50,6 +50,8 @@ fn type_c() -> DType {
 }
 
 fn run_typecheck(input: &str) -> Result<typed_ast::Statement<'_>> {
+    let mut env = Environment::default();
+
     let statements = parse(TEST_PRELUDE, 0)
         .expect("No parse errors for inputs in this test suite")
         .into_iter()
@@ -60,7 +62,7 @@ fn run_typecheck(input: &str) -> Result<typed_ast::Statement<'_>> {
         .map_err(|err| Box::new(err.into()))?;
 
     TypeChecker::default()
-        .check(&transformed_statements)
+        .check(&mut env, &transformed_statements)
         .map(|mut statements_checked| statements_checked.pop().unwrap())
 }
 

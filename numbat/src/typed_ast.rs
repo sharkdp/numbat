@@ -1370,6 +1370,7 @@ mod tests {
     use crate::ast::ReplaceSpans;
     use crate::markup::{Formatter, PlainTextFormatter};
     use crate::prefix_transformer::Transformer;
+    use crate::Environment;
 
     fn parse(code: &str) -> Statement {
         let statements = crate::parser::parse(
@@ -1436,8 +1437,10 @@ mod tests {
         let mut transformer = Transformer::new();
         let transformed_statements = transformer.transform(statements).unwrap().replace_spans();
 
+        let mut env = Environment::default();
+
         crate::typechecker::TypeChecker::default()
-            .check(&transformed_statements)
+            .check(&mut env, &transformed_statements)
             .unwrap()
             .last()
             .unwrap()

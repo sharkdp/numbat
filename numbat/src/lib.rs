@@ -66,6 +66,7 @@ use resolver::CodeSource;
 use resolver::Resolver;
 use resolver::ResolverError;
 use thiserror::Error;
+pub use typechecker::Environment;
 use typechecker::{TypeCheckError, TypeChecker};
 
 pub use diagnostic::Diagnostic;
@@ -102,6 +103,7 @@ type Result<T> = std::result::Result<T, Box<NumbatError>>;
 pub struct Context {
     prefix_transformer: Transformer,
     typechecker: TypeChecker,
+    env: Environment,
     interpreter: BytecodeInterpreter,
     resolver: Resolver,
     load_currency_module_on_demand: bool,
@@ -113,6 +115,7 @@ impl Context {
         Context {
             prefix_transformer: Transformer::new(),
             typechecker: TypeChecker::default(),
+            env: Environment::default(),
             interpreter: BytecodeInterpreter::new(),
             resolver: Resolver::new(module_importer),
             load_currency_module_on_demand: false,
@@ -130,6 +133,10 @@ impl Context {
 
     pub fn load_currency_module_on_demand(&mut self, yes: bool) {
         self.load_currency_module_on_demand = yes;
+    }
+
+    pub fn env(&self) -> &Environment {
+        &self.env
     }
 
     /// Fill the currency exchange rate cache. This call is blocking.
@@ -179,7 +186,7 @@ impl Context {
             .iter()
             .filter(|name| !name.starts_with('_'))
             .map(move |name| {
-                let (signature, meta) = self.typechecker.lookup_function(name).unwrap();
+                let (signature, meta) = self.env.lookup_function(name).unwrap();
                 (
                     name.clone(),
                     meta.name.clone(),
@@ -468,7 +475,7 @@ impl Context {
             return help;
         }
 
-        if let Some((fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
+        if let Some((fn_signature, fn_metadata)) = self.env.lookup_function(keyword) {
             let metadata = fn_metadata.clone();
 
             let mut help = m::text("Function:    ");
@@ -595,7 +602,7 @@ impl Context {
 
         let result = self
             .typechecker
-            .check(&transformed_statements)
+            .check(&mut self.env, &transformed_statements)
             .map_err(|err| NumbatError::TypeCheckError(*err));
 
         if result.is_err() {
