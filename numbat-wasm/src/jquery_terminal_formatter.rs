@@ -68,17 +68,20 @@ impl std::io::Write for JqueryTerminalWriter {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         if let Some(color) = &self.color {
             if color.fg() == Some(&Color::Red) {
-                self.buffer.write_all("[[;;;hl-diagnostic-red]".as_bytes())?;
+                self.buffer
+                    .write_all("[[;;;hl-diagnostic-red]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
                 self.buffer.write_all("]".as_bytes())?;
                 Ok(size)
             } else if color.fg() == Some(&Color::Blue) {
-                self.buffer.write_all("[[;;;hl-diagnostic-blue]".as_bytes())?;
+                self.buffer
+                    .write_all("[[;;;hl-diagnostic-blue]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
                 self.buffer.write_all("]".as_bytes())?;
                 Ok(size)
             } else if color.bold() {
-                self.buffer.write_all("[[;;;hl-diagnostic-bold]".as_bytes())?;
+                self.buffer
+                    .write_all("[[;;;hl-diagnostic-bold]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
                 self.buffer.write_all("]".as_bytes())?;
                 Ok(size)
