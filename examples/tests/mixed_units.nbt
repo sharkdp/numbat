@@ -37,17 +37,15 @@ assert_eq("{-5.5 lb -> pounds_and_ounces}", "{[-5 lb, -8 oz]}")
 
 # Unit list
 
-fn _add<D: Dim>(a: D, b: D) -> D = a + b
-
 let test1 = 12 m + 34 cm + 5 mm + 678 µm
 assert_eq(test1 |> unit_list([m]) |> head, test1)
-assert_eq(test1 |> unit_list([m, cm]) |> foldl(_add, 0), test1)
-assert_eq(test1 |> unit_list([m, cm, mm]) |> foldl(_add, 0), test1)
-assert_eq(test1 |> unit_list([m, cm, mm, µm]) |> foldl(_add, 0), test1)
+assert_eq(test1 |> unit_list([m, cm]) |> sum, test1)
+assert_eq(test1 |> unit_list([m, cm, mm]) |> sum, test1)
+assert_eq(test1 |> unit_list([m, cm, mm, µm]) |> sum, test1)
 
 let test2 = 12 degree + 34 arcminute + 5 arcsec
 assert_eq(test2 |> unit_list([degree]) |> head, test2)
-assert_eq(test2 |> unit_list([degree, arcmin]) |> foldl(_add, 0), test2)
-assert_eq(test2 |> unit_list([degree, arcmin, arcsec]) |> foldl(_add, 0), test2)
+assert_eq(test2 |> unit_list([degree, arcmin]) |> sum, test2)
+assert_eq(test2 |> unit_list([degree, arcmin, arcsec]) |> sum, test2)
 
 
