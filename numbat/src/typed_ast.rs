@@ -315,7 +315,7 @@ impl std::fmt::Display for Type {
                 )
             }
             Type::Struct(info) => {
-                let StructInfo { name, fields, .. } = &**info;
+                let StructInfo { name, fields, .. } = info.as_ref();
                 write!(
                     f,
                     "{name} {{{}}}",
