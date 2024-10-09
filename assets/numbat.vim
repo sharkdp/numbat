@@ -29,7 +29,7 @@ syn match numbatNumber '\v<([0-9]*\.[0-9]*|[0-9]*\.[0-9]+)([eE][+-]?[0-9]+)?>'
 highlight default link numbatNumber Number
 
 " Operators
-syn match numbatOperators "->\|[+*^=/\-:·×÷²³<>]"
+syn match numbatOperators "->\|[+*^=/\-:·⋅×÷²³<>]"
 highlight default link numbatOperators Operator
 
 " Unit decorators

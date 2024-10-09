@@ -211,6 +211,7 @@ fn is_identifier_continue(c: char) -> bool {
         || is_other_allowed_identifier_char(c))
         && !is_exponent_char(c)
         && c != '·'
+        && c != '⋅'
 }
 
 /// When scanning a string interpolation like `"foo = {foo}, and bar = {bar}."`,
@@ -555,7 +556,7 @@ impl Tokenizer {
             '|' if self.match_char(input, '>') => TokenKind::PostfixApply,
             '*' if self.match_char(input, '*') => TokenKind::Power,
             '+' => TokenKind::Plus,
-            '*' | '·' | '×' => TokenKind::Multiply,
+            '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
             '/' => TokenKind::Divide,
             '÷' => TokenKind::Divide,
             '^' => TokenKind::Power,
