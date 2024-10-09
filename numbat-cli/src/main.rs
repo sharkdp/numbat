@@ -353,6 +353,16 @@ impl Cli {
     ) -> Result<()> {
         let mut session_history = SessionHistory::default();
         let mut last_value = None::<Value>;
+        let mut clipboard = match arboard::Clipboard::new() {
+            Ok(cb) => Some(cb),
+            Err(_) => {
+                println!(
+                    "error: could not initialize the clipboard, so
+                    `copy` functionality will be disabled this session"
+                );
+                None
+            }
+        };
 
         loop {
             let readline = rl.readline(&self.config.prompt);
@@ -410,39 +420,53 @@ impl Cli {
                                         };
                                         println!("{}", ansi_format(&m, false));
                                     }
-                                    command::Command::Copy => match &last_value {
-                                        Some(v) => {
-                                            let m = match pretty_print_value(
-                                                v,
-                                                &self.config.copy_output_config,
-                                            ) {
-                                                Ok(m) => m,
-                                                Err(err) => {
-                                                    self.print_diagnostic(*err);
+                                    command::Command::Copy => {
+                                        let Some(clipboard) = &mut clipboard else {
+                                            println!(
+                                                "error: as the clipboard could not \
+                                                be initialized, `copy` functionality is \
+                                                disabled for this session"
+                                            );
+                                            continue;
+                                        };
+                                        match &last_value {
+                                            Some(v) => {
+                                                let m = match pretty_print_value(
+                                                    v,
+                                                    &self.config.copy_output_config,
+                                                ) {
+                                                    Ok(m) => m,
+                                                    Err(err) => {
+                                                        self.print_diagnostic(*err);
+                                                        continue;
+                                                    }
+                                                };
+
+                                                let text = PlainTextFormatter.format(&m, false);
+                                                if let Err(e) = {
+                                                    #[cfg(target_os = "linux")]
+                                                    {
+                                                        clipboard.set().wait().text(text)
+                                                    }
+                                                    #[cfg(not(target_os = "linux"))]
+                                                    {
+                                                        clipboard.set_text(text)
+                                                    }
+                                                } {
+                                                    self.print_diagnostic(
+                                                        RuntimeError::ClipboardError(e.to_string()),
+                                                    );
                                                     continue;
                                                 }
-                                            };
 
-                                            if let Err(e) =
-                                                arboard::Clipboard::new().and_then(|mut cb| {
-                                                    cb.set_text(
-                                                        PlainTextFormatter.format(&m, false),
-                                                    )
-                                                })
-                                            {
-                                                self.print_diagnostic(
-                                                    RuntimeError::ClipboardError(e.to_string()),
+                                                println!(
+                                                    "{} was copied to the clipboard",
+                                                    ansi_format(&m, false)
                                                 );
-                                                continue;
                                             }
-
-                                            println!(
-                                                "{} was copied to the clipboard",
-                                                ansi_format(&m, false)
-                                            );
+                                            None => println!("error: no value to copy"),
                                         }
-                                        None => println!("error: no value to copy"),
-                                    },
+                                    }
                                     command::Command::Clear => rl.clear_screen()?,
                                     command::Command::Save { dst } => {
                                         let save_result = session_history.save(
