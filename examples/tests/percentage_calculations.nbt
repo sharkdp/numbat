@@ -1,0 +1,8 @@
+assert_eq(2.5 m |> increase_by(100%), 5 m)
+assert_eq(2.5 m |> increase_by(10%), 2.75 m)
+assert_eq(2.5 m |> increase_by(0%), 2.5 m)
+
+assert_eq(2.5 m |> decrease_by(100%), 0)
+
+assert_eq(percentage_change(40 dollar, 50 dollar), +25%)
+assert_eq(percentage_change(50 dollar, 40 dollar), -20%)
