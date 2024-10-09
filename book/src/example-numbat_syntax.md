@@ -38,7 +38,7 @@ inf         # Infinity
 3 + (4 - 3)       # Addition and subtraction
 
 1920 / 16 * 9     # Multiplication, division
-1920 ÷ 16 × 9     # Unicode-style, '·' is also multiplication
+1920 ÷ 16 × 9     # Unicode-style, '·' or '⋅' works as well
 2 pi              # Whitespace is implicit multiplication
 meter per second  # 'per' keyword can be used for division
 

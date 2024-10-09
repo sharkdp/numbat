@@ -57,7 +57,7 @@
 //! boolean         ::=   "true" | "false"
 //! plus            ::=   "+"
 //! minus           ::=   "-"
-//! multiply        ::=   "*" | "×" | "·"
+//! multiply        ::=   "*" | "×" | "·" | "⋅"
 //! divide          ::=   "/" | "÷"
 //! string          ::=   '"' [^"]* '"'
 //! ```
@@ -2331,7 +2331,7 @@ mod tests {
     #[test]
     fn multiplication_and_division() {
         parse_as_expression(
-            &["1*2", "  1   *  2    ", "1 · 2", "1 × 2"],
+            &["1*2", "  1   *  2    ", "1 · 2", "1 ⋅ 2", "1 × 2"],
             binop!(scalar!(1.0), Mul, scalar!(2.0)),
         );
 
