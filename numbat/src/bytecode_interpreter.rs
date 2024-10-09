@@ -244,7 +244,7 @@ impl BytecodeInterpreter {
                     condition,
                     then_expr,
                     else_expr,
-                } = &**cond;
+                } = cond.as_ref();
                 self.compile_expression(condition)?;
 
                 let if_jump_offset = self.vm.current_offset() + 1; // +1 for the opcode

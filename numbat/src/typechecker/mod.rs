@@ -389,7 +389,7 @@ impl TypeChecker {
                 bin_op,
                 span_op,
             } => {
-                let ast::BinOp { lhs, rhs } = &**bin_op;
+                let ast::BinOp { lhs, rhs } = bin_op.as_ref();
 
                 let lhs_checked = self.elaborate_expression(lhs)?;
                 let rhs_checked = self.elaborate_expression(rhs)?;
@@ -900,7 +900,7 @@ impl TypeChecker {
                     condition,
                     then_expr: then,
                     else_expr: else_,
-                } = &**cond;
+                } = cond.as_ref();
                 let condition = self.elaborate_expression(condition)?;
 
                 if self

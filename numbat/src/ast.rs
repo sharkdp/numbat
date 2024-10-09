@@ -149,7 +149,7 @@ impl Expression<'_> {
                 bin_op,
                 span_op,
             } => {
-                let BinOp { lhs, rhs } = &**bin_op;
+                let BinOp { lhs, rhs } = bin_op.as_ref();
                 let mut span = lhs.full_span().extend(&rhs.full_span());
                 if let Some(span_op) = span_op {
                     span = span.extend(span_op);
@@ -563,7 +563,7 @@ impl ReplaceSpans for Expression<'_> {
                 bin_op,
                 span_op: _,
             } => {
-                let BinOp { lhs, rhs } = &**bin_op;
+                let BinOp { lhs, rhs } = bin_op.as_ref();
                 Expression::BinaryOperator {
                     op: *op,
                     bin_op: BinOp::new(lhs.replace_spans(), rhs.replace_spans()),
@@ -582,7 +582,7 @@ impl ReplaceSpans for Expression<'_> {
                     condition,
                     then_expr: then,
                     else_expr: else_,
-                } = &**cond;
+                } = cond.as_ref();
                 Expression::Condition(
                     Span::dummy(),
                     Condition::new(
