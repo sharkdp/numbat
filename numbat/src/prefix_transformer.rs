@@ -29,9 +29,9 @@ impl Transformer {
         }
     }
 
-    fn transform_expression<'a>(&self, expression: Expression<'a>) -> Expression<'a> {
+    fn transform_expression(&self, expression: &mut Expression) {
         match expression {
-            expr @ Expression::Scalar(..) => expr,
+            Expression::Scalar(..) | Expression::Boolean(_, _) | Expression::TypedHole(_) => {}
             Expression::Identifier(span, identifier) => {
                 if let PrefixParserResult::UnitIdentifier(
                     _definition_span,
@@ -40,104 +40,57 @@ impl Transformer {
                     full_name,
                 ) = self.prefix_parser.parse(identifier)
                 {
-                    Expression::UnitIdentifier(span, prefix, unit_name, full_name)
+                    *expression = Expression::UnitIdentifier(*span, prefix, unit_name, full_name);
                 } else {
-                    Expression::Identifier(span, identifier)
+                    *expression = Expression::Identifier(*span, identifier);
                 }
             }
             Expression::UnitIdentifier(_, _, _, _) => {
                 unreachable!("Prefixed identifiers should not exist prior to this stage")
             }
-            Expression::UnaryOperator { op, expr, span_op } => Expression::UnaryOperator {
-                op,
-                expr: Box::new(self.transform_expression(*expr)),
-                span_op,
-            },
-            Expression::BinaryOperator {
-                op,
-                bin_op,
-                span_op,
-            } => {
-                let BinOp { lhs, rhs } = *bin_op;
-                Expression::BinaryOperator {
-                    op,
-                    bin_op: BinOp::new(
-                        self.transform_expression(lhs),
-                        self.transform_expression(rhs),
-                    ),
-                    span_op,
+            Expression::UnaryOperator { expr, .. } => self.transform_expression(expr),
+
+            Expression::BinaryOperator { bin_op, .. } => {
+                let BinOp { lhs, rhs } = bin_op.as_mut();
+                self.transform_expression(lhs);
+                self.transform_expression(rhs);
+            }
+            Expression::FunctionCall(_, _, _, args) => {
+                for arg in args {
+                    self.transform_expression(arg);
                 }
             }
-            Expression::FunctionCall(span, full_span, name, args) => Expression::FunctionCall(
-                span,
-                full_span,
-                name,
-                args.into_iter()
-                    .map(|arg| self.transform_expression(arg))
-                    .collect(),
-            ),
-            expr @ Expression::Boolean(_, _) => expr,
-            Expression::Condition(span, cond) => {
+            Expression::Condition(_, cond) => {
                 let Condition {
                     condition,
                     then_expr,
                     else_expr,
-                } = *cond;
-                Expression::Condition(
-                    span,
-                    Condition::new(
-                        self.transform_expression(condition),
-                        self.transform_expression(then_expr),
-                        self.transform_expression(else_expr),
-                    ),
-                )
+                } = cond.as_mut();
+                self.transform_expression(condition);
+                self.transform_expression(then_expr);
+                self.transform_expression(else_expr);
             }
-            Expression::String(span, parts) => Expression::String(
-                span,
-                parts
-                    .into_iter()
-                    .map(|p| match p {
-                        f @ StringPart::Fixed(_) => f,
-                        StringPart::Interpolation {
-                            span,
-                            expr,
-                            format_specifiers,
-                        } => StringPart::Interpolation {
-                            span,
-                            expr: Box::new(self.transform_expression(*expr)),
-                            format_specifiers,
-                        },
-                    })
-                    .collect(),
-            ),
-            Expression::InstantiateStruct {
-                full_span,
-                ident_span,
-                name,
-                fields,
-            } => Expression::InstantiateStruct {
-                full_span,
-                ident_span,
-                name,
-                fields: fields
-                    .into_iter()
-                    .map(|(span, attr, arg)| (span, attr, self.transform_expression(arg)))
-                    .collect(),
-            },
-            Expression::AccessField(full_span, ident_span, expr, attr) => Expression::AccessField(
-                full_span,
-                ident_span,
-                Box::new(self.transform_expression(*expr)),
-                attr,
-            ),
-            Expression::List(span, elements) => Expression::List(
-                span,
-                elements
-                    .into_iter()
-                    .map(|e| self.transform_expression(e))
-                    .collect(),
-            ),
-            hole @ Expression::TypedHole(_) => hole,
+            Expression::String(_, parts) => {
+                for p in parts {
+                    match p {
+                        StringPart::Fixed(_) => {}
+                        StringPart::Interpolation { expr, .. } => self.transform_expression(expr),
+                    }
+                }
+            }
+            Expression::InstantiateStruct { fields, .. } => {
+                for (_, _, arg) in fields {
+                    self.transform_expression(arg);
+                }
+            }
+            Expression::AccessField(_, _, expr, _) => {
+                self.transform_expression(expr);
+            }
+            Expression::List(_, elements) => {
+                for e in elements {
+                    self.transform_expression(e);
+                }
+            }
         }
     }
 
@@ -185,7 +138,7 @@ impl Transformer {
         let DefineVariable {
             identifier_span,
             identifier,
-            expr,
+            mut expr,
             type_annotation,
             decorators,
         } = define_variable;
@@ -195,10 +148,12 @@ impl Transformer {
         }
         self.prefix_parser
             .add_other_identifier(identifier, identifier_span)?;
+        self.transform_expression(&mut expr);
+
         Ok(DefineVariable {
             identifier_span,
             identifier,
-            expr: self.transform_expression(expr),
+            expr,
             type_annotation,
             decorators,
         })
@@ -206,7 +161,10 @@ impl Transformer {
 
     fn transform_statement<'a>(&mut self, statement: Statement<'a>) -> Result<Statement<'a>> {
         Ok(match statement {
-            Statement::Expression(expr) => Statement::Expression(self.transform_expression(expr)),
+            Statement::Expression(mut expr) => {
+                self.transform_expression(&mut expr);
+                Statement::Expression(expr)
+            }
             Statement::DefineBaseUnit(span, name, dexpr, decorators) => {
                 self.register_name_and_aliases(name, span, &decorators)?;
                 Statement::DefineBaseUnit(span, name, dexpr, decorators)
@@ -214,16 +172,17 @@ impl Transformer {
             Statement::DefineDerivedUnit {
                 identifier_span,
                 identifier,
-                expr,
+                mut expr,
                 type_annotation_span,
                 type_annotation,
                 decorators,
             } => {
                 self.register_name_and_aliases(identifier, identifier_span, &decorators)?;
+                self.transform_expression(&mut expr);
                 Statement::DefineDerivedUnit {
                     identifier_span,
                     identifier,
-                    expr: self.transform_expression(expr),
+                    expr,
                     type_annotation_span,
                     type_annotation,
                     decorators,
@@ -237,7 +196,7 @@ impl Transformer {
                 function_name,
                 type_parameters,
                 parameters,
-                body,
+                mut body,
                 local_variables,
                 return_type_annotation,
                 decorators,
@@ -261,12 +220,16 @@ impl Transformer {
                         .add_other_identifier(param, *param_span)?;
                 }
 
+                if let Some(expr) = &mut body {
+                    self.transform_expression(expr);
+                }
+
                 Statement::DefineFunction {
                     function_name_span,
                     function_name,
                     type_parameters,
                     parameters,
-                    body: body.map(|expr| self.transform_expression(expr)),
+                    body,
                     local_variables: local_variables
                         .into_iter()
                         .map(|def| self.transform_define_variable(def))
@@ -288,13 +251,12 @@ impl Transformer {
                 self.dimension_names.push(name.to_owned());
                 Statement::DefineDimension(name_span, name, dexprs)
             }
-            Statement::ProcedureCall(span, procedure, args) => Statement::ProcedureCall(
-                span,
-                procedure,
-                args.into_iter()
-                    .map(|arg| self.transform_expression(arg))
-                    .collect(),
-            ),
+            Statement::ProcedureCall(span, procedure, mut args) => {
+                for arg in &mut args {
+                    self.transform_expression(arg);
+                }
+                Statement::ProcedureCall(span, procedure, args)
+            }
             statement @ Statement::ModuleImport(_, _) => statement,
         })
     }
