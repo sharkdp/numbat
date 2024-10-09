@@ -242,7 +242,7 @@ fn human(time: Time) -> String
 How long is a microcentury?
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=century%2F1e6%20%2D%3E%20human')""></button></div><code class="language-nbt hljs numbat">>>> century/1e6 -> human
 
-    = "52 minutes + 35.692505184 seconds"    [String]
+    = "52 minutes + 35.693 seconds"    [String]
 </code></pre>
 
 </details>

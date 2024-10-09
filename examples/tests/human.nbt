@@ -22,17 +22,26 @@ assert_eq((1.37 day         -> human), "1 day + 8 hours + 52 minutes + 48 second
 assert_eq((1 week           -> human), "7 days")
 assert_eq((1.5 weeks        -> human), "10 days + 12 hours")
 assert_eq((2 weeks          -> human), "14 days")
+assert_eq((2.5 weeks        -> human), "17 days + 12 hours")
 
-assert_eq((1 sidereal_day   -> human), "23 hours + 56 minutes + 4.0905 seconds")
+assert_eq((2 month          -> human), "60.8737 days (approx. 2 months)")
+assert_eq((2 month + 12 day -> human), "72.8737 days (approx. 2.4 months)")
+assert_eq((3 yr + 2 month   -> human), "1156.6 days (approx. 3 years + 2 months)")
+assert_eq((10 yr + 2 s      -> human), "3652.42 days (approx. 10 years)")
 
-assert_eq((10000 days       -> human), "10000 days")
-assert_eq((50 million days  -> human), "50_000_000 days")
+assert_eq((1 sidereal_day   -> human), "23 hours + 56 minutes + 4.091 seconds")
 
-assert_eq((1e12 days        -> human), "1_000_000_000_000 days")
-assert_eq((1e15 days        -> human), "1.0e+15 days")
+assert_eq((10000 days       -> human), "10000 days (approx. 27 years + 5 months)")
+assert_eq((50 million days  -> human), "50_000_000 days (approx. 136_895 years)")
+
+assert_eq((1e12 days        -> human), "1_000_000_000_000 days (approx. 2_737_909_345 years)")
+assert_eq((1e15 days        -> human), "1.0e+15 days (approx. 2_737_909_345_034 years)")
 
 assert_eq((1 ms             -> human), "0.001 seconds")
 assert_eq((1 µs             -> human), "0.000001 seconds")
-assert_eq((1 ns             -> human), "0.000000001 seconds")
+assert_eq((1 ns             -> human), "1.0e-9 seconds")
 assert_eq((1234 ns          -> human), "0.000001234 seconds")
-assert_eq((1s + 1234 ns     -> human), "1.000001234 seconds")
+assert_eq((1s + 1234 ns     -> human), "1 second")
+
+assert_eq((-1 second        -> human), "1 second ago")
+assert_eq((-7.89 hour       -> human), "7 hours + 53 minutes + 24 seconds ago")
