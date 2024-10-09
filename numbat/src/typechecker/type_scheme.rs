@@ -123,7 +123,7 @@ impl TypeScheme {
 
             for type_parameter in &type_parameters {
                 markup += m::space();
-                markup += m::type_identifier(type_parameter.unsafe_name());
+                markup += m::type_identifier(type_parameter.unsafe_name().to_string());
 
                 if instantiated_type.bounds.is_dtype_bound(type_parameter) {
                     markup += m::operator(":");
@@ -219,7 +219,7 @@ impl PrettyPrint for TypeScheme {
                 for type_parameter in &type_parameters {
                     markup += m::keyword("forall");
                     markup += m::space();
-                    markup += m::type_identifier(type_parameter.unsafe_name());
+                    markup += m::type_identifier(type_parameter.unsafe_name().to_string());
 
                     if instantiated_type.bounds.is_dtype_bound(type_parameter) {
                         markup += m::operator(":");

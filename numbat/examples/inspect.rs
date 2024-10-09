@@ -1,5 +1,9 @@
 use itertools::Itertools;
-use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context};
+use numbat::markup::plain_text_format;
+use numbat::module_importer::FileSystemImporter;
+use numbat::resolver::CodeSource;
+use numbat::Context;
+use percent_encoding;
 use std::path::Path;
 
 const AUTO_GENERATED_HINT: &str = "<!-- NOTE! This file is auto-generated -->";
@@ -40,8 +44,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
     }
 }
 
-fn inspect_functions_in_module(ctx: &Context, module: String) {
-    for (fn_name, name, signature, description, url, code_source) in ctx.functions() {
+fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: String) {
+    for (fn_name, name, signature, description, url, examples, code_source) in ctx.functions() {
         let CodeSource::Module(module_path, _) = code_source else {
             unreachable!();
         };
@@ -57,19 +61,7 @@ fn inspect_functions_in_module(ctx: &Context, module: String) {
         }
 
         if let Some(ref description_raw) = description {
-            let description_raw = description_raw.trim().to_string();
-
-            // Replace $..$ with \\( .. \\) for mdbook.
-            let mut description = String::new();
-            for (i, part) in description_raw.split('$').enumerate() {
-                if i % 2 == 0 {
-                    description.push_str(part);
-                } else {
-                    description.push_str("\\\\( ");
-                    description.push_str(part);
-                    description.push_str(" \\\\)");
-                }
-            }
+            let description = replace_equation_delimiters(description_raw.trim().to_string());
 
             if description.ends_with('.') {
                 println!("{description}");
@@ -86,16 +78,117 @@ fn inspect_functions_in_module(ctx: &Context, module: String) {
         println!("{signature}");
         println!("```");
         println!();
+
+        if !examples.is_empty() {
+            println!("<details>");
+            println!("<summary>Examples</summary>");
+            println!();
+
+            for (example_code, example_description) in examples {
+                let mut example_ctx = prelude_ctx.clone();
+                let extra_import = if !example_ctx
+                    .resolver()
+                    .imported_modules
+                    .contains(&module_path)
+                {
+                    format!("use {}\n", module)
+                } else {
+                    "".into()
+                };
+                let _result = example_ctx
+                    .interpret(&extra_import, CodeSource::Internal)
+                    .unwrap();
+
+                if let Ok((statements, results)) =
+                    example_ctx.interpret(&example_code, CodeSource::Internal)
+                {
+                    let code = extra_import + &example_code;
+
+                    //Format the example input
+                    let example_input = format!(">>> {}", code);
+
+                    //Encode the example url
+                    let example_url = format!(
+                        "https://numbat.dev/?q={}",
+                        percent_encoding::utf8_percent_encode(
+                            &code,
+                            percent_encoding::NON_ALPHANUMERIC
+                        )
+                    );
+
+                    //Assemble the example output
+                    let result_markup = results.to_markup(
+                        statements.last(),
+                        &example_ctx.dimension_registry(),
+                        true,
+                        true,
+                    );
+                    let example_output = &plain_text_format(&result_markup, false);
+
+                    //Print the example
+                    if let Some(example_description) = example_description {
+                        println!("{}", replace_equation_delimiters(example_description));
+                    }
+
+                    print!("<pre>");
+                    print!("<div class=\"buttons\">");
+                    print!("<button class=\"fa fa-play play-button\" title=\"{}\" aria-label=\"{}\"  onclick=\" window.open('{}')\"\"></button>",
+                        "Run this code",
+                        "Run this code",
+                        example_url);
+                    print!("</div>");
+                    print!("<code class=\"language-nbt hljs numbat\">");
+                    for l in example_input.lines() {
+                        println!("{}", l);
+                    }
+                    println!();
+                    for l in example_output.lines() {
+                        println!("{}", l);
+                    }
+                    println!("</code></pre>");
+                    println!();
+                } else {
+                    eprintln!(
+                        "Warning: Example \"{example_code}\" of function {fn_name} did not run successfully."
+                    );
+                }
+            }
+            println!("</details>");
+            println!();
+        }
     }
 }
 
-fn main() {
-    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
+// Replace $..$ with \\( .. \\) for mdbook.
+fn replace_equation_delimiters(text_in: String) -> String {
+    let mut text_out = String::new();
+    for (i, part) in text_in.split('$').enumerate() {
+        if i % 2 == 0 {
+            text_out.push_str(part);
+        } else {
+            text_out.push_str("\\\\( ");
+            text_out.push_str(part);
+            text_out.push_str(" \\\\)");
+        }
+    }
+    return text_out;
+}
 
+fn prepare_context() -> Context {
+    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
     let mut importer = FileSystemImporter::default();
     importer.add_path(module_path);
-    let mut ctx = Context::new(importer);
+    return Context::new(importer);
+}
+
+fn main() {
+    let mut ctx = prepare_context();
     let _result = ctx.interpret("use all", CodeSource::Internal).unwrap();
+
+    let mut example_ctx = prepare_context();
+    let _result = example_ctx
+        .interpret("use prelude", CodeSource::Internal)
+        .unwrap();
 
     let mut args = std::env::args();
     args.next();
@@ -104,7 +197,7 @@ fn main() {
             "units" => inspect_units(&ctx),
             "functions" => {
                 let module = args.next().unwrap();
-                inspect_functions_in_module(&ctx, module)
+                inspect_functions_in_module(&ctx, &example_ctx, module)
             }
             _ => eprintln!("USAGE: inspect [units|functions <module>]"),
         }

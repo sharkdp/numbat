@@ -60,7 +60,7 @@ fn run_typecheck(input: &str) -> Result<typed_ast::Statement<'_>> {
         .map_err(|err| Box::new(err.into()))?;
 
     TypeChecker::default()
-        .check(transformed_statements)
+        .check(&transformed_statements)
         .map(|mut statements_checked| statements_checked.pop().unwrap())
 }
 

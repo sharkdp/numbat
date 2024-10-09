@@ -2,26 +2,36 @@ use core::mixed_units
 use units::si
 use units::imperial
 
+@name("Unit list")
+@description("Convert a value to a mixed representation using the provided units.")
+@example("5500 m |> unit_list([miles, yards, feet, inches])")
+fn unit_list<D: Dim>(units: List<D>, value: D) -> List<D> = _mixed_unit_list(value, units, [])
+
 @name("Degrees, minutes, seconds")
 @description("Convert an angle to a mixed degrees, (arc)minutes, and (arc)seconds representation. Also called sexagesimal degree notation.")
 @url("https://en.wikipedia.org/wiki/Sexagesimal_degree")
-fn DMS(alpha: Angle) -> String =
-  _mixed_units(alpha, [deg, arcmin, arcsec], ["° ", "′ ", "″"], true)
+@example("46.5858° -> DMS")
+fn DMS(alpha: Angle) -> List<Angle> =
+  unit_list([degree, arcminute, arcsecond], alpha)
 
 @name("Degrees, decimal minutes")
 @description("Convert an angle to a mixed degrees and decimal minutes representation.")
 @url("https://en.wikipedia.org/wiki/Decimal_degrees")
-fn DM(alpha: Angle) -> String =
-  _mixed_units(alpha, [deg, arcmin], ["° ", "′"], false)
+@example("46.5858° -> DM")
+fn DM(alpha: Angle) -> List<Angle> =
+  unit_list([degree, arcminute], alpha)
 
 @name("Feet and inches")
 @description("Convert a length to a mixed feet and inches representation.")
 @url("https://en.wikipedia.org/wiki/Foot_(unit)")
-fn feet_and_inches(length: Length) -> String =
-  _mixed_units(length, [foot, inch], [" ft ", " in"], false)
+@example("180 cm -> feet_and_inches")
+fn feet_and_inches(length: Length) -> List<Length> =
+  unit_list([foot, inch], length)
 
 @name("Pounds and ounces")
 @description("Convert a mass to a mixed pounds and ounces representation.")
 @url("https://en.wikipedia.org/wiki/Pound_(mass)")
-fn pounds_and_ounces(mass: Mass) -> String =
-  _mixed_units(mass, [pound, ounce], [" lb ", " oz"], false)
+@example("1 kg -> pounds_and_ounces")
+fn pounds_and_ounces(mass: Mass) -> List<Mass> =
+  unit_list([pound, ounce], mass)
+

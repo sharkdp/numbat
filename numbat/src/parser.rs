@@ -96,6 +96,9 @@ pub enum ParseErrorKind {
     #[error("Trailing '=' sign. Use `let {0} = …` if you intended to define a new constant.")]
     TrailingEqualSign(String),
 
+    #[error("Trailing '=' sign. Use `fn {0} = …` if you intended to define a function.")]
+    TrailingEqualSignFunction(String),
+
     #[error("Expected identifier after 'let' keyword")]
     ExpectedIdentifierAfterLet,
 
@@ -197,6 +200,9 @@ pub enum ParseErrorKind {
 
     #[error("Aliases cannot be used on functions.")]
     AliasUsedOnFunction,
+
+    #[error("Example decorators can only be used on functions.")]
+    ExampleUsedOnUnsuitableKind,
 
     #[error("Numerical overflow in dimension exponent")]
     OverflowInDimensionExponent,
@@ -310,12 +316,22 @@ impl<'a> Parser<'a> {
                     break;
                 }
                 TokenKind::Equal => {
+                    let last_token = self.last(tokens).unwrap();
+
+                    let mut input = String::new();
+                    for token in tokens.iter().take(self.current) {
+                        input.push_str(token.lexeme);
+                    }
+
                     errors.push(ParseError {
-                        kind: ParseErrorKind::TrailingEqualSign(
-                            self.last(tokens).unwrap().lexeme.to_owned(),
-                        ),
+                        kind: if last_token.kind == TokenKind::RightParen {
+                            ParseErrorKind::TrailingEqualSignFunction(input)
+                        } else {
+                            ParseErrorKind::TrailingEqualSign(input)
+                        },
                         span: self.peek(tokens).span,
                     });
+
                     self.recover_from_error(tokens);
                 }
                 _ => {
@@ -369,14 +385,17 @@ impl<'a> Parser<'a> {
     fn list_of_aliases(
         &mut self,
         tokens: &[Token<'a>],
-    ) -> Result<Vec<(&'a str, Option<AcceptsPrefix>)>> {
+    ) -> Result<Vec<(&'a str, Option<AcceptsPrefix>, Span)>> {
         if self.match_exact(tokens, TokenKind::RightParen).is_some() {
             return Ok(vec![]);
         }
 
-        let mut identifiers = vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?)];
+        let span = self.peek(tokens).span;
+        let mut identifiers = vec![(self.identifier(tokens)?, self.accepts_prefix(tokens)?, span)];
+
         while self.match_exact(tokens, TokenKind::Comma).is_some() {
-            identifiers.push((self.identifier(tokens)?, self.accepts_prefix(tokens)?));
+            let span = self.peek(tokens).span;
+            identifiers.push((self.identifier(tokens)?, self.accepts_prefix(tokens)?, span));
         }
 
         if self.match_exact(tokens, TokenKind::RightParen).is_none() {
@@ -455,6 +474,14 @@ impl<'a> Parser<'a> {
                             span: self.peek(tokens).span,
                         });
                     }
+
+                    if decorator::contains_examples(&self.decorator_stack) {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExampleUsedOnUnsuitableKind,
+                            span: self.peek(tokens).span,
+                        });
+                    }
+
                     std::mem::swap(&mut decorators, &mut self.decorator_stack);
                 }
 
@@ -734,6 +761,55 @@ impl<'a> Parser<'a> {
                         });
                     }
                 }
+                "example" => {
+                    if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+                        if let Some(token_code) = self.match_exact(tokens, TokenKind::StringFixed) {
+                            if self.match_exact(tokens, TokenKind::Comma).is_some() {
+                                //Code and description
+                                if let Some(token_description) =
+                                    self.match_exact(tokens, TokenKind::StringFixed)
+                                {
+                                    if self.match_exact(tokens, TokenKind::RightParen).is_none() {
+                                        return Err(ParseError::new(
+                                            ParseErrorKind::MissingClosingParen,
+                                            self.peek(tokens).span,
+                                        ));
+                                    }
+
+                                    Decorator::Example(
+                                        strip_and_escape(token_code.lexeme),
+                                        Some(strip_and_escape(token_description.lexeme)),
+                                    )
+                                } else {
+                                    return Err(ParseError {
+                                        kind: ParseErrorKind::ExpectedString,
+                                        span: self.peek(tokens).span,
+                                    });
+                                }
+                            } else {
+                                //Code but no description
+                                if self.match_exact(tokens, TokenKind::RightParen).is_none() {
+                                    return Err(ParseError::new(
+                                        ParseErrorKind::MissingClosingParen,
+                                        self.peek(tokens).span,
+                                    ));
+                                }
+
+                                Decorator::Example(strip_and_escape(token_code.lexeme), None)
+                            }
+                        } else {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedString,
+                                span: self.peek(tokens).span,
+                            });
+                        }
+                    } else {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek(tokens).span,
+                        });
+                    }
+                }
                 _ => {
                     return Err(ParseError {
                         kind: ParseErrorKind::UnknownDecorator,
@@ -767,6 +843,13 @@ impl<'a> Parser<'a> {
                 };
 
             let unit_name = identifier.lexeme;
+
+            if decorator::contains_examples(&self.decorator_stack) {
+                return Err(ParseError {
+                    kind: ParseErrorKind::ExampleUsedOnUnsuitableKind,
+                    span: self.peek(tokens).span,
+                });
+            }
 
             let mut decorators = vec![];
             std::mem::swap(&mut decorators, &mut self.decorator_stack);
@@ -1578,7 +1661,7 @@ impl<'a> Parser<'a> {
 
         let format_specifiers = self
             .match_exact(tokens, TokenKind::StringInterpolationSpecifiers)
-            .map(|token| token.lexeme.to_owned());
+            .map(|token| token.lexeme);
 
         parts.push(StringPart::Interpolation {
             span: expr.full_span(),
@@ -1987,9 +2070,12 @@ mod tests {
     use std::fmt::Write;
 
     use super::*;
-    use crate::ast::{
-        binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
-        struct_, ReplaceSpans,
+    use crate::{
+        ast::{
+            binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
+            struct_, ReplaceSpans,
+        },
+        span::ByteIndex,
     };
 
     #[track_caller]
@@ -2438,7 +2524,26 @@ mod tests {
                 )),
                 decorators: vec![
                     decorator::Decorator::Name("myvar".into()),
-                    decorator::Decorator::Aliases(vec![("foo", None), ("bar", None)]),
+                    decorator::Decorator::Aliases(vec![
+                        (
+                            "foo",
+                            None,
+                            Span {
+                                start: ByteIndex(24),
+                                end: ByteIndex(27),
+                                code_source_id: 0,
+                            },
+                        ),
+                        (
+                            "bar",
+                            None,
+                            Span {
+                                start: ByteIndex(29),
+                                end: ByteIndex(32),
+                                code_source_id: 0,
+                            },
+                        ),
+                    ]),
                 ],
             }),
         );
@@ -2789,6 +2894,24 @@ mod tests {
                     decorator::Decorator::Description(
                         "This is a description of some_function.".into(),
                     ),
+                ],
+            },
+        );
+
+        parse_as(
+            &["@name(\"Some function\") @example(\"some_function(2)\", \"Use this function:\") @example(\"let some_var = some_function(0)\") fn some_function(x) = 1"],
+            Statement::DefineFunction {
+                function_name_span: Span::dummy(),
+                function_name: "some_function".into(),
+                type_parameters: vec![],
+                parameters: vec![(Span::dummy(), "x".into(), None)],
+                body: Some(scalar!(1.0)),
+                local_variables: vec![],
+                return_type_annotation: None,
+                decorators: vec![
+                    decorator::Decorator::Name("Some function".into()),
+                    decorator::Decorator::Example("some_function(2)".into(), Some("Use this function:".into())),
+                    decorator::Decorator::Example("let some_var = some_function(0)".into(), None),
                 ],
             },
         );
@@ -3279,7 +3402,7 @@ mod tests {
                     StringPart::Interpolation {
                         span: Span::dummy(),
                         expr: Box::new(binop!(scalar!(1.0), Add, scalar!(2.0))),
-                        format_specifiers: Some(":0.2".to_string()),
+                        format_specifiers: Some(":0.2"),
                     },
                 ],
             ),

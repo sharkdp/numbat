@@ -1,10 +1,16 @@
 @description("Returns true if the input is `NaN`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.is_nan")
+@example("is_nan(37)")
+@example("is_nan(NaN)")
 fn is_nan<T: Dim>(n: T) -> Bool
 
 @description("Returns true if the input is positive infinity or negative infinity.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.is_infinite")
+@example("is_infinite(37)")
+@example("is_infinite(-inf)")
 fn is_infinite<T: Dim>(n: T) -> Bool
 
 @description("Returns true if the input is neither infinite nor `NaN`.")
+@example("is_finite(37)")
+@example("is_finite(-inf)")
 fn is_finite<T: Dim>(n: T) -> Bool = !is_nan(n) && !is_infinite(n)

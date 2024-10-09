@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{borrow::Cow, fmt::Display};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FormatType {
@@ -23,7 +23,7 @@ pub enum OutputType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct FormattedString(pub OutputType, pub FormatType, pub String);
+pub struct FormattedString(pub OutputType, pub FormatType, pub Cow<'static, str>);
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Markup(pub Vec<FormattedString>);
@@ -43,10 +43,9 @@ impl Display for Markup {
 impl std::ops::Add for Markup {
     type Output = Markup;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut res = self.0;
-        res.extend_from_slice(&rhs.0);
-        Markup(res)
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self.0.extend(rhs.0);
+        self
     }
 }
 
@@ -66,7 +65,7 @@ pub fn space() -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Whitespace,
-        " ".to_string(),
+        " ".into(),
     ))
 }
 
@@ -74,99 +73,99 @@ pub fn empty() -> Markup {
     Markup::default()
 }
 
-pub fn whitespace(text: impl AsRef<str>) -> Markup {
+pub fn whitespace(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Whitespace,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn emphasized(text: impl AsRef<str>) -> Markup {
+pub fn emphasized(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Emphasized,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn dimmed(text: impl AsRef<str>) -> Markup {
+pub fn dimmed(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Dimmed,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn text(text: impl AsRef<str>) -> Markup {
+pub fn text(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Text,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn string(text: impl AsRef<str>) -> Markup {
+pub fn string(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::String,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn keyword(text: impl AsRef<str>) -> Markup {
+pub fn keyword(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Keyword,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn value(text: impl AsRef<str>) -> Markup {
+pub fn value(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Value,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn unit(text: impl AsRef<str>) -> Markup {
+pub fn unit(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Unit,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn identifier(text: impl AsRef<str>) -> Markup {
+pub fn identifier(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Identifier,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn type_identifier(text: impl AsRef<str>) -> Markup {
+pub fn type_identifier(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::TypeIdentifier,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn operator(text: impl AsRef<str>) -> Markup {
+pub fn operator(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Operator,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
-pub fn decorator(text: impl AsRef<str>) -> Markup {
+pub fn decorator(text: impl Into<Cow<'static, str>>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Decorator,
-        text.as_ref().to_string(),
+        text.into(),
     ))
 }
 
@@ -206,6 +205,10 @@ pub struct PlainTextFormatter;
 
 impl Formatter for PlainTextFormatter {
     fn format_part(&self, FormattedString(_, _, text): &FormattedString) -> String {
-        text.clone()
+        text.to_string()
     }
+}
+
+pub fn plain_text_format(m: &Markup, indent: bool) -> String {
+    PlainTextFormatter {}.format(m, indent)
 }

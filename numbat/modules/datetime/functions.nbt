@@ -7,15 +7,22 @@ use units::time
 fn now() -> DateTime
 
 @description("Parses a string (date and time) into a `DateTime` object. See [here](./date-and-time.md#date-time-formats) for an overview of the supported formats.")
+@example("datetime(\"2022-07-20T21:52+0200\")")
+@example("datetime(\"2022-07-20 21:52 Europe/Berlin\")")
+@example("datetime(\"2022/07/20 09:52 PM +0200\")")
 fn datetime(input: String) -> DateTime
 
 @description("Formats a `DateTime` object as a string.")
+@example("format_datetime(\"This is a date in %B in the year %Y.\", datetime(\"2022-07-20 21:52 +0200\"))")
 fn format_datetime(format: String, input: DateTime) -> String
 
 @description("Returns the users local timezone.")
+@example("get_local_timezone()")
 fn get_local_timezone() -> String
 
 @description("Returns a timezone conversion function, typically used with the conversion operator.")
+@example("datetime(\"2022-07-20 21:52 +0200\") -> tz(\"Europe/Amsterdam\")")
+@example("datetime(\"2022-07-20 21:52 +0200\") -> tz(\"Asia/Taipei\")")
 fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
 
 @description("Timezone conversion function targeting the users local timezone (`datetime -> local`).")
@@ -25,9 +32,11 @@ let local: Fn[(DateTime) -> DateTime] = tz(get_local_timezone())
 let UTC: Fn[(DateTime) -> DateTime] = tz("UTC")
 
 @description("Converts a `DateTime` to a UNIX timestamp. Can be used on the right hand side of a conversion operator: `now() -> unixtime`.")
+@example("datetime(\"2022-07-20 21:52 +0200\") -> unixtime")
 fn unixtime(input: DateTime) -> Scalar
 
 @description("Converts a UNIX timestamp to a `DateTime` object.")
+@example("from_unixtime(2^31)")
 fn from_unixtime(input: Scalar) -> DateTime
 
 fn _today_str() = format_datetime("%Y-%m-%d", now())
@@ -36,6 +45,7 @@ fn _today_str() = format_datetime("%Y-%m-%d", now())
 fn today() -> DateTime = datetime("{_today_str()} 00:00:00")
 
 @description("Parses a string (only date) into a `DateTime` object.")
+@example("date(\"2022-07-20\")")
 fn date(input: String) -> DateTime =
   if str_contains(input, " ")
     then datetime(str_replace(input, " ", " 00:00:00 "))
@@ -50,6 +60,7 @@ fn _add_months(dt: DateTime, n_months: Scalar) -> DateTime
 fn _add_years(dt: DateTime, n_years: Scalar) -> DateTime
 
 @description("Adds the given time span to a `DateTime`. This uses leap-year and DST-aware calendar arithmetic with variable-length days, months, and years.")
+@example("calendar_add(datetime(\"2022-07-20 21:52 +0200\"), 2 years)")
 fn calendar_add(dt: DateTime, span: Time) -> DateTime =
    if span_unit == days
      then _add_days(dt, span / days)
@@ -65,14 +76,17 @@ fn calendar_add(dt: DateTime, span: Time) -> DateTime =
     span_unit = unit_of(span)
 
 @description("Subtract the given time span from a `DateTime`. This uses leap-year and DST-aware calendar arithmetic with variable-length days, months, and years.")
+@example("calendar_sub(datetime(\"2022-07-20 21:52 +0200\"), 3 years)")
 fn calendar_sub(dt: DateTime, span: Time) -> DateTime =
   calendar_add(dt, -span)
 
 @description("Get the day of the week from a given `DateTime`.")
+@example("weekday(datetime(\"2022-07-20 21:52 +0200\"))")
 fn weekday(dt: DateTime) -> String = format_datetime("%A", dt)
 
 @name("Julian date")
 @description("Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the proleptic Gregorian calendar).")
 @url("https://en.wikipedia.org/wiki/Julian_day")
+@example("julian_date(datetime(\"2022-07-20 21:52 +0200\"))")
 fn julian_date(dt: DateTime) -> Time =
   (dt - datetime("-4713-11-24 12:00:00 +0000")) -> days

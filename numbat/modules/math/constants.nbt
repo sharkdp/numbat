@@ -9,6 +9,7 @@ let π = 3.14159265358979323846264338327950288
 
 @name("Tau")
 @url("https://en.wikipedia.org/wiki/Turn_(angle)#Tau_proposals")
+@aliases(tau)
 let τ = 2 π
 
 @name("Euler's number")

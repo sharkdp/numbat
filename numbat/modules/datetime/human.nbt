@@ -55,4 +55,5 @@ fn _abs_human(time: Time) -> String =
 @name("Human-readable time duration")
 @url("https://numbat.dev/doc/date-and-time.html")
 @description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
+@example("century/1e6 -> human", "How long is a microcentury?")
 fn human(time: Time) -> String = _human_manage_past(abs(time) -> _abs_human, time)

@@ -67,6 +67,7 @@ pub struct FunctionMetadata {
     pub name: Option<String>,
     pub url: Option<String>,
     pub description: Option<String>,
+    pub examples: Vec<(String, Option<String>)>,
 }
 
 #[derive(Clone, Debug)]

@@ -3,25 +3,15 @@ use core::lists
 
 # Helper functions for mixed-unit conversions. See units::mixed for more.
 
-fn _mixed_units_helper<D: Dim>(q: D, units: List<D>, names: List<String>, round_last: Bool) -> List<String> =
-  if is_empty(units)
-    then
-      []
-    else
-      cons(
-        if len(units) == 1
-          then
-            if round_last
-              then "{round(q / head(units))}{head(names)}"
-              else "{q / head(units)}{head(names)}"
-          else "{trunc(q / head(units))}{head(names)}",
-        _mixed_units_helper(
-          q - trunc(q / head(units)) * head(units),
-          tail(units),
-          tail(names),
-          round_last))
+fn _zero_length<A: Dim>(val: A) -> A = val * 0 -> val
 
-fn _mixed_units<D: Dim>(q: D, units: List<D>, names: List<String>, round_last: Bool) -> String =
-  if q < 0
-    then str_append("-", _mixed_units(-q, units, names, round_last))
-    else join(_mixed_units_helper(q, units, names, round_last), "")
+fn _mixed_unit_list<D: Dim>(val: D, units: List<D>, acc: List<D>) -> List<D> =
+  if val == 0
+    then concat(acc, map(_zero_length, units))
+    else if len(units) == 1
+      then cons_end(val -> head(units), acc)
+      else _mixed_unit_list(val - unit_val, tail(units), cons_end(unit_val, acc))
+  where unit_val: D =
+    if (len(units) > 0)
+      then (val |> trunc_in(head(units)))
+      else error("Units list cannot be empty")

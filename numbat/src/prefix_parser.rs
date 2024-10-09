@@ -1,5 +1,5 @@
+use indexmap::IndexMap;
 use std::collections::HashMap;
-
 use std::sync::OnceLock;
 
 use crate::span::Span;
@@ -52,6 +52,25 @@ impl AcceptsPrefix {
     }
 }
 
+/// The spans associated with an alias passed to `@aliases`
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct AliasSpanInfo {
+    /// The span of the name to which the alias refers
+    pub(crate) name_span: Span,
+    /// The span of the alias itself (in an `@aliases` decorator)
+    pub(crate) alias_span: Span,
+}
+
+impl AliasSpanInfo {
+    #[cfg(test)]
+    fn dummy() -> Self {
+        Self {
+            name_span: Span::dummy(),
+            alias_span: Span::dummy(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct UnitInfo {
     definition_span: Span,
@@ -63,10 +82,7 @@ struct UnitInfo {
 
 #[derive(Debug, Clone)]
 pub struct PrefixParser {
-    units: HashMap<String, UnitInfo>,
-    // This is the exact same information as in the "units" hashmap, only faster to iterate over.
-    // TODO: maybe use an external crate for this (e.g. indexmap?)
-    units_vec: Vec<(String, UnitInfo)>,
+    units: IndexMap<String, UnitInfo>,
 
     other_identifiers: HashMap<String, Span>,
 
@@ -76,8 +92,7 @@ pub struct PrefixParser {
 impl PrefixParser {
     pub fn new() -> Self {
         Self {
-            units: HashMap::new(),
-            units_vec: Vec::new(),
+            units: IndexMap::new(),
             other_identifiers: HashMap::new(),
             reserved_identifiers: &["_", "ans"],
         }
@@ -152,23 +167,23 @@ impl PrefixParser {
     fn ensure_name_is_available(
         &self,
         name: &str,
-        conflict_span: Span,
+        definition_span: Span,
         clash_with_other_identifiers: bool,
     ) -> Result<()> {
         if self.reserved_identifiers.contains(&name) {
-            return Err(NameResolutionError::ReservedIdentifier(conflict_span));
+            return Err(NameResolutionError::ReservedIdentifier(definition_span));
         }
 
         if clash_with_other_identifiers {
             if let Some(original_span) = self.other_identifiers.get(name) {
-                return Err(self.identifier_clash_error(name, conflict_span, *original_span));
+                return Err(self.identifier_clash_error(name, definition_span, *original_span));
             }
         }
 
         match self.parse(name) {
             PrefixParserResult::Identifier(_) => Ok(()),
             PrefixParserResult::UnitIdentifier(original_span, _, _, _) => {
-                Err(self.identifier_clash_error(name, conflict_span, original_span))
+                Err(self.identifier_clash_error(name, definition_span, original_span))
             }
         }
     }
@@ -180,9 +195,12 @@ impl PrefixParser {
         metric: bool,
         binary: bool,
         full_name: &str,
-        definition_span: Span,
+        AliasSpanInfo {
+            name_span,
+            alias_span,
+        }: AliasSpanInfo,
     ) -> Result<()> {
-        self.ensure_name_is_available(unit_name, definition_span, true)?;
+        self.ensure_name_is_available(unit_name, alias_span, true)?;
 
         for (prefix_long, prefixes_short, prefix) in Self::prefixes() {
             if !(prefix.is_metric() && metric || prefix.is_binary() && binary) {
@@ -192,7 +210,7 @@ impl PrefixParser {
             if accepts_prefix.long {
                 self.ensure_name_is_available(
                     &format!("{prefix_long}{unit_name}"),
-                    definition_span,
+                    alias_span,
                     true,
                 )?;
             }
@@ -200,7 +218,7 @@ impl PrefixParser {
                 for prefix_short in *prefixes_short {
                     self.ensure_name_is_available(
                         &format!("{prefix_short}{unit_name}"),
-                        definition_span,
+                        alias_span,
                         true,
                     )?;
                 }
@@ -208,14 +226,13 @@ impl PrefixParser {
         }
 
         let unit_info = UnitInfo {
-            definition_span,
+            definition_span: name_span,
             accepts_prefix,
             metric_prefixes: metric,
             binary_prefixes: binary,
             full_name: full_name.into(),
         };
         self.units.insert(unit_name.into(), unit_info.clone());
-        self.units_vec.push((unit_name.into(), unit_info));
 
         Ok(())
     }
@@ -233,12 +250,12 @@ impl PrefixParser {
             return PrefixParserResult::UnitIdentifier(
                 info.definition_span,
                 Prefix::none(),
-                input.into(),
+                input.to_string(),
                 info.full_name.clone(),
             );
         }
 
-        for (unit_name, info) in &self.units_vec {
+        for (unit_name, info) in &self.units {
             if !input.ends_with(unit_name.as_str()) {
                 continue;
             }
@@ -294,7 +311,7 @@ mod tests {
                 true,
                 false,
                 "meter",
-                Span::dummy(),
+                AliasSpanInfo::dummy(),
             )
             .unwrap();
         prefix_parser
@@ -304,7 +321,7 @@ mod tests {
                 true,
                 false,
                 "meter",
-                Span::dummy(),
+                AliasSpanInfo::dummy(),
             )
             .unwrap();
 
@@ -315,7 +332,7 @@ mod tests {
                 true,
                 true,
                 "byte",
-                Span::dummy(),
+                AliasSpanInfo::dummy(),
             )
             .unwrap();
         prefix_parser
@@ -325,7 +342,7 @@ mod tests {
                 true,
                 true,
                 "byte",
-                Span::dummy(),
+                AliasSpanInfo::dummy(),
             )
             .unwrap();
 
@@ -336,7 +353,7 @@ mod tests {
                 false,
                 false,
                 "me",
-                Span::dummy(),
+                AliasSpanInfo::dummy(),
             )
             .unwrap();
 

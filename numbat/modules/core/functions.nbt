@@ -2,64 +2,85 @@ use core::scalar
 
 @name("Identity function")
 @description("Return the input value.")
+@example("id(8 kg)")
 fn id<A>(x: A) -> A = x
 
 @name("Absolute value")
 @description("Return the absolute value $|x|$ of the input. This works for quantities, too: `abs(-5 m) = 5 m`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.abs")
+@example("abs(-22.2 m)")
 fn abs<T: Dim>(x: T) -> T
 
 @name("Square root")
 @description("Return the square root $\\sqrt\{x\}$ of the input: `sqrt(121 m^2) = 11 m`.")
 @url("https://en.wikipedia.org/wiki/Square_root")
+@example("sqrt(4 are) -> m")
 fn sqrt<D: Dim>(x: D^2) -> D = x^(1/2)
 
 @name("Cube root")
 @description("Return the cube root $\\sqrt[3]\{x\}$ of the input: `cbrt(8 m^3) = 2 m`.")
 @url("https://en.wikipedia.org/wiki/Cube_root")
+@example("cbrt(8 L) -> cm")
 fn cbrt<D: Dim>(x: D^3) -> D = x^(1/3)
 
 @name("Square function")
 @description("Return the square of the input, $x^2$: `sqr(5 m) = 25 m^2`.")
+@example("sqr(7)")
 fn sqr<D: Dim>(x: D) -> D^2 = x^2
 
 @name("Rounding")
 @description("Round to the nearest integer. If the value is half-way between two integers, round away from $0$. See also: `round_in`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.round")
+@example("round(5.5)")
+@example("round(-5.5)")
 fn round(x: Scalar) -> Scalar
 
 @name("Rounding")
-@description("Round to the nearest multiple of `base`. For example: `round_in(m, 5.3 m) == 5 m`.")
+@description("Round to the nearest multiple of `base`.")
+@example("round_in(m, 5.3 m)", "Round in meters.")
+@example("round_in(cm, 5.3 m)", "Round in centimeters.")
 fn round_in<D: Dim>(base: D, value: D) -> D = round(value / base) × base
 
 @name("Floor function")
 @description("Returns the largest integer less than or equal to $x$. See also: `floor_in`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.floor")
+@example("floor(5.5)")
 fn floor(x: Scalar) -> Scalar
 
 @name("Floor function")
-@description("Returns the largest integer multiple of `base` less than or equal to `value`. For example: `floor_in(m, 5.7 m) == 5 m`.")
+@description("Returns the largest integer multiple of `base` less than or equal to `value`.")
+@example("floor_in(m, 5.7 m)", "Floor in meters.")
+@example("floor_in(cm, 5.7 m)", "Floor in centimeters.")
 fn floor_in<D: Dim>(base: D, value: D) -> D = floor(value / base) × base
 
 @name("Ceil function")
 @description("Returns the smallest integer greater than or equal to $x$. See also: `ceil_in`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.ceil")
+@example("ceil(5.5)")
 fn ceil(x: Scalar) -> Scalar
 
 @name("Ceil function")
-@description("Returns the smallest integer multuple of `base` greater than or equal to `value`. For example: `ceil_in(m, 5.3 m) == 6 m`.")
+@description("Returns the smallest integer multiple of `base` greater than or equal to `value`.")
+@example("ceil_in(m, 5.3 m)", "Ceil in meters.")
+@example("ceil_in(cm, 5.3 m)", "Ceil in centimeters.")
+
 fn ceil_in<D: Dim>(base: D, value: D) -> D = ceil(value / base) × base
 
 @name("Truncation")
 @description("Returns the integer part of $x$. Non-integer numbers are always truncated towards zero. See also: `trunc_in`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.trunc")
+@example("trunc(5.5)")
+@example("trunc(-5.5)")
 fn trunc(x: Scalar) -> Scalar
 
 @name("Truncation")
-@description("Truncates to an integer multiple of `base` (towards zero). For example: `trunc_in(m, -5.7 m) == -5 m`.")
+@description("Truncates to an integer multiple of `base` (towards zero).")
+@example("trunc_in(m, 5.7 m)", "Truncate in meters.")
+@example("trunc_in(cm, 5.7 m)", "Truncate in centimeters.")
 fn trunc_in<D: Dim>(base: D, value: D) -> D = trunc(value / base) × base
 
 @name("Modulo")
 @description("Calculates the least nonnegative remainder of $a (\\mod b)$.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid")
+@example("mod(27, 5)")
 fn mod<T: Dim>(a: T, b: T) -> T

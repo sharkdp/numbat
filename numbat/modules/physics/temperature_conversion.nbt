@@ -5,10 +5,12 @@ use units::si
 let _offset_celsius = 273.15
 
 @description("Converts from degree Celsius (°C) to Kelvin.")
+@example("from_celsius(300)", "300 °C in Kelvin.")
 @url("https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature")
 fn from_celsius(t_celsius: Scalar) -> Temperature = (t_celsius + _offset_celsius) kelvin
 
 @description("Converts from Kelvin to degree Celcius (°C). This can be used on the right hand side of a conversion operator: `200 K -> celsius`.")
+@example("300K -> celsius", "300 K in degree Celsius.")
 @url("https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature")
 fn celsius(t_kelvin: Temperature) -> Scalar = t_kelvin / kelvin - _offset_celsius
 
@@ -16,9 +18,11 @@ let _offset_fahrenheit = 459.67
 let _scale_fahrenheit = 5 / 9
 
 @description("Converts from degree Fahrenheit (°F) to Kelvin.")
+@example("from_fahrenheit(300)", "300 °F in Kelvin.")
 @url("https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature")
 fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature = ((t_fahrenheit + _offset_fahrenheit) × _scale_fahrenheit) kelvin
 
 @description("Converts from Kelvin to degree Fahrenheit (°F). This can be used on the right hand side of a conversion operator: `200 K -> fahrenheit`.")
+@example("300K -> fahrenheit", "300 K in degree Fahrenheit.")
 @url("https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature")
 fn fahrenheit(t_kelvin: Temperature) -> Scalar = (t_kelvin / kelvin) / _scale_fahrenheit - _offset_fahrenheit
