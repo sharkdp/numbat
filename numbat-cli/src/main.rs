@@ -443,16 +443,7 @@ impl Cli {
                                                 };
 
                                                 let text = PlainTextFormatter.format(&m, false);
-                                                if let Err(e) = {
-                                                    #[cfg(target_os = "linux")]
-                                                    {
-                                                        clipboard.set().wait().text(text)
-                                                    }
-                                                    #[cfg(not(target_os = "linux"))]
-                                                    {
-                                                        clipboard.set_text(text)
-                                                    }
-                                                } {
+                                                if let Err(e) = clipboard.set_text(text) {
                                                     self.print_diagnostic(
                                                         RuntimeError::ClipboardError(e.to_string()),
                                                     );
