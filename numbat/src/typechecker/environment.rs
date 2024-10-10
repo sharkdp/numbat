@@ -1,4 +1,4 @@
-use crate::ast::{TypeAnnotation, TypeParameterBound};
+use crate::ast::{self, TypeAnnotation, TypeParameterBound};
 use crate::dimension::DimensionRegistry;
 use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
@@ -164,6 +164,22 @@ impl Environment {
             Some(IdentifierKind::Function(signature, metadata)) => Some((signature, metadata)),
             _ => None,
         }
+    }
+
+    pub(crate) fn get_proper_function_reference<'a>(
+        &self,
+        expr: &ast::Expression<'a>,
+    ) -> Option<(&'a str, &FunctionSignature)> {
+        match expr {
+            ast::Expression::Identifier(_, name) => self
+                .get_function_info(name)
+                .map(|(signature, _)| (*name, signature)),
+            _ => None,
+        }
+    }
+
+    pub fn lookup_function(&self, name: &str) -> Option<(&FunctionSignature, &FunctionMetadata)> {
+        self.get_function_info(name)
     }
 
     pub(crate) fn generalize_types(&mut self, dtype_variables: &[TypeVariable]) {
