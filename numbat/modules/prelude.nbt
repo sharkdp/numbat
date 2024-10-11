@@ -16,6 +16,7 @@ use math::statistics
 use math::number_theory
 use math::distributions
 use math::geometry
+use math::percentage_calculations
 
 use units::si
 use units::time

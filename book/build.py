@@ -177,6 +177,10 @@ list_of_functions(
                 ],
             },
             {
+                "title": "Percentage calculations",
+                "modules": ["math::percentage_calculations"],
+            },
+            {
                 "title": "Geometry",
                 "modules": ["math::geometry"],
             },

@@ -1,0 +1,17 @@
+use core::scalar
+use units::partsperx
+
+@description("Increase a quantity by the given percentage.")
+@url("https://en.wikipedia.org/wiki/Percentage#Percentage_increase_and_decrease")
+@example("72 € |> increase_by(15%)")
+fn increase_by<D: Dim>(percentage: Scalar, quantity: D) = quantity * (1 + percentage)
+
+@description("Decrease a quantity by the given percentage.")
+@url("https://en.wikipedia.org/wiki/Percentage#Percentage_increase_and_decrease")
+@example("210 cm |> decrease_by(10%)")
+fn decrease_by<D: Dim>(percentage: Scalar, quantity: D) = increase_by(-percentage, quantity)
+
+@description("By how many percent has a given quantity increased or decreased?")
+@url("https://en.wikipedia.org/wiki/Percentage")
+@example("percentage_change(35 kg, 42 kg)")
+fn percentage_change<D: Dim>(old: D, new: D) = (new - old) / old -> %

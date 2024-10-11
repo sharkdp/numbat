@@ -1,6 +1,6 @@
 # Mathematical functions
 
-[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
+[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Percentage calculations](#percentage-calculations) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
 
 ## Basics
 
@@ -823,6 +823,64 @@ fn function(x) = x/2 - 1
 fixed_point(function, 0, 0.01)
 
     = -1.99219
+</code></pre>
+
+</details>
+
+## Percentage calculations
+
+Defined in: `math::percentage_calculations`
+
+### `increase_by`
+Increase a quantity by the given percentage.
+More information [here](https://en.wikipedia.org/wiki/Percentage#Percentage_increase_and_decrease).
+
+```nbt
+fn increase_by<D: Dim>(percentage: Scalar, quantity: D) -> D
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=72%20%E2%82%AC%20%7C%3E%20increase%5Fby%2815%25%29')""></button></div><code class="language-nbt hljs numbat">>>> 72 € |> increase_by(15%)
+
+    = 82.8 €    [Money]
+</code></pre>
+
+</details>
+
+### `decrease_by`
+Decrease a quantity by the given percentage.
+More information [here](https://en.wikipedia.org/wiki/Percentage#Percentage_increase_and_decrease).
+
+```nbt
+fn decrease_by<D: Dim>(percentage: Scalar, quantity: D) -> D
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=210%20cm%20%7C%3E%20decrease%5Fby%2810%25%29')""></button></div><code class="language-nbt hljs numbat">>>> 210 cm |> decrease_by(10%)
+
+    = 189 cm    [Length]
+</code></pre>
+
+</details>
+
+### `percentage_change`
+By how many percent has a given quantity increased or decreased?.
+More information [here](https://en.wikipedia.org/wiki/Percentage).
+
+```nbt
+fn percentage_change<D: Dim>(old: D, new: D) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=percentage%5Fchange%2835%20kg%2C%2042%20kg%29')""></button></div><code class="language-nbt hljs numbat">>>> percentage_change(35 kg, 42 kg)
+
+    = 20 %
 </code></pre>
 
 </details>
