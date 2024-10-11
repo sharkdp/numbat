@@ -89,23 +89,6 @@ fn is_finite<T: Dim>(n: T) -> Bool
 
 Defined in: `core::quantities`
 
-### `unit_of`
-Extract the unit of a quantity (the `km/h` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise.
-
-```nbt
-fn unit_of<T: Dim>(x: T) -> T
-```
-
-<details>
-<summary>Examples</summary>
-
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=unit%5Fof%2820%20km%2Fh%29')""></button></div><code class="language-nbt hljs numbat">>>> unit_of(20 km/h)
-
-    = 1 km/h    [Velocity]
-</code></pre>
-
-</details>
-
 ### `value_of`
 Extract the plain value of a quantity (the `20` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise.
 
@@ -119,6 +102,23 @@ fn value_of<T: Dim>(x: T) -> Scalar
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=value%5Fof%2820%20km%2Fh%29')""></button></div><code class="language-nbt hljs numbat">>>> value_of(20 km/h)
 
     = 20
+</code></pre>
+
+</details>
+
+### `unit_of`
+Extract the unit of a quantity (the `km/h` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise. Returns an error if the quantity is zero.
+
+```nbt
+fn unit_of<T: Dim>(x: T) -> T
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=unit%5Fof%2820%20km%2Fh%29')""></button></div><code class="language-nbt hljs numbat">>>> unit_of(20 km/h)
+
+    = 1 km/h    [Velocity]
 </code></pre>
 
 </details>
