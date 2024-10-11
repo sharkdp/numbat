@@ -4,7 +4,7 @@ use itertools::Itertools;
 use num_traits::{ToPrimitive, Zero};
 
 use crate::{
-    arithmetic::{pretty_exponent, Exponent, Power, Rational},
+    arithmetic::{pretty_exponent, ugly_exponent, Exponent, Power, Rational},
     number::Number,
     prefix::Prefix,
     prefix_parser::AcceptsPrefix,
@@ -170,6 +170,26 @@ pub struct UnitFactor {
     pub unit_id: UnitIdentifier,
     pub prefix: Prefix,
     pub exponent: Exponent,
+}
+
+impl UnitFactor {
+    // TODO: unify this implementation with `Display::fmt` (they're nearly identical)
+    /// Get this unit as a String, but without fancy Unicode formatting of exponents.
+    /// All exponents look like `^1`, `^-2`, etc.
+    pub fn to_ugly_string(&self) -> String {
+        let prefix = if self.unit_id.canonical_name.accepts_prefix.short {
+            self.prefix.as_string_short()
+        } else {
+            self.prefix.as_string_long()
+        };
+
+        format!(
+            "{}{}{}",
+            prefix,
+            self.unit_id.canonical_name.name,
+            ugly_exponent(&self.exponent)
+        )
+    }
 }
 
 impl Canonicalize for UnitFactor {

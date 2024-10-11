@@ -24,9 +24,9 @@ pub fn pretty_exponent(e: &Exponent) -> String {
         "³".into()
     } else if e == &Ratio::from_integer(2) {
         "²".into()
-    } else if e == &Ratio::from_integer(1) {
-        "".into()
-    } else if e == &Ratio::from_integer(-1) {
+    }
+    // 1 handled by ugly exponent
+    else if e == &Ratio::from_integer(-1) {
         "⁻¹".into()
     } else if e == &Ratio::from_integer(-2) {
         "⁻²".into()
@@ -36,9 +36,19 @@ pub fn pretty_exponent(e: &Exponent) -> String {
         "⁻⁴".into()
     } else if e == &Ratio::from_integer(-5) {
         "⁻⁵".into()
+    } else {
+        ugly_exponent(e)
+    }
+}
+
+pub fn ugly_exponent(e: &Exponent) -> String {
+    if e == &Ratio::from_integer(1) {
+        "".into()
     } else if e.is_positive() && e.is_integer() {
         format!("^{e}")
     } else {
         format!("^({e})")
     }
 }
+
+// pub trait
