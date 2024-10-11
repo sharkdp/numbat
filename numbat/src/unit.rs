@@ -131,7 +131,7 @@ impl UnitIdentifier {
 
                     // Multiply by the product of all divisors to make all exponents
                     // integers. This is needed for the next step.
-                    let factor: i128 = key.iter().map(|p| p.1.numer()).product();
+                    let factor: i128 = key.iter().map(|p| p.1.denom()).product();
 
                     key.iter_mut().for_each(|p| p.1 *= factor);
 
