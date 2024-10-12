@@ -227,7 +227,7 @@ pub trait Formatter {
             "  ".into(),
         ));
 
-        let mut output = CompactString::const_new("");
+        let mut output = CompactString::with_capacity(spaces.len() + markup.0.len());
         if indent {
             output.push_str(&spaces);
         }
