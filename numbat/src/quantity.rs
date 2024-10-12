@@ -3,7 +3,7 @@ use crate::number::Number;
 use crate::pretty_print::PrettyPrint;
 use crate::unit::{is_multiple_of, Unit, UnitFactor};
 
-use compact_str::format_compact;
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::{FromPrimitive, Zero};
@@ -378,8 +378,8 @@ impl Quantity {
         self.pretty_print_with_options(Some(options))
     }
 
-    pub fn unsafe_value_as_string(&self) -> String {
-        self.unsafe_value().to_string()
+    pub fn unsafe_value_as_string(&self) -> CompactString {
+        self.unsafe_value().to_compact_string()
     }
 }
 
