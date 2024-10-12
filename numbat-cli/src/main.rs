@@ -11,6 +11,7 @@ use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::command::{self, CommandParser, SourcelessCommandParser};
+use numbat::compact_str::ToCompactString;
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
 use numbat::markup as m;
@@ -418,7 +419,7 @@ impl Cli {
                                                 let m = m::text(
                                                     "successfully saved session history to",
                                                 ) + m::space()
-                                                    + m::string(dst.to_string());
+                                                    + m::string(dst.to_compact_string());
                                                 println!("{}", ansi_format(&m, interactive));
                                             }
                                             Err(err) => {

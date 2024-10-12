@@ -1,3 +1,4 @@
+use compact_str::{format_compact, CompactString};
 use num_rational::Ratio;
 use num_traits::Signed;
 
@@ -15,30 +16,30 @@ pub trait Power {
     }
 }
 
-pub fn pretty_exponent(e: &Exponent) -> String {
+pub fn pretty_exponent(e: &Exponent) -> CompactString {
     if e == &Ratio::from_integer(5) {
-        "⁵".into()
+        CompactString::const_new("⁵")
     } else if e == &Ratio::from_integer(4) {
-        "⁴".into()
+        CompactString::const_new("⁴")
     } else if e == &Ratio::from_integer(3) {
-        "³".into()
+        CompactString::const_new("³")
     } else if e == &Ratio::from_integer(2) {
-        "²".into()
+        CompactString::const_new("²")
     } else if e == &Ratio::from_integer(1) {
-        "".into()
+        CompactString::const_new("")
     } else if e == &Ratio::from_integer(-1) {
-        "⁻¹".into()
+        CompactString::const_new("⁻¹")
     } else if e == &Ratio::from_integer(-2) {
-        "⁻²".into()
+        CompactString::const_new("⁻²")
     } else if e == &Ratio::from_integer(-3) {
-        "⁻³".into()
+        CompactString::const_new("⁻³")
     } else if e == &Ratio::from_integer(-4) {
-        "⁻⁴".into()
+        CompactString::const_new("⁻⁴")
     } else if e == &Ratio::from_integer(-5) {
-        "⁻⁵".into()
+        CompactString::const_new("⁻⁵")
     } else if e.is_positive() && e.is_integer() {
-        format!("^{e}")
+        format_compact!("^{e}")
     } else {
-        format!("^({e})")
+        format_compact!("^({e})")
     }
 }

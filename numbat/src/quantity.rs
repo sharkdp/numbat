@@ -3,6 +3,7 @@ use crate::number::Number;
 use crate::pretty_print::PrettyPrint;
 use crate::unit::{is_multiple_of, Unit, UnitFactor};
 
+use compact_str::format_compact;
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::{FromPrimitive, Zero};
@@ -354,7 +355,7 @@ impl Quantity {
 
         let formatted_number = self.unsafe_value().pretty_print_with_options(options);
 
-        let unit_str = format!("{}", self.unit());
+        let unit_str = format_compact!("{}", self.unit());
 
         markup::value(formatted_number)
             + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {

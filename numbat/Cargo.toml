@@ -37,6 +37,7 @@ strfmt = "0.2.4"
 indexmap = "2.2.6"
 mendeleev = "0.8.1"
 plotly = "0.10.0"
+compact_str = { version="0.8.0", features = ["serde"] }
 
 [features]
 default = ["fetch-exchangerates"]

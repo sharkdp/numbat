@@ -71,8 +71,16 @@ macro_rules! return_list {
 pub(crate) use return_list;
 
 macro_rules! return_string {
-    ($value:expr) => {
-        Ok(Value::String($value.into()))
+    (owned = $value:expr) => {
+        Ok(Value::String($value))
+    };
+    (borrowed = $value:expr) => {
+        Ok(Value::String(::compact_str::CompactString::new($value)))
+    };
+    (from = $value:expr) => {
+        Ok(Value::String(
+            ::compact_str::ToCompactString::to_compact_string($value),
+        ))
     };
 }
 pub(crate) use return_string;

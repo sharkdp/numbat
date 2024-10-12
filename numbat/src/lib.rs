@@ -51,6 +51,8 @@ use std::borrow::Cow;
 
 use bytecode_interpreter::BytecodeInterpreter;
 use column_formatter::ColumnFormatter;
+use compact_str::CompactString;
+use compact_str::ToCompactString;
 use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
@@ -83,6 +85,8 @@ use unit_registry::UnitMetadata;
 
 use crate::prefix_parser::PrefixParserResult;
 use crate::unicode_input::UNICODE_INPUT;
+
+pub use compact_str;
 
 #[derive(Debug, Clone, Error)]
 pub enum NumbatError {
@@ -145,7 +149,7 @@ impl Context {
         ExchangeRatesCache::use_test_rates();
     }
 
-    pub fn variable_names(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn variable_names(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.prefix_transformer
             .variable_names
             .iter()
@@ -153,7 +157,7 @@ impl Context {
             .cloned()
     }
 
-    pub fn function_names(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn function_names(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.prefix_transformer
             .function_names
             .iter()
@@ -165,12 +169,12 @@ impl Context {
         &self,
     ) -> impl Iterator<
         Item = (
-            String,
-            Option<String>,
-            String,
-            Option<String>,
-            Option<String>,
-            Vec<(String, Option<String>)>,
+            CompactString,
+            Option<CompactString>,
+            CompactString,
+            Option<CompactString>,
+            Option<CompactString>,
+            Vec<(CompactString, Option<CompactString>)>,
             CodeSource,
         ),
     > + '_ {
@@ -185,7 +189,7 @@ impl Context {
                     meta.name.clone(),
                     signature
                         .pretty_print(self.dimension_registry())
-                        .to_string(),
+                        .to_compact_string(),
                     meta.description.clone(),
                     meta.url.clone(),
                     meta.examples.clone(),
@@ -195,11 +199,11 @@ impl Context {
             })
     }
 
-    pub fn unit_names(&self) -> &[Vec<String>] {
+    pub fn unit_names(&self) -> &[Vec<CompactString>] {
         &self.prefix_transformer.unit_names
     }
 
-    pub fn dimension_names(&self) -> &[String] {
+    pub fn dimension_names(&self) -> &[CompactString] {
         &self.prefix_transformer.dimension_names
     }
 
@@ -221,7 +225,7 @@ impl Context {
         output
     }
 
-    fn print_sorted(&self, mut entries: Vec<String>, format_type: FormatType) -> Markup {
+    fn print_sorted(&self, mut entries: Vec<CompactString>, format_type: FormatType) -> Markup {
         entries.sort_by_key(|e| e.to_lowercase());
 
         let formatter = ColumnFormatter::new(self.terminal_width.unwrap_or(80));
@@ -322,7 +326,17 @@ impl Context {
     }
 
     pub fn print_info_for_keyword(&mut self, keyword: &str) -> Markup {
-        let url_encode = |s: &str| s.replace('(', "%28").replace(')', "%29");
+        fn url_encode(s: &str) -> CompactString {
+            let mut out = CompactString::const_new("");
+            for c in s.chars() {
+                match c {
+                    '(' => out.push_str("%28"),
+                    ')' => out.push_str("%29"),
+                    _ => out.push(c),
+                }
+            }
+            out
+        }
 
         if keyword.is_empty() {
             return m::text("Usage: info <unit or variable>");
@@ -338,8 +352,8 @@ impl Context {
                 .ok()
                 .map(|(_, md)| md)
             {
-                let mut help =
-                    m::text("Unit: ") + m::unit(md.name.unwrap_or_else(|| keyword.to_string()));
+                let mut help = m::text("Unit: ")
+                    + m::unit(md.name.unwrap_or_else(|| keyword.to_compact_string()));
                 if let Some(url) = &md.url {
                     help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
                 }
@@ -351,7 +365,8 @@ impl Context {
                                 .iter()
                                 .map(|(x, _)| x.as_str())
                                 .collect::<Vec<_>>()
-                                .join(", "),
+                                .join(", ")
+                                .to_compact_string(),
                         )
                         + m::nl();
                 }
@@ -360,12 +375,19 @@ impl Context {
                     let desc = "Description: ";
                     let mut lines = description.lines();
                     help += m::text(desc)
-                        + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                        + m::text(
+                            lines
+                                .by_ref()
+                                .next()
+                                .unwrap_or("")
+                                .trim()
+                                .to_compact_string(),
+                        )
                         + m::nl();
 
                     for line in lines {
-                        help += m::whitespace(" ".repeat(desc.len()))
-                            + m::text(line.trim().to_string())
+                        help += m::whitespace(CompactString::const_new(" ").repeat(desc.len()))
+                            + m::text(line.trim().to_compact_string())
                             + m::nl();
                     }
                 }
@@ -389,17 +411,17 @@ impl Context {
                     if !prefix.is_none() {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::unit(keyword.to_string())
+                            + m::unit(keyword.to_compact_string())
                             + m::text(" = ")
                             + m::value(prefix.factor().pretty_print())
                             + m::space()
-                            + m::unit(full_name.to_string());
+                            + m::unit(full_name.to_compact_string());
                     }
 
                     if let Some(BaseUnitAndFactor(prod, num)) = x {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::unit(full_name.to_string())
+                            + m::unit(full_name.to_compact_string())
                             + m::text(" = ")
                             + m::value(num.pretty_print())
                             + m::space()
@@ -411,8 +433,9 @@ impl Context {
                                 Some(m::FormatType::Unit),
                             );
                     } else {
-                        help +=
-                            m::nl() + m::unit(full_name.to_string()) + m::text(" is a base unit");
+                        help += m::nl()
+                            + m::unit(full_name.to_compact_string())
+                            + m::text(" is a base unit");
                     }
                 };
 
@@ -427,7 +450,7 @@ impl Context {
             if let Some(name) = &l.metadata.name {
                 help += m::text(name.clone());
             } else {
-                help += m::identifier(keyword.to_string());
+                help += m::identifier(keyword.to_compact_string());
             }
             if let Some(url) = &l.metadata.url {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
@@ -438,12 +461,19 @@ impl Context {
                 let desc = "Description: ";
                 let mut lines = description.lines();
                 help += m::text(desc)
-                    + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                    + m::text(
+                        lines
+                            .by_ref()
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .to_compact_string(),
+                    )
                     + m::nl();
 
                 for line in lines {
-                    help += m::whitespace(" ".repeat(desc.len()))
-                        + m::text(line.trim().to_string())
+                    help += m::whitespace(CompactString::const_new(" ").repeat(desc.len()))
+                        + m::text(line.trim().to_compact_string())
                         + m::nl();
                 }
             }
@@ -456,7 +486,8 @@ impl Context {
                             .iter()
                             .map(|x| x.as_str())
                             .collect::<Vec<_>>()
-                            .join(", "),
+                            .join(", ")
+                            .to_compact_string(),
                     )
                     + m::nl();
             }
@@ -473,9 +504,9 @@ impl Context {
 
             let mut help = m::text("Function:    ");
             if let Some(name) = &metadata.name {
-                help += m::text(name.to_string());
+                help += m::text(name.clone());
             } else {
-                help += m::identifier(keyword.to_string());
+                help += m::identifier(keyword.to_compact_string());
             }
             if let Some(url) = &metadata.url {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
@@ -491,12 +522,19 @@ impl Context {
                 let desc = "Description: ";
                 let mut lines = description.lines();
                 help += m::text(desc)
-                    + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                    + m::text(
+                        lines
+                            .by_ref()
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .to_compact_string(),
+                    )
                     + m::nl();
 
                 for line in lines {
-                    help += m::whitespace(" ".repeat(desc.len()))
-                        + m::text(line.trim().to_string())
+                    help += m::whitespace(CompactString::new(" ").repeat(desc.len()))
+                        + m::text(line.trim().to_compact_string())
                         + m::nl();
                 }
             }
@@ -507,16 +545,18 @@ impl Context {
         m::text("Not found")
     }
 
-    pub fn list_modules(&self) -> impl Iterator<Item = String> {
+    pub fn list_modules(&self) -> impl Iterator<Item = CompactString> {
         let modules = self.resolver.get_importer().list_modules();
-        modules.into_iter().map(|m| m.0.join("::"))
+        modules
+            .into_iter()
+            .map(|m| m.0.join("::").to_compact_string())
     }
 
     pub fn dimension_registry(&self) -> &DimensionRegistry {
         self.typechecker.registry()
     }
 
-    pub fn base_units(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn base_units(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.interpreter
             .get_unit_registry()
             .inner
@@ -525,7 +565,7 @@ impl Context {
 
     pub fn unit_representations(
         &self,
-    ) -> impl Iterator<Item = (String, (BaseRepresentation, UnitMetadata))> + '_ {
+    ) -> impl Iterator<Item = (CompactString, (BaseRepresentation, UnitMetadata))> + '_ {
         let registry = self.interpreter.get_unit_registry();
 
         let unit_names = registry

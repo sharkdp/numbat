@@ -1,4 +1,5 @@
 use colored::Colorize;
+use numbat::compact_str::ToCompactString;
 use numbat::keywords::KEYWORDS;
 use numbat::{markup, Context};
 use rustyline::{highlight::Highlighter, CompletionType};
@@ -41,7 +42,7 @@ impl Highlighter for NumbatHighlighter {
             || ctx.function_names().any(|n| format!("{n}(") == candidate)
         {
             Cow::Owned(ansi_format(
-                &markup::identifier(candidate.to_string()),
+                &markup::identifier(candidate.to_compact_string()),
                 false,
             ))
         } else if ctx
@@ -49,14 +50,20 @@ impl Highlighter for NumbatHighlighter {
             .iter()
             .any(|un| un.iter().any(|n| n == candidate))
         {
-            Cow::Owned(ansi_format(&markup::unit(candidate.to_string()), false))
+            Cow::Owned(ansi_format(
+                &markup::unit(candidate.to_compact_string()),
+                false,
+            ))
         } else if ctx.dimension_names().iter().any(|n| n == candidate) {
             Cow::Owned(ansi_format(
-                &markup::type_identifier(candidate.to_string()),
+                &markup::type_identifier(candidate.to_compact_string()),
                 false,
             ))
         } else if KEYWORDS.iter().any(|k| k == &candidate) {
-            Cow::Owned(ansi_format(&markup::keyword(candidate.to_string()), false))
+            Cow::Owned(ansi_format(
+                &markup::keyword(candidate.to_compact_string()),
+                false,
+            ))
         } else {
             Cow::Borrowed(candidate)
         }

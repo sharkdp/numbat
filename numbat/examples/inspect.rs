@@ -1,3 +1,4 @@
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
@@ -32,7 +33,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
         let name = unit_metadata.name.unwrap_or(unit_name.clone());
 
         let name_with_url = if let Some(url) = url {
-            format!("[{name}]({url})")
+            format_compact!("[{name}]({url})")
         } else {
             name.clone()
         };
@@ -60,7 +61,8 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
         }
 
         if let Some(ref description_raw) = description {
-            let description = replace_equation_delimiters(description_raw.trim().to_string());
+            let description =
+                replace_equation_delimiters(description_raw.trim().to_compact_string());
 
             if description.ends_with('.') {
                 println!("{description}");
@@ -157,8 +159,8 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 }
 
 // Replace $..$ with \\( .. \\) for mdbook.
-fn replace_equation_delimiters(text_in: String) -> String {
-    let mut text_out = String::new();
+fn replace_equation_delimiters(text_in: CompactString) -> CompactString {
+    let mut text_out = CompactString::new("");
     for (i, part) in text_in.split('$').enumerate() {
         if i % 2 == 0 {
             text_out.push_str(part);

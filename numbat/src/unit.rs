@@ -1,5 +1,6 @@
 use std::{fmt::Display, ops::Div};
 
+use compact_str::CompactString;
 use itertools::Itertools;
 use num_traits::{ToPrimitive, Zero};
 
@@ -38,7 +39,7 @@ impl CanonicalName {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitIdentifier {
-    pub name: String,
+    pub name: CompactString,
     pub canonical_name: CanonicalName,
     kind: UnitKind,
 }
@@ -102,7 +103,7 @@ impl UnitIdentifier {
         }
     }
 
-    pub fn sort_key(&self) -> Vec<(String, Exponent)> {
+    pub fn sort_key(&self) -> Vec<(CompactString, Exponent)> {
         use num_integer::Integer;
 
         // TODO: this is more or less a hack. instead of properly sorting by physical

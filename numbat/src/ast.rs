@@ -4,6 +4,7 @@ use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint, resolver::ModulePath,
 };
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use num_traits::Signed;
 
@@ -62,7 +63,7 @@ impl PrettyPrint for BinaryOperator {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum StringPart<'a> {
-    Fixed(String),
+    Fixed(CompactString),
     Interpolation {
         span: Span,
         expr: Box<Expression<'a>>,
@@ -74,7 +75,7 @@ pub enum StringPart<'a> {
 pub enum Expression<'a> {
     Scalar(Span, Number),
     Identifier(Span, &'a str),
-    UnitIdentifier(Span, Prefix, String, String), // can't easily be made &'a str
+    UnitIdentifier(Span, Prefix, CompactString, CompactString), // can't easily be made &'a str
     TypedHole(Span),
     UnaryOperator {
         op: UnaryOperator,
@@ -325,7 +326,7 @@ impl PrettyPrint for TypeAnnotation {
 
 pub enum TypeExpression {
     Unity(Span),
-    TypeIdentifier(Span, String),
+    TypeIdentifier(Span, CompactString),
     Multiply(Span, Box<TypeExpression>, Box<TypeExpression>),
     Divide(Span, Box<TypeExpression>, Box<TypeExpression>),
     Power(
@@ -370,7 +371,9 @@ impl PrettyPrint for TypeExpression {
     fn pretty_print(&self) -> Markup {
         match self {
             TypeExpression::Unity(_) => m::type_identifier("1"),
-            TypeExpression::TypeIdentifier(_, ident) => m::type_identifier(ident.clone()),
+            TypeExpression::TypeIdentifier(_, ident) => {
+                m::type_identifier(ident.to_compact_string())
+            }
             TypeExpression::Multiply(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
             }
@@ -381,9 +384,9 @@ impl PrettyPrint for TypeExpression {
                 with_parens(lhs)
                     + m::operator("^")
                     + if exp.is_positive() {
-                        m::value(format!("{exp}"))
+                        m::value(format_compact!("{exp}"))
                     } else {
-                        m::operator("(") + m::value(format!("{exp}")) + m::operator(")")
+                        m::operator("(") + m::value(format_compact!("{exp}")) + m::operator(")")
                     }
             }
         }

@@ -1,3 +1,5 @@
+use compact_str::CompactString;
+
 use crate::ast::{TypeAnnotation, TypeParameterBound};
 use crate::dimension::DimensionRegistry;
 use crate::pretty_print::PrettyPrint;
@@ -10,15 +12,15 @@ use super::map_stack::MapStack;
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use super::type_scheme::TypeScheme;
 
-type Identifier = String;
+type Identifier = CompactString;
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
-    pub name: String,
+    pub name: CompactString,
     pub definition_span: Span,
     #[allow(dead_code)]
-    pub type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
-    pub parameters: Vec<(Span, String, Option<TypeAnnotation>)>,
+    pub type_parameters: Vec<(Span, CompactString, Option<TypeParameterBound>)>,
+    pub parameters: Vec<(Span, CompactString, Option<TypeAnnotation>)>,
     pub return_type_annotation: Option<TypeAnnotation>,
     pub fn_type: TypeScheme,
 }
@@ -64,10 +66,10 @@ impl FunctionSignature {
 
 #[derive(Clone, Debug)]
 pub struct FunctionMetadata {
-    pub name: Option<String>,
-    pub url: Option<String>,
-    pub description: Option<String>,
-    pub examples: Vec<(String, Option<String>)>,
+    pub name: Option<CompactString>,
+    pub url: Option<CompactString>,
+    pub description: Option<CompactString>,
+    pub examples: Vec<(CompactString, Option<CompactString>)>,
 }
 
 #[derive(Clone, Debug)]
@@ -119,7 +121,7 @@ impl Environment {
 
     pub(crate) fn add_function(
         &mut self,
-        v: String,
+        v: CompactString,
         signature: FunctionSignature,
         metadata: FunctionMetadata,
     ) {
