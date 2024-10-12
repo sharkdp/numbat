@@ -1448,7 +1448,7 @@ mod tests {
             .clone()
     }
 
-    fn pretty_print(stmt: &Statement) -> String {
+    fn pretty_print(stmt: &Statement) -> CompactString {
         let markup = stmt.pretty_print();
 
         (PlainTextFormatter {}).format(&markup, false)

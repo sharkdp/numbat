@@ -407,7 +407,7 @@ impl BytecodeInterpreter {
                     .map_err(RuntimeError::UnitRegistryError)?;
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
-                    unit_name,
+                    unit_name.to_compact_string(),
                     crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]),
                 )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
@@ -428,9 +428,9 @@ impl BytecodeInterpreter {
                     .collect();
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
-                    "<dummy>",
+                    CompactString::const_new("<dummy>"),
                     CanonicalName {
-                        name: "<dummy>".to_string(),
+                        name: CompactString::const_new("<dummy>"),
                         accepts_prefix: AcceptsPrefix::both(),
                     },
                 ))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs

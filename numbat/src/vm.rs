@@ -665,7 +665,7 @@ impl Vm {
                         .map_err(RuntimeError::UnitRegistryError)?;
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
-                        &unit_information.0,
+                        unit_information.0.to_compact_string(),
                         unit_information.2.canonical_name.clone(),
                         *conversion_value.unsafe_value(),
                         defining_unit.clone(),
@@ -951,7 +951,10 @@ impl Vm {
                                     let q = q.full_simplify();
 
                                     let mut vars = HashMap::new();
-                                    vars.insert("value".to_string(), q.unsafe_value().to_f64());
+                                    vars.insert(
+                                        CompactString::const_new("value"),
+                                        q.unsafe_value().to_f64(),
+                                    );
 
                                     let mut str =
                                         strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)

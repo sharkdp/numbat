@@ -395,6 +395,8 @@ impl std::fmt::Display for Quantity {
 
 #[cfg(test)]
 mod tests {
+    use compact_str::CompactString;
+
     use crate::{prefix::Prefix, prefix_parser::AcceptsPrefix, unit::CanonicalName};
 
     use super::*;
@@ -418,7 +420,7 @@ mod tests {
 
         let meter = Unit::meter();
         let foot = Unit::new_derived(
-            "foot",
+            CompactString::const_new("foot"),
             CanonicalName::new("ft", AcceptsPrefix::none()),
             Number::from_f64(0.3048),
             meter.clone(),

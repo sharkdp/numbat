@@ -2,7 +2,7 @@ use std::ops::{Div, Mul};
 
 use crate::arithmetic::{Exponent, Power};
 use crate::markup::{self as m, Formatter, PlainTextFormatter};
-use compact_str::ToCompactString;
+use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::Signed;
@@ -105,7 +105,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + ToCompactString, const CANONIC
         times_separator: char,
         over_separator: char,
         separator_padding: bool,
-    ) -> String
+    ) -> CompactString
     where
         GetExponent: Fn(&Factor) -> Exponent,
     {

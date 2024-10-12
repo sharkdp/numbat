@@ -30,6 +30,15 @@ pub enum CompactStrCow {
     Static(&'static str),
 }
 
+impl From<CompactStrCow> for CompactString {
+    fn from(value: CompactStrCow) -> Self {
+        match value {
+            CompactStrCow::Owned(compact_string) => compact_string,
+            CompactStrCow::Static(s) => CompactString::const_new(s),
+        }
+    }
+}
+
 impl std::ops::Deref for CompactStrCow {
     type Target = str;
 
@@ -209,16 +218,16 @@ pub fn nl() -> Markup {
 }
 
 pub trait Formatter {
-    fn format_part(&self, part: &FormattedString) -> String;
+    fn format_part(&self, part: &FormattedString) -> CompactString;
 
-    fn format(&self, markup: &Markup, indent: bool) -> String {
+    fn format(&self, markup: &Markup, indent: bool) -> CompactString {
         let spaces = self.format_part(&FormattedString(
             OutputType::Normal,
             FormatType::Whitespace,
             "  ".into(),
         ));
 
-        let mut output: String = String::new();
+        let mut output = CompactString::const_new("");
         if indent {
             output.push_str(&spaces);
         }
@@ -235,11 +244,11 @@ pub trait Formatter {
 pub struct PlainTextFormatter;
 
 impl Formatter for PlainTextFormatter {
-    fn format_part(&self, FormattedString(_, _, text): &FormattedString) -> String {
-        text.to_string()
+    fn format_part(&self, FormattedString(_, _, text): &FormattedString) -> CompactString {
+        text.clone().into()
     }
 }
 
-pub fn plain_text_format(m: &Markup, indent: bool) -> String {
+pub fn plain_text_format(m: &Markup, indent: bool) -> CompactString {
     PlainTextFormatter {}.format(m, indent)
 }

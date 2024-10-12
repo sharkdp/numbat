@@ -101,7 +101,7 @@ impl ColumnFormatter {
 }
 
 #[cfg(test)]
-fn format(width: usize, entries: &[&str]) -> String {
+fn format(width: usize, entries: &[&str]) -> CompactString {
     use crate::markup::{Formatter, PlainTextFormatter};
 
     let formatter = ColumnFormatter::new(width);
