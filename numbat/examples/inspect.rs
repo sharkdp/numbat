@@ -3,7 +3,6 @@ use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
 use numbat::resolver::CodeSource;
 use numbat::Context;
-use percent_encoding;
 use std::path::Path;
 
 const AUTO_GENERATED_HINT: &str = "<!-- NOTE! This file is auto-generated -->";
@@ -119,7 +118,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     //Assemble the example output
                     let result_markup = results.to_markup(
                         statements.last(),
-                        &example_ctx.dimension_registry(),
+                        example_ctx.dimension_registry(),
                         true,
                         true,
                     );
@@ -132,9 +131,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 
                     print!("<pre>");
                     print!("<div class=\"buttons\">");
-                    print!("<button class=\"fa fa-play play-button\" title=\"{}\" aria-label=\"{}\"  onclick=\" window.open('{}')\"\"></button>",
-                        "Run this code",
-                        "Run this code",
+                    print!("<button class=\"fa fa-play play-button\" title=\"Run this code\" aria-label=\"Run this code\"  onclick=\" window.open('{}')\"\"></button>",
                         example_url);
                     print!("</div>");
                     print!("<code class=\"language-nbt hljs numbat\">");
@@ -171,14 +168,14 @@ fn replace_equation_delimiters(text_in: String) -> String {
             text_out.push_str(" \\\\)");
         }
     }
-    return text_out;
+    text_out
 }
 
 fn prepare_context() -> Context {
     let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
     let mut importer = FileSystemImporter::default();
     importer.add_path(module_path);
-    return Context::new(importer);
+    Context::new(importer)
 }
 
 fn main() {

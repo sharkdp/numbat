@@ -2902,9 +2902,9 @@ mod tests {
             &["@name(\"Some function\") @example(\"some_function(2)\", \"Use this function:\") @example(\"let some_var = some_function(0)\") fn some_function(x) = 1"],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
-                function_name: "some_function".into(),
+                function_name: "some_function",
                 type_parameters: vec![],
-                parameters: vec![(Span::dummy(), "x".into(), None)],
+                parameters: vec![(Span::dummy(), "x", None)],
                 body: Some(scalar!(1.0)),
                 local_variables: vec![],
                 return_type_annotation: None,
