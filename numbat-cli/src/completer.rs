@@ -6,7 +6,7 @@ use rustyline::completion::{extract_word, Completer, Pair};
 pub struct NumbatCompleter {
     pub context: Arc<Mutex<Context>>,
     pub modules: Vec<CompactString>,
-    pub all_timezones: Vec<String>,
+    pub all_timezones: Vec<CompactString>,
 }
 
 impl Completer for NumbatCompleter {

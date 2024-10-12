@@ -11,7 +11,7 @@ use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::command::{self, CommandParser, SourcelessCommandParser};
-use numbat::compact_str::ToCompactString;
+use numbat::compact_str::{CompactString, ToCompactString};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
 use numbat::markup as m;
@@ -298,7 +298,10 @@ impl Cli {
             completer: NumbatCompleter {
                 context: self.context.clone(),
                 modules: self.context.lock().unwrap().list_modules().collect(),
-                all_timezones: jiff::tz::db().available().collect(),
+                all_timezones: jiff::tz::db()
+                    .available()
+                    .map(CompactString::from)
+                    .collect(),
             },
             highlighter: NumbatHighlighter {
                 context: self.context.clone(),

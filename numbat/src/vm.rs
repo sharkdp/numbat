@@ -514,8 +514,8 @@ impl Vm {
 
                 let operands_str = operands
                     .iter()
-                    .map(u16::to_string)
-                    .collect::<Vec<String>>()
+                    .map(u16::to_compact_string)
+                    .collect::<Vec<_>>()
                     .join(" ");
 
                 eprint!(
