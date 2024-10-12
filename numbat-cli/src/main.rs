@@ -466,7 +466,7 @@ impl Cli {
                             }
                         }
 
-                        session_history.push(line, result);
+                        session_history.push(CompactString::from(line), result);
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}
