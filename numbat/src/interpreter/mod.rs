@@ -13,6 +13,7 @@ use crate::{
 pub use crate::markup as m;
 
 use assert_eq_3::AssertEq3Error;
+use compact_str::{CompactString, ToCompactString};
 use thiserror::Error;
 
 pub use crate::value::Value;
@@ -127,10 +128,10 @@ impl InterpreterResult {
         matches!(self, Self::Continue)
     }
 
-    pub fn value_as_string(&self) -> Option<String> {
+    pub fn value_as_string(&self) -> Option<CompactString> {
         match self {
             Self::Continue => None,
-            Self::Value(value) => Some(value.to_string()),
+            Self::Value(value) => Some(value.to_compact_string()),
         }
     }
 }
