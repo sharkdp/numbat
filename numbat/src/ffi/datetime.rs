@@ -1,4 +1,5 @@
-use compact_str::CompactString;
+use compact_str::format_compact;
+
 use jiff::Span;
 use jiff::Timestamp;
 use jiff::Zoned;
@@ -12,8 +13,6 @@ use crate::quantity::Quantity;
 use crate::value::FunctionReference;
 use crate::value::Value;
 use crate::RuntimeError;
-
-use std::fmt::Write;
 
 pub fn now(_args: Args) -> Result<Value> {
     return_datetime!(Zoned::now())
@@ -32,8 +31,7 @@ pub fn format_datetime(mut args: Args) -> Result<Value> {
     let format = string_arg!(args);
     let dt = datetime_arg!(args);
 
-    let mut output = CompactString::const_new("");
-    write!(output, "{}", dt.strftime(&format)).map_err(|_| RuntimeError::DateFormattingError)?;
+    let output = format_compact!("{}", dt.strftime(&format));
 
     return_string!(owned = output)
 }

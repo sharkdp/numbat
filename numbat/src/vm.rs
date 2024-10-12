@@ -924,7 +924,7 @@ impl Vm {
                 }
                 Op::JoinString => {
                     let num_parts = self.read_u16() as usize;
-                    let mut joined = CompactString::const_new("");
+                    let mut joined = CompactString::with_capacity(num_parts);
                     let to_str = |value| match value {
                         Value::Quantity(q) => q.full_simplify().to_compact_string(),
                         Value::Boolean(b) => b.to_compact_string(),

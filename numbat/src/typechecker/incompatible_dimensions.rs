@@ -24,13 +24,10 @@ pub struct IncompatibleDimensionsError {
     pub actual_dimensions: Vec<CompactString>,
 }
 
-fn pad(a: &str, b: &str) -> (CompactString, CompactString) {
+fn pad(a: &str, b: &str) -> (String, String) {
     let max_length = a.width().max(b.width());
 
-    (
-        format_compact!("{a: <max_length$}"),
-        format_compact!("{b: <max_length$}"),
-    )
+    (format!("{a: <max_length$}"), format!("{b: <max_length$}"))
 }
 
 fn suggested_fix(
@@ -105,8 +102,8 @@ impl fmt::Display for IncompatibleDimensionsError {
                 }
             }
 
-            let mut expected_result_string = CompactString::const_new("");
-            let mut actual_result_string = CompactString::new("");
+            let mut expected_result_string = String::new();
+            let mut actual_result_string = String::new();
 
             for (name, (exp1, exp2)) in shared_factors
                 .iter()
@@ -118,7 +115,7 @@ impl fmt::Display for IncompatibleDimensionsError {
                 actual_result_string.push_str(&str2);
             }
 
-            let mut expected_factors_string = CompactString::const_new("");
+            let mut expected_factors_string = String::new();
 
             for (name, exp) in expected_factors
                 .iter()
@@ -127,7 +124,7 @@ impl fmt::Display for IncompatibleDimensionsError {
                 expected_factors_string.push_str(&format_factor(name, exp));
             }
 
-            let mut actual_factors_string = CompactString::const_new("");
+            let mut actual_factors_string = String::new();
 
             for (name, exp) in actual_factors
                 .iter()

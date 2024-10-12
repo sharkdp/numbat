@@ -327,7 +327,7 @@ impl Context {
 
     pub fn print_info_for_keyword(&mut self, keyword: &str) -> Markup {
         fn url_encode(s: &str) -> CompactString {
-            let mut out = CompactString::const_new("");
+            let mut out = CompactString::with_capacity(s.len());
             for c in s.chars() {
                 match c {
                     '(' => out.push_str("%28"),

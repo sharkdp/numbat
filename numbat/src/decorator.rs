@@ -106,7 +106,7 @@ pub fn url<'a>(decorators: &'a [Decorator<'a>]) -> Option<&'a str> {
 }
 
 pub fn description(decorators: &[Decorator]) -> Option<CompactString> {
-    let mut description = CompactString::const_new("");
+    let mut description = CompactString::with_capacity(decorators.len());
     for decorator in decorators {
         if let Decorator::Description(d) = decorator {
             description += d;

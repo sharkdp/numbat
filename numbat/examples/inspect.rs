@@ -160,7 +160,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 
 // Replace $..$ with \\( .. \\) for mdbook.
 fn replace_equation_delimiters(text_in: CompactString) -> CompactString {
-    let mut text_out = CompactString::new("");
+    let mut text_out = CompactString::with_capacity(text_in.len());
     for (i, part) in text_in.split('$').enumerate() {
         if i % 2 == 0 {
             text_out.push_str(part);
