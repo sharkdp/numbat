@@ -3,6 +3,7 @@ use crate::number::Number;
 use crate::pretty_print::PrettyPrint;
 use crate::unit::{is_multiple_of, Unit, UnitFactor};
 
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::{FromPrimitive, Zero};
@@ -354,7 +355,7 @@ impl Quantity {
 
         let formatted_number = self.unsafe_value().pretty_print_with_options(options);
 
-        let unit_str = format!("{}", self.unit());
+        let unit_str = format_compact!("{}", self.unit());
 
         markup::value(formatted_number)
             + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {
@@ -377,8 +378,8 @@ impl Quantity {
         self.pretty_print_with_options(Some(options))
     }
 
-    pub fn unsafe_value_as_string(&self) -> String {
-        self.unsafe_value().to_string()
+    pub fn unsafe_value_as_string(&self) -> CompactString {
+        self.unsafe_value().to_compact_string()
     }
 }
 
@@ -394,6 +395,8 @@ impl std::fmt::Display for Quantity {
 
 #[cfg(test)]
 mod tests {
+    use compact_str::CompactString;
+
     use crate::{prefix::Prefix, prefix_parser::AcceptsPrefix, unit::CanonicalName};
 
     use super::*;
@@ -417,7 +420,7 @@ mod tests {
 
         let meter = Unit::meter();
         let foot = Unit::new_derived(
-            "foot",
+            CompactString::const_new("foot"),
             CanonicalName::new("ft", AcceptsPrefix::none()),
             Number::from_f64(0.3048),
             meter.clone(),

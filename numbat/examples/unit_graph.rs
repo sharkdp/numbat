@@ -35,7 +35,10 @@ fn main() {
     })
     // TODO: check if to_integer can fail here.sorted_by_key(|(_, b)| b.clone())
     {
-        let is_base = base_representation == vec![(unit_name.into(), 1i128)];
+        let is_base = base_representation
+            .iter()
+            .map(|(a, b)| (a, b))
+            .eq([(unit_name, &1i128)]);
 
         if !is_base {
             for (base_factor, _) in base_representation {

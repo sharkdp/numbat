@@ -1,6 +1,8 @@
+use compact_str::CompactString;
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TypeVariable {
-    Named(String),
+    Named(CompactString),
     Quantified(usize),
 }
 

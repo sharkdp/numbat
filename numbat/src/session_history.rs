@@ -1,3 +1,4 @@
+use compact_str::CompactString;
 use std::{fs, io, path::Path};
 
 use crate::RuntimeError;
@@ -6,7 +7,7 @@ pub type ParseEvaluationResult = Result<(), ()>;
 
 #[derive(Debug)]
 struct SessionHistoryItem {
-    input: String,
+    input: CompactString,
     result: ParseEvaluationResult,
 }
 
@@ -26,7 +27,7 @@ pub struct SessionHistoryOptions {
 }
 
 impl SessionHistory {
-    pub fn push(&mut self, input: String, result: ParseEvaluationResult) {
+    pub fn push(&mut self, input: CompactString, result: ParseEvaluationResult) {
         self.0.push(SessionHistoryItem { input, result });
     }
 
@@ -80,10 +81,10 @@ mod test {
         let mut sh = SessionHistory::new();
 
         // arbitrary non-ascii characters
-        sh.push("  a→  ".to_owned(), Ok(()));
-        sh.push("  b × c  ".to_owned(), Err(()));
-        sh.push("  d ♔ e ⚀ f  ".to_owned(), Err(()));
-        sh.push("  g ☼ h ▶︎ i ❖ j  ".to_owned(), Ok(()));
+        sh.push(CompactString::const_new("  a→  "), Ok(()));
+        sh.push(CompactString::const_new("  b × c  "), Err(()));
+        sh.push(CompactString::const_new("  d ♔ e ⚀ f  "), Err(()));
+        sh.push(CompactString::const_new("  g ☼ h ▶︎ i ❖ j  "), Ok(()));
 
         let test_cases = [
             (

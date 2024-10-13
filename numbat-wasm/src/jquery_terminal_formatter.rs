@@ -1,21 +1,29 @@
 use numbat::buffered_writer::BufferedWriter;
 use numbat::markup::{FormatType, FormattedString, Formatter};
 
+use numbat::compact_str::{format_compact, CompactString};
 use termcolor::{Color, WriteColor};
 
 pub struct JqueryTerminalFormatter;
 
-pub fn jt_format(class: Option<&str>, content: &str) -> String {
+pub fn jt_format(class: Option<&str>, content: &str) -> CompactString {
     if content.is_empty() {
-        return "".into();
+        return CompactString::const_new("");
     }
 
-    let content = html_escape::encode_text(content)
-        .replace('[', "&#91;")
-        .replace(']', "&#93;");
+    let escaped = html_escape::encode_text(content);
+    let mut content = CompactString::with_capacity(escaped.len());
+
+    for c in escaped.chars() {
+        match c {
+            '[' => content.push_str("&#91;"),
+            ']' => content.push_str("&#93;"),
+            _ => content.push(c),
+        }
+    }
 
     if let Some(class) = class {
-        format!("[[;;;hl-{class}]{content}]")
+        format_compact!("[[;;;hl-{class}]{content}]")
     } else {
         content
     }
@@ -25,7 +33,7 @@ impl Formatter for JqueryTerminalFormatter {
     fn format_part(
         &self,
         FormattedString(_output_type, format_type, s): &FormattedString,
-    ) -> String {
+    ) -> CompactString {
         let css_class = match format_type {
             FormatType::Whitespace => None,
             FormatType::Emphasized => Some("emphasized"),
@@ -68,17 +76,20 @@ impl std::io::Write for JqueryTerminalWriter {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         if let Some(color) = &self.color {
             if color.fg() == Some(&Color::Red) {
-                self.buffer.write_all("[[;;;hl-diagnostic-red]".as_bytes())?;
+                self.buffer
+                    .write_all("[[;;;hl-diagnostic-red]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
                 self.buffer.write_all("]".as_bytes())?;
                 Ok(size)
             } else if color.fg() == Some(&Color::Blue) {
-                self.buffer.write_all("[[;;;hl-diagnostic-blue]".as_bytes())?;
+                self.buffer
+                    .write_all("[[;;;hl-diagnostic-blue]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
                 self.buffer.write_all("]".as_bytes())?;
                 Ok(size)
             } else if color.bold() {
-                self.buffer.write_all("[[;;;hl-diagnostic-bold]".as_bytes())?;
+                self.buffer
+                    .write_all("[[;;;hl-diagnostic-bold]".as_bytes())?;
                 let size = self.buffer.write(buf)?;
                 self.buffer.write_all("]".as_bytes())?;
                 Ok(size)

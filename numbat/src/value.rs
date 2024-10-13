@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
 use jiff::Zoned;
 
@@ -9,10 +10,10 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FunctionReference {
-    Foreign(String),
-    Normal(String),
+    Foreign(CompactString),
+    Normal(CompactString),
     // TODO: We can get rid of this variant once we implement closures:
-    TzConversion(String),
+    TzConversion(CompactString),
 }
 
 impl std::fmt::Display for FunctionReference {
@@ -31,11 +32,11 @@ impl std::fmt::Display for FunctionReference {
 pub enum Value {
     Quantity(Quantity),
     Boolean(bool),
-    String(String),
+    String(CompactString),
     /// A DateTime with an associated offset used when pretty printing
     DateTime(Zoned),
     FunctionReference(FunctionReference),
-    FormatSpecifiers(Option<String>),
+    FormatSpecifiers(Option<CompactString>),
     StructInstance(Arc<StructInfo>, Vec<Value>),
     List(NumbatList<Value>),
 }
@@ -60,7 +61,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_string(self) -> String {
+    pub fn unsafe_as_string(self) -> CompactString {
         if let Value::String(s) = self {
             s
         } else {
@@ -155,7 +156,7 @@ impl PrettyPrint for Value {
             Value::Boolean(b) => b.pretty_print(),
             Value::String(s) => s.pretty_print(),
             Value::DateTime(dt) => crate::markup::string(crate::datetime::to_string(dt)),
-            Value::FunctionReference(r) => crate::markup::string(r.to_string()),
+            Value::FunctionReference(r) => crate::markup::string(r.to_compact_string()),
             Value::FormatSpecifiers(Some(s)) => crate::markup::string(s.clone()),
             Value::FormatSpecifiers(None) => crate::markup::empty(),
             Value::StructInstance(struct_info, values) => {

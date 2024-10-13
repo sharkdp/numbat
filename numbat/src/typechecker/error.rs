@@ -4,6 +4,7 @@ use crate::span::Span;
 use crate::typed_ast::BinaryOperator;
 use crate::{BaseRepresentation, NameResolutionError, Type};
 
+use compact_str::CompactString;
 use thiserror::Error;
 
 use super::substitutions::SubstitutionError;
@@ -126,7 +127,7 @@ pub enum TypeCheckError {
     UnknownFieldAccess(Span, Span, String, Type),
 
     #[error("Missing fields in struct instantiation")]
-    MissingFieldsInStructInstantiation(Span, Span, Vec<(String, Type)>),
+    MissingFieldsInStructInstantiation(Span, Span, Vec<(CompactString, Type)>),
 
     #[error("Incompatible types in list: expected '{1}', got '{3}' instead")]
     IncompatibleTypesInList(Span, Type, Span, Type),

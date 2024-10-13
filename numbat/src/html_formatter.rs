@@ -1,19 +1,20 @@
 use crate::buffered_writer::BufferedWriter;
 use crate::markup::{FormatType, FormattedString, Formatter};
 
+use compact_str::{format_compact, CompactString};
 use termcolor::{Color, WriteColor};
 
 pub struct HtmlFormatter;
 
-pub fn html_format(class: Option<&str>, content: &str) -> String {
+pub fn html_format(class: Option<&str>, content: &str) -> CompactString {
     if content.is_empty() {
-        return "".into();
+        return CompactString::const_new("");
     }
 
     let content = html_escape::encode_text(content);
 
     if let Some(class) = class {
-        format!("<span class=\"numbat-{class}\">{content}</span>")
+        format_compact!("<span class=\"numbat-{class}\">{content}</span>")
     } else {
         content.into()
     }
@@ -23,7 +24,7 @@ impl Formatter for HtmlFormatter {
     fn format_part(
         &self,
         FormattedString(_output_type, format_type, s): &FormattedString,
-    ) -> String {
+    ) -> CompactString {
         let css_class = match format_type {
             FormatType::Whitespace => None,
             FormatType::Emphasized => Some("emphasized"),
@@ -73,21 +74,21 @@ impl std::io::Write for HtmlWriter {
         if let Some(color) = &self.color {
             if color.fg() == Some(&Color::Red) {
                 self.buffer
-                    .write("<span class=\"numbat-diagnostic-red\">".as_bytes())?;
+                    .write_all("<span class=\"numbat-diagnostic-red\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("</span>".as_bytes())?;
+                self.buffer.write_all("</span>".as_bytes())?;
                 Ok(size)
             } else if color.fg() == Some(&Color::Blue) {
                 self.buffer
-                    .write("<span class=\"numbat-diagnostic-blue\">".as_bytes())?;
+                    .write_all("<span class=\"numbat-diagnostic-blue\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("</span>".as_bytes())?;
+                self.buffer.write_all("</span>".as_bytes())?;
                 Ok(size)
             } else if color.bold() {
                 self.buffer
-                    .write("<span class=\"numbat-diagnostic-bold\">".as_bytes())?;
+                    .write_all("<span class=\"numbat-diagnostic-bold\">".as_bytes())?;
                 let size = self.buffer.write(buf)?;
-                self.buffer.write("</span>".as_bytes())?;
+                self.buffer.write_all("</span>".as_bytes())?;
                 Ok(size)
             } else {
                 self.buffer.write(buf)

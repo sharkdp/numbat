@@ -2,6 +2,7 @@ mod common;
 
 use common::get_test_context;
 
+use compact_str::CompactString;
 use insta::assert_snapshot;
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
@@ -23,7 +24,7 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: im
 }
 
 #[track_caller]
-fn succeed(code: &str) -> String {
+fn succeed(code: &str) -> CompactString {
     let mut ctx = get_test_context();
     let ret = ctx.interpret(code, CodeSource::Internal);
     match ret {
@@ -33,7 +34,7 @@ fn succeed(code: &str) -> String {
                 let fmt = PlainTextFormatter {};
                 fmt.format(&val.pretty_print(), false)
             } else {
-                String::new()
+                CompactString::const_new("")
             }
         }
     }

@@ -1,3 +1,5 @@
+use compact_str::CompactString;
+
 use crate::{prefix_parser::AcceptsPrefix, span::Span, unit::CanonicalName};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -5,10 +7,10 @@ pub enum Decorator<'a> {
     MetricPrefixes,
     BinaryPrefixes,
     Aliases(Vec<(&'a str, Option<AcceptsPrefix>, Span)>),
-    Url(String),
-    Name(String),
-    Description(String),
-    Example(String, Option<String>),
+    Url(CompactString),
+    Name(CompactString),
+    Description(CompactString),
+    Example(CompactString, Option<CompactString>),
 }
 
 /// Get an iterator of data computed from a name and/or its alias's `AcceptsPrefix` and
@@ -103,8 +105,8 @@ pub fn url<'a>(decorators: &'a [Decorator<'a>]) -> Option<&'a str> {
     None
 }
 
-pub fn description(decorators: &[Decorator]) -> Option<String> {
-    let mut description = String::new();
+pub fn description(decorators: &[Decorator]) -> Option<CompactString> {
+    let mut description = CompactString::with_capacity(decorators.len());
     for decorator in decorators {
         if let Decorator::Description(d) = decorator {
             description += d;
@@ -118,7 +120,7 @@ pub fn description(decorators: &[Decorator]) -> Option<String> {
     }
 }
 
-pub fn examples(decorators: &[Decorator]) -> Vec<(String, Option<String>)> {
+pub fn examples(decorators: &[Decorator]) -> Vec<(CompactString, Option<CompactString>)> {
     let mut examples = Vec::new();
     for decorator in decorators {
         if let Decorator::Example(example_code, example_description) = decorator {

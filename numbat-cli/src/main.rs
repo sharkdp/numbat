@@ -11,6 +11,7 @@ use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::command::{self, CommandParser, SourcelessCommandParser};
+use numbat::compact_str::{CompactString, ToCompactString};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
 use numbat::markup as m;
@@ -297,7 +298,10 @@ impl Cli {
             completer: NumbatCompleter {
                 context: self.context.clone(),
                 modules: self.context.lock().unwrap().list_modules().collect(),
-                all_timezones: jiff::tz::db().available().collect(),
+                all_timezones: jiff::tz::db()
+                    .available()
+                    .map(CompactString::from)
+                    .collect(),
             },
             highlighter: NumbatHighlighter {
                 context: self.context.clone(),
@@ -418,7 +422,7 @@ impl Cli {
                                                 let m = m::text(
                                                     "successfully saved session history to",
                                                 ) + m::space()
-                                                    + m::string(dst.to_string());
+                                                    + m::string(dst.to_compact_string());
                                                 println!("{}", ansi_format(&m, interactive));
                                             }
                                             Err(err) => {
@@ -462,7 +466,7 @@ impl Cli {
                             }
                         }
 
-                        session_history.push(line, result);
+                        session_history.push(CompactString::from(line), result);
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}

@@ -1,4 +1,7 @@
-use numbat::markup::{FormatType, FormattedString, Formatter, Markup};
+use numbat::{
+    compact_str::{CompactString, ToCompactString},
+    markup::{FormatType, FormattedString, Formatter, Markup},
+};
 
 use colored::Colorize;
 
@@ -8,7 +11,7 @@ impl Formatter for ANSIFormatter {
     fn format_part(
         &self,
         FormattedString(_output_type, format_type, text): &FormattedString,
-    ) -> String {
+    ) -> CompactString {
         (match format_type {
             FormatType::Whitespace => text.normal(),
             FormatType::Emphasized => text.bold(),
@@ -23,10 +26,10 @@ impl Formatter for ANSIFormatter {
             FormatType::Operator => text.bold(),
             FormatType::Decorator => text.green(),
         })
-        .to_string()
+        .to_compact_string()
     }
 }
 
-pub fn ansi_format(m: &Markup, indent: bool) -> String {
+pub fn ansi_format(m: &Markup, indent: bool) -> CompactString {
     ANSIFormatter {}.format(m, indent)
 }

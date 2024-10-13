@@ -1,10 +1,8 @@
-use std::{
-    fmt::Display,
-    ops::{Div, Mul},
-};
+use std::ops::{Div, Mul};
 
 use crate::arithmetic::{Exponent, Power};
 use crate::markup::{self as m, Formatter, PlainTextFormatter};
+use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::Signed;
@@ -22,7 +20,7 @@ pub struct Product<Factor, const CANONICALIZE: bool = false> {
     factors: Vec<Factor>,
 }
 
-impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: bool>
+impl<Factor: Power + Clone + Canonicalize + Ord + ToCompactString, const CANONICALIZE: bool>
     Product<Factor, CANONICALIZE>
 {
     /// The last argument controls how the factor is formated.
@@ -54,13 +52,13 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
                     + m::Markup::from(m::FormattedString(
                         m::OutputType::Normal,
                         format_type,
-                        factor.to_string().into(),
+                        factor.to_compact_string().into(),
                     ))
                     + if i == num_factors - 1 {
                         m::empty()
                     } else {
                         separator_padding.clone()
-                            + m::operator(times_separator.to_string())
+                            + m::operator(times_separator.to_compact_string())
                             + separator_padding.clone()
                     };
             }
@@ -85,14 +83,14 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
             (positive, [single_negative]) => {
                 to_string(positive)
                     + separator_padding.clone()
-                    + m::operator(over_separator.to_string())
+                    + m::operator(over_separator.to_compact_string())
                     + separator_padding.clone()
                     + to_string(&[single_negative.clone().invert()])
             }
             (positive, negative) => {
                 to_string(positive)
                     + separator_padding.clone()
-                    + m::operator(over_separator.to_string())
+                    + m::operator(over_separator.to_compact_string())
                     + separator_padding.clone()
                     + m::operator("(")
                     + to_string(&negative.iter().map(|f| f.clone().invert()).collect_vec())
@@ -107,7 +105,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + Display, const CANONICALIZE: b
         times_separator: char,
         over_separator: char,
         separator_padding: bool,
-    ) -> String
+    ) -> CompactString
     where
         GetExponent: Fn(&Factor) -> Exponent,
     {

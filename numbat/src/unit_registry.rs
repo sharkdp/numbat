@@ -4,6 +4,7 @@ use crate::registry::{BaseRepresentation, BaseRepresentationFactor, Registry, Re
 use crate::typed_ast::Type;
 use crate::unit::{CanonicalName, Unit};
 
+use compact_str::CompactString;
 use thiserror::Error;
 
 #[derive(Clone, Error, Debug, PartialEq, Eq)]
@@ -18,11 +19,11 @@ pub type Result<T> = std::result::Result<T, UnitRegistryError>;
 pub struct UnitMetadata {
     pub type_: Type,
     pub readable_type: Markup,
-    pub aliases: Vec<(String, AcceptsPrefix)>,
-    pub name: Option<String>,
+    pub aliases: Vec<(CompactString, AcceptsPrefix)>,
+    pub name: Option<CompactString>,
     pub canonical_name: CanonicalName,
-    pub url: Option<String>,
-    pub description: Option<String>,
+    pub url: Option<CompactString>,
+    pub description: Option<CompactString>,
     pub binary_prefixes: bool,
     pub metric_prefixes: bool,
 }

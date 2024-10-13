@@ -4,6 +4,7 @@ use crate::arithmetic::{pretty_exponent, Exponent, Rational};
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor};
 use crate::span::Span;
 
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use num_traits::Zero;
 use unicode_width::UnicodeWidthStr;
@@ -11,16 +12,16 @@ use unicode_width::UnicodeWidthStr;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IncompatibleDimensionsError {
     pub span_operation: Span,
-    pub operation: String,
+    pub operation: CompactString,
     pub span_expected: Span,
     pub expected_name: &'static str,
     pub expected_type: BaseRepresentation,
-    pub expected_dimensions: Vec<String>,
+    pub expected_dimensions: Vec<CompactString>,
     pub span_actual: Span,
     pub actual_name: &'static str,
     pub actual_name_for_fix: &'static str,
     pub actual_type: BaseRepresentation,
-    pub actual_dimensions: Vec<String>,
+    pub actual_dimensions: Vec<CompactString>,
 }
 
 fn pad(a: &str, b: &str) -> (String, String) {
@@ -33,11 +34,11 @@ fn suggested_fix(
     expected_type: &BaseRepresentation,
     actual_type: &BaseRepresentation,
     expression_to_change: &str,
-) -> Option<String> {
+) -> Option<CompactString> {
     // Heuristic 1: if actual_type == 1 / expected_type, suggest
     // to invert the 'actual' expression:
     if actual_type == &expected_type.clone().invert() {
-        return Some(format!("invert the {expression_to_change}"));
+        return Some(format_compact!("invert the {expression_to_change}"));
     }
 
     // Heuristic 2: compute the "missing" factor between the expected
@@ -58,7 +59,7 @@ fn suggested_fix(
         ("divide", delta_type.invert())
     };
 
-    Some(format!(
+    Some(format_compact!(
         "{action} the {expression_to_change} by a `{delta_type}` factor"
     ))
 }
@@ -74,16 +75,16 @@ impl fmt::Display for IncompatibleDimensionsError {
             || (self.expected_type.iter().count() == 1 && self.actual_type.iter().count() == 1)
         {
             pad(
-                &self.expected_type.to_string(),
-                &self.actual_type.to_string(),
+                &self.expected_type.to_compact_string(),
+                &self.actual_type.to_compact_string(),
             )
         } else {
             let format_factor =
                 |name: &str, exponent: &Exponent| format!(" × {name}{}", pretty_exponent(exponent));
 
-            let mut shared_factors = HashMap::<&String, (Exponent, Exponent)>::new();
-            let mut expected_factors = HashMap::<&String, Exponent>::new();
-            let mut actual_factors = HashMap::<&String, Exponent>::new();
+            let mut shared_factors = HashMap::<&CompactString, (Exponent, Exponent)>::new();
+            let mut expected_factors = HashMap::<&CompactString, Exponent>::new();
+            let mut actual_factors = HashMap::<&CompactString, Exponent>::new();
 
             for BaseRepresentationFactor(name, expected_exponent) in self.expected_type.iter() {
                 if let Some(BaseRepresentationFactor(_, actual_exponent)) =
@@ -143,13 +144,17 @@ impl fmt::Display for IncompatibleDimensionsError {
         };
 
         if !self.expected_dimensions.is_empty() {
-            expected_result_string
-                .push_str(&format!("    [= {}]", self.expected_dimensions.join(", ")));
+            expected_result_string.push_str(&format_compact!(
+                "    [= {}]",
+                self.expected_dimensions.join(", ")
+            ));
         }
 
         if !self.actual_dimensions.is_empty() {
-            actual_result_string
-                .push_str(&format!("    [= {}]", self.actual_dimensions.join(", ")));
+            actual_result_string.push_str(&format_compact!(
+                "    [= {}]",
+                self.actual_dimensions.join(", ")
+            ));
         }
 
         write!(
