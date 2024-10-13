@@ -52,6 +52,7 @@ use std::borrow::Cow;
 use bytecode_interpreter::BytecodeInterpreter;
 use column_formatter::ColumnFormatter;
 use compact_str::CompactString;
+use compact_str::CompactStringExt;
 use compact_str::ToCompactString;
 use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
@@ -365,8 +366,7 @@ impl Context {
                                 .iter()
                                 .map(|(x, _)| x.as_str())
                                 .collect::<Vec<_>>()
-                                .join(", ")
-                                .to_compact_string(),
+                                .join_compact(", "),
                         )
                         + m::nl();
                 }
@@ -486,8 +486,7 @@ impl Context {
                             .iter()
                             .map(|x| x.as_str())
                             .collect::<Vec<_>>()
-                            .join(", ")
-                            .to_compact_string(),
+                            .join_compact(", "),
                     )
                     + m::nl();
             }
@@ -547,9 +546,7 @@ impl Context {
 
     pub fn list_modules(&self) -> impl Iterator<Item = CompactString> {
         let modules = self.resolver.get_importer().list_modules();
-        modules
-            .into_iter()
-            .map(|m| m.0.join("::").to_compact_string())
+        modules.into_iter().map(|m| m.0.join_compact("::"))
     }
 
     pub fn dimension_registry(&self) -> &DimensionRegistry {
