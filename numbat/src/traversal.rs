@@ -45,10 +45,10 @@ impl ForAllTypeSchemes for Expression<'_> {
                 f(type_)
             }
             Expression::Boolean(_, _) => {}
-            Expression::Condition(_, if_, then_, else_) => {
-                if_.for_all_type_schemes(f);
-                then_.for_all_type_schemes(f);
-                else_.for_all_type_schemes(f);
+            Expression::Condition(_, cond) => {
+                cond.condition.for_all_type_schemes(f);
+                cond.then_expr.for_all_type_schemes(f);
+                cond.else_expr.for_all_type_schemes(f);
             }
             Expression::String(_, _) => {}
             Expression::InstantiateStruct(_, initializers, info) => {
@@ -171,10 +171,10 @@ impl ForAllExpressions for Expression<'_> {
                 }
             }
             Expression::Boolean(_, _) => {}
-            Expression::Condition(_, if_, then_, else_) => {
-                if_.for_all_expressions(f);
-                then_.for_all_expressions(f);
-                else_.for_all_expressions(f);
+            Expression::Condition(_, cond) => {
+                cond.condition.for_all_expressions(f);
+                cond.then_expr.for_all_expressions(f);
+                cond.else_expr.for_all_expressions(f);
             }
             Expression::String(_, _) => {}
             Expression::InstantiateStruct(_, initializers, _) => {
