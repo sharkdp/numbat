@@ -7,6 +7,7 @@ use core::strings
 use core::error
 use core::random
 use core::numbers
+use core::mixed_units
 
 use math::constants
 use math::transcendental

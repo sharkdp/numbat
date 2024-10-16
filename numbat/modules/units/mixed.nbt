@@ -5,7 +5,7 @@ use units::imperial
 @name("Unit list")
 @description("Convert a value to a mixed representation using the provided units.")
 @example("5500 m |> unit_list([miles, yards, feet, inches])")
-fn unit_list<D: Dim>(units: List<D>, value: D) -> List<D> = _mixed_unit_list(value, units, [])
+fn unit_list<D: Dim>(units: List<D>, value: D) -> List<D> = _unit_list(units, value)
 
 @name("Degrees, minutes, seconds")
 @description("Convert an angle to a mixed degrees, (arc)minutes, and (arc)seconds representation. Also called sexagesimal degree notation.")
@@ -34,4 +34,3 @@ fn feet_and_inches(length: Length) -> List<Length> =
 @example("1 kg -> pounds_and_ounces")
 fn pounds_and_ounces(mass: Mass) -> List<Mass> =
   unit_list([pound, ounce], mass)
-
