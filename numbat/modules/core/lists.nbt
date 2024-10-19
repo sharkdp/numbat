@@ -121,7 +121,7 @@ fn sort<D: Dim>(xs: List<D>) -> List<D> = sort_by_key(id, xs)
 fn _negate<D: Dim>(x: D) = -x
 
 @description("Sort a list of quantities in descending order")
-@example("sort([3, 2, 7, 8, -4, 0, -5])")
+@example("sort_descending([3, 2, 7, 8, -4, 0, -5])")
 fn sort_descending<D: Dim>(xs: List<D>) -> List<D> = sort_by_key(_negate, xs)
 
 @description("looks for an element in a list. Returns true if the element is in the list.")
