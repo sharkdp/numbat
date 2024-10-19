@@ -70,6 +70,24 @@ fn negate(x) = -x
 assert_eq(sort_by_key(negate, [1, 2, 3]), [3, 2, 1])
 assert_eq(sort_by_key(str_length, ["aa", "", "aaaa", "aaa"]), ["", "aa", "aaa", "aaaa"])
 
+# sort_descending:
+assert_eq(sort_descending([]), [])
+
+assert_eq(sort_descending([1]), [1])
+
+assert_eq(sort_descending([1, 2]), [2, 1])
+assert_eq(sort_descending([2, 1]), [2, 1])
+
+assert_eq(sort_descending([1, 2, 3]), [3, 2, 1])
+assert_eq(sort_descending([1, 3, 2]), [3, 2, 1])
+assert_eq(sort_descending([2, 1, 3]), [3, 2, 1])
+assert_eq(sort_descending([2, 3, 1]), [3, 2, 1])
+assert_eq(sort_descending([3, 1, 2]), [3, 2, 1])
+assert_eq(sort_descending([3, 2, 1]), [3, 2, 1])
+
+assert_eq(sort_descending([3, 2, 7, 8, -4, 0, -5]), (reverse(sort([3, 2, 7, 8, -4, 0, -5]))))
+
+
 assert_eq(intersperse(0, []), [])
 assert_eq(intersperse(0, [1]), [1])
 assert_eq(intersperse(0, [1, 2, 3]), [1, 0, 2, 0, 3])

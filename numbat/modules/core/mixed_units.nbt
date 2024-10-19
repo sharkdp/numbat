@@ -19,7 +19,7 @@ fn _mixed_unit_list<D: Dim>(val: D, units: List<D>, acc: List<D>) -> List<D> =
       else error("Units list cannot be empty")
   
 
-fn _clean_units<D: Dim>(units: List<D>) -> List<D> = units |> unique() |> sort() |> reverse()
+fn _clean_units<D: Dim>(units: List<D>) -> List<D> = units |> unique() |> sort_descending()
 
 fn _unit_list<D: Dim>(units: List<D>, value: D) -> List<D> = _mixed_unit_list(value, _clean_units(units), [])
 
