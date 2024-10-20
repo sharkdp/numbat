@@ -47,8 +47,8 @@ pub enum RuntimeError {
     DurationOutOfRange,
     #[error("DateTime out of range")]
     DateTimeOutOfRange,
-    #[error("Error in datetime format. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
-    DateFormattingError,
+    #[error("{0}. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
+    DateFormattingError(String),
 
     #[error("Invalid format specifiers: {0}")]
     InvalidFormatSpecifiers(String),

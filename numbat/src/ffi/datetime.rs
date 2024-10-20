@@ -1,3 +1,4 @@
+use jiff::fmt::strtime::BrokenDownTime;
 use jiff::Span;
 use jiff::Timestamp;
 use jiff::Zoned;
@@ -11,8 +12,6 @@ use crate::quantity::Quantity;
 use crate::value::FunctionReference;
 use crate::value::Value;
 use crate::RuntimeError;
-
-use std::fmt::Write;
 
 pub fn now(_args: Args) -> Result<Value> {
     return_datetime!(Zoned::now())
@@ -32,7 +31,9 @@ pub fn format_datetime(mut args: Args) -> Result<Value> {
     let dt = datetime_arg!(args);
 
     let mut output = String::new();
-    write!(output, "{}", dt.strftime(&format)).map_err(|_| RuntimeError::DateFormattingError)?;
+    BrokenDownTime::from(&dt)
+        .format(&format, &mut output)
+        .map_err(|e| RuntimeError::DateFormattingError(e.to_string()))?;
 
     return_string!(output)
 }
