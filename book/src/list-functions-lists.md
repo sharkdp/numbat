@@ -300,25 +300,8 @@ fn sort<D: Dim>(xs: List<D>) -> List<D>
 
 </details>
 
-### `sort_descending`
-Sort a list of quantities in descending order.
-
-```nbt
-fn sort_descending<D: Dim>(xs: List<D>) -> List<D>
-```
-
-<details>
-<summary>Examples</summary>
-
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=sort%5Fdescending%28%5B3%2C%202%2C%207%2C%208%2C%20%2D4%2C%200%2C%20%2D5%5D%29')""></button></div><code class="language-nbt hljs numbat">>>> sort_descending([3, 2, 7, 8, -4, 0, -5])
-
-    = [8, 7, 3, 2, 0, -4, -5]    [List<Scalar>]
-</code></pre>
-
-</details>
-
 ### `contains`
-looks for an element in a list. Returns true if the element is in the list.
+Returns true if the element `x` is in the list `xs`.
 
 ```nbt
 fn contains<A>(x: A, xs: List<A>) -> Bool
@@ -340,7 +323,7 @@ fn contains<A>(x: A, xs: List<A>) -> Bool
 </details>
 
 ### `unique`
-Remove duplicates, ensuring every value is unique.
+Remove duplicates from a given list.
 
 ```nbt
 fn unique<A>(xs: List<A>) -> List<A>
