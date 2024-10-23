@@ -86,8 +86,7 @@
         },
         "strings": {
             "name": "string.quoted.double",
-            "begin": "\"",
-            "end": "\""
+            "match": "((?<=})|\")((?!(?<!\\\\)[{\"])([^\"]|\\\"))*((?={)|\")"
         }
     },
     "scopeName": "source.numbat"
