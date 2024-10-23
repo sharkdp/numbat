@@ -11,11 +11,11 @@ pub fn str_length(mut args: Args) -> Result<Value> {
 }
 
 pub fn lowercase(mut args: Args) -> Result<Value> {
-    return_string!(string_arg!(args).to_lowercase())
+    return_string!(owned = string_arg!(args).to_lowercase())
 }
 
 pub fn uppercase(mut args: Args) -> Result<Value> {
-    return_string!(string_arg!(args).to_uppercase())
+    return_string!(owned = string_arg!(args).to_uppercase())
 }
 
 pub fn str_slice(mut args: Args) -> Result<Value> {
@@ -25,7 +25,7 @@ pub fn str_slice(mut args: Args) -> Result<Value> {
 
     let output = input.get(start..end).unwrap_or_default();
 
-    return_string!(output)
+    return_string!(borrowed = output)
 }
 
 pub fn chr(mut args: Args) -> Result<Value> {
@@ -33,7 +33,7 @@ pub fn chr(mut args: Args) -> Result<Value> {
 
     let output = char::from_u32(idx).unwrap_or('�');
 
-    return_string!(output)
+    return_string!(from = &output)
 }
 
 pub fn ord(mut args: Args) -> Result<Value> {

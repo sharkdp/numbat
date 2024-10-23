@@ -449,12 +449,7 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_message("Struct defined here"),
                 ])
                 .with_notes(vec!["Missing fields: ".to_owned()])
-                .with_notes(
-                    missing
-                        .iter()
-                        .map(|(n, t)| n.to_owned() + ": " + &t.to_string())
-                        .collect(),
-                ),
+                .with_notes(missing.iter().map(|(n, t)| format!("{n}: {t}")).collect()),
             TypeCheckError::NameResolutionError(inner) => {
                 return inner.diagnostics();
             }

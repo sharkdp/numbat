@@ -13,6 +13,7 @@ use crate::{
 pub use crate::markup as m;
 
 use assert_eq_3::AssertEq3Error;
+use compact_str::{CompactString, ToCompactString};
 use thiserror::Error;
 
 pub use crate::value::Value;
@@ -127,10 +128,10 @@ impl InterpreterResult {
         matches!(self, Self::Continue)
     }
 
-    pub fn value_as_string(&self) -> Option<String> {
+    pub fn value_as_string(&self) -> Option<CompactString> {
         match self {
             Self::Continue => None,
-            Self::Value(value) => Some(value.to_string()),
+            Self::Value(value) => Some(value.to_compact_string()),
         }
     }
 }
@@ -167,6 +168,8 @@ pub trait Interpreter {
 
 #[cfg(test)]
 mod tests {
+    use compact_str::CompactString;
+
     use crate::prefix_parser::AcceptsPrefix;
     use crate::quantity::Quantity;
     use crate::unit::{CanonicalName, Unit};
@@ -273,11 +276,11 @@ mod tests {
             "1 meter > alternative_length_base_unit",
             RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
                 Unit::new_base(
-                    "meter",
+                    CompactString::const_new("meter"),
                     CanonicalName::new("m", AcceptsPrefix::only_short()),
                 ),
                 Unit::new_base(
-                    "alternative_length_base_unit",
+                    CompactString::const_new("alternative_length_base_unit"),
                     CanonicalName::new("alternative_length_base_unit", AcceptsPrefix::only_long()),
                 ),
             )),
@@ -300,7 +303,7 @@ mod tests {
              2 * pixel",
             Quantity::from_scalar(2.0)
                 * Quantity::from_unit(Unit::new_base(
-                    "pixel",
+                    CompactString::const_new("pixel"),
                     CanonicalName::new("px", AcceptsPrefix::only_short()),
                 )),
         );

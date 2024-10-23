@@ -1,3 +1,4 @@
+use compact_str::{CompactString, ToCompactString};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -11,7 +12,7 @@ static PREFIXES: OnceLock<Vec<(&'static str, &'static [&'static str], Prefix)>> 
 pub enum PrefixParserResult<'a> {
     Identifier(&'a str),
     /// Span, prefix, unit name in source (e.g. 'm'), full unit name (e.g. 'meter')
-    UnitIdentifier(Span, Prefix, String, String),
+    UnitIdentifier(Span, Prefix, CompactString, CompactString),
 }
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
@@ -77,14 +78,14 @@ struct UnitInfo {
     accepts_prefix: AcceptsPrefix,
     metric_prefixes: bool,
     binary_prefixes: bool,
-    full_name: String,
+    full_name: CompactString,
 }
 
 #[derive(Debug, Clone)]
 pub struct PrefixParser {
-    units: IndexMap<String, UnitInfo>,
+    units: IndexMap<CompactString, UnitInfo>,
 
-    other_identifiers: HashMap<String, Span>,
+    other_identifiers: HashMap<CompactString, Span>,
 
     reserved_identifiers: &'static [&'static str],
 }
@@ -250,7 +251,7 @@ impl PrefixParser {
             return PrefixParserResult::UnitIdentifier(
                 info.definition_span,
                 Prefix::none(),
-                input.to_string(),
+                input.to_compact_string(),
                 info.full_name.clone(),
             );
         }
@@ -267,7 +268,7 @@ impl PrefixParser {
                 if info.accepts_prefix.long
                     && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes)
                     && input.starts_with(prefix_long)
-                    && &input[prefix_long.len()..] == unit_name
+                    && input[prefix_long.len()..] == unit_name
                 {
                     return PrefixParserResult::UnitIdentifier(
                         info.definition_span,
@@ -280,7 +281,7 @@ impl PrefixParser {
                 if info.accepts_prefix.short
                     && (is_metric && info.metric_prefixes || is_binary && info.binary_prefixes)
                     && prefixes_short.iter().any(|prefix_short| {
-                        input.starts_with(prefix_short) && &input[prefix_short.len()..] == unit_name
+                        input.starts_with(prefix_short) && input[prefix_short.len()..] == unit_name
                     })
                 {
                     return PrefixParserResult::UnitIdentifier(

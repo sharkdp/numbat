@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
+use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
 use num_traits::Zero;
 use thiserror::Error;
@@ -22,7 +23,7 @@ pub enum RegistryError {
 
 pub type Result<T> = std::result::Result<T, RegistryError>;
 
-pub type BaseEntry = String;
+pub type BaseEntry = CompactString;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BaseRepresentationFactor(pub BaseEntry, pub Exponent);
@@ -81,8 +82,8 @@ impl PrettyPrint for BaseRepresentation {
 
 #[derive(Debug, Clone)]
 pub struct Registry<Metadata> {
-    base_entries: Vec<(String, Metadata)>,
-    derived_entries: HashMap<String, (BaseRepresentation, Metadata)>,
+    base_entries: Vec<(CompactString, Metadata)>,
+    derived_entries: HashMap<CompactString, (BaseRepresentation, Metadata)>,
 }
 
 impl<T> Default for Registry<T> {
@@ -99,7 +100,7 @@ impl<Metadata: Clone> Registry<Metadata> {
         if self.contains(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));
         }
-        self.base_entries.push((name.to_owned(), metadata));
+        self.base_entries.push((name.to_compact_string(), metadata));
 
         Ok(())
     }
@@ -107,11 +108,11 @@ impl<Metadata: Clone> Registry<Metadata> {
     pub fn get_derived_entry_names_for(
         &self,
         base_representation: &BaseRepresentation,
-    ) -> Vec<String> {
+    ) -> Vec<CompactString> {
         self.derived_entries
             .iter()
             .filter(|(_, (br, _))| br == base_representation)
-            .map(|(name, _)| name.clone())
+            .map(|(name, _)| name.to_compact_string())
             .sorted_unstable()
             .collect()
     }
@@ -127,7 +128,7 @@ impl<Metadata: Clone> Registry<Metadata> {
         }
 
         self.derived_entries
-            .insert(name.to_owned(), (base_representation, metadata));
+            .insert(name.to_compact_string(), (base_representation, metadata));
 
         Ok(())
     }
@@ -148,7 +149,7 @@ impl<Metadata: Clone> Registry<Metadata> {
         {
             Ok((
                 BaseRepresentation::from_factor(BaseRepresentationFactor(
-                    name.to_owned(),
+                    name.to_compact_string(),
                     Rational::from_integer(1),
                 )),
                 metadata.clone(),
@@ -160,8 +161,8 @@ impl<Metadata: Clone> Registry<Metadata> {
                     let suggestion = suggestion::did_you_mean(
                         self.base_entries
                             .iter()
-                            .map(|(id, _)| id.to_string())
-                            .chain(self.derived_entries.keys().map(|s| s.to_string())),
+                            .map(|(id, _)| id)
+                            .chain(self.derived_entries.keys()),
                         name,
                     );
                     RegistryError::UnknownEntry(name.to_owned(), suggestion)
@@ -170,11 +171,11 @@ impl<Metadata: Clone> Registry<Metadata> {
         }
     }
 
-    pub fn iter_base_entries(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn iter_base_entries(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.base_entries.iter().map(|(name, _)| name.clone())
     }
 
-    pub fn iter_derived_entries(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn iter_derived_entries(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.derived_entries.keys().cloned()
     }
 }
