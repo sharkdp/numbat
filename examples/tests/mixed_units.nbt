@@ -47,17 +47,3 @@ let test2 = 12 degree + 34 arcminute + 5 arcsec
 assert_eq(test2 |> unit_list([degree]) |> head, test2)
 assert_eq(test2 |> unit_list([degree, arcmin]) |> sum, test2)
 assert_eq(test2 |> unit_list([degree, arcmin, arcsec]) |> sum, test2)
-
-
-# round_mixed_in
-
-assert_eq(round_mixed_in(seconds, [1 h, 29 min, 30 sec]), [1 h, 29 min, 30 sec])
-assert_eq(round_mixed_in(minutes, [1 h, 29 min, 30 sec]), [1 h, 30 min,  0 sec])
-assert_eq(round_mixed_in(hours,   [1 h, 29 min, 30 sec]), [1 h,  0 min,  0 sec])
-
-assert_eq(round_mixed_in(mm,   [1 m, 29 cm]), [1 m, 29 cm, 0 mm])
-
-assert_eq(round_mixed_in(m,   round_mixed_in(cm, [1 m, 49 cm, 50 mm])), [2 m,  0 cm])
-
-let units = [m, cm, mm]
-assert_eq(unit_list(units, 123456 mm) |> round_mixed_in(cm), round_in(cm, 123456 mm) |> unit_list(units))

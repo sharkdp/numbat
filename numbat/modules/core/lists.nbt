@@ -118,13 +118,7 @@ fn sort_by_key<A, D: Dim>(key: Fn[(A) -> D], xs: List<A>) -> List<A> =
 @example("sort([3, 2, 7, 8, -4, 0, -5])")
 fn sort<D: Dim>(xs: List<D>) -> List<D> = sort_by_key(id, xs)
 
-fn _negate<D: Dim>(x: D) = -x
-
-@description("Sort a list of quantities in descending order")
-@example("sort_descending([3, 2, 7, 8, -4, 0, -5])")
-fn sort_descending<D: Dim>(xs: List<D>) -> List<D> = sort_by_key(_negate, xs)
-
-@description("looks for an element in a list. Returns true if the element is in the list.")
+@description("Returns true if the element `x` is in the list `xs`.")
 @example("[3, 2, 7, 8, -4, 0, -5] |> contains(0)")
 @example("[3, 2, 7, 8, -4, 0, -5] |> contains(1)")
 fn contains<A>(x: A, xs: List<A>) -> Bool = 
@@ -143,7 +137,7 @@ fn _unique<A>(acc: List<A>, xs: List<A>) -> List<A> =
         then _unique(acc, tail(xs))
         else _unique((cons_end(head(xs), acc)), tail(xs))
 
-@description("Remove duplicates, ensuring every value is unique")
+@description("Remove duplicates from a given list.")
 @example("unique([1, 2, 2, 3, 3, 3])")
 fn unique<A>(xs: List<A>) -> List<A> = xs |> _unique([])
 
