@@ -58,6 +58,33 @@ haven't already](https://chimera-linux.org/docs/apk#repositories), then install
 doas apk add numbat
 ```
 
+## Android
+There are two options, the first is to install directly, and the second is to install inside a proot running a regular GNU/Linux Distro.
+
+### First method (direct installation in termux):
+
+This method consumes less space, but there is no way to auto-update.
+
+First, install [Termux](https://termux.dev/en/).
+Install wget
+```
+sudo apt install wget tar
+```
+Then, download and extract the compatible musl version of Numbat.
+```
+export LATEST_VER=1.14.0
+wget https://github.com/sharkdp/numbat/releases/download/v$LATEST_VER/numbat-v$LATEST_VER-arm-unknown-linux-musleabihf.tar.gz
+tar -xzvf numbat-v$LATEST_VER-arm-unknown-linux-musleabihf.tar.gz
+```
+Now add numbat to path using a symlink
+```
+ln -s /data/data/com.termux/files/home/numbat-v$LATEST_VER-arm-unknown-linux-musleabihf/numbat /data/data/com.termux/files/usr/bin/numbat
+```
+
+### Second method (installation inside a proot distro):
+
+Install a Proot distro like [TermuxArch](https://termuxarch.github.io/TermuxArch/), and install numbat inside Arch Linux using the method [described above](https://numbat.dev/doc/cli-installation.html#arch-linux). This method consumes more space, but you don't have to worry about updating Numbat or copy paste long commands from the internet.
+
 ## macOS
 
 ### Homebrew
