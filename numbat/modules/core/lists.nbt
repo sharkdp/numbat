@@ -114,9 +114,32 @@ fn sort_by_key<A, D: Dim>(key: Fn[(A) -> D], xs: List<A>) -> List<A> =
                   sort_by_key(key, drop(floor(len(xs) / 2), xs)),
                   key)
 
-@description("Sort a list of quantities")
+@description("Sort a list of quantities in ascending order")
 @example("sort([3, 2, 7, 8, -4, 0, -5])")
 fn sort<D: Dim>(xs: List<D>) -> List<D> = sort_by_key(id, xs)
+
+@description("Returns true if the element `x` is in the list `xs`.")
+@example("[3, 2, 7, 8, -4, 0, -5] |> contains(0)")
+@example("[3, 2, 7, 8, -4, 0, -5] |> contains(1)")
+fn contains<A>(x: A, xs: List<A>) -> Bool = 
+  if is_empty(xs)
+    then false
+    else if x == head(xs)
+      then true
+      else contains(x, tail(xs))
+
+fn _unique<A>(acc: List<A>, xs: List<A>) -> List<A> = 
+  if is_empty(xs)
+    then acc
+    else if is_empty(acc)
+      then _unique([head(xs)], tail(xs))
+      else if (acc |> contains(head(xs)))
+        then _unique(acc, tail(xs))
+        else _unique((cons_end(head(xs), acc)), tail(xs))
+
+@description("Remove duplicates from a given list.")
+@example("unique([1, 2, 2, 3, 3, 3])")
+fn unique<A>(xs: List<A>) -> List<A> = xs |> _unique([])
 
 @description("Add an element between each pair of elements in a list")
 @example("intersperse(0, [1, 1, 1, 1])")

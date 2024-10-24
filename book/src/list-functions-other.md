@@ -85,6 +85,50 @@ fn is_finite<T: Dim>(n: T) -> Bool
 
 </details>
 
+### `is_zero`
+Returns true if the input is 0 (zero).
+
+```nbt
+fn is_zero<D: Dim>(value: D) -> Bool
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fzero%2837%29')""></button></div><code class="language-nbt hljs numbat">>>> is_zero(37)
+
+    = false    [Bool]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fzero%280%29')""></button></div><code class="language-nbt hljs numbat">>>> is_zero(0)
+
+    = true    [Bool]
+</code></pre>
+
+</details>
+
+### `is_nonzero`
+Returns true unless the input is 0 (zero).
+
+```nbt
+fn is_nonzero<D: Dim>(value: D) -> Bool
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fnonzero%2837%29')""></button></div><code class="language-nbt hljs numbat">>>> is_nonzero(37)
+
+    = true    [Bool]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fnonzero%280%29')""></button></div><code class="language-nbt hljs numbat">>>> is_nonzero(0)
+
+    = false    [Bool]
+</code></pre>
+
+</details>
+
 ## Quantities
 
 Defined in: `core::quantities`
