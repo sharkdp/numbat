@@ -37,12 +37,6 @@ impl Default for IntDisplayConfig {
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct FloatDisplayConfig {
-    /// 0 means this value will be ignored
-    pub max_sig_digits: u8,
-    /// 0 means this value will be ignored
-    pub min_sig_digits: u8,
-    /// 0 means this value will be ignored
-    pub max_width: u8,
     pub decimal: char,
     pub capitalize_e: bool,
 }
@@ -50,9 +44,6 @@ pub struct FloatDisplayConfig {
 impl Default for FloatDisplayConfig {
     fn default() -> Self {
         Self {
-            max_sig_digits: 0,
-            min_sig_digits: 0,
-            max_width: 0,
             decimal: '.',
             capitalize_e: false,
         }
@@ -117,27 +108,13 @@ pub(crate) fn pretty_print_value(
 
             let float_options = float_config.as_ref().map(|c| {
                 let FloatDisplayConfig {
-                    max_sig_digits,
-                    min_sig_digits,
-                    max_width,
                     decimal,
                     capitalize_e,
                 } = *c;
 
-                let mut opts = FmtFloatConfig::default()
+                FmtFloatConfig::default()
                     .radix_point(decimal)
-                    .capitalize_e(capitalize_e);
-                if max_sig_digits > 0 {
-                    opts = opts.max_significant_digits(max_sig_digits);
-                }
-                if min_sig_digits > 0 {
-                    opts = opts.min_significant_digits(min_sig_digits);
-                }
-                if max_width > 0 {
-                    opts = opts.max_width(max_width);
-                }
-
-                opts
+                    .capitalize_e(capitalize_e)
             });
 
             let int_options = int_config
