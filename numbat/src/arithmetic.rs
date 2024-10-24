@@ -17,29 +17,29 @@ pub trait Power {
 }
 
 pub fn pretty_exponent(e: &Exponent) -> CompactString {
-    if e == &Ratio::from_integer(5) {
-        CompactString::const_new("⁵")
+    CompactString::const_new(if e == &Ratio::from_integer(5) {
+        "⁵"
     } else if e == &Ratio::from_integer(4) {
-        CompactString::const_new("⁴")
+        "⁴"
     } else if e == &Ratio::from_integer(3) {
-        CompactString::const_new("³")
+        "³"
     } else if e == &Ratio::from_integer(2) {
-        CompactString::const_new("²")
+        "²"
     }
     // 1 handled by ugly_exponent
     else if e == &Ratio::from_integer(-1) {
-        CompactString::const_new("⁻¹")
+        "⁻¹"
     } else if e == &Ratio::from_integer(-2) {
-        CompactString::const_new("⁻²")
+        "⁻²"
     } else if e == &Ratio::from_integer(-3) {
-        CompactString::const_new("⁻³")
+        "⁻³"
     } else if e == &Ratio::from_integer(-4) {
-        CompactString::const_new("⁻⁴")
+        "⁻⁴"
     } else if e == &Ratio::from_integer(-5) {
-        CompactString::const_new("⁻⁵")
+        "⁻⁵"
     } else {
-        ugly_exponent(e)
-    }
+        return ugly_exponent(e);
+    })
 }
 
 pub fn ugly_exponent(e: &Exponent) -> CompactString {
