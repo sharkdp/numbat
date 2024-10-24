@@ -68,7 +68,7 @@ pub struct Config {
     pub load_user_init: bool,
     pub exchange_rates: ExchangeRateConfig,
 
-    pub copy_output_config: NumericDisplayConfig,
+    pub copy_result: NumericDisplayConfig,
 }
 
 impl Default for Config {
@@ -82,7 +82,7 @@ impl Default for Config {
             load_user_init: true,
             exchange_rates: Default::default(),
             enter_repl: true,
-            copy_output_config: Default::default(),
+            copy_result: Default::default(),
         }
     }
 }

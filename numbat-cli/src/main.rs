@@ -437,7 +437,7 @@ impl Cli {
                                             Some(v) => {
                                                 let m = match pretty_print_value(
                                                     v,
-                                                    &self.config.copy_output_config,
+                                                    &self.config.copy_result,
                                                 ) {
                                                     Ok(m) => m,
                                                     Err(err) => {
