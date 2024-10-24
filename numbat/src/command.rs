@@ -23,6 +23,7 @@ enum CommandKind {
     Help,
     Info,
     List,
+    Copy,
     Clear,
     Save,
     Quit(QuitAlias),
@@ -37,6 +38,7 @@ impl FromStr for CommandKind {
             "help" | "?" => Help,
             "info" => Info,
             "list" => List,
+            "copy" => Copy,
             "clear" => Clear,
             "save" => Save,
             "quit" => Quit(QuitAlias::Quit),
@@ -51,6 +53,7 @@ pub enum Command<'a> {
     Help,
     Info { item: &'a str },
     List { items: Option<ListItems> },
+    Copy,
     Clear,
     Save { dst: &'a str },
     Quit,
@@ -212,6 +215,10 @@ impl<'a> CommandParser<'a> {
 
                 Command::Quit
             }
+            CommandKind::Copy => {
+                self.ensure_zero_args("copy", "")?;
+                Command::Copy
+            }
             CommandKind::Info => {
                 let err_msg = "`info` requires exactly one argument, the item to get info on";
                 let Some(item) = self.inner.args.next() else {
@@ -248,6 +255,7 @@ impl<'a> CommandParser<'a> {
 
                 Command::List { items }
             }
+
             CommandKind::Save => {
                 let Some(dst) = self.inner.args.next() else {
                     return Ok(Command::Save { dst: "history.nbt" });

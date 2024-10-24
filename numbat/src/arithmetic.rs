@@ -17,29 +17,39 @@ pub trait Power {
 }
 
 pub fn pretty_exponent(e: &Exponent) -> CompactString {
-    if e == &Ratio::from_integer(5) {
-        CompactString::const_new("⁵")
+    CompactString::const_new(if e == &Ratio::from_integer(5) {
+        "⁵"
     } else if e == &Ratio::from_integer(4) {
-        CompactString::const_new("⁴")
+        "⁴"
     } else if e == &Ratio::from_integer(3) {
-        CompactString::const_new("³")
+        "³"
     } else if e == &Ratio::from_integer(2) {
-        CompactString::const_new("²")
-    } else if e == &Ratio::from_integer(1) {
-        CompactString::const_new("")
-    } else if e == &Ratio::from_integer(-1) {
-        CompactString::const_new("⁻¹")
+        "²"
+    }
+    // 1 handled by ugly_exponent
+    else if e == &Ratio::from_integer(-1) {
+        "⁻¹"
     } else if e == &Ratio::from_integer(-2) {
-        CompactString::const_new("⁻²")
+        "⁻²"
     } else if e == &Ratio::from_integer(-3) {
-        CompactString::const_new("⁻³")
+        "⁻³"
     } else if e == &Ratio::from_integer(-4) {
-        CompactString::const_new("⁻⁴")
+        "⁻⁴"
     } else if e == &Ratio::from_integer(-5) {
-        CompactString::const_new("⁻⁵")
+        "⁻⁵"
+    } else {
+        return ugly_exponent(e);
+    })
+}
+
+pub fn ugly_exponent(e: &Exponent) -> CompactString {
+    if e == &Ratio::from_integer(1) {
+        CompactString::const_new("")
     } else if e.is_positive() && e.is_integer() {
         format_compact!("^{e}")
     } else {
         format_compact!("^({e})")
     }
 }
+
+// pub trait

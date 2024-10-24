@@ -32,6 +32,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + ToCompactString, const CANONIC
         times_separator: char,
         over_separator: char,
         separator_padding: bool,
+        factor_to_string: Option<impl Fn(&Factor) -> CompactString>,
         format_type: Option<m::FormatType>,
     ) -> m::Markup
     where
@@ -52,7 +53,12 @@ impl<Factor: Power + Clone + Canonicalize + Ord + ToCompactString, const CANONIC
                     + m::Markup::from(m::FormattedString(
                         m::OutputType::Normal,
                         format_type,
-                        factor.to_compact_string().into(),
+                        if let Some(factor_to_string) = &factor_to_string {
+                            factor_to_string(factor)
+                        } else {
+                            factor.to_compact_string()
+                        }
+                        .into(),
                     ))
                     + if i == num_factors - 1 {
                         m::empty()
@@ -115,6 +121,7 @@ impl<Factor: Power + Clone + Canonicalize + Ord + ToCompactString, const CANONIC
                 times_separator,
                 over_separator,
                 separator_padding,
+                None::<fn(&Factor) -> _>,
                 None,
             ),
             false,

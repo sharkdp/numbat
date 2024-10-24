@@ -1,3 +1,4 @@
+use crate::copy_to_clipboard::NumericDisplayConfig;
 use clap::ValueEnum;
 use numbat::compact_str::CompactString;
 use serde::{Deserialize, Serialize};
@@ -66,6 +67,8 @@ pub struct Config {
     #[serde(skip_serializing)]
     pub load_user_init: bool,
     pub exchange_rates: ExchangeRateConfig,
+
+    pub copy_result: NumericDisplayConfig,
 }
 
 impl Default for Config {
@@ -79,6 +82,7 @@ impl Default for Config {
             load_user_init: true,
             exchange_rates: Default::default(),
             enter_repl: true,
+            copy_result: Default::default(),
         }
     }
 }

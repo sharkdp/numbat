@@ -82,12 +82,18 @@ pub use registry::BaseRepresentationFactor;
 pub use typed_ast::Statement;
 pub use typed_ast::Type;
 use unit::BaseUnitAndFactor;
+use unit::UnitFactor;
 use unit_registry::UnitMetadata;
 
 use crate::prefix_parser::PrefixParserResult;
 use crate::unicode_input::UNICODE_INPUT;
 
+pub use number::FloatDisplayConfigSource;
+pub use quantity::UnitDisplayOptions;
+
 pub use compact_str;
+pub use num_format;
+pub use pretty_dtoa;
 
 #[derive(Debug, Clone, Error)]
 pub enum NumbatError {
@@ -430,6 +436,7 @@ impl Context {
                                 'x',
                                 '/',
                                 true,
+                                None::<fn(&UnitFactor) -> _>,
                                 Some(m::FormatType::Unit),
                             );
                     } else {
