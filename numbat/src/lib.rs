@@ -47,8 +47,13 @@ mod unit_registry;
 pub mod value;
 mod vm;
 
+use std::borrow::Cow;
+
 use bytecode_interpreter::BytecodeInterpreter;
 use column_formatter::ColumnFormatter;
+use compact_str::CompactString;
+use compact_str::CompactStringExt;
+use compact_str::ToCompactString;
 use currency::ExchangeRatesCache;
 use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
@@ -86,6 +91,7 @@ use crate::unicode_input::UNICODE_INPUT;
 pub use number::FloatDisplayConfigSource;
 pub use quantity::UnitDisplayOptions;
 
+pub use compact_str;
 pub use num_format;
 pub use pretty_dtoa;
 
@@ -150,7 +156,7 @@ impl Context {
         ExchangeRatesCache::use_test_rates();
     }
 
-    pub fn variable_names(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn variable_names(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.prefix_transformer
             .variable_names
             .iter()
@@ -158,7 +164,7 @@ impl Context {
             .cloned()
     }
 
-    pub fn function_names(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn function_names(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.prefix_transformer
             .function_names
             .iter()
@@ -170,11 +176,12 @@ impl Context {
         &self,
     ) -> impl Iterator<
         Item = (
-            String,
-            Option<String>,
-            String,
-            Option<String>,
-            Option<String>,
+            CompactString,
+            Option<CompactString>,
+            CompactString,
+            Option<CompactString>,
+            Option<CompactString>,
+            Vec<(CompactString, Option<CompactString>)>,
             CodeSource,
         ),
     > + '_ {
@@ -189,33 +196,25 @@ impl Context {
                     meta.name.clone(),
                     signature
                         .pretty_print(self.dimension_registry())
-                        .to_string(),
+                        .to_compact_string(),
                     meta.description.clone(),
                     meta.url.clone(),
+                    meta.examples.clone(),
                     self.resolver
                         .get_code_source(signature.definition_span.code_source_id),
                 )
             })
     }
 
-    pub fn unit_names(&self) -> &[Vec<String>] {
+    pub fn unit_names(&self) -> &[Vec<CompactString>] {
         &self.prefix_transformer.unit_names
     }
 
-    pub fn dimension_names(&self) -> &[String] {
+    pub fn dimension_names(&self) -> &[CompactString] {
         &self.prefix_transformer.dimension_names
     }
 
     pub fn print_environment(&self) -> Markup {
-        let mut functions: Vec<_> = self.function_names().collect();
-        functions.sort();
-        let mut dimensions = Vec::from(self.dimension_names());
-        dimensions.sort();
-        let mut units = Vec::from(self.unit_names());
-        units.sort();
-        let mut variables: Vec<_> = self.variable_names().collect();
-        variables.sort();
-
         let mut output = m::empty();
 
         output += m::emphasized("List of functions:") + m::nl();
@@ -233,7 +232,7 @@ impl Context {
         output
     }
 
-    fn print_sorted(&self, mut entries: Vec<String>, format_type: FormatType) -> Markup {
+    fn print_sorted(&self, mut entries: Vec<CompactString>, format_type: FormatType) -> Markup {
         entries.sort_by_key(|e| e.to_lowercase());
 
         let formatter = ColumnFormatter::new(self.terminal_width.unwrap_or(80));
@@ -260,11 +259,11 @@ impl Context {
     /// Gets completions for the given word_part
     ///
     /// If `add_paren` is true, then an opening paren will be added to the end of function names
-    pub fn get_completions_for<'a>(
+    pub fn get_completions_for(
         &self,
-        word_part: &'a str,
+        word_part: &str,
         add_paren: bool,
-    ) -> impl Iterator<Item = String> + 'a {
+    ) -> impl Iterator<Item = String> {
         const COMMON_METRIC_PREFIXES: &[&str] = &[
             "pico", "nano", "micro", "milli", "centi", "kilo", "mega", "giga", "tera",
         ];
@@ -277,57 +276,74 @@ impl Context {
             })
             .collect();
 
-        let mut words: Vec<_> = KEYWORDS.iter().map(|k| k.to_string()).collect();
+        let mut words = Vec::new();
+
+        let mut add_if_valid = |word: Cow<'_, str>| {
+            if word.starts_with(word_part) {
+                words.push(word.into_owned());
+            }
+        };
+
+        for kw in KEYWORDS {
+            add_if_valid((*kw).into());
+        }
 
         for (patterns, _) in UNICODE_INPUT {
             for pattern in *patterns {
-                words.push(pattern.to_string());
+                add_if_valid((*pattern).into());
             }
         }
 
-        {
-            for variable in self.variable_names() {
-                words.push(variable.clone());
+        for variable in self.variable_names() {
+            add_if_valid(variable.into());
+        }
+
+        for mut function in self.function_names() {
+            if add_paren {
+                function.push('(');
             }
+            add_if_valid(function.into());
+        }
 
-            for function in self.function_names() {
-                if add_paren {
-                    words.push(format!("{function}("));
-                } else {
-                    words.push(function.to_string());
-                }
-            }
+        for dimension in self.dimension_names() {
+            add_if_valid(dimension.into());
+        }
 
-            for dimension in self.dimension_names() {
-                words.push(dimension.clone());
-            }
-
-            for (_, (_, meta)) in self.unit_representations() {
-                for (unit, accepts_prefix) in meta.aliases {
-                    words.push(unit.clone());
-
-                    // Add some of the common long prefixes for units that accept them.
-                    // We do not add all possible prefixes here in order to keep the
-                    // number of completions to a reasonable size. Also, we do not add
-                    // short prefixes for units that accept them, as that leads to lots
-                    // and lots of 2-3 character words.
-                    if accepts_prefix.long && meta.metric_prefixes {
-                        for prefix in &metric_prefixes {
-                            words.push(format!("{prefix}{unit}"));
-                        }
+        for (_, (_, meta)) in self.unit_representations() {
+            for (unit, accepts_prefix) in meta.aliases {
+                // Add some of the common long prefixes for units that accept them.
+                // We do not add all possible prefixes here in order to keep the
+                // number of completions to a reasonable size. Also, we do not add
+                // short prefixes for units that accept them, as that leads to lots
+                // and lots of 2-3 character words.
+                if accepts_prefix.long && meta.metric_prefixes {
+                    for prefix in &metric_prefixes {
+                        add_if_valid(format!("{prefix}{unit}").into());
                     }
                 }
+
+                add_if_valid(unit.into());
             }
         }
 
         words.sort();
         words.dedup();
 
-        words.into_iter().filter(move |w| w.starts_with(word_part))
+        words.into_iter()
     }
 
     pub fn print_info_for_keyword(&mut self, keyword: &str) -> Markup {
-        let url_encode = |s: &str| s.replace('(', "%28").replace(')', "%29");
+        fn url_encode(s: &str) -> CompactString {
+            let mut out = CompactString::with_capacity(s.len());
+            for c in s.chars() {
+                match c {
+                    '(' => out.push_str("%28"),
+                    ')' => out.push_str("%29"),
+                    _ => out.push(c),
+                }
+            }
+            out
+        }
 
         if keyword.is_empty() {
             return m::text("Usage: info <unit or variable>");
@@ -343,8 +359,8 @@ impl Context {
                 .ok()
                 .map(|(_, md)| md)
             {
-                let mut help =
-                    m::text("Unit: ") + m::unit(md.name.unwrap_or_else(|| keyword.to_string()));
+                let mut help = m::text("Unit: ")
+                    + m::unit(md.name.unwrap_or_else(|| keyword.to_compact_string()));
                 if let Some(url) = &md.url {
                     help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
                 }
@@ -356,7 +372,7 @@ impl Context {
                                 .iter()
                                 .map(|(x, _)| x.as_str())
                                 .collect::<Vec<_>>()
-                                .join(", "),
+                                .join_compact(", "),
                         )
                         + m::nl();
                 }
@@ -365,12 +381,19 @@ impl Context {
                     let desc = "Description: ";
                     let mut lines = description.lines();
                     help += m::text(desc)
-                        + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                        + m::text(
+                            lines
+                                .by_ref()
+                                .next()
+                                .unwrap_or("")
+                                .trim()
+                                .to_compact_string(),
+                        )
                         + m::nl();
 
                     for line in lines {
-                        help += m::whitespace(" ".repeat(desc.len()))
-                            + m::text(line.trim().to_string())
+                        help += m::whitespace(CompactString::const_new(" ").repeat(desc.len()))
+                            + m::text(line.trim().to_compact_string())
                             + m::nl();
                     }
                 }
@@ -394,17 +417,17 @@ impl Context {
                     if !prefix.is_none() {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::unit(keyword.to_string())
+                            + m::unit(keyword.to_compact_string())
                             + m::text(" = ")
                             + m::value(prefix.factor().pretty_print())
                             + m::space()
-                            + m::unit(full_name.clone());
+                            + m::unit(full_name.to_compact_string());
                     }
 
                     if let Some(BaseUnitAndFactor(prod, num)) = x {
                         help += m::nl()
                             + m::value("1 ")
-                            + m::unit(full_name.clone())
+                            + m::unit(full_name.to_compact_string())
                             + m::text(" = ")
                             + m::value(num.pretty_print())
                             + m::space()
@@ -413,11 +436,13 @@ impl Context {
                                 'x',
                                 '/',
                                 true,
-                                None::<fn(&UnitFactor) -> String>,
+                                None::<fn(&UnitFactor) -> _>,
                                 Some(m::FormatType::Unit),
                             );
                     } else {
-                        help += m::nl() + m::unit(full_name.clone()) + m::text(" is a base unit");
+                        help += m::nl()
+                            + m::unit(full_name.to_compact_string())
+                            + m::text(" is a base unit");
                     }
                 };
 
@@ -432,7 +457,7 @@ impl Context {
             if let Some(name) = &l.metadata.name {
                 help += m::text(name.clone());
             } else {
-                help += m::identifier(keyword.to_string());
+                help += m::identifier(keyword.to_compact_string());
             }
             if let Some(url) = &l.metadata.url {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
@@ -443,12 +468,19 @@ impl Context {
                 let desc = "Description: ";
                 let mut lines = description.lines();
                 help += m::text(desc)
-                    + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                    + m::text(
+                        lines
+                            .by_ref()
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .to_compact_string(),
+                    )
                     + m::nl();
 
                 for line in lines {
-                    help += m::whitespace(" ".repeat(desc.len()))
-                        + m::text(line.trim().to_string())
+                    help += m::whitespace(CompactString::const_new(" ").repeat(desc.len()))
+                        + m::text(line.trim().to_compact_string())
                         + m::nl();
                 }
             }
@@ -461,7 +493,7 @@ impl Context {
                             .iter()
                             .map(|x| x.as_str())
                             .collect::<Vec<_>>()
-                            .join(", "),
+                            .join_compact(", "),
                     )
                     + m::nl();
             }
@@ -478,9 +510,9 @@ impl Context {
 
             let mut help = m::text("Function:    ");
             if let Some(name) = &metadata.name {
-                help += m::text(name.to_string());
+                help += m::text(name.clone());
             } else {
-                help += m::identifier(keyword.to_string());
+                help += m::identifier(keyword.to_compact_string());
             }
             if let Some(url) = &metadata.url {
                 help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
@@ -496,12 +528,19 @@ impl Context {
                 let desc = "Description: ";
                 let mut lines = description.lines();
                 help += m::text(desc)
-                    + m::text(lines.by_ref().next().unwrap_or("").trim().to_string())
+                    + m::text(
+                        lines
+                            .by_ref()
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .to_compact_string(),
+                    )
                     + m::nl();
 
                 for line in lines {
-                    help += m::whitespace(" ".repeat(desc.len()))
-                        + m::text(line.trim().to_string())
+                    help += m::whitespace(CompactString::new(" ").repeat(desc.len()))
+                        + m::text(line.trim().to_compact_string())
                         + m::nl();
                 }
             }
@@ -512,16 +551,16 @@ impl Context {
         m::text("Not found")
     }
 
-    pub fn list_modules(&self) -> impl Iterator<Item = String> {
+    pub fn list_modules(&self) -> impl Iterator<Item = CompactString> {
         let modules = self.resolver.get_importer().list_modules();
-        modules.into_iter().map(|m| m.0.join("::"))
+        modules.into_iter().map(|m| m.0.join_compact("::"))
     }
 
     pub fn dimension_registry(&self) -> &DimensionRegistry {
         self.typechecker.registry()
     }
 
-    pub fn base_units(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn base_units(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.interpreter
             .get_unit_registry()
             .inner
@@ -530,7 +569,7 @@ impl Context {
 
     pub fn unit_representations(
         &self,
-    ) -> impl Iterator<Item = (String, (BaseRepresentation, UnitMetadata))> + '_ {
+    ) -> impl Iterator<Item = (CompactString, (BaseRepresentation, UnitMetadata))> + '_ {
         let registry = self.interpreter.get_unit_registry();
 
         let unit_names = registry
@@ -600,7 +639,7 @@ impl Context {
 
         let result = self
             .typechecker
-            .check(transformed_statements)
+            .check(&transformed_statements)
             .map_err(|err| NumbatError::TypeCheckError(*err));
 
         if result.is_err() {

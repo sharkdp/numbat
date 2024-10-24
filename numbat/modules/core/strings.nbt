@@ -3,27 +3,35 @@ use core::functions
 use core::error
 
 @description("The length of a string")
+@example("str_length(\"Numbat\")")
 fn str_length(s: String) -> Scalar
 
 @description("Subslice of a string")
+@example("str_slice(\"Numbat\", 3, 6)")
 fn str_slice(s: String, start: Scalar, end: Scalar) -> String
 
-@description("Get a single-character string from a Unicode code point. Example: `0x2764 -> chr`")
+@description("Get a single-character string from a Unicode code point.")
+@example("0x2764 -> chr")
 fn chr(n: Scalar) -> String
 
-@description("Get the Unicode code point of the first character in a string. Example: `\"❤\" -> ord`")
+@description("Get the Unicode code point of the first character in a string.")
+@example("\"❤\" -> ord")
 fn ord(s: String) -> Scalar
 
 @description("Convert a string to lowercase")
+@example("lowercase(\"Numbat\")")
 fn lowercase(s: String) -> String
 
 @description("Convert a string to uppercase")
+@example("uppercase(\"Numbat\")")
 fn uppercase(s: String) -> String
 
 @description("Concatenate two strings")
+@example("str_append(\"Numbat\", \"!\")")
 fn str_append(a: String, b: String) -> String = "{a}{b}"
 
 @description("Find the first occurrence of a substring in a string")
+@example("str_find(\"Numbat is a statically typed programming language.\", \"typed\")")
 fn str_find(haystack: String, needle: String) -> Scalar =
   if len_haystack == 0
     then -1
@@ -36,10 +44,12 @@ fn str_find(haystack: String, needle: String) -> Scalar =
     and tail_haystack = str_slice(haystack, 1, len_haystack)
 
 @description("Check if a string contains a substring")
+@example("str_contains(\"Numbat is a statically typed programming language.\", \"typed\")")
 fn str_contains(haystack: String, needle: String) -> Bool =
   str_find(haystack, needle) != -1
 
 @description("Replace all occurrences of a substring in a string")
+@example("str_replace(\"Numbat is a statically typed programming language.\", \"statically typed programming language\", \"scientific calculator\")")
 fn str_replace(s: String, pattern: String, replacement: String) -> String =
   if pattern == ""
     then s
@@ -50,6 +60,7 @@ fn str_replace(s: String, pattern: String, replacement: String) -> String =
            else s
 
 @description("Repeat the input string `n` times")
+@example("str_repeat(\"abc\", 4)")
 fn str_repeat(a: String, n: Scalar) -> String =
   if n > 0
     then str_append(a, str_repeat(a, n - 1))
@@ -76,7 +87,8 @@ fn _digit_in_base(base: Scalar, x: Scalar) -> String =
 # TODO: once we have anonymous functions / closures, we can implement base in a way
 # that it returns a partially-applied version of '_number_in_base'. This would allow
 # arbitrary 'x -> base(b)' conversions.
-@description("Convert a number to the given base. Example: `42 |> base(16)`")
+@description("Convert a number to the given base.")
+@example("42 |> base(16)")
 fn base(b: Scalar, x: Scalar) -> String =
   if x < 0
     then "-{base(b, -x)}"
@@ -84,14 +96,18 @@ fn base(b: Scalar, x: Scalar) -> String =
       then _digit_in_base(b, x)
       else str_append(base(b, floor(x / b)), _digit_in_base(b, mod(x, b)))
 
-@description("Get a binary representation of a number. Example: `42 -> bin`")
+@description("Get a binary representation of a number.")
+@example("42 -> bin")
 fn bin(x: Scalar) -> String = if x < 0 then "-{bin(-x)}" else "0b{base(2, x)}"
 
-@description("Get an octal representation of a number. Example: `42 -> oct`")
+@description("Get an octal representation of a number.")
+@example("42 -> oct")
 fn oct(x: Scalar) -> String = if x < 0 then "-{oct(-x)}" else "0o{base(8, x)}"
 
 @description("Get a decimal representation of a number.")
+@example("0b111 -> dec")
 fn dec(x: Scalar) -> String = base(10, x)
 
-@description("Get a hexadecimal representation of a number. Example: `2^31-1 -> hex`")
+@description("Get a hexadecimal representation of a number.")
+@example("2^31-1 -> hex")
 fn hex(x: Scalar) -> String = if x < 0 then "-{hex(-x)}" else "0x{base(16, x)}"

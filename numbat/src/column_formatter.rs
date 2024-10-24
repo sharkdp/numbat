@@ -1,3 +1,4 @@
+use compact_str::{CompactString, ToCompactString};
 use unicode_width::UnicodeWidthStr;
 
 use crate::markup as m;
@@ -28,7 +29,7 @@ impl ColumnFormatter {
 
         let entries: Vec<_> = entries
             .into_iter()
-            .map(|s| s.as_ref().to_string())
+            .map(|s| s.as_ref().to_compact_string())
             .collect();
 
         if let Some(max_entry_width) = entries.iter().map(|s| s.width()).max() {
@@ -39,15 +40,13 @@ impl ColumnFormatter {
                 for entry in entries {
                     result +=
                         Markup::from(FormattedString(OutputType::Normal, format, entry.into()))
-                            + m::whitespace(" ".repeat(self.padding));
+                            + m::whitespace(CompactString::const_new(" ").repeat(self.padding));
                 }
                 return result;
             }
 
             for num_columns in min_num_columns..=self.terminal_width {
-                // TODO: once we have Rust 1.73, use the div_ceil implementation:
-                // let num_rows = entries.len().div_ceil(num_columns);
-                let num_rows = (entries.len() + num_columns - 1) / num_columns;
+                let num_rows = entries.len().div_ceil(num_columns);
 
                 let mut table: Vec<Vec<Option<&str>>> = vec![vec![None; num_columns]; num_rows];
                 for (idx, entry) in entries.iter().enumerate() {
@@ -82,9 +81,11 @@ impl ColumnFormatter {
                             result += Markup::from(FormattedString(
                                 OutputType::Normal,
                                 format,
-                                entry.to_string().into(),
+                                entry.to_compact_string().into(),
                             ));
-                            result += m::whitespace(" ".repeat(whitespace_length));
+                            result += m::whitespace(
+                                CompactString::const_new(" ").repeat(whitespace_length),
+                            );
                         } else {
                             break;
                         }
@@ -100,7 +101,7 @@ impl ColumnFormatter {
 }
 
 #[cfg(test)]
-fn format(width: usize, entries: &[&str]) -> String {
+fn format(width: usize, entries: &[&str]) -> CompactString {
     use crate::markup::{Formatter, PlainTextFormatter};
 
     let formatter = ColumnFormatter::new(width);

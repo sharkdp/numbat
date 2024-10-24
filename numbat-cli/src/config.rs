@@ -1,5 +1,6 @@
 use crate::copy_to_clipboard::NumericDisplayConfig;
 use clap::ValueEnum;
+use numbat::compact_str::CompactString;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Default, Debug, Clone, Copy, ValueEnum)]
@@ -53,7 +54,7 @@ pub enum ColorMode {
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct Config {
     pub intro_banner: IntroBanner,
-    pub prompt: String,
+    pub prompt: CompactString,
     pub pretty_print: PrettyPrintMode,
     pub color: ColorMode,
 
@@ -73,7 +74,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            prompt: ">>> ".to_owned(),
+            prompt: CompactString::const_new(">>> "),
             intro_banner: IntroBanner::default(),
             pretty_print: PrettyPrintMode::Auto,
             color: ColorMode::default(),

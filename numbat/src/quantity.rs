@@ -5,6 +5,7 @@ use crate::pretty_print::PrettyPrint;
 use crate::unit::{is_multiple_of, Unit, UnitFactor};
 use crate::FloatDisplayConfigSource;
 
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::{FromPrimitive, Zero};
@@ -194,7 +195,8 @@ impl Quantity {
             let group_representative = group_as_unit
                 .iter()
                 .max_by(|&f1, &f2| {
-                    // TODO: describe this heuristic
+                    // prefer base units over non-base. if multiple base units, prefer
+                    // those with a larger exponent
                     (f1.unit_id.is_base().cmp(&f2.unit_id.is_base()))
                         .then(f1.exponent.cmp(&f2.exponent))
                 })
@@ -376,7 +378,7 @@ impl Quantity {
                 space_btwn_operators,
                 Some(|unit: &UnitFactor| {
                     if fancy_exponents {
-                        unit.to_string()
+                        format_compact!("{unit}")
                     } else {
                         unit.to_ugly_string()
                     }
@@ -386,7 +388,7 @@ impl Quantity {
 
             PlainTextFormatter.format(&m, false)
         } else {
-            format!("{}", self.unit())
+            format_compact!("{}", self.unit())
         };
 
         markup::value(formatted_number)
@@ -410,8 +412,8 @@ impl Quantity {
         self.pretty_print_with_options(FloatDisplayConfigSource::Numbat(Some(options)), None, None)
     }
 
-    pub fn unsafe_value_as_string(&self) -> String {
-        self.unsafe_value().to_string()
+    pub fn unsafe_value_as_string(&self) -> CompactString {
+        self.unsafe_value().to_compact_string()
     }
 }
 
@@ -434,6 +436,8 @@ pub struct UnitDisplayOptions {
 
 #[cfg(test)]
 mod tests {
+    use compact_str::CompactString;
+
     use crate::{prefix::Prefix, prefix_parser::AcceptsPrefix, unit::CanonicalName};
 
     use super::*;
@@ -457,7 +461,7 @@ mod tests {
 
         let meter = Unit::meter();
         let foot = Unit::new_derived(
-            "foot",
+            CompactString::const_new("foot"),
             CanonicalName::new("ft", AcceptsPrefix::none()),
             Number::from_f64(0.3048),
             meter.clone(),

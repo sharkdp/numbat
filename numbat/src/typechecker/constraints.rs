@@ -1,3 +1,5 @@
+use compact_str::{format_compact, CompactString};
+
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{DType, DTypeFactor, Type};
@@ -123,7 +125,7 @@ impl ConstraintSet {
                 remaining_constraints
                     .iter()
                     .map(|c| c.pretty_print())
-                    .collect::<Vec<String>>()
+                    .collect::<Vec<CompactString>>()
                     .join("\n"),
             ));
         }
@@ -160,6 +162,7 @@ pub enum TrivialResolution {
 }
 
 impl TrivialResolution {
+    #[allow(clippy::wrong_self_convention)]
     pub fn is_trivially_violated(self) -> bool {
         matches!(self, TrivialResolution::Violated)
     }
@@ -178,7 +181,7 @@ pub enum Constraint {
     Equal(Type, Type),
     IsDType(Type),
     EqualScalar(DType),
-    HasField(Type, String, Type),
+    HasField(Type, CompactString, Type),
 }
 
 impl Constraint {
@@ -296,10 +299,7 @@ impl Constraint {
             Constraint::EqualScalar(dtype) => match dtype.split_first_factor() {
                 Some(((DTypeFactor::TVar(tv), k), rest)) => {
                     let result = DType::from_factors(
-                        &rest
-                            .iter()
-                            .map(|(f, j)| (f.clone(), -j / k))
-                            .collect::<Vec<_>>(),
+                        rest.iter().map(|(f, j)| (f.clone(), -j / k)).collect(),
                     );
                     Some(Satisfied::with_substitution(Substitution::single(
                         tv.clone(),
@@ -328,15 +328,15 @@ impl Constraint {
         }
     }
 
-    fn pretty_print(&self) -> String {
+    fn pretty_print(&self) -> CompactString {
         match self {
             Constraint::Equal(t1, t2) => {
-                format!("  {t1} ~ {t2}")
+                format_compact!("  {t1} ~ {t2}")
             }
-            Constraint::IsDType(t) => format!("  {t}: DType"),
-            Constraint::EqualScalar(d) => format!("  {d} = Scalar"),
+            Constraint::IsDType(t) => format_compact!("  {t}: DType"),
+            Constraint::EqualScalar(d) => format_compact!("  {d} = Scalar"),
             Constraint::HasField(struct_type, field_name, field_type) => {
-                format!("HasField({struct_type}, \"{field_name}\", {field_type})")
+                format_compact!("HasField({struct_type}, \"{field_name}\", {field_type})")
             }
         }
     }

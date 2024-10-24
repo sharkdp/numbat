@@ -4,6 +4,7 @@ use core::error
 @name("Bisection method")
 @url("https://en.wikipedia.org/wiki/Bisection_method")
 @description("Find the root of the function $f$ in the interval $[x_1, x_2]$ using the bisection method. The function $f$ must be continuous and $f(x_1) \cdot f(x_2) < 0$.")
+@example("fn f(x) = x² +x -2\nroot_bisect(f, 0, 100, 0.01, 0.01)", "Find the root of $f(x) = x² +x -2$ in the interval $[0, 100]$.")
 fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y) -> X =
   if abs(x1 - x2) < x_tol
     then x_mean
@@ -27,5 +28,6 @@ fn _root_newton_helper<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X
 @name("Newton's method")
 @url("https://en.wikipedia.org/wiki/Newton%27s_method") 
 @description("Find the root of the function $f(x)$ and its derivative $f'(x)$ using Newton's method.")
+@example("fn f(x) = x² -3x +2\nfn f_prime(x) = 2x -3\nroot_newton(f, f_prime, 0 , 0.01)", "Find a root of $f(x) = x² -3x +2$ using Newton's method.")
 fn root_newton<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y) -> X =
   _root_newton_helper(f, f_prime, x0, y_tol, 10_000)

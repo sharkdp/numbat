@@ -1,0 +1,8 @@
+let price = 100 $
+let shipping = 5 $
+let subtotal = price + shipping
+
+let discount = 10%
+let total = subtotal |> decrease_by(discount)
+
+assert_eq(total, $ 94.50)

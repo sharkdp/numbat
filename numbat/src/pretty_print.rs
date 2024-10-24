@@ -1,3 +1,5 @@
+use compact_str::{CompactString, ToCompactString};
+
 use crate::markup::Markup;
 
 pub trait PrettyPrint {
@@ -11,7 +13,7 @@ impl PrettyPrint for bool {
     }
 }
 
-pub fn escape_numbat_string(s: &str) -> String {
+pub fn escape_numbat_string(s: &str) -> CompactString {
     s.replace("\\", "\\\\")
         .replace("\n", "\\n")
         .replace("\r", "\\r")
@@ -20,9 +22,10 @@ pub fn escape_numbat_string(s: &str) -> String {
         .replace("\0", "\\0")
         .replace("{", "\\{")
         .replace("}", "\\}")
+        .to_compact_string()
 }
 
-impl PrettyPrint for String {
+impl PrettyPrint for CompactString {
     fn pretty_print(&self) -> Markup {
         crate::markup::operator("\"")
             + crate::markup::string(escape_numbat_string(self))

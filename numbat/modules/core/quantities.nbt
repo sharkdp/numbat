@@ -1,7 +1,11 @@
 use core::scalar
-
-@description("Extract the unit of a quantity (the `km/h` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise.")
-fn unit_of<T: Dim>(x: T) -> T
+use core::error
 
 @description("Extract the plain value of a quantity (the `20` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise.")
-fn value_of<T: Dim>(x: T) -> Scalar = x / unit_of(x)
+@example("value_of(20 km/h)")
+fn value_of<T: Dim>(x: T) -> Scalar
+
+@description("Extract the unit of a quantity (the `km/h` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise. Returns an error if the quantity is zero.")
+@example("unit_of(20 km/h)")
+fn unit_of<T: Dim>(x: T) -> T = if x_value == 0 then error("…") else x / value_of(x)
+    where x_value = value_of(x)

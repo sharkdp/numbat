@@ -1,3 +1,4 @@
+use compact_str::CompactString;
 use thiserror::Error;
 
 use crate::{span::Span, typechecker::map_stack::MapStack};
@@ -21,7 +22,7 @@ pub enum NameResolutionError {
 
 #[derive(Debug, Clone, Default)]
 pub struct Namespace {
-    seen: MapStack<String, (String, Span)>,
+    seen: MapStack<CompactString, (CompactString, Span)>,
 }
 
 impl Namespace {
@@ -35,18 +36,18 @@ impl Namespace {
 
     pub fn add_identifier_allow_override(
         &mut self,
-        name: String,
+        name: CompactString,
         span: Span,
-        item_type: String,
+        item_type: CompactString,
     ) -> Result<(), NameResolutionError> {
         self.add_impl(name, span, item_type, true)
     }
 
     pub fn add_identifier(
         &mut self,
-        name: String,
+        name: CompactString,
         span: Span,
-        item_type: String,
+        item_type: CompactString,
     ) -> Result<(), NameResolutionError> {
         self.add_impl(name, span, item_type, false)
     }
@@ -57,9 +58,9 @@ impl Namespace {
 
     fn add_impl(
         &mut self,
-        name: String,
+        name: CompactString,
         span: Span,
-        item_type: String,
+        item_type: CompactString,
         allow_override: bool,
     ) -> Result<(), NameResolutionError> {
         if let Some((original_item_type, original_span)) = self.seen.get(&name) {
@@ -67,15 +68,15 @@ impl Namespace {
                 return Ok(());
             }
 
-            if allow_override && original_item_type == &item_type {
+            if allow_override && original_item_type == item_type {
                 return Ok(());
             }
 
             return Err(NameResolutionError::IdentifierClash {
-                conflicting_identifier: name,
+                conflicting_identifier: name.to_string(),
                 conflict_span: span,
                 original_span: *original_span,
-                original_item_type: Some(original_item_type.clone()),
+                original_item_type: Some(original_item_type.to_string()),
             });
         }
 

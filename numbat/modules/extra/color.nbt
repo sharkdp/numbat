@@ -9,10 +9,12 @@ struct Color {
 }
 
 @description("Create a `Color` from RGB (red, green, blue) values in the range $[0, 256)$.")
+@example("rgb(125, 128, 218)")
 fn rgb(red: Scalar, green: Scalar, blue: Scalar) -> Color =
   Color { red: red, green: green, blue: blue }
 
-@description("Create a `Color` from a (hexadecimal) value, e.g. `color(0xff7700)`")
+@description("Create a `Color` from a (hexadecimal) value.")
+@example("color(0xff7700)")
 fn color(rgb_hex: Scalar) -> Color =
   rgb(
     floor(rgb_hex / 256^2),
@@ -22,15 +24,18 @@ fn color(rgb_hex: Scalar) -> Color =
 fn _color_to_scalar(color: Color) -> Scalar =
   color.red * 0x010000 + color.green * 0x000100 + color.blue
 
-@description("Convert a color to its RGB representation, e.g. `cyan -> color_rgb`")
+@description("Convert a color to its RGB representation.")
+@example("cyan -> color_rgb")
 fn color_rgb(color: Color) -> String =
   "rgb({color.red}, {color.green}, {color.blue})"
 
-@description("Convert a color to its RGB floating point representation, e.g. `cyan -> color_rgb_float`")
+@description("Convert a color to its RGB floating point representation.")
+@example("cyan -> color_rgb_float")
 fn color_rgb_float(color: Color) -> String =
   "rgb({color.red / 255:.3}, {color.green / 255:.3}, {color.blue / 255:.3})"
 
-@description("Convert a color to its hexadecimal representation, e.g. `rgb(225, 36, 143) -> color_hex`")
+@description("Convert a color to its hexadecimal representation.")
+@example("rgb(225, 36, 143) -> color_hex")
 fn color_hex(color: Color) -> String =
   str_append("#", str_replace(str_replace("{color -> _color_to_scalar -> hex:>8}", "0x", ""), " ", "0"))
 

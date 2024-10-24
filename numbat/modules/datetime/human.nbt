@@ -1,39 +1,59 @@
 use core::functions
 use core::strings
 use units::si
+use units::time
 use datetime::functions
 
-fn _human_num_days(time: Time) -> Scalar = floor(time / days)
-
 fn _human_join(a: String, b: String) -> String =
-  if str_slice(a, 0, 2) == "0 " then b else if str_slice(b, 0, 2) == "0 " then a else "{a} + {b}"
+  if a == "" then b else if b == "" then a else "{a} + {b}"
 
-fn _remove_plural_suffix(str: String) -> String =
-  if str_slice(str, 0, 2) == "1 " then str_slice(str, 0, str_length(str) - 1) else str
+fn _prettier(str: String) -> String =
+    if str_slice(clean_str, 0, 2) == "0 " then ""
+    else if str_slice(clean_str, 0, 2) == "1 " then str_slice(clean_str, 0, str_length(clean_str) - 1)
+    else clean_str
+  where clean_str = str_replace(str, ".0 ", " ")
 
-fn _human_seconds(dt: DateTime) -> String =
-  _remove_plural_suffix(format_datetime("%-S%.f seconds", dt))
+fn _human_years(time: Time)   -> String = "{(time -> years)   /  year   |> floor} years"   -> _prettier
+fn _human_months(time: Time)  -> String = "{(time -> months)  /  month  |> round} months"  -> _prettier
 
-fn _human_minutes(dt: DateTime) -> String =
-  _remove_plural_suffix(format_datetime("%-M minutes", dt))
+fn _human_days(time: Time)    -> String = "{(time -> days)    /  day    |> floor} days"    -> _prettier
+fn _human_hours(time: Time)   -> String = "{(time -> hours)   /  hour   |> floor} hours"   -> _prettier
+fn _human_minutes(time: Time) -> String = "{(time -> minutes) /  minute |> floor} minutes" -> _prettier
 
-fn _human_hours(dt: DateTime) -> String =
-  _remove_plural_suffix(format_datetime("%-H hours", dt))
+fn _precise_human_months(time: Time)  -> String = "{(time -> months)  /  month } months"  -> _prettier
+fn _precise_human_days(time: Time)    -> String = "{(time -> days)    /  day   } days"    -> _prettier
+fn _precise_human_seconds(time: Time) -> String = "{(time -> seconds) /  second} seconds" -> _prettier
 
-fn _human_days(num_days: Scalar) -> String =
-  _remove_plural_suffix("{num_days} days")
+fn _human_recurse(t: Time, result: String, time_unit: String) -> String =
+  if time_unit == "day"
+    then _human_recurse((t -> day) - (t |> floor_in(day)), _human_join(result, t -> _human_days),    "hour")
+  else if time_unit == "hour"
+    then _human_recurse((t -> hour) - (t |> floor_in(hour)), _human_join(result, t -> _human_hours),   "minute")
+  else if time_unit == "minute"
+    then _human_recurse((t -> min) - (t |> floor_in(min)), _human_join(result, t -> _human_minutes), "second")
+  else _human_join(result, (t |> round_in(ms)) -> _precise_human_seconds)
 
-fn _human_readable_duration(time: Time, dt: DateTime, num_days: Scalar) -> String =
-    _human_join(_human_join(_human_join(_human_days(_human_num_days(time)), _human_hours(dt)), _human_minutes(dt)), _human_seconds(dt))
+fn _year_month_approx(t: Time) -> String = _human_join(the_years -> _human_years, t - the_years -> _human_months)
+  where the_years = t |> floor_in(year)
 
-# Implementation details:
-# we skip hours/minutes/seconds for durations larger than 1000 days because:
-#   (a) we run into floating point precision problems at the nanosecond level at this point
-#   (b) for much larger numbers, we can't convert to DateTimes anymore
+fn _human_manage_past(str: String, time: Time) = str_append(str, if time < 0 s then " ago" else "")
+
+fn _human_for_long_duration(human_days: String, human_years: String) -> String =
+  "{human_days} (approx. {human_years})"
+
+fn _abs_human(time: Time) -> String =
+  if time == 0 s then "0 seconds"
+  else if time < 60 seconds then time -> _precise_human_seconds
+  else if time < 2 months then _human_recurse(time, "",  "day")
+  else if time < 1 year
+    then _human_for_long_duration(time -> _precise_human_days, (time |> round_in(month/10)) -> _precise_human_months)
+  else if time < 100 years
+    then _human_for_long_duration(time -> _precise_human_days, _year_month_approx(time))
+  else
+    _human_for_long_duration(time -> _precise_human_days, time -> _human_years)
+
 @name("Human-readable time duration")
 @url("https://numbat.dev/doc/date-and-time.html")
 @description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
-fn human(time: Time) =
-  if _human_num_days(time) > 1000
-    then "{_human_num_days(time)} days" 
-    else _human_readable_duration(time, datetime("0001-01-01T00:00:00Z") + time, _human_num_days(time))
+@example("century/1e6 -> human", "How long is a microcentury?")
+fn human(time: Time) -> String = _human_manage_past(abs(time) -> _abs_human, time)

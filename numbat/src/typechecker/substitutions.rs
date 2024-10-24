@@ -92,7 +92,7 @@ impl ApplySubstitution for Type {
 impl ApplySubstitution for DType {
     fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
         let mut new_dtype = self.clone();
-        for (f, power) in &self.factors {
+        for (f, power) in self.factors() {
             match f {
                 DTypeFactor::TVar(tv) => {
                     if let Some(type_) = substitution.lookup(tv) {
@@ -148,7 +148,7 @@ impl ApplySubstitution for StructInfo {
     }
 }
 
-impl ApplySubstitution for Expression {
+impl ApplySubstitution for Expression<'_> {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
             Expression::Scalar(_, _, type_) => type_.apply(s),

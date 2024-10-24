@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: Numbat
+message: >-
+  If you use this software in scientific publications,
+  please consider citing it using the metadata from
+  this file.
+type: software
+authors:
+  - given-names: David
+    family-names: Peter
+    email: mail@david-peter.de
+    orcid: 'https://orcid.org/0000-0001-7950-9915'
+repository-code: 'https://github.com/sharkdp/numbat'
+abstract: >-
+  A statically typed programming language for scientific
+  computations with first class support for physical
+  dimensions and units.
+license: MIT
+version: 1.14.0
+date-released: '2024-10-11'

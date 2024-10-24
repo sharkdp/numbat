@@ -22,10 +22,7 @@ pub enum TokenizerErrorKind {
     ExpectedDigit { character: Option<char> },
 
     #[error("Expected base-{base} digit")]
-    ExpectedDigitInBase {
-        base: usize,
-        character: Option<char>,
-    },
+    ExpectedDigitInBase { base: u8, character: Option<char> },
 
     #[error("Unterminated string")]
     UnterminatedString,
@@ -125,7 +122,7 @@ pub enum TokenKind {
 
     // Variable-length tokens
     Number,
-    IntegerWithBase(usize),
+    IntegerWithBase(u8),
     Identifier,
 
     // A normal string without interpolation: `"hello world"`
@@ -214,6 +211,7 @@ fn is_identifier_continue(c: char) -> bool {
         || is_other_allowed_identifier_char(c))
         && !is_exponent_char(c)
         && c != '·'
+        && c != '⋅'
 }
 
 /// When scanning a string interpolation like `"foo = {foo}, and bar = {bar}."`,
@@ -378,6 +376,18 @@ impl Tokenizer {
     }
 
     fn scan_single_token<'a>(&mut self, input: &'a str) -> Result<Option<Token<'a>>> {
+        fn is_ascii_hex_digit(c: char) -> bool {
+            c.is_ascii_hexdigit()
+        }
+
+        fn is_ascii_octal_digit(c: char) -> bool {
+            ('0'..='7').contains(&c)
+        }
+
+        fn is_ascii_binary_digit(c: char) -> bool {
+            c == '0' || c == '1'
+        }
+
         static KEYWORDS: OnceLock<HashMap<&'static str, TokenKind>> = OnceLock::new();
         let keywords = KEYWORDS.get_or_init(|| {
             let mut m = HashMap::new();
@@ -463,18 +473,17 @@ impl Tokenizer {
                 .map(|c| c == 'x' || c == 'o' || c == 'b')
                 .unwrap_or(false) =>
             {
-                let (base, is_digit_in_base): (_, Box<dyn Fn(char) -> bool>) =
-                    match self.peek(input).unwrap() {
-                        'x' => (16, Box::new(|c| c.is_ascii_hexdigit())),
-                        'o' => (8, Box::new(|c| ('0'..='7').contains(&c))),
-                        'b' => (2, Box::new(|c| c == '0' || c == '1')),
-                        _ => unreachable!(),
-                    };
+                let (base, is_digit_in_base) = match self.peek(input).unwrap() {
+                    'x' => (16, is_ascii_hex_digit as fn(char) -> bool),
+                    'o' => (8, is_ascii_octal_digit as _),
+                    'b' => (2, is_ascii_binary_digit as _),
+                    _ => unreachable!(),
+                };
 
                 self.advance(input); // skip over the x/o/b
 
-                // If the first character is not a digits, that's an error.
-                if !self.peek(input).map(&is_digit_in_base).unwrap_or(false) {
+                // If the first character is not a digit, that's an error.
+                if !self.peek(input).map(is_digit_in_base).unwrap_or(false) {
                     return tokenizer_error(
                         self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {
@@ -547,7 +556,7 @@ impl Tokenizer {
             '|' if self.match_char(input, '>') => TokenKind::PostfixApply,
             '*' if self.match_char(input, '*') => TokenKind::Power,
             '+' => TokenKind::Plus,
-            '*' | '·' | '×' => TokenKind::Multiply,
+            '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
             '/' => TokenKind::Divide,
             '÷' => TokenKind::Divide,
             '^' => TokenKind::Power,

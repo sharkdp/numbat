@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use compact_str::{format_compact, CompactString, ToCompactString};
 use num_traits::{Pow, ToPrimitive};
 use pretty_dtoa::FmtFloatConfig;
 
@@ -31,7 +32,7 @@ impl Number {
     }
 
     /// Pretty prints with default options
-    pub fn pretty_print(self) -> String {
+    pub fn pretty_print(self) -> CompactString {
         self.pretty_print_with_options(FloatDisplayConfigSource::Numbat(None), None)
     }
 
@@ -42,7 +43,7 @@ impl Number {
         self,
         float_options: FloatDisplayConfigSource,
         int_options: Option<num_format::CustomFormat>,
-    ) -> String {
+    ) -> CompactString {
         let number = self.0;
 
         // 64-bit floats can accurately represent integers up to 2^52 [1],
@@ -70,10 +71,13 @@ impl Number {
                     .unwrap()
             });
 
+            // TODO: this is pretty wasteful. formatted numbers should be small enough
+            // to fit in a CompactString without first going to the heap
             number
                 .to_i64()
                 .expect("small enough integers are representable as i64")
                 .to_formatted_string(&format)
+                .to_compact_string()
         } else {
             use pretty_dtoa::dtoa;
 
@@ -91,7 +95,8 @@ impl Number {
                     .round()
             });
 
-            let formatted_number = dtoa(number, config);
+            // TODO: wasteful to go through a String here
+            let formatted_number = dtoa(number, config).to_compact_string();
 
             if formatted_number.contains('.') && !formatted_number.contains('e') {
                 let formatted_number = if config.max_sig_digits.is_some() {
@@ -101,12 +106,12 @@ impl Number {
                 };
 
                 if formatted_number.ends_with('.') {
-                    format!("{formatted_number}0")
+                    format_compact!("{formatted_number}0")
                 } else {
-                    formatted_number.to_string()
+                    formatted_number.to_compact_string()
                 }
             } else if formatted_number.contains('e') && !formatted_number.contains("e-") {
-                formatted_number.replace('e', "e+")
+                formatted_number.replace('e', "e+").to_compact_string()
             } else {
                 formatted_number
             }

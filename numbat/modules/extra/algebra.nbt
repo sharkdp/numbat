@@ -7,6 +7,7 @@ fn _qe_solution<A: Dim, B: Dim>(a: A, b: B, c: B² / A, sign: Scalar) -> B / A =
 @name("Solve quadratic equations")
 @url("https://en.wikipedia.org/wiki/Quadratic_equation")
 @description("Returns the solutions of the equation a x² + b x + c = 0")
+@example("quadratic_equation(2, -1, -1)", "Solve the equation $2x² -x -1 = 0$")
 fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A> =
   if a == 0
     then if b == 0

@@ -1,3 +1,5 @@
+use compact_str::{CompactString, ToCompactString};
+
 use crate::arithmetic::{Exponent, Power};
 use crate::ast::{TypeExpression, TypeParameterBound};
 use crate::registry::{BaseRepresentation, Registry, Result};
@@ -7,7 +9,7 @@ use crate::BaseRepresentationFactor;
 #[derive(Default, Clone)]
 pub struct DimensionRegistry {
     registry: Registry<()>,
-    pub introduced_type_parameters: Vec<(Span, String, Option<TypeParameterBound>)>,
+    pub introduced_type_parameters: Vec<(Span, CompactString, Option<TypeParameterBound>)>,
 }
 
 impl DimensionRegistry {
@@ -24,7 +26,7 @@ impl DimensionRegistry {
                     .any(|(_, n, _)| n == name)
                 {
                     Ok(BaseRepresentation::from_factor(BaseRepresentationFactor(
-                        name.to_string(),
+                        name.to_compact_string(),
                         Exponent::from_integer(1),
                     )))
                 } else {
@@ -60,7 +62,7 @@ impl DimensionRegistry {
     pub fn get_derived_entry_names_for(
         &self,
         base_representation: &BaseRepresentation,
-    ) -> Vec<String> {
+    ) -> Vec<CompactString> {
         self.registry
             .get_derived_entry_names_for(base_representation)
     }
