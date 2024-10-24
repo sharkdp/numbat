@@ -182,10 +182,10 @@ impl ApplySubstitution for Expression<'_> {
                 return_type.apply(s)
             }
             Expression::Boolean(_, _) => Ok(()),
-            Expression::Condition(_, cond) => {
-                cond.condition.apply(s)?;
-                cond.then_expr.apply(s)?;
-                cond.else_expr.apply(s)
+            Expression::Condition(_, if_, then_, else_) => {
+                if_.apply(s)?;
+                then_.apply(s)?;
+                else_.apply(s)
             }
             Expression::String(_, _) => Ok(()),
             Expression::InstantiateStruct(_, initializers, info) => {

@@ -1,5 +1,5 @@
 use crate::{
-    ast::{BinOp, Condition, DefineVariable, Expression, Statement, StringPart},
+    ast::{DefineVariable, Expression, Statement, StringPart},
     decorator::{self, Decorator},
     name_resolution::NameResolutionError,
     prefix_parser::{AliasSpanInfo, PrefixParser, PrefixParserResult},
@@ -50,8 +50,7 @@ impl Transformer {
             }
             Expression::UnaryOperator { expr, .. } => self.transform_expression(expr),
 
-            Expression::BinaryOperator { bin_op, .. } => {
-                let BinOp { lhs, rhs } = bin_op.as_mut();
+            Expression::BinaryOperator { lhs, rhs, .. } => {
                 self.transform_expression(lhs);
                 self.transform_expression(rhs);
             }
@@ -60,12 +59,7 @@ impl Transformer {
                     self.transform_expression(arg);
                 }
             }
-            Expression::Condition(_, cond) => {
-                let Condition {
-                    condition,
-                    then_expr,
-                    else_expr,
-                } = cond.as_mut();
+            Expression::Condition(_, condition, then_expr, else_expr) => {
                 self.transform_expression(condition);
                 self.transform_expression(then_expr);
                 self.transform_expression(else_expr);

@@ -26,7 +26,7 @@ use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{self, Condition, DType, DTypeFactor, Expression, StructInfo, Type};
+use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
 
 use const_evaluation::evaluate_const_expr;
@@ -386,11 +386,10 @@ impl TypeChecker {
             }
             ast::Expression::BinaryOperator {
                 op,
-                bin_op,
+                lhs,
+                rhs,
                 span_op,
             } => {
-                let ast::BinOp { lhs, rhs } = bin_op.as_ref();
-
                 let lhs_checked = self.elaborate_expression(lhs)?;
                 let rhs_checked = self.elaborate_expression(rhs)?;
 
@@ -467,10 +466,8 @@ impl TypeChecker {
                             span_op.unwrap_or_else(|| {
                                 ast::Expression::BinaryOperator {
                                     op: *op,
-                                    bin_op: Box::new(ast::BinOp {
-                                        lhs: lhs.clone(),
-                                        rhs: rhs.clone(),
-                                    }),
+                                    lhs: lhs.clone(),
+                                    rhs: rhs.clone(),
                                     span_op: *span_op,
                                 }
                                 .full_span()
@@ -495,10 +492,8 @@ impl TypeChecker {
                             let rhs_dtype = dtype(&rhs_checked)?;
                             let full_span = ast::Expression::BinaryOperator {
                                 op: *op,
-                                bin_op: Box::new(ast::BinOp {
-                                    lhs: lhs.clone(),
-                                    rhs: rhs.clone(),
-                                }),
+                                lhs: lhs.clone(),
+                                rhs: rhs.clone(),
                                 span_op: *span_op,
                             }
                             .full_span();
@@ -895,12 +890,7 @@ impl TypeChecker {
                     })
                     .collect::<Result<_>>()?,
             ),
-            ast::Expression::Condition(span, cond) => {
-                let ast::Condition {
-                    condition,
-                    then_expr: then,
-                    else_expr: else_,
-                } = cond.as_ref();
+            ast::Expression::Condition(span, condition, then, else_) => {
                 let condition = self.elaborate_expression(condition)?;
 
                 if self
@@ -931,7 +921,12 @@ impl TypeChecker {
                     )));
                 }
 
-                typed_ast::Expression::Condition(*span, Condition::new(condition, then, else_))
+                typed_ast::Expression::Condition(
+                    *span,
+                    Box::new(condition),
+                    Box::new(then),
+                    Box::new(else_),
+                )
             }
             ast::Expression::InstantiateStruct {
                 full_span,
