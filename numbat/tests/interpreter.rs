@@ -856,7 +856,7 @@ fn test_statement_pretty_printing() {
 mod tests {
     use super::*;
     #[cfg(test)]
-    mod assert_eq_3 {
+    mod assert_eq {
         use super::*;
 
         #[test]
@@ -958,6 +958,22 @@ mod tests {
             Assertion failed because the following two quantities differ by 0.0178°, which is more than 0.0001°:
               -76.9911°
               -77.0089°
+            "###);
+        }
+
+        #[test]
+        fn test_floating_point_warning() {
+            insta::assert_snapshot!(fail("assert_eq(2+ 2, 2 + 1)"), @r###"
+            Assertion failed because the following two values are not the same:
+              4
+              3
+            "###);
+            insta::assert_snapshot!(fail("assert_eq(2 + 2e-12, 2 + 1e-12)"), @r###"
+            Assertion failed because the following two values are not the same:
+              2.0
+              2.0
+            Note: The two printed values appear to be the same, this may be due to floating point precision errors.
+                  For dimension types you may want to test approximate equality instead: assert_eq(q1, q2, ε).
             "###);
         }
     }

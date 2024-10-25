@@ -1,7 +1,32 @@
-use crate::{quantity::Quantity, span::Span};
+use crate::{quantity::Quantity, span::Span, value::Value};
 use compact_str::{format_compact, CompactString};
 use std::fmt::Display;
 use thiserror::Error;
+
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
+pub struct AssertEq2Error {
+    pub span_lhs: Span,
+    pub lhs: Value,
+    pub span_rhs: Span,
+    pub rhs: Value,
+}
+
+impl Display for AssertEq2Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let optional_message = if format!("{}", self.lhs) == format!("{}", self.rhs) {
+            "\nNote: The two printed values appear to be the same, this may be due to floating point precision errors.\n      \
+            For dimension types you may want to test approximate equality instead: assert_eq(q1, q2, ε)."
+        } else {
+            ""
+        };
+
+        write!(
+            f,
+            "Assertion failed because the following two values are not the same:\n  {}\n  {}{}",
+            self.lhs, self.rhs, optional_message
+        )
+    }
+}
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub struct AssertEq3Error {
