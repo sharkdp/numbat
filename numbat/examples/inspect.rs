@@ -106,7 +106,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     let code = extra_import + &example_code;
 
                     //Format the example input
-                    let example_input = format!(">>> {}", code);
+                    let example_input = format!("{}", code);
 
                     //Encode the example url
                     let example_url = format!(
