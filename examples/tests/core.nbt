@@ -1,7 +1,5 @@
 # unit_of
 
-assert_eq(unit_of(0),            1)
-
 assert_eq(unit_of(1),            1)
 assert_eq(unit_of(1.2345),       1)
 

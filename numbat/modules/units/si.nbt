@@ -202,12 +202,12 @@ unit degree: Angle = π / 180 × radian
 
 @name("Minute of arc")
 @url("https://en.wikipedia.org/wiki/Minute_and_second_of_arc")
-@aliases(arcminutes, arcmin, ′)
+@aliases(arcminutes, arcmin, ′: short)
 unit arcminute: Angle = 1 / 60 × degree
 
 @name("Second of arc")
 @url("https://en.wikipedia.org/wiki/Minute_and_second_of_arc")
-@aliases(arcseconds, arcsec, ″)
+@aliases(arcseconds, arcsec, ″: short)
 unit arcsecond: Angle = 1 / 60 × arcminute
 
 @name("Are")

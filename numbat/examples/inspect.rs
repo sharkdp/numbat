@@ -1,9 +1,9 @@
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
 use numbat::resolver::CodeSource;
 use numbat::Context;
-use percent_encoding;
 use std::path::Path;
 
 const AUTO_GENERATED_HINT: &str = "<!-- NOTE! This file is auto-generated -->";
@@ -33,7 +33,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
         let name = unit_metadata.name.unwrap_or(unit_name.clone());
 
         let name_with_url = if let Some(url) = url {
-            format!("[{name}]({url})")
+            format_compact!("[{name}]({url})")
         } else {
             name.clone()
         };
@@ -61,7 +61,8 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
         }
 
         if let Some(ref description_raw) = description {
-            let description = replace_equation_delimiters(description_raw.trim().to_string());
+            let description =
+                replace_equation_delimiters(description_raw.trim().to_compact_string());
 
             if description.ends_with('.') {
                 println!("{description}");
@@ -102,15 +103,16 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                 if let Ok((statements, results)) =
                     example_ctx.interpret(&example_code, CodeSource::Internal)
                 {
+                    let code = extra_import + &example_code;
+
                     //Format the example input
-                    let example_input = format!(">>> {}", example_code);
+                    let example_input = format!(">>> {}", code);
 
                     //Encode the example url
-                    let url_code = extra_import + &example_code;
                     let example_url = format!(
                         "https://numbat.dev/?q={}",
                         percent_encoding::utf8_percent_encode(
-                            &url_code,
+                            &code,
                             percent_encoding::NON_ALPHANUMERIC
                         )
                     );
@@ -118,7 +120,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     //Assemble the example output
                     let result_markup = results.to_markup(
                         statements.last(),
-                        &example_ctx.dimension_registry(),
+                        example_ctx.dimension_registry(),
                         true,
                         true,
                     );
@@ -131,9 +133,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 
                     print!("<pre>");
                     print!("<div class=\"buttons\">");
-                    print!("<button class=\"fa fa-play play-button\" title=\"{}\" aria-label=\"{}\"  onclick=\" window.open('{}')\"\"></button>",
-                        "Run this code",
-                        "Run this code",
+                    print!("<button class=\"fa fa-play play-button\" title=\"Run this code\" aria-label=\"Run this code\"  onclick=\" window.open('{}')\"\"></button>",
                         example_url);
                     print!("</div>");
                     print!("<code class=\"language-nbt hljs numbat\">");
@@ -159,8 +159,8 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 }
 
 // Replace $..$ with \\( .. \\) for mdbook.
-fn replace_equation_delimiters(text_in: String) -> String {
-    let mut text_out = String::new();
+fn replace_equation_delimiters(text_in: CompactString) -> CompactString {
+    let mut text_out = CompactString::with_capacity(text_in.len());
     for (i, part) in text_in.split('$').enumerate() {
         if i % 2 == 0 {
             text_out.push_str(part);
@@ -170,14 +170,14 @@ fn replace_equation_delimiters(text_in: String) -> String {
             text_out.push_str(" \\\\)");
         }
     }
-    return text_out;
+    text_out
 }
 
 fn prepare_context() -> Context {
     let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
     let mut importer = FileSystemImporter::default();
     importer.add_path(module_path);
-    return Context::new(importer);
+    Context::new(importer)
 }
 
 fn main() {

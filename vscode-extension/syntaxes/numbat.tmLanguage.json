@@ -40,7 +40,7 @@
             "patterns": [
                 {
                     "name": "support.function.numbat",
-                    "match": "@(metric_prefixes|binary_prefixes|aliases|name|url|description)\\b"
+                    "match": "@(metric_prefixes|binary_prefixes|aliases|name|url|description|example)\\b"
                 }
             ]
         },
@@ -86,8 +86,7 @@
         },
         "strings": {
             "name": "string.quoted.double",
-            "begin": "\"",
-            "end": "\""
+            "match": "((?<=})|\")((?!(?<!\\\\)[{\"])([^\"]|\\\"))*((?={)|\")"
         }
     },
     "scopeName": "source.numbat"

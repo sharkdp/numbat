@@ -40,7 +40,7 @@ print("Radioactivity of a banana: {radioactivity_banana}")
 # A single 40-K decay releases an energy of
 # (https://commons.wikimedia.org/wiki/File:Potassium-40-decay-scheme.svg)
 
-let energy_per_decay: Energy = 11 percent × 1.5 MeV + 89 percent × 1.3 MeV
+let energy_per_decay: Energy = 11% × 1.5 MeV + 89% × 1.3 MeV
 
 # Finally: how many bananas do we need to power a single household?
 

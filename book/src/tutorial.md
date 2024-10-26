@@ -71,7 +71,7 @@ potassium-40 atom](https://commons.wikimedia.org/wiki/File:Potassium-40-decay-sc
 you can optionally add a `: Energy` annotation that will be enforced by Numbat:
 
 ``` numbat
-let energy_per_decay: Energy = 11 percent × 1.5 MeV + 89 percent × 1.3 MeV
+let energy_per_decay: Energy = 11% × 1.5 MeV + 89% × 1.3 MeV
 ```
 
 This also works with custom units since Numbat adds new physical dimensions (types) implicitly:

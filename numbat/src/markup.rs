@@ -1,4 +1,6 @@
-use std::{borrow::Cow, fmt::Display};
+use std::fmt::Display;
+
+use compact_str::CompactString;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FormatType {
@@ -23,7 +25,45 @@ pub enum OutputType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct FormattedString(pub OutputType, pub FormatType, pub Cow<'static, str>);
+pub enum CompactStrCow {
+    Owned(CompactString),
+    Static(&'static str),
+}
+
+impl From<CompactStrCow> for CompactString {
+    fn from(value: CompactStrCow) -> Self {
+        match value {
+            CompactStrCow::Owned(compact_string) => compact_string,
+            CompactStrCow::Static(s) => CompactString::const_new(s),
+        }
+    }
+}
+
+impl std::ops::Deref for CompactStrCow {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            CompactStrCow::Owned(compact_string) => compact_string,
+            CompactStrCow::Static(s) => s,
+        }
+    }
+}
+
+impl From<CompactString> for CompactStrCow {
+    fn from(value: CompactString) -> Self {
+        Self::Owned(value)
+    }
+}
+
+impl From<&'static str> for CompactStrCow {
+    fn from(value: &'static str) -> Self {
+        Self::Static(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct FormattedString(pub OutputType, pub FormatType, pub CompactStrCow);
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Markup(pub Vec<FormattedString>);
@@ -73,7 +113,7 @@ pub fn empty() -> Markup {
     Markup::default()
 }
 
-pub fn whitespace(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn whitespace(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Whitespace,
@@ -81,7 +121,7 @@ pub fn whitespace(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn emphasized(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn emphasized(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Emphasized,
@@ -89,7 +129,7 @@ pub fn emphasized(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn dimmed(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn dimmed(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Dimmed,
@@ -97,7 +137,7 @@ pub fn dimmed(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn text(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn text(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Text,
@@ -105,7 +145,7 @@ pub fn text(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn string(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn string(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::String,
@@ -113,7 +153,7 @@ pub fn string(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn keyword(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn keyword(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Keyword,
@@ -121,7 +161,7 @@ pub fn keyword(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn value(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn value(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Value,
@@ -129,7 +169,7 @@ pub fn value(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn unit(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn unit(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Unit,
@@ -137,7 +177,7 @@ pub fn unit(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn identifier(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn identifier(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Identifier,
@@ -145,7 +185,7 @@ pub fn identifier(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn type_identifier(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn type_identifier(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::TypeIdentifier,
@@ -153,7 +193,7 @@ pub fn type_identifier(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn operator(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn operator(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Operator,
@@ -161,7 +201,7 @@ pub fn operator(text: impl Into<Cow<'static, str>>) -> Markup {
     ))
 }
 
-pub fn decorator(text: impl Into<Cow<'static, str>>) -> Markup {
+pub fn decorator(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Decorator,
@@ -178,16 +218,16 @@ pub fn nl() -> Markup {
 }
 
 pub trait Formatter {
-    fn format_part(&self, part: &FormattedString) -> String;
+    fn format_part(&self, part: &FormattedString) -> CompactString;
 
-    fn format(&self, markup: &Markup, indent: bool) -> String {
+    fn format(&self, markup: &Markup, indent: bool) -> CompactString {
         let spaces = self.format_part(&FormattedString(
             OutputType::Normal,
             FormatType::Whitespace,
             "  ".into(),
         ));
 
-        let mut output: String = String::new();
+        let mut output = CompactString::with_capacity(spaces.len() + markup.0.len());
         if indent {
             output.push_str(&spaces);
         }
@@ -204,11 +244,11 @@ pub trait Formatter {
 pub struct PlainTextFormatter;
 
 impl Formatter for PlainTextFormatter {
-    fn format_part(&self, FormattedString(_, _, text): &FormattedString) -> String {
-        text.to_string()
+    fn format_part(&self, FormattedString(_, _, text): &FormattedString) -> CompactString {
+        text.clone().into()
     }
 }
 
-pub fn plain_text_format(m: &Markup, indent: bool) -> String {
+pub fn plain_text_format(m: &Markup, indent: bool) -> CompactString {
     PlainTextFormatter {}.format(m, indent)
 }

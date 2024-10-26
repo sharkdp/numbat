@@ -1,12 +1,12 @@
 use std::sync::{Arc, Mutex};
 
-use numbat::{unicode_input::UNICODE_INPUT, Context};
+use numbat::{compact_str::CompactString, unicode_input::UNICODE_INPUT, Context};
 use rustyline::completion::{extract_word, Completer, Pair};
 
 pub struct NumbatCompleter {
     pub context: Arc<Mutex<Context>>,
-    pub modules: Vec<String>,
-    pub all_timezones: Vec<String>,
+    pub modules: Vec<CompactString>,
+    pub all_timezones: Vec<CompactString>,
 }
 
 impl Completer for NumbatCompleter {

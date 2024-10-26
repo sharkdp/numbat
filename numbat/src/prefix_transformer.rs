@@ -1,3 +1,5 @@
+use compact_str::{CompactString, ToCompactString};
+
 use crate::{
     ast::{DefineVariable, Expression, Statement, StringPart},
     decorator::{self, Decorator},
@@ -12,10 +14,10 @@ type Result<T> = std::result::Result<T, NameResolutionError>;
 pub(crate) struct Transformer {
     pub prefix_parser: PrefixParser,
 
-    pub variable_names: Vec<String>,
-    pub function_names: Vec<String>,
-    pub unit_names: Vec<Vec<String>>,
-    pub dimension_names: Vec<String>,
+    pub variable_names: Vec<CompactString>,
+    pub function_names: Vec<CompactString>,
+    pub unit_names: Vec<Vec<CompactString>>,
+    pub dimension_names: Vec<CompactString>,
 }
 
 impl Transformer {
@@ -116,7 +118,7 @@ impl Transformer {
                     alias_span,
                 },
             )?;
-            unit_names.push(alias.to_string());
+            unit_names.push(alias.to_compact_string());
         }
 
         unit_names.sort();
@@ -135,7 +137,7 @@ impl Transformer {
         } = define_variable;
 
         for (name, _) in decorator::name_and_aliases(identifier, decorators) {
-            self.variable_names.push(name.to_owned());
+            self.variable_names.push(name.to_compact_string());
         }
         self.prefix_parser
             .add_other_identifier(identifier, *identifier_span)?;
@@ -174,7 +176,7 @@ impl Transformer {
                 body,
                 ..
             } => {
-                self.function_names.push(function_name.to_owned());
+                self.function_names.push(function_name.to_compact_string());
                 self.prefix_parser
                     .add_other_identifier(function_name, *function_name_span)?;
 
@@ -197,9 +199,8 @@ impl Transformer {
                     self.transform_expression(expr);
                 }
             }
-
             Statement::DefineDimension(_, name, _) => {
-                self.dimension_names.push(name.to_owned());
+                self.dimension_names.push(name.to_compact_string());
             }
             Statement::ProcedureCall(_, _, args) => {
                 for arg in args {

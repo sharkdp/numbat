@@ -30,7 +30,7 @@ now() -> unixtime
 # What is the date corresponding to a given UNIX timestamp?
 from_unixtime(1707568901)
 
-# How long are one million seconds in days, hours, minutes, seconds?
+# How long are one million seconds in years, months, days, hours, minutes, seconds?
 1 million seconds -> human
 ```
 

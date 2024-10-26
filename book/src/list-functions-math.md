@@ -1,6 +1,6 @@
 # Mathematical functions
 
-[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
+[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Percentage calculations](#percentage-calculations) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
 
 ## Basics
 
@@ -745,14 +745,16 @@ fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X) -> Y / X
 <summary>Examples</summary>
 
 Compute the derivative of \\( f(x) = x² -x -1 \\) at \\( x=1 \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2D%20x%20%2D%201%0Adiff%28polynomial%2C%201%29')""></button></div><code class="language-nbt hljs numbat">>>> fn polynomial(x) = x² - x - 1
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2D%20x%20%2D%201%0Adiff%28polynomial%2C%201%29')""></button></div><code class="language-nbt hljs numbat">>>> use numerics::diff
+fn polynomial(x) = x² - x - 1
 diff(polynomial, 1)
 
     = 1.0
 </code></pre>
 
 Compute the free fall velocity after \\( t=2 s \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%29%0Avelocity%282%20s%29')""></button></div><code class="language-nbt hljs numbat">>>> fn distance(t) = 0.5 g0 t²
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%29%0Avelocity%282%20s%29')""></button></div><code class="language-nbt hljs numbat">>>> use numerics::diff
+fn distance(t) = 0.5 g0 t²
 fn velocity(t) = diff(distance, t)
 velocity(2 s)
 
@@ -773,7 +775,8 @@ fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y
 <summary>Examples</summary>
 
 Find the root of \\( f(x) = x² +x -2 \\) in the interval \\( [0, 100] \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2Bx%20%2D2%0Aroot%5Fbisect%28f%2C%200%2C%20100%2C%200%2E01%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">>>> fn f(x) = x² +x -2
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2Bx%20%2D2%0Aroot%5Fbisect%28f%2C%200%2C%20100%2C%200%2E01%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">>>> use numerics::solve
+fn f(x) = x² +x -2
 root_bisect(f, 0, 100, 0.01, 0.01)
 
     = 1.00098
@@ -793,7 +796,8 @@ fn root_newton<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X
 <summary>Examples</summary>
 
 Find a root of \\( f(x) = x² -3x +2 \\) using Newton's method.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2D3x%20%2B2%0Afn%20f%5Fprime%28x%29%20%3D%202x%20%2D3%0Aroot%5Fnewton%28f%2C%20f%5Fprime%2C%200%20%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">>>> fn f(x) = x² -3x +2
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2D3x%20%2B2%0Afn%20f%5Fprime%28x%29%20%3D%202x%20%2D3%0Aroot%5Fnewton%28f%2C%20f%5Fprime%2C%200%20%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">>>> use numerics::solve
+fn f(x) = x² -3x +2
 fn f_prime(x) = 2x -3
 root_newton(f, f_prime, 0 , 0.01)
 
@@ -814,10 +818,69 @@ fn fixed_point<X: Dim>(f: Fn[(X) -> X], x0: X, ε: X) -> X
 <summary>Examples</summary>
 
 Compute the fixed poin of \\( f(x) = x/2 -1 \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Afixed%5Fpoint%0Afn%20function%28x%29%20%3D%20x%2F2%20%2D%201%0Afixed%5Fpoint%28function%2C%200%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">>>> fn function(x) = x/2 - 1
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Afixed%5Fpoint%0Afn%20function%28x%29%20%3D%20x%2F2%20%2D%201%0Afixed%5Fpoint%28function%2C%200%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">>>> use numerics::fixed_point
+fn function(x) = x/2 - 1
 fixed_point(function, 0, 0.01)
 
     = -1.99219
+</code></pre>
+
+</details>
+
+## Percentage calculations
+
+Defined in: `math::percentage_calculations`
+
+### `increase_by`
+Increase a quantity by the given percentage.
+More information [here](https://en.wikipedia.org/wiki/Percentage#Percentage_increase_and_decrease).
+
+```nbt
+fn increase_by<D: Dim>(percentage: Scalar, quantity: D) -> D
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=72%20%E2%82%AC%20%7C%3E%20increase%5Fby%2815%25%29')""></button></div><code class="language-nbt hljs numbat">>>> 72 € |> increase_by(15%)
+
+    = 82.8 €    [Money]
+</code></pre>
+
+</details>
+
+### `decrease_by`
+Decrease a quantity by the given percentage.
+More information [here](https://en.wikipedia.org/wiki/Percentage#Percentage_increase_and_decrease).
+
+```nbt
+fn decrease_by<D: Dim>(percentage: Scalar, quantity: D) -> D
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=210%20cm%20%7C%3E%20decrease%5Fby%2810%25%29')""></button></div><code class="language-nbt hljs numbat">>>> 210 cm |> decrease_by(10%)
+
+    = 189 cm    [Length]
+</code></pre>
+
+</details>
+
+### `percentage_change`
+By how many percent has a given quantity increased or decreased?.
+More information [here](https://en.wikipedia.org/wiki/Percentage).
+
+```nbt
+fn percentage_change<D: Dim>(old: D, new: D) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=percentage%5Fchange%2835%20kg%2C%2042%20kg%29')""></button></div><code class="language-nbt hljs numbat">>>> percentage_change(35 kg, 42 kg)
+
+    = 20 %
 </code></pre>
 
 </details>
@@ -904,7 +967,8 @@ fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B^2 / A) -> List<B / A>
 <summary>Examples</summary>
 
 Solve the equation \\( 2x² -x -1 = 0 \\)
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Aquadratic%5Fequation%282%2C%20%2D1%2C%20%2D1%29')""></button></div><code class="language-nbt hljs numbat">>>> quadratic_equation(2, -1, -1)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Aquadratic%5Fequation%282%2C%20%2D1%2C%20%2D1%29')""></button></div><code class="language-nbt hljs numbat">>>> use extra::algebra
+quadratic_equation(2, -1, -1)
 
     = [1, -0.5]    [List<Scalar>]
 </code></pre>

@@ -5,6 +5,7 @@ use super::Args;
 use super::Result;
 use crate::value::Value;
 use crate::RuntimeError;
+use compact_str::CompactString;
 
 fn line_plot(mut args: Args) -> Plot {
     let mut fields = arg!(args).unsafe_as_struct_fields();
@@ -81,18 +82,18 @@ fn bar_chart(mut args: Args) -> Plot {
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn show_plot(plot: Plot) -> String {
+fn show_plot(plot: Plot) -> CompactString {
     plot.show();
 
-    "Plot will be opened in the browser".into()
+    CompactString::const_new("Plot will be opened in the browser")
 }
 
 #[cfg(target_family = "wasm")]
-fn show_plot(_plot: Plot) -> String {
+fn show_plot(_plot: Plot) -> CompactString {
     // The way we could implement this would be to return plot.to_inline_html(..).
     // This would have to be retrieved on the JS side and then rendered using plotly.js.
 
-    "Plotting is currently not supported on this platform.".into()
+    CompactString::const_new("Plotting is currently not supported on this platform.")
 }
 
 pub fn show(args: Args) -> Result<Value> {
@@ -115,5 +116,5 @@ pub fn show(args: Args) -> Result<Value> {
         )));
     };
 
-    return_string!(show_plot(plot))
+    return_string!(owned = show_plot(plot))
 }

@@ -1,3 +1,4 @@
+use compact_str::CompactString;
 use jiff::Span;
 use jiff::Timestamp;
 use jiff::Zoned;
@@ -31,17 +32,17 @@ pub fn format_datetime(mut args: Args) -> Result<Value> {
     let format = string_arg!(args);
     let dt = datetime_arg!(args);
 
-    let mut output = String::new();
+    let mut output = CompactString::with_capacity(format.len());
     write!(output, "{}", dt.strftime(&format)).map_err(|_| RuntimeError::DateFormattingError)?;
 
-    return_string!(output)
+    return_string!(owned = output)
 }
 
 pub fn get_local_timezone(_args: Args) -> Result<Value> {
     let local_tz = datetime::get_local_timezone_or_utc();
     let tz_name = local_tz.iana_name().unwrap_or("<unknown timezone>");
 
-    return_string!(tz_name)
+    return_string!(borrowed = tz_name)
 }
 
 pub fn tz(mut args: Args) -> Result<Value> {

@@ -19,7 +19,7 @@ contexts:
       scope: variable.other.nbt
     - match: '(@aliases|@metric_prefixes|@binary_prefixes|@name|@url)'
       scope: meta.annotation.attribute.nbt
-    - match: '[+\-/*=\^:<>·×÷²³]'
+    - match: '[+\-/*=\^:<>·⋅×÷²³]'
       scope: keyword.operator.nbt
     - match: '[\(\)]'
       scope: punctuation.definition.parenthesis.nbt

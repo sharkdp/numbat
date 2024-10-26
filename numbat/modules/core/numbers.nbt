@@ -14,3 +14,13 @@ fn is_infinite<T: Dim>(n: T) -> Bool
 @example("is_finite(37)")
 @example("is_finite(-inf)")
 fn is_finite<T: Dim>(n: T) -> Bool = !is_nan(n) && !is_infinite(n)
+
+@description("Returns true if the input is 0 (zero).")
+@example("is_zero(37)")
+@example("is_zero(0)")
+fn is_zero<D: Dim>(value: D) -> Bool = value == 0
+
+@description("Returns true unless the input is 0 (zero).")
+@example("is_nonzero(37)")
+@example("is_nonzero(0)")
+fn is_nonzero<D: Dim>(value: D) -> Bool = !is_zero(value)
