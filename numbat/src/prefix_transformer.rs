@@ -174,6 +174,7 @@ impl Transformer {
                 function_name,
                 parameters,
                 body,
+                local_variables,
                 ..
             } => {
                 self.function_names.push(function_name.to_compact_string());
@@ -197,6 +198,10 @@ impl Transformer {
 
                 if let Some(expr) = body {
                     self.transform_expression(expr);
+                }
+
+                for def in local_variables {
+                    self.transform_define_variable(def)?;
                 }
             }
             Statement::DefineDimension(_, name, _) => {
