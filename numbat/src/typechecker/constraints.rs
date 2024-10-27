@@ -68,6 +68,14 @@ impl ConstraintSet {
         result
     }
 
+    pub(crate) fn add_equal_constraint(&mut self, lhs: &Type, rhs: &Type) -> TrivialResolution {
+        self.add(Constraint::Equal(lhs.clone(), rhs.clone()))
+    }
+
+    pub(crate) fn add_dtype_constraint(&mut self, type_: &Type) -> TrivialResolution {
+        self.add(Constraint::IsDType(type_.clone()))
+    }
+
     pub fn clear(&mut self) {
         self.constraints.clear();
     }

@@ -183,6 +183,18 @@ impl Environment {
             }
         }
     }
+
+    pub(crate) fn get_proper_function_reference<'a>(
+        &self,
+        expr: &crate::ast::Expression<'a>,
+    ) -> Option<(&'a str, &FunctionSignature)> {
+        match expr {
+            crate::ast::Expression::Identifier(_, name) => self
+                .get_function_info(name)
+                .map(|(signature, _)| (*name, signature)),
+            _ => None,
+        }
+    }
 }
 
 impl ApplySubstitution for Environment {
