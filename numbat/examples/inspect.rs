@@ -1,4 +1,4 @@
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{format_compact, CompactString};
 use itertools::Itertools;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
@@ -62,8 +62,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
         }
 
         if let Some(ref description_raw) = description {
-            let description =
-                replace_equation_delimiters(description_raw.trim().to_compact_string());
+            let description = replace_equation_delimiters(description_raw.trim());
 
             if description.ends_with('.') {
                 println!("{description}");
@@ -129,7 +128,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 
                     //Print the example
                     if let Some(example_description) = example_description {
-                        println!("{}", replace_equation_delimiters(example_description));
+                        println!("{}", replace_equation_delimiters(&example_description));
                     }
 
                     print!("<pre>");
@@ -161,8 +160,9 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 }
 
 // Replace $..$ with \\( .. \\) for mdbook.
-fn replace_equation_delimiters(text_in: CompactString) -> CompactString {
+fn replace_equation_delimiters(text_in: &str) -> CompactString {
     let mut text_out = CompactString::with_capacity(text_in.len());
+    // TODO: handle \$ in math
     for (i, part) in text_in.split('$').enumerate() {
         if i % 2 == 0 {
             text_out.push_str(part);

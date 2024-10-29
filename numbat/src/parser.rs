@@ -70,7 +70,7 @@ use crate::ast::{
 use crate::decorator::{self, Decorator};
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
-use crate::resolver::ModulePath;
+use crate::resolver::ModulePathBorrowed;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError, TokenizerErrorKind};
 
@@ -898,11 +898,11 @@ impl<'a> Parser<'a> {
         let mut span = self.peek(tokens).span;
 
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
-            let mut module_path = vec![identifier.lexeme.to_compact_string()];
+            let mut module_path = vec![identifier.lexeme];
 
             while self.match_exact(tokens, TokenKind::DoubleColon).is_some() {
                 if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
-                    module_path.push(identifier.lexeme.to_compact_string());
+                    module_path.push(identifier.lexeme);
                 } else {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedModuleNameAfterDoubleColon,
@@ -912,7 +912,10 @@ impl<'a> Parser<'a> {
             }
             span = span.extend(&self.last(tokens).unwrap().span);
 
-            Ok(Statement::ModuleImport(span, ModulePath(module_path)))
+            Ok(Statement::ModuleImport(
+                span,
+                ModulePathBorrowed(module_path),
+            ))
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedModulePathAfterUse,

@@ -83,8 +83,7 @@ impl Number {
                     .round()
             };
 
-            // TODO: wasteful to go through a String here
-            let formatted_number = dtoa(number, config).to_compact_string();
+            let formatted_number = dtoa(number, config);
 
             if formatted_number.contains('.') && !formatted_number.contains('e') {
                 let formatted_number = if config.max_sig_digits.is_some() {
@@ -101,7 +100,7 @@ impl Number {
             } else if formatted_number.contains('e') && !formatted_number.contains("e-") {
                 formatted_number.replace('e', "e+").to_compact_string()
             } else {
-                formatted_number
+                formatted_number.to_compact_string()
             }
         }
     }
