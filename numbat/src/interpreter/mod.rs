@@ -1,4 +1,4 @@
-pub(crate) mod assert_eq_3;
+pub(crate) mod assert_eq;
 
 use crate::{
     dimension::DimensionRegistry,
@@ -12,7 +12,7 @@ use crate::{
 
 pub use crate::markup as m;
 
-use assert_eq_3::AssertEq3Error;
+use assert_eq::{AssertEq2Error, AssertEq3Error};
 use compact_str::{CompactString, ToCompactString};
 use thiserror::Error;
 
@@ -32,8 +32,8 @@ pub enum RuntimeError {
     QuantityError(QuantityError),
     #[error("Assertion failed")]
     AssertFailed(Span),
-    #[error("Assertion failed because the following two values are not the same:\n  {1}\n  {3}")]
-    AssertEq2Failed(Span, Value, Span, Value),
+    #[error("{0}")]
+    AssertEq2Failed(AssertEq2Error),
     #[error("{0}")]
     AssertEq3Failed(AssertEq3Error),
     #[error("Could not load exchange rates from European Central Bank.")]
