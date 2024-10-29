@@ -1,4 +1,4 @@
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{CompactString, ToCompactString};
 use jiff::{civil::DateTime, fmt::rfc2822, tz::TimeZone, Timestamp, Zoned};
 use std::str::FromStr;
 
@@ -75,22 +75,23 @@ pub fn to_string(dt: &Zoned) -> CompactString {
     if dt.time_zone() == &TimeZone::UTC {
         dt.strftime("%Y-%m-%d %H:%M:%S UTC").to_compact_string()
     } else {
+        use std::fmt::Write;
+        let mut out = CompactString::with_capacity("2000-01-01 00:00:00 (UTC +00:00)".len());
+        write!(out, "{}", dt.strftime("%Y-%m-%d %H:%M:%S")).unwrap();
+
         let offset = dt.offset();
         let zone_abbreviation = tz.to_offset(dt.timestamp()).2;
-        let abbreviation_and_offset =
-            if zone_abbreviation.starts_with('+') || zone_abbreviation.starts_with('-') {
-                format_compact!("(UTC {offset})")
-            } else {
-                format_compact!("{zone_abbreviation} (UTC {offset})")
-            };
 
-        let timezone_name = if let Some(iana_tz_name) = tz.iana_name() {
-            format_compact!(", {iana_tz_name}")
+        if zone_abbreviation.starts_with('+') || zone_abbreviation.starts_with('-') {
+            write!(out, " (UTC {offset})").unwrap();
         } else {
-            CompactString::const_new("")
+            write!(out, " {zone_abbreviation} (UTC {offset})").unwrap();
         };
 
-        let dt_str = dt.strftime("%Y-%m-%d %H:%M:%S");
-        format_compact!("{dt_str} {abbreviation_and_offset}{timezone_name}")
+        if let Some(iana_tz_name) = tz.iana_name() {
+            write!(out, ", {iana_tz_name}").unwrap();
+        }
+
+        out
     }
 }

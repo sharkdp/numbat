@@ -1,8 +1,9 @@
 use crate::markup as m;
+use crate::resolver::ModulePathBorrowed;
 use crate::span::Span;
 use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
-    pretty_print::PrettyPrint, resolver::ModulePath,
+    pretty_print::PrettyPrint,
 };
 use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
@@ -444,7 +445,7 @@ pub enum Statement<'a> {
         decorators: Vec<Decorator<'a>>,
     },
     ProcedureCall(Span, ProcedureKind, Vec<Expression<'a>>),
-    ModuleImport(Span, ModulePath),
+    ModuleImport(Span, ModulePathBorrowed<'a>),
     DefineStruct {
         struct_name_span: Span,
         struct_name: &'a str,

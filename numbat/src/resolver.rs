@@ -5,7 +5,7 @@ use crate::{
 };
 
 use codespan_reporting::files::SimpleFiles;
-use compact_str::CompactString;
+use compact_str::{CompactString, ToCompactString};
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -16,6 +16,9 @@ impl std::fmt::Display for ModulePath {
         write!(f, "{}", itertools::join(self.0.iter().cloned(), "::"))
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ModulePathBorrowed<'a>(pub Vec<&'a str>);
 
 #[derive(Debug, Clone)]
 pub enum CodeSource {
@@ -106,13 +109,15 @@ impl Resolver {
 
         for statement in program {
             match statement {
-                Statement::ModuleImport(span, module_path) => {
-                    if !self.imported_modules.contains(module_path) {
-                        if let Some((code, filesystem_path)) = self.importer.import(module_path) {
+                Statement::ModuleImport(span, ModulePathBorrowed(module_path)) => {
+                    if !self.imported_modules.iter().any(|m| &m.0 == module_path) {
+                        let module_path =
+                            ModulePath(module_path.iter().map(|s| s.to_compact_string()).collect());
+                        if let Some((code, filesystem_path)) = self.importer.import(&module_path) {
                             let code: &'static str = Box::leak(code.to_string().into_boxed_str());
                             self.imported_modules.push(module_path.clone());
                             let code_source_id = self.add_code_source(
-                                CodeSource::Module(module_path.clone(), filesystem_path),
+                                CodeSource::Module(module_path, filesystem_path),
                                 code,
                             );
 
