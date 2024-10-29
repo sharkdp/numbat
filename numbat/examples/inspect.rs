@@ -5,6 +5,7 @@ use numbat::module_importer::FileSystemImporter;
 use numbat::resolver::CodeSource;
 use numbat::Context;
 use std::path::Path;
+use std::process::exit;
 
 const AUTO_GENERATED_HINT: &str = "<!-- NOTE! This file is auto-generated -->";
 
@@ -106,7 +107,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     let code = extra_import + &example_code;
 
                     //Format the example input
-                    let example_input = format!(">>> {}", code);
+                    let example_input = format!("{}", code);
 
                     //Encode the example url
                     let example_url = format!(
@@ -148,8 +149,9 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     println!();
                 } else {
                     eprintln!(
-                        "Warning: Example \"{example_code}\" of function {fn_name} did not run successfully."
+                        "Error: Example \"{example_code}\" of function {fn_name} did not run successfully."
                     );
+                    exit(1);
                 }
             }
             println!("</details>");
