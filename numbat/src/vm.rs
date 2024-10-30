@@ -2,6 +2,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::{cmp::Ordering, fmt::Display};
 
+use compact_str::{CompactString, ToCompactString};
 use indexmap::IndexMap;
 use num_traits::ToPrimitive;
 
@@ -210,9 +211,9 @@ pub enum Constant {
     Scalar(f64),
     Unit(Unit),
     Boolean(bool),
-    String(String),
+    String(CompactString),
     FunctionReference(FunctionReference),
-    FormatSpecifiers(Option<String>),
+    FormatSpecifiers(Option<CompactString>),
 }
 
 impl Constant {
@@ -273,7 +274,7 @@ pub struct ExecutionContext<'a> {
 pub struct Vm {
     /// The actual code of the program, structured by function name. The code
     /// for the global scope is at index 0 under the function name `<main>`.
-    bytecode: Vec<(String, Vec<u8>)>,
+    bytecode: Vec<(CompactString, Vec<u8>)>,
 
     /// An index into the `bytecode` vector referring to the function which is
     /// currently being compiled.
@@ -283,7 +284,7 @@ pub struct Vm {
     pub constants: Vec<Constant>,
 
     /// struct metadata, used so we can display struct fields at runtime
-    struct_infos: IndexMap<String, Arc<StructInfo>>,
+    struct_infos: IndexMap<CompactString, Arc<StructInfo>>,
 
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
@@ -295,7 +296,7 @@ pub struct Vm {
     /// - Unit name
     /// - Canonical name
     /// - Metadata
-    unit_information: Vec<(String, Option<String>, UnitMetadata)>,
+    unit_information: Vec<(CompactString, Option<CompactString>, UnitMetadata)>,
 
     /// Result of the last expression
     last_result: Option<Value>,
@@ -429,8 +430,8 @@ impl Vm {
         }
 
         self.unit_information.push((
-            unit_name.to_owned(),
-            canonical_unit_name.map(|s| s.to_owned()),
+            unit_name.to_compact_string(),
+            canonical_unit_name.map(|s| s.to_compact_string()),
             metadata,
         ));
         assert!(self.unit_information.len() <= u16::MAX as usize);
@@ -513,8 +514,8 @@ impl Vm {
 
                 let operands_str = operands
                     .iter()
-                    .map(u16::to_string)
-                    .collect::<Vec<String>>()
+                    .map(u16::to_compact_string)
+                    .collect::<Vec<_>>()
                     .join(" ");
 
                 eprint!(
@@ -664,7 +665,7 @@ impl Vm {
                         .map_err(RuntimeError::UnitRegistryError)?;
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
-                        &unit_information.0,
+                        unit_information.0.to_compact_string(),
                         unit_information.2.canonical_name.clone(),
                         *conversion_value.unsafe_value(),
                         defining_unit.clone(),
@@ -908,7 +909,7 @@ impl Vm {
                             let dt = self.pop_datetime();
 
                             let tz = jiff::tz::TimeZone::get(&tz_name)
-                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name))?;
+                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name.to_string()))?;
 
                             let dt = dt.with_time_zone(tz);
 
@@ -923,15 +924,15 @@ impl Vm {
                 }
                 Op::JoinString => {
                     let num_parts = self.read_u16() as usize;
-                    let mut joined = String::new();
+                    let mut joined = CompactString::with_capacity(num_parts);
                     let to_str = |value| match value {
-                        Value::Quantity(q) => q.full_simplify().to_string(),
-                        Value::Boolean(b) => b.to_string(),
-                        Value::String(s) => s,
+                        Value::Quantity(q) => q.full_simplify().to_compact_string(),
+                        Value::Boolean(b) => b.to_compact_string(),
+                        Value::String(s) => s.to_compact_string(),
                         Value::DateTime(dt) => crate::datetime::to_string(&dt),
-                        Value::FunctionReference(r) => r.to_string(),
-                        s @ Value::StructInstance(..) => s.to_string(),
-                        l @ Value::List(_) => l.to_string(),
+                        Value::FunctionReference(r) => r.to_compact_string(),
+                        s @ Value::StructInstance(..) => s.to_compact_string(),
+                        l @ Value::List(_) => l.to_compact_string(),
                         Value::FormatSpecifiers(_) => unreachable!(),
                     };
 
@@ -950,13 +951,17 @@ impl Vm {
                                     let q = q.full_simplify();
 
                                     let mut vars = HashMap::new();
-                                    vars.insert("value".to_string(), q.unsafe_value().to_f64());
+                                    vars.insert(
+                                        CompactString::const_new("value"),
+                                        q.unsafe_value().to_f64(),
+                                    );
 
                                     let mut str =
                                         strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
+                                            .map(CompactString::from)
                                             .map_err(map_strfmt_error_to_runtime_error)?;
 
-                                    let unit_str = q.unit().to_string();
+                                    let unit_str = q.unit().to_compact_string();
 
                                     if !unit_str.is_empty() {
                                         str += " ";
@@ -967,9 +972,10 @@ impl Vm {
                                 }
                                 value => {
                                     let mut vars = HashMap::new();
-                                    vars.insert("value".to_string(), to_str(value));
+                                    vars.insert("value".to_owned(), to_str(value).to_string());
 
                                     strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
+                                        .map(CompactString::from)
                                         .map_err(map_strfmt_error_to_runtime_error)?
                                 }
                             },

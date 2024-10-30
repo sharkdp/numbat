@@ -1,3 +1,5 @@
+use compact_str::CompactString;
+
 use super::macros::*;
 use super::Args;
 use super::Result;
@@ -28,43 +30,58 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
 
         let type_scalar = Type::Dimension(DType::scalar());
 
-        let mut fields: IndexMap<String, (Span, Type)> = IndexMap::new();
-        fields.insert("symbol".to_string(), (unknown_span, Type::String));
-        fields.insert("name".to_string(), (unknown_span, Type::String));
+        let mut fields: IndexMap<CompactString, (Span, Type)> = IndexMap::new();
         fields.insert(
-            "atomic_number".to_string(),
-            (unknown_span, type_scalar.clone()),
-        );
-        fields.insert("group".to_string(), (unknown_span, type_scalar.clone()));
-        fields.insert("group_name".to_string(), (unknown_span, Type::String));
-        fields.insert("period".to_string(), (unknown_span, type_scalar.clone()));
-        fields.insert(
-            "melting_point_kelvin".to_string(),
-            (unknown_span, type_scalar.clone()),
+            CompactString::const_new("symbol"),
+            (unknown_span, Type::String),
         );
         fields.insert(
-            "boiling_point_kelvin".to_string(),
+            CompactString::const_new("name"),
+            (unknown_span, Type::String),
+        );
+        fields.insert(
+            CompactString::const_new("atomic_number"),
             (unknown_span, type_scalar.clone()),
         );
         fields.insert(
-            "density_gram_per_cm3".to_string(),
+            CompactString::const_new("group"),
             (unknown_span, type_scalar.clone()),
         );
         fields.insert(
-            "electron_affinity_electronvolt".to_string(),
+            CompactString::const_new("group_name"),
+            (unknown_span, Type::String),
+        );
+        fields.insert(
+            CompactString::const_new("period"),
             (unknown_span, type_scalar.clone()),
         );
         fields.insert(
-            "ionization_energy_electronvolt".to_string(),
+            CompactString::const_new("melting_point_kelvin"),
             (unknown_span, type_scalar.clone()),
         );
         fields.insert(
-            "vaporization_heat_kilojoule_per_mole".to_string(),
+            CompactString::const_new("boiling_point_kelvin"),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            CompactString::const_new("density_gram_per_cm3"),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            CompactString::const_new("electron_affinity_electronvolt"),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            CompactString::const_new("ionization_energy_electronvolt"),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
+            CompactString::const_new("vaporization_heat_kilojoule_per_mole"),
             (unknown_span, type_scalar.clone()),
         );
 
         let info = StructInfo {
-            name: "_ChemicalElementRaw".to_string(),
+            name: CompactString::const_new("_ChemicalElementRaw"),
             definition_span: unknown_span,
             fields,
         };
@@ -125,6 +142,6 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
             ],
         ))
     } else {
-        Err(RuntimeError::ChemicalElementNotFound(pattern))
+        Err(RuntimeError::ChemicalElementNotFound(pattern.to_string()))
     }
 }

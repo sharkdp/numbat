@@ -47,5 +47,3 @@ let test2 = 12 degree + 34 arcminute + 5 arcsec
 assert_eq(test2 |> unit_list([degree]) |> head, test2)
 assert_eq(test2 |> unit_list([degree, arcmin]) |> sum, test2)
 assert_eq(test2 |> unit_list([degree, arcmin, arcsec]) |> sum, test2)
-
-

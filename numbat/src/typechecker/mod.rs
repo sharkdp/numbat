@@ -29,6 +29,7 @@ use crate::type_variable::TypeVariable;
 use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
 
+use compact_str::{format_compact, CompactString, ToCompactString};
 use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResolution};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
@@ -54,7 +55,7 @@ fn dtype(e: &Expression) -> Result<DType> {
 
 #[derive(Clone, Default)]
 pub struct TypeChecker {
-    structs: HashMap<String, StructInfo>,
+    structs: HashMap<CompactString, StructInfo>,
     registry: DimensionRegistry,
 
     type_namespace: Namespace,
@@ -253,7 +254,7 @@ impl TypeChecker {
                         return Err(Box::new(TypeCheckError::IncompatibleDimensions(
                             IncompatibleDimensionsError {
                                 span_operation: *span,
-                                operation: format!(
+                                operation: format_compact!(
                                     "argument {num} of function call to '{name}'",
                                     num = idx + 1,
                                     name = function_name
@@ -968,7 +969,7 @@ impl TypeChecker {
                             *span,
                             struct_info.definition_span,
                             field.to_string(),
-                            struct_info.name.clone(),
+                            struct_info.name.to_string(),
                         )));
                     };
 
@@ -1042,7 +1043,7 @@ impl TypeChecker {
                     self.constraints
                         .add(Constraint::HasField(
                             type_.clone(),
-                            field_name.to_owned(),
+                            field_name.to_compact_string(),
                             field_type.clone(),
                         ))
                         .ok();
@@ -1207,7 +1208,7 @@ impl TypeChecker {
 
         for (name, _) in decorator::name_and_aliases(identifier, decorators) {
             self.env.add(
-                name.to_owned(),
+                name.to_compact_string(),
                 type_deduced.clone(),
                 *identifier_span,
                 false,
@@ -1215,9 +1216,9 @@ impl TypeChecker {
 
             self.value_namespace
                 .add_identifier_allow_override(
-                    name.to_owned(),
+                    name.to_compact_string(),
                     *identifier_span,
-                    "constant".to_owned(),
+                    CompactString::const_new("constant"),
                 )
                 .map_err(|err| Box::new(err.into()))?;
         }
@@ -1280,7 +1281,7 @@ impl TypeChecker {
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.env.add(
-                        name.to_string(),
+                        name.to_compact_string(),
                         Type::Dimension(type_specified.clone()),
                         *span,
                         true,
@@ -1317,7 +1318,7 @@ impl TypeChecker {
 
                 for (name, _) in decorator::name_and_aliases(identifier, decorators) {
                     self.env.add(
-                        name.to_string(),
+                        name.to_compact_string(),
                         type_deduced.clone(),
                         *identifier_span,
                         true,
@@ -1345,17 +1346,17 @@ impl TypeChecker {
                 if body.is_none() {
                     self.value_namespace
                         .add_identifier(
-                            function_name.to_string(),
+                            function_name.to_compact_string(),
                             *function_name_span,
-                            "foreign function".to_owned(),
+                            CompactString::const_new("foreign function"),
                         )
                         .map_err(|err| Box::new(err.into()))?;
                 } else {
                     self.value_namespace
                         .add_identifier_allow_override(
-                            function_name.to_string(),
+                            function_name.to_compact_string(),
                             *function_name_span,
-                            "function".to_owned(),
+                            CompactString::const_new("function"),
                         )
                         .map_err(|err| Box::new(err.into()))?;
                 }
@@ -1378,22 +1379,24 @@ impl TypeChecker {
 
                     self.type_namespace
                         .add_identifier(
-                            type_parameter.to_string(),
+                            type_parameter.to_compact_string(),
                             *span,
-                            "type parameter".to_owned(),
+                            CompactString::const_new("type parameter"),
                         )
                         .ok(); // TODO: is this call even correct?
 
                     self.registry.introduced_type_parameters.push((
                         *span,
-                        type_parameter.to_string(),
+                        type_parameter.to_compact_string(),
                         bound.clone(),
                     ));
 
                     match bound {
                         Some(TypeParameterBound::Dim) => {
-                            self.add_dtype_constraint(&Type::TPar(type_parameter.to_string()))
-                                .ok();
+                            self.add_dtype_constraint(&Type::TPar(
+                                type_parameter.to_compact_string(),
+                            ))
+                            .ok();
                         }
                         None => {}
                     }
@@ -1421,7 +1424,7 @@ impl TypeChecker {
                     }
 
                     self.env.add_scheme(
-                        parameter.to_string(),
+                        parameter.to_compact_string(),
                         TypeScheme::make_quantified(parameter_type.clone()),
                         *parameter_span,
                         false,
@@ -1459,24 +1462,26 @@ impl TypeChecker {
                     TypeScheme::Concrete(Type::Fn(parameter_types, Box::new(return_type.clone())));
 
                 self.env.add_function(
-                    function_name.to_string(),
+                    function_name.to_compact_string(),
                     FunctionSignature {
-                        name: function_name.to_string(),
+                        name: function_name.to_compact_string(),
                         definition_span: *function_name_span,
                         type_parameters: type_parameters
                             .iter()
-                            .map(|(span, name, tpb)| (*span, name.to_string(), tpb.clone()).clone())
+                            .map(|(span, name, tpb)| {
+                                (*span, name.to_compact_string(), tpb.clone()).clone()
+                            })
                             .collect(),
                         parameters: parameters
                             .into_iter()
-                            .map(|(span, s, o)| (span, s.to_string(), o))
+                            .map(|(span, s, o)| (span, s.to_compact_string(), o))
                             .collect(),
                         return_type_annotation: return_type_annotation.clone(),
                         fn_type: fn_type.clone(),
                     },
                     FunctionMetadata {
-                        name: crate::decorator::name(decorators).map(ToOwned::to_owned),
-                        url: crate::decorator::url(decorators).map(ToOwned::to_owned),
+                        name: crate::decorator::name(decorators).map(CompactString::from),
+                        url: crate::decorator::url(decorators).map(CompactString::from),
                         description: crate::decorator::description(decorators),
                         examples: crate::decorator::examples(decorators),
                     },
@@ -1581,7 +1586,7 @@ impl TypeChecker {
                 self.type_namespace.restore();
                 self.env.restore();
                 self.env.add_function(
-                    function_name.to_string(),
+                    function_name.to_compact_string(),
                     signature.clone(),
                     metadata.clone(),
                 );
@@ -1613,7 +1618,11 @@ impl TypeChecker {
             }
             ast::Statement::DefineDimension(name_span, name, dexprs) => {
                 self.type_namespace
-                    .add_identifier(name.to_string(), *name_span, "dimension".to_owned())
+                    .add_identifier(
+                        name.to_compact_string(),
+                        *name_span,
+                        CompactString::const_new("dimension"),
+                    )
                     .map_err(|err| Box::new(err.into()))?;
 
                 if let Some(dexpr) = dexprs.first() {
@@ -1747,9 +1756,9 @@ impl TypeChecker {
             } => {
                 self.type_namespace
                     .add_identifier(
-                        struct_name.to_string(),
+                        struct_name.to_compact_string(),
                         *struct_name_span,
-                        "struct".to_owned(),
+                        CompactString::const_new("struct"),
                     )
                     .map_err(|err| Box::new(err.into()))?;
 
@@ -1769,16 +1778,19 @@ impl TypeChecker {
 
                 let struct_info = StructInfo {
                     definition_span: *struct_name_span,
-                    name: struct_name.to_string(),
+                    name: struct_name.to_compact_string(),
                     fields: fields
                         .iter()
                         .map(|(span, name, type_)| {
-                            Ok((name.to_string(), (*span, self.type_from_annotation(type_)?)))
+                            Ok((
+                                name.to_compact_string(),
+                                (*span, self.type_from_annotation(type_)?),
+                            ))
                         })
                         .collect::<Result<_>>()?,
                 };
                 self.structs
-                    .insert(struct_name.to_string(), struct_info.clone());
+                    .insert(struct_name.to_compact_string(), struct_info.clone());
 
                 typed_ast::Statement::DefineStruct(struct_info)
             }
@@ -1891,8 +1903,7 @@ impl TypeChecker {
                     .iter_relevant_matches()
                     .filter(|(_, t)| t == &type_of_hole)
                     .take(10)
-                    .map(|(n, _)| n)
-                    .cloned()
+                    .map(|(n, _)| n.to_string())
                     .collect(),
             )));
         }

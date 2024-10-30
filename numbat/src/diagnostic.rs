@@ -449,12 +449,7 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_message("Struct defined here"),
                 ])
                 .with_notes(vec!["Missing fields: ".to_owned()])
-                .with_notes(
-                    missing
-                        .iter()
-                        .map(|(n, t)| n.to_owned() + ": " + &t.to_string())
-                        .collect(),
-                ),
+                .with_notes(missing.iter().map(|(n, t)| format!("{n}: {t}")).collect()),
             TypeCheckError::NameResolutionError(inner) => {
                 return inner.diagnostics();
             }
@@ -505,16 +500,18 @@ impl ErrorDiagnostic for RuntimeError {
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message("assertion failed")])],
-            RuntimeError::AssertEq2Failed(span_lhs, lhs, span_rhs, rhs) => {
+            RuntimeError::AssertEq2Failed(assert_eq2_error) => {
                 vec![Diagnostic::error()
                     .with_message("Assertion failed")
                     .with_labels(vec![
-                        span_lhs
+                        assert_eq2_error
+                            .span_lhs
                             .diagnostic_label(LabelStyle::Secondary)
-                            .with_message(format!("{lhs}")),
-                        span_rhs
+                            .with_message(format!("{}", assert_eq2_error.lhs)),
+                        assert_eq2_error
+                            .span_rhs
                             .diagnostic_label(LabelStyle::Primary)
-                            .with_message(format!("{rhs}")),
+                            .with_message(format!("{}", assert_eq2_error.rhs)),
                     ])
                     .with_notes(vec![inner])]
             }

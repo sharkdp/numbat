@@ -7,14 +7,20 @@
     },
     // symbols used as brackets
     "brackets": [
-        ["(", ")"]
+        ["(", ")"],
+        ["[", "]"],
     ],
     // symbols that are auto closed when typing
     "autoClosingPairs": [
         ["(", ")"],
+        ["<", ">"],
+        ["[", "]"],
     ],
     // symbols that can be used to surround a selection
     "surroundingPairs": [
         ["(", ")"],
-    ]
+    ],
+    "folding": {
+        "offSide": true // This is not strictly true, but we encourage a coding style where blocks are somewhat based on indentation
+    }
 }

@@ -1,4 +1,6 @@
+use compact_str::CompactString;
 use jiff::fmt::strtime::BrokenDownTime;
+use jiff::fmt::StdFmtWrite;
 use jiff::Span;
 use jiff::Timestamp;
 use jiff::Zoned;
@@ -30,19 +32,21 @@ pub fn format_datetime(mut args: Args) -> Result<Value> {
     let format = string_arg!(args);
     let dt = datetime_arg!(args);
 
-    let mut output = String::new();
+    // jiff::fmt::StdFmtWrite is a wrapper that turns an arbitrary std::fmt::Write into
+    // a jiff::fmt::Write, which is necessary to write a formatted datetime into it
+    let mut output = StdFmtWrite(CompactString::with_capacity(format.len()));
     BrokenDownTime::from(&dt)
         .format(&format, &mut output)
         .map_err(|e| RuntimeError::DateFormattingError(e.to_string()))?;
 
-    return_string!(output)
+    return_string!(owned = output.0)
 }
 
 pub fn get_local_timezone(_args: Args) -> Result<Value> {
     let local_tz = datetime::get_local_timezone_or_utc();
     let tz_name = local_tz.iana_name().unwrap_or("<unknown timezone>");
 
-    return_string!(tz_name)
+    return_string!(borrowed = tz_name)
 }
 
 pub fn tz(mut args: Args) -> Result<Value> {

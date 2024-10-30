@@ -1,3 +1,4 @@
+use compact_str::{CompactString, ToCompactString};
 use unicode_width::UnicodeWidthStr;
 
 use crate::markup as m;
@@ -28,7 +29,7 @@ impl ColumnFormatter {
 
         let entries: Vec<_> = entries
             .into_iter()
-            .map(|s| s.as_ref().to_string())
+            .map(|s| s.as_ref().to_compact_string())
             .collect();
 
         if let Some(max_entry_width) = entries.iter().map(|s| s.width()).max() {
@@ -39,7 +40,7 @@ impl ColumnFormatter {
                 for entry in entries {
                     result +=
                         Markup::from(FormattedString(OutputType::Normal, format, entry.into()))
-                            + m::whitespace(" ".repeat(self.padding));
+                            + m::whitespace(CompactString::const_new(" ").repeat(self.padding));
                 }
                 return result;
             }
@@ -80,9 +81,11 @@ impl ColumnFormatter {
                             result += Markup::from(FormattedString(
                                 OutputType::Normal,
                                 format,
-                                entry.to_string().into(),
+                                entry.to_compact_string().into(),
                             ));
-                            result += m::whitespace(" ".repeat(whitespace_length));
+                            result += m::whitespace(
+                                CompactString::const_new(" ").repeat(whitespace_length),
+                            );
                         } else {
                             break;
                         }
@@ -98,7 +101,7 @@ impl ColumnFormatter {
 }
 
 #[cfg(test)]
-fn format(width: usize, entries: &[&str]) -> String {
+fn format(width: usize, entries: &[&str]) -> CompactString {
     use crate::markup::{Formatter, PlainTextFormatter};
 
     let formatter = ColumnFormatter::new(width);

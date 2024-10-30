@@ -4,8 +4,14 @@ use std::sync::OnceLock;
 
 use super::macros::*;
 use crate::{
-    ast::ProcedureKind, ffi::ControlFlow, interpreter::assert_eq_3::AssertEq3Error,
-    pretty_print::PrettyPrint, span::Span, value::Value, vm::ExecutionContext, RuntimeError,
+    ast::ProcedureKind,
+    ffi::ControlFlow,
+    interpreter::assert_eq::{AssertEq2Error, AssertEq3Error},
+    pretty_print::PrettyPrint,
+    span::Span,
+    value::Value,
+    vm::ExecutionContext,
+    RuntimeError,
 };
 
 use super::{Args, Callable, ForeignFunction};
@@ -81,12 +87,12 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> 
         let lhs = arg!(args);
         let rhs = arg!(args);
 
-        let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(
-            span_lhs,
-            lhs.clone(),
-            span_rhs,
-            rhs.clone(),
-        ));
+        let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(AssertEq2Error {
+            span_lhs: span_lhs,
+            lhs: lhs.clone(),
+            span_rhs: span_rhs,
+            rhs: rhs.clone(),
+        }));
 
         if lhs.is_quantity() {
             let lhs = lhs.unsafe_as_quantity();

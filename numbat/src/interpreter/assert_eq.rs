@@ -1,6 +1,32 @@
-use crate::{quantity::Quantity, span::Span};
+use crate::{quantity::Quantity, span::Span, value::Value};
+use compact_str::{format_compact, CompactString};
 use std::fmt::Display;
 use thiserror::Error;
+
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
+pub struct AssertEq2Error {
+    pub span_lhs: Span,
+    pub lhs: Value,
+    pub span_rhs: Span,
+    pub rhs: Value,
+}
+
+impl Display for AssertEq2Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let optional_message = if format!("{}", self.lhs) == format!("{}", self.rhs) {
+            "\nNote: The two printed values appear to be the same, this may be due to floating point precision errors.\n      \
+            For dimension types you may want to test approximate equality instead: assert_eq(q1, q2, ε)."
+        } else {
+            ""
+        };
+
+        write!(
+            f,
+            "Assertion failed because the following two values are not the same:\n  {}\n  {}{}",
+            self.lhs, self.rhs, optional_message
+        )
+    }
+}
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub struct AssertEq3Error {
@@ -32,7 +58,7 @@ impl AssertEq3Error {
     }
 
     /// Returns the comparand quantities formatted as strings for pretty error message display.
-    pub fn fmt_comparands(&self) -> (String, String) {
+    pub fn fmt_comparands(&self) -> (CompactString, CompactString) {
         let (lhs_converted_len, _) =
             get_float_part_lengths(&self.lhs_converted.unsafe_value_as_string());
         let (rhs_converted_len, _) =
@@ -46,7 +72,12 @@ impl AssertEq3Error {
         (lhs, rhs)
     }
 
-    fn fmt_comparand(&self, converted: &Quantity, original: &Quantity, width: usize) -> String {
+    fn fmt_comparand(
+        &self,
+        converted: &Quantity,
+        original: &Quantity,
+        width: usize,
+    ) -> CompactString {
         let pretty_converted_str = left_pad_integer_part(
             converted
                 .pretty_print_with_precision(self.eps_precision())
@@ -58,7 +89,7 @@ impl AssertEq3Error {
         if converted.unit() == original.unit() {
             pretty_converted_str
         } else {
-            format!("{} ({})", pretty_converted_str, original)
+            format_compact!("{} ({})", pretty_converted_str, original)
         }
     }
 }
@@ -91,7 +122,7 @@ fn get_float_part_lengths(number: &str) -> (usize, usize) {
 
 /// Returns the input number padded with 0s until the integer part width (number of characters) is exactly integer_part_width
 /// The input number should be a float plainly formatted as a string as with `to_string`.
-fn left_pad_integer_part(number: &str, integer_part_width: usize) -> String {
+fn left_pad_integer_part(number: &str, integer_part_width: usize) -> CompactString {
     let (integer_part, fractional_part) = get_float_parts(number);
     let integer_part_len = integer_part.len();
     let is_negative = integer_part.starts_with('-');
@@ -111,7 +142,7 @@ fn left_pad_integer_part(number: &str, integer_part_width: usize) -> String {
     };
 
     // Pad integer part with 0s
-    let integer_part_abs_padded = format!(
+    let integer_part_abs_padded = format_compact!(
         "{:0>width$}",
         integer_part_abs,
         width = padding_needed + integer_part_abs.len()
@@ -121,12 +152,12 @@ fn left_pad_integer_part(number: &str, integer_part_width: usize) -> String {
     let padded_str = if fractional_part.is_empty() {
         integer_part_abs_padded
     } else {
-        format!("{}.{}", integer_part_abs_padded, fractional_part)
+        format_compact!("{}.{}", integer_part_abs_padded, fractional_part)
     };
 
     // Add the negative sign if necessary
     if is_negative {
-        format!("-{}", padded_str)
+        format_compact!("-{}", padded_str)
     } else {
         padded_str
     }

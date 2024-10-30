@@ -1,3 +1,4 @@
+use compact_str::{format_compact, CompactString, ToCompactString};
 use indexmap::IndexMap;
 use itertools::Itertools;
 
@@ -21,8 +22,8 @@ use crate::{markup as m, BaseRepresentation, BaseRepresentationFactor};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DTypeFactor {
     TVar(TypeVariable),
-    TPar(String),
-    BaseDimension(String),
+    TPar(CompactString),
+    BaseDimension(CompactString),
 }
 
 impl DTypeFactor {
@@ -75,14 +76,14 @@ impl DType {
         let mut names = vec![];
 
         if self.factors.len() == 1 && self.factors[0].1 == Exponent::from_integer(1) {
-            names.push(self.factors[0].0.name().to_string());
+            names.push(self.factors[0].0.name().to_compact_string());
         }
 
         let base_representation = self.to_base_representation();
         names.extend(registry.get_derived_entry_names_for(&base_representation));
         match &names[..] {
             [] => self.pretty_print(),
-            [single] => m::type_identifier(single.to_string()),
+            [single] => m::type_identifier(single.to_compact_string()),
             multiple => Itertools::intersperse(
                 multiple.iter().cloned().map(m::type_identifier),
                 m::dimmed(" or "),
@@ -102,7 +103,7 @@ impl DType {
         DType::from_factors(vec![(DTypeFactor::TVar(v), Exponent::from_integer(1))])
     }
 
-    pub fn from_type_parameter(name: String) -> DType {
+    pub fn from_type_parameter(name: CompactString) -> DType {
         DType::from_factors(vec![(DTypeFactor::TPar(name), Exponent::from_integer(1))])
     }
 
@@ -277,14 +278,14 @@ impl From<BaseRepresentation> for DType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructInfo {
     pub definition_span: Span,
-    pub name: String,
-    pub fields: IndexMap<String, (Span, Type)>,
+    pub name: CompactString,
+    pub fields: IndexMap<CompactString, (Span, Type)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     TVar(TypeVariable),
-    TPar(String),
+    TPar(CompactString),
     Dimension(DType),
     Boolean,
     String,
@@ -314,7 +315,7 @@ impl std::fmt::Display for Type {
                 )
             }
             Type::Struct(info) => {
-                let StructInfo { name, fields, .. } = &**info;
+                let StructInfo { name, fields, .. } = info.as_ref();
                 write!(
                     f,
                     "{name} {{{}}}",
@@ -332,7 +333,7 @@ impl std::fmt::Display for Type {
 impl PrettyPrint for Type {
     fn pretty_print(&self) -> Markup {
         match self {
-            Type::TVar(TypeVariable::Named(name)) => m::type_identifier(name.clone()),
+            Type::TVar(TypeVariable::Named(name)) => m::type_identifier(name.to_compact_string()),
             Type::TVar(TypeVariable::Quantified(_)) => {
                 unreachable!("Quantified types should not be printed")
             }
@@ -459,7 +460,7 @@ impl Type {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum StringPart<'a> {
-    Fixed(String),
+    Fixed(CompactString),
     Interpolation {
         span: Span,
         expr: Box<Expression<'a>>,
@@ -479,7 +480,7 @@ impl PrettyPrint for StringPart<'_> {
                 let mut markup = m::operator("{") + expr.pretty_print();
 
                 if let Some(format_specifiers) = format_specifiers {
-                    markup += m::text(format_specifiers.to_string());
+                    markup += m::text(format_specifiers.to_compact_string());
                 }
 
                 markup += m::operator("}");
@@ -500,7 +501,7 @@ impl PrettyPrint for &Vec<StringPart<'_>> {
 pub enum Expression<'a> {
     Scalar(Span, Number, TypeScheme),
     Identifier(Span, &'a str, TypeScheme),
-    UnitIdentifier(Span, Prefix, String, String, TypeScheme),
+    UnitIdentifier(Span, Prefix, CompactString, CompactString, TypeScheme),
     UnaryOperator(Span, UnaryOperator, Box<Expression<'a>>, TypeScheme),
     BinaryOperator(
         Option<Span>,
@@ -858,7 +859,8 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         + m::operator("(")
                         + Itertools::intersperse(
                             names.iter().map(|(name, accepts_prefix, _)| {
-                                m::unit(name.to_string()) + accepts_prefix_markup(accepts_prefix)
+                                m::unit(name.to_compact_string())
+                                    + accepts_prefix_markup(accepts_prefix)
                             }),
                             m::operator(", "),
                         )
@@ -918,7 +920,7 @@ pub fn pretty_print_function_signature<'a>(
         m::operator("<")
             + Itertools::intersperse(
                 type_parameters.iter().map(|tv| {
-                    m::type_identifier(tv.unsafe_name().to_string())
+                    m::type_identifier(tv.unsafe_name().to_compact_string())
                         + if fn_type.bounds.is_dtype_bound(tv) {
                             m::operator(":") + m::space() + m::type_identifier("Dim")
                         } else {
@@ -933,7 +935,7 @@ pub fn pretty_print_function_signature<'a>(
 
     let markup_parameters = Itertools::intersperse(
         parameters.map(|(name, parameter_type)| {
-            m::identifier(name.to_string()) + m::operator(":") + m::space() + parameter_type
+            m::identifier(name.to_compact_string()) + m::operator(":") + m::space() + parameter_type
         }),
         m::operator(", "),
     )
@@ -944,7 +946,7 @@ pub fn pretty_print_function_signature<'a>(
 
     m::keyword("fn")
         + m::space()
-        + m::identifier(function_name.to_string())
+        + m::identifier(function_name.to_compact_string())
         + markup_type_parameters
         + m::operator("(")
         + markup_parameters
@@ -965,7 +967,7 @@ impl PrettyPrint for Statement<'_> {
             )) => {
                 m::keyword("let")
                     + m::space()
-                    + m::identifier(identifier.to_string())
+                    + m::identifier(identifier.to_compact_string())
                     + m::operator(":")
                     + m::space()
                     + readable_type.clone()
@@ -1011,7 +1013,7 @@ impl PrettyPrint for Statement<'_> {
                         plv += m::nl()
                             + introducer_keyword
                             + m::space()
-                            + m::identifier(identifier.to_string())
+                            + m::identifier(identifier.to_compact_string())
                             + m::operator(":")
                             + m::space()
                             + readable_type.clone()
@@ -1039,12 +1041,14 @@ impl PrettyPrint for Statement<'_> {
             }
             Statement::Expression(expr) => expr.pretty_print(),
             Statement::DefineDimension(identifier, dexprs) if dexprs.is_empty() => {
-                m::keyword("dimension") + m::space() + m::type_identifier(identifier.to_string())
+                m::keyword("dimension")
+                    + m::space()
+                    + m::type_identifier(identifier.to_compact_string())
             }
             Statement::DefineDimension(identifier, dexprs) => {
                 m::keyword("dimension")
                     + m::space()
-                    + m::type_identifier(identifier.to_string())
+                    + m::type_identifier(identifier.to_compact_string())
                     + m::space()
                     + m::operator("=")
                     + m::space()
@@ -1058,7 +1062,7 @@ impl PrettyPrint for Statement<'_> {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
-                    + m::unit(identifier.to_string())
+                    + m::unit(identifier.to_compact_string())
                     + m::operator(":")
                     + m::space()
                     + annotation
@@ -1077,7 +1081,7 @@ impl PrettyPrint for Statement<'_> {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
-                    + m::unit(identifier.to_string())
+                    + m::unit(identifier.to_compact_string())
                     + m::operator(":")
                     + m::space()
                     + readable_type.clone()
@@ -1181,11 +1185,11 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
                 // Fuse multiplication of a scalar and a unit to a quantity
                 pretty_scalar(*s)
                     + m::space()
-                    + m::unit(format!("{}{}", prefix.as_string_long(), full_name))
+                    + m::unit(format_compact!("{}{}", prefix.as_string_long(), full_name))
             }
             (Expression::Scalar(_, s, _), Expression::Identifier(_, name, _type)) => {
                 // Fuse multiplication of a scalar and identifier
-                pretty_scalar(*s) + m::space() + m::identifier(name.to_string())
+                pretty_scalar(*s) + m::space() + m::identifier(name.to_compact_string())
             }
             _ => {
                 let add_parens_if_needed = |expr: &Expression| {
@@ -1275,9 +1279,9 @@ impl PrettyPrint for Expression<'_> {
 
         match self {
             Scalar(_, n, _) => pretty_scalar(*n),
-            Identifier(_, name, _type) => m::identifier(name.to_string()),
+            Identifier(_, name, _type) => m::identifier(name.to_compact_string()),
             UnitIdentifier(_, prefix, _name, full_name, _type) => {
-                m::unit(format!("{}{}", prefix.as_string_long(), full_name))
+                m::unit(format_compact!("{}{}", prefix.as_string_long(), full_name))
             }
             UnaryOperator(_, self::UnaryOperator::Negate, expr, _type) => {
                 m::operator("-") + with_parens(expr)
@@ -1291,7 +1295,7 @@ impl PrettyPrint for Expression<'_> {
             BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             BinaryOperatorForDate(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(_, _, name, args, _type) => {
-                m::identifier(name.to_string())
+                m::identifier(name.to_compact_string())
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
                         args.iter().map(|e| e.pretty_print()),
@@ -1335,7 +1339,7 @@ impl PrettyPrint for Expression<'_> {
                         m::space()
                             + itertools::Itertools::intersperse(
                                 exprs.iter().map(|(n, e)| {
-                                    m::identifier(n.to_string())
+                                    m::identifier(n.to_compact_string())
                                         + m::operator(":")
                                         + m::space()
                                         + e.pretty_print()
@@ -1348,7 +1352,7 @@ impl PrettyPrint for Expression<'_> {
                     + m::operator("}")
             }
             AccessField(_, _, expr, attr, _, _) => {
-                expr.pretty_print() + m::operator(".") + m::identifier(attr.to_string())
+                expr.pretty_print() + m::operator(".") + m::identifier(attr.to_compact_string())
             }
             List(_, elements, _) => {
                 m::operator("[")
@@ -1444,7 +1448,7 @@ mod tests {
             .clone()
     }
 
-    fn pretty_print(stmt: &Statement) -> String {
+    fn pretty_print(stmt: &Statement) -> CompactString {
         let markup = stmt.pretty_print();
 
         (PlainTextFormatter {}).format(&markup, false)

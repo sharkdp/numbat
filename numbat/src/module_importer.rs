@@ -4,6 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use compact_str::ToCompactString;
 use rust_embed::RustEmbed;
 
 use crate::resolver::ModulePath;
@@ -68,13 +69,13 @@ impl ModuleImporter for FileSystemImporter {
                 let path = entry.path();
                 if path.is_file() && path.extension() == Some(OsStr::new("nbt")) {
                     if let Ok(relative_path) = path.strip_prefix(root_path) {
-                        let components: Vec<String> = relative_path
+                        let components = relative_path
                             .components()
                             .map(|c| {
                                 c.as_os_str()
                                     .to_string_lossy()
                                     .trim_end_matches(".nbt")
-                                    .to_string()
+                                    .to_compact_string()
                             })
                             .collect();
 
@@ -121,7 +122,7 @@ impl ModuleImporter for BuiltinModuleImporter {
                 ModulePath(
                     path.trim_end_matches(".nbt")
                         .split('/')
-                        .map(|s| s.to_string())
+                        .map(|s| s.to_compact_string())
                         .collect(),
                 )
             })

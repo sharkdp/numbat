@@ -1,9 +1,11 @@
+use compact_str::{format_compact, CompactString};
 use itertools::Itertools;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
 use numbat::resolver::CodeSource;
 use numbat::Context;
 use std::path::Path;
+use std::process::exit;
 
 const AUTO_GENERATED_HINT: &str = "<!-- NOTE! This file is auto-generated -->";
 
@@ -32,7 +34,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
         let name = unit_metadata.name.unwrap_or(unit_name.clone());
 
         let name_with_url = if let Some(url) = url {
-            format!("[{name}]({url})")
+            format_compact!("[{name}]({url})")
         } else {
             name.clone()
         };
@@ -60,7 +62,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
         }
 
         if let Some(ref description_raw) = description {
-            let description = replace_equation_delimiters(description_raw.trim().to_string());
+            let description = replace_equation_delimiters(description_raw.trim());
 
             if description.ends_with('.') {
                 println!("{description}");
@@ -104,7 +106,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     let code = extra_import + &example_code;
 
                     //Format the example input
-                    let example_input = format!(">>> {}", code);
+                    let example_input = format!("{}", code);
 
                     //Encode the example url
                     let example_url = format!(
@@ -126,7 +128,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 
                     //Print the example
                     if let Some(example_description) = example_description {
-                        println!("{}", replace_equation_delimiters(example_description));
+                        println!("{}", replace_equation_delimiters(&example_description));
                     }
 
                     print!("<pre>");
@@ -146,8 +148,9 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     println!();
                 } else {
                     eprintln!(
-                        "Warning: Example \"{example_code}\" of function {fn_name} did not run successfully."
+                        "Error: Example \"{example_code}\" of function {fn_name} did not run successfully."
                     );
+                    exit(1);
                 }
             }
             println!("</details>");
@@ -157,8 +160,9 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 }
 
 // Replace $..$ with \\( .. \\) for mdbook.
-fn replace_equation_delimiters(text_in: String) -> String {
-    let mut text_out = String::new();
+fn replace_equation_delimiters(text_in: &str) -> CompactString {
+    let mut text_out = CompactString::with_capacity(text_in.len());
+    // TODO: handle \$ in math
     for (i, part) in text_in.split('$').enumerate() {
         if i % 2 == 0 {
             text_out.push_str(part);

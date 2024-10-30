@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 import urllib.parse
 import os
+import sys
 
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -122,21 +123,26 @@ def list_of_functions(file_name, document):
                 )
                 env = os.environ.copy()
                 env["TZ"] = "UTC"
-                subprocess.run(
-                    [
-                        "cargo",
-                        "run",
-                        "--release",
-                        "--quiet",
-                        "--example=inspect",
-                        "--",
-                        "functions",
-                        module,
-                    ],
-                    stdout=f,
-                    text=True,
-                    env=env,
-                )
+
+                try:
+                    subprocess.run(
+                        [
+                            "cargo",
+                            "run",
+                            "--release",
+                            "--quiet",
+                            "--example=inspect",
+                            "--",
+                            "functions",
+                            module,
+                        ],
+                        stdout=f,
+                        text=True,
+                        env=env,
+                        check=True
+                    )
+                except subprocess.CalledProcessError as e:
+                    sys.exit(e.returncode)
 
 
 list_of_functions(
