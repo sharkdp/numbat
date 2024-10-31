@@ -88,9 +88,9 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> 
         let rhs = arg!(args);
 
         let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(AssertEq2Error {
-            span_lhs: span_lhs,
+            span_lhs,
             lhs: lhs.clone(),
-            span_rhs: span_rhs,
+            span_rhs,
             rhs: rhs.clone(),
         }));
 
