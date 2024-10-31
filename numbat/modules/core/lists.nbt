@@ -87,7 +87,7 @@ fn filter<A>(p: Fn[(A) -> Bool], xs: List<A>) -> List<A> =
       else filter(p, tail(xs))
 
 @description("Fold a function over a list")
-@example("foldl(str_append, \"\", [\"Num\", \"bat\", \"!\"])", "Join a list of strings by folding.")
+@example("foldl(str_prepend, \"\", [\"Num\", \"bat\", \"!\"])", "Join a list of strings by folding.")
 fn foldl<A, B>(f: Fn[(A, B) -> A], acc: A, xs: List<B>) -> A =
   if is_empty(xs)
     then acc

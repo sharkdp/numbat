@@ -257,7 +257,7 @@ fn foldl<A, B>(f: Fn[(A, B) -> A], acc: A, xs: List<B>) -> A
 <summary>Examples</summary>
 
 Join a list of strings by folding.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=foldl%28str%5Fappend%2C%20%22%22%2C%20%5B%22Num%22%2C%20%22bat%22%2C%20%22%21%22%5D%29')""></button></div><code class="language-nbt hljs numbat">foldl(str_append, "", ["Num", "bat", "!"])
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=foldl%28str%5Fprepend%2C%20%22%22%2C%20%5B%22Num%22%2C%20%22bat%22%2C%20%22%21%22%5D%29')""></button></div><code class="language-nbt hljs numbat">foldl(str_prepend, "", ["Num", "bat", "!"])
 
     = "Numbat!"    [String]
 </code></pre>
