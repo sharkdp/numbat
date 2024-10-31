@@ -19,9 +19,9 @@ pub fn uppercase(mut args: Args) -> Result<Value> {
 }
 
 pub fn str_slice(mut args: Args) -> Result<Value> {
-    let input = string_arg!(args);
     let start = quantity_arg!(args).unsafe_value().to_f64() as usize;
     let end = quantity_arg!(args).unsafe_value().to_f64() as usize;
+    let input = string_arg!(args);
 
     let output = input.get(start..end).unwrap_or_default();
 

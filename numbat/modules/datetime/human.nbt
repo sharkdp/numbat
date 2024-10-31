@@ -8,10 +8,10 @@ fn _human_join(a: String, b: String) -> String =
   if a == "" then b else if b == "" then a else "{a} + {b}"
 
 fn _prettier(str: String) -> String =
-    if str_slice(clean_str, 0, 2) == "0 " then ""
-    else if str_slice(clean_str, 0, 2) == "1 " then str_slice(clean_str, 0, str_length(clean_str) - 1)
+    if str_slice(0, 2, clean_str) == "0 " then ""
+    else if str_slice(0, 2, clean_str) == "1 " then str_slice( 0, str_length(clean_str) - 1, clean_str)
     else clean_str
-  where clean_str = str_replace(str, ".0 ", " ")
+  where clean_str = str_replace(".0 ", " ", str)
 
 fn _human_years(time: Time)   -> String = "{(time -> years)   /  year   |> floor} years"   -> _prettier
 fn _human_months(time: Time)  -> String = "{(time -> months)  /  month  |> round} months"  -> _prettier
@@ -36,7 +36,7 @@ fn _human_recurse(t: Time, result: String, time_unit: String) -> String =
 fn _year_month_approx(t: Time) -> String = _human_join(the_years -> _human_years, t - the_years -> _human_months)
   where the_years = t |> floor_in(year)
 
-fn _human_manage_past(str: String, time: Time) = str_append(str, if time < 0 s then " ago" else "")
+fn _human_manage_past(str: String, time: Time) = str_prepend(str, if time < 0 s then " ago" else "")
 
 fn _human_for_long_duration(human_days: String, human_years: String) -> String =
   "{human_days} (approx. {human_years})"

@@ -47,8 +47,8 @@ fn today() -> DateTime = datetime("{_today_str()} 00:00:00")
 @description("Parses a string (only date) into a `DateTime` object.")
 @example("date(\"2022-07-20\")")
 fn date(input: String) -> DateTime =
-  if str_contains(input, " ")
-    then datetime(str_replace(input, " ", " 00:00:00 "))
+  if str_contains(" ", input)
+    then datetime(str_replace(" ", " 00:00:00 ", input))
     else datetime("{input} 00:00:00")
 
 @description("Parses a string (time only) into a `DateTime` object.")
