@@ -1,0 +1,16 @@
+@name("Factorial, also written \"n!\"")
+@description("The product of the integers 1 through n")
+@url("https://en.wikipedia.org/wiki/Factorial")
+fn factorial(n: Scalar) -> Scalar = n!
+
+@name("Binomial coefficient")
+@description("Often read \"n choose k\" or \"nCk\", this is the number of k-element subsets of a set of size n, extended to non-integer arguments via the gamma function")
+@url("https://en.wikipedia.org/wiki/Binomial_coefficient")
+fn binom(n: Scalar, k: Scalar) -> Scalar =
+	gamma(n+1) / (gamma(k+1) * gamma(n-k+1))
+
+@name("Falling factorial, often read \"nPk\"")
+@description("Often read \"nPk\", this is the number of k-element permutations from a set of size n, extended to non-integer arguments via the gamma function")
+@url("https://en.wikipedia.org/wiki/Falling_and_rising_factorials")
+fn falling_factorial(n: Scalar, k: Scalar) -> Scalar =
+	gamma(n+1) / gamma(n-k+1)
