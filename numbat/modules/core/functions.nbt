@@ -79,6 +79,13 @@ fn trunc(x: Scalar) -> Scalar
 @example("trunc_in(cm, 5.7 m)", "Truncate in centimeters.")
 fn trunc_in<D: Dim>(base: D, value: D) -> D = trunc(value / base) × base
 
+@name("Fractional part")
+@description("Returns the fractional part of $x$, i.e. the remainder when divided by 1.")
+@url("https://doc.rust-lang.org/std/primitive.f64.html#method.fract")
+@example("fract(5.5)")
+@example("fract(-5.5)")
+fn fract(x: Scalar) -> Scalar
+
 @name("Modulo")
 @description("Calculates the least nonnegative remainder of $a (\\mod b)$.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid")
