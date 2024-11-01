@@ -1,3 +1,5 @@
+use math::transcendental
+
 @name("Factorial")
 @description("The product of the integers 1 through n, also written n!")
 @url("https://en.wikipedia.org/wiki/Factorial")
