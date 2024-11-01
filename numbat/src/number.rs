@@ -33,13 +33,17 @@ impl Number {
 
     /// Pretty prints with default options
     pub fn pretty_print(self) -> CompactString {
-        self.pretty_print_with_options(None)
+        self.pretty_print_with_options(FloatDisplayConfigSource::Numbat(None), None)
     }
 
     /// Pretty prints with the given options if options is not None.
     /// If options is None, default options will be used.
     /// If options is not None, float-based format handling is used and integer-based format handling is skipped.
-    pub fn pretty_print_with_options(self, options: Option<FmtFloatConfig>) -> CompactString {
+    pub fn pretty_print_with_options(
+        self,
+        float_options: FloatDisplayConfigSource,
+        int_options: Option<num_format::CustomFormat>,
+    ) -> CompactString {
         let number = self.0;
 
         // 64-bit floats can accurately represent integers up to 2^52 [1],
@@ -48,19 +52,24 @@ impl Number {
         // [1] https://stackoverflow.com/a/43656339
         //
         // Skip special format handling for integers if options is not None.
-        if options.is_none() && self.is_integer() && self.0.abs() < 1e15 {
+        if !matches!(float_options, FloatDisplayConfigSource::Numbat(Some(_)))
+            && self.is_integer()
+            && self.0.abs() < 1e15
+        {
             use num_format::{CustomFormat, Grouping, ToFormattedString};
 
-            let format = CustomFormat::builder()
-                .grouping(if self.0.abs() >= 100_000.0 {
-                    Grouping::Standard
-                } else {
-                    Grouping::Posix
-                })
-                .minus_sign("-")
-                .separator("_")
-                .build()
-                .unwrap();
+            let format = int_options.unwrap_or_else(|| {
+                CustomFormat::builder()
+                    .grouping(if self.0.abs() >= 100_000.0 {
+                        Grouping::Standard
+                    } else {
+                        Grouping::Posix
+                    })
+                    .minus_sign("-")
+                    .separator("_")
+                    .build()
+                    .unwrap()
+            });
 
             // TODO: this is pretty wasteful. formatted numbers should be small enough
             // to fit in a CompactString without first going to the heap
@@ -72,16 +81,19 @@ impl Number {
         } else {
             use pretty_dtoa::dtoa;
 
-            let config = if let Some(options) = options {
-                options
-            } else {
+            let float_options = match float_options {
+                FloatDisplayConfigSource::Numbat(opts) => opts,
+                FloatDisplayConfigSource::UserConfig(opts) => Some(opts),
+            };
+
+            let config = float_options.unwrap_or_else(|| {
                 FmtFloatConfig::default()
                     .max_significant_digits(6)
                     .add_point_zero(false)
                     .lower_e_break(-6)
                     .upper_e_break(6)
                     .round()
-            };
+            });
 
             let formatted_number = dtoa(number, config);
 
@@ -156,6 +168,11 @@ impl std::iter::Product for Number {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Number::from_f64(1.0), |acc, n| acc * n)
     }
+}
+
+pub enum FloatDisplayConfigSource {
+    Numbat(Option<FmtFloatConfig>),
+    UserConfig(FmtFloatConfig),
 }
 
 #[test]

@@ -1,12 +1,14 @@
 mod ansi_formatter;
 mod completer;
 mod config;
+mod copy_to_clipboard;
 mod highlighter;
 
 use ansi_formatter::ansi_format;
 use colored::control::SHOULD_COLORIZE;
 use completer::NumbatCompleter;
 use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode};
+use copy_to_clipboard::pretty_print_value;
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
@@ -14,13 +16,15 @@ use numbat::command::{self, CommandParser, SourcelessCommandParser};
 use numbat::compact_str::{CompactString, ToCompactString};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
-use numbat::markup as m;
+use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::session_history::{ParseEvaluationResult, SessionHistory, SessionHistoryOptions};
+use numbat::session_history::{SessionHistory, SessionHistoryOptions};
+use numbat::value::Value;
+use numbat::{markup as m, InterpreterResult};
 use numbat::{Context, NumbatError};
-use numbat::{InterpreterSettings, NameResolutionError};
+use numbat::{InterpreterSettings, RuntimeError};
 
 use anyhow::{bail, Context as AnyhowContext, Result};
 use clap::Parser;
@@ -98,7 +102,7 @@ struct Args {
 
 struct ParseEvaluationOutcome {
     control_flow: ControlFlow,
-    result: ParseEvaluationResult,
+    result: Result<InterpreterResult, ()>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -352,9 +356,21 @@ impl Cli {
         interactive: bool,
     ) -> Result<()> {
         let mut session_history = SessionHistory::default();
+        let mut last_value = None::<Value>;
+        let mut clipboard = match arboard::Clipboard::new() {
+            Ok(cb) => Some(cb),
+            Err(_) => {
+                println!(
+                    "error: could not initialize the clipboard, so
+                    `copy` functionality will be disabled this session"
+                );
+                None
+            }
+        };
 
         loop {
             let readline = rl.readline(&self.config.prompt);
+
             match readline {
                 Ok(line) => {
                     if !line.trim().is_empty() {
@@ -407,6 +423,44 @@ impl Cli {
                                             }
                                         };
                                         println!("{}", ansi_format(&m, false));
+                                    }
+                                    command::Command::Copy => {
+                                        let Some(clipboard) = &mut clipboard else {
+                                            println!(
+                                                "error: as the clipboard could not \
+                                                be initialized, `copy` functionality is \
+                                                disabled for this session"
+                                            );
+                                            continue;
+                                        };
+                                        match &last_value {
+                                            Some(v) => {
+                                                let m = match pretty_print_value(
+                                                    v,
+                                                    &self.config.copy_result,
+                                                ) {
+                                                    Ok(m) => m,
+                                                    Err(err) => {
+                                                        self.print_diagnostic(*err);
+                                                        continue;
+                                                    }
+                                                };
+
+                                                let text = PlainTextFormatter.format(&m, false);
+                                                if let Err(e) = clipboard.set_text(text) {
+                                                    self.print_diagnostic(
+                                                        RuntimeError::ClipboardError(e.to_string()),
+                                                    );
+                                                    continue;
+                                                }
+
+                                                println!(
+                                                    "{} was copied to the clipboard",
+                                                    ansi_format(&m, false)
+                                                );
+                                            }
+                                            None => println!("error: no value to copy"),
+                                        }
                                     }
                                     command::Command::Clear => rl.clear_screen()?,
                                     command::Command::Save { dst } => {
@@ -466,7 +520,15 @@ impl Cli {
                             }
                         }
 
-                        session_history.push(CompactString::from(line), result);
+                        match result {
+                            Ok(result) => {
+                                session_history.push(CompactString::from(line), Ok(()));
+                                if let InterpreterResult::Value(value) = result {
+                                    last_value = Some(value);
+                                }
+                            }
+                            Err(_) => session_history.push(CompactString::from(line), Err(())),
+                        }
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}
@@ -510,12 +572,7 @@ impl Cli {
             PrettyPrintMode::Auto => interactive,
         };
 
-        let parse_eval_result = match &interpretation_result {
-            Ok(_) => Ok(()),
-            Err(_) => Err(()),
-        };
-
-        let control_flow = match interpretation_result.map_err(|b| *b) {
+        let (control_flow, result) = match interpretation_result.map_err(|b| *b) {
             Ok((statements, interpreter_result)) => {
                 if interactive || pretty_print {
                     println!();
@@ -551,32 +608,23 @@ impl Cli {
                     println!();
                 }
 
-                ControlFlow::Continue(())
+                (ControlFlow::Continue(()), Ok(interpreter_result))
             }
-            Err(NumbatError::ResolverError(e)) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
-            }
-            Err(NumbatError::NameResolutionError(
-                e @ (NameResolutionError::IdentifierClash { .. }
-                | NameResolutionError::ReservedIdentifier(_)),
-            )) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
-            }
-            Err(NumbatError::TypeCheckError(e)) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
-            }
-            Err(NumbatError::RuntimeError(e)) => {
-                self.print_diagnostic(e);
-                execution_mode.exit_status_in_case_of_error()
+            Err(err) => {
+                match err {
+                    NumbatError::ResolverError(e) => self.print_diagnostic(e),
+                    NumbatError::NameResolutionError(e) => self.print_diagnostic(e),
+                    NumbatError::TypeCheckError(e) => self.print_diagnostic(e),
+                    NumbatError::RuntimeError(e) => self.print_diagnostic(e),
+                }
+
+                (execution_mode.exit_status_in_case_of_error(), Err(()))
             }
         };
 
         ParseEvaluationOutcome {
             control_flow,
-            result: parse_eval_result,
+            result,
         }
     }
 
