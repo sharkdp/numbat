@@ -1,6 +1,6 @@
 # Mathematical functions
 
-[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Percentage calculations](#percentage-calculations) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
+[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Combinatorics](#combinatorics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Percentage calculations](#percentage-calculations) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
 
 ## Basics
 
@@ -619,6 +619,34 @@ fn median<D: Dim>(xs: List<D>) -> D
 </code></pre>
 
 </details>
+
+## Combinatorics
+
+Defined in: `math::combinatorics`
+
+### `factorial` (Factorial)
+The product of the integers 1 through n, also written n!.
+More information [here](https://en.wikipedia.org/wiki/Factorial).
+
+```nbt
+fn factorial(n: Scalar) -> Scalar
+```
+
+### `binom` (Binomial coefficient)
+Often read "n choose k" or "nCk", this is the number of k-element subsets of a set of size n, extended to non-integer arguments via the gamma function.
+More information [here](https://en.wikipedia.org/wiki/Binomial_coefficient).
+
+```nbt
+fn binom(n: Scalar, k: Scalar) -> Scalar
+```
+
+### `falling_factorial` (Falling factorial)
+Often read "nPk", this is the number of k-element permutations from a set of size n, extended to non-integer arguments via the gamma function.
+More information [here](https://en.wikipedia.org/wiki/Falling_and_rising_factorials).
+
+```nbt
+fn falling_factorial(n: Scalar, k: Scalar) -> Scalar
+```
 
 ## Random sampling, distributions
 
