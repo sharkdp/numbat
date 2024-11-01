@@ -272,6 +272,29 @@ Truncate in centimeters.
 
 </details>
 
+### `fract` (Fractional part)
+Returns the fractional part of \\( x \\), i.e. the remainder when divided by 1.
+More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.fract).
+
+```nbt
+fn fract(x: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%285%2E5%29')""></button></div><code class="language-nbt hljs numbat">fract(5.5)
+
+    = 0.5
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%28%2D5%2E5%29')""></button></div><code class="language-nbt hljs numbat">fract(-5.5)
+
+    = -0.5
+</code></pre>
+
+</details>
+
 ### `mod` (Modulo)
 Calculates the least nonnegative remainder of \\( a (\mod b) \\).
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid).
