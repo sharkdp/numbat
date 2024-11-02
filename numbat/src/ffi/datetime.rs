@@ -32,14 +32,15 @@ pub fn format_datetime(mut args: Args) -> Result<Value> {
     let format = string_arg!(args);
     let dt = datetime_arg!(args);
 
-    // jiff::fmt::StdFmtWrite is a wrapper that turns an arbitrary std::fmt::Write into
-    // a jiff::fmt::Write, which is necessary to write a formatted datetime into it
-    let mut output = StdFmtWrite(CompactString::with_capacity(format.len()));
+    let mut output = CompactString::with_capacity(format.len());
     BrokenDownTime::from(&dt)
-        .format(&format, &mut output)
+        // jiff::fmt::StdFmtWrite is a wrapper that turns an arbitrary std::fmt::Write
+        // into a jiff::fmt::Write, which is necessary to write a formatted datetime
+        // into it
+        .format(&format, StdFmtWrite(&mut output))
         .map_err(|e| RuntimeError::DateFormattingError(e.to_string()))?;
 
-    return_string!(owned = output.0)
+    return_string!(owned = output)
 }
 
 pub fn get_local_timezone(_args: Args) -> Result<Value> {
