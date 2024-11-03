@@ -741,8 +741,12 @@ fn test_datetime_runtime_errors() {
     );
     expect_failure(
         "format_datetime(\"%Y-%m-%dT%H%:M\", now())",
-        "Error in datetime format",
-    )
+        "strftime formatting failed: found unrecognized directive %M following %:.",
+    );
+    expect_failure(
+        "format_datetime(\"%Y %;\", now())",
+        "strftime formatting failed: found unrecognized specifier directive %;.",
+    );
 }
 
 #[test]

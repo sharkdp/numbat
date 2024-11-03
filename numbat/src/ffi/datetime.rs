@@ -1,4 +1,6 @@
 use compact_str::CompactString;
+use jiff::fmt::strtime::BrokenDownTime;
+use jiff::fmt::StdFmtWrite;
 use jiff::Span;
 use jiff::Timestamp;
 use jiff::Zoned;
@@ -12,8 +14,6 @@ use crate::quantity::Quantity;
 use crate::value::FunctionReference;
 use crate::value::Value;
 use crate::RuntimeError;
-
-use std::fmt::Write;
 
 pub fn now(_args: Args) -> Result<Value> {
     return_datetime!(Zoned::now())
@@ -33,7 +33,12 @@ pub fn format_datetime(mut args: Args) -> Result<Value> {
     let dt = datetime_arg!(args);
 
     let mut output = CompactString::with_capacity(format.len());
-    write!(output, "{}", dt.strftime(&format)).map_err(|_| RuntimeError::DateFormattingError)?;
+    BrokenDownTime::from(&dt)
+        // jiff::fmt::StdFmtWrite is a wrapper that turns an arbitrary std::fmt::Write
+        // into a jiff::fmt::Write, which is necessary to write a formatted datetime
+        // into it
+        .format(&format, StdFmtWrite(&mut output))
+        .map_err(|e| RuntimeError::DateFormattingError(e.to_string()))?;
 
     return_string!(owned = output)
 }
