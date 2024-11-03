@@ -14,7 +14,7 @@ rust-version = "1.70"
 
 [dependencies]
 anyhow = "1"
-rustyline = { version = "13", features = ["derive"] }
+rustyline = { version = "14.0.0", features = ["derive"] }
 dirs = "5"
 numbat = { version = "1.14.0", path = "../numbat" }
 colored = "2"
