@@ -274,6 +274,9 @@ Truncate in centimeters.
 
 ### `fract` (Fractional part)
 Returns the fractional part of \\( x \\), i.e. the remainder when divided by 1.
+	If \\( x < 0 \\), then so will be `fract(x)`. Note that due to floating point error, a
+	number’s fractional part can be slightly “off”; for instance, `fract(1.2) ==
+	0.1999...996 != 0.2`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.fract).
 
 ```nbt
@@ -282,6 +285,11 @@ fn fract(x: Scalar) -> Scalar
 
 <details>
 <summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%280%2E0%29')""></button></div><code class="language-nbt hljs numbat">fract(0.0)
+
+    = 0
+</code></pre>
 
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%285%2E5%29')""></button></div><code class="language-nbt hljs numbat">fract(5.5)
 
@@ -632,20 +640,24 @@ More information [here](https://en.wikipedia.org/wiki/Factorial).
 fn factorial(n: Scalar) -> Scalar
 ```
 
-### `binom` (Binomial coefficient)
-Often read "n choose k" or "nCk", this is the number of k-element subsets of a set of size n, extended to non-integer arguments via the gamma function.
-More information [here](https://en.wikipedia.org/wiki/Binomial_coefficient).
-
-```nbt
-fn binom(n: Scalar, k: Scalar) -> Scalar
-```
-
 ### `falling_factorial` (Falling factorial)
-Often read "nPk", this is the number of k-element permutations from a set of size n, extended to non-integer arguments via the gamma function.
+Equal to n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1) (k terms total). If n is an integer, this is the number
+	of k-element permutations from a set of size n. k must always be an integer.
 More information [here](https://en.wikipedia.org/wiki/Falling_and_rising_factorials).
 
 ```nbt
 fn falling_factorial(n: Scalar, k: Scalar) -> Scalar
+```
+
+### `binom` (Binomial coefficient)
+Equal to falling_factorial(n, k)/k!, this is the coefficient of \\( x^k \\) in
+	the series expansion of \\( (1+x)^n \\) (see “binomial series”). If n is an integer, then
+	this this is the number of k-element subsets of a set of size n, often read "n
+	choose k". k must always be an integer.
+More information [here](https://en.wikipedia.org/wiki/Binomial_coefficient).
+
+```nbt
+fn binom(n: Scalar, k: Scalar) -> Scalar
 ```
 
 ## Random sampling, distributions

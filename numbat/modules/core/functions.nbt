@@ -80,8 +80,12 @@ fn trunc(x: Scalar) -> Scalar
 fn trunc_in<D: Dim>(base: D, value: D) -> D = trunc(value / base) × base
 
 @name("Fractional part")
-@description("Returns the fractional part of $x$, i.e. the remainder when divided by 1.")
+@description("Returns the fractional part of $x$, i.e. the remainder when divided by 1.
+	If $x < 0$, then so will be `fract(x)`. Note that due to floating point error, a
+	number’s fractional part can be slightly “off”; for instance, `fract(1.2) ==
+	0.1999...996 != 0.2`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.fract")
+@example("fract(0.0)")
 @example("fract(5.5)")
 @example("fract(-5.5)")
 fn fract(x: Scalar) -> Scalar

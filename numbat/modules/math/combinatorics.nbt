@@ -1,3 +1,5 @@
+use core::error
+use core::functions
 use math::transcendental
 
 @name("Factorial")
@@ -5,14 +7,28 @@ use math::transcendental
 @url("https://en.wikipedia.org/wiki/Factorial")
 fn factorial(n: Scalar) -> Scalar = n!
 
-@name("Binomial coefficient")
-@description("Often read \"n choose k\" or \"nCk\", this is the number of k-element subsets of a set of size n, extended to non-integer arguments via the gamma function")
-@url("https://en.wikipedia.org/wiki/Binomial_coefficient")
-fn binom(n: Scalar, k: Scalar) -> Scalar =
-	gamma(n+1) / (gamma(k+1) * gamma(n-k+1))
-
 @name("Falling factorial")
-@description("Often read \"nPk\", this is the number of k-element permutations from a set of size n, extended to non-integer arguments via the gamma function")
+@description("Equal to n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1) (k terms total). If n is an integer, this is the number
+	of k-element permutations from a set of size n. k must always be an integer.")
 @url("https://en.wikipedia.org/wiki/Falling_and_rising_factorials")
 fn falling_factorial(n: Scalar, k: Scalar) -> Scalar =
-	gamma(n+1) / gamma(n-k+1)
+	if k < 0 || fract(k) != 0 then
+		error("in falling_factorial(n, k), k must be a nonnegative integer")
+	else if k == 0 then
+		1
+	else
+		n * falling_factorial(n-1, k-1)
+
+@name("Binomial coefficient")
+@description("Equal to falling_factorial(n, k)/k!, this is the coefficient of $x^k$ in
+	the series expansion of $(1+x)^n$ (see “binomial series”). If n is an integer, then
+	this this is the number of k-element subsets of a set of size n, often read \"n
+	choose k\". k must always be an integer.")
+@url("https://en.wikipedia.org/wiki/Binomial_coefficient")
+fn binom(n: Scalar, k: Scalar) -> Scalar =
+	if fract(k) != 0 then
+		error("in binom(n, k), k must be an integer")
+	else if k < 0 || (k > n && fract(n) == 0) then
+		0
+	else
+		falling_factorial(n, k) / k!
