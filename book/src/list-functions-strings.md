@@ -114,7 +114,7 @@ fn str_append(a: String, str: String) -> String
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Fappend%28%22%21%22%2C%20%22Numbat%22%29')""></button></div><code class="language-nbt hljs numbat">str_append("!", "Numbat")
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=%22Numbat%22%20%7C%3E%20str%5Fappend%28%22%21%22%29')""></button></div><code class="language-nbt hljs numbat">"Numbat" |> str_append("!")
 
     = "Numbat!"    [String]
 </code></pre>
@@ -131,7 +131,7 @@ fn str_prepend(a: String, str: String) -> String
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Fprepend%28%22Numbat%22%2C%20%22%21%22%29')""></button></div><code class="language-nbt hljs numbat">str_prepend("Numbat", "!")
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=%22%21%22%20%7C%3E%20str%5Fprepend%28%22Numbat%22%29')""></button></div><code class="language-nbt hljs numbat">"!" |> str_prepend("Numbat")
 
     = "Numbat!"    [String]
 </code></pre>

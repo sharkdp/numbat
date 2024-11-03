@@ -27,11 +27,11 @@ fn lowercase(s: String) -> String
 fn uppercase(s: String) -> String
 
 @description("Concatenate two strings")
-@example("str_append(\"!\", \"Numbat\")")
+@example("\"Numbat\" |> str_append(\"!\")")
 fn str_append(a: String, str: String) -> String = "{str}{a}"
 
 @description("Concatenate two strings")
-@example("str_prepend(\"Numbat\", \"!\")")
+@example("\"!\" |> str_prepend(\"Numbat\")")
 fn str_prepend(a: String, str: String) -> String = "{a}{str}"
 
 @description("Find the first occurrence of a substring in a string")
