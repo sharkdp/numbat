@@ -332,8 +332,6 @@ impl PartialEq for Quantity {
     }
 }
 
-impl Eq for Quantity {}
-
 impl PartialOrd for Quantity {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         let other_converted = other.convert_to(self.unit()).ok()?;
@@ -347,7 +345,36 @@ impl PrettyPrint for Quantity {
     }
 }
 
+pub(crate) enum QuantityOrdering {
+    IncompatibleUnits,
+    NanOperand,
+    Less,
+    Equal,
+    Greater,
+}
+
 impl Quantity {
+    /// partial_cmp that encodes whether comparison fails because its arguments have
+    /// incompatible units, or because one of them is NaN
+    pub(crate) fn partial_cmp_preserve_nan(&self, other: &Self) -> QuantityOrdering {
+        if self.value.to_f64().is_nan() || other.value.to_f64().is_nan() {
+            return QuantityOrdering::NanOperand;
+        }
+
+        let Ok(other_converted) = other.convert_to(self.unit()) else {
+            return QuantityOrdering::IncompatibleUnits;
+        };
+
+        match self.value.partial_cmp(&other_converted.value) {
+            Some(cmp) => match cmp {
+                std::cmp::Ordering::Less => QuantityOrdering::Less,
+                std::cmp::Ordering::Equal => QuantityOrdering::Equal,
+                std::cmp::Ordering::Greater => QuantityOrdering::Greater,
+            },
+            None => unreachable!("unexpectedly got a None partial_cmp from non-NaN arguments"),
+        }
+    }
+
     /// Pretty prints with the given options.
     /// If options is None, default options will be used.
     fn pretty_print_with_options(&self, options: Option<FmtFloatConfig>) -> crate::markup::Markup {

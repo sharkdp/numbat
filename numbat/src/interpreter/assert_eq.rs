@@ -3,7 +3,7 @@ use compact_str::{format_compact, CompactString};
 use std::fmt::Display;
 use thiserror::Error;
 
-#[derive(Debug, Clone, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error, PartialEq)]
 pub struct AssertEq2Error {
     pub span_lhs: Span,
     pub lhs: Value,
@@ -28,7 +28,7 @@ impl Display for AssertEq2Error {
     }
 }
 
-#[derive(Debug, Clone, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error, PartialEq)]
 pub struct AssertEq3Error {
     pub span_lhs: Span,
     pub lhs_original: Quantity,

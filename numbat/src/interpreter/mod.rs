@@ -18,7 +18,7 @@ use thiserror::Error;
 
 pub use crate::value::Value;
 
-#[derive(Debug, Clone, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error, PartialEq)]
 pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
@@ -66,7 +66,7 @@ pub enum RuntimeError {
     FileWrite(std::path::PathBuf),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 #[must_use]
 pub enum InterpreterResult {
     Value(Value),
