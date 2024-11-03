@@ -40,7 +40,7 @@ pub fn ord(mut args: Args) -> Result<Value> {
     let input = string_arg!(args);
 
     if input.is_empty() {
-        return Err(RuntimeError::EmptyList);
+        return Err(Box::new(RuntimeError::EmptyList));
     }
 
     let output = input.chars().next().unwrap() as u32;

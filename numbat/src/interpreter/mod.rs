@@ -19,6 +19,7 @@ use thiserror::Error;
 pub use crate::value::Value;
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant)]
 pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,

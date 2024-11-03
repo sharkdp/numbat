@@ -85,9 +85,9 @@ fn calendar_add(
     let n = quantity_arg!(args).unsafe_value().to_f64();
 
     if n.fract() != 0.0 {
-        return Err(RuntimeError::UserError(format!(
+        return Err(Box::new(RuntimeError::UserError(format!(
             "calendar_add: requires an integer number of {unit_name}s"
-        )));
+        ))));
     }
 
     let n_i64 = n.to_i64().ok_or_else(|| {
