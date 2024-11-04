@@ -27,7 +27,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
                     ForeignFunction {
                         name: $fn_name,
                         arity: $arity,
-                        callable: Callable::Function(Box::new($callable)),
+                        callable: Callable::Function($callable),
                     },
                 );
             };
@@ -115,9 +115,9 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
 }
 
 fn error(mut args: Args) -> Result<Value> {
-    Err(RuntimeError::UserError(
+    Err(Box::new(RuntimeError::UserError(
         arg!(args).unsafe_as_string().to_string(),
-    ))
+    )))
 }
 
 fn value_of(mut args: Args) -> Result<Value> {

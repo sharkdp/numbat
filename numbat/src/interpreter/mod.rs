@@ -19,6 +19,7 @@ use thiserror::Error;
 pub use crate::value::Value;
 
 #[derive(Debug, Clone, Error, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
@@ -48,8 +49,8 @@ pub enum RuntimeError {
     DurationOutOfRange,
     #[error("DateTime out of range")]
     DateTimeOutOfRange,
-    #[error("Error in datetime format. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
-    DateFormattingError,
+    #[error("{0}. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
+    DateFormattingError(String),
 
     #[error("Invalid format specifiers: {0}")]
     InvalidFormatSpecifiers(String),

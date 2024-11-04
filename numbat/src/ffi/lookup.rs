@@ -142,6 +142,8 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
             ],
         ))
     } else {
-        Err(RuntimeError::ChemicalElementNotFound(pattern.to_string()))
+        Err(Box::new(RuntimeError::ChemicalElementNotFound(
+            pattern.to_string(),
+        )))
     }
 }

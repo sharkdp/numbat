@@ -16,7 +16,7 @@ pub fn head(mut args: Args) -> Result<Value> {
     if let Some(first) = list.head() {
         Ok(first)
     } else {
-        Err(RuntimeError::EmptyList)
+        Err(Box::new(RuntimeError::EmptyList))
     }
 }
 
