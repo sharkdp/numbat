@@ -7,5 +7,5 @@ fn value_of<T: Dim>(x: T) -> Scalar
 
 @description("Extract the unit of a quantity (the `km/h` in `20 km/h`). This can be useful in generic code, but should generally be avoided otherwise. Returns an error if the quantity is zero.")
 @example("unit_of(20 km/h)")
-fn unit_of<T: Dim>(x: T) -> T = if x_value == 0 then error("…") else x / value_of(x)
+fn unit_of<T: Dim>(x: T) -> T = if x_value == 0 then error("Invalid argument: cannot call `unit_of` on a value that evaluates to 0") else x / value_of(x)
     where x_value = value_of(x)
