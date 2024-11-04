@@ -348,9 +348,7 @@ impl PrettyPrint for Quantity {
 pub(crate) enum QuantityOrdering {
     IncompatibleUnits,
     NanOperand,
-    Less,
-    Equal,
-    Greater,
+    Ok(std::cmp::Ordering),
 }
 
 impl Quantity {
@@ -365,14 +363,12 @@ impl Quantity {
             return QuantityOrdering::IncompatibleUnits;
         };
 
-        match self.value.partial_cmp(&other_converted.value) {
-            Some(cmp) => match cmp {
-                std::cmp::Ordering::Less => QuantityOrdering::Less,
-                std::cmp::Ordering::Equal => QuantityOrdering::Equal,
-                std::cmp::Ordering::Greater => QuantityOrdering::Greater,
-            },
-            None => unreachable!("unexpectedly got a None partial_cmp from non-NaN arguments"),
-        }
+        let cmp = self
+            .value
+            .partial_cmp(&other_converted.value)
+            .expect("unexpectedly got a None partial_cmp from non-NaN arguments");
+
+        QuantityOrdering::Ok(cmp)
     }
 
     /// Pretty prints with the given options.

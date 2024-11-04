@@ -754,6 +754,7 @@ impl Vm {
                 }
                 op @ (Op::LessThan | Op::GreaterThan | Op::LessOrEqual | Op::GreatorOrEqual) => {
                     use crate::quantity::QuantityOrdering;
+                    use std::cmp::Ordering;
 
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
@@ -768,11 +769,13 @@ impl Vm {
                             )))
                         }
                         QuantityOrdering::NanOperand => false,
-                        QuantityOrdering::Less => matches!(op, Op::LessThan | Op::LessOrEqual),
-                        QuantityOrdering::Equal => {
+                        QuantityOrdering::Ok(Ordering::Less) => {
+                            matches!(op, Op::LessThan | Op::LessOrEqual)
+                        }
+                        QuantityOrdering::Ok(Ordering::Equal) => {
                             matches!(op, Op::LessOrEqual | Op::GreatorOrEqual)
                         }
-                        QuantityOrdering::Greater => {
+                        QuantityOrdering::Ok(Ordering::Greater) => {
                             matches!(op, Op::GreaterThan | Op::GreatorOrEqual)
                         }
                     };
