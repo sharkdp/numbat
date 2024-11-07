@@ -130,7 +130,7 @@ fn is_nonzero<D: Dim>(value: D) -> Bool
 </details>
 
 ### `is_int`
-Returns true if the input is an integer number of its units.
+Returns true if the input is an integer. If the input has units, then returns whether it is an integral number of its units.
 
 ```nbt
 fn is_int<D: Dim>(value: D) -> Bool

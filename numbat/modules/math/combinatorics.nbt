@@ -1,5 +1,6 @@
 use core::error
 use core::functions
+use core::numbers
 use math::transcendental
 
 @name("Factorial")
