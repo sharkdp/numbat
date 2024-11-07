@@ -82,6 +82,12 @@ pub fn is_infinite(mut args: Args) -> Result<Value> {
     return_boolean!(arg.unsafe_value().to_f64().is_infinite())
 }
 
+pub fn is_int(mut args: Args) -> Result<Value> {
+    let arg = quantity_arg!(args);
+
+    return_boolean!(arg.unsafe_value().to_f64().fract() == 0.0)
+}
+
 pub fn random(_args: Args) -> Result<Value> {
     return_scalar!(rand::random::<f64>())
 }

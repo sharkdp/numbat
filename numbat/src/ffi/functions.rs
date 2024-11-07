@@ -71,6 +71,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
 
         insert_function!(is_nan, 1..=1);
         insert_function!(is_infinite, 1..=1);
+        insert_function!(is_int, 1..=1);
 
         insert_function!(random, 0..=0);
 

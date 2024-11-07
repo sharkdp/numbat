@@ -24,3 +24,8 @@ fn is_zero<D: Dim>(value: D) -> Bool = value == 0
 @example("is_nonzero(37)")
 @example("is_nonzero(0)")
 fn is_nonzero<D: Dim>(value: D) -> Bool = !is_zero(value)
+
+@description("Returns true if the input is an integer. If the input has units, then returns whether it is an integral number of its units.")
+@example("is_int(30 seconds)")
+@example("is_int(0.5 minutes)")
+fn is_int<D: Dim>(value: D) -> Bool
