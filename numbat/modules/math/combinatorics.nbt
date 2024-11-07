@@ -3,32 +3,32 @@ use core::functions
 use math::transcendental
 
 @name("Factorial")
-@description("The product of the integers 1 through n, also written n!")
+@description("The product of the integers 1 through n. Numbat also supports calling this via the postfix operator `n!`.")
 @url("https://en.wikipedia.org/wiki/Factorial")
+@example("factorial(4)")
+@example("4!")
 fn factorial(n: Scalar) -> Scalar = n!
 
 @name("Falling factorial")
-@description("Equal to n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1) (k terms total). If n is an integer, this is the number
-	of k-element permutations from a set of size n. k must always be an integer.")
+@description("Equal to $n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1)$ (k terms total). If n is an integer, this is the number of k-element permutations from a set of size n. k must always be an integer.")
 @url("https://en.wikipedia.org/wiki/Falling_and_rising_factorials")
+@example("falling_factorial(4, 2)")
 fn falling_factorial(n: Scalar, k: Scalar) -> Scalar =
-	if k < 0 || fract(k) != 0 then
+	if k < 0 || !is_int(k) then
 		error("in falling_factorial(n, k), k must be a nonnegative integer")
-	else if k == 0 then
+	else if is_zero(k) then
 		1
 	else
 		n * falling_factorial(n-1, k-1)
 
 @name("Binomial coefficient")
-@description("Equal to falling_factorial(n, k)/k!, this is the coefficient of $x^k$ in
-	the series expansion of $(1+x)^n$ (see “binomial series”). If n is an integer, then
-	this this is the number of k-element subsets of a set of size n, often read \"n
-	choose k\". k must always be an integer.")
+@description("Equal to falling_factorial(n, k)/k!, this is the coefficient of $x^k$ in the series expansion of $(1+x)^n$ (see “binomial series”). If n is an integer, then this this is the number of k-element subsets of a set of size n, often read \"n choose k\". k must always be an integer.")
 @url("https://en.wikipedia.org/wiki/Binomial_coefficient")
+@example("binom(5, 2)")
 fn binom(n: Scalar, k: Scalar) -> Scalar =
-	if fract(k) != 0 then
+	if !is_int(k) then
 		error("in binom(n, k), k must be an integer")
-	else if k < 0 || (k > n && fract(n) == 0) then
+	else if k < 0 || (k > n && is_int(n)) then
 		0
 	else
 		falling_factorial(n, k) / k!

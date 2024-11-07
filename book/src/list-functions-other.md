@@ -129,6 +129,28 @@ fn is_nonzero<D: Dim>(value: D) -> Bool
 
 </details>
 
+### `is_int`
+Returns true if the input is an integer number of its units.
+
+```nbt
+fn is_int<D: Dim>(value: D) -> Bool
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fint%2830%20seconds%29')""></button></div><code class="language-nbt hljs numbat">is_int(30 seconds)
+
+    = true    [Bool]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fint%280%2E5%20minutes%29')""></button></div><code class="language-nbt hljs numbat">is_int(0.5 minutes)
+
+    = false    [Bool]
+</code></pre>
+
+</details>
+
 ## Quantities
 
 Defined in: `core::quantities`

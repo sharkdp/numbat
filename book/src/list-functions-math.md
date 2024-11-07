@@ -633,32 +633,63 @@ fn median<D: Dim>(xs: List<D>) -> D
 Defined in: `math::combinatorics`
 
 ### `factorial` (Factorial)
-The product of the integers 1 through n, also written n!.
+The product of the integers 1 through n. Numbat also supports calling this via the postfix operator `n!`.
 More information [here](https://en.wikipedia.org/wiki/Factorial).
 
 ```nbt
 fn factorial(n: Scalar) -> Scalar
 ```
 
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=factorial%284%29')""></button></div><code class="language-nbt hljs numbat">factorial(4)
+
+    = 24
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=4%21')""></button></div><code class="language-nbt hljs numbat">4!
+
+    = 24
+</code></pre>
+
+</details>
+
 ### `falling_factorial` (Falling factorial)
-Equal to n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1) (k terms total). If n is an integer, this is the number
-	of k-element permutations from a set of size n. k must always be an integer.
+Equal to \\( n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1) \\) (k terms total). If n is an integer, this is the number of k-element permutations from a set of size n. k must always be an integer.
 More information [here](https://en.wikipedia.org/wiki/Falling_and_rising_factorials).
 
 ```nbt
 fn falling_factorial(n: Scalar, k: Scalar) -> Scalar
 ```
 
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=falling%5Ffactorial%284%2C%202%29')""></button></div><code class="language-nbt hljs numbat">falling_factorial(4, 2)
+
+    = 12
+</code></pre>
+
+</details>
+
 ### `binom` (Binomial coefficient)
-Equal to falling_factorial(n, k)/k!, this is the coefficient of \\( x^k \\) in
-	the series expansion of \\( (1+x)^n \\) (see “binomial series”). If n is an integer, then
-	this this is the number of k-element subsets of a set of size n, often read "n
-	choose k". k must always be an integer.
+Equal to falling_factorial(n, k)/k!, this is the coefficient of \\( x^k \\) in the series expansion of \\( (1+x)^n \\) (see “binomial series”). If n is an integer, then this this is the number of k-element subsets of a set of size n, often read "n choose k". k must always be an integer.
 More information [here](https://en.wikipedia.org/wiki/Binomial_coefficient).
 
 ```nbt
 fn binom(n: Scalar, k: Scalar) -> Scalar
 ```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=binom%285%2C%202%29')""></button></div><code class="language-nbt hljs numbat">binom(5, 2)
+
+    = 10
+</code></pre>
+
+</details>
 
 ## Random sampling, distributions
 
