@@ -28,7 +28,7 @@ impl std::fmt::Display for FunctionReference {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Quantity(Quantity),
     Boolean(bool),

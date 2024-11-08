@@ -575,6 +575,34 @@ fn test_comparisons() {
     expect_output("2 >= 2", "true");
     expect_output("2 >= 2.1", "false");
 
+    // NaN comparison; all false
+
+    expect_output("NaN < NaN", "false");
+    expect_output("NaN < 0", "false");
+    expect_output("NaN < 0m", "false");
+    expect_output("0 < NaN", "false");
+    expect_output("0m < NaN", "false");
+
+    expect_output("NaN <= NaN", "false");
+    expect_output("NaN <= 0", "false");
+    expect_output("NaN <= 0m", "false");
+    expect_output("0 <= NaN", "false");
+    expect_output("0m <= NaN", "false");
+
+    expect_output("NaN > NaN", "false");
+    expect_output("NaN > 0", "false");
+    expect_output("NaN > 0m", "false");
+    expect_output("0 > NaN", "false");
+    expect_output("0m > NaN", "false");
+
+    expect_output("NaN >= NaN", "false");
+    expect_output("NaN >= 0", "false");
+    expect_output("NaN >= 0m", "false");
+    expect_output("0 >= NaN", "false");
+    expect_output("0m >= NaN", "false");
+
+    // equality
+
     expect_output("200 cm == 2 m", "true");
     expect_output("201 cm == 2 m", "false");
 

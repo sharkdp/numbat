@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
+use std::fmt::Display;
 use std::sync::Arc;
-use std::{cmp::Ordering, fmt::Display};
 
 use compact_str::{CompactString, ToCompactString};
 use indexmap::IndexMap;
@@ -753,22 +753,31 @@ impl Vm {
                     self.push(ret);
                 }
                 op @ (Op::LessThan | Op::GreaterThan | Op::LessOrEqual | Op::GreatorOrEqual) => {
+                    use crate::quantity::QuantityOrdering;
+                    use std::cmp::Ordering;
+
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
 
-                    let result = lhs.partial_cmp(&rhs).ok_or_else(|| {
-                        RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
-                            lhs.unit().clone(),
-                            rhs.unit().clone(),
-                        ))
-                    })?;
-
-                    let result = match op {
-                        Op::LessThan => result == Ordering::Less,
-                        Op::GreaterThan => result == Ordering::Greater,
-                        Op::LessOrEqual => result != Ordering::Greater,
-                        Op::GreatorOrEqual => result != Ordering::Less,
-                        _ => unreachable!(),
+                    let result = match lhs.partial_cmp_preserve_nan(&rhs) {
+                        QuantityOrdering::IncompatibleUnits => {
+                            return Err(Box::new(RuntimeError::QuantityError(
+                                QuantityError::IncompatibleUnits(
+                                    lhs.unit().clone(),
+                                    rhs.unit().clone(),
+                                ),
+                            )))
+                        }
+                        QuantityOrdering::NanOperand => false,
+                        QuantityOrdering::Ok(Ordering::Less) => {
+                            matches!(op, Op::LessThan | Op::LessOrEqual)
+                        }
+                        QuantityOrdering::Ok(Ordering::Equal) => {
+                            matches!(op, Op::LessOrEqual | Op::GreatorOrEqual)
+                        }
+                        QuantityOrdering::Ok(Ordering::Greater) => {
+                            matches!(op, Op::GreaterThan | Op::GreatorOrEqual)
+                        }
                     };
 
                     self.push(Value::Boolean(result));
