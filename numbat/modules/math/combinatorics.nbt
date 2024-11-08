@@ -15,7 +15,7 @@ fn factorial(n: Scalar) -> Scalar = n!
 @url("https://en.wikipedia.org/wiki/Falling_and_rising_factorials")
 @example("falling_factorial(4, 2)")
 fn falling_factorial(n: Scalar, k: Scalar) -> Scalar =
-	if k < 0 || !is_int(k) then
+	if k < 0 || !is_integer(k) then
 		error("in falling_factorial(n, k), k must be a nonnegative integer")
 	else if is_zero(k) then
 		1
@@ -27,9 +27,9 @@ fn falling_factorial(n: Scalar, k: Scalar) -> Scalar =
 @url("https://en.wikipedia.org/wiki/Binomial_coefficient")
 @example("binom(5, 2)")
 fn binom(n: Scalar, k: Scalar) -> Scalar =
-	if !is_int(k) then
+	if !is_integer(k) then
 		error("in binom(n, k), k must be an integer")
-	else if k < 0 || (k > n && is_int(n)) then
+	else if k < 0 || (k > n && is_integer(n)) then
 		0
 	else
 		falling_factorial(n, k) / k!

@@ -1,3 +1,6 @@
+use core::scalar
+use core::functions
+
 @description("Returns true if the input is `NaN`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.is_nan")
 @example("is_nan(37)")
@@ -25,7 +28,7 @@ fn is_zero<D: Dim>(value: D) -> Bool = value == 0
 @example("is_nonzero(0)")
 fn is_nonzero<D: Dim>(value: D) -> Bool = !is_zero(value)
 
-@description("Returns true if the input is an integer. If the input has units, then returns whether it is an integral number of its units.")
-@example("is_int(30 seconds)")
-@example("is_int(0.5 minutes)")
-fn is_int<D: Dim>(value: D) -> Bool
+@description("Returns true if the input is an integer.")
+@example("is_integer(3)")
+@example("is_integer(pi)")
+fn is_integer(x: Scalar) -> Bool = is_zero(fract(x))

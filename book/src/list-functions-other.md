@@ -129,22 +129,22 @@ fn is_nonzero<D: Dim>(value: D) -> Bool
 
 </details>
 
-### `is_int`
-Returns true if the input is an integer. If the input has units, then returns whether it is an integral number of its units.
+### `is_integer`
+Returns true if the input is an integer.
 
 ```nbt
-fn is_int<D: Dim>(value: D) -> Bool
+fn is_integer(x: Scalar) -> Bool
 ```
 
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fint%2830%20seconds%29')""></button></div><code class="language-nbt hljs numbat">is_int(30 seconds)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Finteger%283%29')""></button></div><code class="language-nbt hljs numbat">is_integer(3)
 
     = true    [Bool]
 </code></pre>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fint%280%2E5%20minutes%29')""></button></div><code class="language-nbt hljs numbat">is_int(0.5 minutes)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Finteger%28pi%29')""></button></div><code class="language-nbt hljs numbat">is_integer(pi)
 
     = false    [Bool]
 </code></pre>
