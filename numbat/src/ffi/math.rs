@@ -34,6 +34,7 @@ simple_scalar_math_function!(round, round);
 simple_scalar_math_function!(floor, floor);
 simple_scalar_math_function!(ceil, ceil);
 simple_scalar_math_function!(trunc, trunc);
+simple_scalar_math_function!(fract, fract);
 
 simple_scalar_math_function!(sin, sin);
 simple_scalar_math_function!(cos, cos);

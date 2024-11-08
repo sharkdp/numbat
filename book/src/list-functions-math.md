@@ -1,6 +1,6 @@
 # Mathematical functions
 
-[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Percentage calculations](#percentage-calculations) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
+[Basics](#basics) · [Transcendental functions](#transcendental-functions) · [Trigonometry](#trigonometry) · [Statistics](#statistics) · [Combinatorics](#combinatorics) · [Random sampling, distributions](#random-sampling-distributions) · [Number theory](#number-theory) · [Numerical methods](#numerical-methods) · [Percentage calculations](#percentage-calculations) · [Geometry](#geometry) · [Algebra](#algebra) · [Trigonometry (extra)](#trigonometry-(extra))
 
 ## Basics
 
@@ -268,6 +268,37 @@ Truncate in centimeters.
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=trunc%5Fin%28cm%2C%205%2E7%20m%29')""></button></div><code class="language-nbt hljs numbat">trunc_in(cm, 5.7 m)
 
     = 570 cm    [Length]
+</code></pre>
+
+</details>
+
+### `fract` (Fractional part)
+Returns the fractional part of \\( x \\), i.e. the remainder when divided by 1.
+	If \\( x < 0 \\), then so will be `fract(x)`. Note that due to floating point error, a
+	number’s fractional part can be slightly “off”; for instance, `fract(1.2) ==
+	0.1999...996 != 0.2`.
+More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.fract).
+
+```nbt
+fn fract(x: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%280%2E0%29')""></button></div><code class="language-nbt hljs numbat">fract(0.0)
+
+    = 0
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%285%2E5%29')""></button></div><code class="language-nbt hljs numbat">fract(5.5)
+
+    = 0.5
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%28%2D5%2E5%29')""></button></div><code class="language-nbt hljs numbat">fract(-5.5)
+
+    = -0.5
 </code></pre>
 
 </details>
@@ -593,6 +624,69 @@ fn median<D: Dim>(xs: List<D>) -> D
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=median%28%5B1%20m%2C%202%20m%2C%20400%20cm%5D%29')""></button></div><code class="language-nbt hljs numbat">median([1 m, 2 m, 400 cm])
 
     = 2 m    [Length]
+</code></pre>
+
+</details>
+
+## Combinatorics
+
+Defined in: `math::combinatorics`
+
+### `factorial` (Factorial)
+The product of the integers 1 through n. Numbat also supports calling this via the postfix operator `n!`.
+More information [here](https://en.wikipedia.org/wiki/Factorial).
+
+```nbt
+fn factorial(n: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=factorial%284%29')""></button></div><code class="language-nbt hljs numbat">factorial(4)
+
+    = 24
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=4%21')""></button></div><code class="language-nbt hljs numbat">4!
+
+    = 24
+</code></pre>
+
+</details>
+
+### `falling_factorial` (Falling factorial)
+Equal to \\( n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1) \\) (k terms total). If n is an integer, this is the number of k-element permutations from a set of size n. k must always be an integer.
+More information [here](https://en.wikipedia.org/wiki/Falling_and_rising_factorials).
+
+```nbt
+fn falling_factorial(n: Scalar, k: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=falling%5Ffactorial%284%2C%202%29')""></button></div><code class="language-nbt hljs numbat">falling_factorial(4, 2)
+
+    = 12
+</code></pre>
+
+</details>
+
+### `binom` (Binomial coefficient)
+Equal to falling_factorial(n, k)/k!, this is the coefficient of \\( x^k \\) in the series expansion of \\( (1+x)^n \\) (see “binomial series”). If n is an integer, then this this is the number of k-element subsets of a set of size n, often read "n choose k". k must always be an integer.
+More information [here](https://en.wikipedia.org/wiki/Binomial_coefficient).
+
+```nbt
+fn binom(n: Scalar, k: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=binom%285%2C%202%29')""></button></div><code class="language-nbt hljs numbat">binom(5, 2)
+
+    = 10
 </code></pre>
 
 </details>

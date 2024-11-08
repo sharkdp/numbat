@@ -129,6 +129,28 @@ fn is_nonzero<D: Dim>(value: D) -> Bool
 
 </details>
 
+### `is_integer`
+Returns true if the input is an integer.
+
+```nbt
+fn is_integer(x: Scalar) -> Bool
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Finteger%283%29')""></button></div><code class="language-nbt hljs numbat">is_integer(3)
+
+    = true    [Bool]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Finteger%28pi%29')""></button></div><code class="language-nbt hljs numbat">is_integer(pi)
+
+    = false    [Bool]
+</code></pre>
+
+</details>
+
 ## Quantities
 
 Defined in: `core::quantities`

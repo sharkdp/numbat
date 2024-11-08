@@ -58,7 +58,7 @@ assert_eq(ceil(-1.2), -1)
 assert_eq(1.2 m |> ceil_in(m), 2 m)
 assert_eq(1.2 m |> ceil_in(cm), 120 cm)
 
-# trunc, trunc_in
+# trunc, trunc_in, fract
 
 assert_eq(trunc(1.2), 1)
 assert_eq(trunc(1.8), 1)
@@ -67,3 +67,13 @@ assert_eq(trunc(-1.8), -1)
 
 assert_eq(1.8 m |> trunc_in(m), 1 m)
 assert_eq(1.8 m |> trunc_in(cm), 180 cm)
+
+assert_eq(fract(1.2), 0.2, 1e-12)
+assert_eq(fract(1.8), 0.8, 1e-12)
+assert_eq(fract(0), 0)
+assert_eq(fract(1), 0)
+assert_eq(fract(1e10), 0)
+assert_eq(fract(-1.2), -0.2, 1e-12)
+assert_eq(fract(-1.8), -0.8, 1e-12)
+assert(is_nan(fract(NaN)))
+assert(is_nan(fract(inf)))

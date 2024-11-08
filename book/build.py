@@ -167,6 +167,10 @@ list_of_functions(
                 "modules": ["math::statistics"],
             },
             {
+                "title": "Combinatorics",
+                "modules": ["math::combinatorics"],
+            },
+            {
                 "title": "Random sampling, distributions",
                 "modules": ["core::random", "math::distributions"],
             },
