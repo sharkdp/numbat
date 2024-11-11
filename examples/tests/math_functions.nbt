@@ -186,6 +186,19 @@ assert_eq(binom(1.5, 2), 0.375)
 assert_eq(binom(1.5, 3), -0.0625)
 assert_eq(binom(1.5, 4), 0.0234375)
 
+# combinatoric sequences
+assert_eq(fibonacci(0), 0)
+assert_eq(fibonacci(1), 1)
+assert_eq(fibonacci(5), 5)
+
+assert_eq(lucas(0), 2)
+assert_eq(lucas(1), 1)
+assert_eq(lucas(5), 11)
+
+assert_eq(catalan(0), 1)
+assert_eq(catalan(1), 1)
+assert_eq(catalan(5), 42)
+
 # maximum
 
 assert_eq(maximum([1]), 1)
