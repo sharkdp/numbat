@@ -34,6 +34,15 @@
             "path": "./syntaxes/numbat.tmLanguage.json"
         }]
     },
+    "scripts": {
+        "vscode:package": "vsce package"
+    },
+    "devDependencies": {
+        "@vscode/vsce": "3.2.1"
+    },
+    "vsce": {
+        "skipLicense": true
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/sharkdp/numbat.git"
