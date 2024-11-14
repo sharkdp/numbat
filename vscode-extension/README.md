@@ -1,6 +1,6 @@
-# numbat README
+# Numbat README
 
-Language support for the [Numbat](https://github.com/sharkdp/numbat) language.
+The Numbat extension provides language support for the [Numbat](https://github.com/sharkdp/numbat) programming language.
 
 ## Features
 
