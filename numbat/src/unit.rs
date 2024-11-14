@@ -1,5 +1,6 @@
 use std::{fmt::Display, ops::Div};
 
+use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
 use num_traits::{ToPrimitive, Zero};
 
@@ -23,7 +24,7 @@ pub enum UnitKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CanonicalName {
-    pub name: String,
+    pub name: CompactString,
     pub accepts_prefix: AcceptsPrefix,
 }
 
@@ -38,7 +39,7 @@ impl CanonicalName {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitIdentifier {
-    pub name: String,
+    pub name: CompactString,
     pub canonical_name: CanonicalName,
     kind: UnitKind,
 }
@@ -61,7 +62,7 @@ impl UnitIdentifier {
     pub fn unit_and_factor(&self) -> BaseUnitAndFactor {
         match &self.kind {
             UnitKind::Base => BaseUnitAndFactor(
-                Unit::new_base(&self.name, self.canonical_name.clone()),
+                Unit::new_base(self.name.to_compact_string(), self.canonical_name.clone()),
                 Number::from_f64(1.0),
             ),
             UnitKind::Derived(factor, defining_unit) => {
@@ -73,7 +74,7 @@ impl UnitIdentifier {
     pub fn base_unit_and_factor(&self) -> BaseUnitAndFactor {
         match &self.kind {
             UnitKind::Base => BaseUnitAndFactor(
-                Unit::new_base(&self.name, self.canonical_name.clone()),
+                Unit::new_base(self.name.to_compact_string(), self.canonical_name.clone()),
                 Number::from_f64(1.0),
             ),
             UnitKind::Derived(factor, defining_unit) => {
@@ -102,7 +103,7 @@ impl UnitIdentifier {
         }
     }
 
-    pub fn sort_key(&self) -> Vec<(String, Exponent)> {
+    pub fn sort_key(&self) -> Vec<(CompactString, Exponent)> {
         use num_integer::Integer;
 
         // TODO: this is more or less a hack. instead of properly sorting by physical
@@ -231,11 +232,11 @@ impl Unit {
         self == &Self::scalar()
     }
 
-    pub fn new_base(name: &str, canonical_name: CanonicalName) -> Self {
+    pub fn new_base(name: CompactString, canonical_name: CanonicalName) -> Self {
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
-                name: name.into(),
+                name,
                 canonical_name,
                 kind: UnitKind::Base,
             },
@@ -244,7 +245,7 @@ impl Unit {
     }
 
     pub fn new_derived(
-        name: &str,
+        name: CompactString,
         canonical_name: CanonicalName,
         factor: ConversionFactor,
         base_unit: Unit,
@@ -252,7 +253,7 @@ impl Unit {
         Unit::from_factor(UnitFactor {
             prefix: Prefix::none(),
             unit_id: UnitIdentifier {
-                name: name.into(),
+                name,
                 canonical_name,
                 kind: UnitKind::Derived(factor, base_unit),
             },
@@ -295,7 +296,7 @@ impl Unit {
     #[cfg(test)]
     pub fn meter() -> Self {
         Self::new_base(
-            "meter",
+            CompactString::const_new("meter"),
             CanonicalName::new("m", AcceptsPrefix::only_short()),
         )
     }
@@ -303,7 +304,7 @@ impl Unit {
     #[cfg(test)]
     pub fn centimeter() -> Self {
         Self::new_base(
-            "meter",
+            CompactString::const_new("meter"),
             CanonicalName::new("m", AcceptsPrefix::only_short()),
         )
         .with_prefix(Prefix::centi())
@@ -312,7 +313,7 @@ impl Unit {
     #[cfg(test)]
     pub fn millimeter() -> Self {
         Self::new_base(
-            "meter",
+            CompactString::const_new("meter"),
             CanonicalName::new("m", AcceptsPrefix::only_short()),
         )
         .with_prefix(Prefix::milli())
@@ -321,7 +322,7 @@ impl Unit {
     #[cfg(test)]
     pub fn kilometer() -> Self {
         Self::new_base(
-            "meter",
+            CompactString::const_new("meter"),
             CanonicalName::new("m", AcceptsPrefix::only_short()),
         )
         .with_prefix(Prefix::kilo())
@@ -330,14 +331,17 @@ impl Unit {
     #[cfg(test)]
     pub fn second() -> Self {
         Self::new_base(
-            "second",
+            CompactString::const_new("second"),
             CanonicalName::new("s", AcceptsPrefix::only_short()),
         )
     }
 
     #[cfg(test)]
     pub fn gram() -> Self {
-        Self::new_base("gram", CanonicalName::new("g", AcceptsPrefix::only_short()))
+        Self::new_base(
+            CompactString::const_new("gram"),
+            CanonicalName::new("g", AcceptsPrefix::only_short()),
+        )
     }
 
     #[cfg(test)]
@@ -348,7 +352,7 @@ impl Unit {
     #[cfg(test)]
     pub fn kelvin() -> Self {
         Self::new_base(
-            "kelvin",
+            CompactString::const_new("kelvin"),
             CanonicalName::new("K", AcceptsPrefix::only_short()),
         )
     }
@@ -356,7 +360,7 @@ impl Unit {
     #[cfg(test)]
     pub fn radian() -> Self {
         Self::new_derived(
-            "radian",
+            CompactString::const_new("radian"),
             CanonicalName::new("rad", AcceptsPrefix::only_long()),
             Number::from_f64(1.0),
             Self::meter() / Self::meter(),
@@ -366,7 +370,7 @@ impl Unit {
     #[cfg(test)]
     pub fn degree() -> Self {
         Self::new_derived(
-            "degree",
+            CompactString::const_new("degree"),
             CanonicalName::new("°", AcceptsPrefix::none()),
             Number::from_f64(std::f64::consts::PI / 180.0),
             Self::radian(),
@@ -376,7 +380,7 @@ impl Unit {
     #[cfg(test)]
     pub fn percent() -> Self {
         Self::new_derived(
-            "percent",
+            CompactString::const_new("percent"),
             CanonicalName::new("%", AcceptsPrefix::none()),
             Number::from_f64(1e-2),
             Self::scalar(),
@@ -386,7 +390,7 @@ impl Unit {
     #[cfg(test)]
     pub fn hertz() -> Self {
         Self::new_derived(
-            "hertz",
+            CompactString::const_new("hertz"),
             CanonicalName::new("Hz", AcceptsPrefix::only_short()),
             Number::from_f64(1.0),
             Unit::second().powi(-1),
@@ -396,7 +400,7 @@ impl Unit {
     #[cfg(test)]
     pub fn newton() -> Self {
         Self::new_derived(
-            "newton",
+            CompactString::const_new("newton"),
             CanonicalName::new("N", AcceptsPrefix::only_short()),
             Number::from_f64(1.0),
             Unit::kilogram() * Unit::meter() / Unit::second().powi(2),
@@ -406,7 +410,7 @@ impl Unit {
     #[cfg(test)]
     pub fn minute() -> Self {
         Self::new_derived(
-            "minute",
+            CompactString::const_new("minute"),
             CanonicalName::new("min", AcceptsPrefix::none()),
             Number::from_f64(60.0),
             Self::second(),
@@ -416,7 +420,7 @@ impl Unit {
     #[cfg(test)]
     pub fn hour() -> Self {
         Self::new_derived(
-            "hour",
+            CompactString::const_new("hour"),
             CanonicalName::new("h", AcceptsPrefix::none()),
             Number::from_f64(60.0),
             Self::minute(),
@@ -426,7 +430,7 @@ impl Unit {
     #[cfg(test)]
     pub fn kph() -> Self {
         Self::new_derived(
-            "kilometer_per_hour",
+            CompactString::const_new("kilometer_per_hour"),
             CanonicalName::new("kph", AcceptsPrefix::none()),
             Number::from_f64(1.0),
             Self::kilometer() / Self::hour(),
@@ -436,7 +440,7 @@ impl Unit {
     #[cfg(test)]
     pub fn inch() -> Self {
         Self::new_derived(
-            "inch",
+            CompactString::const_new("inch"),
             CanonicalName::new("in", AcceptsPrefix::none()),
             Number::from_f64(0.0254),
             Self::meter(),
@@ -446,7 +450,7 @@ impl Unit {
     #[cfg(test)]
     pub fn gallon() -> Self {
         Self::new_derived(
-            "gallon",
+            CompactString::const_new("gallon"),
             CanonicalName::new("gal", AcceptsPrefix::none()),
             Number::from_f64(231.0),
             Self::inch().powi(3),
@@ -456,7 +460,7 @@ impl Unit {
     #[cfg(test)]
     pub fn foot() -> Self {
         Self::new_derived(
-            "foot",
+            CompactString::const_new("foot"),
             CanonicalName::new("ft", AcceptsPrefix::none()),
             Number::from_f64(12.0),
             Self::inch(),
@@ -466,7 +470,7 @@ impl Unit {
     #[cfg(test)]
     pub fn yard() -> Self {
         Self::new_derived(
-            "yard",
+            CompactString::const_new("yard"),
             CanonicalName::new("yd", AcceptsPrefix::none()),
             Number::from_f64(3.0),
             Self::foot(),
@@ -476,7 +480,7 @@ impl Unit {
     #[cfg(test)]
     pub fn mile() -> Self {
         Self::new_derived(
-            "mile",
+            CompactString::const_new("mile"),
             CanonicalName::new("mi", AcceptsPrefix::none()),
             Number::from_f64(1760.0),
             Self::yard(),
@@ -485,13 +489,16 @@ impl Unit {
 
     #[cfg(test)]
     pub fn bit() -> Self {
-        Self::new_base("bit", CanonicalName::new("bit", AcceptsPrefix::only_long()))
+        Self::new_base(
+            CompactString::const_new("bit"),
+            CanonicalName::new("bit", AcceptsPrefix::only_long()),
+        )
     }
 
     #[cfg(test)]
     pub fn byte() -> Self {
         Self::new_derived(
-            "byte",
+            CompactString::const_new("byte"),
             CanonicalName::new("B", AcceptsPrefix::only_short()),
             Number::from_f64(8.0),
             Self::bit(),

@@ -1,3 +1,6 @@
+use compact_str::CompactString;
+use jiff::fmt::strtime::BrokenDownTime;
+use jiff::fmt::StdFmtWrite;
 use jiff::Span;
 use jiff::Timestamp;
 use jiff::Zoned;
@@ -11,8 +14,6 @@ use crate::quantity::Quantity;
 use crate::value::FunctionReference;
 use crate::value::Value;
 use crate::RuntimeError;
-
-use std::fmt::Write;
 
 pub fn now(_args: Args) -> Result<Value> {
     return_datetime!(Zoned::now())
@@ -31,17 +32,22 @@ pub fn format_datetime(mut args: Args) -> Result<Value> {
     let format = string_arg!(args);
     let dt = datetime_arg!(args);
 
-    let mut output = String::new();
-    write!(output, "{}", dt.strftime(&format)).map_err(|_| RuntimeError::DateFormattingError)?;
+    let mut output = CompactString::with_capacity(format.len());
+    BrokenDownTime::from(&dt)
+        // jiff::fmt::StdFmtWrite is a wrapper that turns an arbitrary std::fmt::Write
+        // into a jiff::fmt::Write, which is necessary to write a formatted datetime
+        // into it
+        .format(&format, StdFmtWrite(&mut output))
+        .map_err(|e| RuntimeError::DateFormattingError(e.to_string()))?;
 
-    return_string!(output)
+    return_string!(owned = output)
 }
 
 pub fn get_local_timezone(_args: Args) -> Result<Value> {
     let local_tz = datetime::get_local_timezone_or_utc();
     let tz_name = local_tz.iana_name().unwrap_or("<unknown timezone>");
 
-    return_string!(tz_name)
+    return_string!(borrowed = tz_name)
 }
 
 pub fn tz(mut args: Args) -> Result<Value> {
@@ -79,9 +85,9 @@ fn calendar_add(
     let n = quantity_arg!(args).unsafe_value().to_f64();
 
     if n.fract() != 0.0 {
-        return Err(RuntimeError::UserError(format!(
+        return Err(Box::new(RuntimeError::UserError(format!(
             "calendar_add: requires an integer number of {unit_name}s"
-        )));
+        ))));
     }
 
     let n_i64 = n.to_i64().ok_or_else(|| {

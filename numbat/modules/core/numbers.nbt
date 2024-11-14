@@ -1,3 +1,6 @@
+use core::scalar
+use core::functions
+
 @description("Returns true if the input is `NaN`.")
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.is_nan")
 @example("is_nan(37)")
@@ -14,3 +17,18 @@ fn is_infinite<T: Dim>(n: T) -> Bool
 @example("is_finite(37)")
 @example("is_finite(-inf)")
 fn is_finite<T: Dim>(n: T) -> Bool = !is_nan(n) && !is_infinite(n)
+
+@description("Returns true if the input is 0 (zero).")
+@example("is_zero(37)")
+@example("is_zero(0)")
+fn is_zero<D: Dim>(value: D) -> Bool = value == 0
+
+@description("Returns true unless the input is 0 (zero).")
+@example("is_nonzero(37)")
+@example("is_nonzero(0)")
+fn is_nonzero<D: Dim>(value: D) -> Bool = !is_zero(value)
+
+@description("Returns true if the input is an integer.")
+@example("is_integer(3)")
+@example("is_integer(pi)")
+fn is_integer(x: Scalar) -> Bool = is_zero(fract(x))

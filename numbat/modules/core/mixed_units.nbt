@@ -1,5 +1,7 @@
 use core::strings
 use core::lists
+use core::numbers
+use core::quantities
 
 # Helper functions for mixed-unit conversions. See units::mixed for more.
 
@@ -15,3 +17,11 @@ fn _mixed_unit_list<D: Dim>(val: D, units: List<D>, acc: List<D>) -> List<D> =
     if (len(units) > 0)
       then (val |> trunc_in(head(units)))
       else error("Units list cannot be empty")
+  
+fn _negate<D: Dim>(x: D) = -x
+
+fn _sort_descending<D: Dim>(xs: List<D>) -> List<D> = sort_by_key(_negate, xs)
+
+fn _clean_units<D: Dim>(units: List<D>) -> List<D> = units |> unique() |> _sort_descending()
+
+fn _unit_list<D: Dim>(units: List<D>, value: D) -> List<D> = _mixed_unit_list(value, _clean_units(units), [])

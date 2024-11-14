@@ -70,6 +70,29 @@ fn negate(x) = -x
 assert_eq(sort_by_key(negate, [1, 2, 3]), [3, 2, 1])
 assert_eq(sort_by_key(str_length, ["aa", "", "aaaa", "aaa"]), ["", "aa", "aaa", "aaaa"])
 
+# contains:
+assert(contains(1, [1]))
+
+assert(contains(1, [1, 2, 3]))
+assert(contains(1, [3, 2, 1]))
+assert(contains(1, [3, 1, 2]))
+
+assert(!contains(10, [1, 2, 3]))
+
+assert(contains("1", ["1", "2", "3"]))
+
+# unique:
+assert_eq(unique([]), [])
+
+assert_eq(unique([1, 2, 3]), [1, 2, 3])
+
+assert_eq(unique([1, 2, 2, 3, 3, 3]), [1, 2, 3])
+assert_eq(unique([3, 3, 3, 2, 2, 1]), [3, 2, 1])
+assert_eq(unique([1, 3, 2, 3, 2, 3]), [1, 3, 2])
+
+assert_eq(unique([1, 3, 2, 3, 2, 3]), unique(unique([1, 3, 2, 3, 2, 3,])))
+
+# intersperse:
 assert_eq(intersperse(0, []), [])
 assert_eq(intersperse(0, [1]), [1])
 assert_eq(intersperse(0, [1, 2, 3]), [1, 0, 2, 0, 3])

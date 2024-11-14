@@ -20,14 +20,12 @@ type ControlFlow = std::ops::ControlFlow<RuntimeError>;
 
 pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
 
-type Result<T> = std::result::Result<T, RuntimeError>;
+type Result<T> = std::result::Result<T, Box<RuntimeError>>;
 
 pub(crate) type Args = VecDeque<Value>;
 
-type BoxedFunction = Box<dyn Fn(Args) -> Result<Value> + Send + Sync>;
-
 pub(crate) enum Callable {
-    Function(BoxedFunction),
+    Function(fn(Args) -> Result<Value>),
     Procedure(fn(&mut ExecutionContext, Args, Vec<Span>) -> ControlFlow),
 }
 

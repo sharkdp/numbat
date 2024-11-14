@@ -3,6 +3,7 @@ use crate::number::Number;
 use crate::pretty_print::PrettyPrint;
 use crate::unit::{is_multiple_of, Unit, UnitFactor};
 
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::{FromPrimitive, Zero};
@@ -331,8 +332,6 @@ impl PartialEq for Quantity {
     }
 }
 
-impl Eq for Quantity {}
-
 impl PartialOrd for Quantity {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         let other_converted = other.convert_to(self.unit()).ok()?;
@@ -346,7 +345,32 @@ impl PrettyPrint for Quantity {
     }
 }
 
+pub(crate) enum QuantityOrdering {
+    IncompatibleUnits,
+    NanOperand,
+    Ok(std::cmp::Ordering),
+}
+
 impl Quantity {
+    /// partial_cmp that encodes whether comparison fails because its arguments have
+    /// incompatible units, or because one of them is NaN
+    pub(crate) fn partial_cmp_preserve_nan(&self, other: &Self) -> QuantityOrdering {
+        if self.value.to_f64().is_nan() || other.value.to_f64().is_nan() {
+            return QuantityOrdering::NanOperand;
+        }
+
+        let Ok(other_converted) = other.convert_to(self.unit()) else {
+            return QuantityOrdering::IncompatibleUnits;
+        };
+
+        let cmp = self
+            .value
+            .partial_cmp(&other_converted.value)
+            .expect("unexpectedly got a None partial_cmp from non-NaN arguments");
+
+        QuantityOrdering::Ok(cmp)
+    }
+
     /// Pretty prints with the given options.
     /// If options is None, default options will be used.
     fn pretty_print_with_options(&self, options: Option<FmtFloatConfig>) -> crate::markup::Markup {
@@ -354,7 +378,7 @@ impl Quantity {
 
         let formatted_number = self.unsafe_value().pretty_print_with_options(options);
 
-        let unit_str = format!("{}", self.unit());
+        let unit_str = format_compact!("{}", self.unit());
 
         markup::value(formatted_number)
             + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {
@@ -377,8 +401,8 @@ impl Quantity {
         self.pretty_print_with_options(Some(options))
     }
 
-    pub fn unsafe_value_as_string(&self) -> String {
-        self.unsafe_value().to_string()
+    pub fn unsafe_value_as_string(&self) -> CompactString {
+        self.unsafe_value().to_compact_string()
     }
 }
 
@@ -394,6 +418,8 @@ impl std::fmt::Display for Quantity {
 
 #[cfg(test)]
 mod tests {
+    use compact_str::CompactString;
+
     use crate::{prefix::Prefix, prefix_parser::AcceptsPrefix, unit::CanonicalName};
 
     use super::*;
@@ -417,7 +443,7 @@ mod tests {
 
         let meter = Unit::meter();
         let foot = Unit::new_derived(
-            "foot",
+            CompactString::const_new("foot"),
             CanonicalName::new("ft", AcceptsPrefix::none()),
             Number::from_f64(0.3048),
             meter.clone(),

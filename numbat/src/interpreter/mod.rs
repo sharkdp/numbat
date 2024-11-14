@@ -1,4 +1,4 @@
-pub(crate) mod assert_eq_3;
+pub(crate) mod assert_eq;
 
 use crate::{
     dimension::DimensionRegistry,
@@ -12,12 +12,14 @@ use crate::{
 
 pub use crate::markup as m;
 
-use assert_eq_3::AssertEq3Error;
+use assert_eq::{AssertEq2Error, AssertEq3Error};
+use compact_str::{CompactString, ToCompactString};
 use thiserror::Error;
 
 pub use crate::value::Value;
 
-#[derive(Debug, Clone, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 pub enum RuntimeError {
     #[error("Division by zero")]
     DivisionByZero,
@@ -31,8 +33,8 @@ pub enum RuntimeError {
     QuantityError(QuantityError),
     #[error("Assertion failed")]
     AssertFailed(Span),
-    #[error("Assertion failed because the following two values are not the same:\n  {1}\n  {3}")]
-    AssertEq2Failed(Span, Value, Span, Value),
+    #[error("{0}")]
+    AssertEq2Failed(AssertEq2Error),
     #[error("{0}")]
     AssertEq3Failed(AssertEq3Error),
     #[error("Could not load exchange rates from European Central Bank.")]
@@ -47,8 +49,8 @@ pub enum RuntimeError {
     DurationOutOfRange,
     #[error("DateTime out of range")]
     DateTimeOutOfRange,
-    #[error("Error in datetime format. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
-    DateFormattingError,
+    #[error("{0}. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
+    DateFormattingError(String),
 
     #[error("Invalid format specifiers: {0}")]
     InvalidFormatSpecifiers(String),
@@ -65,7 +67,7 @@ pub enum RuntimeError {
     FileWrite(std::path::PathBuf),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 #[must_use]
 pub enum InterpreterResult {
     Value(Value),
@@ -127,10 +129,10 @@ impl InterpreterResult {
         matches!(self, Self::Continue)
     }
 
-    pub fn value_as_string(&self) -> Option<String> {
+    pub fn value_as_string(&self) -> Option<CompactString> {
         match self {
             Self::Continue => None,
-            Self::Value(value) => Some(value.to_string()),
+            Self::Value(value) => Some(value.to_compact_string()),
         }
     }
 }
@@ -167,6 +169,8 @@ pub trait Interpreter {
 
 #[cfg(test)]
 mod tests {
+    use compact_str::CompactString;
+
     use crate::prefix_parser::AcceptsPrefix;
     use crate::quantity::Quantity;
     use crate::unit::{CanonicalName, Unit};
@@ -273,11 +277,11 @@ mod tests {
             "1 meter > alternative_length_base_unit",
             RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
                 Unit::new_base(
-                    "meter",
+                    CompactString::const_new("meter"),
                     CanonicalName::new("m", AcceptsPrefix::only_short()),
                 ),
                 Unit::new_base(
-                    "alternative_length_base_unit",
+                    CompactString::const_new("alternative_length_base_unit"),
                     CanonicalName::new("alternative_length_base_unit", AcceptsPrefix::only_long()),
                 ),
             )),
@@ -300,7 +304,7 @@ mod tests {
              2 * pixel",
             Quantity::from_scalar(2.0)
                 * Quantity::from_unit(Unit::new_base(
-                    "pixel",
+                    CompactString::const_new("pixel"),
                     CanonicalName::new("px", AcceptsPrefix::only_short()),
                 )),
         );

@@ -70,10 +70,11 @@ use crate::ast::{
 use crate::decorator::{self, Decorator};
 use crate::number::Number;
 use crate::prefix_parser::AcceptsPrefix;
-use crate::resolver::ModulePath;
+use crate::resolver::ModulePathBorrowed;
 use crate::span::Span;
 use crate::tokenizer::{Token, TokenKind, TokenizerError, TokenizerErrorKind};
 
+use compact_str::{CompactString, ToCompactString};
 use num_traits::{CheckedDiv, FromPrimitive, Zero};
 use thiserror::Error;
 
@@ -897,11 +898,11 @@ impl<'a> Parser<'a> {
         let mut span = self.peek(tokens).span;
 
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
-            let mut module_path = vec![identifier.lexeme.to_owned()];
+            let mut module_path = vec![identifier.lexeme];
 
             while self.match_exact(tokens, TokenKind::DoubleColon).is_some() {
                 if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
-                    module_path.push(identifier.lexeme.to_owned());
+                    module_path.push(identifier.lexeme);
                 } else {
                     return Err(ParseError {
                         kind: ParseErrorKind::ExpectedModuleNameAfterDoubleColon,
@@ -911,7 +912,10 @@ impl<'a> Parser<'a> {
             }
             span = span.extend(&self.last(tokens).unwrap().span);
 
-            Ok(Statement::ModuleImport(span, ModulePath(module_path)))
+            Ok(Statement::ModuleImport(
+                span,
+                ModulePathBorrowed(module_path),
+            ))
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedModulePathAfterUse,
@@ -1897,7 +1901,7 @@ impl<'a> Parser<'a> {
             let span = self.last(tokens).unwrap().span;
             Ok(TypeExpression::TypeIdentifier(
                 span,
-                token.lexeme.to_owned(),
+                token.lexeme.to_compact_string(),
             ))
         } else if let Some(number) = self.match_exact(tokens, TokenKind::Number) {
             let span = self.last(tokens).unwrap().span;
@@ -1998,10 +2002,10 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn strip_and_escape(s: &str) -> String {
+fn strip_and_escape(s: &str) -> CompactString {
     let trimmed = &s[1..(s.len() - 1)];
 
-    let mut result = String::with_capacity(trimmed.len());
+    let mut result = CompactString::with_capacity(trimmed.len());
     let mut escaped = false;
     for c in trimmed.chars() {
         if escaped {
@@ -3432,7 +3436,7 @@ mod tests {
                         "foo",
                         TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
                             Span::dummy(),
-                            "Scalar".to_owned(),
+                            CompactString::const_new("Scalar"),
                         )),
                     ),
                     (
@@ -3440,7 +3444,7 @@ mod tests {
                         "bar",
                         TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
                             Span::dummy(),
-                            "Scalar".to_owned(),
+                            CompactString::const_new("Scalar"),
                         )),
                     ),
                 ],

@@ -2,6 +2,7 @@ mod common;
 
 use common::get_test_context;
 
+use compact_str::CompactString;
 use insta::assert_snapshot;
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
@@ -23,7 +24,7 @@ fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: im
 }
 
 #[track_caller]
-fn succeed(code: &str) -> String {
+fn succeed(code: &str) -> CompactString {
     let mut ctx = get_test_context();
     let ret = ctx.interpret(code, CodeSource::Internal);
     match ret {
@@ -33,7 +34,7 @@ fn succeed(code: &str) -> String {
                 let fmt = PlainTextFormatter {};
                 fmt.format(&val.pretty_print(), false)
             } else {
-                String::new()
+                CompactString::const_new("")
             }
         }
     }
@@ -574,6 +575,34 @@ fn test_comparisons() {
     expect_output("2 >= 2", "true");
     expect_output("2 >= 2.1", "false");
 
+    // NaN comparison; all false
+
+    expect_output("NaN < NaN", "false");
+    expect_output("NaN < 0", "false");
+    expect_output("NaN < 0m", "false");
+    expect_output("0 < NaN", "false");
+    expect_output("0m < NaN", "false");
+
+    expect_output("NaN <= NaN", "false");
+    expect_output("NaN <= 0", "false");
+    expect_output("NaN <= 0m", "false");
+    expect_output("0 <= NaN", "false");
+    expect_output("0m <= NaN", "false");
+
+    expect_output("NaN > NaN", "false");
+    expect_output("NaN > 0", "false");
+    expect_output("NaN > 0m", "false");
+    expect_output("0 > NaN", "false");
+    expect_output("0m > NaN", "false");
+
+    expect_output("NaN >= NaN", "false");
+    expect_output("NaN >= 0", "false");
+    expect_output("NaN >= 0m", "false");
+    expect_output("0 >= NaN", "false");
+    expect_output("0m >= NaN", "false");
+
+    // equality
+
     expect_output("200 cm == 2 m", "true");
     expect_output("201 cm == 2 m", "false");
 
@@ -740,8 +769,12 @@ fn test_datetime_runtime_errors() {
     );
     expect_failure(
         "format_datetime(\"%Y-%m-%dT%H%:M\", now())",
-        "Error in datetime format",
-    )
+        "strftime formatting failed: found unrecognized directive %M following %:.",
+    );
+    expect_failure(
+        "format_datetime(\"%Y %;\", now())",
+        "strftime formatting failed: found unrecognized specifier directive %;.",
+    );
 }
 
 #[test]
@@ -855,7 +888,7 @@ fn test_statement_pretty_printing() {
 mod tests {
     use super::*;
     #[cfg(test)]
-    mod assert_eq_3 {
+    mod assert_eq {
         use super::*;
 
         #[test]
@@ -957,6 +990,22 @@ mod tests {
             Assertion failed because the following two quantities differ by 0.0178°, which is more than 0.0001°:
               -76.9911°
               -77.0089°
+            "###);
+        }
+
+        #[test]
+        fn test_floating_point_warning() {
+            insta::assert_snapshot!(fail("assert_eq(2+ 2, 2 + 1)"), @r###"
+            Assertion failed because the following two values are not the same:
+              4
+              3
+            "###);
+            insta::assert_snapshot!(fail("assert_eq(2 + 2e-12, 2 + 1e-12)"), @r###"
+            Assertion failed because the following two values are not the same:
+              2.0
+              2.0
+            Note: The two printed values appear to be the same, this may be due to floating point precision errors.
+                  For dimension types you may want to test approximate equality instead: assert_eq(q1, q2, ε).
             "###);
         }
     }

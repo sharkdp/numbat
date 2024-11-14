@@ -79,7 +79,7 @@ impl Numbat {
             FormatType::JqueryTerminal => Box::new(JqueryTerminalFormatter {}),
             FormatType::Html => Box::new(HtmlFormatter {}),
         };
-        fmt.format(markup, indent)
+        fmt.format(markup, indent).to_string()
     }
 
     pub fn interpret(&mut self, code: &str) -> InterpreterOutput {

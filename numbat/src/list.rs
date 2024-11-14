@@ -76,9 +76,9 @@ impl<T> NumbatList<T> {
 
     /// Return the tail of the list without the first element.
     /// Return an error if the list is empty.
-    pub fn tail(&mut self) -> Result<(), RuntimeError> {
+    pub fn tail(&mut self) -> Result<(), Box<RuntimeError>> {
         if self.is_empty() {
-            return Err(RuntimeError::EmptyList);
+            return Err(Box::new(RuntimeError::EmptyList));
         }
         if let Some(view) = &mut self.view {
             view.0 += 1;
@@ -239,7 +239,7 @@ mod test {
         assert!(list.is_empty());
         assert_eq!(alloc, Arc::as_ptr(&list.alloc));
 
-        assert_eq!(list.tail(), Err(RuntimeError::EmptyList));
+        assert_eq!(list.tail(), Err(Box::new(RuntimeError::EmptyList)));
     }
 
     #[test]
