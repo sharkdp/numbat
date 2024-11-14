@@ -11,7 +11,7 @@ The Numbat extension provides language support for the [Numbat](https://github.c
 
 ## Requirements
 
-_None_  
+_TO BE DONE_  
 
 ## Extension Settings
 
