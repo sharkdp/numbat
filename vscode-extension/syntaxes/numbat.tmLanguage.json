@@ -86,7 +86,20 @@
         },
         "strings": {
             "name": "string.quoted.double",
-            "match": "((?<=})|\")((?!(?<!\\\\)[{\"])([^\"]|\\\"))*((?={)|\")"
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "constant.character.escape",
+                    "begin": "{",
+                    "end": "}",
+                    "patterns": [
+                        {
+                            "include": "$base"
+                        }
+                    ]
+                }
+            ]
         }
     },
     "scopeName": "source.numbat"
