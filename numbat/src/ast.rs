@@ -36,27 +36,25 @@ pub enum BinaryOperator {
 
 impl PrettyPrint for BinaryOperator {
     fn pretty_print(&self) -> Markup {
-        use BinaryOperator::*;
-
         let operator = m::operator(match self {
-            Add => "+",
-            Sub => "-",
-            Mul => "×",
-            Div => "/",
-            Power => "^",
-            ConvertTo => "➞",
-            LessThan => "<",
-            GreaterThan => ">",
-            LessOrEqual => "≤",
-            GreaterOrEqual => "≥",
-            Equal => "==",
-            NotEqual => "≠",
-            LogicalAnd => "&&",
-            LogicalOr => "||",
+            BinaryOperator::Add => "+",
+            BinaryOperator::Sub => "-",
+            BinaryOperator::Mul => "×",
+            BinaryOperator::Div => "/",
+            BinaryOperator::Power => "^",
+            BinaryOperator::ConvertTo => "➞",
+            BinaryOperator::LessThan => "<",
+            BinaryOperator::GreaterThan => ">",
+            BinaryOperator::LessOrEqual => "≤",
+            BinaryOperator::GreaterOrEqual => "≥",
+            BinaryOperator::Equal => "==",
+            BinaryOperator::NotEqual => "≠",
+            BinaryOperator::LogicalAnd => "&&",
+            BinaryOperator::LogicalOr => "||",
         });
 
         match self {
-            Power => operator,
+            BinaryOperator::Power => operator,
             _ => m::space() + operator + m::space(),
         }
     }
@@ -111,9 +109,13 @@ pub enum Expression<'a> {
 impl Expression<'_> {
     pub fn full_span(&self) -> Span {
         match self {
-            Expression::Scalar(span, _) => *span,
-            Expression::Identifier(span, _) => *span,
-            Expression::UnitIdentifier(span, _, _, _) => *span,
+            Expression::Scalar(span, _)
+            | Expression::Identifier(span, _)
+            | Expression::UnitIdentifier(span, _, _, _)
+            | Expression::Boolean(span, _)
+            | Expression::String(span, _)
+            | Expression::List(span, _)
+            | Expression::TypedHole(span) => *span,
             Expression::UnaryOperator {
                 op: _,
                 expr,
@@ -132,15 +134,11 @@ impl Expression<'_> {
                 span
             }
             Expression::FunctionCall(_identifier_span, full_span, _, _) => *full_span,
-            Expression::Boolean(span, _) => *span,
             Expression::Condition(span_if, _, _, then_expr) => {
                 span_if.extend(&then_expr.full_span())
             }
-            Expression::String(span, _) => *span,
             Expression::InstantiateStruct { full_span, .. } => *full_span,
             Expression::AccessField(full_span, _ident_span, _, _) => *full_span,
-            Expression::List(span, _) => *span,
-            Expression::TypedHole(span) => *span,
         }
     }
 }
@@ -282,11 +280,11 @@ impl TypeAnnotation {
     pub fn full_span(&self) -> Span {
         match self {
             TypeAnnotation::TypeExpression(d) => d.full_span(),
-            TypeAnnotation::Bool(span) => *span,
-            TypeAnnotation::String(span) => *span,
-            TypeAnnotation::DateTime(span) => *span,
-            TypeAnnotation::Fn(span, _, _) => *span,
-            TypeAnnotation::List(span, _) => *span,
+            TypeAnnotation::Bool(span)
+            | TypeAnnotation::String(span)
+            | TypeAnnotation::DateTime(span)
+            | TypeAnnotation::Fn(span, _, _)
+            | TypeAnnotation::List(span, _) => *span,
         }
     }
 }
@@ -341,12 +339,9 @@ pub enum TypeExpression {
 impl TypeExpression {
     pub fn full_span(&self) -> Span {
         match self {
-            TypeExpression::Unity(s) => *s,
-            TypeExpression::TypeIdentifier(s, _) => *s,
-            TypeExpression::Multiply(span_op, lhs, rhs) => {
-                span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
-            }
-            TypeExpression::Divide(span_op, lhs, rhs) => {
+            TypeExpression::Unity(s) | TypeExpression::TypeIdentifier(s, _) => *s,
+            TypeExpression::Multiply(span_op, lhs, rhs)
+            | TypeExpression::Divide(span_op, lhs, rhs) => {
                 span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
             }
             TypeExpression::Power(span_op, lhs, span_exponent, _exp) => match span_op {

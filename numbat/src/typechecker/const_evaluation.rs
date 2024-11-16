@@ -85,8 +85,8 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         }
         typed_ast::Expression::Identifier(..) => "variable",
         typed_ast::Expression::UnitIdentifier(..) => "unit identifier",
-        typed_ast::Expression::FunctionCall(_, _, _, _, _) => "function call",
-        typed_ast::Expression::CallableCall(_, _, _, _) => "function call",
+        typed_ast::Expression::FunctionCall(_, _, _, _, _)
+        | typed_ast::Expression::CallableCall(_, _, _, _) => "function call",
         typed_ast::Expression::Boolean(_, _) => "Boolean value",
         typed_ast::Expression::String(_, _) => "String",
         typed_ast::Expression::Condition(..) => "Conditional",

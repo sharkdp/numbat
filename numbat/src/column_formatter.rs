@@ -59,7 +59,7 @@ impl ColumnFormatter {
                 let column_widths: Vec<usize> = (0..num_columns)
                     .map(|c| {
                         (0..num_rows)
-                            .map(|r| table[r][c].map(|e| e.width()).unwrap_or(0))
+                            .map(|r| table[r][c].map_or(0, |e| e.width()))
                             .max()
                             .unwrap_or(0)
                             + self.padding

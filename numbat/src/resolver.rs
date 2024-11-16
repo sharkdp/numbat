@@ -41,7 +41,7 @@ pub enum ResolverError {
     #[error("Unknown module '{1}'.")]
     UnknownModule(Span, ModulePath),
 
-    #[error("{}", .0.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n"))]
+    #[error("{}", .0.iter().map(ToString::to_string).collect::<Vec<_>>().join("\n"))]
     ParseErrors(Vec<ParseError>),
 }
 
@@ -85,8 +85,7 @@ impl Resolver {
                 module_path = itertools::join(module_path.0.iter(), "::"),
                 path = path
                     .as_ref()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .unwrap_or("?".into()),
+                    .map_or("?".into(), |p| p.to_string_lossy().to_string()),
             ),
         };
 

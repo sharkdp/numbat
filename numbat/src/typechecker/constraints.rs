@@ -57,10 +57,7 @@ impl ConstraintSet {
 
         match result {
             TrivialResolution::Satisfied => {}
-            TrivialResolution::Violated => {
-                self.constraints.push(constraint);
-            }
-            TrivialResolution::Unknown => {
+            TrivialResolution::Violated | TrivialResolution::Unknown => {
                 self.constraints.push(constraint);
             }
         }
@@ -152,7 +149,7 @@ impl ConstraintSet {
 
 impl ApplySubstitution for ConstraintSet {
     fn apply(&mut self, substitution: &Substitution) -> Result<(), SubstitutionError> {
-        for c in self.constraints.iter_mut() {
+        for c in &mut self.constraints {
             c.apply(substitution)?;
         }
         Ok(())
@@ -207,18 +204,18 @@ impl Constraint {
             {
                 TrivialResolution::Violated
             }
-            Constraint::Equal(_, _) => TrivialResolution::Unknown,
             Constraint::IsDType(t) if t.is_closed() => match t {
                 Type::Dimension(_) => TrivialResolution::Satisfied,
                 _ => TrivialResolution::Violated,
             },
-            Constraint::IsDType(_) => TrivialResolution::Unknown,
             Constraint::EqualScalar(d) if d.is_scalar() => TrivialResolution::Satisfied,
             Constraint::EqualScalar(d) if d.type_variables(false).is_empty() => {
                 TrivialResolution::Violated
             }
-            Constraint::EqualScalar(_) => TrivialResolution::Unknown,
-            Constraint::HasField(_, _, _) => {
+            Constraint::IsDType(_)
+            | Constraint::EqualScalar(_)
+            | Constraint::Equal(_, _)
+            | Constraint::HasField(_, _, _) => {
                 // Trivial resolution handling for structs is done directly in the type checker
                 TrivialResolution::Unknown
             }
@@ -240,8 +237,7 @@ impl Constraint {
             Constraint::Equal(Type::Dimension(dtype_x), t)
                 if dtype_x
                     .deconstruct_as_single_type_variable()
-                    .map(|tv| !t.contains(&tv, false))
-                    .unwrap_or(false) =>
+                    .is_some_and(|tv| !t.contains(&tv, false)) =>
             {
                 let x = dtype_x.deconstruct_as_single_type_variable().unwrap();
                 Some(Satisfied::with_substitution(Substitution::single(
@@ -252,8 +248,7 @@ impl Constraint {
             Constraint::Equal(t, Type::Dimension(dtype_x))
                 if dtype_x
                     .deconstruct_as_single_type_variable()
-                    .map(|tv| !t.contains(&tv, false))
-                    .unwrap_or(false) =>
+                    .is_some_and(|tv| !t.contains(&tv, false)) =>
             {
                 let x = dtype_x.deconstruct_as_single_type_variable().unwrap();
                 Some(Satisfied::with_substitution(Substitution::single(
@@ -293,7 +288,6 @@ impl Constraint {
                     Constraint::EqualScalar(d_result),
                 ]))
             }
-            Constraint::Equal(_, _) => None,
             Constraint::IsDType(Type::Dimension(inner)) => {
                 let new_constraints = inner
                     .type_variables(true)
@@ -302,7 +296,6 @@ impl Constraint {
                     .collect();
                 Some(Satisfied::with_new_constraints(new_constraints))
             }
-            Constraint::IsDType(_) => None,
             Constraint::EqualScalar(d) if d == &DType::scalar() => Some(Satisfied::trivially()),
             Constraint::EqualScalar(dtype) => match dtype.split_first_factor() {
                 Some(((DTypeFactor::TVar(tv), k), rest)) => {
@@ -332,7 +325,9 @@ impl Constraint {
                     None
                 }
             }
-            Constraint::HasField(_, _, _) => None,
+            Constraint::Equal(_, _) | Constraint::IsDType(_) | Constraint::HasField(_, _, _) => {
+                None
+            }
         }
     }
 

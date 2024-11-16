@@ -96,48 +96,35 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
                         .group()
                         .map_or(f64::NAN, |g| g.group_number() as f64),
                 )),
-                Value::String(
-                    element
-                        .group()
-                        .map(|g| g.group_name().unwrap_or("unknown").into())
-                        .unwrap_or("unknown".into()),
-                ),
+                Value::String(element.group().map_or("unknown".into(), |g| {
+                    g.group_name().unwrap_or("unknown").into()
+                })),
                 Value::Quantity(Quantity::from_scalar(element.period() as f64)),
                 Value::Quantity(Quantity::from_scalar(
-                    element
-                        .melting_point()
-                        .map(|Kelvin(k)| k)
-                        .unwrap_or(f64::NAN),
+                    element.melting_point().map_or(f64::NAN, |Kelvin(k)| k),
                 )),
                 Value::Quantity(Quantity::from_scalar(
-                    element
-                        .boiling_point()
-                        .map(|Kelvin(k)| k)
-                        .unwrap_or(f64::NAN),
+                    element.boiling_point().map_or(f64::NAN, |Kelvin(k)| k),
                 )),
                 Value::Quantity(Quantity::from_scalar(
                     element
                         .density()
-                        .map(|GramPerCubicCentimeter(d)| d)
-                        .unwrap_or(f64::NAN),
+                        .map_or(f64::NAN, |GramPerCubicCentimeter(d)| d),
                 )),
                 Value::Quantity(Quantity::from_scalar(
                     element
                         .electron_affinity()
-                        .map(|Electronvolt(e)| e)
-                        .unwrap_or(f64::NAN),
+                        .map_or(f64::NAN, |Electronvolt(e)| e),
                 )),
                 Value::Quantity(Quantity::from_scalar(
                     element
                         .ionization_energy()
-                        .map(|Electronvolt(e)| e)
-                        .unwrap_or(f64::NAN),
+                        .map_or(f64::NAN, |Electronvolt(e)| e),
                 )),
                 Value::Quantity(Quantity::from_scalar(
                     element
                         .evaporation_heat()
-                        .map(|KiloJoulePerMole(e)| e)
-                        .unwrap_or(f64::NAN),
+                        .map_or(f64::NAN, |KiloJoulePerMole(e)| e),
                 )),
             ],
         ))

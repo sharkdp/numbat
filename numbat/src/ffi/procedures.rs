@@ -56,7 +56,7 @@ fn print(ctx: &mut ExecutionContext, mut args: Args, _: Vec<Span>) -> ControlFlo
     assert!(args.len() <= 1);
 
     if args.is_empty() {
-        (ctx.print_fn)(&crate::markup::text(""))
+        (ctx.print_fn)(&crate::markup::text(""));
     } else {
         match arg!(args) {
             Value::String(string) => (ctx.print_fn)(&crate::markup::text(string)), // print string without quotes

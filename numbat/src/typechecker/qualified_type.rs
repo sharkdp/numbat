@@ -40,7 +40,7 @@ impl Bounds {
     pub fn is_dtype_bound(&self, tv: &TypeVariable) -> bool {
         self.0.iter().any(|b| match b {
             Bound::IsDim(Type::TVar(v)) => v == tv,
-            _ => false,
+            Bound::IsDim(_) => false,
         })
     }
 }

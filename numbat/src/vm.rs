@@ -362,7 +362,7 @@ impl Vm {
     pub fn add_op1(&mut self, op: Op, arg: u16) {
         let current_chunk = self.current_chunk_mut();
         current_chunk.push(op as u8);
-        Self::push_u16(current_chunk, arg)
+        Self::push_u16(current_chunk, arg);
     }
 
     pub(crate) fn add_op2(&mut self, op: Op, arg1: u16, arg2: u16) {
@@ -440,7 +440,7 @@ impl Vm {
 
     pub(crate) fn begin_function(&mut self, name: &str) {
         self.bytecode.push((name.into(), vec![]));
-        self.current_chunk_index = self.bytecode.len() - 1
+        self.current_chunk_index = self.bytecode.len() - 1;
     }
 
     pub(crate) fn end_function(&mut self) {
@@ -1076,7 +1076,7 @@ impl Vm {
             "Stack: [{}]",
             self.stack
                 .iter()
-                .map(|x| x.to_string())
+                .map(ToString::to_string)
                 .collect::<Vec<_>>()
                 .join("] [")
         );

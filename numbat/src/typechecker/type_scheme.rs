@@ -147,7 +147,7 @@ impl TypeScheme {
     pub(crate) fn unsafe_as_concrete(&self) -> Type {
         match self {
             TypeScheme::Concrete(t) => t.clone(),
-            _ => unreachable!("Expected concrete type: {:#?}", self),
+            TypeScheme::Quantified(..) => unreachable!("Expected concrete type: {:#?}", self),
         }
     }
 

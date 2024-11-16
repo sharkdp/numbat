@@ -32,15 +32,14 @@ impl FromStr for CommandKind {
     type Err = ();
 
     fn from_str(word: &str) -> Result<Self, Self::Err> {
-        use CommandKind::*;
         Ok(match word {
-            "help" | "?" => Help,
-            "info" => Info,
-            "list" => List,
-            "clear" => Clear,
-            "save" => Save,
-            "quit" => Quit(QuitAlias::Quit),
-            "exit" => Quit(QuitAlias::Exit),
+            "help" | "?" => CommandKind::Help,
+            "info" => CommandKind::Info,
+            "list" => CommandKind::List,
+            "clear" => CommandKind::Clear,
+            "save" => CommandKind::Save,
+            "quit" => CommandKind::Quit(QuitAlias::Quit),
+            "exit" => CommandKind::Quit(QuitAlias::Exit),
             _ => return Err(()),
         })
     }

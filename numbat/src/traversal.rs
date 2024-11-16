@@ -14,19 +14,15 @@ impl ForAllTypeSchemes for StructInfo {
 impl ForAllTypeSchemes for Expression<'_> {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
         match self {
-            Expression::Scalar(_, _, type_) => f(type_),
-            Expression::Identifier(_, _, type_) => f(type_),
-            Expression::UnitIdentifier(_, _, _, _, type_) => f(type_),
+            Expression::Scalar(_, _, type_)
+            | Expression::Identifier(_, _, type_)
+            | Expression::UnitIdentifier(_, _, _, _, type_) => f(type_),
             Expression::UnaryOperator(_, _, expr, type_) => {
                 expr.for_all_type_schemes(f);
                 f(type_);
             }
-            Expression::BinaryOperator(_, _, lhs, rhs, type_) => {
-                lhs.for_all_type_schemes(f);
-                rhs.for_all_type_schemes(f);
-                f(type_);
-            }
-            Expression::BinaryOperatorForDate(_, _, lhs, rhs, type_) => {
+            Expression::BinaryOperator(_, _, lhs, rhs, type_)
+            | Expression::BinaryOperatorForDate(_, _, lhs, rhs, type_) => {
                 lhs.for_all_type_schemes(f);
                 rhs.for_all_type_schemes(f);
                 f(type_);
@@ -35,22 +31,21 @@ impl ForAllTypeSchemes for Expression<'_> {
                 for arg in args {
                     arg.for_all_type_schemes(f);
                 }
-                f(type_)
+                f(type_);
             }
             Expression::CallableCall(_, callable, args, type_) => {
                 callable.for_all_type_schemes(f);
                 for arg in args {
                     arg.for_all_type_schemes(f);
                 }
-                f(type_)
+                f(type_);
             }
-            Expression::Boolean(_, _) => {}
             Expression::Condition(_, if_, then_, else_) => {
                 if_.for_all_type_schemes(f);
                 then_.for_all_type_schemes(f);
                 else_.for_all_type_schemes(f);
             }
-            Expression::String(_, _) => {}
+            Expression::Boolean(_, _) | Expression::String(_, _) => {}
             Expression::InstantiateStruct(_, initializers, info) => {
                 for (_, expr) in initializers {
                     expr.for_all_type_schemes(f);
@@ -118,9 +113,11 @@ pub trait ForAllExpressions {
 impl ForAllExpressions for Statement<'_> {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
         match self {
-            Statement::Expression(expr) => expr.for_all_expressions(f),
-            Statement::DefineVariable(DefineVariable(_, _, expr, _, _, _)) => {
+            Statement::Expression(expr) | Statement::DefineDerivedUnit(_, expr, _, _, _, _) => {
                 expr.for_all_expressions(f)
+            }
+            Statement::DefineVariable(DefineVariable(_, _, expr, _, _, _)) => {
+                expr.for_all_expressions(f);
             }
             Statement::DefineFunction(_, _, _, _, body, local_variables, _, _, _) => {
                 for local_variable in local_variables {
@@ -130,15 +127,14 @@ impl ForAllExpressions for Statement<'_> {
                     body.for_all_expressions(f);
                 }
             }
-            Statement::DefineDimension(_, _) => {}
-            Statement::DefineBaseUnit(_, _, _, _) => {}
-            Statement::DefineDerivedUnit(_, expr, _, _, _, _) => expr.for_all_expressions(f),
+            Statement::DefineDimension(_, _)
+            | Statement::DefineBaseUnit(_, _, _, _)
+            | Statement::DefineStruct(_) => {}
             Statement::ProcedureCall(_, args) => {
                 for arg in args {
                     arg.for_all_expressions(f);
                 }
             }
-            Statement::DefineStruct(_) => {}
         }
     }
 }
@@ -147,15 +143,12 @@ impl ForAllExpressions for Expression<'_> {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
         f(self);
         match self {
-            Expression::Scalar(_, _, _) => {}
-            Expression::Identifier(_, _, _) => {}
-            Expression::UnitIdentifier(_, _, _, _, _) => {}
             Expression::UnaryOperator(_, _, expr, _) => expr.for_all_expressions(f),
-            Expression::BinaryOperator(_, _, lhs, rhs, _) => {
-                lhs.for_all_expressions(f);
-                rhs.for_all_expressions(f);
+            Expression::AccessField(_, _, expr, _, _, _) => {
+                expr.for_all_expressions(f);
             }
-            Expression::BinaryOperatorForDate(_, _, lhs, rhs, _) => {
+            Expression::BinaryOperator(_, _, lhs, rhs, _)
+            | Expression::BinaryOperatorForDate(_, _, lhs, rhs, _) => {
                 lhs.for_all_expressions(f);
                 rhs.for_all_expressions(f);
             }
@@ -170,27 +163,27 @@ impl ForAllExpressions for Expression<'_> {
                     arg.for_all_expressions(f);
                 }
             }
-            Expression::Boolean(_, _) => {}
             Expression::Condition(_, if_, then_, else_) => {
                 if_.for_all_expressions(f);
                 then_.for_all_expressions(f);
                 else_.for_all_expressions(f);
             }
-            Expression::String(_, _) => {}
             Expression::InstantiateStruct(_, initializers, _) => {
                 for (_, expr) in initializers {
                     expr.for_all_expressions(f);
                 }
-            }
-            Expression::AccessField(_, _, expr, _, _, _) => {
-                expr.for_all_expressions(f);
             }
             Expression::List(_, elements, _) => {
                 for element in elements {
                     element.for_all_expressions(f);
                 }
             }
-            Expression::TypedHole(_, _) => {}
+            Expression::TypedHole(_, _)
+            | Expression::Scalar(_, _, _)
+            | Expression::Identifier(_, _, _)
+            | Expression::UnitIdentifier(_, _, _, _, _)
+            | Expression::Boolean(_, _)
+            | Expression::String(_, _) => {}
         }
     }
 }

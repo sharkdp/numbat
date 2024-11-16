@@ -400,9 +400,8 @@ impl TypeChecker {
                 let rhs_type = rhs_checked.get_type();
 
                 if rhs_type.is_fn_type() && op == &BinaryOperator::ConvertTo {
-                    let (parameter_types, return_type) = match rhs_type {
-                        Type::Fn(p, r) => (p, r),
-                        _ => unreachable!(),
+                    let Type::Fn(parameter_types, return_type) = rhs_type else {
+                        unreachable!();
                     };
                     // make sure that there is just one paramter (return arity error otherwise)
                     if parameter_types.len() != 1 {
@@ -439,8 +438,7 @@ impl TypeChecker {
 
                     let rhs_is_time = dtype(&rhs_checked)
                         .ok()
-                        .map(|t| t.is_time_dimension())
-                        .unwrap_or(false);
+                        .is_some_and(|t| t.is_time_dimension());
                     let rhs_is_datetime = rhs_type == Type::DateTime;
 
                     if *op == BinaryOperator::Sub && rhs_is_datetime {
@@ -962,7 +960,7 @@ impl TypeChecker {
                             TypeCheckError::DuplicateFieldInStructInstantiation(
                                 *span,
                                 *other_span,
-                                field.to_string(),
+                                (*field).to_string(),
                             ),
                         ));
                     }
@@ -972,7 +970,7 @@ impl TypeChecker {
                         return Err(Box::new(TypeCheckError::UnknownFieldInStructInstantiation(
                             *span,
                             struct_info.definition_span,
-                            field.to_string(),
+                            (*field).to_string(),
                             struct_info.name.to_string(),
                         )));
                     };
@@ -1268,7 +1266,7 @@ impl TypeChecker {
                     if dtype.is_scalar() {
                         return Err(Box::new(TypeCheckError::NoDimensionlessBaseUnit(
                             *span,
-                            unit_name.to_string(),
+                            (*unit_name).to_string(),
                         )));
                     }
 
@@ -1377,7 +1375,7 @@ impl TypeChecker {
                     if self.type_namespace.has_identifier(type_parameter) {
                         return Err(Box::new(TypeCheckError::TypeParameterNameClash(
                             *span,
-                            type_parameter.to_string(),
+                            (*type_parameter).to_string(),
                         )));
                     }
 
@@ -1422,7 +1420,7 @@ impl TypeChecker {
                         return Err(Box::new(
                             TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
                                 *parameter_span,
-                                parameter.to_string(),
+                                (*parameter).to_string(),
                             ),
                         ));
                     }
@@ -1564,14 +1562,14 @@ impl TypeChecker {
                     if !ffi::functions().contains_key(*function_name) {
                         return Err(Box::new(TypeCheckError::UnknownForeignFunction(
                             *function_name_span,
-                            function_name.to_string(),
+                            (*function_name).to_string(),
                         )));
                     }
 
                     annotated_return_type.ok_or_else(|| {
                         TypeCheckError::ForeignFunctionNeedsTypeAnnotations(
                             *function_name_span,
-                            function_name.to_string(),
+                            (*function_name).to_string(),
                         )
                     })?
                 };
@@ -1647,7 +1645,7 @@ impl TypeChecker {
                         if alternative_base_representation != base_representation {
                             return Err(Box::new(
                                 TypeCheckError::IncompatibleAlternativeDimensionExpression(
-                                    name.to_string(),
+                                    (*name).to_string(),
                                     dexpr.full_span(),
                                     base_representation,
                                     alternative_expr.full_span(),
@@ -1773,7 +1771,7 @@ impl TypeChecker {
                         return Err(Box::new(TypeCheckError::DuplicateFieldInStructDefinition(
                             *span,
                             *other_span,
-                            field.to_string(),
+                            (*field).to_string(),
                         )));
                     }
 
@@ -1859,7 +1857,7 @@ impl TypeChecker {
                     // Otherwise, a `Dim` bound is missing.
                     if dtype_variables.iter().any(|tv| match tv {
                         TypeVariable::Named(name) => name == type_parameter,
-                        _ => false,
+                        TypeVariable::Quantified(_) => false,
                     }) {
                         return Err(Box::new(TypeCheckError::MissingDimBound(*span)));
                     }

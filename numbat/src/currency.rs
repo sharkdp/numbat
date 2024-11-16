@@ -25,7 +25,7 @@ impl ExchangeRatesCache {
                 ExchangeRates::Real(er) => er.get(currency),
                 ExchangeRates::TestRates => Some(&1.0),
             })
-            .cloned()
+            .copied()
     }
 
     pub fn set_from_xml(xml_content: &str) {

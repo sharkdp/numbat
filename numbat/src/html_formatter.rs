@@ -26,10 +26,9 @@ impl Formatter for HtmlFormatter {
         FormattedString(_output_type, format_type, s): &FormattedString,
     ) -> CompactString {
         let css_class = match format_type {
-            FormatType::Whitespace => None,
+            FormatType::Whitespace | FormatType::Text => None,
             FormatType::Emphasized => Some("emphasized"),
             FormatType::Dimmed => Some("dimmed"),
-            FormatType::Text => None,
             FormatType::String => Some("string"),
             FormatType::Keyword => Some("keyword"),
             FormatType::Value => Some("value"),

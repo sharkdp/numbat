@@ -8,7 +8,7 @@ pub const LAST_RESULT_IDENTIFIERS: &[&str] = &["ans", "_"];
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum NameResolutionError {
     #[error("Identifier is already in use{}: '{conflicting_identifier}'.",
-            if let Some(t) = .original_item_type { format!(" by the {t}") } else { "".to_owned() })]
+            if let Some(t) = .original_item_type { format!(" by the {t}") } else { String::new() })]
     IdentifierClash {
         conflicting_identifier: String,
         conflict_span: Span,
@@ -27,11 +27,11 @@ pub struct Namespace {
 
 impl Namespace {
     pub(crate) fn save(&mut self) {
-        self.seen.save()
+        self.seen.save();
     }
 
     pub(crate) fn restore(&mut self) {
-        self.seen.restore()
+        self.seen.restore();
     }
 
     pub fn add_identifier_allow_override(
