@@ -7,8 +7,8 @@ use core::error
 fn str_length(s: String) -> Scalar
 
 @description("Subslice of a string")
-@example("str_slice(\"Numbat\", 3, 6)")
-fn str_slice(s: String, start: Scalar, end: Scalar) -> String
+@example("str_slice(3, 6, \"Numbat\")")
+fn str_slice(start: Scalar, end: Scalar, s: String) -> String
 
 @description("Get a single-character string from a Unicode code point.")
 @example("0x2764 -> chr")
@@ -27,43 +27,49 @@ fn lowercase(s: String) -> String
 fn uppercase(s: String) -> String
 
 @description("Concatenate two strings")
-@example("str_append(\"Numbat\", \"!\")")
+@example("\"Numbat\" |> str_append(\"!\")")
 fn str_append(a: String, b: String) -> String = "{a}{b}"
 
+@description("Concatenate two strings")
+@example("\"!\" |> str_prepend(\"Numbat\")")
+fn str_prepend(a: String, b: String) -> String = "{b}{a}"
+
 @description("Find the first occurrence of a substring in a string")
-@example("str_find(\"Numbat is a statically typed programming language.\", \"typed\")")
-fn str_find(haystack: String, needle: String) -> Scalar =
+@example("str_find(\"typed\", \"Numbat is a statically typed programming language.\")")
+fn str_find(needle: String, haystack: String) -> Scalar =
   if len_haystack == 0
     then -1
-    else if str_slice(haystack, 0, str_length(needle)) == needle
+    else if str_slice(0, str_length(needle), haystack) == needle
       then 0
-      else if str_find(tail_haystack, needle) == -1
+      else if str_find(needle, tail_haystack) == -1
         then -1
-        else 1 + str_find(tail_haystack, needle)
+        else 1 + str_find(needle, tail_haystack)
   where len_haystack = str_length(haystack)
-    and tail_haystack = str_slice(haystack, 1, len_haystack)
+    and tail_haystack = str_slice(1, len_haystack, haystack)
 
 @description("Check if a string contains a substring")
-@example("str_contains(\"Numbat is a statically typed programming language.\", \"typed\")")
-fn str_contains(haystack: String, needle: String) -> Bool =
-  str_find(haystack, needle) != -1
+@example("str_contains(\"typed\", \"Numbat is a statically typed programming language.\")")
+fn str_contains(needle: String, haystack: String) -> Bool =
+  str_find(needle, haystack) != -1
 
 @description("Replace all occurrences of a substring in a string")
-@example("str_replace(\"Numbat is a statically typed programming language.\", \"statically typed programming language\", \"scientific calculator\")")
-fn str_replace(s: String, pattern: String, replacement: String) -> String =
+@example("str_replace(\"statically typed programming language\", \"scientific calculator\", \"Numbat is a statically typed programming language.\")")
+fn str_replace(pattern: String, replacement: String, s: String) -> String =
   if pattern == ""
     then s
-    else if str_contains(s, pattern)
-           then if str_slice(s, 0, str_length(pattern)) == pattern
-               then str_append(replacement, str_replace(str_slice(s, str_length(pattern), str_length(s)), pattern, replacement))
-               else str_append(str_slice(s, 0, 1), str_replace(str_slice(s, 1, str_length(s)), pattern, replacement))
-           else s
+    else if str_contains(pattern, s)
+      then if str_slice(0, pattern_length, s) == pattern
+          then (s |> str_slice(pattern_length, s_length) |> str_replace(pattern, replacement) |> str_append(replacement))
+          else (s |> str_slice(             1, s_length) |> str_replace(pattern, replacement) |> str_append(str_slice(0, 1, s)))
+      else s
+  where s_length = str_length(s)
+    and pattern_length = str_length(pattern)
 
 @description("Repeat the input string `n` times")
-@example("str_repeat(\"abc\", 4)")
-fn str_repeat(a: String, n: Scalar) -> String =
+@example("str_repeat(4, \"abc\")")
+fn str_repeat(n: Scalar, a: String) -> String =
   if n > 0
-    then str_append(a, str_repeat(a, n - 1))
+    then str_append(a, str_repeat(n - 1, a))
     else ""
 
 fn _bin_digit(x: Scalar) -> String =

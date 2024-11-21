@@ -182,9 +182,9 @@ fn join(xs: List<String>, sep: String) =
 fn split(input: String, separator: String) -> List<String> =
   if input == ""
     then []
-    else if !str_contains(input, separator)
+    else if !str_contains(separator, input)
       then [input]
-      else cons(str_slice(input, 0, idx_separator),
-                split(str_slice(input, idx_separator + str_length(separator), str_length(input)), separator))
+      else cons(str_slice(0, idx_separator, input),
+                split(str_slice(idx_separator + str_length(separator), str_length(input), input), separator))
   where
-    idx_separator = str_find(input, separator)
+    idx_separator = str_find(separator, input)

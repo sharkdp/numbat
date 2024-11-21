@@ -1,10 +1,10 @@
 assert_eq(str_length(""), 0)
 assert_eq(str_length("foo"), 3)
 
-assert_eq(str_slice("hello world", 0, 5), "hello")
-assert_eq(str_slice("hello world", 6, 11), "world")
-assert_eq(str_slice("hello world", 0, 0), "")
-assert_eq(str_slice("hello world", 0, 100), "")
+assert_eq(str_slice(0, 5, "hello world"), "hello")
+assert_eq(str_slice(6, 11, "hello world"), "world")
+assert_eq(str_slice(0, 0, "hello world"), "")
+assert_eq(str_slice(0, 100, "hello world"), "")
 
 assert_eq(chr(65), "A")
 assert_eq(chr(97), "a")
@@ -15,13 +15,14 @@ assert_eq(ord("a"), 97)
 assert_eq(ord("❤"), 0x2764)
 
 assert_eq(str_append("foo", "bar"), "foobar")
+assert_eq(str_prepend("bar", "foo"), "foobar")
 
-assert(str_contains("hello world", "hello"))
-assert(str_contains("hello world", "world"))
-assert_eq(str_contains("hello world", "HELLO"), false)
+assert(str_contains("hello", "hello world"))
+assert(str_contains("world", "hello world"))
+assert_eq(str_contains("HELLO", "hello world"), false)
 
-assert_eq(str_replace("hello world", "hello", "HEY"), "HEY world")
-assert_eq(str_replace("xxx", "x", "yY"), "yYyYyY")
-assert_eq(str_replace("a b", " ", "   "), "a   b")
+assert_eq(str_replace("hello", "HEY", "hello world"), "HEY world")
+assert_eq(str_replace("x", "yY", "xxx"), "yYyYyY")
+assert_eq(str_replace(" ", "   ", "a b"), "a   b")
 
-assert_eq(str_repeat("xy", 3), "xyxyxy")
+assert_eq(str_repeat(3, "xy"), "xyxyxy")

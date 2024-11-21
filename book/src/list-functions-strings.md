@@ -23,13 +23,13 @@ fn str_length(s: String) -> Scalar
 Subslice of a string.
 
 ```nbt
-fn str_slice(s: String, start: Scalar, end: Scalar) -> String
+fn str_slice(start: Scalar, end: Scalar, s: String) -> String
 ```
 
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Fslice%28%22Numbat%22%2C%203%2C%206%29')""></button></div><code class="language-nbt hljs numbat">str_slice("Numbat", 3, 6)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Fslice%283%2C%206%2C%20%22Numbat%22%29')""></button></div><code class="language-nbt hljs numbat">str_slice(3, 6, "Numbat")
 
     = "bat"    [String]
 </code></pre>
@@ -114,9 +114,26 @@ fn str_append(a: String, b: String) -> String
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Fappend%28%22Numbat%22%2C%20%22%21%22%29')""></button></div><code class="language-nbt hljs numbat">str_append("Numbat", "!")
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=%22Numbat%22%20%7C%3E%20str%5Fappend%28%22%21%22%29')""></button></div><code class="language-nbt hljs numbat">"Numbat" |> str_append("!")
 
-    = "Numbat!"    [String]
+    = "!Numbat"    [String]
+</code></pre>
+
+</details>
+
+### `str_prepend`
+Concatenate two strings.
+
+```nbt
+fn str_prepend(a: String, b: String) -> String
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=%22%21%22%20%7C%3E%20str%5Fprepend%28%22Numbat%22%29')""></button></div><code class="language-nbt hljs numbat">"!" |> str_prepend("Numbat")
+
+    = "!Numbat"    [String]
 </code></pre>
 
 </details>
@@ -125,13 +142,13 @@ fn str_append(a: String, b: String) -> String
 Find the first occurrence of a substring in a string.
 
 ```nbt
-fn str_find(haystack: String, needle: String) -> Scalar
+fn str_find(needle: String, haystack: String) -> Scalar
 ```
 
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Ffind%28%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%2C%20%22typed%22%29')""></button></div><code class="language-nbt hljs numbat">str_find("Numbat is a statically typed programming language.", "typed")
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Ffind%28%22typed%22%2C%20%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%29')""></button></div><code class="language-nbt hljs numbat">str_find("typed", "Numbat is a statically typed programming language.")
 
     = 23
 </code></pre>
@@ -142,13 +159,13 @@ fn str_find(haystack: String, needle: String) -> Scalar
 Check if a string contains a substring.
 
 ```nbt
-fn str_contains(haystack: String, needle: String) -> Bool
+fn str_contains(needle: String, haystack: String) -> Bool
 ```
 
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Fcontains%28%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%2C%20%22typed%22%29')""></button></div><code class="language-nbt hljs numbat">str_contains("Numbat is a statically typed programming language.", "typed")
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Fcontains%28%22typed%22%2C%20%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%29')""></button></div><code class="language-nbt hljs numbat">str_contains("typed", "Numbat is a statically typed programming language.")
 
     = true    [Bool]
 </code></pre>
@@ -159,13 +176,13 @@ fn str_contains(haystack: String, needle: String) -> Bool
 Replace all occurrences of a substring in a string.
 
 ```nbt
-fn str_replace(s: String, pattern: String, replacement: String) -> String
+fn str_replace(pattern: String, replacement: String, s: String) -> String
 ```
 
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Freplace%28%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%2C%20%22statically%20typed%20programming%20language%22%2C%20%22scientific%20calculator%22%29')""></button></div><code class="language-nbt hljs numbat">str_replace("Numbat is a statically typed programming language.", "statically typed programming language", "scientific calculator")
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Freplace%28%22statically%20typed%20programming%20language%22%2C%20%22scientific%20calculator%22%2C%20%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%29')""></button></div><code class="language-nbt hljs numbat">str_replace("statically typed programming language", "scientific calculator", "Numbat is a statically typed programming language.")
 
     = "Numbat is a scientific calculator."    [String]
 </code></pre>
@@ -176,13 +193,13 @@ fn str_replace(s: String, pattern: String, replacement: String) -> String
 Repeat the input string `n` times.
 
 ```nbt
-fn str_repeat(a: String, n: Scalar) -> String
+fn str_repeat(n: Scalar, a: String) -> String
 ```
 
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Frepeat%28%22abc%22%2C%204%29')""></button></div><code class="language-nbt hljs numbat">str_repeat("abc", 4)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=str%5Frepeat%284%2C%20%22abc%22%29')""></button></div><code class="language-nbt hljs numbat">str_repeat(4, "abc")
 
     = "abcabcabcabc"    [String]
 </code></pre>
