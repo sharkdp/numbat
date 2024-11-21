@@ -2,24 +2,50 @@
     "name": "numbat",
     "displayName": "Numbat",
     "description": "Syntax highlighting for the Numbat programming language",
-    "version": "0.0.1",
+    "version": "0.1.0",
+    "license": "(MIT OR Apache-2.0)",
+    "icon": "./assets/numbat-256x256.png",
     "engines": {
         "vscode": "^1.71.0"
     },
     "categories": [
         "Programming Languages"
     ],
+    "keywords": [
+        "language",
+        "physics",
+        "units",
+        "calculation"
+    ],
     "contributes": {
         "languages": [{
             "id": "numbat",
             "aliases": ["Numbat", "numbat"],
             "extensions": [".nbt"],
-            "configuration": "./language-configuration.json"
+            "configuration": "./language-configuration.json",
+            "icon": {
+                "light": "./assets/numbat-64x64.png",
+                "dark": "./assets/numbat-64x64.png"
+            }
         }],
         "grammars": [{
             "language": "numbat",
             "scopeName": "source.numbat",
             "path": "./syntaxes/numbat.tmLanguage.json"
         }]
-    }
+    },
+    "scripts": {
+        "vscode:package": "vsce package"
+    },
+    "devDependencies": {
+        "@vscode/vsce": "3.2.1"
+    },
+    "vsce": {
+        "skipLicense": true
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sharkdp/numbat.git"
+    },
+    "homepage": "https://github.com/sharkdp/numbat/blob/master/vscode-extension/README.md"
 }
