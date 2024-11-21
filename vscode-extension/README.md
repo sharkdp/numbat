@@ -7,7 +7,7 @@ The Numbat extension provides language support for the [Numbat](https://github.c
 - Syntax highlighting
 - Code block folding
 - comment toggling
-- autosurounding brackets
+- autosurrounding brackets
 
 ## Requirements
 
