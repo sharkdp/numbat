@@ -40,7 +40,7 @@ fn color_hex(color: Color) -> String =
   "{color -> _color_to_scalar -> hex:>8}" |> 
     str_replace("0x", "") |> 
     str_replace(" ", "0") |> 
-    str_prepend("#")
+    str_append("#")
 
 let black: Color = rgb(0, 0, 0)
 let white: Color = rgb(255, 255, 255)

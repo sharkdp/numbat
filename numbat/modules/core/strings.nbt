@@ -28,11 +28,11 @@ fn uppercase(s: String) -> String
 
 @description("Concatenate two strings")
 @example("\"Numbat\" |> str_append(\"!\")")
-fn str_append(a: String, str: String) -> String = "{str}{a}"
+fn str_append(a: String, b: String) -> String = "{a}{b}"
 
 @description("Concatenate two strings")
 @example("\"!\" |> str_prepend(\"Numbat\")")
-fn str_prepend(a: String, str: String) -> String = "{a}{str}"
+fn str_prepend(a: String, b: String) -> String = "{b}{a}"
 
 @description("Find the first occurrence of a substring in a string")
 @example("str_find(\"typed\", \"Numbat is a statically typed programming language.\")")
@@ -59,8 +59,8 @@ fn str_replace(pattern: String, replacement: String, s: String) -> String =
     then s
     else if str_contains(pattern, s)
       then if str_slice(0, pattern_length, s) == pattern
-          then (s |> str_slice(pattern_length, s_length) |> str_replace(pattern, replacement) |> str_prepend(replacement))
-          else (s |> str_slice(             1, s_length) |> str_replace(pattern, replacement) |> str_prepend(str_slice(0, 1, s)))
+          then (s |> str_slice(pattern_length, s_length) |> str_replace(pattern, replacement) |> str_append(replacement))
+          else (s |> str_slice(             1, s_length) |> str_replace(pattern, replacement) |> str_append(str_slice(0, 1, s)))
       else s
   where s_length = str_length(s)
     and pattern_length = str_length(pattern)
@@ -69,7 +69,7 @@ fn str_replace(pattern: String, replacement: String, s: String) -> String =
 @example("str_repeat(4, \"abc\")")
 fn str_repeat(n: Scalar, a: String) -> String =
   if n > 0
-    then str_prepend(a, str_repeat(n - 1, a))
+    then str_append(a, str_repeat(n - 1, a))
     else ""
 
 fn _bin_digit(x: Scalar) -> String =
@@ -100,7 +100,7 @@ fn base(b: Scalar, x: Scalar) -> String =
     then "-{base(b, -x)}"
     else if x < b
       then _digit_in_base(b, x)
-      else str_prepend(base(b, floor(x / b)), _digit_in_base(b, mod(x, b)))
+      else str_append(base(b, floor(x / b)), _digit_in_base(b, mod(x, b)))
 
 @description("Get a binary representation of a number.")
 @example("42 -> bin")
