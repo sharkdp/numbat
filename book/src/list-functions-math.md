@@ -274,9 +274,9 @@ Truncate in centimeters.
 
 ### `fract` (Fractional part)
 Returns the fractional part of \\( x \\), i.e. the remainder when divided by 1.
-	If \\( x < 0 \\), then so will be `fract(x)`. Note that due to floating point error, a
-	number’s fractional part can be slightly “off”; for instance, `fract(1.2) ==
-	0.1999...996 != 0.2`.
+  If \\( x < 0 \\), then so will be `fract(x)`. Note that due to floating point error, a
+  number’s fractional part can be slightly “off”; for instance, `fract(1.2) ==
+  0.1999...996 != 0.2`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.fract).
 
 ```nbt
@@ -687,6 +687,60 @@ fn binom(n: Scalar, k: Scalar) -> Scalar
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=binom%285%2C%202%29')""></button></div><code class="language-nbt hljs numbat">binom(5, 2)
 
     = 10
+</code></pre>
+
+</details>
+
+### `fibonacci` (Fibonacci numbers)
+The nth Fibonacci number, where n is a nonnegative integer. The Fibonacci sequence is given by \\( F_0=0 \\), \\( F_1=1 \\), and \\( F_n=F_{n-1}+F_{n-2} \\) for \\( n≥2 \\). The first several elements, starting with \\( n=0 \\), are \\( 0, 1, 1, 2, 3, 5, 8, 13 \\).
+More information [here](https://en.wikipedia.org/wiki/Fibonacci_sequence).
+
+```nbt
+fn fibonacci(n: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fibonacci%285%29')""></button></div><code class="language-nbt hljs numbat">fibonacci(5)
+
+    = 5
+</code></pre>
+
+</details>
+
+### `lucas` (Lucas numbers)
+The nth Lucas number, where n is a nonnegative integer. The Lucas sequence is given by \\( L_0=2 \\), \\( L_1=1 \\), and \\( L_n=L_{n-1}+L_{n-2} \\) for \\( n≥2 \\). The first several elements, starting with \\( n=0 \\), are \\( 2, 1, 3, 4, 7, 11, 18, 29 \\).
+More information [here](https://en.wikipedia.org/wiki/Lucas_number).
+
+```nbt
+fn lucas(n: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=lucas%285%29')""></button></div><code class="language-nbt hljs numbat">lucas(5)
+
+    = 11
+</code></pre>
+
+</details>
+
+### `catalan` (Catalan numbers)
+The nth Catalan number, where n is a nonnegative integer. The Catalan sequence is given by \\( C_n=\frac{1}{n+1}\binom{2n}{n}=\binom{2n}{n}-\binom{2n}{n+1} \\). The first several elements, starting with \\( n=0 \\), are \\( 1, 1, 2, 5, 14, 42, 132, 429 \\).
+More information [here](https://en.wikipedia.org/wiki/Catalan_number).
+
+```nbt
+fn catalan(n: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=catalan%285%29')""></button></div><code class="language-nbt hljs numbat">catalan(5)
+
+    = 42
 </code></pre>
 
 </details>
