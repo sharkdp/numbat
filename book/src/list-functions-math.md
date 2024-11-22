@@ -274,9 +274,9 @@ Truncate in centimeters.
 
 ### `fract` (Fractional part)
 Returns the fractional part of \\( x \\), i.e. the remainder when divided by 1.
-	If \\( x < 0 \\), then so will be `fract(x)`. Note that due to floating point error, a
-	number’s fractional part can be slightly “off”; for instance, `fract(1.2) ==
-	0.1999...996 != 0.2`.
+  If \\( x < 0 \\), then so will be `fract(x)`. Note that due to floating point error, a
+  number’s fractional part can be slightly “off”; for instance, `fract(1.2) ==
+  0.1999...996 != 0.2`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.fract).
 
 ```nbt

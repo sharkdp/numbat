@@ -15,55 +15,55 @@ fn factorial(n: Scalar) -> Scalar = n!
 @url("https://en.wikipedia.org/wiki/Falling_and_rising_factorials")
 @example("falling_factorial(4, 2)")
 fn falling_factorial(n: Scalar, k: Scalar) -> Scalar =
-	if k < 0 || !is_integer(k) then
-		error("in falling_factorial(n, k), k must be a nonnegative integer")
-	else if is_zero(k) then
-		1
-	else
-		n * falling_factorial(n-1, k-1)
+  if k < 0 || !is_integer(k) then
+    error("in falling_factorial(n, k), k must be a nonnegative integer")
+  else if is_zero(k) then
+    1
+  else
+    n * falling_factorial(n-1, k-1)
 
 @name("Binomial coefficient")
 @description("Equal to falling_factorial(n, k)/k!, this is the coefficient of $x^k$ in the series expansion of $(1+x)^n$ (see “binomial series”). If n is an integer, then this this is the number of k-element subsets of a set of size n, often read \"n choose k\". k must always be an integer.")
 @url("https://en.wikipedia.org/wiki/Binomial_coefficient")
 @example("binom(5, 2)")
 fn binom(n: Scalar, k: Scalar) -> Scalar =
-	if !is_integer(k) then
-		error("in binom(n, k), k must be an integer")
-	else if k < 0 || (k > n && is_integer(n)) then
-		0
-	else
-		falling_factorial(n, k) / k!
+   if !is_integer(k) then
+    error("in binom(n, k), k must be an integer")
+  else if k < 0 || (k > n && is_integer(n)) then
+    0
+  else
+    falling_factorial(n, k) / k!
 
 @name("Fibonacci numbers")
 @description("The nth Fibonacci number, where n is a nonnegative integer. The Fibonacci sequence is given by $F_0=0$, $F_1=1$, and $F_n=F_\{n-1\}+F_\{n-2\}$ for $n≥2$. The first several elements, starting with $n=0$, are $0, 1, 1, 2, 3, 5, 8, 13$.")
 @url("https://en.wikipedia.org/wiki/Fibonacci_sequence")
 @example("fibonacci(5)")
 fn fibonacci(n: Scalar) -> Scalar =
-	if !(is_integer(n) && n >= 0) then
-		error("the argument to fibonacci(n) must be a nonnegative integer")
-	else
-		# use Binet's formula for constant time
-		round((phi^n - (-phi)^(-n))/sqrt(5))
-			where phi = (1+sqrt(5))/2
+  if !(is_integer(n) && n >= 0) then
+    error("the argument to fibonacci(n) must be a nonnegative integer")
+  else
+    # use Binet's formula for constant time
+    round((phi^n - (-phi)^(-n))/sqrt(5))
+      where phi = (1+sqrt(5))/2
 
 @name("Lucas numbers")
 @description("The nth Lucas number, where n is a nonnegative integer. The Lucas sequence is given by $L_0=2$, $L_1=1$, and $L_n=L_\{n-1\}+L_\{n-2\}$ for $n≥2$. The first several elements, starting with $n=0$, are $2, 1, 3, 4, 7, 11, 18, 29$.")
 @url("https://en.wikipedia.org/wiki/Lucas_number")
 @example("lucas(5)")
 fn lucas(n: Scalar) -> Scalar =
-	if !(is_integer(n) && n >= 0) then
-		error("the argument to lucas(n) must be a nonnegative integer")
-	else
-		# use Binet's formula for constant time
-		round(phi^n + (1-phi)^n)
-			where phi = (1+sqrt(5))/2
+  if !(is_integer(n) && n >= 0) then
+    error("the argument to lucas(n) must be a nonnegative integer")
+  else
+    # use Binet's formula for constant time
+    round(phi^n + (1-phi)^n)
+      where phi = (1+sqrt(5))/2
 
 @name("Catalan numbers")
 @description("The nth Catalan number, where n is a nonnegative integer. The Catalan sequence is given by $C_n=\frac\{1\}\{n+1\}\binom\{2n\}\{n\}=\binom\{2n\}\{n\}-\binom\{2n\}\{n+1\}$. The first several elements, starting with $n=0$, are $1, 1, 2, 5, 14, 42, 132, 429$.")
 @url("https://en.wikipedia.org/wiki/Catalan_number")
 @example("catalan(5)")
 fn catalan(n: Scalar) -> Scalar =
-	if !(is_integer(n) && n >= 0) then
-		error("the argument to catalan(n) must be a nonnegative integer")
-	else
-		binom(2*n, n) / (n+1)
+  if !(is_integer(n) && n >= 0) then
+    error("the argument to catalan(n) must be a nonnegative integer")
+  else
+    binom(2*n, n) / (n+1)
