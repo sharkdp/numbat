@@ -222,12 +222,12 @@ enum InterpolationState {
     /// We are not inside curly braces.
     Outside,
     /// We are currently scanning the inner part of an interpolation.
-    Inside,
+    Inside(u32),
 }
 
 impl InterpolationState {
     fn is_inside(&self) -> bool {
-        matches!(self, InterpolationState::Inside)
+        matches!(self, InterpolationState::Inside(_))
     }
 }
 
@@ -595,29 +595,41 @@ impl Tokenizer {
                     if self.match_char(input, '"') {
                         TokenKind::StringFixed
                     } else if self.match_char(input, '{') {
-                        self.interpolation_state = InterpolationState::Inside;
+                        self.interpolation_state = InterpolationState::Inside(0);
                         self.interpolation_start = self.last;
                         TokenKind::StringInterpolationStart
                     } else {
                         return Err(TokenizerError {
                             kind: TokenizerErrorKind::UnterminatedString,
                             span: Span {
-                                start: self.token_start,
+                                start: self.string_start,
                                 end: self.current,
                                 code_source_id: self.code_source_id,
                             },
                         });
                     }
                 }
-                InterpolationState::Inside => {
-                    return Err(TokenizerError {
-                        kind: TokenizerErrorKind::UnterminatedStringInterpolation,
-                        span: Span {
-                            start: self.interpolation_start,
-                            end: self.last,
-                            code_source_id: self.code_source_id,
-                        },
-                    });
+                InterpolationState::Inside(i) => {
+                    self.string_start = self.token_start;
+
+                    self.consume_string(input)?;
+
+                    if self.match_char(input, '"') {
+                        TokenKind::StringFixed
+                    } else if self.match_char(input, '{') {
+                        self.interpolation_state = InterpolationState::Inside(i + 1);
+                        self.interpolation_start = self.last;
+                        TokenKind::StringInterpolationStart
+                    } else {
+                        return Err(TokenizerError {
+                            kind: TokenizerErrorKind::UnterminatedStringInterpolation,
+                            span: Span {
+                                start: self.interpolation_start,
+                                end: self.last,
+                                code_source_id: self.code_source_id,
+                            },
+                        });
+                    }
                 }
             },
             ':' if self.interpolation_state.is_inside() => {
@@ -656,7 +668,12 @@ impl Tokenizer {
                 self.consume_string(input)?;
 
                 if self.match_char(input, '"') {
-                    self.interpolation_state = InterpolationState::Outside;
+                    match self.interpolation_state {
+                        InterpolationState::Inside(i) if i > 0 => {
+                            self.interpolation_state = InterpolationState::Inside(i - 1)
+                        }
+                        _ => self.interpolation_state = InterpolationState::Outside,
+                    }
                     TokenKind::StringInterpolationEnd
                 } else if self.match_char(input, '{') {
                     self.interpolation_start = self.last;
