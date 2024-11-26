@@ -1,8 +1,11 @@
 use core::functions
+use core::lists
 use core::strings
+use core::quantities
 use units::si
 use units::time
 use datetime::functions
+use units::mixed
 
 fn _human_join(a: String, b: String) -> String =
   if a == "" then b else if b == "" then a else "{a} + {b}"
@@ -24,36 +27,42 @@ fn _precise_human_months(time: Time)  -> String = "{(time -> months)  /  month }
 fn _precise_human_days(time: Time)    -> String = "{(time -> days)    /  day   } days"    -> _prettier
 fn _precise_human_seconds(time: Time) -> String = "{(time -> seconds) /  second} seconds" -> _prettier
 
-fn _human_recurse(t: Time, result: String, time_unit: String) -> String =
-  if time_unit == "day"
-    then _human_recurse((t -> day) - (t |> floor_in(day)), _human_join(result, t -> _human_days),    "hour")
-  else if time_unit == "hour"
-    then _human_recurse((t -> hour) - (t |> floor_in(hour)), _human_join(result, t -> _human_hours),   "minute")
-  else if time_unit == "minute"
-    then _human_recurse((t -> min) - (t |> floor_in(min)), _human_join(result, t -> _human_minutes), "second")
-  else _human_join(result, (t |> round_in(ms)) -> _precise_human_seconds)
+fn _human_unit(time: Time) -> String =
+  if      time_unit >= year    then _human_years(time)
+  else if time_unit >= month   then _human_months(time)
+  else if time_unit >= day     then _human_days(time)
+  else if time_unit >= hour    then _human_hours(time)
+  else if time_unit >= minute  then _human_minutes(time)
+  else if time      != 0 s     then _precise_human_seconds(time |> round_in(ms))
+  else                              ""
+  where time_unit = if (time == 0) then 0 s else unit_of(time)
 
-fn _year_month_approx(t: Time) -> String = _human_join(the_years -> _human_years, t - the_years -> _human_months)
-  where the_years = t |> floor_in(year)
+fn _round_mixed_in<D: Dim>(base: D, value: List<D>) -> List<D> =
+  value |> sum |> round_in(base) |> _unit_list(units)
+    where units: List<D> = value |> filter(is_nonzero) |> map(unit_of)
 
-fn _human_manage_past(str: String, time: Time) = str_append(str, if time < 0 s then " ago" else "")
+fn _human_time(base: Time, time_segments: List<Time>) -> String = 
+  time_segments |> _round_mixed_in(base) |> map(_human_unit) |> foldl(_human_join, "")
 
 fn _human_for_long_duration(human_days: String, human_years: String) -> String =
   "{human_days} (approx. {human_years})"
 
 fn _abs_human(time: Time) -> String =
-  if time == 0 s then "0 seconds"
-  else if time < 60 seconds then time -> _precise_human_seconds
-  else if time < 2 months then _human_recurse(time, "",  "day")
-  else if time < 1 year
-    then _human_for_long_duration(time -> _precise_human_days, (time |> round_in(month/10)) -> _precise_human_months)
-  else if time < 100 years
-    then _human_for_long_duration(time -> _precise_human_days, _year_month_approx(time))
+  if      abs_time ==  0 seconds then "0 seconds"
+  else if abs_time <  60 seconds then abs_time -> _precise_human_seconds
+  else if abs_time <   2 months  then ((abs_time -> seconds) |> unit_list([day, hour, minute, second]) |> _human_time(0.1 ms))
+  else if abs_time <   1 years   then _human_for_long_duration(abs_time -> _precise_human_days, (abs_time |> round_in(month/10)) -> _precise_human_months)
+  else if abs_time < 100 years
+   then _human_for_long_duration(abs_time -> _precise_human_days, ((abs_time -> months) |> unit_list([year, month]) |> _human_time(month/10)))
   else
-    _human_for_long_duration(time -> _precise_human_days, time -> _human_years)
+    _human_for_long_duration(abs_time -> _precise_human_days, abs_time -> _human_years)
+  where abs_time: Time = abs(time)
 
 @name("Human-readable time duration")
 @url("https://numbat.dev/doc/date-and-time.html")
 @description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
 @example("century/1e6 -> human", "How long is a microcentury?")
-fn human(time: Time) -> String = _human_manage_past(abs(time) -> _abs_human, time)
+fn human(time: Time) -> String = 
+  if time < 0 s 
+  then str_append(_abs_human(time),  " ago") 
+  else _abs_human(time)

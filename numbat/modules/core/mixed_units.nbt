@@ -15,7 +15,7 @@ fn _mixed_unit_list<D: Dim>(val: D, units: List<D>, acc: List<D>) -> List<D> =
       else _mixed_unit_list(val - unit_val, tail(units), cons_end(unit_val, acc))
   where unit_val: D =
     if (len(units) > 0)
-      then (val |> trunc_in(head(units)))
+      then ((val -> head(units)) |> trunc_in(head(units)))
       else error("Units list cannot be empty")
   
 fn _negate<D: Dim>(x: D) = -x
