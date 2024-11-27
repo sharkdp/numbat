@@ -14,6 +14,7 @@ pub mod type_scheme;
 
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use crate::arithmetic::Exponent;
 use crate::ast::{
@@ -251,7 +252,7 @@ impl TypeChecker {
                     .into_factors();
 
                 // Replace BaseDimension("D") with TVar("D") for all type parameters
-                for (factor, _) in &mut factors {
+                for (factor, _) in Arc::make_mut(&mut factors) {
                     *factor = match factor {
                         DTypeFactor::BaseDimension(ref n)
                             if self

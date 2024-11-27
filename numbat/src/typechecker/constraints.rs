@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use compact_str::{format_compact, CompactString};
 
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
@@ -306,9 +308,9 @@ impl Constraint {
             Constraint::EqualScalar(d) if d == &DType::scalar() => Some(Satisfied::trivially()),
             Constraint::EqualScalar(dtype) => match dtype.split_first_factor() {
                 Some(((DTypeFactor::TVar(tv), k), rest)) => {
-                    let result = DType::from_factors(
+                    let result = DType::from_factors(Arc::new(
                         rest.iter().map(|(f, j)| (f.clone(), -j / k)).collect(),
-                    );
+                    ));
                     Some(Satisfied::with_substitution(Substitution::single(
                         tv.clone(),
                         Type::Dimension(result),

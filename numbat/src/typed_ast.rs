@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use compact_str::{format_compact, CompactString, ToCompactString};
 use indexmap::IndexMap;
 use itertools::Itertools;
@@ -42,7 +44,7 @@ type DtypeFactorPower = (DTypeFactor, Exponent);
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DType {
     // Always in canonical form
-    factors: Vec<DtypeFactorPower>,
+    factors: Arc<Vec<DtypeFactorPower>>,
 }
 
 impl DType {
@@ -50,18 +52,18 @@ impl DType {
         &self.factors
     }
 
-    pub fn into_factors(self) -> Vec<DtypeFactorPower> {
+    pub fn into_factors(self) -> Arc<Vec<DtypeFactorPower>> {
         self.factors
     }
 
-    pub fn from_factors(factors: Vec<DtypeFactorPower>) -> DType {
+    pub fn from_factors(factors: Arc<Vec<DtypeFactorPower>>) -> DType {
         let mut dtype = DType { factors };
         dtype.canonicalize();
         dtype
     }
 
     pub fn scalar() -> DType {
-        DType::from_factors(vec![])
+        DType::from_factors(Arc::new(vec![]))
     }
 
     pub fn is_scalar(&self) -> bool {
@@ -100,11 +102,17 @@ impl DType {
     }
 
     pub fn from_type_variable(v: TypeVariable) -> DType {
-        DType::from_factors(vec![(DTypeFactor::TVar(v), Exponent::from_integer(1))])
+        DType::from_factors(Arc::new(vec![(
+            DTypeFactor::TVar(v),
+            Exponent::from_integer(1),
+        )]))
     }
 
     pub fn from_type_parameter(name: CompactString) -> DType {
-        DType::from_factors(vec![(DTypeFactor::TPar(name), Exponent::from_integer(1))])
+        DType::from_factors(Arc::new(vec![(
+            DTypeFactor::TPar(name),
+            Exponent::from_integer(1),
+        )]))
     }
 
     pub fn deconstruct_as_single_type_variable(&self) -> Option<TypeVariable> {
@@ -117,22 +125,22 @@ impl DType {
     }
 
     pub fn from_tgen(i: usize) -> DType {
-        DType::from_factors(vec![(
+        DType::from_factors(Arc::new(vec![(
             DTypeFactor::TVar(TypeVariable::Quantified(i)),
             Exponent::from_integer(1),
-        )])
+        )]))
     }
 
     pub fn base_dimension(name: &str) -> DType {
-        DType::from_factors(vec![(
+        DType::from_factors(Arc::new(vec![(
             DTypeFactor::BaseDimension(name.into()),
             Exponent::from_integer(1),
-        )])
+        )]))
     }
 
     fn canonicalize(&mut self) {
         // Move all type-variable and tgen factors to the front, sort by name
-        self.factors.sort_by(|(f1, _), (f2, _)| match (f1, f2) {
+        Arc::make_mut(&mut self.factors).sort_by(|(f1, _), (f2, _)| match (f1, f2) {
             (DTypeFactor::TVar(v1), DTypeFactor::TVar(v2)) => v1.cmp(v2),
             (DTypeFactor::TVar(_), _) => std::cmp::Ordering::Less,
 
@@ -146,7 +154,7 @@ impl DType {
 
         // Merge powers of equal factors:
         let mut new_factors = Vec::new();
-        for (f, n) in &self.factors {
+        for (f, n) in self.factors.iter() {
             if let Some((last_f, last_n)) = new_factors.last_mut() {
                 if f == last_f {
                     *last_n += n;
@@ -155,16 +163,16 @@ impl DType {
             }
             new_factors.push((f.clone(), *n));
         }
-        self.factors = new_factors;
 
         // Remove factors with zero exponent:
-        self.factors
-            .retain(|(_, n)| *n != Exponent::from_integer(0));
+        new_factors.retain(|(_, n)| *n != Exponent::from_integer(0));
+
+        self.factors = Arc::new(new_factors);
     }
 
     pub fn multiply(&self, other: &DType) -> DType {
         let mut factors = self.factors.clone();
-        factors.extend(other.factors.clone());
+        Arc::make_mut(&mut factors).extend(other.factors.iter().cloned());
         DType::from_factors(factors)
     }
 
@@ -174,7 +182,7 @@ impl DType {
             .iter()
             .map(|(f, m)| (f.clone(), n * m))
             .collect();
-        DType::from_factors(factors)
+        DType::from_factors(Arc::new(factors))
     }
 
     pub fn inverse(&self) -> DType {
@@ -218,7 +226,7 @@ impl DType {
     fn instantiate(&self, type_variables: &[TypeVariable]) -> DType {
         let mut factors = Vec::new();
 
-        for (f, n) in &self.factors {
+        for (f, n) in self.factors.iter() {
             match f {
                 DTypeFactor::TVar(TypeVariable::Quantified(i)) => {
                     factors.push((DTypeFactor::TVar(type_variables[*i].clone()), *n));
@@ -228,12 +236,12 @@ impl DType {
                 }
             }
         }
-        Self::from_factors(factors)
+        Self::from_factors(Arc::new(factors))
     }
 
     pub fn to_base_representation(&self) -> BaseRepresentation {
         let mut factors = vec![];
-        for (f, n) in &self.factors {
+        for (f, n) in self.factors.iter() {
             match f {
                 DTypeFactor::BaseDimension(name) => {
                     factors.push(BaseRepresentationFactor(name.clone(), *n));
@@ -271,7 +279,7 @@ impl From<BaseRepresentation> for DType {
             .into_iter()
             .map(|BaseRepresentationFactor(name, exp)| (DTypeFactor::BaseDimension(name), exp))
             .collect();
-        DType::from_factors(factors)
+        DType::from_factors(Arc::new(factors))
     }
 }
 
@@ -729,9 +737,9 @@ impl Statement<'_> {
         let mut exponents = vec![];
         self.for_all_type_schemes(&mut |type_: &mut TypeScheme| {
             if let Type::Dimension(dtype) = type_.unsafe_as_concrete() {
-                for (factor, exp) in dtype.factors {
-                    if factor == DTypeFactor::TVar(tv.clone()) {
-                        exponents.push(exp)
+                for (factor, exp) in dtype.factors.iter() {
+                    if factor == &DTypeFactor::TVar(tv.clone()) {
+                        exponents.push(*exp)
                     }
                 }
             }
