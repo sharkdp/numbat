@@ -69,9 +69,7 @@ impl ApplySubstitution for Type {
                 Ok(())
             }
             Type::Dimension(dtype) => dtype.apply(s),
-            Type::Boolean => Ok(()),
-            Type::String => Ok(()),
-            Type::DateTime => Ok(()),
+            Type::Boolean | Type::String | Type::DateTime => Ok(()),
             Type::Fn(param_types, return_type) => {
                 for param_type in param_types {
                     param_type.apply(s)?;
@@ -151,9 +149,10 @@ impl ApplySubstitution for StructInfo {
 impl ApplySubstitution for Expression<'_> {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
-            Expression::Scalar(_, _, type_) => type_.apply(s),
-            Expression::Identifier(_, _, type_) => type_.apply(s),
-            Expression::UnitIdentifier(_, _, _, _, type_) => type_.apply(s),
+            Expression::Scalar(_, _, type_)
+            | Expression::Identifier(_, _, type_)
+            | Expression::TypedHole(_, type_)
+            | Expression::UnitIdentifier(_, _, _, _, type_) => type_.apply(s),
             Expression::UnaryOperator(_, _, expr, type_) => {
                 expr.apply(s)?;
                 type_.apply(s)
@@ -181,13 +180,11 @@ impl ApplySubstitution for Expression<'_> {
                 }
                 return_type.apply(s)
             }
-            Expression::Boolean(_, _) => Ok(()),
             Expression::Condition(_, if_, then_, else_) => {
                 if_.apply(s)?;
                 then_.apply(s)?;
                 else_.apply(s)
             }
-            Expression::String(_, _) => Ok(()),
             Expression::InstantiateStruct(_, initializers, info) => {
                 for (_, expr) in initializers {
                     expr.apply(s)?;
@@ -205,7 +202,7 @@ impl ApplySubstitution for Expression<'_> {
                 }
                 element_type.apply(s)
             }
-            Expression::TypedHole(_, type_) => type_.apply(s),
+            Expression::Boolean(_, _) | Expression::String(_, _) => Ok(()),
         }
     }
 }

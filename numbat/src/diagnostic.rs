@@ -130,12 +130,11 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message(format!("{type_}"))])
                 .with_notes(vec![inner_error]),
-            TypeCheckError::UnsupportedConstEvalExpression(span, _) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
-            TypeCheckError::DivisionByZeroInConstEvalExpression(span) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
+            TypeCheckError::UnsupportedConstEvalExpression(span, _)
+            | TypeCheckError::DivisionByZeroInConstEvalExpression(span) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error)]),
             TypeCheckError::RegistryError(re) => match re {
                 crate::registry::RegistryError::EntryExists(_) => d.with_notes(vec![inner_error]),
                 crate::registry::RegistryError::UnknownEntry(name, suggestion) => {
@@ -144,7 +143,7 @@ impl ErrorDiagnostic for TypeCheckError {
                         maybe_suggestion = if let Some(suggestion) = suggestion {
                             format!(" did you mean '{suggestion}'?")
                         } else {
-                            "".into()
+                            String::new()
                         }
                     )])
                 }

@@ -287,12 +287,7 @@ impl Tokenizer {
         disallow_leading_underscore: bool,
         disallow_dot_after_stream: bool,
     ) -> Result<()> {
-        if at_least_one_digit
-            && !self
-                .peek(input)
-                .map(|c| c.is_ascii_digit())
-                .unwrap_or(false)
-        {
+        if at_least_one_digit && !self.peek(input).is_some_and(|c| c.is_ascii_digit()) {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::ExpectedDigit {
                     character: self.peek(input),
@@ -302,7 +297,7 @@ impl Tokenizer {
         }
 
         // Make sure we don't start with an underscore
-        if disallow_leading_underscore && self.peek(input).map(|c| c == '_').unwrap_or(false) {
+        if disallow_leading_underscore && self.peek(input).is_some_and(|c| c == '_') {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(
                     self.peek(input).unwrap(),
@@ -314,8 +309,7 @@ impl Tokenizer {
         let mut last_char = None;
         while self
             .peek(input)
-            .map(|c| c.is_ascii_digit() || c == '_')
-            .unwrap_or(false)
+            .is_some_and(|c| c.is_ascii_digit() || c == '_')
         {
             last_char = Some(self.advance(input));
         }
@@ -328,7 +322,7 @@ impl Tokenizer {
             });
         }
 
-        if disallow_dot_after_stream && self.peek(input).map(|c| c == '.').unwrap_or(false) {
+        if disallow_dot_after_stream && self.peek(input).is_some_and(|c| c == '.') {
             return Err(TokenizerError {
                 kind: TokenizerErrorKind::UnexpectedCharacterInNumberLiteral(
                     self.peek(input).unwrap(),
@@ -343,8 +337,7 @@ impl Tokenizer {
     fn scientific_notation(&mut self, input: &str) -> Result<()> {
         if self
             .peek2(input)
-            .map(|c| c.is_ascii_digit() || c == '+' || c == '-')
-            .unwrap_or(false)
+            .is_some_and(|c| c.is_ascii_digit() || c == '+' || c == '-')
             && (self.match_char(input, 'e') || self.match_char(input, 'E'))
         {
             let _ = self.match_char(input, '+') || self.match_char(input, '-');
@@ -363,7 +356,7 @@ impl Tokenizer {
                     break;
                 }
                 Some('\\') if !escaped => true,
-                Some('"') | Some('{') if !escaped => {
+                Some('"' | '{') if !escaped => {
                     break;
                 }
                 Some(_) => false,
@@ -470,8 +463,7 @@ impl Tokenizer {
             '?' => TokenKind::QuestionMark,
             '0' if self
                 .peek(input)
-                .map(|c| c == 'x' || c == 'o' || c == 'b')
-                .unwrap_or(false) =>
+                .is_some_and(|c| c == 'x' || c == 'o' || c == 'b') =>
             {
                 let (base, is_digit_in_base) = match self.peek(input).unwrap() {
                     'x' => (16, is_ascii_hex_digit as fn(char) -> bool),
@@ -483,7 +475,7 @@ impl Tokenizer {
                 self.advance(input); // skip over the x/o/b
 
                 // If the first character is not a digit, that's an error.
-                if !self.peek(input).map(is_digit_in_base).unwrap_or(false) {
+                if !self.peek(input).is_some_and(is_digit_in_base) {
                     return tokenizer_error(
                         self.current,
                         TokenizerErrorKind::ExpectedDigitInBase {
@@ -497,8 +489,7 @@ impl Tokenizer {
 
                 while self
                     .peek(input)
-                    .map(|c| is_digit_in_base(c) || c == '_')
-                    .unwrap_or(false)
+                    .is_some_and(|c| is_digit_in_base(c) || c == '_')
                 {
                     last_char = self.peek(input);
                     self.advance(input);
@@ -508,8 +499,7 @@ impl Tokenizer {
                 if last_char == Some('_')
                     || self
                         .peek(input)
-                        .map(|c| is_identifier_continue(c) || c == '.')
-                        .unwrap_or(false)
+                        .is_some_and(|c| is_identifier_continue(c) || c == '.')
                 {
                     return tokenizer_error(
                         self.current,
@@ -557,8 +547,7 @@ impl Tokenizer {
             '*' if self.match_char(input, '*') => TokenKind::Power,
             '+' => TokenKind::Plus,
             '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
-            '/' => TokenKind::Divide,
-            '÷' => TokenKind::Divide,
+            '/' | '÷' => TokenKind::Divide,
             '^' => TokenKind::Power,
             ',' => TokenKind::Comma,
             '⩵' => TokenKind::EqualEqual,
@@ -573,7 +562,7 @@ impl Tokenizer {
             '!' => TokenKind::ExclamationMark,
             '⁻' => {
                 let c = self.peek(input);
-                if c.map(is_exponent_char).unwrap_or(false) {
+                if c.is_some_and(is_exponent_char) {
                     self.advance(input);
                     TokenKind::UnicodeExponent
                 } else {
@@ -621,11 +610,7 @@ impl Tokenizer {
                 }
             },
             ':' if self.interpolation_state.is_inside() => {
-                while self
-                    .peek(input)
-                    .map(|c| c != '"' && c != '}')
-                    .unwrap_or(false)
-                {
+                while self.peek(input).is_some_and(|c| c != '"' && c != '}') {
                     self.advance(input);
                 }
 
@@ -680,19 +665,12 @@ impl Tokenizer {
             }
             '…' => TokenKind::Ellipsis,
             c if is_identifier_start(c) => {
-                while self
-                    .peek(input)
-                    .map(is_identifier_continue)
-                    .unwrap_or(false)
-                {
+                while self.peek(input).is_some_and(is_identifier_continue) {
                     self.advance(input);
                 }
 
-                if self.peek(input).map(|c| c == '.').unwrap_or(false)
-                    && self
-                        .peek2(input)
-                        .map(|c| !is_identifier_start(c))
-                        .unwrap_or(true)
+                if self.peek(input).is_some_and(|c| c == '.')
+                    && self.peek2(input).map_or(true, |c| !is_identifier_start(c))
                 {
                     return tokenizer_error(
                         self.current,

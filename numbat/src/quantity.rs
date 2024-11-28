@@ -539,7 +539,7 @@ mod tests {
         }
         {
             let q = Quantity::new_f64(2.0, Unit::kilometer() / Unit::millimeter());
-            assert_eq!(q.full_simplify(), Quantity::from_scalar(2000000.0));
+            assert_eq!(q.full_simplify(), Quantity::from_scalar(2_000_000.0));
         }
         {
             let q = Quantity::new_f64(2.0, Unit::meter() / Unit::centimeter() * Unit::second());
@@ -563,7 +563,7 @@ mod tests {
         }
         {
             let q = Quantity::new_f64(2.0, Unit::kilometer() / Unit::millimeter());
-            assert_eq!(q.full_simplify(), Quantity::from_scalar(2000000.0));
+            assert_eq!(q.full_simplify(), Quantity::from_scalar(2_000_000.0));
         }
         {
             let q = Quantity::new_f64(1.0, Unit::meter() * Unit::gram() / Unit::centimeter());

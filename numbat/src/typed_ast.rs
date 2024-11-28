@@ -29,10 +29,10 @@ pub enum DTypeFactor {
 impl DTypeFactor {
     pub fn name(&self) -> &str {
         match self {
-            DTypeFactor::TVar(TypeVariable::Named(name)) => name,
             DTypeFactor::TVar(TypeVariable::Quantified(_)) => unreachable!(),
-            DTypeFactor::TPar(name) => name,
-            DTypeFactor::BaseDimension(name) => name,
+            DTypeFactor::TVar(TypeVariable::Named(name))
+            | DTypeFactor::TPar(name)
+            | DTypeFactor::BaseDimension(name) => name,
         }
     }
 }
@@ -235,17 +235,13 @@ impl DType {
         let mut factors = vec![];
         for (f, n) in &self.factors {
             match f {
-                DTypeFactor::BaseDimension(name) => {
-                    factors.push(BaseRepresentationFactor(name.clone(), *n));
-                }
-                DTypeFactor::TVar(TypeVariable::Named(name)) => {
+                DTypeFactor::BaseDimension(name)
+                | DTypeFactor::TPar(name)
+                | DTypeFactor::TVar(TypeVariable::Named(name)) => {
                     factors.push(BaseRepresentationFactor(name.clone(), *n));
                 }
                 DTypeFactor::TVar(TypeVariable::Quantified(_)) => {
                     unreachable!("Unexpected quantified type")
-                }
-                DTypeFactor::TPar(name) => {
-                    factors.push(BaseRepresentationFactor(name.clone(), *n));
                 }
             }
         }
@@ -298,11 +294,7 @@ pub enum Type {
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Type::TVar(TypeVariable::Named(name)) => write!(f, "{name}"),
-            Type::TVar(TypeVariable::Quantified(_)) => {
-                unreachable!("Quantified types should not be printed")
-            }
-            Type::TPar(name) => write!(f, "{name}"),
+            Type::TVar(TypeVariable::Named(name)) | Type::TPar(name) => write!(f, "{name}"),
             Type::Dimension(d) => d.fmt(f),
             Type::Boolean => write!(f, "Bool"),
             Type::String => write!(f, "String"),
@@ -311,7 +303,7 @@ impl std::fmt::Display for Type {
                 write!(
                     f,
                     "Fn[({ps}) -> {return_type}]",
-                    ps = param_types.iter().map(|p| p.to_string()).join(", ")
+                    ps = param_types.iter().map(ToString::to_string).join(", ")
                 )
             }
             Type::Struct(info) => {
@@ -326,6 +318,9 @@ impl std::fmt::Display for Type {
                 )
             }
             Type::List(element_type) => write!(f, "List<{element_type}>"),
+            Type::TVar(TypeVariable::Quantified(_)) => {
+                unreachable!("Quantified types should not be printed")
+            }
         }
     }
 }
@@ -548,35 +543,33 @@ pub enum Expression<'a> {
 impl Expression<'_> {
     pub fn full_span(&self) -> Span {
         match self {
-            Expression::Scalar(span, ..) => *span,
-            Expression::Identifier(span, ..) => *span,
-            Expression::UnitIdentifier(span, ..) => *span,
+            Expression::Scalar(span, ..)
+            | Expression::Identifier(span, ..)
+            | Expression::UnitIdentifier(span, ..)
+            | Expression::Boolean(span, _)
+            | Expression::String(span, _)
+            | Expression::TypedHole(span, _)
+            | Expression::InstantiateStruct(span, _, _) => *span,
+
             Expression::UnaryOperator(span, _, expr, _) => span.extend(&expr.full_span()),
-            Expression::BinaryOperator(span_op, _op, lhs, rhs, _) => {
+
+            Expression::BinaryOperator(span_op, _op, lhs, rhs, _)
+            | Expression::BinaryOperatorForDate(span_op, _op, lhs, rhs, ..) => {
                 let mut span = lhs.full_span().extend(&rhs.full_span());
                 if let Some(span_op) = span_op {
                     span = span.extend(span_op);
                 }
                 span
             }
-            Expression::BinaryOperatorForDate(span_op, _op, lhs, rhs, ..) => {
-                let mut span = lhs.full_span().extend(&rhs.full_span());
-                if let Some(span_op) = span_op {
-                    span = span.extend(span_op);
-                }
-                span
-            }
-            Expression::FunctionCall(_identifier_span, full_span, _, _, _) => *full_span,
-            Expression::CallableCall(full_span, _, _, _) => *full_span,
-            Expression::Boolean(span, _) => *span,
+
             Expression::Condition(span_if, _, _, then_expr) => {
                 span_if.extend(&then_expr.full_span())
             }
-            Expression::String(span, _) => *span,
-            Expression::InstantiateStruct(span, _, _) => *span,
-            Expression::AccessField(_span, full_span, _, _, _, _) => *full_span,
-            Expression::List(full_span, _, _) => *full_span,
-            Expression::TypedHole(span, _) => *span,
+
+            Expression::FunctionCall(_, full_span, _, _, _)
+            | Expression::AccessField(_, full_span, _, _, _, _)
+            | Expression::CallableCall(full_span, _, _, _)
+            | Expression::List(full_span, _, _) => *full_span,
         }
     }
 }
@@ -659,7 +652,6 @@ impl Statement<'_> {
 
     pub(crate) fn update_readable_types(&mut self, registry: &DimensionRegistry) {
         match self {
-            Statement::Expression(_) => {}
             Statement::DefineVariable(DefineVariable(
                 _,
                 _,
@@ -667,7 +659,8 @@ impl Statement<'_> {
                 type_annotation,
                 type_,
                 readable_type,
-            )) => {
+            ))
+            | Statement::DefineDerivedUnit(_, _, _, type_annotation, type_, readable_type) => {
                 *readable_type = Self::create_readable_type(registry, type_, type_annotation, true);
             }
             Statement::DefineFunction(
@@ -713,14 +706,11 @@ impl Statement<'_> {
                     );
                 }
             }
-            Statement::DefineDimension(_, _) => {}
-            Statement::DefineBaseUnit(_, _, _, _) => {}
-            Statement::DefineDerivedUnit(_, _, _, type_annotation, type_, readable_type) => {
-                *readable_type =
-                    Self::create_readable_type(registry, type_, type_annotation, false);
-            }
-            Statement::ProcedureCall(_, _) => {}
-            Statement::DefineStruct(_) => {}
+            Statement::DefineDimension(_, _)
+            | Statement::DefineBaseUnit(_, _, _, _)
+            | Statement::ProcedureCall(_, _)
+            | Statement::Expression(_)
+            | Statement::DefineStruct(_) => {}
         }
     }
 
@@ -766,38 +756,37 @@ impl Statement<'_> {
 impl Expression<'_> {
     pub fn get_type(&self) -> Type {
         match self {
-            Expression::Scalar(_, _, type_) => type_.unsafe_as_concrete(),
-            Expression::Identifier(_, _, type_) => type_.unsafe_as_concrete(),
-            Expression::UnitIdentifier(_, _, _, _, _type) => _type.unsafe_as_concrete(),
-            Expression::UnaryOperator(_, _, _, type_) => type_.unsafe_as_concrete(),
-            Expression::BinaryOperator(_, _, _, _, type_) => type_.unsafe_as_concrete(),
-            Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.unsafe_as_concrete(),
-            Expression::FunctionCall(_, _, _, _, type_) => type_.unsafe_as_concrete(),
-            Expression::CallableCall(_, _, _, type_) => type_.unsafe_as_concrete(),
+            Expression::Scalar(_, _, type_)
+            | Expression::Identifier(_, _, type_)
+            | Expression::UnitIdentifier(_, _, _, _, type_)
+            | Expression::UnaryOperator(_, _, _, type_)
+            | Expression::BinaryOperator(_, _, _, _, type_)
+            | Expression::BinaryOperatorForDate(_, _, _, _, type_, ..)
+            | Expression::FunctionCall(_, _, _, _, type_)
+            | Expression::CallableCall(_, _, _, type_)
+            | Expression::TypedHole(_, type_)
+            | Expression::AccessField(_, _, _, _, _, type_) => type_.unsafe_as_concrete(),
             Expression::Boolean(_, _) => Type::Boolean,
             Expression::Condition(_, _, then_, _) => then_.get_type(),
             Expression::String(_, _) => Type::String,
             Expression::InstantiateStruct(_, _, info_) => Type::Struct(Box::new(info_.clone())),
-            Expression::AccessField(_, _, _, _, _struct_type, field_type) => {
-                field_type.unsafe_as_concrete()
-            }
             Expression::List(_, _, element_type) => {
                 Type::List(Box::new(element_type.unsafe_as_concrete()))
             }
-            Expression::TypedHole(_, type_) => type_.unsafe_as_concrete(),
         }
     }
 
     pub fn get_type_scheme(&self) -> TypeScheme {
         match self {
-            Expression::Scalar(_, _, type_) => type_.clone(),
-            Expression::Identifier(_, _, type_) => type_.clone(),
-            Expression::UnitIdentifier(_, _, _, _, type_) => type_.clone(),
-            Expression::UnaryOperator(_, _, _, type_) => type_.clone(),
-            Expression::BinaryOperator(_, _, _, _, type_) => type_.clone(),
-            Expression::BinaryOperatorForDate(_, _, _, _, type_, ..) => type_.clone(),
-            Expression::FunctionCall(_, _, _, _, type_) => type_.clone(),
-            Expression::CallableCall(_, _, _, type_) => type_.clone(),
+            Expression::Scalar(_, _, type_)
+            | Expression::Identifier(_, _, type_)
+            | Expression::UnitIdentifier(_, _, _, _, type_)
+            | Expression::UnaryOperator(_, _, _, type_)
+            | Expression::BinaryOperator(_, _, _, _, type_)
+            | Expression::BinaryOperatorForDate(_, _, _, _, type_, ..)
+            | Expression::FunctionCall(_, _, _, _, type_)
+            | Expression::CallableCall(_, _, _, type_)
+            | Expression::TypedHole(_, type_) => type_.clone(),
             Expression::Boolean(_, _) => TypeScheme::make_quantified(Type::Boolean),
             Expression::Condition(_, _, then_, _) => then_.get_type_scheme(),
             Expression::String(_, _) => TypeScheme::make_quantified(Type::String),
@@ -815,7 +804,6 @@ impl Expression<'_> {
                     },
                 ),
             },
-            Expression::TypedHole(_, type_) => type_.clone(),
         }
     }
 }
@@ -1195,8 +1183,11 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
                 let add_parens_if_needed = |expr: &Expression| {
                     if matches!(
                         expr,
-                        Expression::BinaryOperator(_, BinaryOperator::Power, ..)
-                            | Expression::BinaryOperator(_, BinaryOperator::Mul, ..)
+                        Expression::BinaryOperator(
+                            _,
+                            BinaryOperator::Power | BinaryOperator::Mul,
+                            ..
+                        )
                     ) {
                         expr.pretty_print()
                     } else {
@@ -1211,8 +1202,7 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             let lhs_add_parens_if_needed = |expr: &Expression| {
                 if matches!(
                     expr,
-                    Expression::BinaryOperator(_, BinaryOperator::Power, ..)
-                        | Expression::BinaryOperator(_, BinaryOperator::Mul, ..)
+                    Expression::BinaryOperator(_, BinaryOperator::Power | BinaryOperator::Mul, ..)
                 ) {
                     expr.pretty_print()
                 } else {
@@ -1236,9 +1226,11 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             let add_parens_if_needed = |expr: &Expression| {
                 if matches!(
                     expr,
-                    Expression::BinaryOperator(_, BinaryOperator::Power, ..)
-                        | Expression::BinaryOperator(_, BinaryOperator::Mul, ..)
-                        | Expression::BinaryOperator(_, BinaryOperator::Add, ..)
+                    Expression::BinaryOperator(
+                        _,
+                        BinaryOperator::Power | BinaryOperator::Mul | BinaryOperator::Add,
+                        ..
+                    )
                 ) {
                     expr.pretty_print()
                 } else {
@@ -1252,8 +1244,7 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
             let add_parens_if_needed = |expr: &Expression| {
                 if matches!(
                     expr,
-                    Expression::BinaryOperator(_, BinaryOperator::Power, ..)
-                        | Expression::BinaryOperator(_, BinaryOperator::Mul, ..)
+                    Expression::BinaryOperator(_, BinaryOperator::Power | BinaryOperator::Mul, ..)
                 ) {
                     expr.pretty_print()
                 } else {
@@ -1275,26 +1266,26 @@ fn pretty_print_binop(op: &BinaryOperator, lhs: &Expression, rhs: &Expression) -
 
 impl PrettyPrint for Expression<'_> {
     fn pretty_print(&self) -> Markup {
-        use Expression::*;
-
         match self {
-            Scalar(_, n, _) => pretty_scalar(*n),
-            Identifier(_, name, _type) => m::identifier(name.to_compact_string()),
-            UnitIdentifier(_, prefix, _name, full_name, _type) => {
+            Expression::Scalar(_, n, _) => pretty_scalar(*n),
+            Expression::Identifier(_, name, _type) => m::identifier(name.to_compact_string()),
+            Expression::UnitIdentifier(_, prefix, _name, full_name, _type) => {
                 m::unit(format_compact!("{}{}", prefix.as_string_long(), full_name))
             }
-            UnaryOperator(_, self::UnaryOperator::Negate, expr, _type) => {
+            Expression::UnaryOperator(_, self::UnaryOperator::Negate, expr, _type) => {
                 m::operator("-") + with_parens(expr)
             }
-            UnaryOperator(_, self::UnaryOperator::Factorial, expr, _type) => {
+            Expression::UnaryOperator(_, self::UnaryOperator::Factorial, expr, _type) => {
                 with_parens(expr) + m::operator("!")
             }
-            UnaryOperator(_, self::UnaryOperator::LogicalNeg, expr, _type) => {
+            Expression::UnaryOperator(_, self::UnaryOperator::LogicalNeg, expr, _type) => {
                 m::operator("!") + with_parens(expr)
             }
-            BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
-            BinaryOperatorForDate(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
-            FunctionCall(_, _, name, args, _type) => {
+            Expression::BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
+            Expression::BinaryOperatorForDate(_, op, lhs, rhs, _type) => {
+                pretty_print_binop(op, lhs, rhs)
+            }
+            Expression::FunctionCall(_, _, name, args, _type) => {
                 m::identifier(name.to_compact_string())
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
@@ -1304,7 +1295,7 @@ impl PrettyPrint for Expression<'_> {
                     .sum()
                     + m::operator(")")
             }
-            CallableCall(_, expr, args, _type) => {
+            Expression::CallableCall(_, expr, args, _type) => {
                 expr.pretty_print()
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
@@ -1314,9 +1305,9 @@ impl PrettyPrint for Expression<'_> {
                     .sum()
                     + m::operator(")")
             }
-            Boolean(_, val) => val.pretty_print(),
-            String(_, parts) => parts.pretty_print(),
-            Condition(_, condition, then, else_) => {
+            Expression::Boolean(_, val) => val.pretty_print(),
+            Expression::String(_, parts) => parts.pretty_print(),
+            Expression::Condition(_, condition, then, else_) => {
                 m::keyword("if")
                     + m::space()
                     + with_parens(condition)
@@ -1329,7 +1320,7 @@ impl PrettyPrint for Expression<'_> {
                     + m::space()
                     + with_parens(else_)
             }
-            InstantiateStruct(_, exprs, struct_info) => {
+            Expression::InstantiateStruct(_, exprs, struct_info) => {
                 m::type_identifier(struct_info.name.clone())
                     + m::space()
                     + m::operator("{")
@@ -1351,10 +1342,10 @@ impl PrettyPrint for Expression<'_> {
                     }
                     + m::operator("}")
             }
-            AccessField(_, _, expr, attr, _, _) => {
+            Expression::AccessField(_, _, expr, attr, _, _) => {
                 expr.pretty_print() + m::operator(".") + m::identifier(attr.to_compact_string())
             }
-            List(_, elements, _) => {
+            Expression::List(_, elements, _) => {
                 m::operator("[")
                     + itertools::Itertools::intersperse(
                         elements.iter().map(|e| e.pretty_print()),
@@ -1363,7 +1354,7 @@ impl PrettyPrint for Expression<'_> {
                     .sum()
                     + m::operator("]")
             }
-            TypedHole(_, _) => m::operator("?"),
+            Expression::TypedHole(_, _) => m::operator("?"),
         }
     }
 }

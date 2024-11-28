@@ -1,4 +1,4 @@
-use super::macros::*;
+use super::macros::{arg, return_scalar, string_arg};
 use super::Args;
 use super::Result;
 use crate::currency::ExchangeRatesCache;

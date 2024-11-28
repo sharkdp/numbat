@@ -53,7 +53,7 @@ impl SessionHistory {
                 &item.input
             };
 
-            writeln!(w, "{input}").map_err(&err_fn)?
+            writeln!(w, "{input}").map_err(&err_fn)?;
         }
         Ok(())
     }
@@ -120,7 +120,7 @@ mod test {
         for (options, expected) in test_cases {
             let mut s = Cursor::new(Vec::<u8>::new());
             sh.save_inner(&mut s, options, |_| unreachable!()).unwrap();
-            assert_eq!(expected, String::from_utf8(s.into_inner()).unwrap())
+            assert_eq!(expected, String::from_utf8(s.into_inner()).unwrap());
         }
     }
 
@@ -135,6 +135,6 @@ mod test {
                     trim_lines: false
                 }
             )
-            .is_err())
+            .is_err());
     }
 }

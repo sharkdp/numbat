@@ -167,7 +167,7 @@ impl Transformer {
                 self.transform_expression(expr);
             }
             Statement::DefineVariable(define_variable) => {
-                self.transform_define_variable(define_variable)?
+                self.transform_define_variable(define_variable)?;
             }
             Statement::DefineFunction {
                 function_name_span,

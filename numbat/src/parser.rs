@@ -358,7 +358,7 @@ impl<'a> Parser<'a> {
     fn recover_from_error(&mut self, tokens: &[Token]) {
         // Skip all the tokens until we encounter a newline or EoF.
         while !matches!(self.peek(tokens).kind, TokenKind::Newline | TokenKind::Eof) {
-            self.advance(tokens)
+            self.advance(tokens);
         }
     }
 
@@ -1379,7 +1379,7 @@ impl<'a> Parser<'a> {
                 let ident_span = self.last(tokens).unwrap().span;
                 let full_span = expr.full_span().extend(&ident_span);
 
-                expr = Expression::AccessField(full_span, ident_span, Box::new(expr), ident)
+                expr = Expression::AccessField(full_span, ident_span, Box::new(expr), ident);
             } else {
                 return Ok(expr);
             }
@@ -1626,16 +1626,12 @@ impl<'a> Parser<'a> {
                 ParseErrorKind::InlineProcedureUsage,
                 self.peek(tokens).span,
             ))
-        } else if self
-            .last(tokens)
-            .map(|t| {
-                matches!(
-                    t.kind,
-                    TokenKind::StringInterpolationStart | TokenKind::StringInterpolationMiddle
-                )
-            })
-            .unwrap_or(false)
-        {
+        } else if self.last(tokens).is_some_and(|t| {
+            matches!(
+                t.kind,
+                TokenKind::StringInterpolationStart | TokenKind::StringInterpolationMiddle
+            )
+        }) {
             let full_interpolation_end_span = self.peek(tokens).span;
             let closing_brace_span = full_interpolation_end_span
                 .start
@@ -2024,7 +2020,7 @@ fn strip_and_escape(s: &str) -> CompactString {
                     // We follow Python here, where an unknown escape sequence
                     // does not lead to an error, but is just passed through.
                     result.push('\\');
-                    result.push(c)
+                    result.push(c);
                 }
             }
             escaped = false;
@@ -2176,7 +2172,7 @@ mod tests {
     fn large_numbers() {
         parse_as_expression(
             &["1234567890000000", "1234567890000000.0"],
-            scalar!(1234567890000000.0),
+            scalar!(1_234_567_890_000_000.0),
         );
     }
 
@@ -2374,7 +2370,7 @@ mod tests {
             binop!(binop!(scalar!(5.0), Div, scalar!(3.0)), Mul, scalar!(2.0)),
         );
 
-        should_fail(&["3+*4", "3*/4", "(3+4", "3+4)", "3+(", "()", "(3+)4"])
+        should_fail(&["3+*4", "3*/4", "(3+4", "3+4)", "3+(", "()", "(3+)4"]);
     }
 
     #[test]

@@ -88,12 +88,7 @@ impl Prefix {
     }
 
     pub fn is_none(&self) -> bool {
-        match self {
-            Prefix::Metric(0) => true,
-            Prefix::Binary(0) => true,
-            Prefix::Metric(_) => false,
-            Prefix::Binary(_) => false,
-        }
+        matches!(self, Prefix::Metric(0) | Prefix::Binary(0))
     }
 
     pub fn is_metric(&self) -> bool {

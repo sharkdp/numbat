@@ -171,27 +171,27 @@ fn test_pretty_print() {
 
     assert_eq!(Number::from_f64(1234.).pretty_print(), "1234");
     assert_eq!(Number::from_f64(12345.).pretty_print(), "12345");
-    assert_eq!(Number::from_f64(123456.).pretty_print(), "123_456");
+    assert_eq!(Number::from_f64(123_456.).pretty_print(), "123_456");
     assert_eq!(
-        Number::from_f64(1234567890.).pretty_print(),
+        Number::from_f64(1_234_567_890.).pretty_print(),
         "1_234_567_890"
     );
     assert_eq!(
-        Number::from_f64(1234567890000000.).pretty_print(),
+        Number::from_f64(1_234_567_890_000_000.).pretty_print(),
         "1.23457e+15"
     );
 
-    assert_eq!(Number::from_f64(1.23456789).pretty_print(), "1.23457");
+    assert_eq!(Number::from_f64(1.234_567_89).pretty_print(), "1.23457");
     assert_eq!(
-        Number::from_f64(1234567890000.1).pretty_print(),
+        Number::from_f64(1_234_567_890_000.1).pretty_print(),
         "1.23457e+12"
     );
 
     assert_eq!(Number::from_f64(100.00001).pretty_print(), "100.0");
 
     assert_eq!(Number::from_f64(0.00001).pretty_print(), "0.00001");
-    assert_eq!(Number::from_f64(0.000001).pretty_print(), "0.000001");
-    assert_eq!(Number::from_f64(0.0000001).pretty_print(), "1.0e-7");
+    assert_eq!(Number::from_f64(0.000_001).pretty_print(), "0.000001");
+    assert_eq!(Number::from_f64(0.000_000_1).pretty_print(), "1.0e-7");
 }
 
 #[test]

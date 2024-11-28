@@ -235,7 +235,7 @@ mod tests {
 
     #[track_caller]
     fn assert_evaluates_to_scalar(input: &str, expected: f64) {
-        assert_evaluates_to(input, Quantity::from_scalar(expected))
+        assert_evaluates_to(input, Quantity::from_scalar(expected));
     }
 
     #[track_caller]

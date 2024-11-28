@@ -19,7 +19,7 @@ fn line_plot(mut args: Args) -> Plot {
     let x_label = format!(
         "{x_label}{x_unit}",
         x_unit = if x_unit.is_empty() {
-            "".into()
+            String::new()
         } else {
             format!(" [{}]", x_unit)
         }
@@ -27,7 +27,7 @@ fn line_plot(mut args: Args) -> Plot {
     let y_label = format!(
         "{y_label}{y_unit}",
         y_unit = if y_unit.is_empty() {
-            "".into()
+            String::new()
         } else {
             format!(" [{}]", y_unit)
         }
@@ -72,7 +72,7 @@ fn bar_chart(mut args: Args) -> Plot {
     let value_label = format!(
         "{value_label}{value_unit}",
         value_unit = if value_unit.is_empty() {
-            "".into()
+            String::new()
         } else {
             format!(" [{}]", value_unit)
         }

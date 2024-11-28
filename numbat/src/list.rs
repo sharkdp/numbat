@@ -21,8 +21,8 @@ pub struct NumbatList<T> {
 impl<T> Default for NumbatList<T> {
     fn default() -> Self {
         Self {
-            alloc: Default::default(),
-            view: Default::default(),
+            alloc: Arc::default(),
+            view: None,
         }
     }
 }

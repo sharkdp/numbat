@@ -86,8 +86,7 @@ pub enum IdentifierKind {
 impl IdentifierKind {
     fn get_type(&self) -> TypeScheme {
         match self {
-            IdentifierKind::Predefined(t) => t.clone(),
-            IdentifierKind::Normal(t, _, _) => t.clone(),
+            IdentifierKind::Predefined(t) | IdentifierKind::Normal(t, _, _) => t.clone(),
             IdentifierKind::Function(s, _) => s.fn_type.clone(),
         }
     }

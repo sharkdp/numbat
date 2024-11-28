@@ -124,7 +124,7 @@ impl std::fmt::Display for Value {
                 "{} {{{}}}",
                 struct_info.name,
                 if values.is_empty() {
-                    "".to_owned()
+                    String::new()
                 } else {
                     format!(
                         " {} ",
@@ -142,7 +142,9 @@ impl std::fmt::Display for Value {
                 "[{}]",
                 elements
                     .iter()
-                    .map(|element| element.to_string())
+                    // TODO: zero-copi for this write. For now, just assume that the compiler
+                    // recognises that this can be zero-copy, and be on our way...
+                    .map(ToString::to_string)
                     .join(", ")
             ),
         }
