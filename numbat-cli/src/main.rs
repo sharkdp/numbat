@@ -417,74 +417,76 @@ impl Cli {
             let readline = rl.readline(&self.config.prompt);
             match readline {
                 Ok(line) => {
-                    if !line.trim().is_empty() {
-                        rl.add_history_entry(&line)?;
+                    if line.trim().is_empty() {
+                        continue;
+                    }
 
-                        // if we enter here, the line looks like a command
-                        if let Some(sourceless_parser) =
-                            SourcelessCommandParser::new(&line, &cmd_runner)
-                        {
-                            let mut parser = CommandParser::new(
-                                sourceless_parser,
-                                self.context
-                                    .lock()
-                                    .unwrap()
-                                    .resolver_mut()
-                                    .add_code_source(CodeSource::Text, &line),
-                            );
+                    rl.add_history_entry(&line)?;
 
-                            match parser.parse_command() {
-                                Ok(cmd) => {
-                                    let mut context = self.context.lock().unwrap();
-                                    match cmd_runner.run(
-                                        cmd,
-                                        CommandContext {
-                                            ctx: &mut context,
-                                            editor: rl,
-                                            session_history: &session_history,
-                                            interactive,
-                                        },
-                                    ) {
-                                        CommandControlFlow::Normal => {}
-                                        CommandControlFlow::Continue => continue,
-                                        CommandControlFlow::Return => return Ok(()),
-                                    }
-                                }
-                                Err(e) => {
-                                    self.print_diagnostic(e);
-                                    continue;
-                                }
-                            }
-
-                            continue;
-                        }
-
-                        let ParseEvaluationOutcome {
-                            control_flow,
-                            result,
-                        } = self.parse_and_evaluate(
-                            &line,
-                            CodeSource::Text,
-                            if interactive {
-                                ExecutionMode::Interactive
-                            } else {
-                                ExecutionMode::Normal
-                            },
-                            self.config.pretty_print,
+                    // if we enter here, the line looks like a command
+                    if let Some(sourceless_parser) =
+                        SourcelessCommandParser::new(&line, &cmd_runner)
+                    {
+                        let mut parser = CommandParser::new(
+                            sourceless_parser,
+                            self.context
+                                .lock()
+                                .unwrap()
+                                .resolver_mut()
+                                .add_code_source(CodeSource::Text, &line),
                         );
 
-                        match control_flow {
-                            std::ops::ControlFlow::Continue(()) => {}
-                            std::ops::ControlFlow::Break(ExitStatus::Success) => {
-                                return Ok(());
+                        match parser.parse_command() {
+                            Ok(cmd) => {
+                                let mut context = self.context.lock().unwrap();
+                                match cmd_runner.run(
+                                    cmd,
+                                    CommandContext {
+                                        ctx: &mut context,
+                                        editor: rl,
+                                        session_history: &session_history,
+                                        interactive,
+                                    },
+                                ) {
+                                    CommandControlFlow::Normal => {}
+                                    CommandControlFlow::Continue => continue,
+                                    CommandControlFlow::Return => return Ok(()),
+                                }
                             }
-                            std::ops::ControlFlow::Break(ExitStatus::Error) => {
-                                bail!("Interpreter stopped due to error")
+                            Err(e) => {
+                                self.print_diagnostic(e);
+                                continue;
                             }
                         }
 
-                        session_history.push(CompactString::from(line), result);
+                        continue;
                     }
+
+                    let ParseEvaluationOutcome {
+                        control_flow,
+                        result,
+                    } = self.parse_and_evaluate(
+                        &line,
+                        CodeSource::Text,
+                        if interactive {
+                            ExecutionMode::Interactive
+                        } else {
+                            ExecutionMode::Normal
+                        },
+                        self.config.pretty_print,
+                    );
+
+                    match control_flow {
+                        std::ops::ControlFlow::Continue(()) => {}
+                        std::ops::ControlFlow::Break(ExitStatus::Success) => {
+                            return Ok(());
+                        }
+                        std::ops::ControlFlow::Break(ExitStatus::Error) => {
+                            bail!("Interpreter stopped due to error")
+                        }
+                    }
+
+                    session_history.push(CompactString::from(line), result);
                 }
                 Err(ReadlineError::Interrupted) => {}
                 Err(ReadlineError::Eof) => {
