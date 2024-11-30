@@ -1,7 +1,10 @@
 use std::str::{FromStr, SplitWhitespace};
 
+use compact_str::ToCompactString;
+
 use crate::{
     parser::ParseErrorKind,
+    resolver::CodeSource,
     session_history::SessionHistory,
     span::{ByteIndex, Span},
     Context, ParseError,
@@ -58,7 +61,6 @@ pub enum CommandControlFlow {
 pub struct CommandContext<'ctx, 'aux, Editor> {
     pub ctx: &'ctx mut Context,
     pub editor: &'aux mut Editor,
-    pub session_history: &'aux SessionHistory,
     pub interactive: bool,
 }
 
@@ -68,7 +70,10 @@ pub struct CommandRunner<Editor> {
     list: Option<fn(&Context, Option<ListItems>) -> CommandControlFlow>,
     clear: Option<fn(&mut Editor) -> CommandControlFlow>,
     #[allow(clippy::type_complexity)]
-    save: Option<fn(&Context, &SessionHistory, &str, bool) -> CommandControlFlow>,
+    save: Option<(
+        SessionHistory,
+        fn(&Context, &SessionHistory, &str, bool) -> CommandControlFlow,
+    )>,
     quit: Option<fn() -> CommandControlFlow>,
 }
 
@@ -115,9 +120,10 @@ impl<Editor> CommandRunner<Editor> {
 
     pub fn enable_save(
         mut self,
+        session_history: SessionHistory,
         action: fn(&Context, &SessionHistory, &str, bool) -> CommandControlFlow,
     ) -> Self {
-        self.save = Some(action);
+        self.save = Some((session_history, action));
         self
     }
 
@@ -126,11 +132,50 @@ impl<Editor> CommandRunner<Editor> {
         self
     }
 
-    pub fn run(&self, cmd: Command, args: CommandContext<Editor>) -> CommandControlFlow {
+    pub fn push_to_history(&mut self, line: &str, result: Result<(), ()>) {
+        let Some((session_history, _)) = self.save.as_mut() else {
+            return;
+        };
+        session_history.push(line.to_compact_string(), result);
+    }
+
+    /// Try to run the input line as a command. `Return Some(control_flow)` if it is
+    /// recognized as a command, `None` otherwise (in which case we should just fall
+    /// back to the normal Numbat evaluator).
+    pub fn try_run_line(
+        &self,
+        ctx: &mut Context,
+        line: &str,
+        editor: &mut Editor,
+        interactive: bool,
+    ) -> Option<CommandControlFlow> {
+        let sourceless_parser = SourcelessCommandParser::new(line, self)?;
+
+        let mut parser = CommandParser::new(
+            sourceless_parser,
+            ctx.resolver_mut().add_code_source(CodeSource::Text, line),
+        );
+
+        Some(match parser.parse_command() {
+            Ok(cmd) => self.run_command(
+                cmd,
+                CommandContext {
+                    ctx,
+                    editor,
+                    interactive,
+                },
+            ),
+            Err(e) => {
+                ctx.print_diagnostic(e);
+                CommandControlFlow::Continue
+            }
+        })
+    }
+
+    fn run_command(&self, cmd: Command, args: CommandContext<Editor>) -> CommandControlFlow {
         let CommandContext {
             ctx,
             editor,
-            session_history,
             interactive,
         } = args;
 
@@ -139,7 +184,10 @@ impl<Editor> CommandRunner<Editor> {
             Command::Info { item } => self.info.unwrap()(ctx, item),
             Command::List { items } => self.list.unwrap()(ctx, items),
             Command::Clear => self.clear.unwrap()(editor),
-            Command::Save { dst } => self.save.unwrap()(ctx, session_history, dst, interactive),
+            Command::Save { dst } => {
+                let (sh, action) = self.save.as_ref().unwrap();
+                action(ctx, sh, dst, interactive)
+            }
             Command::Quit => self.quit.unwrap()(),
         }
     }
@@ -395,7 +443,9 @@ mod test {
                     info: Some(|_, _| CommandControlFlow::default()),
                     list: Some(|_, _| CommandControlFlow::default()),
                     clear: Some(|_| CommandControlFlow::default()),
-                    save: Some(|_, _, _, _| CommandControlFlow::default()),
+                    save: Some((SessionHistory::default(), |_, _, _, _| {
+                        CommandControlFlow::default()
+                    })),
                     quit: Some(default_cf0),
                 }
             }
