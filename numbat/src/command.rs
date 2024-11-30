@@ -2,8 +2,9 @@ use std::str::{FromStr, SplitWhitespace};
 
 use crate::{
     parser::ParseErrorKind,
+    session_history::SessionHistory,
     span::{ByteIndex, Span},
-    ParseError,
+    Context, ParseError,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -43,6 +44,104 @@ impl FromStr for CommandKind {
             "exit" => Quit(QuitAlias::Exit),
             _ => return Err(()),
         })
+    }
+}
+
+#[derive(Default)]
+pub enum CommandControlFlow {
+    #[default]
+    Normal,
+    Continue,
+    Return,
+}
+
+pub struct CommandContext<'ctx, 'aux, Editor> {
+    pub ctx: &'ctx mut Context,
+    pub editor: &'aux mut Editor,
+    pub session_history: &'aux SessionHistory,
+    pub interactive: bool,
+}
+
+pub struct CommandRunner<Editor> {
+    help: Option<fn() -> CommandControlFlow>,
+    info: Option<fn(&mut Context, &str) -> CommandControlFlow>,
+    list: Option<fn(&Context, Option<ListItems>) -> CommandControlFlow>,
+    clear: Option<fn(&mut Editor) -> CommandControlFlow>,
+    #[allow(clippy::type_complexity)]
+    save: Option<fn(&Context, &SessionHistory, &str, bool) -> CommandControlFlow>,
+    quit: Option<fn() -> CommandControlFlow>,
+}
+
+impl<Editor> Default for CommandRunner<Editor> {
+    fn default() -> Self {
+        Self {
+            help: None,
+            info: None,
+            list: None,
+            clear: None,
+            save: None,
+            quit: None,
+        }
+    }
+}
+
+impl<Editor> CommandRunner<Editor> {
+    pub fn new_all_disabled() -> Self {
+        Self::default()
+    }
+
+    pub fn enable_help(mut self, action: fn() -> CommandControlFlow) -> Self {
+        self.help = Some(action);
+        self
+    }
+
+    pub fn enable_info(mut self, action: fn(&mut Context, &str) -> CommandControlFlow) -> Self {
+        self.info = Some(action);
+        self
+    }
+
+    pub fn enable_list(
+        mut self,
+        action: fn(&Context, Option<ListItems>) -> CommandControlFlow,
+    ) -> Self {
+        self.list = Some(action);
+        self
+    }
+
+    pub fn enable_clear(mut self, action: fn(&mut Editor) -> CommandControlFlow) -> Self {
+        self.clear = Some(action);
+        self
+    }
+
+    pub fn enable_save(
+        mut self,
+        action: fn(&Context, &SessionHistory, &str, bool) -> CommandControlFlow,
+    ) -> Self {
+        self.save = Some(action);
+        self
+    }
+
+    pub fn enable_quit(mut self, action: fn() -> CommandControlFlow) -> Self {
+        self.quit = Some(action);
+        self
+    }
+
+    pub fn run(&self, cmd: Command, args: CommandContext<Editor>) -> CommandControlFlow {
+        let CommandContext {
+            ctx,
+            editor,
+            session_history,
+            interactive,
+        } = args;
+
+        match cmd {
+            Command::Help => self.help.unwrap()(),
+            Command::Info { item } => self.info.unwrap()(ctx, item),
+            Command::List { items } => self.list.unwrap()(ctx, items),
+            Command::Clear => self.clear.unwrap()(editor),
+            Command::Save { dst } => self.save.unwrap()(ctx, session_history, dst, interactive),
+            Command::Quit => self.quit.unwrap()(),
+        }
     }
 }
 
@@ -86,9 +185,21 @@ impl<'a> SourcelessCommandParser<'a> {
     ///
     /// If this returns `None`, you should proceed with parsing the input as an ordinary
     /// numbat expression
-    pub fn new(input: &'a str) -> Option<Self> {
+    pub fn new<Editor>(input: &'a str, config: &CommandRunner<Editor>) -> Option<Self> {
         let mut words: SplitWhitespace<'_> = input.split_whitespace();
         let command_kind = words.next().and_then(|w| w.parse().ok())?;
+
+        let is_supported = match command_kind {
+            CommandKind::Help => config.help.is_some(),
+            CommandKind::Info => config.info.is_some(),
+            CommandKind::List => config.list.is_some(),
+            CommandKind::Clear => config.clear.is_some(),
+            CommandKind::Save => config.save.is_some(),
+            CommandKind::Quit(_) => config.quit.is_some(),
+        };
+        if !is_supported {
+            return None;
+        }
 
         let mut word_boundaries = Vec::new();
         let mut prev_char_was_whitespace = true;
@@ -272,8 +383,28 @@ impl<'a> CommandParser<'a> {
 mod test {
     use super::*;
 
+    fn default_cf0() -> CommandControlFlow {
+        CommandControlFlow::default()
+    }
+
     fn parser(input: &'static str) -> Option<CommandParser<'static>> {
-        Some(CommandParser::new(SourcelessCommandParser::new(input)?, 0))
+        impl<Editor> CommandRunner<Editor> {
+            fn new_all_enabled() -> Self {
+                Self {
+                    help: Some(default_cf0),
+                    info: Some(|_, _| CommandControlFlow::default()),
+                    list: Some(|_, _| CommandControlFlow::default()),
+                    clear: Some(|_| CommandControlFlow::default()),
+                    save: Some(|_, _, _, _| CommandControlFlow::default()),
+                    quit: Some(default_cf0),
+                }
+            }
+        }
+        let config = CommandRunner::<()>::new_all_enabled();
+        Some(CommandParser::new(
+            SourcelessCommandParser::new(input, &config)?,
+            0,
+        ))
     }
 
     // can't be a function due to lifetimes/borrow checker
@@ -484,5 +615,30 @@ mod test {
         assert_eq!(parse!("save arg").unwrap(), Command::Save { dst: "arg" });
         assert_eq!(parse!("save .").unwrap(), Command::Save { dst: "." });
         assert!(parse!("save arg1 arg2").is_err());
+    }
+
+    #[test]
+    fn test_config() {
+        fn parser<'a, Editor>(
+            input: &'a str,
+            config: &CommandRunner<Editor>,
+        ) -> Option<CommandParser<'a>> {
+            Some(CommandParser::new(
+                SourcelessCommandParser::new(input, config)?,
+                0,
+            ))
+        }
+
+        let config = CommandRunner::<()>::new_all_disabled()
+            .enable_help(default_cf0)
+            .enable_quit(default_cf0);
+
+        assert!(parser("help", &config).is_some());
+        assert!(parser("info", &config).is_none());
+        assert!(parser("list", &config).is_none());
+        assert!(parser("clear", &config).is_none());
+        assert!(parser("save", &config).is_none());
+        assert!(parser("quit", &config).is_some());
+        assert!(parser("exit", &config).is_some());
     }
 }
