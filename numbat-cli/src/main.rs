@@ -10,7 +10,9 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
-use numbat::command::{self, CommandParser, SourcelessCommandParser};
+use numbat::command::{
+    self, CommandContext, CommandControlFlow, CommandParser, CommandRunner, SourcelessCommandParser,
+};
 use numbat::compact_str::{CompactString, ToCompactString};
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::help::help_markup;
@@ -357,6 +359,60 @@ impl Cli {
     ) -> Result<()> {
         let mut session_history = SessionHistory::default();
 
+        let cmd_runner = CommandRunner::<Editor<NumbatHelper, DefaultHistory>>::new_all_disabled()
+            .enable_help(|| {
+                let help = help_markup();
+                print!("{}", ansi_format(&help, true));
+                // currently, the ansi formatter adds indents
+                // _after_ each newline and so we need to manually
+                // add an extra blank line to absorb this indent
+                println!();
+                CommandControlFlow::Normal
+            })
+            .enable_info(|ctx, item| {
+                let help = ctx.print_info_for_keyword(item);
+                println!("{}", ansi_format(&help, true));
+                CommandControlFlow::Normal
+            })
+            .enable_list(|ctx, item| {
+                let m = match item {
+                    None => ctx.print_environment(),
+                    Some(command::ListItems::Functions) => ctx.print_functions(),
+                    Some(command::ListItems::Dimensions) => ctx.print_dimensions(),
+                    Some(command::ListItems::Variables) => ctx.print_variables(),
+                    Some(command::ListItems::Units) => ctx.print_units(),
+                };
+                println!("{}", ansi_format(&m, false));
+                CommandControlFlow::Normal
+            })
+            .enable_clear(|rl| match rl.clear_screen() {
+                Ok(_) => CommandControlFlow::Normal,
+                Err(_) => CommandControlFlow::Return,
+            })
+            .enable_save(|ctx, sh, dst, interactive| {
+                let save_result = sh.save(
+                    dst,
+                    SessionHistoryOptions {
+                        include_err_lines: false,
+                        trim_lines: true,
+                    },
+                );
+                match save_result {
+                    Ok(_) => {
+                        let m = m::text("successfully saved session history to")
+                            + m::space()
+                            + m::string(dst.to_compact_string());
+                        println!("{}", ansi_format(&m, interactive));
+                        CommandControlFlow::Normal
+                    }
+                    Err(err) => {
+                        ctx.print_diagnostic(*err);
+                        CommandControlFlow::Continue
+                    }
+                }
+            })
+            .enable_quit(|| CommandControlFlow::Return);
+
         loop {
             let readline = rl.readline(&self.config.prompt);
             match readline {
@@ -365,7 +421,9 @@ impl Cli {
                         rl.add_history_entry(&line)?;
 
                         // if we enter here, the line looks like a command
-                        if let Some(sourceless_parser) = SourcelessCommandParser::new(&line) {
+                        if let Some(sourceless_parser) =
+                            SourcelessCommandParser::new(&line, &cmd_runner)
+                        {
                             let mut parser = CommandParser::new(
                                 sourceless_parser,
                                 self.context
@@ -376,67 +434,22 @@ impl Cli {
                             );
 
                             match parser.parse_command() {
-                                Ok(command) => match command {
-                                    command::Command::Help => {
-                                        let help = help_markup();
-                                        print!("{}", ansi_format(&help, true));
-                                        // currently, the ansi formatter adds indents
-                                        // _after_ each newline and so we need to manually
-                                        // add an extra blank line to absorb this indent
-                                        println!();
+                                Ok(cmd) => {
+                                    let mut context = self.context.lock().unwrap();
+                                    match cmd_runner.run(
+                                        cmd,
+                                        CommandContext {
+                                            ctx: &mut context,
+                                            editor: rl,
+                                            session_history: &session_history,
+                                            interactive,
+                                        },
+                                    ) {
+                                        CommandControlFlow::Normal => {}
+                                        CommandControlFlow::Continue => continue,
+                                        CommandControlFlow::Return => return Ok(()),
                                     }
-                                    command::Command::Info { item } => {
-                                        let help = self
-                                            .context
-                                            .lock()
-                                            .unwrap()
-                                            .print_info_for_keyword(item);
-                                        println!("{}", ansi_format(&help, true));
-                                    }
-                                    command::Command::List { items } => {
-                                        let context = self.context.lock().unwrap();
-                                        let m = match items {
-                                            None => context.print_environment(),
-                                            Some(command::ListItems::Functions) => {
-                                                context.print_functions()
-                                            }
-                                            Some(command::ListItems::Dimensions) => {
-                                                context.print_dimensions()
-                                            }
-                                            Some(command::ListItems::Variables) => {
-                                                context.print_variables()
-                                            }
-                                            Some(command::ListItems::Units) => {
-                                                context.print_units()
-                                            }
-                                        };
-                                        println!("{}", ansi_format(&m, false));
-                                    }
-                                    command::Command::Clear => rl.clear_screen()?,
-                                    command::Command::Save { dst } => {
-                                        let save_result = session_history.save(
-                                            dst,
-                                            SessionHistoryOptions {
-                                                include_err_lines: false,
-                                                trim_lines: true,
-                                            },
-                                        );
-                                        match save_result {
-                                            Ok(_) => {
-                                                let m = m::text(
-                                                    "successfully saved session history to",
-                                                ) + m::space()
-                                                    + m::string(dst.to_compact_string());
-                                                println!("{}", ansi_format(&m, interactive));
-                                            }
-                                            Err(err) => {
-                                                self.print_diagnostic(*err);
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                    command::Command::Quit => return Ok(()),
-                                },
+                                }
                                 Err(e) => {
                                     self.print_diagnostic(e);
                                     continue;
