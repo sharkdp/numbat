@@ -53,7 +53,6 @@ impl FromStr for CommandKind {
 #[derive(Default)]
 pub enum CommandControlFlow {
     #[default]
-    Normal,
     Continue,
     Return,
 }

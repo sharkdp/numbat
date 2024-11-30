@@ -360,12 +360,12 @@ impl Cli {
                     // _after_ each newline and so we need to manually
                     // add an extra blank line to absorb this indent
                     println!();
-                    CommandControlFlow::Normal
+                    CommandControlFlow::Continue
                 })
                 .enable_info(|ctx, item| {
                     let help = ctx.print_info_for_keyword(item);
                     println!("{}", ansi_format(&help, true));
-                    CommandControlFlow::Normal
+                    CommandControlFlow::Continue
                 })
                 .enable_list(|ctx, item| {
                     let m = match item {
@@ -376,10 +376,10 @@ impl Cli {
                         Some(command::ListItems::Units) => ctx.print_units(),
                     };
                     println!("{}", ansi_format(&m, false));
-                    CommandControlFlow::Normal
+                    CommandControlFlow::Continue
                 })
                 .enable_clear(|rl| match rl.clear_screen() {
-                    Ok(_) => CommandControlFlow::Normal,
+                    Ok(_) => CommandControlFlow::Continue,
                     Err(_) => CommandControlFlow::Return,
                 })
                 .enable_save(SessionHistory::default(), |ctx, sh, dst, interactive| {
@@ -396,13 +396,12 @@ impl Cli {
                                 + m::space()
                                 + m::string(dst.to_compact_string());
                             println!("{}", ansi_format(&m, interactive));
-                            CommandControlFlow::Normal
                         }
                         Err(err) => {
                             ctx.print_diagnostic(*err);
-                            CommandControlFlow::Continue
                         }
                     }
+                    CommandControlFlow::Continue
                 })
                 .enable_quit(|| CommandControlFlow::Return);
 
@@ -424,11 +423,9 @@ impl Cli {
                         interactive,
                     ) {
                         match cmd_cf {
-                            CommandControlFlow::Normal => {}
                             CommandControlFlow::Continue => continue,
                             CommandControlFlow::Return => return Ok(()),
                         }
-                        continue;
                     }
 
                     let ParseEvaluationOutcome {
