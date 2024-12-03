@@ -10,15 +10,14 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
-use numbat::command::{self, CommandControlFlow, CommandRunner};
-use numbat::compact_str::{CompactString, ToCompactString};
+use numbat::command::{CommandContext, CommandControlFlow, CommandRunner};
+use numbat::compact_str::CompactString;
 use numbat::diagnostic::ErrorDiagnostic;
-use numbat::help::help_markup;
 use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::session_history::{ParseEvaluationResult, SessionHistory, SessionHistoryOptions};
+use numbat::session_history::{ParseEvaluationResult, SessionHistory};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -353,57 +352,13 @@ impl Cli {
     ) -> Result<()> {
         let mut cmd_runner =
             CommandRunner::<Editor<NumbatHelper, DefaultHistory>>::new_all_disabled()
-                .enable_help(|| {
-                    let help = help_markup();
-                    print!("{}", ansi_format(&help, true));
-                    // currently, the ansi formatter adds indents
-                    // _after_ each newline and so we need to manually
-                    // add an extra blank line to absorb this indent
-                    println!();
-                    CommandControlFlow::Continue
-                })
-                .enable_info(|ctx, item| {
-                    let help = ctx.print_info_for_keyword(item);
-                    println!("{}", ansi_format(&help, true));
-                    CommandControlFlow::Continue
-                })
-                .enable_list(|ctx, item| {
-                    let m = match item {
-                        None => ctx.print_environment(),
-                        Some(command::ListItems::Functions) => ctx.print_functions(),
-                        Some(command::ListItems::Dimensions) => ctx.print_dimensions(),
-                        Some(command::ListItems::Variables) => ctx.print_variables(),
-                        Some(command::ListItems::Units) => ctx.print_units(),
-                    };
-                    println!("{}", ansi_format(&m, false));
-                    CommandControlFlow::Continue
-                })
+                .enable_print_markup(|m| println!("{}", ansi_format(m, true)))
                 .enable_clear(|rl| match rl.clear_screen() {
                     Ok(_) => CommandControlFlow::Continue,
                     Err(_) => CommandControlFlow::Return,
                 })
-                .enable_save(SessionHistory::default(), |ctx, sh, dst, interactive| {
-                    let save_result = sh.save(
-                        dst,
-                        SessionHistoryOptions {
-                            include_err_lines: false,
-                            trim_lines: true,
-                        },
-                    );
-                    match save_result {
-                        Ok(_) => {
-                            let m = m::text("successfully saved session history to")
-                                + m::space()
-                                + m::string(dst.to_compact_string());
-                            println!("{}", ansi_format(&m, interactive));
-                        }
-                        Err(err) => {
-                            ctx.print_diagnostic(*err);
-                        }
-                    }
-                    CommandControlFlow::Continue
-                })
-                .enable_quit(|| CommandControlFlow::Return);
+                .enable_save(SessionHistory::default())
+                .enable_quit();
 
         loop {
             let readline = rl.readline(&self.config.prompt);
@@ -415,17 +370,16 @@ impl Cli {
 
                     rl.add_history_entry(&line)?;
 
-                    // if we enter here, the line looks like a command
-                    if let Some(cmd_cf) = cmd_runner.try_run_line(
-                        &mut self.context.lock().unwrap(),
+                    match cmd_runner.try_run_line(
                         &line,
-                        rl,
-                        interactive,
+                        CommandContext {
+                            ctx: self.context.lock().unwrap(),
+                            editor: rl,
+                        },
                     ) {
-                        match cmd_cf {
-                            CommandControlFlow::Continue => continue,
-                            CommandControlFlow::Return => return Ok(()),
-                        }
+                        CommandControlFlow::Continue => continue,
+                        CommandControlFlow::Return => return Ok(()),
+                        CommandControlFlow::NotACommand => {}
                     }
 
                     let ParseEvaluationOutcome {
