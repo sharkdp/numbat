@@ -370,7 +370,7 @@ impl Cli {
 
                     rl.add_history_entry(&line)?;
 
-                    match cmd_runner.run_command(
+                    match cmd_runner.try_run_command(
                         &line,
                         CommandContext {
                             ctx: self.context.lock().unwrap(),

@@ -341,7 +341,7 @@ impl<Editor> CommandRunner<Editor> {
     /// `CommandControlFlow::Continue` or `CommandControlFlow::Return`. If the line is
     /// not an enabled command (whether that's because it's not a command at all, or
     /// it's a disabled command), then this returns `CommandControlFlow::NotACommand`.
-    pub fn run_command<ContextMut: DerefMut<Target = Context>>(
+    pub fn try_run_command<ContextMut: DerefMut<Target = Context>>(
         &self,
         line: &str,
         mut args: CommandContext<ContextMut, Editor>,
@@ -815,7 +815,7 @@ mod test {
                 ctx,
                 editor: &mut (),
             };
-            assert_eq!(expected, runner.run_command(input, args).unwrap());
+            assert_eq!(expected, runner.try_run_command(input, args).unwrap());
         }
 
         let mut ctx = Context::new_without_importer();
