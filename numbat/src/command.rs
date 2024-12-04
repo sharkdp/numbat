@@ -112,14 +112,41 @@ enum Command<'a, 'b, Editor> {
     Clear {
         clear_fn: fn(&mut Editor) -> CommandControlFlow,
     },
-    Save {
-        session_history: &'a SessionHistory,
-        dst: &'b str,
-        print_fn: Option<fn(&Markup)>,
-        #[allow(clippy::type_complexity)]
-        save_fn: fn(&SessionHistory, &str, Option<fn(&Markup)>) -> Result<(), Box<RuntimeError>>,
-    },
+    Save(SaveCmdArgs<'a, 'b>),
     Quit,
+}
+
+struct SaveCmdArgs<'a, 'b> {
+    session_history: &'a SessionHistory,
+    dst: &'b str,
+    print_fn: Option<fn(&Markup)>,
+}
+
+impl SaveCmdArgs<'_, '_> {
+    fn save(&self) -> Result<(), Box<RuntimeError>> {
+        let Self {
+            session_history,
+            dst,
+            print_fn,
+        } = self;
+
+        session_history.save(
+            dst,
+            SessionHistoryOptions {
+                include_err_lines: false,
+                trim_lines: true,
+            },
+        )?;
+
+        if let Some(print_markup) = *print_fn {
+            let markup = m::text("successfully saved session history to")
+                + m::space()
+                + m::string(dst.to_compact_string());
+            print_markup(&markup)
+        }
+
+        Ok(())
+    }
 }
 
 pub struct CommandRunner<Editor> {
@@ -260,29 +287,6 @@ impl<Editor> CommandRunner<Editor> {
                 Command::Clear { clear_fn }
             }
             CommandKind::Save => {
-                fn save_fn(
-                    session_history: &SessionHistory,
-                    dst: &str,
-                    print_markup: Option<fn(&Markup)>,
-                ) -> Result<(), Box<RuntimeError>> {
-                    session_history.save(
-                        dst,
-                        SessionHistoryOptions {
-                            include_err_lines: false,
-                            trim_lines: true,
-                        },
-                    )?;
-
-                    if let Some(print_markup) = print_markup {
-                        let markup = m::text("successfully saved session history to")
-                            + m::space()
-                            + m::string(dst.to_compact_string());
-                        print_markup(&markup)
-                    }
-
-                    Ok(())
-                }
-
                 let Some(session_history) = session_history else {
                     return Ok(None);
                 };
@@ -306,12 +310,11 @@ impl<Editor> CommandRunner<Editor> {
                     None => "history.nbt",
                 };
 
-                Command::Save {
+                Command::Save(SaveCmdArgs {
                     session_history,
                     dst,
                     print_fn,
-                    save_fn,
-                }
+                })
             }
             CommandKind::Quit(quit_alias) => {
                 let Some(_) = quit else {
@@ -336,11 +339,13 @@ impl<Editor> CommandRunner<Editor> {
     /// Try to run the input line as a command.
     ///
     /// If the line is recognized as an (enabled) command, this handles the happy path,
-    /// but it is up to frontends to handle the error path if this returns an error. If
-    /// the command was recognized then this returns one of
-    /// `CommandControlFlow::Continue` or `CommandControlFlow::Return`. If the line is
-    /// not an enabled command (whether that's because it's not a command at all, or
-    /// it's a disabled command), then this returns `CommandControlFlow::NotACommand`.
+    /// but it is up to frontends to handle the error path if this returns an error,
+    /// which can happen because arguments to the command were incorrect (eg `list
+    /// foobar`) or because the command failed at runtime (eg `save /`). If the command
+    /// was recognized then this returns one of `CommandControlFlow::Continue` or
+    /// `CommandControlFlow::Return`. If the line is not an enabled command (whether
+    /// that's because it's not a command at all, or it's a disabled command), then this
+    /// returns `CommandControlFlow::NotACommand`.
     pub fn try_run_command<ContextMut: DerefMut<Target = Context>>(
         &self,
         line: &str,
@@ -374,13 +379,8 @@ impl<Editor> CommandRunner<Editor> {
                 CommandControlFlow::Continue
             }
             Command::Clear { clear_fn } => clear_fn(editor),
-            Command::Save {
-                session_history,
-                dst,
-                print_fn,
-                save_fn,
-            } => {
-                save_fn(session_history, dst, print_fn).map_err(|err| Box::new((*err).into()))?;
+            Command::Save(save_args) => {
+                save_args.save().map_err(|err| Box::new((*err).into()))?;
                 CommandControlFlow::Continue
             }
             Command::Quit => CommandControlFlow::Return,
@@ -407,7 +407,7 @@ impl<'b, Editor> Command<'_, 'b, Editor> {
             Command::Info { item, .. } => BareCommand::Info { item },
             Command::List { items, .. } => BareCommand::List { items },
             Command::Clear { clear_fn: _ } => BareCommand::Clear,
-            Command::Save { dst, .. } => BareCommand::Save { dst },
+            Command::Save(SaveCmdArgs { dst, .. }) => BareCommand::Save { dst },
             Command::Quit => BareCommand::Quit,
         }
     }
