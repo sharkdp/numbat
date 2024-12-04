@@ -374,16 +374,22 @@ impl Cli {
 
                     rl.add_history_entry(&line)?;
 
-                    match cmd_runner.try_run_line(
+                    match cmd_runner.run_command(
                         &line,
                         CommandContext {
                             ctx: self.context.lock().unwrap(),
                             editor: rl,
                         },
                     ) {
-                        CommandControlFlow::Continue => continue,
-                        CommandControlFlow::Return => return Ok(()),
-                        CommandControlFlow::NotACommand => {}
+                        Ok(cf) => match cf {
+                            CommandControlFlow::Continue => continue,
+                            CommandControlFlow::Return => return Ok(()),
+                            CommandControlFlow::NotACommand => {}
+                        },
+                        Err(err) => {
+                            self.context.lock().unwrap().print_diagnostic(*err);
+                            continue;
+                        }
                     }
 
                     let ParseEvaluationOutcome {

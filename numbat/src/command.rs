@@ -1,5 +1,3 @@
-#![cfg_attr(test, allow(unused_variables))]
-
 use std::{
     ops::DerefMut,
     str::{FromStr, SplitWhitespace},
@@ -7,18 +5,15 @@ use std::{
 
 use compact_str::ToCompactString;
 
-#[cfg(test)]
-use crate::RuntimeError;
-#[cfg(not(test))]
-use crate::{help::help_markup, session_history::SessionHistoryOptions};
-
 use crate::{
+    diagnostic::ErrorDiagnostic,
+    help::help_markup,
     markup::{self as m, Markup},
     parser::ParseErrorKind,
     resolver::CodeSource,
-    session_history::SessionHistory,
+    session_history::{SessionHistory, SessionHistoryOptions},
     span::{ByteIndex, Span},
-    Context, ParseError,
+    Context, ParseError, RuntimeError,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -75,6 +70,58 @@ pub struct CommandContext<'editor, ContextMut, Editor> {
     pub editor: &'editor mut Editor,
 }
 
+#[derive(Debug)]
+pub enum CommandError {
+    Parse(ParseError),
+    Runtime(RuntimeError),
+}
+
+impl From<ParseError> for CommandError {
+    fn from(err: ParseError) -> Self {
+        Self::Parse(err)
+    }
+}
+
+impl From<RuntimeError> for CommandError {
+    fn from(err: RuntimeError) -> Self {
+        Self::Runtime(err)
+    }
+}
+
+impl ErrorDiagnostic for CommandError {
+    fn diagnostics(&self) -> Vec<crate::Diagnostic> {
+        match self {
+            CommandError::Parse(parse_error) => parse_error.diagnostics(),
+            CommandError::Runtime(runtime_error) => runtime_error.diagnostics(),
+        }
+    }
+}
+
+enum Command<'a, 'b, Editor> {
+    Help {
+        print_fn: fn(&Markup),
+    },
+    Info {
+        item: &'b str,
+        print_fn: fn(&Markup),
+    },
+    List {
+        items: Option<ListItems>,
+        print_fn: fn(&Markup),
+    },
+    Clear {
+        clear_fn: fn(&mut Editor) -> CommandControlFlow,
+    },
+    Save {
+        session_history: &'a SessionHistory,
+        dst: &'b str,
+        print_fn: Option<fn(&Markup)>,
+        #[allow(clippy::type_complexity)]
+        save_fn: fn(&SessionHistory, &str, Option<fn(&Markup)>) -> Result<(), Box<RuntimeError>>,
+    },
+    Quit,
+}
+
 pub struct CommandRunner<Editor> {
     print_markup: Option<fn(&Markup)>,
     clear: Option<fn(&mut Editor) -> CommandControlFlow>,
@@ -93,26 +140,12 @@ impl<Editor> CommandRunner<Editor> {
     }
 
     pub fn enable_print_markup(mut self, action: fn(&Markup)) -> Self {
-        #[cfg(not(test))]
-        {
-            self.print_markup = Some(action);
-        }
-        #[cfg(test)]
-        {
-            self.print_markup = Some(|_| {});
-        }
+        self.print_markup = Some(action);
         self
     }
 
     pub fn enable_clear(mut self, action: fn(&mut Editor) -> CommandControlFlow) -> Self {
-        #[cfg(not(test))]
-        {
-            self.clear = Some(action);
-        }
-        #[cfg(test)]
-        {
-            self.clear = Some(|_| CommandControlFlow::Continue);
-        }
+        self.clear = Some(action);
         self
     }
 
@@ -133,156 +166,203 @@ impl<Editor> CommandRunner<Editor> {
         session_history.push(line.to_compact_string(), result);
     }
 
-    /// Try to run the input line as a command.
-    ///
-    /// If the line is recognized as an (enabled) command, this handles everything that
-    /// needs to be done, including printing markup or error messages, and simply
-    /// returns a `CommandControlFlow`, returning one of `CommandControlFlow::Continue`
-    /// or `CommandControlFlow::Return`. If the line is not an enabled command, then
-    /// returns `CommandControlFlow::NotACommand`.
-    pub fn try_run_line<ContextMut: DerefMut<Target = Context>>(
-        &self,
-        line: &str,
-        args: CommandContext<ContextMut, Editor>,
-    ) -> CommandControlFlow {
-        let (cf, _) = self.try_run_line_internal(line, args);
-        cf
-    }
-
-    /// Try to run the input line as a command. See [`Self::try_run_line`] for details.
-    ///
-    /// Returns both the control flow and the parsed command if it exists. Only used for
-    /// testing; for production we only need the `CommandControlFlow`.
-    fn try_run_line_internal<'a, ContextMut: DerefMut<Target = Context>>(
-        &self,
-        line: &'a str,
-        args: CommandContext<ContextMut, Editor>,
-    ) -> (CommandControlFlow, Option<Command<'a>>) {
-        macro_rules! ensure_enabled {
-            ($ident:ident, $if_some:tt) => {
-                match $ident {
-                    Some($ident) => $if_some,
-                    None => return (CommandControlFlow::NotACommand, None),
-                }
-            };
-            ($ident:ident: _, $if_some:tt) => {
-                match $ident {
-                    Some(_) => $if_some,
-                    None => return (CommandControlFlow::NotACommand, None),
-                }
-            };
-        }
-
-        macro_rules! validate {
-            ($ctx:expr, $ex:expr) => {
-                match $ex {
-                    Ok(ok) => ok,
-                    Err(err) => {
-                        #[cfg(not(test))]
-                        {
-                            $ctx.print_diagnostic(err);
-                        }
-                        return (CommandControlFlow::Continue, None);
-                    }
-                }
-            };
-        }
-
-        let CommandContext { mut ctx, editor } = args;
-
-        let ctx = &mut *ctx;
-
+    fn get_command<'a, 'b>(
+        &'a self,
+        line: &'b str,
+        ctx: &mut Context,
+    ) -> Result<Option<Command<'a, 'b, Editor>>, Box<CommandError>> {
         let Some(mut parser) = CommandParser::new(
             line,
             ctx.resolver_mut().add_code_source(CodeSource::Text, line),
         ) else {
-            return (CommandControlFlow::NotACommand, None);
+            return Ok(None);
         };
 
         let Self {
+            print_markup,
             clear,
             session_history,
             quit,
-            print_markup,
         } = self;
 
-        // ideally we could use if-let match guards, eg:
-        // `CommandKind::Help if let Some(print_markup) = print_markup {...}`
-        // and then at the bottom have a catch-all:
-        // `_ => return CommandControlFlow::NotACommand`
-        // but this syntax is currently experimental
-        match &parser.command_kind {
-            CommandKind::Help => ensure_enabled!(print_markup, {
-                validate!(
-                    ctx,
-                    parser.ensure_zero_args(
-                        "help",
-                        "; use `info <item>` for information about an item",
-                    )
-                );
+        Ok(Some(match &parser.command_kind {
+            CommandKind::Help => {
+                let &Some(print_fn) = print_markup else {
+                    return Ok(None);
+                };
 
-                #[cfg(not(test))]
-                {
-                    print_markup(&help_markup());
+                parser
+                    .ensure_zero_args("help", "; use `info <item>` for information about an item")
+                    .map_err(|err| Box::new(err.into()))?;
+
+                Command::Help { print_fn }
+            }
+            CommandKind::Info => {
+                let &Some(print_fn) = print_markup else {
+                    return Ok(None);
+                };
+                let err_msg = "`info` requires exactly one argument, the item to get info on";
+                let Some(item) = parser.args.next() else {
+                    return Err(Box::new(parser.err_at_idx(0, err_msg).into()));
+                };
+
+                if parser.args.next().is_some() {
+                    return Err(Box::new(parser.err_through_end_from(1, err_msg).into()));
                 }
 
-                (CommandControlFlow::Continue, Some(Command::Help))
-            }),
-            CommandKind::Info => ensure_enabled!(print_markup, {
-                let item = validate!(
-                    ctx,
-                    (|| {
-                        let err_msg =
-                            "`info` requires exactly one argument, the item to get info on";
-                        let Some(item) = parser.args.next() else {
-                            return Err(parser.err_at_idx(0, err_msg));
-                        };
+                Command::Info { item, print_fn }
+            }
+            CommandKind::List => {
+                let &Some(print_fn) = print_markup else {
+                    return Ok(None);
+                };
 
-                        if parser.args.next().is_some() {
-                            return Err(parser.err_through_end_from(1, err_msg));
-                        }
+                let items = parser.args.next();
 
-                        Ok(item)
-                    })()
-                );
-                #[cfg(not(test))]
-                {
-                    print_markup(&ctx.print_info_for_keyword(item));
+                if parser.args.next().is_some() {
+                    return Err(Box::new(
+                        parser
+                            .err_through_end_from(2, "`list` takes at most one argument")
+                            .into(),
+                    ));
                 }
 
-                (CommandControlFlow::Continue, Some(Command::Info { item }))
-            }),
-            CommandKind::List => ensure_enabled!(print_markup, {
-                let items = validate!(
-                    ctx,
-                    (|| {
-                        let items = parser.args.next();
-
-                        if parser.args.next().is_some() {
-                            return Err(
-                                parser.err_through_end_from(2, "`list` takes at most one argument")
-                            );
-                        }
-
-                        let items = match items {
-                            None => None,
-                            Some("functions") => Some(ListItems::Functions),
-                            Some("dimensions") => Some(ListItems::Dimensions),
-                            Some("variables") => Some(ListItems::Variables),
-                            Some("units") => Some(ListItems::Units),
-                            _ => {
-                                return Err(parser.err_at_idx(
+                let items = match items {
+                    None => None,
+                    Some("functions") => Some(ListItems::Functions),
+                    Some("dimensions") => Some(ListItems::Dimensions),
+                    Some("variables") => Some(ListItems::Variables),
+                    Some("units") => Some(ListItems::Units),
+                    _ => {
+                        return Err(Box::new(
+                            parser
+                                .err_at_idx(
                                     1,
                                     "if provided, the argument to `list` must be \
                             one of: functions, dimensions, variables, units",
-                                ));
-                            }
-                        };
+                                )
+                                .into(),
+                        ));
+                    }
+                };
 
-                        Ok(items)
-                    })()
-                );
+                Command::List { items, print_fn }
+            }
+            CommandKind::Clear => {
+                let &Some(clear_fn) = clear else {
+                    return Ok(None);
+                };
 
+                parser
+                    .ensure_zero_args("clear", "")
+                    .map_err(|err| Box::new(err.into()))?;
+
+                Command::Clear { clear_fn }
+            }
+            CommandKind::Save => {
+                fn save_fn(
+                    session_history: &SessionHistory,
+                    dst: &str,
+                    print_markup: Option<fn(&Markup)>,
+                ) -> Result<(), Box<RuntimeError>> {
+                    session_history.save(
+                        dst,
+                        SessionHistoryOptions {
+                            include_err_lines: false,
+                            trim_lines: true,
+                        },
+                    )?;
+
+                    if let Some(print_markup) = print_markup {
+                        let markup = m::text("successfully saved session history to")
+                            + m::space()
+                            + m::string(dst.to_compact_string());
+                        print_markup(&markup)
+                    }
+
+                    Ok(())
+                }
+
+                let Some(session_history) = session_history else {
+                    return Ok(None);
+                };
+
+                let print_fn = print_markup.as_ref().copied();
+
+                let dst = match parser.args.next() {
+                    Some(dst) => {
+                        if parser.args.next().is_some() {
+                            return Err(Box::new(
+                                parser
+                                    .err_through_end_from(
+                                        2,
+                                        "`save` requires exactly one argument, the destination",
+                                    )
+                                    .into(),
+                            ));
+                        }
+                        dst
+                    }
+                    None => "history.nbt",
+                };
+
+                Command::Save {
+                    session_history,
+                    dst,
+                    print_fn,
+                    save_fn,
+                }
+            }
+            CommandKind::Quit(quit_alias) => {
+                let Some(_) = quit else {
+                    return Ok(None);
+                };
+
+                parser
+                    .ensure_zero_args(
+                        match quit_alias {
+                            QuitAlias::Quit => "quit",
+                            QuitAlias::Exit => "exit",
+                        },
+                        "",
+                    )
+                    .map_err(|err| Box::new(err.into()))?;
+
+                Command::Quit
+            }
+        }))
+    }
+
+    /// Try to run the input line as a command.
+    ///
+    /// If the line is recognized as an (enabled) command, this handles the happy path,
+    /// but it is up to frontends to handle the error path if this returns an error. If
+    /// the command was recognized then this returns one of
+    /// `CommandControlFlow::Continue` or `CommandControlFlow::Return`. If the line is
+    /// not an enabled command (whether that's because it's not a command at all, or
+    /// it's a disabled command), then this returns `CommandControlFlow::NotACommand`.
+    pub fn run_command<ContextMut: DerefMut<Target = Context>>(
+        &self,
+        line: &str,
+        mut args: CommandContext<ContextMut, Editor>,
+    ) -> Result<CommandControlFlow, Box<CommandError>> {
+        let Some(output) = self.get_command(line, &mut args.ctx)? else {
+            return Ok(CommandControlFlow::NotACommand);
+        };
+
+        let CommandContext { mut ctx, editor } = args;
+        let ctx = &mut *ctx;
+
+        Ok(match output {
+            Command::Help { print_fn } => {
+                print_fn(&help_markup());
+                CommandControlFlow::Continue
+            }
+            Command::Info { item, print_fn } => {
+                print_fn(&ctx.print_info_for_keyword(item));
+                CommandControlFlow::Continue
+            }
+            Command::List { items, print_fn } => {
                 let markup = match items {
                     None => ctx.print_environment(),
                     Some(ListItems::Functions) => ctx.print_functions(),
@@ -290,88 +370,47 @@ impl<Editor> CommandRunner<Editor> {
                     Some(ListItems::Variables) => ctx.print_variables(),
                     Some(ListItems::Units) => ctx.print_units(),
                 };
-                #[cfg(not(test))]
-                {
-                    print_markup(&markup);
-                }
-
-                (CommandControlFlow::Continue, Some(Command::List { items }))
-            }),
-            CommandKind::Clear => ensure_enabled!(clear, {
-                validate!(ctx, parser.ensure_zero_args("clear", ""));
-                (clear(editor), Some(Command::Clear))
-            }),
-            CommandKind::Save => ensure_enabled!(session_history, {
-                let dst = validate!(
-                    ctx,
-                    (|| {
-                        let Some(dst) = parser.args.next() else {
-                            return Ok("history.nbt");
-                        };
-
-                        if parser.args.next().is_some() {
-                            return Err(parser.err_through_end_from(
-                                2,
-                                "`save` requires exactly one argument, the destination",
-                            ));
-                        }
-
-                        Ok(dst)
-                    })()
-                );
-
-                #[cfg(not(test))]
-                let save_result = session_history.save(
-                    dst,
-                    SessionHistoryOptions {
-                        include_err_lines: false,
-                        trim_lines: true,
-                    },
-                );
-
-                #[cfg(test)]
-                let save_result = Ok::<_, Box<RuntimeError>>(());
-
-                match save_result {
-                    Ok(_) => {
-                        if let Some(print_markup) = print_markup {
-                            let markup = m::text("successfully saved session history to")
-                                + m::space()
-                                + m::string(dst.to_compact_string());
-                            print_markup(&markup)
-                        }
-                    }
-                    Err(err) => {
-                        ctx.print_diagnostic(*err);
-                    }
-                };
-                (CommandControlFlow::Continue, Some(Command::Save { dst }))
-            }),
-            CommandKind::Quit(quit_alias) => ensure_enabled!(quit: _, {
-                validate!(
-                    ctx,
-                    parser.ensure_zero_args(
-                        match quit_alias {
-                            QuitAlias::Quit => "quit",
-                            QuitAlias::Exit => "exit",
-                        },
-                        "",
-                    )
-                );
-                (CommandControlFlow::Return, Some(Command::Quit))
-            }),
-        }
+                print_fn(&markup);
+                CommandControlFlow::Continue
+            }
+            Command::Clear { clear_fn } => clear_fn(editor),
+            Command::Save {
+                session_history,
+                dst,
+                print_fn,
+                save_fn,
+            } => {
+                save_fn(session_history, dst, print_fn).map_err(|err| Box::new((*err).into()))?;
+                CommandControlFlow::Continue
+            }
+            Command::Quit => CommandControlFlow::Return,
+        })
     }
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, PartialEq)]
-pub enum Command<'a> {
+pub enum BareCommand<'a> {
     Help,
     Info { item: &'a str },
     List { items: Option<ListItems> },
     Clear,
     Save { dst: &'a str },
     Quit,
+}
+
+#[cfg(test)]
+impl<'b, Editor> Command<'_, 'b, Editor> {
+    fn into_bare(self) -> BareCommand<'b> {
+        match self {
+            Command::Help { print_fn: _ } => BareCommand::Help,
+            Command::Info { item, .. } => BareCommand::Info { item },
+            Command::List { items, .. } => BareCommand::List { items },
+            Command::Clear { clear_fn: _ } => BareCommand::Clear,
+            Command::Save { dst, .. } => BareCommand::Save { dst },
+            Command::Quit => BareCommand::Quit,
+        }
+    }
 }
 
 /// The command parser
@@ -486,15 +525,6 @@ impl<'a> CommandParser<'a> {
 mod test {
     use super::*;
 
-    macro_rules! args {
-        ($ctx:expr) => {{
-            CommandContext {
-                ctx: &mut $ctx,
-                editor: &mut (),
-            }
-        }};
-    }
-
     fn new_runner() -> CommandRunner<()> {
         CommandRunner::new_all_disabled()
             .enable_print_markup(|_| {})
@@ -511,39 +541,18 @@ mod test {
         parser(input).unwrap()
     }
 
-    fn expect_command_ok(
+    fn expect_ok(
         runner: &CommandRunner<()>,
-        args: CommandContext<&mut Context, ()>,
+        ctx: &mut Context,
         input: &'static str,
-        expected: Command,
+        expected: BareCommand,
     ) {
-        let (cf, cmd) = runner.try_run_line_internal(input, args);
-
-        assert_eq!(cf, CommandControlFlow::Continue);
-        assert_eq!(expected, cmd.unwrap());
+        let cmd = runner.get_command(input, ctx).unwrap().unwrap();
+        assert_eq!(expected, cmd.into_bare());
     }
 
-    fn expect_command_return(
-        runner: &CommandRunner<()>,
-        args: CommandContext<&mut Context, ()>,
-        input: &'static str,
-        expected: Command,
-    ) {
-        let (cf, cmd) = runner.try_run_line_internal(input, args);
-
-        assert_eq!(cf, CommandControlFlow::Return);
-        assert_eq!(expected, cmd.unwrap());
-    }
-
-    fn expect_command_fail(
-        runner: &CommandRunner<()>,
-        args: CommandContext<&mut Context, ()>,
-        input: &'static str,
-    ) {
-        let (cf, cmd) = runner.try_run_line_internal(input, args);
-
-        assert_eq!(cf, CommandControlFlow::Continue);
-        assert_eq!(None, cmd);
+    fn expect_fail(runner: &CommandRunner<()>, ctx: &mut Context, input: &'static str) {
+        assert!(runner.get_command(input, ctx).is_err());
     }
 
     // fn parse(input: &'static str) -> Result<Command, ParseError> {
@@ -660,39 +669,54 @@ mod test {
         let mut ctx = Context::new_without_importer();
         let runner = new_runner();
 
-        expect_command_ok(&runner, args!(ctx), "list", Command::List { items: None });
-        expect_command_ok(&runner, args!(ctx), " list", Command::List { items: None });
-        expect_command_ok(&runner, args!(ctx), "list ", Command::List { items: None });
-        expect_command_ok(&runner, args!(ctx), " list ", Command::List { items: None });
-        expect_command_ok(
+        expect_ok(&runner, &mut ctx, "list", BareCommand::List { items: None });
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
+            " list",
+            BareCommand::List { items: None },
+        );
+        expect_ok(
+            &runner,
+            &mut ctx,
+            "list ",
+            BareCommand::List { items: None },
+        );
+        expect_ok(
+            &runner,
+            &mut ctx,
+            " list ",
+            BareCommand::List { items: None },
+        );
+        expect_ok(
+            &runner,
+            &mut ctx,
             "list functions  ",
-            Command::List {
+            BareCommand::List {
                 items: Some(ListItems::Functions),
             },
         );
-        expect_command_ok(
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "  list    functions  ",
-            Command::List {
+            BareCommand::List {
                 items: Some(ListItems::Functions),
             },
         );
-        expect_command_ok(
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "  list    functions  ",
-            Command::List {
+            BareCommand::List {
                 items: Some(ListItems::Functions),
             },
         );
-        expect_command_ok(
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "list    functions",
-            Command::List {
+            BareCommand::List {
                 items: Some(ListItems::Functions),
             },
         );
@@ -703,80 +727,80 @@ mod test {
         let mut ctx = Context::new_without_importer();
         let runner = new_runner();
 
-        expect_command_ok(&runner, args!(ctx), "help", Command::Help);
-        expect_command_fail(&runner, args!(ctx), "help arg");
-        expect_command_fail(&runner, args!(ctx), "help arg1 arg2");
+        expect_ok(&runner, &mut ctx, "help", BareCommand::Help);
+        expect_fail(&runner, &mut ctx, "help arg");
+        expect_fail(&runner, &mut ctx, "help arg1 arg2");
 
-        expect_command_fail(&runner, args!(ctx), "info");
-        expect_command_ok(
+        expect_fail(&runner, &mut ctx, "info");
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "info arg",
-            Command::Info { item: "arg" },
+            BareCommand::Info { item: "arg" },
         );
-        expect_command_ok(&runner, args!(ctx), "info .", Command::Info { item: "." });
-        expect_command_fail(&runner, args!(ctx), "info arg1 arg2");
+        expect_ok(&runner, &mut ctx, "info .", BareCommand::Info { item: "." });
+        expect_fail(&runner, &mut ctx, "info arg1 arg2");
 
-        expect_command_ok(&runner, args!(ctx), "clear", Command::Clear);
-        expect_command_fail(&runner, args!(ctx), "clear arg");
-        expect_command_fail(&runner, args!(ctx), "clear arg1 arg2");
+        expect_ok(&runner, &mut ctx, "clear", BareCommand::Clear);
+        expect_fail(&runner, &mut ctx, "clear arg");
+        expect_fail(&runner, &mut ctx, "clear arg1 arg2");
 
-        expect_command_ok(&runner, args!(ctx), "list", Command::List { items: None });
-        expect_command_ok(
+        expect_ok(&runner, &mut ctx, "list", BareCommand::List { items: None });
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "list functions",
-            Command::List {
+            BareCommand::List {
                 items: Some(ListItems::Functions),
             },
         );
-        expect_command_ok(
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "list dimensions",
-            Command::List {
+            BareCommand::List {
                 items: Some(ListItems::Dimensions),
             },
         );
-        expect_command_ok(
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "list variables",
-            Command::List {
+            BareCommand::List {
                 items: Some(ListItems::Variables),
             },
         );
-        expect_command_ok(
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "list units",
-            Command::List {
+            BareCommand::List {
                 items: Some(ListItems::Units),
             },
         );
 
-        expect_command_return(&runner, args!(ctx), "quit", Command::Quit);
-        expect_command_fail(&runner, args!(ctx), "quit arg");
-        expect_command_fail(&runner, args!(ctx), "quit arg1 arg2");
+        expect_ok(&runner, &mut ctx, "quit", BareCommand::Quit);
+        expect_fail(&runner, &mut ctx, "quit arg");
+        expect_fail(&runner, &mut ctx, "quit arg1 arg2");
 
-        expect_command_return(&runner, args!(ctx), "exit", Command::Quit);
-        expect_command_fail(&runner, args!(ctx), "exit arg");
-        expect_command_fail(&runner, args!(ctx), "exit arg1 arg2");
+        expect_ok(&runner, &mut ctx, "exit", BareCommand::Quit);
+        expect_fail(&runner, &mut ctx, "exit arg");
+        expect_fail(&runner, &mut ctx, "exit arg1 arg2");
 
-        expect_command_ok(
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "save",
-            Command::Save { dst: "history.nbt" },
+            BareCommand::Save { dst: "history.nbt" },
         );
-        expect_command_ok(
+        expect_ok(
             &runner,
-            args!(ctx),
+            &mut ctx,
             "save arg",
-            Command::Save { dst: "arg" },
+            BareCommand::Save { dst: "arg" },
         );
-        expect_command_ok(&runner, args!(ctx), "save .", Command::Save { dst: "." });
-        expect_command_fail(&runner, args!(ctx), "save arg1 arg2");
+        expect_ok(&runner, &mut ctx, "save .", BareCommand::Save { dst: "." });
+        expect_fail(&runner, &mut ctx, "save arg1 arg2");
     }
 
     #[test]
@@ -791,7 +815,7 @@ mod test {
                 ctx,
                 editor: &mut (),
             };
-            assert_eq!(runner.try_run_line(input, args), expected);
+            assert_eq!(expected, runner.run_command(input, args).unwrap());
         }
 
         let mut ctx = Context::new_without_importer();
