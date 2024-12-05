@@ -388,31 +388,6 @@ impl<Editor> CommandRunner<Editor> {
     }
 }
 
-#[cfg(test)]
-#[derive(Debug, Clone, PartialEq)]
-pub enum BareCommand<'a> {
-    Help,
-    Info { item: &'a str },
-    List { items: Option<ListItems> },
-    Clear,
-    Save { dst: &'a str },
-    Quit,
-}
-
-#[cfg(test)]
-impl<'b, Editor> Command<'_, 'b, Editor> {
-    fn into_bare(self) -> BareCommand<'b> {
-        match self {
-            Command::Help { print_fn: _ } => BareCommand::Help,
-            Command::Info { item, .. } => BareCommand::Info { item },
-            Command::List { items, .. } => BareCommand::List { items },
-            Command::Clear { clear_fn: _ } => BareCommand::Clear,
-            Command::Save(SaveCmdArgs { dst, .. }) => BareCommand::Save { dst },
-            Command::Quit => BareCommand::Quit,
-        }
-    }
-}
-
 /// The command parser
 ///
 /// This contains the words of the input and, for reporting errors, their boundaries'
@@ -524,6 +499,29 @@ impl<'a> CommandParser<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum BareCommand<'a> {
+        Help,
+        Info { item: &'a str },
+        List { items: Option<ListItems> },
+        Clear,
+        Save { dst: &'a str },
+        Quit,
+    }
+
+    impl<'b, Editor> Command<'_, 'b, Editor> {
+        fn into_bare(self) -> BareCommand<'b> {
+            match self {
+                Command::Help { print_fn: _ } => BareCommand::Help,
+                Command::Info { item, .. } => BareCommand::Info { item },
+                Command::List { items, .. } => BareCommand::List { items },
+                Command::Clear { clear_fn: _ } => BareCommand::Clear,
+                Command::Save(SaveCmdArgs { dst, .. }) => BareCommand::Save { dst },
+                Command::Quit => BareCommand::Quit,
+            }
+        }
+    }
 
     fn new_runner() -> CommandRunner<()> {
         CommandRunner::new_all_disabled()
