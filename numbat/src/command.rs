@@ -1,7 +1,4 @@
-use std::{
-    ops::DerefMut,
-    str::{FromStr, SplitWhitespace},
-};
+use std::str::{FromStr, SplitWhitespace};
 
 use compact_str::ToCompactString;
 
@@ -56,17 +53,16 @@ impl FromStr for CommandKind {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 #[must_use]
 pub enum CommandControlFlow {
-    #[default]
     Continue,
     Return,
     NotACommand,
 }
 
-pub struct CommandContext<'editor, ContextMut, Editor> {
-    pub ctx: ContextMut,
+pub struct CommandContext<'ctx, 'editor, Editor> {
+    pub ctx: &'ctx mut Context,
     pub editor: &'editor mut Editor,
 }
 
@@ -97,12 +93,12 @@ impl ErrorDiagnostic for CommandError {
     }
 }
 
-enum Command<'a, 'b, Editor> {
+enum Command<'session, 'input, Editor> {
     Help {
         print_fn: fn(&Markup),
     },
     Info {
-        item: &'b str,
+        item: &'input str,
         print_fn: fn(&Markup),
     },
     List {
@@ -112,13 +108,13 @@ enum Command<'a, 'b, Editor> {
     Clear {
         clear_fn: fn(&mut Editor) -> CommandControlFlow,
     },
-    Save(SaveCmdArgs<'a, 'b>),
+    Save(SaveCmdArgs<'session, 'input>),
     Quit,
 }
 
-struct SaveCmdArgs<'a, 'b> {
-    session_history: &'a SessionHistory,
-    dst: &'b str,
+struct SaveCmdArgs<'session, 'input> {
+    session_history: &'session SessionHistory,
+    dst: &'input str,
     print_fn: Option<fn(&Markup)>,
 }
 
@@ -138,7 +134,7 @@ impl SaveCmdArgs<'_, '_> {
             },
         )?;
 
-        if let Some(print_markup) = *print_fn {
+        if let Some(print_markup) = print_fn {
             let markup = m::text("successfully saved session history to")
                 + m::space()
                 + m::string(dst.to_compact_string());
@@ -266,7 +262,7 @@ impl<Editor> CommandRunner<Editor> {
                                 .err_at_idx(
                                     1,
                                     "if provided, the argument to `list` must be \
-                            one of: functions, dimensions, variables, units",
+                                             one of: functions, dimensions, variables, units",
                                 )
                                 .into(),
                         ));
@@ -293,22 +289,18 @@ impl<Editor> CommandRunner<Editor> {
 
                 let print_fn = print_markup.as_ref().copied();
 
-                let dst = match parser.args.next() {
-                    Some(dst) => {
-                        if parser.args.next().is_some() {
-                            return Err(Box::new(
-                                parser
-                                    .err_through_end_from(
-                                        2,
-                                        "`save` requires exactly one argument, the destination",
-                                    )
-                                    .into(),
-                            ));
-                        }
-                        dst
-                    }
-                    None => "history.nbt",
-                };
+                let dst = parser.args.next().unwrap_or("history.nbt");
+
+                if parser.args.next().is_some() {
+                    return Err(Box::new(
+                        parser
+                            .err_through_end_from(
+                                2,
+                                "`save` requires exactly one argument, the destination",
+                            )
+                            .into(),
+                    ));
+                }
 
                 Command::Save(SaveCmdArgs {
                     session_history,
@@ -346,17 +338,16 @@ impl<Editor> CommandRunner<Editor> {
     /// `CommandControlFlow::Return`. If the line is not an enabled command (whether
     /// that's because it's not a command at all, or it's a disabled command), then this
     /// returns `CommandControlFlow::NotACommand`.
-    pub fn try_run_command<ContextMut: DerefMut<Target = Context>>(
+    pub fn try_run_command(
         &self,
         line: &str,
-        mut args: CommandContext<ContextMut, Editor>,
+        args: CommandContext<Editor>,
     ) -> Result<CommandControlFlow, Box<CommandError>> {
-        let Some(output) = self.get_command(line, &mut args.ctx)? else {
+        let Some(output) = self.get_command(line, args.ctx)? else {
             return Ok(CommandControlFlow::NotACommand);
         };
 
-        let CommandContext { mut ctx, editor } = args;
-        let ctx = &mut *ctx;
+        let CommandContext { ctx, editor } = args;
 
         Ok(match output {
             Command::Help { print_fn } => {
