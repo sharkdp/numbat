@@ -10,15 +10,14 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
-use numbat::command::{self, CommandParser, SourcelessCommandParser};
-use numbat::compact_str::{CompactString, ToCompactString};
+use numbat::command::{CommandContext, CommandControlFlow, CommandRunner};
+use numbat::compact_str::CompactString;
 use numbat::diagnostic::ErrorDiagnostic;
-use numbat::help::help_markup;
 use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::session_history::{ParseEvaluationResult, SessionHistory, SessionHistoryOptions};
+use numbat::session_history::{ParseEvaluationResult, SessionHistory};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -351,123 +350,71 @@ impl Cli {
         rl: &mut Editor<NumbatHelper, DefaultHistory>,
         interactive: bool,
     ) -> Result<()> {
-        let mut session_history = SessionHistory::default();
+        let mut cmd_runner =
+            CommandRunner::<Editor<NumbatHelper, DefaultHistory>>::new_all_disabled()
+                .enable_print_markup(|m| println!("{}", ansi_format(m, true)))
+                .enable_clear(|rl| match rl.clear_screen() {
+                    Ok(_) => CommandControlFlow::Continue,
+                    Err(_) => CommandControlFlow::Return,
+                })
+                .enable_save(SessionHistory::default())
+                .enable_quit();
 
         loop {
             let readline = rl.readline(&self.config.prompt);
             match readline {
                 Ok(line) => {
-                    if !line.trim().is_empty() {
-                        rl.add_history_entry(&line)?;
+                    if line.trim().is_empty() {
+                        continue;
+                    }
 
-                        // if we enter here, the line looks like a command
-                        if let Some(sourceless_parser) = SourcelessCommandParser::new(&line) {
-                            let mut parser = CommandParser::new(
-                                sourceless_parser,
-                                self.context
-                                    .lock()
-                                    .unwrap()
-                                    .resolver_mut()
-                                    .add_code_source(CodeSource::Text, &line),
-                            );
+                    rl.add_history_entry(&line)?;
 
-                            match parser.parse_command() {
-                                Ok(command) => match command {
-                                    command::Command::Help => {
-                                        let help = help_markup();
-                                        print!("{}", ansi_format(&help, true));
-                                        // currently, the ansi formatter adds indents
-                                        // _after_ each newline and so we need to manually
-                                        // add an extra blank line to absorb this indent
-                                        println!();
-                                    }
-                                    command::Command::Info { item } => {
-                                        let help = self
-                                            .context
-                                            .lock()
-                                            .unwrap()
-                                            .print_info_for_keyword(item);
-                                        println!("{}", ansi_format(&help, true));
-                                    }
-                                    command::Command::List { items } => {
-                                        let context = self.context.lock().unwrap();
-                                        let m = match items {
-                                            None => context.print_environment(),
-                                            Some(command::ListItems::Functions) => {
-                                                context.print_functions()
-                                            }
-                                            Some(command::ListItems::Dimensions) => {
-                                                context.print_dimensions()
-                                            }
-                                            Some(command::ListItems::Variables) => {
-                                                context.print_variables()
-                                            }
-                                            Some(command::ListItems::Units) => {
-                                                context.print_units()
-                                            }
-                                        };
-                                        println!("{}", ansi_format(&m, false));
-                                    }
-                                    command::Command::Clear => rl.clear_screen()?,
-                                    command::Command::Save { dst } => {
-                                        let save_result = session_history.save(
-                                            dst,
-                                            SessionHistoryOptions {
-                                                include_err_lines: false,
-                                                trim_lines: true,
-                                            },
-                                        );
-                                        match save_result {
-                                            Ok(_) => {
-                                                let m = m::text(
-                                                    "successfully saved session history to",
-                                                ) + m::space()
-                                                    + m::string(dst.to_compact_string());
-                                                println!("{}", ansi_format(&m, interactive));
-                                            }
-                                            Err(err) => {
-                                                self.print_diagnostic(*err);
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                    command::Command::Quit => return Ok(()),
-                                },
-                                Err(e) => {
-                                    self.print_diagnostic(e);
-                                    continue;
-                                }
-                            }
-
+                    let mut ctx = self.context.lock().unwrap();
+                    match cmd_runner.try_run_command(
+                        &line,
+                        CommandContext {
+                            ctx: &mut ctx,
+                            editor: rl,
+                        },
+                    ) {
+                        Ok(cf) => match cf {
+                            CommandControlFlow::Continue => continue,
+                            CommandControlFlow::Return => return Ok(()),
+                            CommandControlFlow::NotACommand => {}
+                        },
+                        Err(err) => {
+                            ctx.print_diagnostic(*err);
                             continue;
                         }
-
-                        let ParseEvaluationOutcome {
-                            control_flow,
-                            result,
-                        } = self.parse_and_evaluate(
-                            &line,
-                            CodeSource::Text,
-                            if interactive {
-                                ExecutionMode::Interactive
-                            } else {
-                                ExecutionMode::Normal
-                            },
-                            self.config.pretty_print,
-                        );
-
-                        match control_flow {
-                            std::ops::ControlFlow::Continue(()) => {}
-                            std::ops::ControlFlow::Break(ExitStatus::Success) => {
-                                return Ok(());
-                            }
-                            std::ops::ControlFlow::Break(ExitStatus::Error) => {
-                                bail!("Interpreter stopped due to error")
-                            }
-                        }
-
-                        session_history.push(CompactString::from(line), result);
                     }
+                    drop(ctx);
+
+                    let ParseEvaluationOutcome {
+                        control_flow,
+                        result,
+                    } = self.parse_and_evaluate(
+                        &line,
+                        CodeSource::Text,
+                        if interactive {
+                            ExecutionMode::Interactive
+                        } else {
+                            ExecutionMode::Normal
+                        },
+                        self.config.pretty_print,
+                    );
+
+                    match control_flow {
+                        std::ops::ControlFlow::Continue(()) => {}
+                        std::ops::ControlFlow::Break(ExitStatus::Success) => {
+                            return Ok(());
+                        }
+                        std::ops::ControlFlow::Break(ExitStatus::Error) => {
+                            bail!("Interpreter stopped due to error")
+                        }
+                    }
+
+                    cmd_runner.push_to_history(&line, result);
                 }
                 Err(ReadlineError::Interrupted) => {}
                 Err(ReadlineError::Eof) => {
