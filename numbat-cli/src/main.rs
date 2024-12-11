@@ -373,7 +373,7 @@ impl Cli {
                     match cmd_runner.try_run_command(
                         &line,
                         CommandContext {
-                            ctx: self.context.lock().unwrap(),
+                            ctx: &mut self.context.lock().unwrap(),
                             editor: rl,
                         },
                     ) {
