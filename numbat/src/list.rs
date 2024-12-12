@@ -113,12 +113,9 @@ impl<T: Clone> NumbatList<T> {
     /// clone the value that's being returned.
     pub fn head(self) -> Option<T> {
         let front = self.view.map_or(0, |(start, _end)| start);
-        if Arc::strong_count(&self.alloc) == 1 {
-            // safety: unwrap cannot fail because we ensured there was only one strong reference above
-            let mut alloc = Arc::try_unwrap(self.alloc).map_err(|_| ()).unwrap();
-            alloc.swap_remove_front(front)
-        } else {
-            self.alloc.get(front).cloned()
+        match Arc::try_unwrap(self.alloc) {
+            Ok(mut solely_owned) => solely_owned.swap_remove_front(front),
+            Err(shared) => shared.get(front).cloned(),
         }
     }
 
