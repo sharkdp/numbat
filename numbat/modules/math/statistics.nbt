@@ -45,7 +45,8 @@ fn stdev<D: Dim>(xs: List<D>) -> D = sqrt(variance(xs))
 @example("median([1 m, 2 m, 400 cm])")
 fn median<D: Dim>(xs: List<D>) -> D =  # TODO: this is extremely inefficient
   if mod(n, 2) == 1
-    then element_at((n - 1) / 2, sort(xs))
-    else mean([element_at(n / 2 - 1, sort(xs)), element_at(n / 2, sort(xs))])
+    then element_at((n - 1) / 2, sorted)
+    else (element_at(n / 2 - 1, sorted) + element_at(n / 2, sorted)) / 2
   where
     n = len(xs)
+    and sorted = sort(xs)
