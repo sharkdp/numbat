@@ -183,6 +183,10 @@ impl Cli {
     }
 
     fn run(&mut self) -> Result<()> {
+        // Enabled ANSI colors on Windows 10
+        #[cfg(windows)]
+        colored::control::set_virtual_terminal(true).unwrap();
+
         match self.config.color {
             ColorMode::Never => SHOULD_COLORIZE.set_override(false),
             ColorMode::Always => SHOULD_COLORIZE.set_override(true),
