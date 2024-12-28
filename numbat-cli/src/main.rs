@@ -354,15 +354,14 @@ impl Cli {
         rl: &mut Editor<NumbatHelper, DefaultHistory>,
         interactive: bool,
     ) -> Result<()> {
-        let mut cmd_runner =
-            CommandRunner::<Editor<NumbatHelper, DefaultHistory>>::new_all_disabled()
-                .enable_print_markup(|m| println!("{}", ansi_format(m, true)))
-                .enable_clear(|rl| match rl.clear_screen() {
-                    Ok(_) => CommandControlFlow::Continue,
-                    Err(_) => CommandControlFlow::Return,
-                })
-                .enable_save(SessionHistory::default())
-                .enable_quit();
+        let mut cmd_runner = CommandRunner::<Editor<NumbatHelper, DefaultHistory>>::new()
+            .enable_print_markup(|m| println!("{}", ansi_format(m, true)))
+            .enable_clear(|rl| match rl.clear_screen() {
+                Ok(_) => CommandControlFlow::Continue,
+                Err(_) => CommandControlFlow::Return,
+            })
+            .enable_save(SessionHistory::default())
+            .enable_quit();
 
         loop {
             let readline = rl.readline(&self.config.prompt);

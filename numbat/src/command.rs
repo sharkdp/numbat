@@ -147,14 +147,22 @@ pub struct CommandRunner<Editor> {
     quit: Option<()>,
 }
 
-impl<Editor> CommandRunner<Editor> {
-    pub fn new_all_disabled() -> Self {
+// cannot be derived because `#[derive(Default)]` introduces the bound `Editor:
+// Default`, which is not necessary
+impl<Editor> Default for CommandRunner<Editor> {
+    fn default() -> Self {
         Self {
             print_markup: None,
             clear: None,
             session_history: None,
             quit: None,
         }
+    }
+}
+
+impl<Editor> CommandRunner<Editor> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn enable_print_markup(mut self, action: fn(&Markup)) -> Self {
@@ -509,7 +517,7 @@ mod test {
     }
 
     fn new_runner() -> CommandRunner<()> {
-        CommandRunner::new_all_disabled()
+        CommandRunner::new()
             .enable_print_markup(|_| {})
             .enable_clear(|_| CommandControlFlow::Continue)
             .enable_save(SessionHistory::new())
@@ -803,7 +811,7 @@ mod test {
 
         let mut ctx = Context::new_without_importer();
 
-        let runner = CommandRunner::<()>::new_all_disabled()
+        let runner = CommandRunner::<()>::new()
             .enable_print_markup(|_| {})
             .enable_quit();
 
