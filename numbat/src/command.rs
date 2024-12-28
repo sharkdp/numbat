@@ -14,12 +14,15 @@ pub enum ListItems {
     Units,
 }
 
-enum QuitAlias {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum QuitAlias {
     Quit,
     Exit,
 }
 
-enum CommandKind {
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CommandKind {
     Help,
     Info,
     List,
@@ -46,9 +49,15 @@ impl FromStr for CommandKind {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HelpKind {
+    BasicHelp,
+    AllCommands,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command<'a> {
-    Help,
+    Help { help_kind: HelpKind },
     Info { item: &'a str },
     List { items: Option<ListItems> },
     Clear,
@@ -194,8 +203,24 @@ impl<'a> CommandParser<'a> {
     pub fn parse_command(&mut self) -> Result<Command, ParseError> {
         let command = match &self.inner.command_kind {
             CommandKind::Help => {
-                self.ensure_zero_args("help", "; use `info <item>` for information about an item")?;
-                Command::Help
+                let help_kind = self.inner.args.next();
+
+                if self.inner.args.next().is_some() {
+                    return Err(self.err_through_end_from(2, "`help` takes at most one argument"));
+                }
+
+                let help_kind = match help_kind {
+                    None => HelpKind::BasicHelp,
+                    Some("commands") => HelpKind::AllCommands,
+                    _ => {
+                        return Err(self.err_at_idx(
+                            1,
+                            "if provided, the argument to `help` must be \"commands\"",
+                        ))
+                    }
+                };
+
+                Command::Help { help_kind }
             }
             CommandKind::Clear => {
                 self.ensure_zero_args("clear", "")?;
@@ -430,7 +455,12 @@ mod test {
 
     #[test]
     fn test_args() {
-        assert_eq!(parse!("help").unwrap(), Command::Help);
+        assert_eq!(
+            parse!("help").unwrap(),
+            Command::Help {
+                help_kind: HelpKind::BasicHelp
+            }
+        );
         assert!(parse!("help arg").is_err());
         assert!(parse!("help arg1 arg2").is_err());
 
@@ -484,5 +514,50 @@ mod test {
         assert_eq!(parse!("save arg").unwrap(), Command::Save { dst: "arg" });
         assert_eq!(parse!("save .").unwrap(), Command::Save { dst: "." });
         assert!(parse!("save arg1 arg2").is_err());
+    }
+
+    #[test]
+    fn test_help() {
+        assert_eq!(
+            parse!("help").unwrap(),
+            Command::Help {
+                help_kind: HelpKind::BasicHelp
+            }
+        );
+        assert_eq!(
+            parse!("help commands").unwrap(),
+            Command::Help {
+                help_kind: HelpKind::AllCommands
+            }
+        );
+    }
+
+    #[test]
+    fn test_list() {
+        assert_eq!(parse!("list").unwrap(), Command::List { items: None });
+        assert_eq!(
+            parse!("list functions").unwrap(),
+            Command::List {
+                items: Some(ListItems::Functions)
+            }
+        );
+        assert_eq!(
+            parse!("list dimensions").unwrap(),
+            Command::List {
+                items: Some(ListItems::Dimensions)
+            }
+        );
+        assert_eq!(
+            parse!("list variables").unwrap(),
+            Command::List {
+                items: Some(ListItems::Variables)
+            }
+        );
+        assert_eq!(
+            parse!("list units").unwrap(),
+            Command::List {
+                items: Some(ListItems::Units)
+            }
+        );
     }
 }
