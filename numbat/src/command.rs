@@ -61,11 +61,6 @@ pub enum CommandControlFlow {
     NotACommand,
 }
 
-pub struct CommandContext<'ctx, 'editor, Editor> {
-    pub ctx: &'ctx mut Context,
-    pub editor: &'editor mut Editor,
-}
-
 #[derive(Debug)]
 pub enum CommandError {
     Parse(ParseError),
@@ -341,13 +336,12 @@ impl<Editor> CommandRunner<Editor> {
     pub fn try_run_command(
         &self,
         line: &str,
-        args: CommandContext<Editor>,
+        ctx: &mut Context,
+        editor: &mut Editor,
     ) -> Result<CommandControlFlow, Box<CommandError>> {
-        let Some(output) = self.get_command(line, args.ctx)? else {
+        let Some(output) = self.get_command(line, ctx)? else {
             return Ok(CommandControlFlow::NotACommand);
         };
-
-        let CommandContext { ctx, editor } = args;
 
         Ok(match output {
             Command::Help { print_fn } => {
@@ -800,11 +794,11 @@ mod test {
             input: &'static str,
             expected: CommandControlFlow,
         ) {
-            let args = CommandContext {
-                ctx,
-                editor: &mut (),
-            };
-            assert_eq!(expected, runner.try_run_command(input, args).unwrap());
+            let editor = &mut ();
+            assert_eq!(
+                expected,
+                runner.try_run_command(input, ctx, editor).unwrap()
+            );
         }
 
         let mut ctx = Context::new_without_importer();
