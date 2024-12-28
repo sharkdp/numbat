@@ -533,6 +533,7 @@ mod test {
         parser(input).unwrap().word_boundaries
     }
 
+    #[track_caller]
     fn expect_ok(
         runner: &CommandRunner<()>,
         ctx: &mut Context,
@@ -543,6 +544,7 @@ mod test {
         assert_eq!(expected, cmd.into_bare());
     }
 
+    #[track_caller]
     fn expect_fail(runner: &CommandRunner<()>, ctx: &mut Context, input: &'static str) {
         assert!(runner.get_command(input, ctx).is_err());
     }
