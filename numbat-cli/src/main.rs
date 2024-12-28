@@ -370,10 +370,11 @@ impl Cli {
 
                     rl.add_history_entry(&line)?;
 
+                    let mut ctx = self.context.lock().unwrap();
                     match cmd_runner.try_run_command(
                         &line,
                         CommandContext {
-                            ctx: self.context.lock().unwrap(),
+                            ctx: &mut ctx,
                             editor: rl,
                         },
                     ) {
@@ -383,10 +384,11 @@ impl Cli {
                             CommandControlFlow::NotACommand => {}
                         },
                         Err(err) => {
-                            self.context.lock().unwrap().print_diagnostic(*err);
+                            ctx.print_diagnostic(*err);
                             continue;
                         }
                     }
+                    drop(ctx);
 
                     let ParseEvaluationOutcome {
                         control_flow,
