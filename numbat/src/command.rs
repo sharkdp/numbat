@@ -239,7 +239,7 @@ impl<Editor> CommandRunner<Editor> {
                                 .err_at_idx(
                                     1,
                                     "if provided, the argument to `list` must be \
-                            one of: functions, dimensions, variables, units",
+                                             one of: functions, dimensions, variables, units",
                                 )
                                 .into(),
                         ));
