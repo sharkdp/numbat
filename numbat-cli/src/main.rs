@@ -32,7 +32,7 @@ use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
 use std::io::IsTerminal;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::{fs, thread};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -123,6 +123,11 @@ struct NumbatHelper {
     completer: NumbatCompleter,
     #[rustyline(Highlighter)]
     highlighter: NumbatHighlighter,
+}
+
+static ANSI_HELP: OnceLock<String> = OnceLock::new();
+fn ansi_help() -> &'static str {
+    ANSI_HELP.get_or_init(|| ansi_format(&help_markup(), true))
 }
 
 struct Cli {
@@ -317,6 +322,8 @@ impl Cli {
         );
         rl.load_history(&history_path).ok();
 
+        std::thread::spawn(ansi_help);
+
         if interactive {
             match self.config.intro_banner {
                 IntroBanner::Long => {
@@ -378,12 +385,7 @@ impl Cli {
                             match parser.parse_command() {
                                 Ok(command) => match command {
                                     command::Command::Help => {
-                                        let help = help_markup();
-                                        print!("{}", ansi_format(&help, true));
-                                        // currently, the ansi formatter adds indents
-                                        // _after_ each newline and so we need to manually
-                                        // add an extra blank line to absorb this indent
-                                        println!();
+                                        println!("{}", ansi_help());
                                     }
                                     command::Command::Info { item } => {
                                         let help = self
