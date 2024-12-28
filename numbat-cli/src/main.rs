@@ -10,7 +10,7 @@ use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyP
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
-use numbat::command::{CommandContext, CommandControlFlow, CommandRunner};
+use numbat::command::{CommandControlFlow, CommandRunner};
 use numbat::compact_str::CompactString;
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::markup as m;
@@ -371,13 +371,7 @@ impl Cli {
                     rl.add_history_entry(&line)?;
 
                     let mut ctx = self.context.lock().unwrap();
-                    match cmd_runner.try_run_command(
-                        &line,
-                        CommandContext {
-                            ctx: &mut ctx,
-                            editor: rl,
-                        },
-                    ) {
+                    match cmd_runner.try_run_command(&line, &mut ctx, rl) {
                         Ok(cf) => match cf {
                             CommandControlFlow::Continue => continue,
                             CommandControlFlow::Return => return Ok(()),
