@@ -140,7 +140,7 @@ impl SaveCmdArgs<'_, '_> {
     }
 }
 
-pub struct CommandRunner<Editor> {
+pub struct CommandRunner<Editor = ()> {
     print_markup: Option<fn(&Markup)>,
     clear: Option<fn(&mut Editor) -> CommandControlFlow>,
     session_history: Option<SessionHistory>,
@@ -801,7 +801,7 @@ mod test {
 
         let mut ctx = Context::new_without_importer();
 
-        let runner = CommandRunner::<()>::new()
+        let runner = CommandRunner::new()
             .enable_print_markup(|_| {})
             .enable_quit();
 
