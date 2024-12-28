@@ -173,7 +173,7 @@ impl<Editor> CommandRunner<Editor> {
         Self::default()
     }
 
-    pub fn enable_print_markup(mut self, action: fn(&Markup)) -> Self {
+    pub fn print_with(mut self, action: fn(&Markup)) -> Self {
         self.print_markup = Some(action);
         self
     }
@@ -557,7 +557,7 @@ mod test {
 
     fn new_runner() -> CommandRunner<()> {
         CommandRunner::new()
-            .enable_print_markup(|_| {})
+            .print_with(|_| {})
             .enable_clear(|_| CommandControlFlow::Continue)
             .enable_save(SessionHistory::new())
             .enable_reset(Context::new_without_importer)
@@ -851,9 +851,7 @@ mod test {
 
         let mut ctx = Context::new_without_importer();
 
-        let runner = CommandRunner::new()
-            .enable_print_markup(|_| {})
-            .enable_quit();
+        let runner = CommandRunner::new().print_with(|_| {}).enable_quit();
 
         test_case(&runner, &mut ctx, "help", CommandControlFlow::Continue);
         test_case(&runner, &mut ctx, "list", CommandControlFlow::Continue);
