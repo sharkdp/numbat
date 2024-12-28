@@ -528,8 +528,9 @@ mod test {
         CommandParser::new(input, 0)
     }
 
-    fn parser_uw(input: &'static str) -> CommandParser<'static> {
-        parser(input).unwrap()
+    #[track_caller]
+    fn expect_word_boundaries(input: &'static str) -> Vec<(u32, u32)> {
+        parser(input).unwrap().word_boundaries
     }
 
     fn expect_ok(
@@ -545,14 +546,6 @@ mod test {
     fn expect_fail(runner: &CommandRunner<()>, ctx: &mut Context, input: &'static str) {
         assert!(runner.get_command(input, ctx).is_err());
     }
-
-    // fn parse(input: &'static str) -> Result<Command, ParseError> {
-    //     parser(input).unwrap().parse_command()
-    // }
-
-    // fn parse_uw(input: &'static str) -> Command {
-    //     parse(input).unwrap()
-    // }
 
     #[test]
     fn test_command_parser() {
@@ -575,34 +568,31 @@ mod test {
         assert!(parser(" abc   x").is_none());
         assert!(parser("  abc   x  ").is_none());
 
-        assert_eq!(&parser_uw("list").word_boundaries, &[(0, 4)]);
-        assert_eq!(&parser_uw("list ").word_boundaries, &[(0, 4)]);
-        assert_eq!(&parser_uw(" list").word_boundaries, &[(1, 5)]);
-        assert_eq!(&parser_uw(" list ").word_boundaries, &[(1, 5)]);
+        assert_eq!(expect_word_boundaries("list"), [(0, 4)]);
+        assert_eq!(expect_word_boundaries("list "), [(0, 4)]);
+        assert_eq!(expect_word_boundaries(" list"), [(1, 5)]);
+        assert_eq!(expect_word_boundaries(" list "), [(1, 5)]);
 
-        assert_eq!(&parser_uw("list   ab").word_boundaries, &[(0, 4), (7, 9)]);
-        assert_eq!(&parser_uw("list   ab ").word_boundaries, &[(0, 4), (7, 9)]);
-        assert_eq!(&parser_uw(" list   ab").word_boundaries, &[(1, 5), (8, 10)]);
-        assert_eq!(
-            &parser_uw(" list   ab ").word_boundaries,
-            &[(1, 5), (8, 10)]
-        );
+        assert_eq!(expect_word_boundaries("list   ab"), [(0, 4), (7, 9)]);
+        assert_eq!(expect_word_boundaries("list   ab "), [(0, 4), (7, 9)]);
+        assert_eq!(expect_word_boundaries(" list   ab"), [(1, 5), (8, 10)]);
+        assert_eq!(expect_word_boundaries(" list   ab "), [(1, 5), (8, 10)]);
 
         assert_eq!(
-            &parser_uw("list   ab xy").word_boundaries,
-            &[(0, 4), (7, 9), (10, 12)]
+            expect_word_boundaries("list   ab xy"),
+            [(0, 4), (7, 9), (10, 12)]
         );
         assert_eq!(
-            &parser_uw("list   ab   xy ").word_boundaries,
-            &[(0, 4), (7, 9), (12, 14)]
+            expect_word_boundaries("list   ab   xy "),
+            [(0, 4), (7, 9), (12, 14)]
         );
         assert_eq!(
-            parser_uw("   list   ab    xy").word_boundaries,
-            &[(3, 7), (10, 12), (16, 18)]
+            expect_word_boundaries("   list   ab    xy"),
+            [(3, 7), (10, 12), (16, 18)]
         );
         assert_eq!(
-            parser_uw("   list   ab    xy   ").word_boundaries,
-            &[(3, 7), (10, 12), (16, 18)]
+            expect_word_boundaries("   list   ab    xy   "),
+            [(3, 7), (10, 12), (16, 18)]
         );
     }
 
