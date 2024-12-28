@@ -32,6 +32,7 @@ enum CommandKind {
     List,
     Clear,
     Save,
+    Reset,
     Quit(QuitAlias),
 }
 
@@ -46,6 +47,7 @@ impl FromStr for CommandKind {
             "list" => List,
             "clear" => Clear,
             "save" => Save,
+            "reset" => Reset,
             "quit" => Quit(QuitAlias::Quit),
             "exit" => Quit(QuitAlias::Exit),
             _ => return Err(()),
@@ -104,6 +106,10 @@ enum Command<'session, 'input, Editor> {
         clear_fn: fn(&mut Editor) -> CommandControlFlow,
     },
     Save(SaveCmdArgs<'session, 'input>),
+    Reset {
+        ctx_ctor: fn() -> Context,
+        clear_fn: Option<fn(&mut Editor) -> CommandControlFlow>,
+    },
     Quit,
 }
 
@@ -144,6 +150,7 @@ pub struct CommandRunner<Editor = ()> {
     print_markup: Option<fn(&Markup)>,
     clear: Option<fn(&mut Editor) -> CommandControlFlow>,
     session_history: Option<SessionHistory>,
+    ctx_ctor: Option<fn() -> Context>,
     quit: Option<()>,
 }
 
@@ -155,6 +162,7 @@ impl<Editor> Default for CommandRunner<Editor> {
             print_markup: None,
             clear: None,
             session_history: None,
+            ctx_ctor: None,
             quit: None,
         }
     }
@@ -177,6 +185,11 @@ impl<Editor> CommandRunner<Editor> {
 
     pub fn enable_save(mut self, session_history: SessionHistory) -> Self {
         self.session_history = Some(session_history);
+        self
+    }
+
+    pub fn enable_reset(mut self, ctx_ctor: fn() -> Context) -> Self {
+        self.ctx_ctor = Some(ctx_ctor);
         self
     }
 
@@ -208,9 +221,12 @@ impl<Editor> CommandRunner<Editor> {
             print_markup,
             clear,
             session_history,
+            ctx_ctor,
             quit,
         } = self;
 
+        // todo: replace all of the initial `let Some(...) = ... else { return Ok(None) };`
+        // with an if-let guard. https://github.com/rust-lang/rust/issues/51114
         Ok(Some(match &parser.command_kind {
             CommandKind::Help => {
                 let &Some(print_fn) = print_markup else {
@@ -311,6 +327,20 @@ impl<Editor> CommandRunner<Editor> {
                     print_fn,
                 })
             }
+            CommandKind::Reset => {
+                let &Some(ctx_ctor) = ctx_ctor else {
+                    return Ok(None);
+                };
+
+                parser
+                    .ensure_zero_args("reset", "")
+                    .map_err(|err| Box::new(err.into()))?;
+
+                Command::Reset {
+                    ctx_ctor,
+                    clear_fn: *clear,
+                }
+            }
             CommandKind::Quit(quit_alias) => {
                 let Some(_) = quit else {
                     return Ok(None);
@@ -375,6 +405,13 @@ impl<Editor> CommandRunner<Editor> {
             Command::Save(save_args) => {
                 save_args.save().map_err(|err| Box::new((*err).into()))?;
                 CommandControlFlow::Continue
+            }
+            Command::Reset { ctx_ctor, clear_fn } => {
+                *ctx = ctx_ctor();
+                match clear_fn {
+                    Some(clear_fn) => clear_fn(editor),
+                    None => CommandControlFlow::Continue,
+                }
             }
             Command::Quit => CommandControlFlow::Return,
         })
@@ -500,6 +537,7 @@ mod test {
         List { items: Option<ListItems> },
         Clear,
         Save { dst: &'a str },
+        Reset,
         Quit,
     }
 
@@ -511,6 +549,7 @@ mod test {
                 Command::List { items, .. } => BareCommand::List { items },
                 Command::Clear { clear_fn: _ } => BareCommand::Clear,
                 Command::Save(SaveCmdArgs { dst, .. }) => BareCommand::Save { dst },
+                Command::Reset { .. } => BareCommand::Reset,
                 Command::Quit => BareCommand::Quit,
             }
         }
@@ -521,6 +560,7 @@ mod test {
             .enable_print_markup(|_| {})
             .enable_clear(|_| CommandControlFlow::Continue)
             .enable_save(SessionHistory::new())
+            .enable_reset(Context::new_without_importer)
             .enable_quit()
     }
 
@@ -633,6 +673,10 @@ mod test {
         assert!(parser("save").is_some());
         assert!(parser("save arg").is_some());
         assert!(parser("save arg1 arg2").is_some());
+
+        assert!(parser("reset").is_some());
+        assert!(parser("reset arg").is_some());
+        assert!(parser("reset arg1 arg2").is_some());
 
         // invalid (nonempty) command names are all None so that parsing can continue on
         // what is presumably a math expression. case matters
@@ -761,6 +805,10 @@ mod test {
                 items: Some(ListItems::Units),
             },
         );
+
+        expect_ok(&runner, &mut ctx, "reset", BareCommand::Reset);
+        expect_fail(&runner, &mut ctx, "reset arg");
+        expect_fail(&runner, &mut ctx, "reset arg1 arg2");
 
         expect_ok(&runner, &mut ctx, "quit", BareCommand::Quit);
         expect_fail(&runner, &mut ctx, "quit arg");

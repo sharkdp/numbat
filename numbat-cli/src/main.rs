@@ -132,6 +132,26 @@ struct Cli {
 }
 
 impl Cli {
+    fn make_fresh_context() -> Context {
+        let mut fs_importer = FileSystemImporter::default();
+        for path in Self::get_modules_paths() {
+            fs_importer.add_path(path);
+        }
+
+        let importer = ChainedImporter::new(
+            Box::new(fs_importer),
+            Box::<BuiltinModuleImporter>::default(),
+        );
+
+        let mut context = Context::new(importer);
+
+        context.set_terminal_width(
+            terminal_size::terminal_size().map(|(terminal_size::Width(w), _)| w as usize),
+        );
+
+        context
+    }
+
     fn new(args: Args) -> Result<Self> {
         let user_config_path = Self::get_config_path().join("config.toml");
 
@@ -156,22 +176,8 @@ impl Cli {
         config.enter_repl =
             (args.file.is_none() && args.expression.is_none()) || args.inspect_interactively;
 
-        let mut fs_importer = FileSystemImporter::default();
-        for path in Self::get_modules_paths() {
-            fs_importer.add_path(path);
-        }
-
-        let importer = ChainedImporter::new(
-            Box::new(fs_importer),
-            Box::<BuiltinModuleImporter>::default(),
-        );
-
-        let mut context = Context::new(importer);
+        let mut context = Self::make_fresh_context();
         context.set_debug(args.debug);
-
-        context.set_terminal_width(
-            terminal_size::terminal_size().map(|(terminal_size::Width(w), _)| w as usize),
-        );
 
         Ok(Self {
             context: Arc::new(Mutex::new(context)),
@@ -361,6 +367,7 @@ impl Cli {
                 Err(_) => CommandControlFlow::Return,
             })
             .enable_save(SessionHistory::default())
+            .enable_reset(Self::make_fresh_context)
             .enable_quit();
 
         loop {
