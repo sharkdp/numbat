@@ -1087,7 +1087,7 @@ dependencies = [
 
 [[package]]
 name = "numbat"
-version = "1.14.0"
+version = "1.15.0"
 dependencies = [
  "approx",
  "codespan-reporting",
@@ -1124,7 +1124,7 @@ dependencies = [
 
 [[package]]
 name = "numbat-cli"
-version = "1.14.0"
+version = "1.15.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
