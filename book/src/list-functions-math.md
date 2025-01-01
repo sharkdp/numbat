@@ -886,24 +886,24 @@ Compute the numerical derivative of the function \\( f \\) at point \\( x \\) us
 More information [here](https://en.wikipedia.org/wiki/Numerical_differentiation).
 
 ```nbt
-fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X) -> Y / X
+fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X, Δx: X) -> Y / X
 ```
 
 <details>
 <summary>Examples</summary>
 
 Compute the derivative of \\( f(x) = x² -x -1 \\) at \\( x=1 \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2D%20x%20%2D%201%0Adiff%28polynomial%2C%201%29')""></button></div><code class="language-nbt hljs numbat">use numerics::diff
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2D%20x%20%2D%201%0Adiff%28polynomial%2C%201%2C%201e%2D10%29')""></button></div><code class="language-nbt hljs numbat">use numerics::diff
 fn polynomial(x) = x² - x - 1
-diff(polynomial, 1)
+diff(polynomial, 1, 1e-10)
 
     = 1.0
 </code></pre>
 
 Compute the free fall velocity after \\( t=2 s \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%29%0Avelocity%282%20s%29')""></button></div><code class="language-nbt hljs numbat">use numerics::diff
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%2C%201e%2D10%20s%29%0Avelocity%282%20s%29')""></button></div><code class="language-nbt hljs numbat">use numerics::diff
 fn distance(t) = 0.5 g0 t²
-fn velocity(t) = diff(distance, t)
+fn velocity(t) = diff(distance, t, 1e-10 s)
 velocity(2 s)
 
     = 19.6133 m/s    [Velocity]

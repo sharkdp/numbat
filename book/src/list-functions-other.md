@@ -189,6 +189,77 @@ fn unit_of<T: Dim>(x: T) -> T
 
 </details>
 
+### `has_unit`
+Returns true if `quantity` has the same unit as `unit_query`, or if `quantity` evaluates to zero.
+
+```nbt
+fn has_unit<T: Dim>(quantity: T, unit_query: T) -> Bool
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=has%5Funit%2820%20km%2Fh%2C%20km%2Fh%29')""></button></div><code class="language-nbt hljs numbat">has_unit(20 km/h, km/h)
+
+    = true    [Bool]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=has%5Funit%2820%20km%2Fh%2C%20m%2Fs%29')""></button></div><code class="language-nbt hljs numbat">has_unit(20 km/h, m/s)
+
+    = false    [Bool]
+</code></pre>
+
+</details>
+
+### `is_dimensionless`
+Returns true if `quantity` is dimensionless, or if `quantity` is zero.
+
+```nbt
+fn is_dimensionless<T: Dim>(quantity: T) -> Bool
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fdimensionless%2810%29')""></button></div><code class="language-nbt hljs numbat">is_dimensionless(10)
+
+    = true    [Bool]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=is%5Fdimensionless%2810%20km%2Fh%29')""></button></div><code class="language-nbt hljs numbat">is_dimensionless(10 km/h)
+
+    = false    [Bool]
+</code></pre>
+
+</details>
+
+### `unit_name`
+Returns a string representation of the unit of `quantity`. Returns an empty string if `quantity` is dimensionless.
+
+```nbt
+fn unit_name<T: Dim>(quantity: T) -> String
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=unit%5Fname%2820%29')""></button></div><code class="language-nbt hljs numbat">unit_name(20)
+
+    = ""    [String]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=unit%5Fname%2820%20m%5E2%29')""></button></div><code class="language-nbt hljs numbat">unit_name(20 m^2)
+
+    = "m²"    [String]
+</code></pre>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=unit%5Fname%2820%20km%2Fh%29')""></button></div><code class="language-nbt hljs numbat">unit_name(20 km/h)
+
+    = "km/h"    [String]
+</code></pre>
+
+</details>
+
 ## Chemical elements
 
 Defined in: `chemistry::elements`

@@ -19,18 +19,17 @@ assert_eq(fixed_point(f_sqrt3, 1, 1e-10), sqrt(3), 1e-10)
 
 # Differentiation
 
-assert_eq(diff(log, 2.0), 0.5, 1e-5)
+assert_eq(diff(log, 2.0, 1e-10), 0.5, 1e-5)
 
-# TODO: Sadly, the following is not possible at the moment. See https://github.com/sharkdp/numbat/issues/521 for details
-# assert_eq(diff(sin, 0.0), 1.0, 1e-5)
+assert_eq(diff(sin, 0.0, 1e-10), 1.0, 1e-5)
 
-assert_eq(diff(sqrt, 1.0), 0.5, 1e-5)
+assert_eq(diff(sqrt, 1.0, 1e-10), 0.5, 1e-5)
 
 fn f2(x: Scalar) -> Scalar = x² + 4 x + 1
 
-assert_eq(diff(f2, 2.0), 8.0, 1e-5)
+assert_eq(diff(f2, 2.0, 1e-10), 8.0, 1e-5)
 
 fn dist(t: Time) -> Length = 0.5 g0 t^2
-fn velocity(t: Time) -> Velocity = diff(dist, t)
+fn velocity(t: Time) -> Velocity = diff(dist, t, 1e-10 s)
 
 assert_eq(velocity(2.0 s), 2.0 s × g0, 1e-3 m/s)

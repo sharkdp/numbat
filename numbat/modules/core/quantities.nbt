@@ -9,3 +9,19 @@ fn value_of<T: Dim>(x: T) -> Scalar
 @example("unit_of(20 km/h)")
 fn unit_of<T: Dim>(x: T) -> T = if x_value == 0 then error("Invalid argument: cannot call `unit_of` on a value that evaluates to 0") else x / value_of(x)
     where x_value = value_of(x)
+
+@description("Returns true if `quantity` has the same unit as `unit_query`, or if `quantity` evaluates to zero.")
+@example("has_unit(20 km/h, km/h)")
+@example("has_unit(20 km/h, m/s)")
+fn has_unit<T: Dim>(quantity: T, unit_query: T) -> Bool
+
+@description("Returns true if `quantity` is dimensionless, or if `quantity` is zero.")
+@example("is_dimensionless(10)")
+@example("is_dimensionless(10 km/h)")
+fn is_dimensionless<T: Dim>(quantity: T) -> Bool
+
+@description("Returns a string representation of the unit of `quantity`. Returns an empty string if `quantity` is dimensionless.")
+@example("unit_name(20)")
+@example("unit_name(20 m^2)")
+@example("unit_name(20 km/h)")
+fn unit_name<T: Dim>(quantity: T) -> String

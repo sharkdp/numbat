@@ -15,7 +15,7 @@ fn _default_label(n: Scalar) -> String = "{n}"
 fn bar_chart<A: Dim>(values: List<A>) -> BarChart =
   BarChart {
     value_label: "",
-    value_unit: if _is_scalar(head(values)) then "" else _unit_name(head(values)),
+    value_unit: unit_name(head(values)),
     values: map(value_of, values),
     x_labels: map(_default_label, range(1, len(values))),
   }
