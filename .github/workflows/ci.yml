@@ -132,8 +132,8 @@ jobs:
         shell: bash
         run: |
           $VSCE_NAME=${{ steps.vsce-info.outputs.name }}-v${{ steps.vsce-info.outputs.version }}.vsix
-          $VSCE_PATH=./bin/$VSCE_NAME
-          npm run vscode:package -- --out=$VSCE_PATH
+          $VSCE_PATH=./bin/${VSCE_NAME}
+          npm run vscode:package -- --out=${VSCE_PATH}
           echo "VSCE_NAME=${VSCE_NAME}" >> $GITHUB_OUTPUT
           echo "VSCE_PATH=${VSCE_PATH}" >> $GITHUB_OUTPUT
     outputs:
