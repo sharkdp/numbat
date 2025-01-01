@@ -105,13 +105,13 @@ jobs:
 
   vscode_extension_package:
     name: Package vscode extension
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./vscode-extension
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v1.0.0
+        uses: actions/checkout@v4
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -132,8 +132,8 @@ jobs:
         shell: bash
         run: |
           $VSCE_NAME=${{ steps.vsce-info.outputs.name }}-v${{ steps.vsce-info.outputs.version }}.vsix
-          $VSCE_PATH=./bin/${VSCE_NAME}
-          npm run vscode:package -- --out=${VSCE_PATH}
+          $VSCE_PATH="./bin/${VSCE_NAME}"
+          npm run vscode:package -- --out="${VSCE_PATH}"
           echo "VSCE_NAME=${VSCE_NAME}" >> $GITHUB_OUTPUT
           echo "VSCE_PATH=${VSCE_PATH}" >> $GITHUB_OUTPUT
     outputs:
