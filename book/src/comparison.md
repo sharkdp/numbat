@@ -45,6 +45,6 @@ or misrepresented, please [let us know](https://github.com/sharkdp/numbat/issues
 
 - [F#](https://fsharp.org/) is the only programming language that we know of that comes close in terms of having an
   expressive type system that is based on units of measure. In fact, Numbats type system is heavily inspired by F#,
-  except that it uses physical dimensions instead of physical units on the type level. Both languages have feature
+  except that it uses physical dimensions instead of physical units on the type level. Both languages have
   full [type inference](./function-definitions.md#type-inference). F# is not listed above, as it's not really suitable
   as a scientific calculator.
