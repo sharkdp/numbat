@@ -103,10 +103,50 @@ jobs:
     - name: Run tests
       run: cargo test --locked ${{ env.MSRV_FEATURES }}
 
+  vscode_extension_package:
+    name: Package vscode extension
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./vscode-extension
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      
+      - name: Install VS Code extension dependencies
+        run: npm install
+
+      - name: package.json info
+        id: vsce-info
+        uses: jaywcjlove/github-action-package@main
+        with:
+          path: ./vscode-extension/package.json
+      
+      - name: "Create VS Code extension package"
+        id: vsce-package 
+        shell: bash
+        run: |
+          VSCE_NAME=${{ steps.vsce-info.outputs.name }}-v${{ steps.vsce-info.outputs.version }}.vsix
+          VSCE_PATH="./out/${VSCE_NAME}"
+          mkdir "out"
+          npm run vscode:package -- --out="${VSCE_PATH}"
+          echo "VSCE_NAME=${VSCE_NAME}" >> $GITHUB_OUTPUT
+          echo "VSCE_PATH=${VSCE_PATH}" >> $GITHUB_OUTPUT
+    outputs:
+      VSCE_NAME: ${{ steps.vsce-package.outputs.VSCE_NAME }}
+      VSCE_PATH: ${{ steps.vsce-package.outputs.VSCE_PATH }}
+
   build:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
-    needs: crate_metadata
+    needs: 
+      - crate_metadata
+      - vscode_extension_package
     strategy:
       fail-fast: false
       matrix:
@@ -356,6 +396,12 @@ jobs:
       with:
         name: ${{ steps.debian-package.outputs.DPKG_NAME }}
         path: ${{ steps.debian-package.outputs.DPKG_PATH }}
+    
+    - name: "Artifact upload: Debian package"
+      uses: actions/upload-artifact@master
+      with:
+        name: ${{ needs.vscode_extension_package.outputs.VSCE_NAME }}
+        path: ${{ needs.vscode_extension_package.outputs.VSCE_PATH }}
 
     - name: Check for release
       id: is-release
