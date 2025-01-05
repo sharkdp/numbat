@@ -137,9 +137,12 @@ jobs:
           npm run vscode:package -- --out="${VSCE_PATH}"
           echo "VSCE_NAME=${VSCE_NAME}" >> $GITHUB_OUTPUT
           echo "VSCE_PATH=${VSCE_PATH}" >> $GITHUB_OUTPUT
-    outputs:
-      VSCE_NAME: ${{ steps.vsce-package.outputs.VSCE_NAME }}
-      VSCE_PATH: ${{ steps.vsce-package.outputs.VSCE_PATH }}
+      
+      - name: "Artifact upload: VSCode extension"
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ steps.vsce-package.outputs.VSCE_NAME }}
+          path: ${{ steps.vsce-package.outputs.VSCE_PATH }}
 
   build:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
@@ -395,12 +398,6 @@ jobs:
       with:
         name: ${{ steps.debian-package.outputs.DPKG_NAME }}
         path: ${{ steps.debian-package.outputs.DPKG_PATH }}
-    
-    - name: "Artifact upload: Debian package"
-      uses: actions/upload-artifact@master
-      with:
-        name: ${{ needs.vscode_extension_package.outputs.VSCE_NAME }}
-        path: ${{ needs.vscode_extension_package.outputs.VSCE_PATH }}
 
     - name: Check for release
       id: is-release
