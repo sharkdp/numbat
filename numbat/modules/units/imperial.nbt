@@ -82,17 +82,17 @@ unit imperial_fluidounce: Volume = 28.4130625 mL
 
 @name("Imperial Pint")
 @url("https://en.wikipedia.org/wiki/Pint#Imperial_pint")
-@aliases(imperial_pints, UK_pt: short)
+@aliases(imperial_pints, UK_pt: short, UK_pint, UK_pints)
 unit imperial_pint: Volume = 20 imperial_fluidounces
 
 @name("Imperial Quart")
 @url("https://en.wikipedia.org/wiki/Quart#Imperial_quart")
-@aliases(imperial_quarts, UK_qt: short)
+@aliases(imperial_quarts, UK_qt: short, UK_quart, UK_quarts)
 unit imperial_quart: Volume = 2 imperial_pints
 
 @name("Imperial Gallon")
 @url("https://en.wikipedia.org/wiki/Gallon#Imperial_gallon")
-@aliases(imperial_gallons, UK_gal: short)
+@aliases(imperial_gallons, UK_gal: short, UK_gallon, UK_gallons)
 unit imperial_gallon: Volume = 4 imperial_quart
 
 @name("Imperial Bushel")
@@ -109,3 +109,13 @@ unit imperial_fluid_drachm: Volume = 1/8 × imperial_fluidounce
 @url("https://en.wikipedia.org/wiki/Gill_(unit)")
 @aliases(imperial_gills, UK_gi: short)
 unit imperial_gill: Volume = 5 imperial_fluidounces
+
+@name("UK tablespoon")
+@url("https://en.wikipedia.org/wiki/Tablespoon")
+@aliases(imperial_tablespoon, UK_tbsp: short, UK_tablespoon, UK_tablespoons)
+unit imperial_tablespoon: Volume = 1/2 × imperial_fluidounce
+
+@name("UK teaspoon")
+@url("https://en.wikipedia.org/wiki/Teaspoon")
+@aliases(imperial_teaspoons, UK_tsp: short, UK_teaspoon,UK_teaspoons)
+unit imperial_teaspoon: Volume = 1/4 × imperial_tablespoon

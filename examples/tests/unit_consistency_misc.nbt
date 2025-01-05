@@ -43,6 +43,8 @@ assert_eq(1 imperial_gallon, 4.546_09 L, 1e-5 L)
 assert_eq(1 imperial_bushel, 36.368_72 L, 1e-5 L)
 assert_eq(1 imperial_fluid_drachm, 3.551_632_812_5 mL)
 assert_eq(1 imperial_gill, 142.065_312_5 mL)
+assert_eq(1 imperial_tablespoon, 1/2 imperial_fluidounce)
+assert_eq(1 imperial_teaspoon, 1/4 imperial_tablespoon)
 
 
 assert_eq(1 gauss, 100 µT)
