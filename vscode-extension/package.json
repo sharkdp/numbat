@@ -1,5 +1,5 @@
 {
-    "name": "numbat-extension",
+    "name": "numbat-vscode-extension",
     "displayName": "Numbat",
     "description": "Syntax highlighting for the Numbat programming language",
     "version": "0.1.0",
