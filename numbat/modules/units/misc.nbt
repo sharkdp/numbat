@@ -173,3 +173,13 @@ unit cc: Volume = cm^3
 @name("Fermi")
 @url("https://en.wikipedia.org/wiki/Femtometre")
 unit fermi: Length = 1 fm
+
+@name("Metric tablespoon")
+@url("https://en.wikipedia.org/wiki/Tablespoon")
+@aliases(tablespoons, tbsp: short)
+unit tablespoon: Volume = 15 mL
+
+@name("Metric teaspoon")
+@url("https://en.wikipedia.org/wiki/Teaspoon")
+@aliases(teaspoons, tsp: short)
+unit teaspoon: Volume = 1/3 × tablespoon

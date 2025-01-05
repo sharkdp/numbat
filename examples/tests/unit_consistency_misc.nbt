@@ -17,6 +17,9 @@ assert_eq(1 gregorian_year, 365.2425 day)
 assert_eq(1 julian_year, 365.25 day)
 assert_eq(1 year, 1 tropical_year)
 
+assert_eq(1 teaspoon, 5 mL, 1e-5 teaspoon)
+assert_eq(3 teaspoon, 1 tablespoon, 1e-5 teaspoon)
+
 assert_eq(1 gallon, 231 inch³, 1e-5 inch³)
 assert_eq(8 pint, 1 gallon)
 assert_eq(2 cup, 1 pint)
