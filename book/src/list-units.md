@@ -215,12 +215,16 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Volume` | [Imperial Bushel](https://en.wikipedia.org/wiki/Bushel#Imperial_bushel) | `imperial_bushel`, `imperial_bushels`, `UK_bu` |
 | `Volume` | [Imperial Fluid Drachm](https://en.wikipedia.org/wiki/Fluid_drachm#Imperial_fluid_drachm) | `imperial_fluid_drachm`, `imperial_fluid_drachms`, `UK_fldr` |
 | `Volume` | [Imperial Fluid Ounce](https://en.wikipedia.org/wiki/Fluid_ounce) | `imperial_fluidounce`, `imperial_fluidounces`, `UK_floz` |
-| `Volume` | [Imperial Gallon](https://en.wikipedia.org/wiki/Gallon#Imperial_gallon) | `imperial_gallon`, `imperial_gallons`, `UK_gal` |
+| `Volume` | [Imperial Gallon](https://en.wikipedia.org/wiki/Gallon#Imperial_gallon) | `imperial_gallon`, `imperial_gallons`, `UK_gal`, `UK_gallon`, `UK_gallons` |
 | `Volume` | [Imperial Gill](https://en.wikipedia.org/wiki/Gill_(unit)) | `imperial_gill`, `imperial_gills`, `UK_gi` |
-| `Volume` | [Imperial Pint](https://en.wikipedia.org/wiki/Pint#Imperial_pint) | `imperial_pint`, `imperial_pints`, `UK_pt` |
-| `Volume` | [Imperial Quart](https://en.wikipedia.org/wiki/Quart#Imperial_quart) | `imperial_quart`, `imperial_quarts`, `UK_qt` |
+| `Volume` | [Imperial Pint](https://en.wikipedia.org/wiki/Pint#Imperial_pint) | `imperial_pint`, `imperial_pints`, `UK_pint`, `UK_pints`, `UK_pt` |
+| `Volume` | [Imperial Quart](https://en.wikipedia.org/wiki/Quart#Imperial_quart) | `imperial_quart`, `imperial_quarts`, `UK_qt`, `UK_quart`, `UK_quarts` |
+| `Volume` | [UK tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `imperial_tablespoon`, `UK_tablespoon`, `UK_tablespoons`, `UK_tbsp` |
+| `Volume` | [UK teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `imperial_teaspoon`, `imperial_teaspoons`, `UK_teaspoon`, `UK_teaspoons`, `UK_tsp` |
 | `Volume` | [Litre](https://en.wikipedia.org/wiki/Litre) | `l`, `L`, `liter`, `liters`, `litre`, `litres` |
 | `Volume` | [US liquid pint](https://en.wikipedia.org/wiki/Pint) | `pint`, `pints` |
 | `Volume` | [Swimming pool](https://en.wikipedia.org/wiki/Olympic-size_swimming_pool) | `swimmingpool` |
-| `Volume` | [US tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `tablespoon`, `tablespoons`, `tbsp` |
-| `Volume` | [US teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `teaspoon`, `teaspoons`, `tsp` |
+| `Volume` | [Metric tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `tablespoon`, `tablespoons`, `tbsp` |
+| `Volume` | [Metric teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `teaspoon`, `teaspoons`, `tsp` |
+| `Volume` | [US tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `US_tablespoon`, `US_tablespoons`, `US_tbsp` |
+| `Volume` | [US teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `US_teaspoon`, `US_teaspoons`, `US_tsp` |
