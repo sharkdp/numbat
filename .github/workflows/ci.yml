@@ -134,7 +134,7 @@ jobs:
           BASE_PATH="${{ env.CICD_INTERMEDIATES_DIR }}"
           VSCE_NAME=${{ steps.vsce-info.outputs.name }}-v${{ steps.vsce-info.outputs.version }}.vsix
           VSCE_PATH="${BASE_PATH}/out/${VSCE_NAME}"
-          mkdir "out"
+          mkdir -p "${BASE_PATH}/out"
           npm run vscode:package -- --out="${VSCE_PATH}"
           echo "VSCE_NAME=${VSCE_NAME}" >> $GITHUB_OUTPUT
           echo "VSCE_PATH=${VSCE_PATH}" >> $GITHUB_OUTPUT
