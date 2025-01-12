@@ -30,6 +30,15 @@ pub enum CompactStrCow {
     Static(&'static str),
 }
 
+impl std::fmt::Display for CompactStrCow {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            CompactStrCow::Owned(s) => write!(f, "{s}"),
+            CompactStrCow::Static(s) => write!(f, "{s}"),
+        }
+    }
+}
+
 impl From<CompactStrCow> for CompactString {
     fn from(value: CompactStrCow) -> Self {
         match value {
