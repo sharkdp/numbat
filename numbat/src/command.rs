@@ -315,7 +315,7 @@ impl<Editor> CommandRunner<Editor> {
                         parser
                             .err_through_end_from(
                                 2,
-                                "`save` takes at most one argument (the destination, or history.nbt if omitted)",
+                                "`save` takes at most one argument (the destination, which will be history.nbt if omitted)",
                             )
                             .into(),
                     ));
