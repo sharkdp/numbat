@@ -12,8 +12,8 @@ Download the latest `.deb` package from [the release page](https://github.com/sh
 and install it via `dpkg`. For example:
 
 ``` bash
-curl -LO https://github.com/sharkdp/numbat/releases/download/v1.15.0/numbat_1.15.0_amd64.deb
-sudo dpkg -i numbat_1.15.0_amd64.deb
+curl -LO https://github.com/sharkdp/numbat/releases/download/v1.16.0/numbat_1.16.0_amd64.deb
+sudo dpkg -i numbat_1.16.0_amd64.deb
 ```
 
 Alternatively, if you want automatic updates, you can use a community-maintained [Numbat PPA](https://launchpad.net/~apandada1/+archive/ubuntu/numbat). The PPA only hosts packages for the `amd64`/`x86_64` architecture.
