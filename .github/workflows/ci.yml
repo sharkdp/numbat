@@ -106,6 +106,8 @@ jobs:
   vscode_extension_package:
     name: Package vscode extension
     runs-on: ubuntu-latest
+    outputs:
+      VSCE_PATH: ${{ steps.vsce-package.outputs.VSCE_PATH }}
     defaults:
       run:
         working-directory: ./vscode-extension
@@ -137,19 +139,20 @@ jobs:
           mkdir -p "${BASE_PATH}/out"
           npm run vscode:package -- --out="${VSCE_PATH}"
           echo "VSCE_NAME=${VSCE_NAME}" >> $GITHUB_OUTPUT
-          echo "VSCE_PATH=${VSCE_PATH}" >> $GITHUB_OUTPUT
+          echo "VSCE_PATH=./vscode-extension/${VSCE_PATH}" >> $GITHUB_OUTPUT
       
       - name: "Artifact upload: VSCode extension"
         uses: actions/upload-artifact@master
         with:
           name: ${{ steps.vsce-package.outputs.VSCE_NAME }}
-          path: ./vscode-extension/${{ steps.vsce-package.outputs.VSCE_PATH }}
+          path: ${{ steps.vsce-package.outputs.VSCE_PATH }}
 
   build:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
     needs: 
       - crate_metadata
+      - vscode_extension_package
     strategy:
       fail-fast: false
       matrix:
@@ -414,5 +417,6 @@ jobs:
         files: |
           ${{ steps.package.outputs.PKG_PATH }}
           ${{ steps.debian-package.outputs.DPKG_PATH }}
+          ${{ needs.vscode_extension_package.outputs.VSCE_PATH }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
