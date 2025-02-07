@@ -107,7 +107,7 @@ enum ExecutionMode {
 }
 
 impl ExecutionMode {
-    fn exit_status_in_case_of_error(&self) -> ControlFlow {
+    fn exit_status_in_case_of_error(self) -> ControlFlow {
         if matches!(self, ExecutionMode::Normal) {
             ControlFlow::Break(ExitStatus::Error)
         } else {
