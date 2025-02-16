@@ -50,6 +50,12 @@ assert_eq(unit_name(1), "")
 assert_eq(unit_name(1 m), "m")
 assert_eq(unit_name(1 m^2/s), "m²/s")
 
+# quantity_cast
+
+assert_eq(quantity_cast(1 m, m), 1 m)
+assert_eq(quantity_cast(1 nm, m), 1 nm)
+assert_eq(quantity_cast(0, m), 0)
+
 # round, round_in
 
 assert_eq(round(1.234), 1)

@@ -42,6 +42,7 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         insert_function!(has_unit, 2..=2);
         insert_function!(is_dimensionless, 1..=1);
         insert_function!(unit_name, 1..=1);
+        insert_function!(quantity_cast, 2..=2);
 
         // Math
         insert_function!("mod", mod_, 2..=2);
@@ -147,4 +148,11 @@ fn unit_name(mut args: Args) -> Result<Value> {
     let quantity = quantity_arg!(args);
 
     return_string!(from = &quantity.unit().to_string())
+}
+
+fn quantity_cast(mut args: Args) -> Result<Value> {
+    let value_from = quantity_arg!(args);
+    let _ = quantity_arg!(args);
+
+    Ok(Value::Quantity(value_from))
 }

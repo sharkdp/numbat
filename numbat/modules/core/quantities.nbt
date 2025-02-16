@@ -25,3 +25,9 @@ fn is_dimensionless<T: Dim>(quantity: T) -> Bool
 @example("unit_name(20 m^2)")
 @example("unit_name(20 km/h)")
 fn unit_name<T: Dim>(quantity: T) -> String
+
+# TODO: Once we support explicitly passing arguments to type parameters, we can remove the second argument and
+# replace this with `fn quantity_cast<To: Dim, From: Dim>(f: From) -> To` and call it with `quantity_cast::<Length>(…)`.
+@description("Unsafe function that returns the quantity `from` unmodified with the target dimension `To`. This can be useful in generic code, but should generally be avoided otherwise.")
+@example("quantity_cast(1 nm, m)")
+fn quantity_cast<From: Dim, To: Dim>(f: From, t: To) -> To

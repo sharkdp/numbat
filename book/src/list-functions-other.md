@@ -260,6 +260,23 @@ fn unit_name<T: Dim>(quantity: T) -> String
 
 </details>
 
+### `quantity_cast`
+Unsafe function that returns the quantity `from` unmodified with the target dimension `To`. This can be useful in generic code, but should generally be avoided otherwise.
+
+```nbt
+fn quantity_cast<From: Dim, To: Dim>(f: From, t: To) -> To
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=quantity%5Fcast%281%20nm%2C%20m%29')""></button></div><code class="language-nbt hljs numbat">quantity_cast(1 nm, m)
+
+    = 1 nm    [Length]
+</code></pre>
+
+</details>
+
 ## Chemical elements
 
 Defined in: `chemistry::elements`
