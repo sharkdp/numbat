@@ -540,7 +540,7 @@ impl Tokenizer {
 
                 TokenKind::Ellipsis
             }
-            '.' if self.peek(input).map_or(false, is_identifier_start) => TokenKind::Period,
+            '.' if self.peek(input).is_some_and(is_identifier_start) => TokenKind::Period,
             '.' => {
                 self.consume_stream_of_digits(input, true, true, true)?;
                 self.scientific_notation(input)?;

@@ -1,4 +1,4 @@
-/// Some macros for writing FFI functions
+//! Some macros for writing FFI functions
 
 macro_rules! arg {
     ($args:ident) => {

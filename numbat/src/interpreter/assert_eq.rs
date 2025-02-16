@@ -135,11 +135,7 @@ fn left_pad_integer_part(number: &str, integer_part_width: usize) -> CompactStri
     };
 
     // Calculate padding needed
-    let padding_needed = if integer_part_len >= integer_part_width {
-        0
-    } else {
-        integer_part_width - integer_part_len
-    };
+    let padding_needed = integer_part_width.saturating_sub(integer_part_len);
 
     // Pad integer part with 0s
     let integer_part_abs_padded = format_compact!(
