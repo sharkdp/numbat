@@ -140,7 +140,7 @@ fn has_unit(mut args: Args) -> Result<Value> {
 fn is_dimensionless(mut args: Args) -> Result<Value> {
     let quantity = quantity_arg!(args);
 
-    return_boolean!(quantity.unit().is_scalar())
+    return_boolean!(quantity.as_scalar().is_ok())
 }
 
 fn unit_name(mut args: Args) -> Result<Value> {

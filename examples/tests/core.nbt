@@ -39,6 +39,7 @@ assert(has_unit(0, s))
 
 assert(is_dimensionless(0))
 assert(is_dimensionless(1))
+assert(is_dimensionless(1 nm/m))
 assert(!is_dimensionless(1 m))
 assert(!is_dimensionless(1 m/s))
 
