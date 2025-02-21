@@ -357,7 +357,7 @@ impl TypeChecker {
                 let type_ = checked_expr.get_type();
 
                 match op {
-                    ast::UnaryOperator::Factorial => {
+                    ast::UnaryOperator::Factorial(_order) => {
                         if self
                             .add_equal_constraint(&type_, &Type::scalar())
                             .is_trivially_violated()

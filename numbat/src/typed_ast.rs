@@ -1294,8 +1294,8 @@ impl PrettyPrint for Expression<'_> {
             UnaryOperator(_, self::UnaryOperator::Negate, expr, _type) => {
                 m::operator("-") + with_parens(expr)
             }
-            UnaryOperator(_, self::UnaryOperator::Factorial, expr, _type) => {
-                with_parens(expr) + m::operator("!")
+            UnaryOperator(_, self::UnaryOperator::Factorial(order), expr, _type) => {
+                with_parens(expr) + (0..order.get()).map(|_| m::operator("!")).sum()
             }
             UnaryOperator(_, self::UnaryOperator::LogicalNeg, expr, _type) => {
                 m::operator("!") + with_parens(expr)

@@ -62,6 +62,8 @@
 //! string          ::=   '"' [^"]* '"'
 //! ```
 
+use std::num::NonZeroUsize;
+
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{
     BinaryOperator, DefineVariable, Expression, ProcedureKind, Statement, StringPart,
@@ -1300,16 +1302,24 @@ impl<'a> Parser<'a> {
     fn factorial(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
         let mut expr = self.unicode_power(tokens)?;
 
+        let mut order = 0;
+        let mut span = None;
         while self
             .match_exact(tokens, TokenKind::ExclamationMark)
             .is_some()
         {
-            let span = self.last(tokens).unwrap().span;
-
+            let current_span = self.last(tokens).unwrap().span;
+            match span.as_mut() {
+                None => span = Some(current_span),
+                Some(span) => *span = span.extend(&current_span),
+            };
+            order += 1;
+        }
+        if order != 0 {
             expr = Expression::UnaryOperator {
-                op: UnaryOperator::Factorial,
+                op: UnaryOperator::Factorial(NonZeroUsize::new(order).unwrap()), // safe because we ensured count was != 0 above
                 expr: Box::new(expr),
-                span_op: span,
+                span_op: span.unwrap(), // safe because if we increased count we wrote a value in span
             };
         }
 
