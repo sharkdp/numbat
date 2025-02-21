@@ -192,9 +192,9 @@ macro_rules! negate {
 
 #[cfg(test)]
 macro_rules! factorial {
-    ( $lhs:expr ) => {{
+    ( $lhs:expr, $order:expr ) => {{
         crate::ast::Expression::UnaryOperator {
-            op: UnaryOperator::Factorial(NonZeroUsize::new(1).unwrap()),
+            op: UnaryOperator::Factorial(NonZeroUsize::new($order).unwrap()),
             expr: Box::new($lhs),
             span_op: Span::dummy(),
         }
