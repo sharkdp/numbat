@@ -169,6 +169,12 @@ fn test_factorial() {
     expect_output("-5!", "-120");
     expect_output("-(5!)", "-120");
     expect_output("-(5)!", "-120");
+    expect_output("5!!", "15");
+    expect_output("5!!!", "10");
+    expect_output("5!!!!", "5");
+    expect_output("5!!!!!", "5");
+    expect_output("5!!!!!!", "5");
+    expect_output("(3!)!!!", "18");
 
     expect_failure(
         "(-1)!",

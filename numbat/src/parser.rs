@@ -2212,25 +2212,27 @@ mod tests {
     fn factorials() {
         parse_as_expression(
             &["4!", "4.0!", "4 !", " 4 !", "(4)!"],
-            factorial!(scalar!(4.0)),
+            factorial!(scalar!(4.0), 1),
         );
         parse_as_expression(
             &["3!^3", "(3!)^3"],
-            binop!(factorial!(scalar!(3.0)), Power, scalar!(3.0)),
+            binop!(factorial!(scalar!(3.0), 1), Power, scalar!(3.0)),
         );
         parse_as_expression(
             &["3²!"],
-            factorial!(binop!(scalar!(3.0), Power, scalar!(2.0))),
+            factorial!(binop!(scalar!(3.0), Power, scalar!(2.0)), 1),
         );
         parse_as_expression(
             &["3^3!"],
-            binop!(scalar!(3.0), Power, factorial!(scalar!(3.0))),
+            binop!(scalar!(3.0), Power, factorial!(scalar!(3.0), 1)),
         );
         parse_as_expression(
             &["-5!", "-(5!)", "-(5)!"],
-            negate!(factorial!(scalar!(5.0))),
+            negate!(factorial!(scalar!(5.0), 1)),
         );
-        parse_as_expression(&["5!!", "(5!)!"], factorial!(factorial!(scalar!(5.0))));
+        parse_as_expression(&["(5!)!"], factorial!(factorial!(scalar!(5.0), 1), 1));
+        parse_as_expression(&["5!!", "(5!!)"], factorial!(scalar!(5.0), 2));
+        parse_as_expression(&["5!!!!!"], factorial!(scalar!(5.0), 5));
     }
 
     #[test]
