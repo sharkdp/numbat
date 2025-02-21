@@ -819,13 +819,15 @@ impl Vm {
                         .expect("Expected factorial operand to be scalar")
                         .to_f64();
 
+                    let order = self.read_u16();
+
                     if lhs < 0. {
                         return Err(Box::new(RuntimeError::FactorialOfNegativeNumber));
                     } else if lhs.fract() != 0. {
                         return Err(Box::new(RuntimeError::FactorialOfNonInteger));
                     }
 
-                    self.push_quantity(Quantity::from_scalar(math::factorial(lhs)));
+                    self.push_quantity(Quantity::from_scalar(math::factorial(lhs, order)));
                 }
                 Op::JumpIfFalse => {
                     let offset = self.read_u16() as usize;

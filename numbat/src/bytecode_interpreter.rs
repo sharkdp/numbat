@@ -102,9 +102,9 @@ impl BytecodeInterpreter {
                 self.compile_expression(rhs)?;
                 self.vm.add_op(Op::Negate);
             }
-            Expression::UnaryOperator(_span, UnaryOperator::Factorial, lhs, _type) => {
+            Expression::UnaryOperator(_span, UnaryOperator::Factorial(order), lhs, _type) => {
                 self.compile_expression(lhs)?;
-                self.vm.add_op(Op::Factorial);
+                self.vm.add_op1(Op::Factorial, order.get() as u16);
             }
             Expression::UnaryOperator(_span, UnaryOperator::LogicalNeg, lhs, _type) => {
                 self.compile_expression(lhs)?;

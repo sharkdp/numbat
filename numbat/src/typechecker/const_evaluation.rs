@@ -21,7 +21,9 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Negate, ref expr, _) => {
             return Ok(-evaluate_const_expr(expr)?)
         }
-        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial, _, _) => "factorial",
+        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial(_order), _, _) => {
+            "factorial"
+        }
         typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::LogicalNeg, _, _) => "logical",
 
         e @ typed_ast::Expression::BinaryOperator(_span_op, op, lhs_expr, rhs_expr, _) => {

@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use crate::markup as m;
 use crate::resolver::ModulePathBorrowed;
 use crate::span::Span;
@@ -11,7 +13,7 @@ use num_traits::Signed;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOperator {
-    Factorial,
+    Factorial(NonZeroUsize),
     Negate,
     LogicalNeg,
 }
@@ -192,7 +194,7 @@ macro_rules! negate {
 macro_rules! factorial {
     ( $lhs:expr ) => {{
         crate::ast::Expression::UnaryOperator {
-            op: UnaryOperator::Factorial,
+            op: UnaryOperator::Factorial(NonZeroUsize::new(1).unwrap()),
             expr: Box::new($lhs),
             span_op: Span::dummy(),
         }
