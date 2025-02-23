@@ -5,7 +5,7 @@ Numbat operators and other language constructs, ordered by precedence form *high
 | Operation / operator      | Syntax                               |
 | ------------------------- | ------------------------------------ |
 | square, cube, ...         | `x²`, `x³`, `x⁻¹`, ...               |
-| factorial                 | `x!`                                 |
+| factorials                | `x!`, `x!!`, `x!!!`, ...             |
 | exponentiation            | `x^y`, `x**y`                        |
 | multiplication (implicit) | `x y` (*whitespace*)                 |
 | unary negation            | `-x`                                 |
