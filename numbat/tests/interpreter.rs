@@ -158,7 +158,9 @@ fn test_factorial() {
     expect_output("0!", "1");
     expect_output("4!", "24");
     expect_output("4.0!", "24");
+    expect_output("4.0!!", "8");
     expect_output("4 !", "24");
+    expect_output("4 !!", "8");
     expect_output(" 4 !", "24");
     expect_output("(4)!", "24");
     expect_output("3!^3", "216");
@@ -169,6 +171,9 @@ fn test_factorial() {
     expect_output("-5!", "-120");
     expect_output("-(5!)", "-120");
     expect_output("-(5)!", "-120");
+    expect_output("-5!!", "-15");
+    expect_output("-(5!!)", "-15");
+    expect_output("-(5)!!", "-15");
     expect_output("5!!", "15");
     expect_output("5!!!", "10");
     expect_output("5!!!!", "5");
