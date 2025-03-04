@@ -65,6 +65,11 @@ pub enum RuntimeError {
 
     #[error("Could not write to file: {0:?}")]
     FileWrite(std::path::PathBuf),
+
+    #[error(
+        "Could not write to history file {0:?}. History will not be saved until this is fixed."
+    )]
+    HistoryWrite(std::path::PathBuf),
 }
 
 #[derive(Debug, PartialEq)]
