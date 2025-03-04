@@ -13,11 +13,11 @@ use itertools::Itertools;
 use numbat::command::{CommandControlFlow, CommandRunner};
 use numbat::compact_str::CompactString;
 use numbat::diagnostic::ErrorDiagnostic;
-use numbat::markup as m;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::session_history::{ParseEvaluationResult, SessionHistory};
+use numbat::{markup as m, RuntimeError};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -30,7 +30,7 @@ use rustyline::{
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
 use std::io::IsTerminal;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::{fs, thread};
 
@@ -343,7 +343,7 @@ impl Cli {
             }
         }
 
-        let result = self.repl_loop(&mut rl, interactive);
+        let result = self.repl_loop(&mut rl, interactive, &history_path);
 
         if interactive {
             rl.save_history(&history_path).context(format!(
@@ -359,6 +359,7 @@ impl Cli {
         &mut self,
         rl: &mut Editor<NumbatHelper, DefaultHistory>,
         interactive: bool,
+        history_path: &Path,
     ) -> Result<()> {
         let mut cmd_runner = CommandRunner::<Editor<NumbatHelper, DefaultHistory>>::new()
             .print_with(|m| println!("{}", ansi_format(m, true)))
@@ -379,6 +380,9 @@ impl Cli {
                     }
 
                     rl.add_history_entry(&line)?;
+                    if interactive && rl.append_history(history_path).is_err() {
+                        self.print_diagnostic(RuntimeError::HistoryWrite(history_path.to_owned()));
+                    }
 
                     let mut ctx = self.context.lock().unwrap();
                     match cmd_runner.try_run_command(&line, &mut ctx, rl) {
