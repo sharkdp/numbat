@@ -32,8 +32,7 @@ pub struct LocalMetadata {
 
 #[derive(Debug, Clone)]
 pub struct Local {
-    identifier: CompactString,
-    depth: usize,
+    identifiers: Vec<CompactString>,
     pub metadata: LocalMetadata,
 }
 
@@ -62,12 +61,12 @@ impl BytecodeInterpreter {
 
                 if let Some(position) = self.locals[current_depth]
                     .iter()
-                    .rposition(|l| l.identifier == identifier && l.depth == current_depth)
+                    .rposition(|l| l.identifiers.iter().any(|n| n == identifier))
                 {
                     self.vm.add_op1(Op::GetLocal, position as u16); // TODO: check overflow
                 } else if let Some(upvalue_position) = self.locals[0]
                     .iter()
-                    .rposition(|l| l.identifier == identifier)
+                    .rposition(|l| l.identifiers.iter().any(|n| n == identifier))
                 {
                     self.vm.add_op1(Op::GetUpvalue, upvalue_position as u16);
                 } else if LAST_RESULT_IDENTIFIERS.contains(identifier) {
@@ -283,25 +282,21 @@ impl BytecodeInterpreter {
         let current_depth = self.current_depth();
 
         // For variables, we ignore the prefix info and only use the names
-        let aliases = crate::decorator::name_and_aliases(identifier, decorators)
+        let identifiers = crate::decorator::name_and_aliases(identifier, decorators)
             .map(|(name, _)| name.to_compact_string())
             .collect::<Vec<_>>();
         let metadata = LocalMetadata {
             name: crate::decorator::name(decorators).map(CompactString::from),
             url: crate::decorator::url(decorators).map(CompactString::from),
             description: crate::decorator::description(decorators),
-            aliases: aliases.clone(),
+            aliases: identifiers.clone(),
         };
 
-        for alias_name in aliases {
-            self.compile_expression(expr)?;
-
-            self.locals[current_depth].push(Local {
-                identifier: alias_name.clone(),
-                depth: current_depth,
-                metadata: metadata.clone(),
-            });
-        }
+        self.compile_expression(expr)?;
+        self.locals[current_depth].push(Local {
+            identifiers,
+            metadata,
+        });
         Ok(())
     }
 
@@ -336,8 +331,7 @@ impl BytecodeInterpreter {
                 let current_depth = self.current_depth();
                 for parameter in parameters {
                     self.locals[current_depth].push(Local {
-                        identifier: parameter.1.to_compact_string(),
-                        depth: current_depth,
+                        identifiers: [parameter.1.to_compact_string()].into(),
                         metadata: LocalMetadata::default(),
                     });
                 }
@@ -544,7 +538,9 @@ impl BytecodeInterpreter {
     }
 
     pub fn lookup_global(&self, name: &str) -> Option<&Local> {
-        self.locals[0].iter().find(|l| l.identifier == name)
+        self.locals[0]
+            .iter()
+            .find(|l| l.identifiers.iter().any(|n| n == name))
     }
 }
 
