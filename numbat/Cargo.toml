@@ -13,7 +13,7 @@ readme = "README.md"
 rust-version = "1.74"
 
 [dependencies]
-thiserror = "1"
+thiserror = "2"
 itertools = "0.12"
 num-rational = "0.4"
 num-integer = "0.1.45"
@@ -32,7 +32,7 @@ rust-embed = { version = "8.2.0", features = [
 ] }
 num-format = "0.4.4"
 walkdir = "2"
-jiff = { version = "0.1.3", features = ["js"] }
+jiff = { version = "0.2.3", features = ["js"] }
 termcolor = { version = "1.4.1", optional = true }
 html-escape = { version = "0.2.13", optional = true }
 rand = "0.8.5"
@@ -40,7 +40,7 @@ strfmt = "0.2.4"
 indexmap = "2.2.6"
 mendeleev = "0.8.1"
 plotly = "0.10.0"
-compact_str = { version = "0.8.0", features = ["serde"] }
+compact_str = { version = "0.9.0", features = ["serde"] }
 
 [features]
 default = ["fetch-exchangerates"]

@@ -17,12 +17,12 @@ anyhow = "1"
 rustyline = { version = "14.0.0", features = ["derive"] }
 dirs = "5"
 numbat = { version = "1.16.0", path = "../numbat" }
-colored = "2"
+colored = "3"
 itertools = "0.12"
 toml = { version = "0.8.8", features = ["parse"] }
 serde = { version = "1.0.195", features = ["derive"] }
 terminal_size = "0.3.0"
-jiff = "0.1"
+jiff = "0.2"
 
 [dependencies.clap]
 version = "4"
