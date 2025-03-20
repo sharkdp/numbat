@@ -53,6 +53,8 @@ pi/3 + pi |> cos  # Same, 'arg |> f' is equivalent to 'f(arg)'
                   # which makes it very useful for interactive
                   # terminals (press up-arrow, and add '|> f')
 
+_                 # Result of last calculation, also 'ans'
+
 # 4. Constants
 
 let n = 4                          # Simple numerical constant
