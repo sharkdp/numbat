@@ -42,7 +42,7 @@ yay -S numbat
 
 ### Void Linux
 
-You can install the `numbat` package using
+You can install the `numbat` package using:
 
 ``` bash
 sudo xbps-install -S numbat
@@ -94,6 +94,14 @@ Or add it to your NixOS Configuration:
 environment.systemPackages = [
   pkgs.numbat
 ];
+```
+
+## Pixi
+
+You can install [numbat](https://prefix.dev/channels/conda-forge/packages/numbat) on Linux, macOS, or Windows using [Pixi](https://pixi.sh/):
+
+``` bash
+pixi global install numbat
 ```
 
 ## From pre-built binaries
