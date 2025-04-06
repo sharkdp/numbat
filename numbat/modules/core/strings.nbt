@@ -27,11 +27,13 @@ fn lowercase(s: String) -> String
 fn uppercase(s: String) -> String
 
 @description("Concatenate two strings")
-@example("\"Numbat\" |> str_append(\"!\")")
+@example("\"!\" |> str_append(\"Numbat\")")
+@example("str_append(\"Numbat\", \"!\")")
 fn str_append(a: String, b: String) -> String = "{a}{b}"
 
 @description("Concatenate two strings")
-@example("\"!\" |> str_prepend(\"Numbat\")")
+@example("\"Numbat\" |> str_prepend(\"!\")")
+@example("str_prepend(\"!\", \"Numbat\")")
 fn str_prepend(a: String, b: String) -> String = "{b}{a}"
 
 fn _str_find(needle: String, index: Scalar, haystack: String) -> Scalar =

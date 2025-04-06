@@ -12,13 +12,13 @@ fn id<A>(x: A) -> A = x
 fn abs<T: Dim>(x: T) -> T
 
 @name("Square root")
-@description("Return the square root $\\sqrt\{x\}$ of the input: `sqrt(121 m^2) = 11 m`.")
+@description("Return the square root $\\sqrt{{x}}$ of the input: `sqrt(121 m^2) = 11 m`.")
 @url("https://en.wikipedia.org/wiki/Square_root")
 @example("sqrt(4 are) -> m")
 fn sqrt<D: Dim>(x: D^2) -> D = x^(1/2)
 
 @name("Cube root")
-@description("Return the cube root $\\sqrt[3]\{x\}$ of the input: `cbrt(8 m^3) = 2 m`.")
+@description("Return the cube root $\\sqrt[3]{{x}}$ of the input: `cbrt(8 m^3) = 2 m`.")
 @url("https://en.wikipedia.org/wiki/Cube_root")
 @example("cbrt(8 L) -> cm")
 fn cbrt<D: Dim>(x: D^3) -> D = x^(1/3)
