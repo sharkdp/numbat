@@ -34,18 +34,19 @@ fn str_append(a: String, b: String) -> String = "{a}{b}"
 @example("\"!\" |> str_prepend(\"Numbat\")")
 fn str_prepend(a: String, b: String) -> String = "{b}{a}"
 
-@description("Find the first occurrence of a substring in a string")
-@example("str_find(\"typed\", \"Numbat is a statically typed programming language.\")")
-fn str_find(needle: String, haystack: String) -> Scalar =
+fn _str_find(needle: String, index: Scalar, haystack: String) -> Scalar =
   if len_haystack == 0
     then -1
     else if str_slice(0, str_length(needle), haystack) == needle
-      then 0
-      else if str_find(needle, tail_haystack) == -1
-        then -1
-        else 1 + str_find(needle, tail_haystack)
+      then index
+      else _str_find(needle, index + 1, tail_haystack)
   where len_haystack = str_length(haystack)
     and tail_haystack = str_slice(1, len_haystack, haystack)
+
+@description("Find the first occurrence of a substring in a string")
+@example("str_find(\"typed\", \"Numbat is a statically typed programming language.\")")
+fn str_find(needle: String, haystack: String) -> Scalar = 
+  _str_find(needle, 0, haystack)
 
 @description("Check if a string contains a substring")
 @example("str_contains(\"typed\", \"Numbat is a statically typed programming language.\")")
