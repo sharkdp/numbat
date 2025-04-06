@@ -2016,33 +2016,34 @@ fn strip_and_escape(s: &str) -> CompactString {
     let trimmed = &s[1..(s.len() - 1)];
 
     let mut result = CompactString::with_capacity(trimmed.len());
-    let mut escaped = false;
+    let mut last_char: Option<char> = None;
     for c in trimmed.chars() {
-        if escaped {
-            // Keep this in sync with 'escape_numbat_string',
-            // where the reverse replacement is needed
-            match c {
-                'n' => result.push('\n'),
-                'r' => result.push('\r'),
-                't' => result.push('\t'),
-                '"' => result.push('"'),
-                '0' => result.push('\0'),
-                '\\' => result.push('\\'),
-                '{' => result.push('{'),
-                '}' => result.push('}'),
-                _ => {
-                    // We follow Python here, where an unknown escape sequence
-                    // does not lead to an error, but is just passed through.
-                    result.push('\\');
-                    result.push(c)
-                }
+        // Keep this in sync with 'escape_numbat_string',
+        // where the reverse replacement is needed
+        let replacement = match c {
+            'n' if last_char == Some('\\') => '\n',
+            'r' if last_char == Some('\\') => '\r',
+            't' if last_char == Some('\\') => '\t',
+            '"' if last_char == Some('\\') => '"',
+            '0' if last_char == Some('\\') => '\0',
+            '{' | '}' | '\\' if last_char == Some(c) => {
+                result.push(c);
+                last_char = None;
+                continue;
             }
-            escaped = false;
-        } else if c == '\\' {
-            escaped = true;
-        } else {
-            result.push(c);
-        }
+            '{' | '}' | '\\' => {
+                last_char = Some(c);
+                continue;
+            }
+            _ if last_char == Some('\\') => {
+                result.push('\\');
+                c
+            }
+            _ => c,
+        };
+
+        result.push(replacement);
+        last_char = Some(c);
     }
 
     result
@@ -3301,7 +3302,7 @@ mod tests {
         );
 
         parse_as_expression(
-            &[r#""newline: \n, return: \r, tab: \t, quote: \", null: \0, backslash: \\, open_brace: \{, close brace: \}.""#],
+            &[r#""newline: \n, return: \r, tab: \t, quote: \", null: \0, backslash: \\, open_brace: {{, close brace: }}.""#],
             Expression::String(
                 Span::dummy(),
                 vec![StringPart::Fixed("newline: \n, return: \r, tab: \t, quote: \", null: \0, backslash: \\, open_brace: {, close brace: }.".into())],
