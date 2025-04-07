@@ -51,7 +51,7 @@ impl BytecodeInterpreter {
     fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
         match expr {
             Expression::Scalar(_span, n, _type) => {
-                let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
+                let index = self.vm.add_constant(Constant::Scalar(n.to_f64()), true);
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(_span, identifier, _type) => {
@@ -72,13 +72,14 @@ impl BytecodeInterpreter {
                 } else if LAST_RESULT_IDENTIFIERS.contains(identifier) {
                     self.vm.add_op(Op::GetLastResult);
                 } else if let Some(is_foreign) = self.functions.get(*identifier) {
-                    let index = self
-                        .vm
-                        .add_constant(Constant::FunctionReference(if *is_foreign {
+                    let index = self.vm.add_constant(
+                        Constant::FunctionReference(if *is_foreign {
                             FunctionReference::Foreign(identifier.to_compact_string())
                         } else {
                             FunctionReference::Normal(identifier.to_compact_string())
-                        }));
+                        }),
+                        true,
+                    );
                     self.vm.add_op1(Op::LoadConstant, index);
                 } else {
                     unreachable!("Unknown identifier '{identifier}'")
@@ -214,14 +215,14 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::CallCallable, args.len() as u16);
             }
             Expression::Boolean(_, val) => {
-                let index = self.vm.add_constant(Constant::Boolean(*val));
+                let index = self.vm.add_constant(Constant::Boolean(*val), true);
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::String(_, string_parts) => {
                 for part in string_parts {
                     match part {
                         StringPart::Fixed(s) => {
-                            let index = self.vm.add_constant(Constant::String(s.clone()));
+                            let index = self.vm.add_constant(Constant::String(s.clone()), true);
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
                         StringPart::Interpolation {
@@ -230,9 +231,12 @@ impl BytecodeInterpreter {
                             format_specifiers,
                         } => {
                             self.compile_expression(expr)?;
-                            let index = self.vm.add_constant(Constant::FormatSpecifiers(
-                                format_specifiers.map(|s| s.to_compact_string()),
-                            ));
+                            let index = self.vm.add_constant(
+                                Constant::FormatSpecifiers(
+                                    format_specifiers.map(|s| s.to_compact_string()),
+                                ),
+                                true,
+                            );
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
                     }
@@ -400,10 +404,14 @@ impl BytecodeInterpreter {
                     )
                     .map_err(RuntimeError::UnitRegistryError)?;
 
-                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
-                    unit_name.to_compact_string(),
-                    crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]),
-                )));
+                let constant_idx = self.vm.add_constant(
+                    Constant::Unit(Unit::new_base(
+                        unit_name.to_compact_string(),
+                        crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]),
+                    )),
+                    // already unique
+                    false,
+                );
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
                         .insert(name.into(), constant_idx);
@@ -421,13 +429,16 @@ impl BytecodeInterpreter {
                     .map(|(name, ap)| (name.to_compact_string(), ap))
                     .collect();
 
-                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
-                    CompactString::const_new("<dummy>"),
-                    CanonicalName {
-                        name: CompactString::const_new("<dummy>"),
-                        accepts_prefix: AcceptsPrefix::both(),
-                    },
-                ))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
+                let constant_idx = self.vm.add_constant(
+                    Constant::Unit(Unit::new_base(
+                        CompactString::const_new("<dummy>"),
+                        CanonicalName {
+                            name: CompactString::const_new("<dummy>"),
+                            accepts_prefix: AcceptsPrefix::both(),
+                        },
+                    )),
+                    false,
+                ); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
                     Some(
