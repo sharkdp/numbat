@@ -86,13 +86,17 @@
         },
         "strings": {
             "name": "string.quoted.double",
-            "begin": "\"",
-            "end": "\"",
+            "begin": "(?<!\\\\)\"",
+            "end": "(?<!\\\\)\"",
             "patterns": [
                 {
                     "name": "constant.character.escape",
-                    "begin": "{",
-                    "end": "}",
+                    "match": "\\\\\\S|{{|}}"
+                },
+                {
+                    "name": "constant.character.escape",
+                    "begin": "(?<!{){(?!{)",
+                    "end": "(?<!})}(?!})",
                     "patterns": [
                         {
                             "include": "$base"

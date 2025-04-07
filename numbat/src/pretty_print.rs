@@ -17,14 +17,16 @@ pub fn escape_numbat_string(s: &str) -> CompactString {
     let mut out = CompactString::const_new("");
     for c in s.chars() {
         let replacement = match c {
-            '\\' => r"\\",
             '\n' => r"\n",
             '\r' => r"\r",
             '\t' => r"\t",
             '"' => r#"\""#,
             '\0' => r"\0",
-            '{' => r"\{",
-            '}' => r"\}",
+            '{' | '}' | '\\' => {
+                out.push(c);
+                out.push(c);
+                continue;
+            }
             _ => {
                 out.push(c);
                 continue;

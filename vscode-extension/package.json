@@ -2,7 +2,7 @@
     "name": "numbat-vscode-extension",
     "displayName": "Numbat",
     "description": "Syntax highlighting for the Numbat programming language",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "license": "(MIT OR Apache-2.0)",
     "icon": "./assets/numbat-256x256.png",
     "engines": {
@@ -38,7 +38,7 @@
         "vscode:package": "vsce package"
     },
     "devDependencies": {
-        "@vscode/vsce": "3.2.1"
+        "@vscode/vsce": "3.3.2"
     },
     "vsce": {
         "skipLicense": true
