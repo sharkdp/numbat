@@ -309,7 +309,7 @@ impl Cli {
                 modules: self.context.lock().unwrap().list_modules().collect(),
                 all_timezones: jiff::tz::db()
                     .available()
-                    .map(CompactString::from)
+                    .map(|tz_name| CompactString::from(tz_name.as_str()))
                     .collect(),
             },
             highlighter: NumbatHighlighter {
