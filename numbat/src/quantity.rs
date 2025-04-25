@@ -17,6 +17,9 @@ pub enum QuantityError {
 
     #[error("Non-rational exponent")]
     NonRationalExponent,
+
+    #[error("Zero raised to a negative power")]
+    ZeroToNegativePower,
 }
 
 pub type Result<T> = std::result::Result<T, QuantityError>;
@@ -241,12 +244,17 @@ impl Quantity {
 
     pub fn power(self, exp: Quantity) -> Result<Self> {
         let exponent_as_scalar = exp.as_scalar()?.to_f64();
-        Ok(Quantity::new_f64(
-            self.value.to_f64().powf(exponent_as_scalar),
-            self.unit.power(
-                Rational::from_f64(exponent_as_scalar).ok_or(QuantityError::NonRationalExponent)?,
-            ),
-        ))
+        
+        if exponent_as_scalar < 0.0 && self.is_zero(){
+            Err(QuantityError::ZeroToNegativePower)
+        } else {
+            Ok(Quantity::new_f64(
+                self.value.to_f64().powf(exponent_as_scalar),
+                self.unit.power(
+                    Rational::from_f64(exponent_as_scalar).ok_or(QuantityError::NonRationalExponent)?,
+                ),
+            ))
+        }
     }
 
     pub fn checked_div(self, other: Self) -> Option<Self> {
