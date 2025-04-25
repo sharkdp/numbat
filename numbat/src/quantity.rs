@@ -244,14 +244,15 @@ impl Quantity {
 
     pub fn power(self, exp: Quantity) -> Result<Self> {
         let exponent_as_scalar = exp.as_scalar()?.to_f64();
-        
-        if exponent_as_scalar < 0.0 && self.is_zero(){
+
+        if exponent_as_scalar < 0.0 && self.is_zero() {
             Err(QuantityError::ZeroToNegativePower)
         } else {
             Ok(Quantity::new_f64(
                 self.value.to_f64().powf(exponent_as_scalar),
                 self.unit.power(
-                    Rational::from_f64(exponent_as_scalar).ok_or(QuantityError::NonRationalExponent)?,
+                    Rational::from_f64(exponent_as_scalar)
+                        .ok_or(QuantityError::NonRationalExponent)?,
                 ),
             ))
         }
