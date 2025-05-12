@@ -1,3 +1,4 @@
+use crate::ast::ProcedureKind;
 use crate::span::{ByteIndex, Span};
 
 use std::collections::HashMap;
@@ -423,10 +424,10 @@ impl Tokenizer {
             m.insert("inf", TokenKind::Inf);
 
             // procedures
-            m.insert("print", TokenKind::ProcedurePrint);
-            m.insert("assert", TokenKind::ProcedureAssert);
-            m.insert("assert_eq", TokenKind::ProcedureAssertEq);
-            m.insert("type", TokenKind::ProcedureType);
+            m.insert(ProcedureKind::Print.name(), TokenKind::ProcedurePrint);
+            m.insert(ProcedureKind::Assert.name(), TokenKind::ProcedureAssert);
+            m.insert(ProcedureKind::AssertEq.name(), TokenKind::ProcedureAssertEq);
+            m.insert(ProcedureKind::Type.name(), TokenKind::ProcedureType);
 
             // type names
             m.insert("Bool", TokenKind::Bool);

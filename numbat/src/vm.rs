@@ -302,7 +302,7 @@ pub struct Vm {
     last_result: Option<Value>,
 
     /// List of registered native/foreign functions
-    ffi_callables: Vec<&'static ForeignFunction>,
+    ffi_callables: IndexMap<&'static str, &'static ForeignFunction>,
 
     /// Spans for arguments of procedure calls. This is used for
     /// assertion error messages, for example.
@@ -331,7 +331,10 @@ impl Vm {
             strings: vec![],
             unit_information: vec![],
             last_result: None,
-            ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
+            ffi_callables: ffi::procedures()
+                .iter()
+                .map(|(kind, ff)| (kind.name(), ff))
+                .collect(),
             procedure_arg_spans: vec![],
             frames: vec![CallFrame::root()],
             stack: vec![],
@@ -463,14 +466,14 @@ impl Vm {
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: ArityRange) {
-        let ff = ffi::functions().get(name).unwrap();
+        // `key: &'static str`, whereas `name: &'non_static str`
+        let (key, ff) = ffi::functions().get_key_value(name).unwrap();
         assert!(ff.arity == arity);
-        self.ffi_callables.push(ff);
+        self.ffi_callables.insert(key, ff);
     }
 
     pub(crate) fn get_ffi_callable_idx(&self, name: &str) -> Option<u16> {
-        // TODO: this is a linear search that can certainly be optimized
-        let position = self.ffi_callables.iter().position(|ff| ff.name == name)?;
+        let position = self.ffi_callables.keys().position(|&n| n == name)?;
         assert!(position <= u16::MAX as usize);
         Some(position as u16)
     }

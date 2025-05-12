@@ -292,7 +292,7 @@ impl TypeChecker {
                     .iter_identifiers()
                     .map(|k| k.as_str())
                     .chain(["true", "false"]) // These are parsed as keywords, but can act like identifiers
-                    .chain(ffi::procedures().values().map(|p| p.name)),
+                    .chain(ffi::procedures().keys().map(|p| p.name())),
                 name,
             );
             TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
@@ -1687,7 +1687,7 @@ impl TypeChecker {
                 if !procedure.arity.contains(&args.len()) {
                     return Err(Box::new(TypeCheckError::WrongArity {
                         callable_span: *span,
-                        callable_name: procedure.name.to_owned(),
+                        callable_name: kind.name().to_owned(),
                         callable_definition_span: None,
                         arity: procedure.arity.clone(),
                         num_args: args.len(),
