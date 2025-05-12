@@ -404,6 +404,17 @@ pub enum ProcedureKind {
     Type,
 }
 
+impl ProcedureKind {
+    pub(crate) fn name(&self) -> &'static str {
+        match self {
+            ProcedureKind::Print => "print",
+            ProcedureKind::Assert => "assert",
+            ProcedureKind::AssertEq => "assert_eq",
+            ProcedureKind::Type => "type",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeParameterBound {
     Dim,

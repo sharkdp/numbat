@@ -25,7 +25,6 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
         m.insert(
             ProcedureKind::Print,
             ForeignFunction {
-                name: "print",
                 arity: 0..=1,
                 callable: Callable::Procedure(print),
             },
@@ -33,7 +32,6 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
         m.insert(
             ProcedureKind::Assert,
             ForeignFunction {
-                name: "assert",
                 arity: 1..=1,
                 callable: Callable::Procedure(assert),
             },
@@ -41,7 +39,6 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
         m.insert(
             ProcedureKind::AssertEq,
             ForeignFunction {
-                name: "assert_eq",
                 arity: 2..=3,
                 callable: Callable::Procedure(assert_eq),
             },

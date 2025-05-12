@@ -20,7 +20,7 @@ use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::{FunctionReference, Value};
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
-use crate::{decorator, ffi, Type};
+use crate::{decorator, Type};
 
 #[derive(Debug, Clone, Default)]
 pub struct LocalMetadata {
@@ -475,7 +475,7 @@ impl BytecodeInterpreter {
                     self.compile_expression(arg)?;
                 }
 
-                let name = &ffi::procedures().get(kind).unwrap().name;
+                let name = kind.name();
 
                 let callable_idx = self.vm.get_ffi_callable_idx(name).unwrap();
 

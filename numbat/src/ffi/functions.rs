@@ -6,9 +6,9 @@ use crate::{quantity::Quantity, value::Value, RuntimeError};
 
 use super::{Callable, ForeignFunction, Result};
 
-static FFI_FUNCTIONS: OnceLock<HashMap<String, ForeignFunction>> = OnceLock::new();
+static FFI_FUNCTIONS: OnceLock<HashMap<&'static str, ForeignFunction>> = OnceLock::new();
 
-pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
+pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
     use super::currency::*;
     use super::datetime::*;
     use super::lists::*;
@@ -23,9 +23,8 @@ pub(crate) fn functions() -> &'static HashMap<String, ForeignFunction> {
         macro_rules! insert_function {
             ($fn_name:expr, $callable:expr, $arity:expr) => {
                 m.insert(
-                    $fn_name.to_string(),
+                    $fn_name,
                     ForeignFunction {
-                        name: $fn_name,
                         arity: $arity,
                         callable: Callable::Function($callable),
                     },
