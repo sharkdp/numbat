@@ -17,19 +17,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let line = line.trim();
 
         if line.starts_with("@aliases(") {
-            // assumes that @aliases(...) is on a single line
+            // get everything between the parentheses. assumes that @aliases(...) is on
+            // a single line
             let alias_str = line.split('(').nth(1).unwrap().split(')').next().unwrap();
 
             currency_names.extend(
                 alias_str
                     .split(',')
-                    .map(|s| s.trim().split(':').next().unwrap().to_owned()),
+                    .map(|s| s.split(':').next().unwrap().trim().to_owned()),
             );
         } else if line.starts_with("unit ") {
             // assumes that `unit` and unit name are on the same line
-            let name = line.split(' ').nth(1).unwrap().split(':').next().unwrap();
+            let name = line
+                .split(' ') // after 'unit '...
+                .nth(1)
+                .unwrap()
+                .split(':') // before the ':'
+                .next()
+                .unwrap()
+                .trim();
 
-            currency_names.push(name.trim().to_owned());
+            currency_names.push(name.to_owned());
         }
     }
 
