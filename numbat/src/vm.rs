@@ -473,7 +473,7 @@ impl Vm {
     }
 
     pub(crate) fn get_ffi_callable_idx(&self, name: &str) -> Option<u16> {
-        let position = self.ffi_callables.keys().position(|&n| n == name)?;
+        let position = self.ffi_callables.get_index_of(name)?;
         assert!(position <= u16::MAX as usize);
         Some(position as u16)
     }
