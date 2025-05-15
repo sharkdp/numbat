@@ -1,6 +1,5 @@
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Display;
-use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
 use compact_str::{CompactString, ToCompactString};
@@ -208,10 +207,17 @@ impl Op {
     }
 }
 
+/// The value stored in a `Constant::Dummy`. Each dummy needs to have a distinct one of
+/// these so that they count as separate keys for a Map.
+///
+/// The wrapped value is private (and in particular, we don't just store a `usize` in
+/// `Constant::Dummy`) so that it's impossible to construct a dummy ad-hoc; you must
+/// instead go through `Vm::add_dummy_constant`, which ensures a unique value is
+/// produced. (The implementation currently uses the current length of the vm’s
+/// `constants`, which will never repeat because constants are only added, never
+/// deleted.)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct ConstantDummyValue(u64);
-
-static DUMMY_CURR_VALUE: AtomicU64 = AtomicU64::new(0);
+pub struct ConstantDummyValue(usize);
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Constant {
@@ -227,11 +233,6 @@ pub enum Constant {
 impl Constant {
     pub(crate) fn scalar_from_f64(n: f64) -> Self {
         Constant::Scalar(Number::from_f64(n))
-    }
-
-    pub(crate) fn new_dummy() -> Self {
-        let value = DUMMY_CURR_VALUE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        Constant::Dummy(ConstantDummyValue(value))
     }
 
     fn to_value(&self) -> Value {
@@ -418,6 +419,12 @@ impl Vm {
         self.constants.insert(constant);
         assert!(self.constants.len() <= u16::MAX as usize);
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
+    }
+
+    pub(crate) fn add_dummy_constant(&mut self) -> u16 {
+        // uniqueness is guaranteed because `self.constants` only grows in length
+        let constant = Constant::Dummy(ConstantDummyValue(self.constants.len()));
+        self.add_constant(constant)
     }
 
     pub fn add_struct_info(&mut self, struct_info: &StructInfo) -> usize {

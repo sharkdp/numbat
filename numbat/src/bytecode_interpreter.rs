@@ -420,7 +420,7 @@ impl BytecodeInterpreter {
                     .map(|(name, ap)| (name.to_compact_string(), ap))
                     .collect();
 
-                let constant_idx = self.vm.add_constant(Constant::new_dummy()); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
+                let constant_idx = self.vm.add_dummy_constant(); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
                     Some(
