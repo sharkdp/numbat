@@ -3,7 +3,6 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use compact_str::{CompactString, ToCompactString};
-use indexmap::set::MutableValues;
 use indexmap::{IndexMap, IndexSet};
 use num_traits::ToPrimitive;
 
@@ -699,15 +698,22 @@ impl Vm {
                         )
                         .map_err(RuntimeError::UnitRegistryError)?;
 
-                    *self
-                        .constants
-                        .get_index_mut2(constant_idx as usize)
-                        .unwrap() = Constant::Unit(Unit::new_derived(
+                    // 1. swap-remove the dummy value, leaving an arbitrary element in
+                    //    its place (which is now at the wrong spot)
+                    // 2. insert the new correct element (which is now at the end of the
+                    //    list, also at the wrong spot)
+                    // 3. swap the two
+                    let removed = self.constants.swap_remove_index(constant_idx as usize);
+                    debug_assert!(matches!(removed, Some(Constant::Dummy(_))));
+
+                    self.constants.insert(Constant::Unit(Unit::new_derived(
                         unit_information.0.to_compact_string(),
                         unit_information.2.canonical_name.clone(),
                         *conversion_value.unsafe_value(),
                         defining_unit.clone(),
-                    ));
+                    )));
+                    self.constants
+                        .swap_indices(constant_idx as usize, self.constants.len() - 1);
                 }
                 Op::GetLocal => {
                     let slot_idx = self.read_u16() as usize;
