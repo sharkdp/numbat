@@ -411,20 +411,24 @@ impl Vm {
         chunk[offset + 1] = ((arg >> 8) & 0xff) as u8;
     }
 
-    pub fn add_constant(&mut self, constant: Constant) -> u16 {
-        if let Some(idx) = self.constants.get_index_of(&constant) {
-            return idx as u16;
-        }
-
+    fn add_constant_impl(&mut self, constant: Constant) -> u16 {
         self.constants.insert(constant);
         assert!(self.constants.len() <= u16::MAX as usize);
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
+    pub fn add_constant(&mut self, constant: Constant) -> u16 {
+        if let Some(idx) = self.constants.get_index_of(&constant) {
+            return idx as u16;
+        }
+
+        self.add_constant_impl(constant)
+    }
+
     pub(crate) fn add_dummy_constant(&mut self) -> u16 {
         // uniqueness is guaranteed because `self.constants` only grows in length
         let constant = Constant::Dummy(ConstantDummyValue(self.constants.len()));
-        self.add_constant(constant)
+        self.add_constant_impl(constant)
     }
 
     pub fn add_struct_info(&mut self, struct_info: &StructInfo) -> usize {
