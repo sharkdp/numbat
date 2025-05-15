@@ -1,22 +1,55 @@
-use std::fmt::Display;
+use std::{
+    fmt::{self, Debug, Display},
+    hash::Hash,
+};
 
 use compact_str::{format_compact, CompactString, ToCompactString};
 use num_traits::{Pow, ToPrimitive};
 use pretty_dtoa::FmtFloatConfig;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)] // TODO: we probably want to remove 'Copy' once we move to a more sophisticated numerical type
-pub struct Number(pub f64);
+/// A type that acts like an `f64`
+///
+/// To make this type `Hash` and `Eq`, we actually store a `u64`. To convert to and from `f64`
+/// (which is the actual value we care about), we use the [`f64::from_bits`] and
+/// [`f64::to_bits`] functions.
+///
+/// Note that we can't derive PartialEq because some f64 with different bits represent
+/// the same value (e.g. `0.0` and `-0.0`).
+#[derive(Clone, Copy, Eq)] // TODO: we probably want to remove 'Copy' once we move to a more sophisticated numerical type
+pub struct Number(u64);
 
-impl Eq for Number {}
+impl Debug for Number {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("Number").field(&self.to_f64()).finish()
+    }
+}
+
+impl PartialEq for Number {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_f64() == other.to_f64()
+    }
+}
+
+impl PartialOrd for Number {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.to_f64().partial_cmp(&other.to_f64())
+    }
+}
+
+impl Hash for Number {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
 
 impl Number {
     pub fn from_f64(n: f64) -> Self {
-        Number(n)
+        Number(n.to_bits())
     }
 
     pub fn to_f64(self) -> f64 {
         let Number(n) = self;
-        n
+        f64::from_bits(n)
     }
 
     pub fn pow(self, other: &Number) -> Self {
@@ -28,7 +61,7 @@ impl Number {
     }
 
     fn is_integer(self) -> bool {
-        self.0.trunc() == self.0
+        self.to_f64().trunc() == self.to_f64()
     }
 
     /// Pretty prints with default options
@@ -40,7 +73,7 @@ impl Number {
     /// If options is None, default options will be used.
     /// If options is not None, float-based format handling is used and integer-based format handling is skipped.
     pub fn pretty_print_with_options(self, options: Option<FmtFloatConfig>) -> CompactString {
-        let number = self.0;
+        let number = self.to_f64();
 
         // 64-bit floats can accurately represent integers up to 2^52 [1],
         // which is approximately 4.5 × 10^15.
@@ -48,11 +81,11 @@ impl Number {
         // [1] https://stackoverflow.com/a/43656339
         //
         // Skip special format handling for integers if options is not None.
-        if options.is_none() && self.is_integer() && self.0.abs() < 1e15 {
+        if options.is_none() && self.is_integer() && self.to_f64().abs() < 1e15 {
             use num_format::{CustomFormat, Grouping, ToFormattedString};
 
             let format = CustomFormat::builder()
-                .grouping(if self.0.abs() >= 100_000.0 {
+                .grouping(if self.to_f64().abs() >= 100_000.0 {
                     Grouping::Standard
                 } else {
                     Grouping::Posix
@@ -108,7 +141,7 @@ impl Number {
 
 impl Display for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.to_f64().fmt(f)
+        Display::fmt(&self.to_f64(), f)
     }
 }
 
@@ -116,7 +149,7 @@ impl std::ops::Add for Number {
     type Output = Number;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Number(self.0 + rhs.0)
+        Number::from_f64(self.to_f64() + rhs.to_f64())
     }
 }
 
@@ -124,7 +157,7 @@ impl std::ops::Sub for Number {
     type Output = Number;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Number(self.0 - rhs.0)
+        Number::from_f64(self.to_f64() - rhs.to_f64())
     }
 }
 
@@ -132,7 +165,7 @@ impl std::ops::Mul for Number {
     type Output = Number;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Number(self.0 * rhs.0)
+        Number::from_f64(self.to_f64() * rhs.to_f64())
     }
 }
 
@@ -140,7 +173,7 @@ impl std::ops::Div for Number {
     type Output = Number;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Number(self.0 / rhs.0)
+        Number::from_f64(self.to_f64() / rhs.to_f64())
     }
 }
 
@@ -148,7 +181,7 @@ impl std::ops::Neg for Number {
     type Output = Number;
 
     fn neg(self) -> Self::Output {
-        Number(-self.0)
+        Number::from_f64(-self.to_f64())
     }
 }
 

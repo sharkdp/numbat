@@ -1,9 +1,11 @@
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Display;
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
 use compact_str::{CompactString, ToCompactString};
-use indexmap::IndexMap;
+use indexmap::set::MutableValues;
+use indexmap::{IndexMap, IndexSet};
 use num_traits::ToPrimitive;
 
 use crate::list::NumbatList;
@@ -206,25 +208,43 @@ impl Op {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+static DUMMY_CURR_VALUE: AtomicU64 = AtomicU64::new(0);
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Constant {
-    Scalar(f64),
+    /// The bits representation of the f64 we actually care about
+    ///
+    /// f64 isn't Hash, so we need to store something interconvertible that is Hash. The
+    /// easiest solution is u64. To read the f64 out, we use f64::from_bits. To store an
+    /// f64, we use f64::to_bits.
+    Scalar(u64),
     Unit(Unit),
     Boolean(bool),
     String(CompactString),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<CompactString>),
+    Dummy(u64),
 }
 
 impl Constant {
+    pub(crate) fn scalar_from_f64(n: f64) -> Self {
+        Constant::Scalar(n.to_bits())
+    }
+
+    pub(crate) fn new_dummy() -> Self {
+        let value = DUMMY_CURR_VALUE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        Constant::Dummy(value)
+    }
+
     fn to_value(&self) -> Value {
         match self {
-            Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(*n)),
+            Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(f64::from_bits(*n))),
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
             Constant::FunctionReference(inner) => Value::FunctionReference(inner.clone()),
             Constant::FormatSpecifiers(s) => Value::FormatSpecifiers(s.clone()),
+            Constant::Dummy(_) => unreachable!("unexpectedly found dummy constant"),
         }
     }
 }
@@ -238,6 +258,7 @@ impl Display for Constant {
             Constant::String(val) => write!(f, "\"{val}\""),
             Constant::FunctionReference(inner) => write!(f, "{inner}"),
             Constant::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
+            Constant::Dummy(n) => write!(f, "<dummy {n}>"),
         }
     }
 }
@@ -281,7 +302,7 @@ pub struct Vm {
     current_chunk_index: usize,
 
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
-    pub constants: Vec<Constant>,
+    pub constants: IndexSet<Constant>,
 
     /// struct metadata, used so we can display struct fields at runtime
     struct_infos: IndexMap<CompactString, Arc<StructInfo>>,
@@ -325,7 +346,7 @@ impl Vm {
         Self {
             bytecode: vec![("<main>".into(), vec![])],
             current_chunk_index: 0,
-            constants: vec![],
+            constants: IndexSet::new(),
             struct_infos: IndexMap::new(),
             prefixes: vec![],
             strings: vec![],
@@ -391,14 +412,12 @@ impl Vm {
         chunk[offset + 1] = ((arg >> 8) & 0xff) as u8;
     }
 
-    pub fn add_constant(&mut self, constant: Constant, dedupe: bool) -> u16 {
-        if dedupe {
-            if let Some(idx) = self.constants.iter().position(|c| *c == constant) {
-                return idx as u16;
-            }
+    pub fn add_constant(&mut self, constant: Constant) -> u16 {
+        if let Some(idx) = self.constants.get_index_of(&constant) {
+            return idx as u16;
         }
 
-        self.constants.push(constant);
+        self.constants.insert(constant);
         assert!(self.constants.len() <= u16::MAX as usize);
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
     }
@@ -670,7 +689,10 @@ impl Vm {
                         )
                         .map_err(RuntimeError::UnitRegistryError)?;
 
-                    self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
+                    *self
+                        .constants
+                        .get_index_mut2(constant_idx as usize)
+                        .unwrap() = Constant::Unit(Unit::new_derived(
                         unit_information.0.to_compact_string(),
                         unit_information.2.canonical_name.clone(),
                         *conversion_value.unsafe_value(),
@@ -1104,8 +1126,8 @@ impl Vm {
 #[test]
 fn vm_basic() {
     let mut vm = Vm::new();
-    vm.add_constant(Constant::Scalar(42.0), true);
-    vm.add_constant(Constant::Scalar(1.0), true);
+    vm.add_constant(Constant::scalar_from_f64(42.0));
+    vm.add_constant(Constant::scalar_from_f64(1.0));
 
     vm.add_op1(Op::LoadConstant, 0);
     vm.add_op1(Op::LoadConstant, 1);

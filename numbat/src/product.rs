@@ -1,3 +1,4 @@
+use std::hash::Hash;
 use std::ops::{Div, Mul};
 
 use crate::arithmetic::{Exponent, Power};
@@ -232,6 +233,14 @@ impl<Factor: Clone + Ord + PartialEq + Canonicalize, const CANONICALIZE: bool> P
 {
     fn eq(&self, other: &Self) -> bool {
         self.canonicalized().factors == other.canonicalized().factors
+    }
+}
+
+impl<Factor: Clone + Ord + Hash + Canonicalize, const CANONICALIZE: bool> Hash
+    for Product<Factor, CANONICALIZE>
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.canonicalized().factors.hash(state);
     }
 }
 

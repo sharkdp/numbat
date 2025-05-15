@@ -11,12 +11,11 @@ use crate::interpreter::{
 };
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
-use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
 use crate::typed_ast::{
     BinaryOperator, DefineVariable, Expression, Statement, StringPart, UnaryOperator,
 };
-use crate::unit::{CanonicalName, Unit};
+use crate::unit::Unit;
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::{FunctionReference, Value};
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
@@ -51,7 +50,7 @@ impl BytecodeInterpreter {
     fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
         match expr {
             Expression::Scalar(_span, n, _type) => {
-                let index = self.vm.add_constant(Constant::Scalar(n.to_f64()), true);
+                let index = self.vm.add_constant(Constant::scalar_from_f64(n.to_f64()));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::Identifier(_span, identifier, _type) => {
@@ -72,14 +71,13 @@ impl BytecodeInterpreter {
                 } else if LAST_RESULT_IDENTIFIERS.contains(identifier) {
                     self.vm.add_op(Op::GetLastResult);
                 } else if let Some(is_foreign) = self.functions.get(*identifier) {
-                    let index = self.vm.add_constant(
-                        Constant::FunctionReference(if *is_foreign {
+                    let index = self
+                        .vm
+                        .add_constant(Constant::FunctionReference(if *is_foreign {
                             FunctionReference::Foreign(identifier.to_compact_string())
                         } else {
                             FunctionReference::Normal(identifier.to_compact_string())
-                        }),
-                        true,
-                    );
+                        }));
                     self.vm.add_op1(Op::LoadConstant, index);
                 } else {
                     unreachable!("Unknown identifier '{identifier}'")
@@ -215,14 +213,14 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::CallCallable, args.len() as u16);
             }
             Expression::Boolean(_, val) => {
-                let index = self.vm.add_constant(Constant::Boolean(*val), true);
+                let index = self.vm.add_constant(Constant::Boolean(*val));
                 self.vm.add_op1(Op::LoadConstant, index);
             }
             Expression::String(_, string_parts) => {
                 for part in string_parts {
                     match part {
                         StringPart::Fixed(s) => {
-                            let index = self.vm.add_constant(Constant::String(s.clone()), true);
+                            let index = self.vm.add_constant(Constant::String(s.clone()));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
                         StringPart::Interpolation {
@@ -231,12 +229,9 @@ impl BytecodeInterpreter {
                             format_specifiers,
                         } => {
                             self.compile_expression(expr)?;
-                            let index = self.vm.add_constant(
-                                Constant::FormatSpecifiers(
-                                    format_specifiers.map(|s| s.to_compact_string()),
-                                ),
-                                true,
-                            );
+                            let index = self.vm.add_constant(Constant::FormatSpecifiers(
+                                format_specifiers.map(|s| s.to_compact_string()),
+                            ));
                             self.vm.add_op1(Op::LoadConstant, index)
                         }
                     }
@@ -404,14 +399,10 @@ impl BytecodeInterpreter {
                     )
                     .map_err(RuntimeError::UnitRegistryError)?;
 
-                let constant_idx = self.vm.add_constant(
-                    Constant::Unit(Unit::new_base(
-                        unit_name.to_compact_string(),
-                        crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]),
-                    )),
-                    // already unique
-                    false,
-                );
+                let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
+                    unit_name.to_compact_string(),
+                    crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]),
+                )));
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
                     self.unit_name_to_constant_index
                         .insert(name.into(), constant_idx);
@@ -429,16 +420,7 @@ impl BytecodeInterpreter {
                     .map(|(name, ap)| (name.to_compact_string(), ap))
                     .collect();
 
-                let constant_idx = self.vm.add_constant(
-                    Constant::Unit(Unit::new_base(
-                        CompactString::const_new("<dummy>"),
-                        CanonicalName {
-                            name: CompactString::const_new("<dummy>"),
-                            accepts_prefix: AcceptsPrefix::both(),
-                        },
-                    )),
-                    false,
-                ); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
+                let constant_idx = self.vm.add_constant(Constant::new_dummy()); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
                     Some(
@@ -541,7 +523,7 @@ impl BytecodeInterpreter {
     pub fn get_defining_unit(&self, unit_name: &str) -> Option<&Unit> {
         self.unit_name_to_constant_index
             .get(unit_name)
-            .and_then(|idx| self.vm.constants.get(*idx as usize))
+            .and_then(|idx| self.vm.constants.get_index(*idx as usize))
             .and_then(|constant| match constant {
                 Constant::Unit(u) => Some(u),
                 _ => None,
