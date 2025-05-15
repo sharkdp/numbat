@@ -215,12 +215,7 @@ static DUMMY_CURR_VALUE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Constant {
-    /// The bits representation of the f64 we actually care about
-    ///
-    /// f64 isn't Hash, so we need to store something interconvertible that is Hash. The
-    /// easiest solution is u64. To read the f64 out, we use f64::from_bits. To store an
-    /// f64, we use f64::to_bits.
-    Scalar(u64),
+    Scalar(Number),
     Unit(Unit),
     Boolean(bool),
     String(CompactString),
@@ -231,7 +226,7 @@ pub enum Constant {
 
 impl Constant {
     pub(crate) fn scalar_from_f64(n: f64) -> Self {
-        Constant::Scalar(n.to_bits())
+        Constant::Scalar(Number::from_f64(n))
     }
 
     pub(crate) fn new_dummy() -> Self {
@@ -241,7 +236,7 @@ impl Constant {
 
     fn to_value(&self) -> Value {
         match self {
-            Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(f64::from_bits(*n))),
+            Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(n.to_f64())),
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
