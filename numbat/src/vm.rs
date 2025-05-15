@@ -208,6 +208,9 @@ impl Op {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ConstantDummyValue(u64);
+
 static DUMMY_CURR_VALUE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -223,7 +226,7 @@ pub enum Constant {
     String(CompactString),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<CompactString>),
-    Dummy(u64),
+    Dummy(ConstantDummyValue),
 }
 
 impl Constant {
@@ -233,7 +236,7 @@ impl Constant {
 
     pub(crate) fn new_dummy() -> Self {
         let value = DUMMY_CURR_VALUE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        Constant::Dummy(value)
+        Constant::Dummy(ConstantDummyValue(value))
     }
 
     fn to_value(&self) -> Value {
@@ -258,7 +261,7 @@ impl Display for Constant {
             Constant::String(val) => write!(f, "\"{val}\""),
             Constant::FunctionReference(inner) => write!(f, "{inner}"),
             Constant::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
-            Constant::Dummy(n) => write!(f, "<dummy {n}>"),
+            Constant::Dummy(ConstantDummyValue(n)) => write!(f, "<dummy {n}>"),
         }
     }
 }
