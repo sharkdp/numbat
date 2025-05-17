@@ -430,9 +430,6 @@ impl BytecodeInterpreter {
                 ))); // TODO: dummy is just a temp. value until the SetUnitConstant op runs
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
-                    Some(
-                        &crate::decorator::get_canonical_unit_name(unit_name, &decorators[..]).name,
-                    ),
                     UnitMetadata {
                         type_: type_.to_concrete_type(), // We guarantee that derived-unit definitions do not contain generics, so no TGen(..)s can escape
                         readable_type: annotation
