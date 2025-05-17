@@ -113,6 +113,16 @@ pub struct Context {
     terminal_width: Option<usize>,
 }
 
+pub struct FunctionInfo {
+    pub fn_name: CompactString,
+    pub name: Option<CompactString>,
+    pub signature_str: CompactString,
+    pub description: Option<CompactString>,
+    pub url: Option<CompactString>,
+    pub examples: Vec<(CompactString, Option<CompactString>)>,
+    pub code_source: CodeSource,
+}
+
 impl Context {
     pub fn new(module_importer: impl ModuleImporter + 'static) -> Self {
         Context {
@@ -166,37 +176,26 @@ impl Context {
             .cloned()
     }
 
-    pub fn functions(
-        &self,
-    ) -> impl Iterator<
-        Item = (
-            CompactString,
-            Option<CompactString>,
-            CompactString,
-            Option<CompactString>,
-            Option<CompactString>,
-            Vec<(CompactString, Option<CompactString>)>,
-            CodeSource,
-        ),
-    > + '_ {
+    pub fn functions(&self) -> impl Iterator<Item = FunctionInfo> + '_ {
         self.prefix_transformer
             .function_names
             .iter()
             .filter(|name| !name.starts_with('_'))
             .map(move |name| {
                 let (signature, meta) = self.typechecker.lookup_function(name).unwrap();
-                (
-                    name.clone(),
-                    meta.name.clone(),
-                    signature
+                FunctionInfo {
+                    fn_name: name.clone(),
+                    name: meta.name.clone(),
+                    signature_str: signature
                         .pretty_print(self.dimension_registry())
                         .to_compact_string(),
-                    meta.description.clone(),
-                    meta.url.clone(),
-                    meta.examples.clone(),
-                    self.resolver
+                    description: meta.description.clone(),
+                    url: meta.url.clone(),
+                    examples: meta.examples.clone(),
+                    code_source: self
+                        .resolver
                         .get_code_source(signature.definition_span.code_source_id),
-                )
+                }
             })
     }
 

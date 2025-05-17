@@ -3,7 +3,7 @@ use itertools::Itertools;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
 use numbat::resolver::CodeSource;
-use numbat::Context;
+use numbat::{Context, FunctionInfo};
 use std::path::Path;
 use std::process::exit;
 
@@ -46,7 +46,16 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 }
 
 fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: String) {
-    for (fn_name, name, signature, description, url, examples, code_source) in ctx.functions() {
+    for FunctionInfo {
+        fn_name,
+        name,
+        signature_str: signature,
+        description,
+        url,
+        examples,
+        code_source,
+    } in ctx.functions()
+    {
         let CodeSource::Module(module_path, _) = code_source else {
             unreachable!();
         };
