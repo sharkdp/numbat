@@ -706,14 +706,15 @@ impl Vm {
                     let removed = self.constants.swap_remove_index(constant_idx as usize);
                     debug_assert!(matches!(removed, Some(Constant::Dummy(_))));
 
-                    self.constants.insert(Constant::Unit(Unit::new_derived(
+                    // index should be `self.constants.len()-1`, but just in case we try
+                    // to insert the same derived unit twice, this will handle that
+                    let (index, _) = self.constants.insert_full(Constant::Unit(Unit::new_derived(
                         unit_information.0.to_compact_string(),
                         unit_information.2.canonical_name.clone(),
                         *conversion_value.unsafe_value(),
                         defining_unit.clone(),
                     )));
-                    self.constants
-                        .swap_indices(constant_idx as usize, self.constants.len() - 1);
+                    self.constants.swap_indices(constant_idx as usize, index);
                 }
                 Op::GetLocal => {
                     let slot_idx = self.read_u16() as usize;
