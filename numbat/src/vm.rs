@@ -294,7 +294,6 @@ pub struct Vm {
 
     /// Meta information about derived units:
     /// - Unit name
-    /// - Canonical name
     /// - Metadata
     unit_information: Vec<(CompactString, UnitMetadata)>,
 
