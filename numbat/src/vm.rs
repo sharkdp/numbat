@@ -296,7 +296,7 @@ pub struct Vm {
     /// - Unit name
     /// - Canonical name
     /// - Metadata
-    unit_information: Vec<(CompactString, Option<CompactString>, UnitMetadata)>,
+    unit_information: Vec<(CompactString, UnitMetadata)>,
 
     /// Result of the last expression
     last_result: Option<Value>,
@@ -419,21 +419,17 @@ impl Vm {
         }
     }
 
-    pub fn add_unit_information(
-        &mut self,
-        unit_name: &str,
-        canonical_unit_name: Option<&str>,
-        metadata: UnitMetadata,
-    ) -> u16 {
-        if let Some(idx) = self.unit_information.iter().position(|i| i.0 == unit_name) {
+    pub fn add_unit_information(&mut self, unit_name: &str, metadata: UnitMetadata) -> u16 {
+        if let Some(idx) = self
+            .unit_information
+            .iter()
+            .position(|(name, _)| name == unit_name)
+        {
             return idx as u16;
         }
 
-        self.unit_information.push((
-            unit_name.to_compact_string(),
-            canonical_unit_name.map(|s| s.to_compact_string()),
-            metadata,
-        ));
+        self.unit_information
+            .push((unit_name.to_compact_string(), metadata));
         assert!(self.unit_information.len() <= u16::MAX as usize);
         (self.unit_information.len() - 1) as u16 // TODO: this can overflow, see above
     }
@@ -651,22 +647,19 @@ impl Vm {
 
                     let conversion_value = self.pop_quantity();
 
-                    let unit_information = &self.unit_information[unit_information_idx as usize];
+                    let (unit_name, metadata) =
+                        &self.unit_information[unit_information_idx as usize];
                     let defining_unit = conversion_value.unit();
 
                     let (base_unit_representation, _) = defining_unit.to_base_unit_representation();
 
                     self.unit_registry
-                        .add_derived_unit(
-                            &unit_information.0,
-                            &base_unit_representation,
-                            unit_information.2.clone(),
-                        )
+                        .add_derived_unit(unit_name, &base_unit_representation, metadata.clone())
                         .map_err(RuntimeError::UnitRegistryError)?;
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
-                        unit_information.0.to_compact_string(),
-                        unit_information.2.canonical_name.clone(),
+                        unit_name.clone(),
+                        metadata.canonical_name.clone(),
                         *conversion_value.unsafe_value(),
                         defining_unit.clone(),
                     ));
