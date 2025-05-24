@@ -152,7 +152,8 @@ unit lux: Illuminance = lumen / meter^2
 @name("Luminance")
 @url("https://en.wikipedia.org/wiki/Luminance")
 @metric_prefixes
-unit nit = candela / metre^2
+@aliases(nt: short)
+unit nit: Luminance = candela / meter^2
 
 @name("Becquerel")
 @url("https://en.wikipedia.org/wiki/Becquerel")

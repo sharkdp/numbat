@@ -73,6 +73,7 @@ dimension MolarHeatCapacity = HeatCapacity / AmountOfSubstance
 dimension LuminousIntensity
 dimension LuminousFlux = LuminousIntensity × Angle^2
 dimension Illuminance = LuminousFlux / Area
+dimension Luminance = LuminousIntensity / Area
 dimension Irradiance = Power / Area
 
 dimension Activity = 1 / Time
