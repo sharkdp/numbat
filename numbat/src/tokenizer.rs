@@ -7,7 +7,15 @@ use thiserror::Error;
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum TokenizerErrorKind {
-    #[error("Unexpected character: '{character}'")]
+    #[error("Unexpected character: {}",
+        if *character == '\'' {
+            r#""'""#.to_owned()
+        } else if character.is_ascii() {
+            format!("'{}'", character.escape_default())
+        } else {
+            format!("'{character}' (U+{:0>4X})", *character as u32)
+        }
+    )]
     UnexpectedCharacter { character: char },
 
     #[error("Unexpected character in negative exponent")]
