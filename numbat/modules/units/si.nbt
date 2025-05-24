@@ -149,6 +149,11 @@ unit lumen: LuminousFlux = candela steradian
 @aliases(lx: short)
 unit lux: Illuminance = lumen / meter^2
 
+@name("Luminance")
+@url("https://en.wikipedia.org/wiki/Luminance")
+@metric_prefixes
+unit nit = candela / metre^2
+
 @name("Becquerel")
 @url("https://en.wikipedia.org/wiki/Becquerel")
 @metric_prefixes
