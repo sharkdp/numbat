@@ -150,7 +150,7 @@ unit lumen: LuminousFlux = candela steradian
 unit lux: Illuminance = lumen / meter^2
 
 @name("Luminance")
-@url("https://en.wikipedia.org/wiki/Luminance")
+@url("https://en.wikipedia.org/wiki/Candela_per_square_metre")
 @metric_prefixes
 @aliases(nt: short)
 unit nit: Luminance = candela / meter^2
