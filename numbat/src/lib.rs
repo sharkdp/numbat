@@ -291,9 +291,18 @@ impl Context {
             add_if_valid(variable.into());
         }
 
-        for mut function in self.function_names() {
+        for function_name in self.function_names() {
+            let mut function = function_name.clone();
             if add_paren {
-                function.push('(');
+                if let Some((signature, _)) = self.typechecker.lookup_function(&function_name) {
+                    if signature.parameters.is_empty() {
+                        function.push_str("()");
+                    } else {
+                        function.push('(');
+                    }
+                } else {
+                    function.push('(');
+                }
             }
             add_if_valid(function.into());
         }
