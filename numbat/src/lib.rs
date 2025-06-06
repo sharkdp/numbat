@@ -24,6 +24,7 @@ pub mod module_importer;
 mod name_resolution;
 mod number;
 mod parser;
+#[cfg(feature = "plotting")]
 mod plot;
 mod prefix;
 mod prefix_parser;

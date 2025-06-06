@@ -7,11 +7,13 @@ repository = "https://github.com/sharkdp/numbat"
 version = "0.5.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-rust-version = "1.70"
+rust-version = "1.76"
 
 [dependencies]
-attohttpc = { version = "0.27.0", default-features = false, features = ["tls-rustls-webpki-roots"], optional = true }
-quick-xml = "0.31.0"
+attohttpc = { version = "0.27.0", default-features = false, features = [
+    "tls-rustls-webpki-roots",
+], optional = true }
+quick-xml = "0.37.5"
 
 [features]
 fetch-exchangerates = ["dep:attohttpc"]

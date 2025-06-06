@@ -10,21 +10,21 @@ version = "1.16.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-rust-version = "1.74"
+rust-version = "1.76"
 
 [dependencies]
-thiserror = "1"
-itertools = "0.12"
+thiserror = "2"
+itertools = "0.14"
 num-rational = "0.4"
 num-integer = "0.1.45"
 num-traits = "0.2"
-codespan-reporting = "0.11"
+codespan-reporting = "0.12"
 strsim = "0.11.0"
 pretty_dtoa = "0.3"
 numbat-exchange-rates = { version = "0.5.0", path = "../numbat-exchange-rates" }
-heck = { version = "0.4.1", features = ["unicode"] }
+heck = "0.5.0"
 unicode-ident = "1.0.12"
-unicode-width = "0.1.11"
+unicode-width = "0.2"
 libc = "0.2.152"
 rust-embed = { version = "8.2.0", features = [
     "interpolate-folder-path",
@@ -32,20 +32,21 @@ rust-embed = { version = "8.2.0", features = [
 ] }
 num-format = "0.4.4"
 walkdir = "2"
-jiff = { version = "0.1.3", features = ["js"] }
+jiff = { version = "0.2.14", features = ["js"] }
 termcolor = { version = "1.4.1", optional = true }
 html-escape = { version = "0.2.13", optional = true }
-rand = "0.8.5"
+rand = "0.9"
 strfmt = "0.2.4"
 indexmap = "2.2.6"
 mendeleev = "0.8.1"
-plotly = "0.10.0"
-compact_str = { version = "0.8.0", features = ["serde"] }
+plotly = { version = "0.12.0", optional = true }
+compact_str = { version = "0.9.0", features = ["serde"] }
 
 [features]
-default = ["fetch-exchangerates"]
+default = ["fetch-exchangerates", "plotting"]
 fetch-exchangerates = ["numbat-exchange-rates/fetch-exchangerates"]
 html-formatter = ["termcolor", "html-escape"]
+plotting = ["plotly"]
 
 [dev-dependencies]
 approx = "0.5"

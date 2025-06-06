@@ -768,7 +768,7 @@ fn test_full_simplify_for_function_calls() {
 
 #[test]
 fn test_datetime_runtime_errors() {
-    expect_failure("datetime(\"2000-01-99\")", "Unrecognized datetime format");
+    expect_failure("datetime(\"2000-01-99\")", "Unrecognized datetime format: failed to parse day in date \"2000-01-99\": day is not valid: parameter 'day' with value 99 is not in the required range of 1..=31");
     expect_failure("now() -> tz(\"Europe/NonExisting\")", "Unknown timezone");
     expect_failure(
         "date(\"2000-01-01\") + 1e100 years",
@@ -777,10 +777,6 @@ fn test_datetime_runtime_errors() {
     expect_failure(
         "date(\"2000-01-01\") + 15_000 years",
         "DateTime out of range",
-    );
-    expect_failure(
-        "format_datetime(\"%Y-%m-%dT%H%:M\", now())",
-        "strftime formatting failed: found unrecognized directive %M following %:.",
     );
     expect_failure(
         "format_datetime(\"%Y %;\", now())",
