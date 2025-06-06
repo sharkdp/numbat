@@ -6,7 +6,7 @@ use std::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Single colon should be replaced with double colon once crate MSRV hits 1.77
-    println!("cargo:rerun-if-changed=src/modules/units/currencies.nbt");
+    println!("cargo:rerun-if-changed=modules/units/currencies.nbt");
 
     let currencies_file = BufReader::new(fs::File::open("modules/units/currencies.nbt")?);
 
