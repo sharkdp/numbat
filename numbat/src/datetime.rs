@@ -80,7 +80,8 @@ pub fn to_string(dt: &Zoned) -> CompactString {
         write!(out, "{}", dt.strftime("%Y-%m-%d %H:%M:%S")).unwrap();
 
         let offset = dt.offset();
-        let zone_abbreviation = tz.to_offset(dt.timestamp()).2;
+        let offset_info = tz.to_offset_info(dt.timestamp());
+        let zone_abbreviation = offset_info.abbreviation();
 
         if zone_abbreviation.starts_with('+') || zone_abbreviation.starts_with('-') {
             write!(out, " (UTC {offset})").unwrap();

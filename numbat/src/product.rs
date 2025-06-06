@@ -165,7 +165,7 @@ impl<Factor: Clone + Ord + Canonicalize, const CANONICALIZE: bool> Product<Facto
             .factors
             .iter()
             .cloned()
-            .group_by(|f1| f1.merge_key())
+            .chunk_by(|f1| f1.merge_key())
             .into_iter()
             .map(|(_, group)| {
                 group
