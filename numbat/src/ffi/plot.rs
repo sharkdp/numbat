@@ -1,12 +1,18 @@
+#[cfg(feature = "plotting")]
 use plotly::Plot;
 
+#[cfg(feature = "plotting")]
 use super::macros::*;
+
+#[cfg(feature = "plotting")]
+use compact_str::CompactString;
+
 use super::Args;
 use super::Result;
 use crate::value::Value;
 use crate::RuntimeError;
-use compact_str::CompactString;
 
+#[cfg(feature = "plotting")]
 fn line_plot(mut args: Args) -> Plot {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let ys = fields.pop().unwrap();
@@ -49,6 +55,7 @@ fn line_plot(mut args: Args) -> Plot {
     crate::plot::line_plot(xs, ys, &x_label, &y_label)
 }
 
+#[cfg(feature = "plotting")]
 fn bar_chart(mut args: Args) -> Plot {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let x_labels = fields.pop().unwrap();
@@ -81,21 +88,14 @@ fn bar_chart(mut args: Args) -> Plot {
     crate::plot::bar_chart(values, x_labels, &value_label)
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(feature = "plotting")]
 fn show_plot(plot: Plot) -> CompactString {
     plot.show();
 
     CompactString::const_new("Plot will be opened in the browser")
 }
 
-#[cfg(target_family = "wasm")]
-fn show_plot(_plot: Plot) -> CompactString {
-    // The way we could implement this would be to return plot.to_inline_html(..).
-    // This would have to be retrieved on the JS side and then rendered using plotly.js.
-
-    CompactString::const_new("Plotting is currently not supported on this platform.")
-}
-
+#[cfg(feature = "plotting")]
 pub fn show(args: Args) -> Result<Value> {
     // Dynamic dispatch hack since we don't have bounded polymorphism.
     // And no real support for generics in the FFI.
@@ -117,4 +117,11 @@ pub fn show(args: Args) -> Result<Value> {
     };
 
     return_string!(owned = show_plot(plot))
+}
+
+#[cfg(not(feature = "plotting"))]
+pub fn show(_args: Args) -> Result<Value> {
+    return Err(Box::new(RuntimeError::UserError(
+        "Plotting is currently not supported on this platform.".into(),
+    )));
 }

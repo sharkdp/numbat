@@ -11,7 +11,6 @@ use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::command::{CommandControlFlow, CommandRunner};
-use numbat::compact_str::CompactString;
 use numbat::diagnostic::ErrorDiagnostic;
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
@@ -309,7 +308,7 @@ impl Cli {
                 modules: self.context.lock().unwrap().list_modules().collect(),
                 all_timezones: jiff::tz::db()
                     .available()
-                    .map(CompactString::from)
+                    .map(|name| name.as_str().into())
                     .collect(),
             },
             highlighter: NumbatHighlighter {

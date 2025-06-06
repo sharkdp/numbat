@@ -10,19 +10,19 @@ version = "1.16.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "../README.md"
-rust-version = "1.70"
+rust-version = "1.76"
 
 [dependencies]
 anyhow = "1"
-rustyline = { version = "14.0.0", features = ["derive"] }
-dirs = "5"
+rustyline = { version = "16.0.0", features = ["derive"] }
+dirs = "6"
 numbat = { version = "1.16.0", path = "../numbat" }
-colored = "2"
-itertools = "0.12"
+colored = "3"
+itertools = "0.14"
 toml = { version = "0.8.8", features = ["parse"] }
 serde = { version = "1.0.195", features = ["derive"] }
-terminal_size = "0.3.0"
-jiff = "0.1"
+terminal_size = "0.4.2"
+jiff = "0.2"
 
 [dependencies.clap]
 version = "4"
@@ -31,6 +31,7 @@ features = ["suggestions", "color", "wrap_help", "derive"]
 [dev-dependencies]
 assert_cmd = "2"
 predicates = "3"
+
 
 [[bin]]
 name = "numbat"
