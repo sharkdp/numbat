@@ -17,7 +17,7 @@ pub enum PrefixParserResult<'a> {
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AcceptsPrefix {
     pub short: bool,
     pub long: bool,

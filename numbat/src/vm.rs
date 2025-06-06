@@ -3,7 +3,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use compact_str::{CompactString, ToCompactString};
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use num_traits::ToPrimitive;
 
 use crate::list::NumbatList;
@@ -206,25 +206,43 @@ impl Op {
     }
 }
 
-#[derive(Clone, Debug)]
+/// The value stored in a `Constant::Dummy`. Each dummy needs to have a distinct one of
+/// these so that they count as separate keys for a Map.
+///
+/// The wrapped value is private (and in particular, we don't just store a `usize` in
+/// `Constant::Dummy`) so that it's impossible to construct a dummy ad-hoc; you must
+/// instead go through `Vm::add_dummy_constant`, which ensures a unique value is
+/// produced. (The implementation currently uses the current length of the vm’s
+/// `constants`, which causes each dummy to store its own index in the IndexMap, which
+/// will obviously cause them to be distinct.)
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ConstantDummyValue(usize);
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Constant {
-    Scalar(f64),
+    Scalar(Number),
     Unit(Unit),
     Boolean(bool),
     String(CompactString),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<CompactString>),
+    Dummy(ConstantDummyValue),
 }
 
 impl Constant {
+    pub(crate) fn scalar_from_f64(n: f64) -> Self {
+        Constant::Scalar(Number::from_f64(n))
+    }
+
     fn to_value(&self) -> Value {
         match self {
-            Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(*n)),
+            Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(n.to_f64())),
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
             Constant::FunctionReference(inner) => Value::FunctionReference(inner.clone()),
             Constant::FormatSpecifiers(s) => Value::FormatSpecifiers(s.clone()),
+            Constant::Dummy(_) => unreachable!("unexpectedly found dummy constant"),
         }
     }
 }
@@ -238,6 +256,7 @@ impl Display for Constant {
             Constant::String(val) => write!(f, "\"{val}\""),
             Constant::FunctionReference(inner) => write!(f, "{inner}"),
             Constant::FormatSpecifiers(_) => write!(f, "<format specfiers>"),
+            Constant::Dummy(ConstantDummyValue(n)) => write!(f, "<dummy {n}>"),
         }
     }
 }
@@ -281,7 +300,7 @@ pub struct Vm {
     current_chunk_index: usize,
 
     /// Constants are numbers like '1.4' or a [Unit] like 'meter'.
-    pub constants: Vec<Constant>,
+    pub constants: IndexSet<Constant>,
 
     /// struct metadata, used so we can display struct fields at runtime
     struct_infos: IndexMap<CompactString, Arc<StructInfo>>,
@@ -325,7 +344,7 @@ impl Vm {
         Self {
             bytecode: vec![("<main>".into(), vec![])],
             current_chunk_index: 0,
-            constants: vec![],
+            constants: IndexSet::new(),
             struct_infos: IndexMap::new(),
             prefixes: vec![],
             strings: vec![],
@@ -394,10 +413,25 @@ impl Vm {
         chunk[offset + 1] = ((arg >> 8) & 0xff) as u8;
     }
 
-    pub fn add_constant(&mut self, constant: Constant) -> u16 {
-        self.constants.push(constant);
+    fn add_constant_impl(&mut self, constant: Constant) -> u16 {
+        self.constants.insert(constant);
         assert!(self.constants.len() <= u16::MAX as usize);
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
+    }
+
+    pub fn add_constant(&mut self, constant: Constant) -> u16 {
+        if let Some(idx) = self.constants.get_index_of(&constant) {
+            return idx as u16;
+        }
+
+        self.add_constant_impl(constant)
+    }
+
+    pub(crate) fn add_dummy_constant(&mut self) -> u16 {
+        // uniqueness is guaranteed because each dummy points to its current index in
+        // the IndexMap
+        let constant = Constant::Dummy(ConstantDummyValue(self.constants.len()));
+        self.add_constant_impl(constant)
     }
 
     pub fn add_struct_info(&mut self, struct_info: &StructInfo) -> usize {
@@ -667,12 +701,23 @@ impl Vm {
                         )
                         .map_err(RuntimeError::UnitRegistryError)?;
 
-                    self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
+                    // 1. swap-remove the dummy value, leaving an arbitrary element in
+                    //    its place (which is now at the wrong spot)
+                    // 2. insert the new correct element (which is now at the end of the
+                    //    list, also at the wrong spot)
+                    // 3. swap the two
+                    let removed = self.constants.swap_remove_index(constant_idx as usize);
+                    debug_assert!(matches!(removed, Some(Constant::Dummy(_))));
+
+                    // index should be `self.constants.len()-1`, but just in case we try
+                    // to insert the same derived unit twice, this will handle that
+                    let (index, _) = self.constants.insert_full(Constant::Unit(Unit::new_derived(
                         unit_information.0.to_compact_string(),
                         unit_information.2.canonical_name.clone(),
                         *conversion_value.unsafe_value(),
                         defining_unit.clone(),
-                    ));
+                    )));
+                    self.constants.swap_indices(constant_idx as usize, index);
                 }
                 Op::GetLocal => {
                     let slot_idx = self.read_u16() as usize;
@@ -1101,8 +1146,8 @@ impl Vm {
 #[test]
 fn vm_basic() {
     let mut vm = Vm::new();
-    vm.add_constant(Constant::Scalar(42.0));
-    vm.add_constant(Constant::Scalar(1.0));
+    vm.add_constant(Constant::scalar_from_f64(42.0));
+    vm.add_constant(Constant::scalar_from_f64(1.0));
 
     vm.add_op1(Op::LoadConstant, 0);
     vm.add_op1(Op::LoadConstant, 1);

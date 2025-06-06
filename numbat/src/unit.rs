@@ -16,13 +16,13 @@ pub type ConversionFactor = Number;
 
 /// A unit can either be a base/fundamental unit or it is derived from another unit.
 /// In the latter case, a conversion factor to the defining unit has to be specified.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UnitKind {
     Base,
     Derived(ConversionFactor, Unit),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CanonicalName {
     pub name: CompactString,
     pub accepts_prefix: AcceptsPrefix,
@@ -37,7 +37,7 @@ impl CanonicalName {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnitIdentifier {
     pub name: CompactString,
     pub canonical_name: CanonicalName,
@@ -166,7 +166,7 @@ impl Ord for UnitIdentifier {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UnitFactor {
     pub unit_id: UnitIdentifier,
     pub prefix: Prefix,

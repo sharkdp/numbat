@@ -8,7 +8,7 @@ use crate::{
     list::NumbatList, pretty_print::PrettyPrint, quantity::Quantity, typed_ast::StructInfo,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FunctionReference {
     Foreign(CompactString),
     Normal(CompactString),
