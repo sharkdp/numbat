@@ -187,7 +187,7 @@ impl Quantity {
             .unit
             .canonicalized()
             .iter()
-            .group_by(|f| f.unit_id.sort_key())
+            .chunk_by(|f| f.unit_id.sort_key())
         {
             let group_as_unit = Unit::from_factors(group.cloned());
             let group_representative = group_as_unit
