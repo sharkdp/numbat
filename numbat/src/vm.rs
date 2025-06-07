@@ -206,7 +206,7 @@ impl Op {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Constant {
     Scalar(f64),
     Unit(Unit),
@@ -393,7 +393,13 @@ impl Vm {
         chunk[offset + 1] = ((arg >> 8) & 0xff) as u8;
     }
 
-    pub fn add_constant(&mut self, constant: Constant) -> u16 {
+    pub fn add_constant(&mut self, constant: Constant, dedupe: bool) -> u16 {
+        if dedupe {
+            if let Some(idx) = self.constants.iter().position(|c| *c == constant) {
+                return idx as u16;
+            }
+        }
+
         self.constants.push(constant);
         assert!(self.constants.len() <= u16::MAX as usize);
         (self.constants.len() - 1) as u16 // TODO: this can overflow, see above
@@ -1093,8 +1099,8 @@ impl Vm {
 #[test]
 fn vm_basic() {
     let mut vm = Vm::new();
-    vm.add_constant(Constant::Scalar(42.0));
-    vm.add_constant(Constant::Scalar(1.0));
+    vm.add_constant(Constant::Scalar(42.0), true);
+    vm.add_constant(Constant::Scalar(1.0), true);
 
     vm.add_op1(Op::LoadConstant, 0);
     vm.add_op1(Op::LoadConstant, 1);
