@@ -37,7 +37,7 @@ There is a set of special commands that only work in interactive mode:
 |---------|--------|
 | `list` | List all functions, dimensions, variables and units |
 | `list <what>` | Where `<what>` can be `functions`, `dimensions`, `variables`, `units` |
-| `info <identifier>` | Get more information about units, variables, and functions |
+| `info <identifier>` | Get more information about units, dimensions, variables, and functions |
 | `clear` | Clear screen |
 | `help`, `?` | View short help text |
 | `save` | Save the current session history to file `history.nbt` in the current directory |
