@@ -64,6 +64,7 @@ use markup::FormatType;
 use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
 use prefix_transformer::Transformer;
+use pretty_print::PrettyPrint;
 
 use resolver::CodeSource;
 use resolver::Resolver;
@@ -352,6 +353,7 @@ impl Context {
         }
         let reg = self.interpreter.get_unit_registry();
 
+        // Check if it's a unit
         if let PrefixParserResult::UnitIdentifier(_span, prefix, _, full_name) =
             self.prefix_transformer.prefix_parser.parse(keyword)
         {
@@ -453,6 +455,80 @@ impl Context {
             }
         };
 
+        // Check if it's a dimension
+        if self.dimension_registry().contains(keyword) {
+            let mut help =
+                m::text("Dimension:   ") + m::type_identifier(keyword.to_compact_string());
+
+            if let Ok(base_representation) = self
+                .dimension_registry()
+                .get_base_representation_for_name(keyword)
+            {
+                if self.dimension_registry().is_base_dimension(keyword) {
+                    help += m::text(" (Base dimension)") + m::nl();
+                } else {
+                    help += m::space()
+                        + m::operator("=")
+                        + m::space()
+                        + base_representation.pretty_print()
+                        + m::nl();
+                }
+
+                let equivalent_dimensions = self
+                    .dimension_registry()
+                    .get_derived_entry_names_for(&base_representation);
+                if equivalent_dimensions.len() > 1 {
+                    let other_names: Vec<CompactString> = equivalent_dimensions
+                        .iter()
+                        .filter(|&name| name.as_str() != keyword)
+                        .cloned()
+                        .collect();
+                    if !other_names.is_empty() {
+                        help += m::text("Equivalent:  ");
+                        for (i, name) in other_names.iter().enumerate() {
+                            if i > 0 {
+                                help += m::text(", ");
+                            }
+                            help += m::type_identifier(name.clone());
+                        }
+                        help += m::nl();
+                    }
+                }
+
+                // List units that belong to this dimension
+                let matching_units: Vec<CompactString> = self
+                    .unit_representations()
+                    .filter_map(|(_unit_name, (_unit_base_rep, unit_metadata))| {
+                        if let Type::Dimension(unit_dim) = &unit_metadata.type_ {
+                            if unit_dim.to_base_representation() == base_representation {
+                                if let Some((primary_alias, _)) = unit_metadata.aliases.first() {
+                                    return Some(primary_alias.clone());
+                                }
+                            }
+                        }
+                        None
+                    })
+                    .collect();
+
+                if !matching_units.is_empty() {
+                    let mut sorted_units = matching_units;
+                    sorted_units.sort_by_key(|unit| unit.to_lowercase());
+
+                    help += m::text("Units:       ");
+                    for (i, unit) in sorted_units.iter().enumerate() {
+                        if i > 0 {
+                            help += m::text(", ");
+                        }
+                        help += m::unit(unit.clone());
+                    }
+                    help += m::nl();
+                }
+            }
+
+            return help;
+        }
+
+        // Check if it's a valid identifier
         if let Some(l) = self.interpreter.lookup_global(keyword) {
             let mut help = m::text("Variable: ");
             if let Some(name) = &l.metadata.name {
@@ -506,6 +582,7 @@ impl Context {
             return help;
         }
 
+        // Check if it's a function
         if let Some((fn_signature, fn_metadata)) = self.typechecker.lookup_function(keyword) {
             let metadata = fn_metadata.clone();
 

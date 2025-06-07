@@ -94,6 +94,10 @@ impl DimensionRegistry {
     pub fn contains(&self, dimension_name: &str) -> bool {
         self.registry.contains(dimension_name)
     }
+
+    pub fn is_base_dimension(&self, dimension_name: &str) -> bool {
+        self.registry.is_base_dimension(dimension_name)
+    }
 }
 
 #[test]

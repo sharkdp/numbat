@@ -178,4 +178,10 @@ impl<Metadata: Clone> Registry<Metadata> {
     pub fn iter_derived_entries(&self) -> impl Iterator<Item = CompactString> + '_ {
         self.derived_entries.keys().cloned()
     }
+
+    pub fn is_base_dimension(&self, dimension_name: &str) -> bool {
+        self.base_entries
+            .iter()
+            .any(|(name, _)| name == dimension_name)
+    }
 }
