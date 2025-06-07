@@ -2,7 +2,6 @@ name: CICD
 
 env:
   CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
-  MSRV_FEATURES: ""
 
 on:
   workflow_dispatch:
@@ -26,13 +25,11 @@ jobs:
         cargo metadata --no-deps --format-version 1 | jq -r '"version=" + .packages[0].version' | tee -a $GITHUB_OUTPUT
         cargo metadata --no-deps --format-version 1 | jq -r '"maintainer=" + .packages[0].authors[0]' | tee -a $GITHUB_OUTPUT
         cargo metadata --no-deps --format-version 1 | jq -r '"homepage=" + .packages[0].homepage' | tee -a $GITHUB_OUTPUT
-        cargo metadata --no-deps --format-version 1 | jq -r '"msrv=" + .packages[0].rust_version' | tee -a $GITHUB_OUTPUT
     outputs:
       name: ${{ steps.crate_metadata.outputs.name }}
       version: ${{ steps.crate_metadata.outputs.version }}
       maintainer: ${{ steps.crate_metadata.outputs.maintainer }}
       homepage: ${{ steps.crate_metadata.outputs.homepage }}
-      msrv: ${{ steps.crate_metadata.outputs.msrv }}
 
   ensure_cargo_fmt:
     name: Ensure 'cargo fmt' has been run
@@ -84,24 +81,6 @@ jobs:
       run: |
         cd numbat-wasm
         bash test.sh
-
-  min_version:
-    name: Minimum supported rust version
-    runs-on: ubuntu-latest
-    needs: crate_metadata
-    steps:
-    - name: Checkout source code
-      uses: actions/checkout@v4
-
-    - name: Install rust toolchain (v${{ needs.crate_metadata.outputs.msrv }})
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ needs.crate_metadata.outputs.msrv }}
-        components: clippy
-    - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
-      run: cargo clippy --locked --all-targets ${{ env.MSRV_FEATURES }}
-    - name: Run tests
-      run: cargo test --locked ${{ env.MSRV_FEATURES }}
 
   release_check:
     name: Release check 
