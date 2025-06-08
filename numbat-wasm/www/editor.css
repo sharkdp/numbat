@@ -7,62 +7,19 @@ html {
     height: 100%;
     width: 100%;
 
-    font-size: large;
+    font-size: medium;
 
-    /* Light theme */
-    --editor-bg-color-light: #FFFFFF;
-    --results-bg-color-light: #f6f8f6;
-    --editor-accent-color-light: #eee;
-    --editor-text-color-light: black;
-    --editor-text-highlight-color-light: rgb(181, 213, 255);
-
-    /* Dark theme */
-    --editor-bg-color-dark: #262826;
-    --results-bg-color-dark: #2F322F;
-    --editor-accent-color-dark: #464846;
-    --editor-text-color-dark: #eee;
-    --editor-text-highlight-color-dark: rgb(83, 157, 255);
-
-    /* Default theme */
-    --editor-bg-color: var(--editor-bg-color-light);
-    --results-bg-color: var(--results-bg-color-light);
-    --editor-accent-color: var(--editor-accent-color-light);
-    --editor-text-color: var(--editor-text-color-light);
-    --editor-text-highlight-color: var(--editor-text-highlight-color-light);
+    /* Light theme only */
+    --editor-bg-color: #FFFFFF;
+    --results-bg-color: #fafafa;
+    --editor-accent-color: #eee;
+    --editor-text-color: black;
 
     background-color: var(--editor-bg-color);
     caret-color: var(--editor-text-color);
 }
 
-.alt-theme body,
-html.alt-theme {
-    --editor-bg-color: var(--editor-bg-color-dark);
-    --results-bg-color: var(--results-bg-color-dark);
-    --editor-accent-color: var(--editor-accent-color-dark);
-    --editor-text-color: var(--editor-text-color-dark);
-    --editor-text-highlight-color: var(--editor-text-highlight-color-dark);
-}
-
-@media (prefers-color-scheme: dark) {
-
-    body,
-    html {
-        --editor-bg-color: var(--editor-bg-color-dark);
-        --results-bg-color: var(--results-bg-color-dark);
-        --editor-accent-color: var(--editor-accent-color-dark);
-        --editor-text-color: var(--editor-text-color-dark);
-        --editor-text-highlight-color: var(--editor-text-highlight-color-dark);
-    }
-
-    .alt-theme body,
-    html.alt-theme {
-        --editor-bg-color: var(--editor-bg-color-light);
-        --results-bg-color: var(--results-bg-color-light);
-        --editor-accent-color: var(--editor-accent-color-light);
-        --editor-text-color: var(--editor-text-color-light);
-        --editor-text-highlight-color: var(--editor-text-highlight-color-light);
-    }
-}
+/* Dark theme styles removed */
 
 
 .split {
@@ -98,32 +55,32 @@ html.alt-theme {
 }
 
 
-.terminal,
-.cmd,
-.ace_editor {
-    background-color: var(--editor-bg-color);
-    color: var(--editor-text-color);
+/* Monaco editor will handle its own theming through the defined themes */
+
+/* Add proper spacing between line numbers and code */
+.monaco-editor .margin {
+    padding-right: 10px;
 }
 
-.ace-tm .ace_cursor {
-    color: var(--editor-text-color)
+.monaco-editor .line-numbers {
+    padding-right: 15px;
+    color: #888 !important;
 }
 
-.ace-tm .ace_marker-layer .ace_selection {
-    background: var(--editor-text-highlight-color)
+/* Override Monaco's default parentheses color only */
+.monaco-editor .bracket-highlighting-0,
+.monaco-editor .bracket-highlighting-1,
+.monaco-editor .bracket-highlighting-2 {
+    color: #db2828 !important;
 }
 
-#editor .ace_gutter {
-    background-color: var(--editor-accent-color);
-    color: var(--editor-text-color);
+/* More specific override for parentheses tokens */
+.monaco-editor .view-line span[title="("],
+.monaco-editor .view-line span[title=")"] {
+    color: #db2828 !important;
 }
 
-#theme-toggle {
-    position: absolute;
-    right: 6px;
-    top: 6px;
-    background-color: #00000000;
-}
+/* Theme toggle styles removed */
 
 .type-expr {
     font-family: 'Fira Mono', monospace;
@@ -156,45 +113,19 @@ html.alt-theme {
     color: #ca3b63;
 }
 
-.ace_type {
-    color: #ca3b63 !important;
-}
+/* Monaco handles syntax highlighting through themes */
 
 .numbat-value {
     color: #0040ff;
 }
 
-.ace_numeric {
-    color: #0040ff !important;
-}
-
-.numbat-keyword {
-    color: #c802ff !important;
-}
-
-.ace_keyword {
-    color: #c802ff !important;
-}
-
-.ace_comment {
-    color: #8c8c8c !important;
-}
-
-.ace_string {
-    color: #27a85f !important;
-}
-
-.ace_decorator {
-    color: #27a85f !important;
-}
+/* Monaco editor uses its own themes for syntax highlighting */
 
 .numbat-string {
     color: #27a85f;
 }
 
-.ace_operator {
-    color: #db2828 !important;
-}
+/* Monaco handles operator styling */
 
 .numbat-unit {
     color: #8812a6;
@@ -219,26 +150,12 @@ html.alt-theme {
 
 
 @media all and (width <=900px) {
-
-    body,
-    html {
-        font-size: medium;
-    }
-
     .split {
         margin: 0px;
     }
 }
 
-
-
 @media all and (width >=1900px) {
-
-    body,
-    html {
-        font-size: x-large;
-    }
-
     .split {
         margin: 0px 100px;
     }

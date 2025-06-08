@@ -4,14 +4,24 @@ import init, {
     FormatType,
 } from "./pkg/numbat_wasm.js";
 
+let editor;
+
 async function main() {
     await init();
-
     setup_panic_hook();
-
-    initializeEditor();
-    initializeSplit();
-    initializeThemeToggle();
+    
+    // Configure Monaco Editor loader
+    require.config({ 
+        paths: { 
+            'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' 
+        } 
+    });
+    
+    require(['vs/editor/editor.main'], function() {
+        initializeMonacoLanguage();
+        initializeEditor();
+        initializeSplit();
+    });
 }
 
 main();
@@ -48,84 +58,82 @@ function interpret(input) {
     return results.join("<br>");
 }
 
-ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.36.2/");
+function initializeMonacoLanguage() {
+    // Register the Numbat language
+    monaco.languages.register({ id: 'numbat' });
 
-ace.define(
-    "ace/mode/numbat_highlight_rules",
-    function (require, exports, module) {
-        var oop = require("ace/lib/oop");
-        var TextHighlightRules =
-            require("ace/mode/text_highlight_rules").TextHighlightRules;
+    // Define tokens for syntax highlighting
+    monaco.languages.setMonarchTokensProvider('numbat', {
+        tokenizer: {
+            root: [
+                // Comments - must come first to take priority
+                [/#.*$/, 'comment'],
+                
+                // Keywords
+                [/\b(?:per|to|let|fn|where|and|dimension|unit|use|long|short|both|none|print|assert|assert_eq|type|if|then|else|true|false)\b/, 'keyword'],
+                
+                // Function names (identifiers followed by parentheses) - must come before numbers
+                [/\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/, 'entity.name.function'],
+                
+                // General identifiers (must come before types to prevent partial matching)
+                [/\b[a-zA-Z_][a-zA-Z0-9_]*\b/, 'identifier'],
+                
+                // Numbers (standalone numbers, not part of identifiers)
+                [/\b(?:[0-9]+(?:[._][0-9]+)*|0x[0-9A-Fa-f]+|0o[0-7]+|0b[01]+(?:_[01]+)*|\.[0-9]+(?:[eE][-+]?[0-9]+)?|[0-9]+[eE][-+]?[0-9]+)(?![a-zA-Z_])/, 'number'],
+                
+                // Types (identifiers that start with uppercase letter, but this won't match now due to general identifier rule above)
+                [/\b[A-Z][A-Za-z0-9_]*\b/, 'type'],
+                
+                // Strings
+                [/"[^"]*"/, 'string'],
+                
+                // Decorators
+                [/@[\w_]+/, 'annotation'],
+                
+                // Operators and special characters (including parentheses, but excluding #)
+                [/[+\-*/^➞→:÷×≤≥≠<>²³()]/, 'operator'],
+            ]
+        }
+    });
 
-        var NumbatHighlightRules = function () {
-            this.$rules = {
-                start: [
-                    {
-                        token: "comment",
-                        regex: "#.*$",
-                    },
-                    {
-                        token: "keyword",
-                        regex:
-                            "\\b(?:per|to|let|fn|where|and|dimension|unit|use|long|short|both|none|print|assert|assert_eq|type|if|then|else|true|false)\\b",
-                    },
-                    {
-                        token: "constant.numeric",
-                        regex:
-                            "\\b(?:[0-9]+(?:[._][0-9]+)*" +
-                            "|0x[0-9A-Fa-f]+|0o[0-7]+|0b[01]+(?:_[01]+)*" +
-                            "|\\.[0-9]+(?:[eE][-+]?[0-9]+)?" +
-                            "|[0-9]+[eE][-+]?[0-9]+)\\b",
-                    },
-                    // {
-                    //     token: "variable",
-                    //     regex: "\\b[a-z\u00B0\u0394\u03C0\u00B5][A-Za-z0-9_\u00B0\u0394\u03C0\u00B5]*\\b"
-                    // },
-                    {
-                        token: "support.type",
-                        regex: "\\b[A-Z][A-Za-z]*\\b",
-                    },
-                    {
-                        token: "string",
-                        regex: '"[^"]*"',
-                    },
-                    {
-                        token: "keyword.operator",
-                        regex: "\\+|-|\\*|/|\\^|➞|→|:|÷|×|≤|≥|≠|<|>|²|³|\\(|\\)",
-                    },
-                    {
-                        token: "meta.decorator",
-                        regex: "@[\\w_]+",
-                    },
-                ],
-            };
-        };
+    // Configure language features
+    monaco.languages.setLanguageConfiguration('numbat', {
+        comments: {
+            lineComment: '#'
+        },
+        brackets: [
+            ['(', ')'],
+        ],
+        autoClosingPairs: [
+            { open: '(', close: ')' },
+            { open: '"', close: '"' },
+        ],
+    });
 
-        oop.inherits(NumbatHighlightRules, TextHighlightRules);
+    // Define custom theme for Numbat
+    monaco.editor.defineTheme('numbat-light', {
+        base: 'vs',
+        inherit: true,
+        rules: [
+            { token: 'comment', foreground: '8c8c8c' },
+            { token: 'keyword', foreground: 'c802ff' },
+            { token: 'entity.name.function', foreground: '000000' },
+            { token: 'identifier', foreground: '000000' },
+            { token: 'number', foreground: '0040ff' },
+            { token: 'type', foreground: 'ca3b63' },
+            { token: 'string', foreground: '27a85f' },
+            { token: 'operator', foreground: 'db2828' },
+            { token: 'annotation', foreground: '27a85f' },
+        ],
+        colors: {
+            'editor.background': '#FFFFFF',
+            'editor.foreground': '#000000',
+            'editorLineNumber.foreground': '#000000',
+            'editorGutter.background': '#eee',
+        }
+    });
 
-        exports.NumbatHighlightRules = NumbatHighlightRules;
-    },
-);
-
-ace.define("ace/mode/numbat", function (require, exports, module) {
-    var oop = require("ace/lib/oop");
-    var TextMode = require("ace/mode/text").Mode;
-    var NumbatHighlightRules =
-        require("ace/mode/numbat_highlight_rules").NumbatHighlightRules;
-
-    var Mode = function () {
-        this.HighlightRules = NumbatHighlightRules;
-    };
-    oop.inherits(Mode, TextMode);
-
-    (function () {
-        this.lineCommentStart = "#";
-
-        this.$id = "ace/mode/numbat";
-    }).call(Mode.prototype);
-
-    exports.Mode = Mode;
-});
+}
 
 function debounce(func, wait, immediate) {
     var timeout;
@@ -144,16 +152,8 @@ function debounce(func, wait, immediate) {
 }
 
 function initializeEditor() {
-    const editor = ace.edit("editor", {
-        mode: "ace/mode/numbat",
-        showPrintMargin: false,
-        showGutter: true,
-        highlightActiveLine: false,
-        highlightGutterLine: false,
-        scrollPastEnd: 0,
-    });
-
-    editor.insert(`8 km / (1 h + 25 min)
+    editor = monaco.editor.create(document.getElementById('editor'), {
+        value: `8 km / (1 h + 25 min)
 
 atan2(30 cm, 1 m) -> deg
 
@@ -165,22 +165,33 @@ fn braking_distance(v) = v t_reaction + v² / 2 µ g0
   where t_reaction = 1 s # driver reaction time
     and µ = 0.7          # coefficient of friction
 
-braking_distance(50 km/h) -> m`);
+braking_distance(50 km/h) -> m`,
+        language: 'numbat',
+        theme: 'numbat-light',
+        fontFamily: 'Fira Mono, monospace',
+        fontSize: 16,
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        glyphMargin: false,
+        folding: false,
+        lineDecorationsWidth: 0,
+        lineNumbersMinChars: 4,
+        renderLineHighlight: 'none',
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+    });
 
     function evaluate() {
         let code = editor.getValue();
-
         let output = interpret(code);
-
         document.getElementById("results").innerHTML = output;
     }
 
     var debouncedEvaluate = debounce(evaluate, 500);
 
-    editor.getSession().on("change", debouncedEvaluate);
+    editor.onDidChangeModelContent(debouncedEvaluate);
 
     evaluate();
-
     editor.focus();
 }
 
@@ -190,22 +201,4 @@ function initializeSplit() {
     });
 }
 
-function initializeThemeToggle() { 
-    const colorSchemeQueryList = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    let toggleImg = document.querySelector("#theme-toggle img");
-    toggleImg.src = colorSchemeQueryList.matches ? "assets/sun.svg" : "assets/moon.svg";
-
-    function toggleTheme() {
-        let classList = document.querySelector(":root").classList;
-        let isToggledOn = classList.toggle("alt-theme");
-
-        if (colorSchemeQueryList.matches) {
-            toggleImg.src = isToggledOn ? "assets/moon.svg" : "assets/sun.svg";
-        } else {
-            toggleImg.src = isToggledOn ? "assets/sun.svg" : "assets/moon.svg";
-        }
-    } 
-
-    document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
-}
+// Theme toggle functionality removed
