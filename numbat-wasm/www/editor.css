@@ -58,40 +58,7 @@ html {
     color: #db2828 !important;
 }
 
-/* Inline result styling - using inlineClassName with debugging */
-.monaco-editor .view-line .numbat-result-success-inline,
-.monaco-editor .numbat-result-success-inline {
-    color: #0066cc !important;
-    font-weight: normal !important;
-    opacity: 0.8 !important;
-    font-style: italic !important;
-    font-family: 'Fira Mono', monospace !important;
-    display: inline !important;
-    visibility: visible !important;
-    background-color: rgba(0, 102, 204, 0.1) !important; /* Debug background */
-    border: 1px solid rgba(0, 102, 204, 0.3) !important; /* Debug border */
-}
-
-.monaco-editor .view-line .numbat-result-error-inline,
-.monaco-editor .numbat-result-error-inline {
-    color: #cc3b0a !important;
-    font-weight: normal !important;
-    opacity: 0.9 !important;
-    font-style: italic !important;
-    font-family: 'Fira Mono', monospace !important;
-    display: inline !important;
-    visibility: visible !important;
-    background-color: rgba(204, 59, 10, 0.1) !important; /* Debug background */
-    border: 1px solid rgba(204, 59, 10, 0.3) !important; /* Debug border */
-}
-
-.monaco-editor .numbat-result-success-gutter {
-    background-color: rgba(0, 102, 204, 0.1);
-}
-
-.monaco-editor .numbat-result-error-gutter {
-    background-color: rgba(204, 59, 10, 0.1);
-}
+/* Inline results now use absolute positioning in JavaScript */
 
 /* Theme toggle styles removed */
 

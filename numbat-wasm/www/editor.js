@@ -221,84 +221,64 @@ braking_distance(50 km/h) -> m`,
     let currentResultElements = [];
 
     function evaluate() {
-        try {
-            let code = editor.getValue();
-            let results = interpretAndGetResults(code);
+        let code = editor.getValue();
+        let results = interpretAndGetResults(code);
+        
+        // Clear previous result elements
+        currentResultElements.forEach(element => {
+            if (element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        });
+        currentResultElements = [];
+        
+        // Create new result elements positioned absolutely
+        results.forEach(result => {
+            const cleanOutput = result.output.replace(/<[^>]*>/g, '');
             
-            console.log('Evaluate called, results:', results.length); // Debug log
-            
-            // Clear previous result elements
-            currentResultElements.forEach(element => {
-                if (element.parentNode) {
-                    element.parentNode.removeChild(element);
-                }
-            });
-            currentResultElements = [];
-            
-            // Create new result elements positioned absolutely
-            results.forEach(result => {
-                const cleanOutput = result.output.replace(/<[^>]*>/g, ''); // Strip HTML tags
-                console.log(`Creating result for line ${result.lineNumber}: "${cleanOutput}"`); // Debug log
+            setTimeout(() => {
+                const editorContainer = editor.getDomNode();
+                const model = editor.getModel();
+                const lineContent = model.getLineContent(result.lineNumber);
+                const lineEndColumn = lineContent.length + 1;
                 
-                setTimeout(() => {
-                    try {
-                        const editorContainer = editor.getDomNode();
-                        
-                        // Get the position of the line end using Monaco's API
-                        const model = editor.getModel();
-                        const lineContent = model.getLineContent(result.lineNumber);
-                        const lineEndColumn = lineContent.length + 1;
-                        
-                        // Get pixel position for the end of the line
-                        const position = editor.getScrolledVisiblePosition({
-                            lineNumber: result.lineNumber,
-                            column: lineEndColumn
-                        });
-                        
-                        if (position) {
-                            // Create result element
-                            const resultElement = document.createElement('div');
-                            resultElement.textContent = `→ ${cleanOutput}`;
-                            resultElement.style.cssText = `
-                                position: absolute;
-                                left: ${position.left + 10}px;
-                                top: ${position.top}px;
-                                color: ${result.isError ? '#cc3b0a' : '#0066cc'};
-                                font-family: 'Fira Mono', monospace;
-                                font-size: 16px;
-                                font-style: italic;
-                                opacity: 0.8;
-                                pointer-events: none;
-                                z-index: 1000;
-                                white-space: nowrap;
-                            `;
-                            
-                            // Add to the editor container
-                            editorContainer.appendChild(resultElement);
-                            currentResultElements.push(resultElement);
-                            
-                            console.log(`Added result to line ${result.lineNumber} at position ${position.left}, ${position.top}`);
-                        } else {
-                            console.warn(`Could not get position for line ${result.lineNumber}`);
-                        }
-                    } catch (error) {
-                        console.error('Error positioning result element:', error);
-                    }
-                }, 100); // Small delay to ensure editor is ready
-            });
-            
-        } catch (error) {
-            console.error('Error in evaluate:', error);
-        }
+                const position = editor.getScrolledVisiblePosition({
+                    lineNumber: result.lineNumber,
+                    column: lineEndColumn
+                });
+                
+                if (position) {
+                    const resultElement = document.createElement('div');
+                    resultElement.textContent = cleanOutput;
+                    resultElement.style.cssText = `
+                        position: absolute;
+                        left: ${position.left + 30}px;
+                        top: ${position.top}px;
+                        color: ${result.isError ? '#cc3b0a' : '#0066cc'};
+                        background-color: ${result.isError ? 'rgba(204, 59, 10, 0.1)' : 'rgba(0, 102, 204, 0.1)'};
+                        font-family: 'Fira Mono', monospace;
+                        font-size: 16px;
+                        font-style: italic;
+                        opacity: 0.9;
+                        pointer-events: none;
+                        z-index: 1000;
+                        white-space: nowrap;
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                    `;
+                    
+                    editorContainer.appendChild(resultElement);
+                    currentResultElements.push(resultElement);
+                }
+            }, 100);
+        });
     }
 
     var debouncedEvaluate = debounce(evaluate, 1000);
 
     editor.onDidChangeModelContent(debouncedEvaluate);
 
-    // Add a listener to track when model changes
     editor.onDidChangeModel(() => {
-        console.log('Model changed, clearing result elements');
         currentResultElements.forEach(element => {
             if (element.parentNode) {
                 element.parentNode.removeChild(element);
