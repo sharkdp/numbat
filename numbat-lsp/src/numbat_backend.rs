@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use numbat::{Context, NumbatError, NameResolutionError, InterpreterSettings};
+use numbat::{Context, NumbatError, InterpreterSettings};
 use numbat::module_importer::BuiltinModuleImporter;
 use numbat::resolver::CodeSource;
 use numbat::diagnostic::ErrorDiagnostic;
+use codespan_reporting::files::Files;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
@@ -48,42 +49,91 @@ impl NumbatBackend {
                 // No errors, return empty diagnostics
             }
             Err(error) => {
-                if let Some(diagnostic) = self.error_to_diagnostic(&error, text) {
-                    diagnostics.push(diagnostic);
-                }
+                let error_diagnostics = self.error_to_diagnostics(&error, &ctx);
+                diagnostics.extend(error_diagnostics);
             }
         }
 
         diagnostics
     }
 
-    fn error_to_diagnostic(&self, error: &NumbatError, source_text: &str) -> Option<Diagnostic> {
-        // Get error message
-        let message = match error {
-            NumbatError::ResolverError(e) => format!("Resolver error: {}", e),
-            NumbatError::NameResolutionError(e) => format!("Name resolution error: {}", e),
-            NumbatError::TypeCheckError(e) => format!("Type check error: {}", e),
-            NumbatError::RuntimeError(e) => format!("Runtime error: {}", e),
+    fn error_to_diagnostics(&self, error: &NumbatError, ctx: &Context) -> Vec<Diagnostic> {
+        let error_diagnostic: &dyn ErrorDiagnostic = match error {
+            NumbatError::ResolverError(e) => e,
+            NumbatError::NameResolutionError(e) => e,
+            NumbatError::TypeCheckError(e) => e,
+            NumbatError::RuntimeError(e) => e,
         };
 
-        // For now, we'll create a diagnostic that highlights the first line
-        // TODO: Extract proper span information from the error
+        // Get the concise error message from thiserror
+        let error_message = error.to_string();
+        
+        let numbat_diagnostics = error_diagnostic.diagnostics();
+        let files = &ctx.resolver().files;
+        
+        numbat_diagnostics
+            .into_iter()
+            .filter_map(|diag| self.convert_numbat_diagnostic(&diag, files, &error_message))
+            .collect()
+    }
+
+    fn convert_numbat_diagnostic<'a>(
+        &self,
+        diag: &numbat::Diagnostic,
+        files: &'a impl Files<'a, FileId = usize>,
+        error_message: &str,
+    ) -> Option<Diagnostic> {
+        // Get all primary labels
+        let primary_labels: Vec<_> = diag
+            .labels
+            .iter()
+            .filter(|label| {
+                matches!(
+                    label.style,
+                    codespan_reporting::diagnostic::LabelStyle::Primary
+                )
+            })
+            .collect();
+
+        if primary_labels.is_empty() {
+            return None;
+        }
+
+        // Find the combined range that encompasses all primary labels
+        let first_label = primary_labels[0];
+        let mut min_start = first_label.range.start;
+        let mut max_end = first_label.range.end;
+        let file_id = first_label.file_id;
+
+        // Extend the range to include all primary labels
+        for label in &primary_labels[1..] {
+            // Only combine labels from the same file
+            if label.file_id == file_id {
+                min_start = min_start.min(label.range.start);
+                max_end = max_end.max(label.range.end);
+            }
+        }
+
+        // Convert byte range to line/column using codespan
+        let start_location = files.location(file_id, min_start).ok()?;
+        let end_location = files.location(file_id, max_end).ok()?;
+
         Some(Diagnostic {
             range: Range {
                 start: Position {
-                    line: 0,
-                    character: 0,
+                    line: start_location.line_number as u32 - 1, // Convert to 0-based
+                    character: start_location.column_number as u32 - 1, // Convert to 0-based
                 },
                 end: Position {
-                    line: 0,
-                    character: 10,
+                    line: end_location.line_number as u32 - 1,
+                    character: end_location.column_number as u32,
                 },
             },
             severity: Some(DiagnosticSeverity::ERROR),
             code: None,
             code_description: None,
             source: Some("numbat".to_string()),
-            message,
+            message: error_message.to_string(),
             related_information: None,
             tags: None,
             data: None,
@@ -161,6 +211,7 @@ impl LanguageServer for NumbatBackend {
             CompletionItem::new_simple("if".to_string(), "Conditional expression".to_string()),
             CompletionItem::new_simple("then".to_string(), "Then branch".to_string()),
             CompletionItem::new_simple("else".to_string(), "Else branch".to_string()),
+            CompletionItem::new_simple("struct".to_string(), "Struct definition".to_string()),
         ])))
     }
 }
