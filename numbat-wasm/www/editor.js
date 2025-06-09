@@ -10,6 +10,10 @@ async function main() {
     await init();
     setup_panic_hook();
     
+    // Make Numbat and FormatType available globally for LSP client
+    window.Numbat = Numbat;
+    window.FormatType = FormatType;
+    
     // Configure Monaco Editor loader
     require.config({ 
         paths: { 
@@ -222,6 +226,12 @@ braking_distance(50 km/h) -> m`,
         },
     });
 
+    // Initialize LSP client for diagnostics
+    let lspClient = null;
+    if (window.NumbatLSPClient) {
+        lspClient = new window.NumbatLSPClient(editor);
+    }
+
     let currentResultElements = [];
 
     function evaluate() {
@@ -237,16 +247,11 @@ braking_distance(50 km/h) -> m`,
         currentResultElements = [];
         
         
-        // Separate errors and successful results
-        const errors = results.filter(result => result.isError);
+        // Only show success results inline - errors are handled by LSP diagnostics
         const successes = results.filter(result => !result.isError);
         
-        // If there are errors, show only the first error and no success hints
-        // If no errors, show all success results
-        const resultsToShow = errors.length > 0 ? [errors[0]] : successes;
-        
-        // Display results inline in editor
-        resultsToShow.forEach(result => {
+        // Display success results inline in editor
+        successes.forEach(result => {
             setTimeout(() => {
                 const editorContainer = editor.getDomNode();
                 const model = editor.getModel();
@@ -261,48 +266,24 @@ braking_distance(50 km/h) -> m`,
                 if (position) {
                     const resultElement = document.createElement('div');
                     
-                    if (result.isError) {
-                        // Show full multiline error message inline with HTML formatting
-                        resultElement.innerHTML = result.output;
-                        resultElement.style.cssText = `
-                            position: absolute;
-                            left: ${position.left + 30}px;
-                            top: ${position.top}px;
-                            color: #cc3b0a;
-                            background-color: rgba(204, 59, 10, 0.15);
-                            font-family: 'Fira Mono', monospace;
-                            font-size: 17px;
-                            font-style: normal;
-                            opacity: 0.95;
-                            pointer-events: none;
-                            z-index: 1000;
-                            white-space: pre-wrap;
-                            padding: 8px 12px;
-                            border-radius: 6px;
-                            border-left: 3px solid #cc3b0a;
-                            max-width: 600px;
-                            box-shadow: 0 2px 8px rgba(204, 59, 10, 0.2);
-                        `;
-                    } else {
-                        // Show success result inline with HTML formatting
-                        resultElement.innerHTML = result.output;
-                        resultElement.style.cssText = `
-                            position: absolute;
-                            left: ${position.left + 30}px;
-                            top: ${position.top}px;
-                            color: #6B6EBF;
-                            background-color: rgba(125, 128, 218, 0.08);
-                            font-family: 'Fira Mono', monospace;
-                            font-size: 19px;
-                            font-style: normal;
-                            opacity: 0.9;
-                            pointer-events: none;
-                            z-index: 1000;
-                            white-space: nowrap;
-                            padding: 2px 6px;
-                            border-radius: 3px;
-                        `;
-                    }
+                    // Show success result inline with HTML formatting
+                    resultElement.innerHTML = result.output;
+                    resultElement.style.cssText = `
+                        position: absolute;
+                        left: ${position.left + 30}px;
+                        top: ${position.top}px;
+                        color: #6B6EBF;
+                        background-color: rgba(125, 128, 218, 0.08);
+                        font-family: 'Fira Mono', monospace;
+                        font-size: 19px;
+                        font-style: normal;
+                        opacity: 0.9;
+                        pointer-events: none;
+                        z-index: 1000;
+                        white-space: nowrap;
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                    `;
                     
                     editorContainer.appendChild(resultElement);
                     currentResultElements.push(resultElement);
