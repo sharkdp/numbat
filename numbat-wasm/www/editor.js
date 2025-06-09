@@ -166,7 +166,7 @@ function initializeMonacoLanguage() {
             'editor.background': '#FFFFFF',
             'editor.foreground': '#000000',
             'editorLineNumber.foreground': '#000000',
-            'editorGutter.background': '#eee',
+            'editorGutter.background': '#FFFFFF',
         }
     });
 
@@ -210,8 +210,8 @@ braking_distance(50 km/h) -> m`,
         minimap: { enabled: false },
         lineNumbers: 'on',
         glyphMargin: false,
-        folding: false,
-        lineDecorationsWidth: 0,
+        folding: true,
+        lineDecorationsWidth: 10,
         lineNumbersMinChars: 4,
         renderLineHighlight: 'none',
         scrollBeyondLastLine: false,
@@ -240,7 +240,7 @@ braking_distance(50 km/h) -> m`,
         const errors = results.filter(result => result.isError);
         const successes = results.filter(result => !result.isError);
         
-        // Display errors in side panel
+        // Display errors in side panel or full program result
         if (errors.length > 0) {
             const errorHeader = document.createElement('div');
             errorHeader.textContent = 'Errors';
@@ -286,10 +286,46 @@ braking_distance(50 km/h) -> m`,
                 errorContainer.appendChild(errorElement);
                 sidePanel.appendChild(errorContainer);
             });
+        } else {
+            // Show full program result when no errors
+            const numbat = Numbat.new(true, false, FormatType.Html);
+            const fullOutput = numbat.interpret(code);
+            
+            if (fullOutput.output.trim()) {
+                const resultHeader = document.createElement('div');
+                resultHeader.textContent = 'Program Output';
+                resultHeader.style.cssText = `
+                    color: #6B6EBF;
+                    font-family: 'Fira Mono', monospace;
+                    font-size: 19px;
+                    font-weight: bold;
+                    margin: 0 0 15px 0;
+                    border-bottom: 2px solid #6B6EBF;
+                    padding-bottom: 5px;
+                `;
+                sidePanel.appendChild(resultHeader);
+                
+                const outputElement = document.createElement('pre');
+                outputElement.innerHTML = fullOutput.output;
+                outputElement.style.cssText = `
+                    background-color: rgba(125, 128, 218, 0.05);
+                    border-left: 4px solid #6B6EBF;
+                    padding: 15px;
+                    font-family: 'Fira Mono', monospace;
+                    font-size: 17px;
+                    border-radius: 4px;
+                    white-space: pre-wrap;
+                    overflow-x: auto;
+                    margin: 0;
+                `;
+                sidePanel.appendChild(outputElement);
+            }
+            
+            numbat.free();
         }
         
-        // Display successful results inline in editor
-        successes.forEach(result => {
+        // Display results inline in editor (both successes and error hints)
+        results.forEach(result => {
             const cleanOutput = result.output.replace(/<[^>]*>/g, '');
             
             setTimeout(() => {
@@ -305,23 +341,47 @@ braking_distance(50 km/h) -> m`,
                 
                 if (position) {
                     const resultElement = document.createElement('div');
-                    resultElement.textContent = cleanOutput;
-                    resultElement.style.cssText = `
-                        position: absolute;
-                        left: ${position.left + 30}px;
-                        top: ${position.top}px;
-                        color: #0066cc;
-                        background-color: rgba(0, 102, 204, 0.1);
-                        font-family: 'Fira Mono', monospace;
-                        font-size: 19px;
-                        font-style: italic;
-                        opacity: 0.9;
-                        pointer-events: none;
-                        z-index: 1000;
-                        white-space: nowrap;
-                        padding: 2px 6px;
-                        border-radius: 3px;
-                    `;
+                    
+                    if (result.isError) {
+                        // Show full first line of error message inline
+                        const errorHint = cleanOutput.split('\n')[0] || 'Error'; // First line only
+                        resultElement.textContent = `⚠ ${errorHint}`;
+                        resultElement.style.cssText = `
+                            position: absolute;
+                            left: ${position.left + 30}px;
+                            top: ${position.top}px;
+                            color: #cc3b0a;
+                            background-color: rgba(204, 59, 10, 0.15);
+                            font-family: 'Fira Mono', monospace;
+                            font-size: 19px;
+                            font-style: italic;
+                            opacity: 0.9;
+                            pointer-events: none;
+                            z-index: 1000;
+                            white-space: nowrap;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                        `;
+                    } else {
+                        // Show success result inline
+                        resultElement.textContent = cleanOutput;
+                        resultElement.style.cssText = `
+                            position: absolute;
+                            left: ${position.left + 30}px;
+                            top: ${position.top}px;
+                            color: #6B6EBF;
+                            background-color: rgba(125, 128, 218, 0.08);
+                            font-family: 'Fira Mono', monospace;
+                            font-size: 19px;
+                            font-style: italic;
+                            opacity: 0.9;
+                            pointer-events: none;
+                            z-index: 1000;
+                            white-space: nowrap;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                        `;
+                    }
                     
                     editorContainer.appendChild(resultElement);
                     currentResultElements.push(resultElement);
