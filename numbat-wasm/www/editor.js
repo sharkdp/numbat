@@ -206,7 +206,7 @@ braking_distance(50 km/h) -> m`,
         language: 'numbat',
         theme: 'numbat-light',
         fontFamily: 'Fira Mono, monospace',
-        fontSize: 16,
+        fontSize: 19,
         minimap: { enabled: false },
         lineNumbers: 'on',
         glyphMargin: false,
@@ -232,8 +232,64 @@ braking_distance(50 km/h) -> m`,
         });
         currentResultElements = [];
         
-        // Create new result elements positioned absolutely
-        results.forEach(result => {
+        // Clear previous errors in side panel
+        const sidePanel = document.getElementById('side-panel');
+        sidePanel.innerHTML = '';
+        
+        // Separate errors and successful results
+        const errors = results.filter(result => result.isError);
+        const successes = results.filter(result => !result.isError);
+        
+        // Display errors in side panel
+        if (errors.length > 0) {
+            const errorHeader = document.createElement('div');
+            errorHeader.textContent = 'Errors';
+            errorHeader.style.cssText = `
+                color: #cc3b0a;
+                font-family: 'Fira Mono', monospace;
+                font-size: 19px;
+                font-weight: bold;
+                margin: 0 0 15px 0;
+                border-bottom: 2px solid #cc3b0a;
+                padding-bottom: 5px;
+            `;
+            sidePanel.appendChild(errorHeader);
+            
+            errors.forEach(error => {
+                const errorElement = document.createElement('pre');
+                errorElement.innerHTML = error.output; // Keep HTML for error formatting
+                errorElement.style.cssText = `
+                    background-color: rgba(204, 59, 10, 0.1);
+                    border-left: 4px solid #cc3b0a;
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    font-family: 'Fira Mono', monospace;
+                    font-size: 17px;
+                    border-radius: 4px;
+                    white-space: pre-wrap;
+                    overflow-x: auto;
+                    margin-top: 0;
+                `;
+                
+                const lineInfo = document.createElement('div');
+                lineInfo.textContent = `Line ${error.lineNumber}`;
+                lineInfo.style.cssText = `
+                    font-family: 'Fira Mono', monospace;
+                    font-size: 16px;
+                    color: #cc3b0a;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                `;
+                
+                const errorContainer = document.createElement('div');
+                errorContainer.appendChild(lineInfo);
+                errorContainer.appendChild(errorElement);
+                sidePanel.appendChild(errorContainer);
+            });
+        }
+        
+        // Display successful results inline in editor
+        successes.forEach(result => {
             const cleanOutput = result.output.replace(/<[^>]*>/g, '');
             
             setTimeout(() => {
@@ -254,10 +310,10 @@ braking_distance(50 km/h) -> m`,
                         position: absolute;
                         left: ${position.left + 30}px;
                         top: ${position.top}px;
-                        color: ${result.isError ? '#cc3b0a' : '#0066cc'};
-                        background-color: ${result.isError ? 'rgba(204, 59, 10, 0.1)' : 'rgba(0, 102, 204, 0.1)'};
+                        color: #0066cc;
+                        background-color: rgba(0, 102, 204, 0.1);
                         font-family: 'Fira Mono', monospace;
-                        font-size: 16px;
+                        font-size: 19px;
                         font-style: italic;
                         opacity: 0.9;
                         pointer-events: none;

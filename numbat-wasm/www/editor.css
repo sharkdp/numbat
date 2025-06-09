@@ -7,7 +7,7 @@ html {
     height: 100%;
     width: 100%;
 
-    font-size: medium;
+    font-size: large;
 
     /* Light theme only */
     --editor-bg-color: #FFFFFF;
@@ -22,14 +22,30 @@ html {
 /* Dark theme styles removed */
 
 
-/* Full-width editor layout */
+/* Split layout with side panel */
+.split {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: row;
+}
 
 
 #editor {
     font-family: 'Fira Mono', monospace;
     font-size: 1em;
+    flex: 1;
     height: 100vh;
-    width: 100vw;
+}
+
+#side-panel {
+    width: 400px;
+    height: 100vh;
+    background-color: var(--results-bg-color);
+    border-left: 1px solid var(--editor-accent-color);
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 
@@ -42,7 +58,7 @@ html {
 
 .monaco-editor .line-numbers {
     padding-right: 15px;
-    color: #888 !important;
+    color: #ccc !important;
 }
 
 /* Override Monaco's default parentheses color only */
@@ -116,9 +132,3 @@ html {
 
 
 
-@media all and (width >=1900px) {
-    #editor {
-        margin: 0px 100px;
-        width: calc(100vw - 200px);
-    }
-}
