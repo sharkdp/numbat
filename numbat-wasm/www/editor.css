@@ -46,6 +46,21 @@ html {
     overflow-y: auto;
     padding: 20px;
     box-sizing: border-box;
+    z-index: 2000;
+    position: relative;
+}
+
+@media (max-width: 1400px) {
+    #side-panel {
+        width: 400px;
+    }
+}
+
+@media (max-width: 1000px) {
+    #side-panel {
+        width: 300px;
+        padding: 15px;
+    }
 }
 
 

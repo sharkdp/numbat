@@ -107,7 +107,7 @@ function initializeMonacoLanguage() {
                 [/#.*$/, 'comment'],
                 
                 // Keywords
-                [/\b(?:per|to|let|fn|where|and|dimension|unit|use|long|short|both|none|print|assert|assert_eq|type|if|then|else|true|false)\b/, 'keyword'],
+                [/\b(?:per|to|let|fn|where|and|dimension|unit|use|long|short|both|none|print|assert|assert_eq|type|if|then|else|true|false|struct)\b/, 'keyword'],
                 
                 // Function names (identifiers followed by parentheses) - must come before numbers
                 [/\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()/, 'entity.name.function'],
@@ -216,6 +216,10 @@ braking_distance(50 km/h) -> m`,
         renderLineHighlight: 'none',
         scrollBeyondLastLine: false,
         automaticLayout: true,
+        unicodeHighlight: {
+            ambiguousCharacters: false,
+            invisibleCharacters: false
+        },
     });
 
     let currentResultElements = [];
@@ -392,7 +396,18 @@ braking_distance(50 km/h) -> m`,
 
     var debouncedEvaluate = debounce(evaluate, 1000);
 
-    editor.onDidChangeModelContent(debouncedEvaluate);
+    editor.onDidChangeModelContent(() => {
+        // Clear inline hints immediately when content changes
+        currentResultElements.forEach(element => {
+            if (element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        });
+        currentResultElements = [];
+        
+        // Then run the debounced evaluation
+        debouncedEvaluate();
+    });
 
     editor.onDidChangeModel(() => {
         currentResultElements.forEach(element => {
