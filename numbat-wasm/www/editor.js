@@ -422,6 +422,3 @@ braking_distance(50 km/h) -> m`,
     editor.focus();
 }
 
-// Split functionality removed - now using inline output
-
-// Theme toggle functionality removed

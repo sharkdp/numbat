@@ -19,7 +19,6 @@ html {
     caret-color: var(--editor-text-color);
 }
 
-/* Dark theme styles removed */
 
 
 /* Split layout with side panel */
@@ -64,7 +63,6 @@ html {
 }
 
 
-/* Monaco editor will handle its own theming through the defined themes */
 
 /* Subtle line numbers */
 .monaco-editor .line-numbers {
@@ -84,9 +82,6 @@ html {
     color: #db2828 !important;
 }
 
-/* Inline results now use absolute positioning in JavaScript */
-
-/* Theme toggle styles removed */
 
 .type-expr {
     font-family: 'Fira Mono', monospace;
@@ -99,26 +94,22 @@ html {
 }
 
 
-/* Results div removed - using inline output */
 
 
 .numbat-type-identifier {
     color: #ca3b63;
 }
 
-/* Monaco handles syntax highlighting through themes */
 
 .numbat-value {
     color: #0040ff;
 }
 
-/* Monaco editor uses its own themes for syntax highlighting */
 
 .numbat-string {
     color: #27a85f;
 }
 
-/* Monaco handles operator styling */
 
 .numbat-unit {
     color: #8812a6;
