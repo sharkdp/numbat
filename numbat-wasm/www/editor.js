@@ -20,42 +20,79 @@ async function main() {
     require(['vs/editor/editor.main'], function() {
         initializeMonacoLanguage();
         initializeEditor();
-        initializeSplit();
     });
 }
 
 main();
 
-function interpret(input) {
+function interpretAndGetResults(input) {
     var numbat = Numbat.new(true, false, FormatType.Html);
-
-    let parts = input.split("\n\n");
-
-    let results = parts.map((part) => {
-        let res = part.match(/\n/g);
-        let num_newlines = res ? res.length : 0;
-
-        let brs = "<br>".repeat(num_newlines);
-        let interpretOutput = numbat.interpret(part);
+    
+    let lines = input.split('\n');
+    let results = [];
+    let currentBlock = '';
+    let blockStartLine = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
         
-        let output = part.trim().length > 0 ? interpretOutput.output.trim() : "";
+        if (line === '') {
+            // Empty line - process current block if it exists
+            if (currentBlock.trim()) {
+                let interpretOutput = numbat.interpret(currentBlock);
+                let output = interpretOutput.output.trim();
+                
+                if (interpretOutput.is_error) {
+                    output = output.replace(/<(input:\d+)>/gm, "&lt;$1&gt;");
+                }
+                
+                if (output) {
+                    // Add result to the last non-empty line of the block
+                    for (let j = i - 1; j >= blockStartLine; j--) {
+                        if (lines[j].trim()) {
+                            results.push({
+                                lineNumber: j + 1,
+                                output: output,
+                                isError: interpretOutput.is_error
+                            });
+                            break;
+                        }
+                    }
+                }
+                
+                interpretOutput.free();
+                currentBlock = '';
+            }
+            blockStartLine = i + 1;
+        } else {
+            // Non-empty line - add to current block
+            if (currentBlock) currentBlock += '\n';
+            currentBlock += lines[i];
+        }
+    }
+    
+    // Process final block if it exists
+    if (currentBlock.trim()) {
+        let interpretOutput = numbat.interpret(currentBlock);
+        let output = interpretOutput.output.trim();
         
         if (interpretOutput.is_error) {
-            output = output.replace(/<(input:\d+)>/gm, "&lt;$1&gt;")
+            output = output.replace(/<(input:\d+)>/gm, "&lt;$1&gt;");
         }
-        let result = "";
-
-        if (output.trim().length === 0) {
-            result = brs + "<br>";
-        } else {
-            result = brs + "<div>" + output  + "</div>";
+        
+        if (output) {
+            // Add result to the last line
+            results.push({
+                lineNumber: lines.length,
+                output: output,
+                isError: interpretOutput.is_error
+            });
         }
-
+        
         interpretOutput.free();
-        return result;
-    });
-
-    return results.join("<br>");
+    }
+    
+    return results;
 }
 
 function initializeMonacoLanguage() {
@@ -181,24 +218,99 @@ braking_distance(50 km/h) -> m`,
         automaticLayout: true,
     });
 
+    let currentResultElements = [];
+
     function evaluate() {
-        let code = editor.getValue();
-        let output = interpret(code);
-        document.getElementById("results").innerHTML = output;
+        try {
+            let code = editor.getValue();
+            let results = interpretAndGetResults(code);
+            
+            console.log('Evaluate called, results:', results.length); // Debug log
+            
+            // Clear previous result elements
+            currentResultElements.forEach(element => {
+                if (element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            });
+            currentResultElements = [];
+            
+            // Create new result elements positioned absolutely
+            results.forEach(result => {
+                const cleanOutput = result.output.replace(/<[^>]*>/g, ''); // Strip HTML tags
+                console.log(`Creating result for line ${result.lineNumber}: "${cleanOutput}"`); // Debug log
+                
+                setTimeout(() => {
+                    try {
+                        const editorContainer = editor.getDomNode();
+                        
+                        // Get the position of the line end using Monaco's API
+                        const model = editor.getModel();
+                        const lineContent = model.getLineContent(result.lineNumber);
+                        const lineEndColumn = lineContent.length + 1;
+                        
+                        // Get pixel position for the end of the line
+                        const position = editor.getScrolledVisiblePosition({
+                            lineNumber: result.lineNumber,
+                            column: lineEndColumn
+                        });
+                        
+                        if (position) {
+                            // Create result element
+                            const resultElement = document.createElement('div');
+                            resultElement.textContent = `→ ${cleanOutput}`;
+                            resultElement.style.cssText = `
+                                position: absolute;
+                                left: ${position.left + 10}px;
+                                top: ${position.top}px;
+                                color: ${result.isError ? '#cc3b0a' : '#0066cc'};
+                                font-family: 'Fira Mono', monospace;
+                                font-size: 16px;
+                                font-style: italic;
+                                opacity: 0.8;
+                                pointer-events: none;
+                                z-index: 1000;
+                                white-space: nowrap;
+                            `;
+                            
+                            // Add to the editor container
+                            editorContainer.appendChild(resultElement);
+                            currentResultElements.push(resultElement);
+                            
+                            console.log(`Added result to line ${result.lineNumber} at position ${position.left}, ${position.top}`);
+                        } else {
+                            console.warn(`Could not get position for line ${result.lineNumber}`);
+                        }
+                    } catch (error) {
+                        console.error('Error positioning result element:', error);
+                    }
+                }, 100); // Small delay to ensure editor is ready
+            });
+            
+        } catch (error) {
+            console.error('Error in evaluate:', error);
+        }
     }
 
-    var debouncedEvaluate = debounce(evaluate, 500);
+    var debouncedEvaluate = debounce(evaluate, 1000);
 
     editor.onDidChangeModelContent(debouncedEvaluate);
+
+    // Add a listener to track when model changes
+    editor.onDidChangeModel(() => {
+        console.log('Model changed, clearing result elements');
+        currentResultElements.forEach(element => {
+            if (element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        });
+        currentResultElements = [];
+    });
 
     evaluate();
     editor.focus();
 }
 
-function initializeSplit() {
-    Split(['#editor', '#results'], {
-        gutterSize: 15,
-    });
-}
+// Split functionality removed - now using inline output
 
 // Theme toggle functionality removed

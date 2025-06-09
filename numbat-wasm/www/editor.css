@@ -22,36 +22,14 @@ html {
 /* Dark theme styles removed */
 
 
-.split {
-    width: auto;
-    min-height: 100%;
-    display: flex;
-    flex-direction: row;
-    overflow-y: auto;
-    margin: 0px;
-}
-
-
-.gutter {
-    background-color: var(--editor-accent-color);
-    background-repeat: no-repeat;
-    background-position: 50%;
-}
-
-
-.gutter.gutter-horizontal {
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
-    cursor: col-resize;
-    height: 100dvh;
-    position: sticky;
-    top: 0px;
-}
+/* Full-width editor layout */
 
 
 #editor {
     font-family: 'Fira Mono', monospace;
     font-size: 1em;
-    overflow-y: clip;
+    height: 100vh;
+    width: 100vw;
 }
 
 
@@ -80,6 +58,41 @@ html {
     color: #db2828 !important;
 }
 
+/* Inline result styling - using inlineClassName with debugging */
+.monaco-editor .view-line .numbat-result-success-inline,
+.monaco-editor .numbat-result-success-inline {
+    color: #0066cc !important;
+    font-weight: normal !important;
+    opacity: 0.8 !important;
+    font-style: italic !important;
+    font-family: 'Fira Mono', monospace !important;
+    display: inline !important;
+    visibility: visible !important;
+    background-color: rgba(0, 102, 204, 0.1) !important; /* Debug background */
+    border: 1px solid rgba(0, 102, 204, 0.3) !important; /* Debug border */
+}
+
+.monaco-editor .view-line .numbat-result-error-inline,
+.monaco-editor .numbat-result-error-inline {
+    color: #cc3b0a !important;
+    font-weight: normal !important;
+    opacity: 0.9 !important;
+    font-style: italic !important;
+    font-family: 'Fira Mono', monospace !important;
+    display: inline !important;
+    visibility: visible !important;
+    background-color: rgba(204, 59, 10, 0.1) !important; /* Debug background */
+    border: 1px solid rgba(204, 59, 10, 0.3) !important; /* Debug border */
+}
+
+.monaco-editor .numbat-result-success-gutter {
+    background-color: rgba(0, 102, 204, 0.1);
+}
+
+.monaco-editor .numbat-result-error-gutter {
+    background-color: rgba(204, 59, 10, 0.1);
+}
+
 /* Theme toggle styles removed */
 
 .type-expr {
@@ -93,20 +106,7 @@ html {
 }
 
 
-#results {
-    font-family: 'Fira Mono', monospace;
-    font-size: 1em;
-    padding: 0.1em;
-    padding-bottom: 1em;
-    background-color: var(--results-bg-color);
-    color: var(--editor-text-color);
-    overflow-y: clip;
-}
-
-
-#results div {
-    white-space-collapse: preserve;
-}
+/* Results div removed - using inline output */
 
 
 .numbat-type-identifier {
@@ -149,14 +149,9 @@ html {
 
 
 
-@media all and (width <=900px) {
-    .split {
-        margin: 0px;
-    }
-}
-
 @media all and (width >=1900px) {
-    .split {
+    #editor {
         margin: 0px 100px;
+        width: calc(100vw - 200px);
     }
 }
