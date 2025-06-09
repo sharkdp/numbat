@@ -236,102 +236,17 @@ braking_distance(50 km/h) -> m`,
         });
         currentResultElements = [];
         
-        // Clear previous errors in side panel
-        const sidePanel = document.getElementById('side-panel');
-        sidePanel.innerHTML = '';
         
         // Separate errors and successful results
         const errors = results.filter(result => result.isError);
         const successes = results.filter(result => !result.isError);
         
-        // Display errors in side panel or full program result
-        if (errors.length > 0) {
-            const errorHeader = document.createElement('div');
-            errorHeader.textContent = 'Errors';
-            errorHeader.style.cssText = `
-                color: #cc3b0a;
-                font-family: 'Fira Mono', monospace;
-                font-size: 19px;
-                font-weight: bold;
-                margin: 0 0 15px 0;
-                border-bottom: 2px solid #cc3b0a;
-                padding-bottom: 5px;
-            `;
-            sidePanel.appendChild(errorHeader);
-            
-            errors.forEach(error => {
-                const errorElement = document.createElement('pre');
-                errorElement.innerHTML = error.output; // Keep HTML for error formatting
-                errorElement.style.cssText = `
-                    background-color: rgba(204, 59, 10, 0.1);
-                    border-left: 4px solid #cc3b0a;
-                    padding: 10px;
-                    margin-bottom: 10px;
-                    font-family: 'Fira Mono', monospace;
-                    font-size: 17px;
-                    border-radius: 4px;
-                    white-space: pre-wrap;
-                    overflow-x: auto;
-                    margin-top: 0;
-                `;
-                
-                const lineInfo = document.createElement('div');
-                lineInfo.textContent = `Line ${error.lineNumber}`;
-                lineInfo.style.cssText = `
-                    font-family: 'Fira Mono', monospace;
-                    font-size: 16px;
-                    color: #cc3b0a;
-                    font-weight: bold;
-                    margin-bottom: 5px;
-                `;
-                
-                const errorContainer = document.createElement('div');
-                errorContainer.appendChild(lineInfo);
-                errorContainer.appendChild(errorElement);
-                sidePanel.appendChild(errorContainer);
-            });
-        } else {
-            // Show full program result when no errors
-            const numbat = Numbat.new(true, false, FormatType.Html);
-            const fullOutput = numbat.interpret(code);
-            
-            if (fullOutput.output.trim()) {
-                const resultHeader = document.createElement('div');
-                resultHeader.textContent = 'Program Output';
-                resultHeader.style.cssText = `
-                    color: #6B6EBF;
-                    font-family: 'Fira Mono', monospace;
-                    font-size: 19px;
-                    font-weight: bold;
-                    margin: 0 0 15px 0;
-                    border-bottom: 2px solid #6B6EBF;
-                    padding-bottom: 5px;
-                `;
-                sidePanel.appendChild(resultHeader);
-                
-                const outputElement = document.createElement('pre');
-                outputElement.innerHTML = fullOutput.output;
-                outputElement.style.cssText = `
-                    background-color: rgba(125, 128, 218, 0.05);
-                    border-left: 4px solid #6B6EBF;
-                    padding: 15px;
-                    font-family: 'Fira Mono', monospace;
-                    font-size: 17px;
-                    border-radius: 4px;
-                    white-space: pre-wrap;
-                    overflow-x: auto;
-                    margin: 0;
-                `;
-                sidePanel.appendChild(outputElement);
-            }
-            
-            numbat.free();
-        }
+        // If there are errors, show only the first error and no success hints
+        // If no errors, show all success results
+        const resultsToShow = errors.length > 0 ? [errors[0]] : successes;
         
-        // Display results inline in editor (both successes and error hints)
-        results.forEach(result => {
-            const cleanOutput = result.output.replace(/<[^>]*>/g, '');
-            
+        // Display results inline in editor
+        resultsToShow.forEach(result => {
             setTimeout(() => {
                 const editorContainer = editor.getDomNode();
                 const model = editor.getModel();
@@ -347,9 +262,8 @@ braking_distance(50 km/h) -> m`,
                     const resultElement = document.createElement('div');
                     
                     if (result.isError) {
-                        // Show full first line of error message inline
-                        const errorHint = cleanOutput.split('\n')[0] || 'Error'; // First line only
-                        resultElement.textContent = `⚠ ${errorHint}`;
+                        // Show full multiline error message inline with HTML formatting
+                        resultElement.innerHTML = result.output;
                         resultElement.style.cssText = `
                             position: absolute;
                             left: ${position.left + 30}px;
@@ -357,18 +271,21 @@ braking_distance(50 km/h) -> m`,
                             color: #cc3b0a;
                             background-color: rgba(204, 59, 10, 0.15);
                             font-family: 'Fira Mono', monospace;
-                            font-size: 19px;
-                            font-style: italic;
-                            opacity: 0.9;
+                            font-size: 17px;
+                            font-style: normal;
+                            opacity: 0.95;
                             pointer-events: none;
                             z-index: 1000;
-                            white-space: nowrap;
-                            padding: 2px 6px;
-                            border-radius: 3px;
+                            white-space: pre-wrap;
+                            padding: 8px 12px;
+                            border-radius: 6px;
+                            border-left: 3px solid #cc3b0a;
+                            max-width: 600px;
+                            box-shadow: 0 2px 8px rgba(204, 59, 10, 0.2);
                         `;
                     } else {
-                        // Show success result inline
-                        resultElement.textContent = cleanOutput;
+                        // Show success result inline with HTML formatting
+                        resultElement.innerHTML = result.output;
                         resultElement.style.cssText = `
                             position: absolute;
                             left: ${position.left + 30}px;
@@ -377,7 +294,7 @@ braking_distance(50 km/h) -> m`,
                             background-color: rgba(125, 128, 218, 0.08);
                             font-family: 'Fira Mono', monospace;
                             font-size: 19px;
-                            font-style: italic;
+                            font-style: normal;
                             opacity: 0.9;
                             pointer-events: none;
                             z-index: 1000;
