@@ -31,7 +31,7 @@ use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::{fs, thread};
+use std::{env, fs, thread};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExitStatus {
@@ -570,6 +570,14 @@ impl Cli {
     }
 
     fn get_history_path(&self) -> Result<PathBuf> {
+        if let Ok(history) = env::var("NUMBAT_HISTORY") {
+            let history_path = PathBuf::from(history);
+            if let Some(parent) = history_path.parent() {
+                fs::create_dir_all(parent).ok();
+            }
+            return Ok(history_path);
+        }
+
         let data_dir = dirs::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join("numbat");
