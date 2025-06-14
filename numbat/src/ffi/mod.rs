@@ -1,3 +1,4 @@
+mod algebra;
 mod currency;
 mod datetime;
 mod functions;

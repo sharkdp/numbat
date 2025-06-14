@@ -25,5 +25,4 @@ fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A> =
 @url("https://en.wikipedia.org/wiki/Cubic_equation")
 @description("Returns the solutions of the equation a x³ + b x² + c x + e = 0")
 @example("cubic_equation(1, -6, 11, -6)", "Solve the equation $x³ - 6x² + 11x - 6 = 0$")
-fn cubic_equation<A: Dim, B: Dim, C: Dim, E: Dim>(a: A, b: B, c: C, e: E) -> List<A> =
-  []
+fn cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar>
