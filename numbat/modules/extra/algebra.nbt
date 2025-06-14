@@ -20,3 +20,10 @@ fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A> =
       else if b² == 4 a c
         then [-b / 2 a]
         else [_qe_solution(a, b, c, 1), _qe_solution(a, b, c, -1)]
+
+@name("Solve cubic equations")
+@url("https://en.wikipedia.org/wiki/Cubic_equation")
+@description("Returns the solutions of the equation a x³ + b x² + c x + e = 0")
+@example("cubic_equation(1, -6, 11, -6)", "Solve the equation $x³ - 6x² + 11x - 6 = 0$")
+fn cubic_equation<A: Dim, B: Dim, C: Dim, E: Dim>(a: A, b: B, c: C, e: E) -> List<A> =
+  []
