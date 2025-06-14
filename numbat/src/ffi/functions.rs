@@ -9,6 +9,7 @@ use super::{Callable, ForeignFunction, Result};
 static FFI_FUNCTIONS: OnceLock<HashMap<&'static str, ForeignFunction>> = OnceLock::new();
 
 pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
+    use super::algebra::*;
     use super::currency::*;
     use super::datetime::*;
     use super::lists::*;
@@ -114,6 +115,8 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
         // Plotting
         insert_function!(show, 1..=1);
 
+        // Algebra
+        insert_function!(cubic_equation, 4..=4);
         m
     })
 }
