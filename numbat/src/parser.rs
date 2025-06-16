@@ -507,55 +507,7 @@ impl<'a> Parser<'a> {
     fn parse_function_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if let Some(fn_name) = self.match_exact(tokens, TokenKind::Identifier) {
             let function_name_span = self.last(tokens).unwrap().span;
-            let mut type_parameters = vec![];
-            // Parsing the generic parameters if there are any
-            if self.match_exact(tokens, TokenKind::LessThan).is_some() {
-                while self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
-                    if let Some(type_parameter_name) =
-                        self.match_exact(tokens, TokenKind::Identifier)
-                    {
-                        let bound = if self.match_exact(tokens, TokenKind::Colon).is_some() {
-                            match self.match_exact(tokens, TokenKind::Identifier) {
-                                Some(token) if token.lexeme == "Dim" => {
-                                    Some(TypeParameterBound::Dim)
-                                }
-                                Some(token) => {
-                                    return Err(ParseError {
-                                        kind: ParseErrorKind::UnknownBound(token.lexeme.to_owned()),
-                                        span: token.span,
-                                    });
-                                }
-                                None => {
-                                    return Err(ParseError {
-                                        kind:
-                                            ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
-                                        span: self.peek(tokens).span,
-                                    });
-                                }
-                            }
-                        } else {
-                            None
-                        };
-
-                        let span = self.last(tokens).unwrap().span;
-                        type_parameters.push((span, type_parameter_name.lexeme, bound));
-
-                        if self.match_exact(tokens, TokenKind::Comma).is_none()
-                            && self.peek(tokens).kind != TokenKind::GreaterThan
-                        {
-                            return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
-                                span: self.peek(tokens).span,
-                            });
-                        }
-                    } else {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedTypeParameterName,
-                            span: self.peek(tokens).span,
-                        });
-                    }
-                }
-            }
+            let type_parameters = self.parse_generic_parameters(tokens)?;
 
             if self.match_exact(tokens, TokenKind::LeftParen).is_none() {
                 return Err(ParseError {
@@ -679,6 +631,58 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_generic_parameters(&mut self, tokens: &[Token<'a>]) -> Result<Vec<(Span, &'a str, Option<TypeParameterBound>)>> {
+        let mut type_parameters = vec![];
+        if self.match_exact(tokens, TokenKind::LessThan).is_some() {
+            while self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
+                if let Some(type_parameter_name) =
+                    self.match_exact(tokens, TokenKind::Identifier)
+                {
+                    let bound = if self.match_exact(tokens, TokenKind::Colon).is_some() {
+                        match self.match_exact(tokens, TokenKind::Identifier) {
+                            Some(token) if token.lexeme == "Dim" => {
+                                Some(TypeParameterBound::Dim)
+                            }
+                            Some(token) => {
+                                return Err(ParseError {
+                                    kind: ParseErrorKind::UnknownBound(token.lexeme.to_owned()),
+                                    span: token.span,
+                                });
+                            }
+                            None => {
+                                return Err(ParseError {
+                                    kind:
+                                        ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
+                                    span: self.peek(tokens).span,
+                                });
+                            }
+                        }
+                    } else {
+                        None
+                    };
+    
+                    let span = self.last(tokens).unwrap().span;
+                    type_parameters.push((span, type_parameter_name.lexeme, bound));
+    
+                    if self.match_exact(tokens, TokenKind::Comma).is_none()
+                        && self.peek(tokens).kind != TokenKind::GreaterThan
+                    {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
+                            span: self.peek(tokens).span,
+                        });
+                    }
+                } else {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedTypeParameterName,
+                        span: self.peek(tokens).span,
+                    });
+                }
+            }
+        }
+        Ok(type_parameters)
+    }
+    
     fn parse_dimension_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             if identifier.lexeme.starts_with("__") {
