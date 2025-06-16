@@ -104,6 +104,7 @@ pub enum Expression<'a> {
         full_span: Span,
         ident_span: Span,
         name: &'a str,
+        type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
         fields: Vec<(Span, &'a str, Expression<'a>)>,
     },
     AccessField(Span, Span, Box<Expression<'a>>, &'a str),
@@ -232,6 +233,7 @@ macro_rules! struct_ {
             full_span: Span::dummy(),
             ident_span: Span::dummy(),
             name: stringify!($name),
+            type_parameters: Vec::new(),
             fields: vec![
                 $((Span::dummy(), stringify!($field), $val)),*
             ]
@@ -462,6 +464,7 @@ pub enum Statement<'a> {
     DefineStruct {
         struct_name_span: Span,
         struct_name: &'a str,
+        type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
         fields: Vec<(Span, &'a str, TypeAnnotation)>,
     },
 }
@@ -581,10 +584,19 @@ impl ReplaceSpans for Expression<'_> {
                 Span::dummy(),
                 parts.iter().map(|p| p.replace_spans()).collect(),
             ),
-            Expression::InstantiateStruct { name, fields, .. } => Expression::InstantiateStruct {
+            Expression::InstantiateStruct {
+                name,
+                fields,
+                type_parameters,
+                ..
+            } => Expression::InstantiateStruct {
                 full_span: Span::dummy(),
                 ident_span: Span::dummy(),
                 name,
+                type_parameters: type_parameters
+                    .iter()
+                    .map(|(_span, name, bound)| (Span::dummy(), *name, bound.clone()))
+                    .collect(),
                 fields: fields
                     .iter()
                     .map(|(_, n, v)| (Span::dummy(), *n, v.replace_spans()))
@@ -695,12 +707,17 @@ impl ReplaceSpans for Statement<'_> {
                 Statement::ModuleImport(Span::dummy(), module_path.clone())
             }
             Statement::DefineStruct {
+                struct_name_span: _,
                 struct_name,
+                type_parameters,
                 fields,
-                ..
             } => Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
                 struct_name,
+                type_parameters: type_parameters
+                    .iter()
+                    .map(|(_span, name, bound)| (Span::dummy(), *name, bound.clone()))
+                    .collect(),
                 fields: fields
                     .iter()
                     .map(|(_span, name, type_)| (Span::dummy(), *name, type_.replace_spans()))

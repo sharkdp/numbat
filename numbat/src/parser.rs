@@ -631,18 +631,17 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_generic_parameters(&mut self, tokens: &[Token<'a>]) -> Result<Vec<(Span, &'a str, Option<TypeParameterBound>)>> {
+    fn parse_generic_parameters(
+        &mut self,
+        tokens: &[Token<'a>],
+    ) -> Result<Vec<(Span, &'a str, Option<TypeParameterBound>)>> {
         let mut type_parameters = vec![];
         if self.match_exact(tokens, TokenKind::LessThan).is_some() {
             while self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
-                if let Some(type_parameter_name) =
-                    self.match_exact(tokens, TokenKind::Identifier)
-                {
+                if let Some(type_parameter_name) = self.match_exact(tokens, TokenKind::Identifier) {
                     let bound = if self.match_exact(tokens, TokenKind::Colon).is_some() {
                         match self.match_exact(tokens, TokenKind::Identifier) {
-                            Some(token) if token.lexeme == "Dim" => {
-                                Some(TypeParameterBound::Dim)
-                            }
+                            Some(token) if token.lexeme == "Dim" => Some(TypeParameterBound::Dim),
                             Some(token) => {
                                 return Err(ParseError {
                                     kind: ParseErrorKind::UnknownBound(token.lexeme.to_owned()),
@@ -651,8 +650,7 @@ impl<'a> Parser<'a> {
                             }
                             None => {
                                 return Err(ParseError {
-                                    kind:
-                                        ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
+                                    kind: ParseErrorKind::ExpectedBoundInTypeParameterDefinition,
                                     span: self.peek(tokens).span,
                                 });
                             }
@@ -660,10 +658,10 @@ impl<'a> Parser<'a> {
                     } else {
                         None
                     };
-    
+
                     let span = self.last(tokens).unwrap().span;
                     type_parameters.push((span, type_parameter_name.lexeme, bound));
-    
+
                     if self.match_exact(tokens, TokenKind::Comma).is_none()
                         && self.peek(tokens).kind != TokenKind::GreaterThan
                     {
@@ -682,7 +680,7 @@ impl<'a> Parser<'a> {
         }
         Ok(type_parameters)
     }
-    
+
     fn parse_dimension_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             if identifier.lexeme.starts_with("__") {
@@ -934,6 +932,8 @@ impl<'a> Parser<'a> {
         let name = self.identifier(tokens)?;
         let name_span = self.last(tokens).unwrap().span;
 
+        let type_parameters = self.parse_generic_parameters(tokens)?;
+
         if self.match_exact(tokens, TokenKind::LeftCurly).is_none() {
             return Err(ParseError {
                 kind: ParseErrorKind::ExpectedLeftCurlyAfterStructName,
@@ -985,6 +985,7 @@ impl<'a> Parser<'a> {
         Ok(Statement::DefineStruct {
             struct_name_span: name_span,
             struct_name: name,
+            type_parameters,
             fields,
         })
     }
@@ -1517,6 +1518,7 @@ impl<'a> Parser<'a> {
             Ok(Expression::TypedHole(span))
         } else if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             let span = self.last(tokens).unwrap().span;
+            let type_parameters = self.parse_generic_parameters(tokens)?;
 
             if self.match_exact(tokens, TokenKind::LeftCurly).is_some() {
                 self.skip_empty_lines(tokens);
@@ -1567,6 +1569,7 @@ impl<'a> Parser<'a> {
                     full_span,
                     ident_span: span,
                     name: identifier.lexeme,
+                    type_parameters,
                     fields,
                 });
             }
@@ -3447,6 +3450,7 @@ mod tests {
             Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
                 struct_name: "Foo",
+                type_parameters: vec![],
                 fields: vec![
                     (
                         Span::dummy(),
@@ -3468,12 +3472,59 @@ mod tests {
             },
         );
 
+        parse_as(
+            &["struct Foo<A, B: Dim> { foo: A, bar: B }"],
+            Statement::DefineStruct {
+                struct_name_span: Span::dummy(),
+                struct_name: "Foo",
+                type_parameters: vec![
+                    (Span::dummy(), "A", None),
+                    (Span::dummy(), "B", Some(TypeParameterBound::Dim)),
+                ],
+                fields: vec![
+                    (
+                        Span::dummy(),
+                        "foo",
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            CompactString::const_new("A"),
+                        )),
+                    ),
+                    (
+                        Span::dummy(),
+                        "bar",
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            CompactString::const_new("B"),
+                        )),
+                    ),
+                ],
+            },
+        );
+
         parse_as_expression(
             &["Foo {foo: 1, bar: 2}"],
             struct_! {
                 Foo,
                 foo: scalar!(1.0),
                 bar: scalar!(2.0)
+            },
+        );
+
+        parse_as_expression(
+            &["Foo<A: Dim, B> {foo: 1, bar: 2m}"],
+            Expression::InstantiateStruct {
+                full_span: Span::dummy(),
+                ident_span: Span::dummy(),
+                name: "Foo",
+                type_parameters: vec![
+                    (Span::dummy(), "A", Some(TypeParameterBound::Dim)),
+                    (Span::dummy(), "B", None),
+                ],
+                fields: vec![
+                    (Span::dummy(), "foo", scalar!(1.0)),
+                    (Span::dummy(), "bar", binop!(scalar!(2.0), Mul, identifier!("m"))),
+                ],
             },
         );
 

@@ -938,6 +938,7 @@ impl TypeChecker {
                 full_span,
                 ident_span,
                 name,
+                type_parameters,
                 fields,
             } => {
                 let name = *name;
@@ -1757,6 +1758,7 @@ impl TypeChecker {
             ast::Statement::DefineStruct {
                 struct_name_span,
                 struct_name,
+                type_parameters,
                 fields,
             } => {
                 self.type_namespace
