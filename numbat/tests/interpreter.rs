@@ -446,6 +446,9 @@ fn test_temperature_conversions() {
 #[test]
 fn test_other_functions() {
     expect_output("sqrt(4)", "2");
+    expect_output("sqrt(-1)", "NaN");
+    expect_output("cbrt(27)", "3");
+    expect_output("cbrt(-64)", "-4");
     expect_output("log10(100000)", "5");
     expect_output("log(e^15)", "15");
     expect_output("ln(e^15)", "15");
