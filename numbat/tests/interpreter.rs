@@ -305,10 +305,10 @@ fn test_algebra() {
         "infinitely many solutions",
     );
     expect_output_with_context(&mut ctx, "quadratic_equation(1, 1, 1)", "[]");
-    expect_output_with_context(&mut ctx, "cubic_equation(1, -6, 11, -6)", "[3, 2, 1]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, -6, 11, -6)", "[1, 2, 3]");
     expect_output_with_context(&mut ctx, "cubic_equation(1, 0, 0, -1)", "[1]");
     expect_output_with_context(&mut ctx, "cubic_equation(1, 0, 0, 0)", "[0]");
-    expect_output_with_context(&mut ctx, "cubic_equation(0, 1, -3, 2)", "[2, 1]");
+    expect_output_with_context(&mut ctx, "cubic_equation(0, 1, -3, 2)", "[1, 2]");
     expect_output_with_context(&mut ctx, "cubic_equation(0, 0, 1, -4)", "[4]");
     expect_output_with_context(&mut ctx, "cubic_equation(0, 0, 0, 5)", "[]");
     expect_output_with_context(&mut ctx, "cubic_equation(1, 1, 1, 1)", "[-1]");
