@@ -51,7 +51,7 @@ fn _solve_reduced(a: Scalar, b: Scalar) -> List<Scalar> =
   else _solve_reduced_greater(b2, delta)
   where b2 = - b/2 and delta = b2^2 + (a/3)^3
 
-fn _translation_solutions(y: Scalar, p: Scalar) -> Scalar = y - p /3
+fn _translation_solutions(p: Scalar, y: Scalar) -> Scalar = y - p /3
 
 fn _solve_true_cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar> =
   map2(_translation_solutions, p, _solve_reduced(q - p^2/3, 2 * p^3 / 27 - p * q / 3 + r))
