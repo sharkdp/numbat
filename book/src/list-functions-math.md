@@ -1138,7 +1138,7 @@ Solve the equation \\( x³ - 6x² + 11x - 6 = 0 \\)
 <pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Acubic%5Fequation%281%2C%20%2D6%2C%2011%2C%20%2D6%29')""></button></div><code class="language-nbt hljs numbat">use extra::algebra
 cubic_equation(1, -6, 11, -6)
 
-    = [3, 2, 1]    [List<Scalar>]
+    = [1, 2, 3]    [List<Scalar>]
 </code></pre>
 
 </details>
