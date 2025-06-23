@@ -106,6 +106,7 @@ unit atmosphere: Pressure = 101_325 pascal
 @name("Molar")
 @url("https://en.wikipedia.org/wiki/Molar_concentration")
 @metric_prefixes
+@aliases(M: short)
 unit molar: Molarity = 1 mol / litre
 
 @name("Molal")
