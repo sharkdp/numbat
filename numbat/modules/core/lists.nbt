@@ -77,6 +77,14 @@ fn map<A, B>(f: Fn[(A) -> B], xs: List<A>) -> List<B> =
     then []
     else cons(f(head(xs)), map(f, tail(xs)))
 
+@description("Generate a new list by applying a function to each element of the input list. This function takes two inputs: a variable, and the element of the list.")
+@example("map2(contains, 2, [[0], [2], [1, 2], [0, 2, 3], []])", "Returns a list of bools corresponding to whether the sublist contains a 2 or not.")
+fn map2<A, B, C>(f: Fn[(A, B) -> C], other: A, xs: List<B>) -> List<C> =
+  if is_empty(xs) 
+    then []
+    else cons(f(other, head(xs)), map2(f, other, tail(xs)))
+
+
 @description("Filter a list by a predicate")
 @example("filter(is_finite, [0, 1e10, NaN, -inf])")
 fn filter<A>(p: Fn[(A) -> Bool], xs: List<A>) -> List<A> =

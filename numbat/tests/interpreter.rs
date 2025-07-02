@@ -305,6 +305,18 @@ fn test_algebra() {
         "infinitely many solutions",
     );
     expect_output_with_context(&mut ctx, "quadratic_equation(1, 1, 1)", "[]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, -6, 11, -6)", "[1, 2, 3]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, 0, 0, -1)", "[1]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, 0, 0, 0)", "[0]");
+    expect_output_with_context(&mut ctx, "cubic_equation(0, 1, -3, 2)", "[1, 2]");
+    expect_output_with_context(&mut ctx, "cubic_equation(0, 0, 1, -4)", "[4]");
+    expect_output_with_context(&mut ctx, "cubic_equation(0, 0, 0, 5)", "[]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, 1, 1, 1)", "[-1]");
+    expect_failure_with_context(
+        &mut ctx,
+        "cubic_equation(0, 0, 0, 0)",
+        "infinitely many solutions",
+    );
 }
 
 #[test]
@@ -434,6 +446,9 @@ fn test_temperature_conversions() {
 #[test]
 fn test_other_functions() {
     expect_output("sqrt(4)", "2");
+    expect_output("sqrt(-1)", "NaN");
+    expect_output("cbrt(27)", "3");
+    expect_output("cbrt(-64)", "-4");
     expect_output("log10(100000)", "5");
     expect_output("log(e^15)", "15");
     expect_output("ln(e^15)", "15");

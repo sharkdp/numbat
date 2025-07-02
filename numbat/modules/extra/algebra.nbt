@@ -1,5 +1,8 @@
 use core::error
 use core::functions
+use math::constants
+use math::trigonometry
+use core::lists
 
 fn _qe_solution<A: Dim, B: Dim>(a: A, b: B, c: B² / A, sign: Scalar) -> B / A =
   (-b + sign × sqrt(b² - 4 a c)) / 2 a
@@ -20,3 +23,52 @@ fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A> =
       else if b² == 4 a c
         then [-b / 2 a]
         else [_qe_solution(a, b, c, 1), _qe_solution(a, b, c, -1)]
+
+fn _solve_reduced_less_solution(theta: Scalar, k: Scalar, radius: Scalar) -> Scalar =
+  2 * radius * cos( (theta + 2 k pi) / 3 )
+
+fn _solve_reduced_less(a: Scalar, b2: Scalar) -> List<Scalar> = 
+  [
+    _solve_reduced_less_solution(theta, 0, radius),
+    _solve_reduced_less_solution(theta, 1, radius),
+    _solve_reduced_less_solution(theta, 2, radius)
+  ]
+  where radius = sqrt(-a/3) 
+    and theta = acos(b2 / (radius^3))
+
+fn _solve_reduced_greater(b2: Scalar, delta: Scalar) -> List<Scalar> = 
+  [cbrt(b2+rd) + cbrt(b2-rd)]
+  where rd = sqrt(delta)
+
+fn _solve_reduced_equal(b2: Scalar) -> List<Scalar> = 
+  if b2 == 0 
+    then [0]
+    else [2*cbrt_b2, -cbrt_b2]
+  where cbrt_b2 = cbrt(b2)
+
+fn _solve_reduced(a: Scalar, b: Scalar) -> List<Scalar> = 
+  if delta < 0 
+    then _solve_reduced_less(a, b2)
+    else if delta == 0 
+      then _solve_reduced_equal(b2)
+      else _solve_reduced_greater(b2, delta)
+  where b2 = - b/2 
+    and delta = b2^2 + (a/3)^3
+
+fn _translation_solutions(p: Scalar, y: Scalar) -> Scalar = y - p /3
+
+fn _solve_true_cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar> =
+  map2(_translation_solutions, p, _solve_reduced(q - p^2/3, 2 * p^3 / 27 - p * q / 3 + r))
+  where p = b/a 
+    and q = c/a 
+    and r = e/a
+
+@name("Solve cubic equations")
+@url("https://en.wikipedia.org/wiki/Cubic_equation")
+@description("Returns the solutions of the equation a x³ + b x² + c x + e = 0")
+@example("cubic_equation(1, -6, 11, -6)", "Solve the equation $x³ - 6x² + 11x - 6 = 0$")
+fn cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar> = 
+  if a == 0 
+    then sort(quadratic_equation(b, c, e)) 
+    else sort(_solve_true_cubic_equation(a, b, c, e))
+
