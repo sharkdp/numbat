@@ -143,6 +143,8 @@ impl Prefix {
             Prefix::Binary(60) => "Ei",
             Prefix::Binary(70) => "Zi",
             Prefix::Binary(80) => "Yi",
+            Prefix::Binary(90) => "Ri",
+            Prefix::Binary(100) => "Qi",
 
             Prefix::Binary(n) => return format_compact!("<prefix 2^{n}>"),
         })
@@ -187,6 +189,8 @@ impl Prefix {
             Prefix::Binary(60) => "exbi",
             Prefix::Binary(70) => "zebi",
             Prefix::Binary(80) => "yobi",
+            Prefix::Binary(90) => "robi",
+            Prefix::Binary(100) => "quebi",
 
             Prefix::Binary(n) => return format_compact!("<prefix 2^{n}>"),
         })
