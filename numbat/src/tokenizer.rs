@@ -42,7 +42,13 @@ pub enum TokenizerErrorKind {
     #[error("Unexpected '{{' inside string interpolation")]
     UnexpectedCurlyInInterpolation,
 
-    #[error("Unexpected closing of scope other than the current scope")]
+    #[error("Unexpected closing of {closing_scope_type:?} scope {}", 
+        if let Some(curr_scope_type) = current_scope {
+            format!("while inside a {:#?} scope", curr_scope_type.scope_type)
+        } else {
+            "while not inside any scope".to_owned()
+        }
+    )]
     UnexpectedScopeClosing {
         current_scope: Option<Scope>,
         closing_scope_type: ScopeType,
@@ -232,8 +238,7 @@ fn is_identifier_continue(c: char) -> bool {
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ScopeType {
-    OrdinaryCurly,
-    Interpolation,
+    Curly,
     String,
 }
 
@@ -256,6 +261,7 @@ struct Tokenizer {
 
     // Special state for parsing nested strings and/or structs in string interpolations
     scopes: Vec<Scope>,
+    last_token: Option<TokenKind>,
 }
 
 fn char_at(s: &str, byte_index: usize) -> Option<char> {
@@ -271,6 +277,7 @@ impl Tokenizer {
 
             code_source_id,
             scopes: Vec::new(),
+            last_token: None,
         }
     }
 
@@ -279,6 +286,7 @@ impl Tokenizer {
         while !self.at_end(input) {
             self.token_start = self.current;
             if let Some(token) = self.scan_single_token(input)? {
+                self.last_token = Some(token.kind.to_owned());
                 tokens.push(token);
             }
         }
@@ -447,6 +455,10 @@ impl Tokenizer {
             .map(|scope| scope.scope_start)
     }
 
+    fn is_inside_interpolation(&mut self) -> bool {
+        self.is_directly_inside(ScopeType::Curly) && self.is_inside_child_of(ScopeType::String)
+    }
+
     fn scan_single_token<'a>(&mut self, input: &'a str) -> Result<Option<Token<'a>>> {
         fn is_ascii_hex_digit(c: char) -> bool {
             c.is_ascii_hexdigit()
@@ -531,12 +543,12 @@ impl Tokenizer {
             ')' => TokenKind::RightParen,
             '[' => TokenKind::LeftBracket,
             ']' => TokenKind::RightBracket,
-            '{' => {
-                self.open_scope(ScopeType::OrdinaryCurly)?;
+            '{' if self.last_token == Some(TokenKind::Identifier) => {
+                self.open_scope(ScopeType::Curly)?;
                 TokenKind::LeftCurly
             }
-            '}' if self.is_directly_inside(ScopeType::OrdinaryCurly) => {
-                self.close_scope(ScopeType::OrdinaryCurly)?;
+            '}' if !self.is_inside_interpolation() => {
+                self.close_scope(ScopeType::Curly)?;
                 TokenKind::RightCurly
             }
             '≤' => TokenKind::LessOrEqual,
@@ -664,6 +676,23 @@ impl Tokenizer {
             '¹' | '²' | '³' | '⁴' | '⁵' | '⁶' | '⁷' | '⁸' | '⁹' => {
                 TokenKind::UnicodeExponent
             }
+            '"' if self.is_inside_interpolation()
+                && matches!(
+                    self.last_token,
+                    Some(TokenKind::StringFixed) | Some(TokenKind::StringInterpolationEnd)
+                ) =>
+            {
+                return Err(TokenizerError {
+                    kind: TokenizerErrorKind::UnterminatedStringInterpolation,
+                    span: Span {
+                        start: self
+                            .scope_start(ScopeType::Curly)
+                            .unwrap_or(self.token_start),
+                        end: self.last,
+                        code_source_id: self.code_source_id,
+                    },
+                });
+            }
             '"' => {
                 self.open_scope(ScopeType::String)?;
                 self.consume_string(input)?;
@@ -672,25 +701,14 @@ impl Tokenizer {
                     self.close_scope(ScopeType::String)?;
                     TokenKind::StringFixed
                 } else if self.match_char(input, '{') {
-                    self.open_scope(ScopeType::Interpolation)?;
+                    self.open_scope(ScopeType::Curly)?;
                     TokenKind::StringInterpolationStart
-                } else if self.match_char(input, '}') {
-                    return Err(TokenizerError {
-                        kind: TokenizerErrorKind::UnterminatedString,
-                        span: Span {
-                            start: self
-                                .scope_start(ScopeType::String)
-                                .unwrap_or(self.token_start),
-                            end: self.current,
-                            code_source_id: self.code_source_id,
-                        },
-                    });
-                } else if self.is_inside_child_of(ScopeType::Interpolation) {
+                } else if self.is_inside_interpolation() {
                     return Err(TokenizerError {
                         kind: TokenizerErrorKind::UnterminatedStringInterpolation,
                         span: Span {
                             start: self
-                                .scope_start(ScopeType::Interpolation)
+                                .scope_start(ScopeType::Curly)
                                 .unwrap_or(self.token_start),
                             end: self.current,
                             code_source_id: self.code_source_id,
@@ -709,7 +727,7 @@ impl Tokenizer {
                     });
                 }
             }
-            ':' if self.is_directly_inside(ScopeType::Interpolation) => {
+            ':' if self.is_inside_interpolation() => {
                 while self
                     .peek(input)
                     .map(|c| c != '"' && c != '}')
@@ -741,15 +759,15 @@ impl Tokenizer {
                     });
                 }
             }
-            '}' if self.is_directly_inside(ScopeType::Interpolation) => {
-                self.close_scope(ScopeType::Interpolation)?;
+            '}' if self.is_inside_interpolation() => {
+                self.close_scope(ScopeType::Curly)?;
                 self.consume_string(input)?;
 
                 if self.match_char(input, '"') {
                     self.close_scope(ScopeType::String)?;
                     TokenKind::StringInterpolationEnd
                 } else if self.match_char(input, '{') {
-                    self.open_scope(ScopeType::Interpolation)?;
+                    self.open_scope(ScopeType::Curly)?;
                     TokenKind::StringInterpolationMiddle
                 } else {
                     return Err(TokenizerError {
@@ -763,6 +781,16 @@ impl Tokenizer {
                         },
                     });
                 }
+            }
+            '{' if self.is_inside_interpolation() => {
+                return Err(TokenizerError {
+                    kind: TokenizerErrorKind::UnexpectedCurlyInInterpolation,
+                    span: Span {
+                        start: self.last,
+                        end: self.current,
+                        code_source_id: self.code_source_id,
+                    },
+                });
             }
             '…' => TokenKind::Ellipsis,
             c if is_identifier_start(c) => {
@@ -1231,7 +1259,9 @@ fn test_tokenize_string() {
         TokenizerErrorKind::UnterminatedStringInterpolation
     );
     assert_eq!(
-        tokenize("\"foobar = {\"foo{\"bar\"}\"\"", 0).unwrap_err().kind,
+        tokenize("\"foobar = {\"foo{\"bar\"}\"\"", 0)
+            .unwrap_err()
+            .kind,
         TokenizerErrorKind::UnterminatedStringInterpolation
     );
     assert_eq!(
@@ -1247,7 +1277,9 @@ fn test_tokenize_string() {
         TokenizerErrorKind::UnterminatedString
     );
     assert_eq!(
-        tokenize("\"foobar = {\"foo{\"bar}\"}.\"", 0).unwrap_err().kind,
+        tokenize("\"foobar = {\"foo{\"bar}\"}.\"", 0)
+            .unwrap_err()
+            .kind,
         TokenizerErrorKind::UnterminatedString
     );
 

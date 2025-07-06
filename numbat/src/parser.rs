@@ -3431,7 +3431,10 @@ mod tests {
                 Span::dummy(),
                 vec![StringPart::Interpolation {
                     span: Span::dummy(),
-                    expr: Box::new(Expression::String(Span::dummy(), vec![StringPart::Fixed("foo".into())])),
+                    expr: Box::new(Expression::String(
+                        Span::dummy(),
+                        vec![StringPart::Fixed("foo".into())],
+                    )),
                     format_specifiers: None,
                 }],
             ),
@@ -3444,15 +3447,18 @@ mod tests {
                 vec![StringPart::Interpolation {
                     span: Span::dummy(),
                     expr: Box::new(Expression::String(
-                        Span::dummy(), 
+                        Span::dummy(),
                         vec![
                             StringPart::Fixed("foo ".into()),
-                            StringPart::Interpolation { 
-                                span: Span::dummy(), 
-                                expr: Box::new(Expression::String(Span::dummy(), vec![StringPart::Fixed("bar".into())])), 
-                                format_specifiers: None 
-                            }
-                        ]
+                            StringPart::Interpolation {
+                                span: Span::dummy(),
+                                expr: Box::new(Expression::String(
+                                    Span::dummy(),
+                                    vec![StringPart::Fixed("bar".into())],
+                                )),
+                                format_specifiers: None,
+                            },
+                        ],
                     )),
                     format_specifiers: None,
                 }],
