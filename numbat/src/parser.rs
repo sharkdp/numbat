@@ -3425,6 +3425,40 @@ mod tests {
             ),
         );
 
+        parse_as_expression(
+            &["\"{\"foo\"}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Interpolation {
+                    span: Span::dummy(),
+                    expr: Box::new(Expression::String(Span::dummy(), vec![StringPart::Fixed("foo".into())])),
+                    format_specifiers: None,
+                }],
+            ),
+        );
+
+        parse_as_expression(
+            &["\"{\"foo {\"bar\"}\"}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Interpolation {
+                    span: Span::dummy(),
+                    expr: Box::new(Expression::String(
+                        Span::dummy(), 
+                        vec![
+                            StringPart::Fixed("foo ".into()),
+                            StringPart::Interpolation { 
+                                span: Span::dummy(), 
+                                expr: Box::new(Expression::String(Span::dummy(), vec![StringPart::Fixed("bar".into())])), 
+                                format_specifiers: None 
+                            }
+                        ]
+                    )),
+                    format_specifiers: None,
+                }],
+            ),
+        );
+
         should_fail_with(&["\"test {1"], ParseErrorKind::UnterminatedString);
         should_fail_with(
             &[
