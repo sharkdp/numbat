@@ -1199,6 +1199,30 @@ fn test_tokenize_string() {
     );
 
     assert_eq!(
+        tokenize_reduced("\"foo = {\"foo\"}, and bar = {\"bar\"}\"").unwrap(),
+        [
+            ("\"foo = {", StringInterpolationStart, ByteIndex(0)),
+            ("\"foo\"", StringFixed, ByteIndex(8)),
+            ("}, and bar = {", StringInterpolationMiddle, ByteIndex(13)),
+            ("\"bar\"", StringFixed, ByteIndex(27)),
+            ("}\"", StringInterpolationEnd, ByteIndex(32)),
+            ("", Eof, ByteIndex(34))
+        ]
+    );
+
+    assert_eq!(
+        tokenize_reduced("\"foo = {\"foo, and bar = {\"bar\"}\"}\"").unwrap(),
+        [
+            ("\"foo = {", StringInterpolationStart, ByteIndex(0)),
+            ("\"foo, and bar = {", StringInterpolationStart, ByteIndex(8)),
+            ("\"bar\"", StringFixed, ByteIndex(25)),
+            ("}\"", StringInterpolationEnd, ByteIndex(30)),
+            ("}\"", StringInterpolationEnd, ByteIndex(32)),
+            ("", Eof, ByteIndex(34))
+        ]
+    );
+
+    assert_eq!(
         tokenize("\"foo", 0).unwrap_err().kind,
         TokenizerErrorKind::UnterminatedString
     );
@@ -1207,7 +1231,23 @@ fn test_tokenize_string() {
         TokenizerErrorKind::UnterminatedStringInterpolation
     );
     assert_eq!(
+        tokenize("\"foobar = {\"foo{\"bar\"}\"\"", 0).unwrap_err().kind,
+        TokenizerErrorKind::UnterminatedStringInterpolation
+    );
+    assert_eq!(
         tokenize("\"foo = {foo}.", 0).unwrap_err().kind,
+        TokenizerErrorKind::UnterminatedString
+    );
+    assert_eq!(
+        tokenize("\"foo = {\"foo\"}.", 0).unwrap_err().kind,
+        TokenizerErrorKind::UnterminatedString
+    );
+    assert_eq!(
+        tokenize("\"foo = {\"foo}.\"", 0).unwrap_err().kind,
+        TokenizerErrorKind::UnterminatedString
+    );
+    assert_eq!(
+        tokenize("\"foobar = {\"foo{\"bar}\"}.\"", 0).unwrap_err().kind,
         TokenizerErrorKind::UnterminatedString
     );
 
