@@ -235,8 +235,7 @@ fn is_identifier_continue(c: char) -> bool {
         && c != '⋅'
 }
 
-#[cfg_attr(debug_assertions, derive(Debug))]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScopeType {
     Curly,
     String,
@@ -245,8 +244,7 @@ pub enum ScopeType {
 /// When scanning a string interpolation like `"foo = {foo}, and bar = {bar}."`,
 /// the tokenizer needs to keep track of where it currently is, because we allow
 /// for (almost) arbitrary expressions inside the {…} part.
-#[cfg_attr(debug_assertions, derive(Debug))]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Scope {
     scope_type: ScopeType,
     scope_start: ByteIndex,
@@ -679,7 +677,9 @@ impl Tokenizer {
             '"' if self.is_inside_interpolation()
                 && matches!(
                     self.last_token,
-                    Some(TokenKind::StringFixed) | Some(TokenKind::StringInterpolationEnd)
+                    Some(TokenKind::StringFixed)
+                        | Some(TokenKind::StringInterpolationEnd)
+                        | Some(TokenKind::Identifier)
                 ) =>
             {
                 return Err(TokenizerError {
