@@ -109,6 +109,32 @@ impl BytecodeInterpreter {
                 self.compile_expression(lhs)?;
                 self.vm.add_op(Op::LogicalNeg);
             }
+            Expression::BinaryOperator(
+                _span,
+                op @ (BinaryOperator::LogicalOr | BinaryOperator::LogicalAnd),
+                lhs,
+                rhs,
+                _type,
+            ) => {
+                self.compile_expression(lhs)?;
+
+                let jump_offset = self.vm.current_offset() + 1; // +1 for the opcode
+                self.vm.add_op1(
+                    match op {
+                        BinaryOperator::LogicalOr => Op::JumpIfTrue,
+                        BinaryOperator::LogicalAnd => Op::JumpIfFalse,
+                        _ => unreachable!(),
+                    },
+                    0xffff,
+                );
+                self.vm.add_op(Op::Pop);
+
+                self.compile_expression(rhs)?;
+
+                let else_block_offset = self.vm.current_offset();
+                self.vm
+                    .patch_u16_value_at(jump_offset, else_block_offset - (jump_offset + 2));
+            }
             Expression::BinaryOperator(_span, operator, lhs, rhs, _type) => {
                 self.compile_expression(lhs)?;
                 self.compile_expression(rhs)?;
@@ -126,8 +152,7 @@ impl BytecodeInterpreter {
                     BinaryOperator::GreaterOrEqual => Op::GreatorOrEqual,
                     BinaryOperator::Equal => Op::Equal,
                     BinaryOperator::NotEqual => Op::NotEqual,
-                    BinaryOperator::LogicalAnd => Op::LogicalAnd,
-                    BinaryOperator::LogicalOr => Op::LogicalOr,
+                    BinaryOperator::LogicalAnd | BinaryOperator::LogicalOr => unreachable!(),
                 };
                 self.vm.add_op(op);
             }
@@ -243,7 +268,7 @@ impl BytecodeInterpreter {
                 self.compile_expression(condition)?;
 
                 let if_jump_offset = self.vm.current_offset() + 1; // +1 for the opcode
-                self.vm.add_op1(Op::JumpIfFalse, 0xffff);
+                self.vm.add_op1(Op::PopJumpIfFalse, 0xffff);
 
                 self.compile_expression(then_expr)?;
 

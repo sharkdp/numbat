@@ -650,6 +650,12 @@ fn test_logical() {
     expect_output("true && false", "false");
     expect_output("true && true", "true");
 
+    // short-circuiting
+    expect_output("false && head([])", "false");
+    expect_output("true || head([])", "true");
+    insta::assert_snapshot!(fail("true && head([])"), @"Empty list");
+    insta::assert_snapshot!(fail("false || head([])"), @"Empty list");
+
     // priority
     expect_output("false || true && false", "false");
     expect_output("false || true && !false", "true");
