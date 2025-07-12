@@ -1,7 +1,4 @@
-use std::{
-    fmt::{self, Debug, Display},
-    hash::Hash,
-};
+use std::fmt::{self, Debug, Display};
 
 use compact_str::{format_compact, CompactString, ToCompactString};
 use num_traits::{Pow, ToPrimitive};
@@ -33,12 +30,6 @@ impl PartialEq for Number {
 impl PartialOrd for Number {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.to_f64().partial_cmp(&other.to_f64())
-    }
-}
-
-impl Hash for Number {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
     }
 }
 

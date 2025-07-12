@@ -218,9 +218,40 @@ impl Op {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ConstantDummyValue(usize);
 
+/// A Number that is hash-friendly: in addition to all values hashing equal when they
+/// compare equal, all NaNs also compare equal to themselves (and hash the same).
+#[derive(Clone, Debug, Eq)]
+pub struct HashableNumber(Number);
+
+impl HashableNumber {
+    pub fn number(&self) -> &Number {
+        &self.0
+    }
+}
+
+impl From<Number> for HashableNumber {
+    fn from(n: Number) -> Self {
+        HashableNumber(n)
+    }
+}
+
+impl PartialEq for HashableNumber {
+    fn eq(&self, other: &Self) -> bool {
+        let lhs = self.number().to_f64();
+        let rhs = other.number().to_f64();
+        lhs == rhs || lhs.is_nan() && rhs.is_nan()
+    }
+}
+
+impl std::hash::Hash for HashableNumber {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.to_f64().to_bits().hash(state);
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Constant {
-    Scalar(Number),
+    Scalar(HashableNumber),
     Unit(Unit),
     Boolean(bool),
     String(CompactString),
@@ -231,12 +262,14 @@ pub enum Constant {
 
 impl Constant {
     pub(crate) fn scalar_from_f64(n: f64) -> Self {
-        Constant::Scalar(Number::from_f64(n))
+        Constant::Scalar(HashableNumber(Number::from_f64(n)))
     }
 
     fn to_value(&self) -> Value {
         match self {
-            Constant::Scalar(n) => Value::Quantity(Quantity::from_scalar(n.to_f64())),
+            Constant::Scalar(HashableNumber(n)) => {
+                Value::Quantity(Quantity::from_scalar(n.to_f64()))
+            }
             Constant::Unit(u) => Value::Quantity(Quantity::from_unit(u.clone())),
             Constant::Boolean(b) => Value::Boolean(*b),
             Constant::String(s) => Value::String(s.clone()),
@@ -250,7 +283,7 @@ impl Constant {
 impl Display for Constant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Constant::Scalar(n) => write!(f, "{n}"),
+            Constant::Scalar(HashableNumber(n)) => write!(f, "{n}"),
             Constant::Unit(unit) => write!(f, "{unit}"),
             Constant::Boolean(val) => write!(f, "{val}"),
             Constant::String(val) => write!(f, "\"{val}\""),
@@ -350,7 +383,7 @@ impl Vm {
             strings: vec![],
             unit_information: vec![],
             last_result: None,
-            ffi_callables: ffi::procedures().iter().map(|(_, ff)| ff).collect(),
+            ffi_callables: ffi::procedures().values().collect(),
             procedure_arg_spans: vec![],
             frames: vec![CallFrame::root()],
             stack: vec![],
@@ -1160,4 +1193,18 @@ fn vm_basic() {
         vm.run(&mut ctx).unwrap(),
         InterpreterResult::Value(Value::Quantity(Quantity::from_scalar(42.0 + 1.0)))
     );
+}
+
+#[test]
+fn vm_constant_dedupe_hashability() {
+    let mut vm = Vm::new();
+
+    vm.add_constant(Constant::scalar_from_f64(f64::NAN));
+    vm.add_constant(Constant::scalar_from_f64(f64::NAN));
+    vm.add_constant(Constant::scalar_from_f64(-f64::NAN));
+
+    vm.add_constant(Constant::scalar_from_f64(0.0));
+    vm.add_constant(Constant::scalar_from_f64(-0.0));
+
+    assert_eq!(vm.constants.len(), 2);
 }

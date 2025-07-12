@@ -10,6 +10,7 @@ use crate::{
     prefix::Prefix,
     prefix_parser::AcceptsPrefix,
     product::{Canonicalize, Product},
+    vm::HashableNumber,
 };
 
 pub type ConversionFactor = Number;
@@ -19,7 +20,7 @@ pub type ConversionFactor = Number;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UnitKind {
     Base,
-    Derived(ConversionFactor, Unit),
+    Derived(HashableNumber, Unit),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -66,7 +67,7 @@ impl UnitIdentifier {
                 Number::from_f64(1.0),
             ),
             UnitKind::Derived(factor, defining_unit) => {
-                BaseUnitAndFactor(defining_unit.clone(), *factor)
+                BaseUnitAndFactor(defining_unit.clone(), *factor.number())
             }
         }
     }
@@ -98,7 +99,7 @@ impl UnitIdentifier {
                     )
                     .product();
 
-                BaseUnitAndFactor(base_unit, *factor * defining_unit_factor)
+                BaseUnitAndFactor(base_unit, *factor.number() * defining_unit_factor)
             }
         }
     }
@@ -255,7 +256,7 @@ impl Unit {
             unit_id: UnitIdentifier {
                 name,
                 canonical_name,
-                kind: UnitKind::Derived(factor, base_unit),
+                kind: UnitKind::Derived(factor.into(), base_unit),
             },
             exponent: Rational::from_integer(1),
         })
