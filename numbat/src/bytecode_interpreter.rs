@@ -274,7 +274,7 @@ impl BytecodeInterpreter {
         };
     }
 
-    fn compile_define_variable(&mut self, define_variable: &DefineVariable) -> Result<()> {
+    fn compile_define_variable(&mut self, define_variable: &DefineVariable) {
         let DefineVariable(identifier, decorators, expr, _annotation, _type, _readable_type) =
             define_variable;
         let current_depth = self.current_depth();
@@ -295,7 +295,6 @@ impl BytecodeInterpreter {
             identifiers,
             metadata,
         });
-        Ok(())
     }
 
     fn compile_statement(
@@ -309,7 +308,7 @@ impl BytecodeInterpreter {
                 self.vm.add_op(Op::Return);
             }
             Statement::DefineVariable(define_variable) => {
-                self.compile_define_variable(define_variable)?
+                self.compile_define_variable(define_variable);
             }
             Statement::DefineFunction(
                 name,
@@ -334,7 +333,7 @@ impl BytecodeInterpreter {
                     });
                 }
                 for local_variables in local_variables {
-                    self.compile_define_variable(local_variables)?;
+                    self.compile_define_variable(local_variables);
                 }
 
                 self.compile_expression(expr);
