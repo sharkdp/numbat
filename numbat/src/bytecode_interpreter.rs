@@ -48,7 +48,7 @@ pub struct BytecodeInterpreter {
 }
 
 impl BytecodeInterpreter {
-    fn compile_expression(&mut self, expr: &Expression) -> Result<()> {
+    fn compile_expression(&mut self, expr: &Expression) {
         match expr {
             Expression::Scalar(_span, n, _type) => {
                 let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
@@ -98,20 +98,20 @@ impl BytecodeInterpreter {
                 }
             }
             Expression::UnaryOperator(_span, UnaryOperator::Negate, rhs, _type) => {
-                self.compile_expression(rhs)?;
+                self.compile_expression(rhs);
                 self.vm.add_op(Op::Negate);
             }
             Expression::UnaryOperator(_span, UnaryOperator::Factorial(order), lhs, _type) => {
-                self.compile_expression(lhs)?;
+                self.compile_expression(lhs);
                 self.vm.add_op1(Op::Factorial, order.get() as u16);
             }
             Expression::UnaryOperator(_span, UnaryOperator::LogicalNeg, lhs, _type) => {
-                self.compile_expression(lhs)?;
+                self.compile_expression(lhs);
                 self.vm.add_op(Op::LogicalNeg);
             }
             Expression::BinaryOperator(_span, operator, lhs, rhs, _type) => {
-                self.compile_expression(lhs)?;
-                self.compile_expression(rhs)?;
+                self.compile_expression(lhs);
+                self.compile_expression(rhs);
 
                 let op = match operator {
                     BinaryOperator::Add => Op::Add,
@@ -132,8 +132,8 @@ impl BytecodeInterpreter {
                 self.vm.add_op(op);
             }
             Expression::BinaryOperatorForDate(_span, operator, lhs, rhs, type_) => {
-                self.compile_expression(lhs)?;
-                self.compile_expression(rhs)?;
+                self.compile_expression(lhs);
+                self.compile_expression(rhs);
 
                 // if the result is a duration:
                 let op = if type_.is_dtype() {
@@ -159,7 +159,7 @@ impl BytecodeInterpreter {
             Expression::FunctionCall(_span, _full_span, name, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression(arg)?;
+                    self.compile_expression(arg);
                 }
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
@@ -181,7 +181,7 @@ impl BytecodeInterpreter {
                     .sorted_by_key(|(n, _)| struct_info.fields.get_index_of(*n).unwrap());
 
                 for (_, expr) in sorted_exprs.rev() {
-                    self.compile_expression(expr)?;
+                    self.compile_expression(expr);
                 }
 
                 let struct_info_idx = self.vm.get_structinfo_idx(&struct_info.name).unwrap() as u16;
@@ -190,7 +190,7 @@ impl BytecodeInterpreter {
                     .add_op2(Op::BuildStructInstance, struct_info_idx, exprs.len() as u16);
             }
             Expression::AccessField(_span, _full_span, expr, attr, struct_type, _result_type) => {
-                self.compile_expression(expr)?;
+                self.compile_expression(expr);
 
                 let Type::Struct(ref struct_info) = struct_type.to_concrete_type() else {
                     unreachable!(
@@ -205,11 +205,11 @@ impl BytecodeInterpreter {
             Expression::CallableCall(_span, callable, args, _type) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression(arg)?;
+                    self.compile_expression(arg);
                 }
 
                 // Put the callable on top of the stack
-                self.compile_expression(callable)?;
+                self.compile_expression(callable);
 
                 self.vm.add_op1(Op::CallCallable, args.len() as u16);
             }
@@ -229,7 +229,7 @@ impl BytecodeInterpreter {
                             span: _,
                             format_specifiers,
                         } => {
-                            self.compile_expression(expr)?;
+                            self.compile_expression(expr);
                             let index = self.vm.add_constant(Constant::FormatSpecifiers(
                                 format_specifiers.map(|s| s.to_compact_string()),
                             ));
@@ -240,12 +240,12 @@ impl BytecodeInterpreter {
                 self.vm.add_op1(Op::JoinString, string_parts.len() as u16); // TODO: this can overflow
             }
             Expression::Condition(_, condition, then_expr, else_expr) => {
-                self.compile_expression(condition)?;
+                self.compile_expression(condition);
 
                 let if_jump_offset = self.vm.current_offset() + 1; // +1 for the opcode
                 self.vm.add_op1(Op::JumpIfFalse, 0xffff);
 
-                self.compile_expression(then_expr)?;
+                self.compile_expression(then_expr);
 
                 let else_jump_offset = self.vm.current_offset() + 1;
                 self.vm.add_op1(Op::Jump, 0xffff);
@@ -254,7 +254,7 @@ impl BytecodeInterpreter {
                 self.vm
                     .patch_u16_value_at(if_jump_offset, else_block_offset - (if_jump_offset + 2));
 
-                self.compile_expression(else_expr)?;
+                self.compile_expression(else_expr);
 
                 let end_offset = self.vm.current_offset();
 
@@ -263,7 +263,7 @@ impl BytecodeInterpreter {
             }
             Expression::List(_, elements, _) => {
                 for element in elements {
-                    self.compile_expression(element)?;
+                    self.compile_expression(element);
                 }
 
                 self.vm.add_op1(Op::BuildList, elements.len() as u16);
@@ -272,8 +272,6 @@ impl BytecodeInterpreter {
                 unreachable!("Typed holes cause type inference errors")
             }
         };
-
-        Ok(())
     }
 
     fn compile_define_variable(&mut self, define_variable: &DefineVariable) -> Result<()> {
@@ -292,7 +290,7 @@ impl BytecodeInterpreter {
             aliases: identifiers.clone(),
         };
 
-        self.compile_expression(expr)?;
+        self.compile_expression(expr);
         self.locals[current_depth].push(Local {
             identifiers,
             metadata,
@@ -307,7 +305,7 @@ impl BytecodeInterpreter {
     ) -> Result<()> {
         match stmt {
             Statement::Expression(expr) => {
-                self.compile_expression(expr)?;
+                self.compile_expression(expr);
                 self.vm.add_op(Op::Return);
             }
             Statement::DefineVariable(define_variable) => {
@@ -339,7 +337,7 @@ impl BytecodeInterpreter {
                     self.compile_define_variable(local_variables)?;
                 }
 
-                self.compile_expression(expr)?;
+                self.compile_expression(expr);
 
                 self.vm.add_op(Op::Return);
 
@@ -446,7 +444,7 @@ impl BytecodeInterpreter {
                     },
                 ); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 
-                self.compile_expression(expr)?;
+                self.compile_expression(expr);
                 self.vm
                     .add_op2(Op::SetUnitConstant, unit_information_idx, constant_idx);
 
@@ -469,7 +467,7 @@ impl BytecodeInterpreter {
             Statement::ProcedureCall(kind, args) => {
                 // Put all arguments on top of the stack
                 for arg in args {
-                    self.compile_expression(arg)?;
+                    self.compile_expression(arg);
                 }
 
                 let name = kind.name();
