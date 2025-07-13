@@ -114,9 +114,15 @@ impl NumbatBackend {
             }
         }
 
+        // Trim trailing whitespace from the range
+        let source = files.source(file_id).ok()?;
+        let text_slice = &source[min_start..max_end];
+        let trimmed_length = text_slice.trim_end().len();
+        let actual_end = min_start + trimmed_length;
+        
         // Convert byte range to line/column using codespan
         let start_location = files.location(file_id, min_start).ok()?;
-        let end_location = files.location(file_id, max_end).ok()?;
+        let end_location = files.location(file_id, actual_end).ok()?;
 
         Some(Diagnostic {
             range: Range {

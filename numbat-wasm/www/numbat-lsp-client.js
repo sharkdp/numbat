@@ -1,5 +1,5 @@
 // Simple LSP client implementation for Monaco Editor
-// This version communicates with the Rust LSP server
+// Uses WASM Numbat with structured diagnostics for accurate error positioning
 
 class NumbatLSPClient {
     constructor(editor) {
@@ -18,7 +18,7 @@ class NumbatLSPClient {
         // Check if Numbat WASM is available
         if (window.Numbat && window.FormatType) {
             this.isConnected = true;
-            console.log('Numbat LSP Client initialized with WASM validation');
+            console.log('Numbat LSP Client initialized with structured diagnostics');
         } else {
             console.warn('Numbat WASM not available for LSP client');
         }
@@ -70,62 +70,24 @@ class NumbatLSPClient {
         // Try to interpret the text and collect errors
         const result = numbat.interpret(text);
         
-        if (result.is_error) {
-            // Create a diagnostic from the error
-            const diagnostic = this.createDiagnosticFromError(result.output, text);
-            if (diagnostic) {
-                diagnostics.push(diagnostic);
+        if (result.is_error && result.diagnostics) {
+            // Use structured diagnostics from the WASM interface
+            for (const diagInfo of result.diagnostics) {
+                for (const range of diagInfo.ranges) {
+                    diagnostics.push({
+                        severity: monaco.MarkerSeverity.Error,
+                        startLineNumber: range.start_line,
+                        startColumn: range.start_column,
+                        endLineNumber: range.end_line,
+                        endColumn: range.end_column,
+                        message: diagInfo.message,
+                        source: 'numbat'
+                    });
+                }
             }
         }
         
         return diagnostics;
-    }
-    
-    createDiagnosticFromError(errorOutput, sourceText) {
-        // Parse error message to extract line and column info if available
-        const errorText = errorOutput.replace(/<[^>]*>/g, ''); // Strip HTML
-        
-        console.log('Debug: Error text:', errorText); // Debug logging
-        
-        // Try to extract line information from error message
-        // Look for codespan patterns like "┌─ :3:1" and line markers like "3 │"
-        const codespanMatch = errorText.match(/┌─ :(\d+):(\d+)/);
-        const lineMarkerMatch = errorText.match(/(\d+) │/);
-        const inputMatch = errorText.match(/input:(\d+):(\d+)/);
-        
-        let lineNumber = 1; // Default to line 1
-        let columnNumber = 1; // Default to column 1
-        
-        if (codespanMatch) {
-            lineNumber = parseInt(codespanMatch[1]);
-            columnNumber = parseInt(codespanMatch[2]);
-            console.log('Debug: Found codespan match:', lineNumber, columnNumber);
-        } else if (lineMarkerMatch) {
-            lineNumber = parseInt(lineMarkerMatch[1]);
-            columnNumber = 1; // Default column when only line is available
-            console.log('Debug: Found line marker match:', lineNumber);
-        } else if (inputMatch) {
-            lineNumber = parseInt(inputMatch[1]);
-            columnNumber = parseInt(inputMatch[2]);
-            console.log('Debug: Found input match:', lineNumber, columnNumber);
-        } else {
-            console.log('Debug: No line/column match found, using defaults');
-        }
-        
-        // Get the actual line content to determine a better end position
-        const lines = sourceText.split('\\n');
-        const targetLine = lines[lineNumber - 1]; // Convert to 0-based for array access
-        const lineLength = targetLine ? targetLine.length : 10;
-        
-        return {
-            severity: monaco.MarkerSeverity.Error,
-            startLineNumber: lineNumber,
-            startColumn: columnNumber,
-            endLineNumber: lineNumber,
-            endColumn: Math.min(columnNumber + 10, lineLength + 1), // Don't exceed line length
-            message: errorText.trim() || 'Numbat error', // Full error message
-            source: 'numbat'
-        };
     }
     
     updateDiagnostics(diagnostics) {
@@ -134,8 +96,6 @@ class NumbatLSPClient {
         
         // Update Monaco editor markers
         monaco.editor.setModelMarkers(model, 'numbat', diagnostics);
-        
-        console.log(`Updated ${diagnostics.length} diagnostics`);
     }
     
     dispose() {
