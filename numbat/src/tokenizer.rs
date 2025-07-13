@@ -430,13 +430,13 @@ impl Tokenizer {
         }
     }
 
-    fn is_directly_inside(&mut self, scope_type: ScopeType) -> bool {
+    fn is_directly_inside(&self, scope_type: ScopeType) -> bool {
         self.scopes
             .last()
             .is_some_and(|scope| scope.scope_type == scope_type)
     }
 
-    fn is_inside_child_of(&mut self, scope_type: ScopeType) -> bool {
+    fn is_inside_child_of(&self, scope_type: ScopeType) -> bool {
         let Some(i) = self.scopes.len().checked_sub(2) else {
             return false;
         };
@@ -445,7 +445,7 @@ impl Tokenizer {
             .is_some_and(|scope| scope.scope_type == scope_type)
     }
 
-    fn scope_start(&mut self, scope_type: ScopeType) -> Option<ByteIndex> {
+    fn scope_start(&self, scope_type: ScopeType) -> Option<ByteIndex> {
         self.scopes
             .iter()
             .filter(|scope| scope.scope_type == scope_type)
@@ -453,7 +453,7 @@ impl Tokenizer {
             .map(|scope| scope.scope_start)
     }
 
-    fn is_inside_interpolation(&mut self) -> bool {
+    fn is_inside_interpolation(&self) -> bool {
         self.is_directly_inside(ScopeType::Curly) && self.is_inside_child_of(ScopeType::String)
     }
 
