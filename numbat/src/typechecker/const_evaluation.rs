@@ -84,21 +84,15 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                         "logical",
                     )))
                 }
-                typed_ast::BinaryOperator::BitwiseOr 
-                | typed_ast::BinaryOperator::BitwiseAnd 
-                | typed_ast::BinaryOperator::BitwiseXor => {
-                    Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
-                        e.full_span(),
-                        "bitwise",
-                    )))
-                }
+                typed_ast::BinaryOperator::BitwiseOr
+                | typed_ast::BinaryOperator::BitwiseAnd
+                | typed_ast::BinaryOperator::BitwiseXor => Err(Box::new(
+                    TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "bitwise"),
+                )),
                 typed_ast::BinaryOperator::BitShiftLeft
-                | typed_ast::BinaryOperator::BitShiftRight => {
-                    Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
-                        e.full_span(),
-                        "bitshift",
-                    )))
-                }
+                | typed_ast::BinaryOperator::BitShiftRight => Err(Box::new(
+                    TypeCheckError::UnsupportedConstEvalExpression(e.full_span(), "bitshift"),
+                )),
             };
         }
         typed_ast::Expression::Identifier(..) => "variable",

@@ -935,8 +935,6 @@ fn test_tokenize_basic() {
             ("", Eof, ByteIndex(6))
         ]
     );
-
-
 }
 
 #[test]

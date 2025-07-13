@@ -865,10 +865,9 @@ impl Vm {
                     let rhs = self.pop_quantity();
 
                     let check_rhs = rhs
-                                    .as_scalar()
-                                    .expect("Expected bitwise not operand to be scalar")
-                                    .to_f64();
-
+                        .as_scalar()
+                        .expect("Expected bitwise not operand to be scalar")
+                        .to_f64();
 
                     if check_rhs.fract() != 0. {
                         return Err(Box::new(RuntimeError::BitwiseNotOfNonInteger));
