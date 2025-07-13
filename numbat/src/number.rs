@@ -136,6 +136,46 @@ impl std::ops::Mul for Number {
     }
 }
 
+impl std::ops::BitOr for Number {
+    type Output = Number;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Number((self.0 as i64 | rhs.0 as i64) as f64)
+    }
+}
+
+impl std::ops::BitAnd for Number {
+    type Output = Number;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Number((self.0 as i64 & rhs.0 as i64) as f64)
+    }
+}
+
+impl std::ops::BitXor for Number {
+    type Output = Number;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Number((self.0 as i64 ^ rhs.0 as i64) as f64)
+    }
+}
+
+impl std::ops::Shl for Number {
+    type Output = Number;
+
+    fn shl(self, rhs: Self) -> Self::Output {
+        Number(((self.0 as i64) << rhs.0 as i64) as f64)
+    }
+}
+
+impl std::ops::Shr for Number {
+    type Output = Number;
+
+    fn shr(self, rhs: Self) -> Self::Output {
+        Number(((self.0 as i64) >> (rhs.0 as i64)) as f64)
+    }
+}
+
 impl std::ops::Div for Number {
     type Output = Number;
 
@@ -149,6 +189,14 @@ impl std::ops::Neg for Number {
 
     fn neg(self) -> Self::Output {
         Number(-self.0)
+    }
+}
+
+impl std::ops::Not for Number {
+    type Output = Number;
+
+    fn not(self) -> Self::Output {
+        Number(!(self.0 as i64) as f64)
     }
 }
 

@@ -109,6 +109,10 @@ impl BytecodeInterpreter {
                 self.compile_expression(lhs)?;
                 self.vm.add_op(Op::LogicalNeg);
             }
+            Expression::UnaryOperator(_span, UnaryOperator::BitwiseNot, lhs, _type) => {
+                self.compile_expression(lhs)?;
+                self.vm.add_op(Op::BitwiseNot);
+            }
             Expression::BinaryOperator(_span, operator, lhs, rhs, _type) => {
                 self.compile_expression(lhs)?;
                 self.compile_expression(rhs)?;
@@ -128,6 +132,11 @@ impl BytecodeInterpreter {
                     BinaryOperator::NotEqual => Op::NotEqual,
                     BinaryOperator::LogicalAnd => Op::LogicalAnd,
                     BinaryOperator::LogicalOr => Op::LogicalOr,
+                    BinaryOperator::BitwiseOr => Op::BitwiseOr,
+                    BinaryOperator::BitwiseAnd => Op::BitwiseAnd,
+                    BinaryOperator::BitwiseXor => Op::BitwiseXor,
+                    BinaryOperator::BitShiftLeft => Op::BitShiftLeft,
+                    BinaryOperator::BitShiftRight => Op::BitShiftRight,
                 };
                 self.vm.add_op(op);
             }

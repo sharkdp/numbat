@@ -87,6 +87,12 @@ pub enum TokenKind {
     GreaterOrEqual,
     LogicalAnd,
     LogicalOr,
+    BitwiseOr,
+    BitwiseAnd,
+    BitwiseNot,
+    BitwiseXor,
+    BitShiftLeft,
+    BitShiftRight,
     Period,
     QuestionMark,
 
@@ -480,9 +486,11 @@ impl Tokenizer {
             '}' if !self.interpolation_state.is_inside() => TokenKind::RightCurly,
             '≤' => TokenKind::LessOrEqual,
             '<' if self.match_char(input, '=') => TokenKind::LessOrEqual,
+            '<' if self.match_char(input, '<') => TokenKind::BitShiftLeft,
             '<' => TokenKind::LessThan,
             '≥' => TokenKind::GreaterOrEqual,
             '>' if self.match_char(input, '=') => TokenKind::GreaterOrEqual,
+            '>' if self.match_char(input, '>') => TokenKind::BitShiftRight,
             '>' => TokenKind::GreaterThan,
             '?' => TokenKind::QuestionMark,
             '0' if self
@@ -572,6 +580,10 @@ impl Tokenizer {
             '|' if self.match_char(input, '|') => TokenKind::LogicalOr,
             '|' if self.match_char(input, '>') => TokenKind::PostfixApply,
             '*' if self.match_char(input, '*') => TokenKind::Power,
+            '|' => TokenKind::BitwiseOr,
+            '&' => TokenKind::BitwiseAnd,
+            '⨁' => TokenKind::BitwiseXor,
+            '~' => TokenKind::BitwiseNot,
             '+' => TokenKind::Plus,
             '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
             '/' => TokenKind::Divide,
@@ -900,9 +912,31 @@ fn test_tokenize_basic() {
         [("...", Ellipsis, ByteIndex(0)), ("", Eof, ByteIndex(3))]
     );
 
-    insta::assert_snapshot!(
-        tokenize_reduced_pretty("~").unwrap_err(),
-    @"Error at index 0: `Unexpected character: '~'`");
+    assert_eq!(
+        tokenize_reduced("1<<2\n42").unwrap(),
+        [
+            ("1", Number, ByteIndex(0)),
+            ("<<", BitShiftLeft, ByteIndex(1)),
+            ("2", Number, ByteIndex(3)),
+            ("\n", Newline, ByteIndex(4)),
+            ("42", Number, ByteIndex(5)),
+            ("", Eof, ByteIndex(7))
+        ]
+    );
+
+    assert_eq!(
+        tokenize_reduced("1|2&42").unwrap(),
+        [
+            ("1", Number, ByteIndex(0)),
+            ("|", BitwiseOr, ByteIndex(1)),
+            ("2", Number, ByteIndex(2)),
+            ("&", BitwiseAnd, ByteIndex(3)),
+            ("42", Number, ByteIndex(4)),
+            ("", Eof, ByteIndex(6))
+        ]
+    );
+
+
 }
 
 #[test]
@@ -1193,16 +1227,6 @@ fn test_logical_operators() {
     "false", False, 8
     "", Eof, 13
     "###
-    );
-
-    insta::assert_snapshot!(
-        tokenize_reduced_pretty("true | false").unwrap_err(),
-        @"Error at index 5: `Unexpected character: '|'`"
-    );
-
-    insta::assert_snapshot!(
-        tokenize_reduced_pretty("true & false").unwrap_err(),
-        @"Error at index 5: `Unexpected character: '&'`"
     );
 }
 

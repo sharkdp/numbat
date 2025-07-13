@@ -1,0 +1,30 @@
+# bitwise and truth table
+assert_eq(1 & 1, 1)
+assert_eq(1 & 0, 0)
+assert_eq(0 & 1, 0)
+assert_eq(0 & 0, 0)
+
+# bitwise or truth table
+assert_eq(1 | 1, 1)
+assert_eq(1 | 0, 1)
+assert_eq(0 | 1, 1)
+assert_eq(0 | 0, 0)
+
+# bitwise xor truth table
+assert_eq(0 ⨁ 0, 0)
+assert_eq(1 ⨁ 0, 1)
+assert_eq(0 ⨁ 1, 1)
+assert_eq(1 ⨁ 1, 0)
+
+# bitshift left checks
+assert_eq(0xFF << 2, 0x3FC)
+assert_eq(0xFF << 0, 0xFF)
+
+# bitshift right checks
+assert_eq(0xC7A5 >> 8, 0xC7)
+
+# bit flipping operation
+assert_eq(0xC700 ⨁ (0xC0 << 8), 0x700)
+
+# bit clearing operation
+assert_eq(0xC700 & ~(1 << 15), 0x4700)

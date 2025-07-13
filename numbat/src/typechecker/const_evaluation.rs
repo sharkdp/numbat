@@ -25,6 +25,7 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
             "factorial"
         }
         typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::LogicalNeg, _, _) => "logical",
+        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::BitwiseNot, _, _) => "bitwise",
 
         e @ typed_ast::Expression::BinaryOperator(_span_op, op, lhs_expr, rhs_expr, _) => {
             let lhs = evaluate_const_expr(lhs_expr)?;
@@ -81,6 +82,21 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
                     Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
                         e.full_span(),
                         "logical",
+                    )))
+                }
+                typed_ast::BinaryOperator::BitwiseOr 
+                | typed_ast::BinaryOperator::BitwiseAnd 
+                | typed_ast::BinaryOperator::BitwiseXor => {
+                    Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
+                        e.full_span(),
+                        "bitwise",
+                    )))
+                }
+                typed_ast::BinaryOperator::BitShiftLeft
+                | typed_ast::BinaryOperator::BitShiftRight => {
+                    Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
+                        e.full_span(),
+                        "bitshift",
                     )))
                 }
             };
