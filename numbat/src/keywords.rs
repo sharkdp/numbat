@@ -11,6 +11,7 @@ pub const KEYWORDS: &[&str] = &[
     "unit ",
     "use ",
     "struct ",
+    "xor ",
     // 'inline' keywords
     "long",
     "short",
