@@ -582,6 +582,12 @@ impl Tokenizer {
             '*' if self.match_char(input, '*') => TokenKind::Power,
             '|' => TokenKind::BitwiseOr,
             '&' => TokenKind::BitwiseAnd,
+            'x' if self.peek(input) == Some('o') && self.peek2(input) == Some('r') => {
+                self.advance(input);
+                self.advance(input);
+
+                TokenKind::BitwiseXor
+            }
             '⨁' => TokenKind::BitwiseXor,
             '~' => TokenKind::BitwiseNot,
             '+' => TokenKind::Plus,
