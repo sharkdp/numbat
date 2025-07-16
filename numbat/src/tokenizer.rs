@@ -654,7 +654,7 @@ impl Tokenizer {
             '*' if self.match_char(input, '*') => TokenKind::Power,
             '|' => TokenKind::BitwiseOr,
             '&' => TokenKind::BitwiseAnd,
-            '⨁' => TokenKind::BitwiseXor,
+            '⨁' | '⊕' => TokenKind::BitwiseXor,
             '~' => TokenKind::BitwiseNot,
             '+' => TokenKind::Plus,
             '*' | '·' | '⋅' | '×' => TokenKind::Multiply,
