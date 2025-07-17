@@ -176,10 +176,10 @@ unit fermi: Length = 1 fm
 
 @name("Metric tablespoon")
 @url("https://en.wikipedia.org/wiki/Tablespoon")
-@aliases(tablespoons, tbsp: short)
-unit tablespoon: Volume = 15 mL
+@aliases(metric_tablespoons, metric_tbsp: short)
+unit metric_tablespoon: Volume = 15 mL
 
 @name("Metric teaspoon")
 @url("https://en.wikipedia.org/wiki/Teaspoon")
-@aliases(teaspoons, tsp: short)
-unit teaspoon: Volume = 1/3 × tablespoon
+@aliases(metric_teaspoons, metric_tsp: short)
+unit metric_teaspoon: Volume = 1/3 × metric_tablespoon

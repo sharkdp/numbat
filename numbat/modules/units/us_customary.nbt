@@ -18,18 +18,18 @@ unit cup: Volume = 1/2 × pint
 
 @name("US tablespoon")
 @url("https://en.wikipedia.org/wiki/Tablespoon")
-@aliases(US_tablespoons, US_tbsp: short)
-unit US_tablespoon: Volume = 1/16 × cup
+@aliases(tablespoons, tbsp: short)
+unit tablespoon: Volume = 1/16 × cup
 
 @name("US teaspoon")
 @url("https://en.wikipedia.org/wiki/Teaspoon")
-@aliases(US_teaspoons, US_tsp: short)
-unit US_teaspoon: Volume = 1/3 × US_tablespoon
+@aliases(teaspoons, tsp: short)
+unit teaspoon: Volume = 1/3 × tablespoon
 
 @name("US fluid ounce")
 @url("https://en.wikipedia.org/wiki/Fluid_ounce")
 @aliases(fluidounces, floz: short)
-unit fluidounce: Volume = 2 US_tablespoon
+unit fluidounce: Volume = 2 tablespoon
 
 @name("US hogshead")
 @url("https://en.wikipedia.org/wiki/Hogshead")
