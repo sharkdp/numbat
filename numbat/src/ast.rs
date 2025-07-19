@@ -16,6 +16,7 @@ pub enum UnaryOperator {
     Factorial(NonZeroUsize),
     Negate,
     LogicalNeg,
+    BitwiseNot,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,6 +35,11 @@ pub enum BinaryOperator {
     NotEqual,
     LogicalAnd,
     LogicalOr,
+    BitwiseOr,
+    BitwiseAnd,
+    BitwiseXor,
+    BitShiftLeft,
+    BitShiftRight,
 }
 
 impl PrettyPrint for BinaryOperator {
@@ -55,6 +61,11 @@ impl PrettyPrint for BinaryOperator {
             NotEqual => "≠",
             LogicalAnd => "&&",
             LogicalOr => "||",
+            BitwiseOr => "|",
+            BitwiseAnd => "&",
+            BitwiseXor => "⨁",
+            BitShiftLeft => "<<",
+            BitShiftRight => ">>",
         });
 
         match self {
