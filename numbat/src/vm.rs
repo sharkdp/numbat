@@ -821,6 +821,20 @@ impl Vm {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
 
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
+
                     let result = Ok(lhs | rhs);
 
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
@@ -828,6 +842,20 @@ impl Vm {
                 Op::BitwiseAnd => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
+
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
 
                     let result = Ok(lhs & rhs);
 
@@ -837,6 +865,20 @@ impl Vm {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
 
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise not operand to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise not operand to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
+
                     let result = Ok(lhs ^ rhs);
 
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
@@ -845,6 +887,20 @@ impl Vm {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
 
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
+
                     let result = Ok(lhs << rhs);
 
                     self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
@@ -852,6 +908,20 @@ impl Vm {
                 Op::BitShiftRight => {
                     let rhs = self.pop_quantity();
                     let lhs = self.pop_quantity();
+
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
 
                     let result = Ok(lhs >> rhs);
 
@@ -870,7 +940,7 @@ impl Vm {
                         .to_f64();
 
                     if check_rhs.fract() != 0. {
-                        return Err(Box::new(RuntimeError::BitwiseNotOfNonInteger));
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
                     }
                     self.push_quantity(!rhs);
                 }
