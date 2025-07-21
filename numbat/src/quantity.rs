@@ -306,11 +306,59 @@ impl std::ops::Mul for Quantity {
     }
 }
 
+impl std::ops::BitOr for Quantity {
+    type Output = Quantity;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Quantity::new(self.value | rhs.value, self.unit.clone())
+    }
+}
+
+impl std::ops::BitAnd for Quantity {
+    type Output = Quantity;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Quantity::new(self.value & rhs.value, self.unit.clone())
+    }
+}
+
+impl std::ops::BitXor for Quantity {
+    type Output = Quantity;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Quantity::new(self.value ^ rhs.value, self.unit.clone())
+    }
+}
+
+impl std::ops::Shl for Quantity {
+    type Output = Quantity;
+
+    fn shl(self, rhs: Self) -> Self::Output {
+        Quantity::new(self.value << rhs.value, self.unit.clone())
+    }
+}
+
+impl std::ops::Shr for Quantity {
+    type Output = Quantity;
+
+    fn shr(self, rhs: Self) -> Self::Output {
+        Quantity::new(self.value >> rhs.value, self.unit.clone())
+    }
+}
+
 impl std::ops::Div for Quantity {
     type Output = Quantity;
 
     fn div(self, rhs: Self) -> Self::Output {
         Quantity::new(self.value / rhs.value, self.unit / rhs.unit)
+    }
+}
+
+impl std::ops::Not for Quantity {
+    type Output = Quantity;
+
+    fn not(self) -> Self::Output {
+        Quantity::new(!self.value, self.unit)
     }
 }
 

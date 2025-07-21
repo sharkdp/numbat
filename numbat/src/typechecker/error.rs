@@ -24,6 +24,9 @@ pub enum TypeCheckError {
     #[error("Argument of factorial needs to be dimensionless (got {1}).")]
     NonScalarFactorialArgument(Span, Type),
 
+    #[error("Argument of bitwise not needs to be dimensionless (got {1}).")]
+    NonScalarBitwiseNotArgument(Span, Type),
+
     #[error("Unsupported expression in const-evaluation of exponent: {1}.")]
     UnsupportedConstEvalExpression(Span, &'static str),
 
