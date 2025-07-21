@@ -164,7 +164,7 @@ impl std::ops::Shl for Number {
     type Output = Number;
 
     fn shl(self, rhs: Self) -> Self::Output {
-        Number(((self.0 as i64) << rhs.0 as i64) as f64)
+        Number((self.0 as i64).unbounded_shl(rhs.0 as u32) as f64)
     }
 }
 
@@ -172,7 +172,7 @@ impl std::ops::Shr for Number {
     type Output = Number;
 
     fn shr(self, rhs: Self) -> Self::Output {
-        Number(((self.0 as i64) >> (rhs.0 as i64)) as f64)
+        Number((self.0 as i64).unbounded_shr(rhs.0 as u32) as f64)
     }
 }
 

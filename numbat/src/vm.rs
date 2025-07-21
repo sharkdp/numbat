@@ -899,6 +899,8 @@ impl Vm {
 
                     if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
                         return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    } else if check_rhs < 0. {
+                        return Err(Box::new(RuntimeError::BitwiseShiftOfNegativeInteger));
                     }
 
                     let result = Ok(lhs << rhs);
@@ -921,6 +923,8 @@ impl Vm {
 
                     if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
                         return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    } else if check_rhs < 0. {
+                        return Err(Box::new(RuntimeError::BitwiseShiftOfNegativeInteger));
                     }
 
                     let result = Ok(lhs >> rhs);
