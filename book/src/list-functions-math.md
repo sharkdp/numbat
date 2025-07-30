@@ -321,6 +321,38 @@ fn mod<T: Dim>(a: T, b: T) -> T
 
 </details>
 
+### `wrapped_shl` (Bitwise left shift)
+
+```nbt
+fn wrapped_shl(lhs: Scalar, rhs: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=wrapped%5Fshl%280b0000%5F0101%2C%204%29%20%2D%3E%20bin')""></button></div><code class="language-nbt hljs numbat">wrapped_shl(0b0000_0101, 4) -> bin
+
+    = "0b1010000"    [String]
+</code></pre>
+
+</details>
+
+### `wrapped_shr` (Bitwise right shift)
+
+```nbt
+fn wrapped_shr(lhs: Scalar, rhs: Scalar) -> Scalar
+```
+
+<details>
+<summary>Examples</summary>
+
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=wrapped%5Fshr%280b0101%5F0000%2C%204%29%20%2D%3E%20bin')""></button></div><code class="language-nbt hljs numbat">wrapped_shr(0b0101_0000, 4) -> bin
+
+    = "0b101"    [String]
+</code></pre>
+
+</details>
+
 ## Transcendental functions
 
 Defined in: `math::transcendental`

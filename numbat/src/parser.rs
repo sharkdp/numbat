@@ -1139,6 +1139,15 @@ impl<'a> Parser<'a> {
             tokens,
             &[TokenKind::LogicalOr],
             |_| BinaryOperator::LogicalOr,
+            |parser| parser.bitwise_or(tokens),
+        )
+    }
+
+    fn bitwise_or(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
+        self.parse_binop(
+            tokens,
+            &[TokenKind::BitwiseOr],
+            |_| BinaryOperator::BitwiseOr,
             |parser| parser.logical_and(tokens),
         )
     }
@@ -1148,6 +1157,42 @@ impl<'a> Parser<'a> {
             tokens,
             &[TokenKind::LogicalAnd],
             |_| BinaryOperator::LogicalAnd,
+            |parser| parser.bitwise_and(tokens),
+        )
+    }
+
+    fn bitwise_and(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
+        self.parse_binop(
+            tokens,
+            &[TokenKind::BitwiseAnd],
+            |_| BinaryOperator::BitwiseAnd,
+            |parser| parser.bitwise_xor(tokens),
+        )
+    }
+
+    fn bitwise_xor(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
+        self.parse_binop(
+            tokens,
+            &[TokenKind::BitwiseXor],
+            |_| BinaryOperator::BitwiseXor,
+            |parser| parser.bitshift_left(tokens),
+        )
+    }
+
+    fn bitshift_left(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
+        self.parse_binop(
+            tokens,
+            &[TokenKind::BitShiftLeft],
+            |_| BinaryOperator::BitShiftLeft,
+            |parser| parser.bitshift_right(tokens),
+        )
+    }
+
+    fn bitshift_right(&mut self, tokens: &[Token<'a>]) -> Result<Expression<'a>> {
+        self.parse_binop(
+            tokens,
+            &[TokenKind::BitShiftRight],
+            |_| BinaryOperator::BitShiftRight,
             |parser| parser.logical_neg(tokens),
         )
     }
@@ -1236,6 +1281,15 @@ impl<'a> Parser<'a> {
 
             Ok(Expression::UnaryOperator {
                 op: UnaryOperator::Negate,
+                expr: Box::new(rhs),
+                span_op: span,
+            })
+        } else if self.match_exact(tokens, TokenKind::BitwiseNot).is_some() {
+            let span = self.last(tokens).unwrap().span;
+            let rhs = self.unary(tokens)?;
+
+            Ok(Expression::UnaryOperator {
+                op: UnaryOperator::BitwiseNot,
                 expr: Box::new(rhs),
                 span_op: span,
             })
@@ -3188,6 +3242,8 @@ mod tests {
         Missing closing parenthesis ')' - ParseError { kind: MissingClosingParen, span: Span { start: ByteIndex(57), end: ByteIndex(57), code_source_id: 0 } }
         "###);
     }
+
+    // TODO: Add test for bitwise operations
 
     #[test]
     fn logical_operation() {
