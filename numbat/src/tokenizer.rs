@@ -639,6 +639,7 @@ impl Tokenizer {
                 return Ok(None);
             }
             '\n' => TokenKind::Newline,
+            ';' => TokenKind::Newline,
             '&' if self.match_char(input, '&') => TokenKind::LogicalAnd,
             '|' if self.match_char(input, '|') => TokenKind::LogicalOr,
             '|' if self.match_char(input, '>') => TokenKind::PostfixApply,
@@ -980,6 +981,16 @@ fn test_tokenize_basic() {
             ("\n", Newline, ByteIndex(3)),
             ("42", Number, ByteIndex(4)),
             ("", Eof, ByteIndex(6))
+        ]
+    );
+
+    assert_eq!(
+        tokenize_reduced("1;42").unwrap(),
+        [
+            ("1", Number, ByteIndex(0)),
+            (";", Newline, ByteIndex(1)),
+            ("42", Number, ByteIndex(2)),
+            ("", Eof, ByteIndex(4))
         ]
     );
 

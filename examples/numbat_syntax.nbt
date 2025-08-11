@@ -1,6 +1,11 @@
 # This is a line comment. It can span over
 # multiple lines
 
+# statements can be separated by newlines or semicolons
+1
+2
+1;2
+
 # 1. Imports
 
 use prelude        # This is not necessary. The 'prelude'
