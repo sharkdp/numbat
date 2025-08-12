@@ -159,6 +159,7 @@ pub enum TokenKind {
 
     // Other
     Newline,
+    Semicolon,
     Eof,
 }
 
@@ -639,7 +640,7 @@ impl Tokenizer {
                 return Ok(None);
             }
             '\n' => TokenKind::Newline,
-            ';' => TokenKind::Newline,
+            ';' => TokenKind::Semicolon,
             '&' if self.match_char(input, '&') => TokenKind::LogicalAnd,
             '|' if self.match_char(input, '|') => TokenKind::LogicalOr,
             '|' if self.match_char(input, '>') => TokenKind::PostfixApply,
@@ -988,7 +989,7 @@ fn test_tokenize_basic() {
         tokenize_reduced("1;42").unwrap(),
         [
             ("1", Number, ByteIndex(0)),
-            (";", Newline, ByteIndex(1)),
+            (";", Semicolon, ByteIndex(1)),
             ("42", Number, ByteIndex(2)),
             ("", Eof, ByteIndex(4))
         ]
