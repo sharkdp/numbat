@@ -363,7 +363,10 @@ impl<'a> Parser<'a> {
     /// Must be called after encountering an error.
     fn recover_from_error(&mut self, tokens: &[Token]) {
         // Skip all the tokens until we encounter a newline or EoF.
-        while !matches!(self.peek(tokens).kind, TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof) {
+        while !matches!(
+            self.peek(tokens).kind,
+            TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof
+        ) {
             self.advance(tokens)
         }
     }
@@ -2008,7 +2011,10 @@ impl<'a> Parser<'a> {
     }
 
     pub fn is_end_of_statement(&self, tokens: &[Token]) -> bool {
-        matches!( self.peek(tokens).kind, TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof)
+        matches!(
+            self.peek(tokens).kind,
+            TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof
+        )
     }
 
     pub fn is_at_end(&self, tokens: &[Token]) -> bool {
