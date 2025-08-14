@@ -2,6 +2,7 @@
 //!
 //! Grammar:
 //! ```txt
+//! prog            ::=   statement ((";" | "\n"+) statement)*
 //! statement       ::=   variable_decl | struct_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
 //!
 //! variable_decl   ::=   "let" identifier ( ":" type_annotation ) ? "=" expression
@@ -315,6 +316,9 @@ impl<'a> Parser<'a> {
                     // Skip over empty lines
                     self.skip_empty_lines(tokens);
                 }
+                TokenKind::Semicolon => {
+                    self.advance(tokens);
+                }
                 TokenKind::Eof => {
                     break;
                 }
@@ -359,7 +363,10 @@ impl<'a> Parser<'a> {
     /// Must be called after encountering an error.
     fn recover_from_error(&mut self, tokens: &[Token]) {
         // Skip all the tokens until we encounter a newline or EoF.
-        while !matches!(self.peek(tokens).kind, TokenKind::Newline | TokenKind::Eof) {
+        while !matches!(
+            self.peek(tokens).kind,
+            TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof
+        ) {
             self.advance(tokens)
         }
     }
@@ -1951,7 +1958,7 @@ impl<'a> Parser<'a> {
     fn look_ahead_beyond_linebreak(&self, tokens: &[Token], token_kind: TokenKind) -> bool {
         let mut i = self.current;
         while i < tokens.len() {
-            if tokens[i].kind != TokenKind::Newline {
+            if !matches!(tokens[i].kind, TokenKind::Newline | TokenKind::Semicolon) {
                 return tokens[i].kind == token_kind;
             }
             i += 1;
@@ -2004,7 +2011,10 @@ impl<'a> Parser<'a> {
     }
 
     pub fn is_end_of_statement(&self, tokens: &[Token]) -> bool {
-        self.peek(tokens).kind == TokenKind::Newline || self.is_at_end(tokens)
+        matches!(
+            self.peek(tokens).kind,
+            TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof
+        )
     }
 
     pub fn is_at_end(&self, tokens: &[Token]) -> bool {
