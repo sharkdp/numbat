@@ -500,6 +500,11 @@ fn test_misc_examples() {
     expect_output("3m/4m", "0.75");
     expect_output("4/2*2", "4");
     expect_output("1/2 Hz -> s", "0.5 s");
+
+    expect_output("let b = \";\"; b", "\";\"");
+    expect_output("let b = \";\"\nb", "\";\"");
+    expect_output("let a = 3m; 5; a", "3 m");
+    expect_output("let a = 3m\n5\na", "3 m");
 }
 
 #[test]
