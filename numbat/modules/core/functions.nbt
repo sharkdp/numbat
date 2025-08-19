@@ -95,3 +95,13 @@ fn fract(x: Scalar) -> Scalar
 @url("https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid")
 @example("mod(27, 5)")
 fn mod<T: Dim>(a: T, b: T) -> T
+
+#TODO: Add description and URL
+@name("Bitwise left shift")
+@example("wrapped_shl(0b0000_0101, 4) -> bin")
+fn wrapped_shl(lhs: Scalar, rhs: Scalar) -> Scalar
+
+#TODO: Add description and URL
+@name("Bitwise right shift")
+@example("wrapped_shr(0b0101_0000, 4) -> bin")
+fn wrapped_shr(lhs: Scalar, rhs: Scalar) -> Scalar
