@@ -815,14 +815,22 @@ impl Context {
         Ok((typed_statements, result))
     }
 
-    pub fn print_diagnostic(&self, error: impl ErrorDiagnostic) {
+    pub fn print_diagnostic(&self, error: impl ErrorDiagnostic, colorize: bool) {
         use codespan_reporting::term::{
             self,
             termcolor::{ColorChoice, StandardStream},
             Config,
         };
 
-        let writer = StandardStream::stderr(ColorChoice::Auto);
+        let color = if colorize {
+            // by leaving it in auto we makes sure it can still
+            // chose between true or ansi colors
+            ColorChoice::Auto
+        } else {
+            ColorChoice::Never
+        };
+
+        let writer = StandardStream::stderr(color);
         let config = Config::default();
 
         // we want to be sure no one can write between our diagnostics
