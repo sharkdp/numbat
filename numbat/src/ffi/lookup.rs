@@ -83,6 +83,7 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
         let info = StructInfo {
             name: CompactString::const_new("_ChemicalElementRaw"),
             definition_span: unknown_span,
+            type_parameters: vec![],
             fields,
         };
         Ok(Value::StructInstance(

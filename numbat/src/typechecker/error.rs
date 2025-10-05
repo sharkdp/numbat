@@ -117,6 +117,9 @@ pub enum TypeCheckError {
     #[error("Duplicate field '{2}' in struct definition")]
     DuplicateFieldInStructDefinition(Span, Span, String),
 
+    #[error("Unused generic parameter '{1}' in struct definition")]
+    UnusedGenericParameterInStructureDefinition(Span, String),
+
     #[error("Duplicate field '{2}' in struct instantiation")]
     DuplicateFieldInStructInstantiation(Span, Span, String),
 

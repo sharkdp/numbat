@@ -411,6 +411,9 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message("Defined here"),
             ]),
+            TypeCheckError::UnusedGenericParameterInStructureDefinition(span, _name) => d.with_labels(vec![span
+                .diagnostic_label(LabelStyle::Primary)
+                .with_message(inner_error)]),
             TypeCheckError::UnknownStruct(span, _name) => d.with_labels(vec![span
                 .diagnostic_label(LabelStyle::Primary)
                 .with_message(inner_error)]),

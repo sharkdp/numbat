@@ -947,12 +947,22 @@ impl TypeChecker {
                     .map(|(_, n, v)| Ok((*n, self.elaborate_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
-                let Some(struct_info) = self.structs.get(name).cloned() else {
+                let Some(mut struct_info) = self.structs.get(name).cloned() else {
                     return Err(Box::new(TypeCheckError::UnknownStruct(
                         *ident_span,
                         name.to_owned(),
                     )));
                 };
+
+                for generic in struct_info.type_parameters.iter_mut() {
+                    if let Some(ref mut bound) = generic.2 {
+                        if let Some(parameter) =
+                            type_parameters.iter().find(|(_, n, _)| n == &generic.1)
+                        {
+                            generic.2 = parameter.2.clone();
+                        }
+                    }
+                }
 
                 let mut seen_fields = HashMap::new();
 
@@ -1769,9 +1779,39 @@ impl TypeChecker {
                     )
                     .map_err(|err| Box::new(err.into()))?;
 
-                let mut seen_fields = HashMap::new();
+                // Save the type namespace to avoid polluting the type namespace with our local generic parameters
+                self.env.save();
+                self.type_namespace.save();
 
-                for (span, field, _) in fields {
+                for (span, name, bound) in type_parameters {
+                    self.type_namespace
+                        .add_identifier(
+                            name.to_compact_string(),
+                            *span,
+                            CompactString::const_new("type parameter"),
+                        )
+                        .map_err(|err| Box::new(err.into()))?;
+
+                    self.registry.introduced_type_parameters.push((
+                        *span,
+                        name.to_compact_string(),
+                        bound.clone(),
+                    ));
+                }
+
+                let mut seen_fields = HashMap::new();
+                let mut generic_seen = vec![false; type_parameters.len()];
+
+                for (span, field, type_) in fields {
+                    if let TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(_, name)) =
+                        type_
+                    {
+                        if let Some(index) = type_parameters.iter().position(|(_, n, _)| n == name)
+                        {
+                            generic_seen[index] = true;
+                        }
+                    }
+
                     if let Some(other_span) = seen_fields.get(field) {
                         return Err(Box::new(TypeCheckError::DuplicateFieldInStructDefinition(
                             *span,
@@ -1783,9 +1823,24 @@ impl TypeChecker {
                     seen_fields.insert(field, *span);
                 }
 
+                for (i, seen) in generic_seen.iter().enumerate() {
+                    if !seen {
+                        return Err(Box::new(
+                            TypeCheckError::UnusedGenericParameterInStructureDefinition(
+                                *struct_name_span,
+                                type_parameters[i].1.to_string(),
+                            ),
+                        ));
+                    }
+                }
+
                 let struct_info = StructInfo {
                     definition_span: *struct_name_span,
                     name: struct_name.to_compact_string(),
+                    type_parameters: type_parameters
+                        .iter()
+                        .map(|(span, name, bound)| (*span, name.to_compact_string(), bound.clone()))
+                        .collect(),
                     fields: fields
                         .iter()
                         .map(|(span, name, type_)| {
@@ -1798,6 +1853,9 @@ impl TypeChecker {
                 };
                 self.structs
                     .insert(struct_name.to_compact_string(), struct_info.clone());
+
+                self.env.restore();
+                self.type_namespace.restore();
 
                 typed_ast::Statement::DefineStruct(struct_info)
             }
