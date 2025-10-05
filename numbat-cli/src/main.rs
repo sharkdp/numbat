@@ -28,7 +28,7 @@ use rustyline::{
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
-use std::io::IsTerminal;
+use std::io::{IsTerminal, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::{env, fs, thread};
@@ -391,7 +391,10 @@ impl Cli {
                             CommandControlFlow::NotACommand => {}
                         },
                         Err(err) => {
-                            ctx.print_diagnostic(*err);
+                            ctx.print_diagnostic(
+                                *err,
+                                colored::control::SHOULD_COLORIZE.should_colorize(),
+                            );
                             continue;
                         }
                     }
@@ -535,7 +538,10 @@ impl Cli {
     }
 
     fn print_diagnostic(&mut self, error: impl ErrorDiagnostic) {
-        self.context.lock().unwrap().print_diagnostic(error)
+        self.context
+            .lock()
+            .unwrap()
+            .print_diagnostic(error, colored::control::SHOULD_COLORIZE.should_colorize())
     }
 
     fn get_config_path() -> PathBuf {
@@ -628,7 +634,8 @@ fn main() {
     }
 
     if let Err(e) = Cli::new(args).and_then(|mut cli| cli.run()) {
-        eprintln!("{e:#}");
+        let mut stdout = termcolor::StandardStream::stderr(termcolor::ColorChoice::Never);
+        writeln!(stdout, "{e:#}").unwrap();
         std::process::exit(1);
     }
 }
