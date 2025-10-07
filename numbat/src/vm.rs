@@ -272,9 +272,9 @@ pub struct ExecutionContext<'a> {
 
 #[derive(Clone)]
 pub struct Vm {
-    /// The actual code of the program, structured by function name. The code
+    /// The actual code and spans of the program, structured by function name. The code
     /// for the global scope is at index 0 under the function name `<main>`.
-    bytecode: Vec<(CompactString, Vec<u8>)>,
+    bytecode: Vec<(CompactString, Vec<u8>, Vec<Span>)>,
 
     /// An index into the `bytecode` vector referring to the function which is
     /// currently being compiled.
@@ -322,7 +322,7 @@ pub struct Vm {
 impl Vm {
     pub fn new() -> Self {
         Self {
-            bytecode: vec![("<main>".into(), vec![])],
+            bytecode: vec![("<main>".into(), vec![], vec![])],
             current_chunk_index: 0,
             constants: vec![],
             struct_infos: IndexMap::new(),
@@ -347,8 +347,9 @@ impl Vm {
 
     // The following functions are helpers for the compilation process
 
-    fn current_chunk_mut(&mut self) -> &mut Vec<u8> {
-        &mut self.bytecode[self.current_chunk_index].1
+    fn current_chunk_mut(&mut self) -> (&mut Vec<u8>, &mut Vec<Span>) {
+        let current = &mut self.bytecode[self.current_chunk_index];
+        (&mut current.1, &mut current.2)
     }
 
     fn push_u16(chunk: &mut Vec<u8>, data: u16) {
@@ -357,29 +358,34 @@ impl Vm {
         chunk.push(arg_bytes[1]);
     }
 
-    pub fn add_op(&mut self, op: Op) {
-        self.current_chunk_mut().push(op as u8);
+    pub fn add_op(&mut self, op: Op, span: Span) {
+        let (bytecode, spans) = self.current_chunk_mut();
+        bytecode.push(op as u8);
+        spans.push(span);
     }
 
-    pub fn add_op1(&mut self, op: Op, arg: u16) {
-        let current_chunk = self.current_chunk_mut();
-        current_chunk.push(op as u8);
-        Self::push_u16(current_chunk, arg)
+    pub fn add_op1(&mut self, op: Op, arg: u16, span: Span) {
+        let (bytecode, spans) = self.current_chunk_mut();
+        bytecode.push(op as u8);
+        Self::push_u16(bytecode, arg);
+        spans.extend(std::iter::repeat_n(span, 3));
     }
 
-    pub(crate) fn add_op2(&mut self, op: Op, arg1: u16, arg2: u16) {
-        let current_chunk = self.current_chunk_mut();
-        current_chunk.push(op as u8);
-        Self::push_u16(current_chunk, arg1);
-        Self::push_u16(current_chunk, arg2);
+    pub(crate) fn add_op2(&mut self, op: Op, arg1: u16, arg2: u16, span: Span) {
+        let (bytecode, spans) = self.current_chunk_mut();
+        bytecode.push(op as u8);
+        Self::push_u16(bytecode, arg1);
+        Self::push_u16(bytecode, arg2);
+        spans.extend(std::iter::repeat_n(span, 5));
     }
 
-    pub(crate) fn add_op3(&mut self, op: Op, arg1: u16, arg2: u16, arg3: u16) {
-        let current_chunk = self.current_chunk_mut();
-        current_chunk.push(op as u8);
-        Self::push_u16(current_chunk, arg1);
-        Self::push_u16(current_chunk, arg2);
-        Self::push_u16(current_chunk, arg3);
+    pub(crate) fn add_op3(&mut self, op: Op, arg1: u16, arg2: u16, arg3: u16, span: Span) {
+        let (bytecode, spans) = self.current_chunk_mut();
+        bytecode.push(op as u8);
+        Self::push_u16(bytecode, arg1);
+        Self::push_u16(bytecode, arg2);
+        Self::push_u16(bytecode, arg3);
+        spans.extend(std::iter::repeat_n(span, 7));
     }
 
     pub fn current_offset(&self) -> u16 {
@@ -388,9 +394,9 @@ impl Vm {
 
     pub fn patch_u16_value_at(&mut self, offset: u16, arg: u16) {
         let offset = offset as usize;
-        let chunk = self.current_chunk_mut();
-        chunk[offset] = (arg & 0xff) as u8;
-        chunk[offset + 1] = ((arg >> 8) & 0xff) as u8;
+        let (bytecode, _spans) = self.current_chunk_mut();
+        bytecode[offset] = (arg & 0xff) as u8;
+        bytecode[offset + 1] = ((arg >> 8) & 0xff) as u8;
     }
 
     pub fn add_constant(&mut self, constant: Constant) -> u16 {
@@ -437,7 +443,7 @@ impl Vm {
     }
 
     pub(crate) fn begin_function(&mut self, name: &str) {
-        self.bytecode.push((name.into(), vec![]));
+        self.bytecode.push((name.into(), vec![], vec![]));
         self.current_chunk_index = self.bytecode.len() - 1
     }
 
@@ -453,7 +459,7 @@ impl Vm {
             .bytecode
             .iter()
             .rev()
-            .position(|(n, _)| n == name)
+            .position(|(n, _, _)| n == name)
             .unwrap();
         let position = self.bytecode.len() - 1 - rev_position;
         assert!(position <= u16::MAX as usize);
@@ -493,7 +499,7 @@ impl Vm {
         for (idx, identifier) in self.unit_information.iter().enumerate() {
             eprintln!("  {:04} {}", idx, identifier.0);
         }
-        for (idx, (function_name, bytecode)) in self.bytecode.iter().enumerate() {
+        for (idx, (function_name, bytecode, _spans)) in self.bytecode.iter().enumerate() {
             eprintln!(".CODE {idx} ({function_name})");
             let mut offset = 0;
             while offset < bytecode.len() {
@@ -1096,10 +1102,10 @@ fn vm_basic() {
     vm.add_constant(Constant::Scalar(42.0));
     vm.add_constant(Constant::Scalar(1.0));
 
-    vm.add_op1(Op::LoadConstant, 0);
-    vm.add_op1(Op::LoadConstant, 1);
-    vm.add_op(Op::Add);
-    vm.add_op(Op::Return);
+    vm.add_op1(Op::LoadConstant, 0, Span::dummy());
+    vm.add_op1(Op::LoadConstant, 1, Span::dummy());
+    vm.add_op(Op::Add, Span::dummy());
+    vm.add_op(Op::Return, Span::dummy());
 
     let mut print_fn = |_: &Markup| {};
     let mut ctx = ExecutionContext {
