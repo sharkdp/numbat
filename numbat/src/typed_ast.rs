@@ -629,13 +629,14 @@ pub enum Statement<'a> {
     ),
     DefineDerivedUnit(
         &'a str,
+        Span,
         Expression<'a>,
         Vec<Decorator<'a>>,
         Option<TypeAnnotation>,
         TypeScheme,
         Markup,
     ),
-    ProcedureCall(crate::ast::ProcedureKind, Vec<Expression<'a>>),
+    ProcedureCall(crate::ast::ProcedureKind, Span, Vec<Expression<'a>>),
     DefineStruct(StructInfo),
 }
 
@@ -723,11 +724,11 @@ impl Statement<'_> {
             }
             Statement::DefineDimension(_, _) => {}
             Statement::DefineBaseUnit(_, _, _, _) => {}
-            Statement::DefineDerivedUnit(_, _, _, type_annotation, type_, readable_type) => {
+            Statement::DefineDerivedUnit(_, _, _, _, type_annotation, type_, readable_type) => {
                 *readable_type =
                     Self::create_readable_type(registry, type_, type_annotation, false);
             }
-            Statement::ProcedureCall(_, _) => {}
+            Statement::ProcedureCall(_, _, _) => {}
             Statement::DefineStruct(_) => {}
         }
     }
@@ -1080,6 +1081,7 @@ impl PrettyPrint for Statement<'_> {
             }
             Statement::DefineDerivedUnit(
                 identifier,
+                _,
                 expr,
                 decorators,
                 _annotation,
@@ -1098,7 +1100,7 @@ impl PrettyPrint for Statement<'_> {
                     + m::space()
                     + expr.pretty_print()
             }
-            Statement::ProcedureCall(kind, args) => {
+            Statement::ProcedureCall(kind, _, args) => {
                 let identifier = match kind {
                     ProcedureKind::Print => "print",
                     ProcedureKind::Assert => "assert",
