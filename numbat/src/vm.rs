@@ -391,7 +391,7 @@ impl Vm {
         let (bytecode, spans) = self.current_chunk_mut();
         bytecode.push(op as u8);
         Self::push_u16(bytecode, arg);
-        spans.extend(std::iter::repeat_n(span, 3));
+        spans.extend(std::iter::repeat(span).take(3));
     }
 
     pub(crate) fn add_op2(&mut self, op: Op, arg1: u16, arg2: u16, span: Span) {
@@ -399,7 +399,7 @@ impl Vm {
         bytecode.push(op as u8);
         Self::push_u16(bytecode, arg1);
         Self::push_u16(bytecode, arg2);
-        spans.extend(std::iter::repeat_n(span, 5));
+        spans.extend(std::iter::repeat(span).take(5));
     }
 
     pub(crate) fn add_op3(&mut self, op: Op, arg1: u16, arg2: u16, arg3: u16, span: Span) {
@@ -408,7 +408,7 @@ impl Vm {
         Self::push_u16(bytecode, arg1);
         Self::push_u16(bytecode, arg2);
         Self::push_u16(bytecode, arg3);
-        spans.extend(std::iter::repeat_n(span, 7));
+        spans.extend(std::iter::repeat(span).take(7));
     }
 
     pub fn current_offset(&self) -> u16 {
