@@ -5,6 +5,7 @@ use compact_str::ToCompactString;
 use crate::{
     diagnostic::ErrorDiagnostic,
     help::help_markup,
+    interpreter::RuntimeErrorKind,
     markup::{self as m, Markup},
     parser::ParseErrorKind,
     resolver::CodeSource,
@@ -120,7 +121,7 @@ struct SaveCmdArgs<'session, 'input> {
 }
 
 impl SaveCmdArgs<'_, '_> {
-    fn save(&self) -> Result<(), Box<RuntimeError>> {
+    fn save(&self) -> Result<(), Box<RuntimeErrorKind>> {
         let Self {
             session_history,
             dst,
@@ -403,7 +404,9 @@ impl<Editor> CommandRunner<Editor> {
             }
             Command::Clear { clear_fn } => clear_fn(editor),
             Command::Save(save_args) => {
-                save_args.save().map_err(|err| Box::new((*err).into()))?;
+                save_args
+                    .save()
+                    .map_err(|err| CommandError::Runtime(ctx.interpreter.runtime_error(*err)))?;
                 CommandControlFlow::Continue
             }
             Command::Reset { ctx_ctor, clear_fn } => {

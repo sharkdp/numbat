@@ -76,7 +76,7 @@ use typechecker::{TypeCheckError, TypeChecker};
 pub use diagnostic::Diagnostic;
 pub use interpreter::InterpreterResult;
 pub use interpreter::InterpreterSettings;
-pub use interpreter::RuntimeError;
+pub use interpreter::{RuntimeError, RuntimeErrorKind};
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
 pub use registry::BaseRepresentation;
@@ -160,6 +160,10 @@ impl Context {
 
     pub fn use_test_exchange_rates() {
         ExchangeRatesCache::use_test_rates();
+    }
+
+    pub fn runtime_error(&self, kind: RuntimeErrorKind) -> RuntimeError {
+        self.interpreter.runtime_error(kind)
     }
 
     pub fn variable_names(&self) -> impl Iterator<Item = CompactString> + '_ {
@@ -760,7 +764,8 @@ impl Context {
 
                             if erc.is_none() {
                                 return Err(Box::new(NumbatError::RuntimeError(
-                                    RuntimeError::CouldNotLoadExchangeRates,
+                                    self.interpreter
+                                        .runtime_error(RuntimeErrorKind::CouldNotLoadExchangeRates),
                                 )));
                             }
                         }

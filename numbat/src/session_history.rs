@@ -1,7 +1,7 @@
 use compact_str::CompactString;
 use std::{fs, io, path::Path};
 
-use crate::RuntimeError;
+use crate::{interpreter::RuntimeErrorKind, RuntimeError};
 
 pub type ParseEvaluationResult = Result<(), ()>;
 
@@ -35,8 +35,8 @@ impl SessionHistory {
         &self,
         mut w: impl io::Write,
         options: SessionHistoryOptions,
-        err_fn: impl Fn(io::Error) -> RuntimeError,
-    ) -> Result<(), Box<RuntimeError>> {
+        err_fn: impl Fn(io::Error) -> RuntimeErrorKind,
+    ) -> Result<(), Box<RuntimeErrorKind>> {
         let SessionHistoryOptions {
             include_err_lines,
             trim_lines,
@@ -62,9 +62,9 @@ impl SessionHistory {
         &self,
         dst: impl AsRef<Path>,
         options: SessionHistoryOptions,
-    ) -> Result<(), Box<RuntimeError>> {
+    ) -> Result<(), Box<RuntimeErrorKind>> {
         let dst = dst.as_ref();
-        let err_fn = |_: io::Error| RuntimeError::FileWrite(dst.to_owned());
+        let err_fn = |_: io::Error| RuntimeErrorKind::FileWrite(dst.to_owned());
 
         let f = fs::File::create(dst).map_err(err_fn)?;
         self.save_inner(f, options, err_fn)
