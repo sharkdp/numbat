@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 
 use numbat::buffered_writer::BufferedWriter;
-use numbat::diagnostic::ErrorDiagnostic;
+use numbat::diagnostic::{ErrorDiagnostic, ResolverDiagnostic};
 use numbat::help::help_markup;
 use numbat::html_formatter::{HtmlFormatter, HtmlWriter};
 use numbat::markup::Formatter;
@@ -143,7 +143,10 @@ impl Numbat {
                 | NameResolutionError::ReservedIdentifier(_)),
             )) => self.print_diagnostic(&e),
             Err(NumbatError::TypeCheckError(e)) => self.print_diagnostic(&e),
-            Err(NumbatError::RuntimeError(e)) => self.print_diagnostic(&e),
+            Err(NumbatError::RuntimeError(e)) => self.print_diagnostic(&ResolverDiagnostic {
+                resolver: self.ctx.resolver(),
+                error: &e,
+            }),
         }
     }
 

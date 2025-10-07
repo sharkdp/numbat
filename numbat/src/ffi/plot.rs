@@ -1,7 +1,6 @@
 #[cfg(feature = "plotting")]
 use plotly::Plot;
 
-#[cfg(feature = "plotting")]
 use crate::interpreter::RuntimeErrorKind;
 
 #[cfg(feature = "plotting")]
@@ -124,8 +123,8 @@ pub fn show(args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
 }
 
 #[cfg(not(feature = "plotting"))]
-pub fn show(_args: Args) -> Result<Value> {
-    return Err(Box::new(RuntimeError::UserError(
+pub fn show(_args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+    return Err(Box::new(RuntimeErrorKind::UserError(
         "Plotting is currently not supported on this platform.".into(),
     )));
 }
