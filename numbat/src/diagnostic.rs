@@ -506,7 +506,7 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, RuntimeError> {
         match &self.error.kind {
             RuntimeErrorKind::AssertFailed(span) => diag.push(
                 Diagnostic::error()
-                    .with_message("assertion failed")
+                    .with_message("Assertion failed")
                     .with_labels(vec![span
                         .diagnostic_label(LabelStyle::Primary)
                         .with_message("assertion failed")]),
@@ -550,11 +550,17 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, RuntimeError> {
                     .with_message("runtime error")
                     .with_notes(vec![inner])
                     .with_labels_iter(
+                        // We're going to join the three first piece of user code that triggered the error
                         self.error
                             .backtrace
                             .iter()
-                            .take(1)
-                            .map(|span| span.1.diagnostic_label(LabelStyle::Primary)),
+                            .filter(|(_, span)| {
+                                let file = self.resolver.files.get(span.code_source_id).unwrap();
+                                // Everything that starts by prelude was not written by the user and must be ignored
+                                !file.name().contains("<builtin>")
+                            })
+                            .take(3)
+                            .map(|(_, span)| span.diagnostic_label(LabelStyle::Primary)),
                     ),
             ),
         }
@@ -564,10 +570,24 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, RuntimeError> {
                 .with_message("Backtrace:")
                 .with_notes_iter(self.error.backtrace.iter().enumerate().map(
                     |(i, (fn_name, span))| {
-                        let file_name = self.resolver.files.get(span.code_source_id).unwrap();
-                        let (line, col) = position(*span, file_name.source());
+                        let file = self.resolver.files.get(span.code_source_id).unwrap();
+                        let file_name = file.name();
+                        let (line, col) = position(*span, file.source());
 
-                        format!("{i}: in {fn_name} - {}:{}:{}", file_name.name(), line, col)
+                        // We want to retrieve a rough summary of the error that fits on a single line.
+                        let error_cause =
+                            &file.source()[span.start.as_usize()..span.end.as_usize()];
+                        // " = {}: " => 5 character + the size of the idx in base 10
+                        let target_width = 120 - 5 - (i + 1).ilog10() as usize;
+                        let last_char_idx = error_cause
+                            .char_indices()
+                            .take(target_width)
+                            .map(|(i, _)| i)
+                            .last()
+                            .unwrap_or_default();
+                        let error_cause = &error_cause[..=last_char_idx].escape_debug();
+
+                        format!("{i}: {error_cause}\n\tat {fn_name} - {file_name}:{line}:{col}")
                     },
                 )),
         );
