@@ -11,12 +11,12 @@ use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::command::{CommandControlFlow, CommandRunner};
-use numbat::diagnostic::ErrorDiagnostic;
+use numbat::diagnostic::{ErrorDiagnostic, ResolverDiagnostic};
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::session_history::{ParseEvaluationResult, SessionHistory};
-use numbat::{markup as m, RuntimeError, RuntimeErrorKind};
+use numbat::{markup as m, RuntimeErrorKind};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -382,9 +382,15 @@ impl Cli {
                     let mut ctx = self.context.lock().unwrap();
 
                     if interactive && rl.append_history(history_path).is_err() {
-                        ctx.print_diagnostic(ctx.runtime_error(RuntimeErrorKind::HistoryWrite(
-                            history_path.to_owned(),
-                        )));
+                        ctx.print_diagnostic(
+                            ResolverDiagnostic {
+                                resolver: ctx.resolver(),
+                                error: &ctx.runtime_error(RuntimeErrorKind::HistoryWrite(
+                                    history_path.to_owned(),
+                                )),
+                            },
+                            colored::control::SHOULD_COLORIZE.should_colorize(),
+                        );
                     }
 
                     match cmd_runner.try_run_command(&line, &mut ctx, rl) {
@@ -395,7 +401,10 @@ impl Cli {
                         },
                         Err(err) => {
                             ctx.print_diagnostic(
-                                *err,
+                                ResolverDiagnostic {
+                                    resolver: ctx.resolver(),
+                                    error: &*err,
+                                },
                                 colored::control::SHOULD_COLORIZE.should_colorize(),
                             );
                             continue;
@@ -529,7 +538,14 @@ impl Cli {
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::RuntimeError(e)) => {
-                self.print_diagnostic(e);
+                let ctx = self.context.lock().unwrap();
+                ctx.print_diagnostic(
+                    ResolverDiagnostic {
+                        resolver: ctx.resolver(),
+                        error: &e,
+                    },
+                    colored::control::SHOULD_COLORIZE.should_colorize(),
+                );
                 execution_mode.exit_status_in_case_of_error()
             }
         };

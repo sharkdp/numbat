@@ -3,7 +3,7 @@ use std::str::{FromStr, SplitWhitespace};
 use compact_str::ToCompactString;
 
 use crate::{
-    diagnostic::ErrorDiagnostic,
+    diagnostic::{ErrorDiagnostic, ResolverDiagnostic},
     help::help_markup,
     interpreter::RuntimeErrorKind,
     markup::{self as m, Markup},
@@ -82,11 +82,15 @@ impl From<RuntimeError> for CommandError {
     }
 }
 
-impl ErrorDiagnostic for CommandError {
+impl ErrorDiagnostic for ResolverDiagnostic<'_, CommandError> {
     fn diagnostics(&self) -> Vec<crate::Diagnostic> {
-        match self {
+        match self.error {
             CommandError::Parse(parse_error) => parse_error.diagnostics(),
-            CommandError::Runtime(runtime_error) => runtime_error.diagnostics(),
+            CommandError::Runtime(runtime_error) => ResolverDiagnostic {
+                resolver: self.resolver,
+                error: runtime_error,
+            }
+            .diagnostics(),
         }
     }
 }

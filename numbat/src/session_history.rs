@@ -1,7 +1,7 @@
 use compact_str::CompactString;
 use std::{fs, io, path::Path};
 
-use crate::{interpreter::RuntimeErrorKind, RuntimeError};
+use crate::interpreter::RuntimeErrorKind;
 
 pub type ParseEvaluationResult = Result<(), ()>;
 

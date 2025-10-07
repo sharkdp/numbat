@@ -1,6 +1,6 @@
 pub(crate) mod assert_eq;
 
-use std::fmt;
+use core::fmt;
 
 use crate::{
     dimension::DimensionRegistry,
@@ -20,15 +20,14 @@ use thiserror::Error;
 
 pub use crate::value::Value;
 
-#[derive(Debug, Clone, Error)]
+#[derive(Debug, Clone)]
 pub struct RuntimeError {
     pub kind: RuntimeErrorKind,
-    pub backtrace: Vec<Span>,
+    pub backtrace: Vec<(CompactString, Span)>,
 }
 
 impl fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO: TAMO: display the backtrace
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.kind)
     }
 }

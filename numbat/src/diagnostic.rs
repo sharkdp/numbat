@@ -4,7 +4,8 @@ use crate::{
     interpreter::{RuntimeError, RuntimeErrorKind},
     parser::ParseError,
     pretty_print::PrettyPrint,
-    resolver::ResolverError,
+    resolver::{Resolver, ResolverError},
+    span::Span,
     typechecker::{IncompatibleDimensionsError, TypeCheckError},
     NameResolutionError,
 };
@@ -490,18 +491,28 @@ impl ErrorDiagnostic for TypeCheckError {
     }
 }
 
-impl ErrorDiagnostic for RuntimeError {
-    fn diagnostics(&self) -> Vec<Diagnostic> {
-        let inner = format!("{self:#}");
+/// Little helper to quickly implement diagnostic for types that requires the resolver
+/// in order to emit a diagnostic.
+pub struct ResolverDiagnostic<'a, E> {
+    pub resolver: &'a Resolver,
+    pub error: &'a E,
+}
 
-        match &self.kind {
-            RuntimeErrorKind::AssertFailed(span) => vec![Diagnostic::error()
-                .with_message("assertion failed")
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message("assertion failed")])],
-            RuntimeErrorKind::AssertEq2Failed(assert_eq2_error) => {
-                vec![Diagnostic::error()
+impl ErrorDiagnostic for ResolverDiagnostic<'_, RuntimeError> {
+    fn diagnostics(&self) -> Vec<Diagnostic> {
+        let mut diag = Vec::new();
+
+        let inner = format!("{:#}", self.error.kind);
+        match &self.error.kind {
+            RuntimeErrorKind::AssertFailed(span) => diag.push(
+                Diagnostic::error()
+                    .with_message("assertion failed")
+                    .with_labels(vec![span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message("assertion failed")]),
+            ),
+            RuntimeErrorKind::AssertEq2Failed(assert_eq2_error) => diag.push(
+                Diagnostic::error()
                     .with_message("Assertion failed")
                     .with_labels(vec![
                         assert_eq2_error
@@ -513,28 +524,73 @@ impl ErrorDiagnostic for RuntimeError {
                             .diagnostic_label(LabelStyle::Primary)
                             .with_message(format!("{}", assert_eq2_error.rhs)),
                     ])
-                    .with_notes(vec![inner])]
-            }
+                    .with_notes(vec![inner]),
+            ),
             RuntimeErrorKind::AssertEq3Failed(assert_eq3_error) => {
                 let (lhs, rhs) = assert_eq3_error.fmt_comparands();
 
-                vec![Diagnostic::error()
-                    .with_message("Assertion failed")
-                    .with_labels(vec![
-                        assert_eq3_error
-                            .span_lhs
-                            .diagnostic_label(LabelStyle::Secondary)
-                            .with_message(lhs),
-                        assert_eq3_error
-                            .span_rhs
-                            .diagnostic_label(LabelStyle::Primary)
-                            .with_message(rhs),
-                    ])
-                    .with_notes(vec![format!("{self:#}")])]
+                diag.push(
+                    Diagnostic::error()
+                        .with_message("Assertion failed")
+                        .with_labels(vec![
+                            assert_eq3_error
+                                .span_lhs
+                                .diagnostic_label(LabelStyle::Secondary)
+                                .with_message(lhs),
+                            assert_eq3_error
+                                .span_rhs
+                                .diagnostic_label(LabelStyle::Primary)
+                                .with_message(rhs),
+                        ])
+                        .with_notes(vec![inner]),
+                )
             }
-            _ => vec![Diagnostic::error()
-                .with_message("runtime error")
-                .with_notes(vec![inner])],
+            _ => diag.push(
+                Diagnostic::error()
+                    .with_message("runtime error")
+                    .with_notes(vec![inner])
+                    .with_labels_iter(
+                        self.error
+                            .backtrace
+                            .iter()
+                            .take(1)
+                            .map(|span| span.1.diagnostic_label(LabelStyle::Primary)),
+                    ),
+            ),
+        }
+
+        diag.push(
+            Diagnostic::help()
+                .with_message("Backtrace:")
+                .with_notes_iter(self.error.backtrace.iter().enumerate().map(
+                    |(i, (fn_name, span))| {
+                        let file_name = self.resolver.files.get(span.code_source_id).unwrap();
+                        let (line, col) = position(*span, file_name.source());
+
+                        format!("{i}: in {fn_name} - {}:{}:{}", file_name.name(), line, col)
+                    },
+                )),
+        );
+
+        diag
+    }
+}
+
+/// Return the position in terms of line number and column number
+/// of the span starting position in the source.
+fn position(span: Span, source: &str) -> (usize, usize) {
+    let mut line = 1;
+    let mut last_line_pos = 0;
+    let start = span.start.as_usize();
+
+    for (i, b) in source.bytes().enumerate() {
+        if b == b'\n' {
+            line += 1;
+            last_line_pos = i;
+        }
+        if i == start {
+            break;
         }
     }
+    (line, start - last_line_pos)
 }

@@ -14,7 +14,6 @@ use crate::{
     span::Span,
     value::Value,
     vm::ExecutionContext,
-    RuntimeError,
 };
 
 use super::{Args, Callable, ForeignFunction};

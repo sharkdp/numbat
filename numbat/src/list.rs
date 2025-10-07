@@ -7,7 +7,7 @@
 
 use std::{collections::VecDeque, fmt, sync::Arc};
 
-use crate::{interpreter::RuntimeErrorKind, value::Value, RuntimeError};
+use crate::{interpreter::RuntimeErrorKind, value::Value};
 
 /// Reference counted list / list view
 #[derive(Clone, Eq)]
