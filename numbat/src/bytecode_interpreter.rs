@@ -433,6 +433,7 @@ impl BytecodeInterpreter {
             }
             Statement::DefineDerivedUnit(
                 unit_name,
+                full_span,
                 expr,
                 decorators,
                 annotation,
@@ -473,8 +474,7 @@ impl BytecodeInterpreter {
                     Op::SetUnitConstant,
                     unit_information_idx,
                     constant_idx,
-                    // TODO: TAMO: We should have the full span of the stmt here
-                    expr.full_span(),
+                    *full_span,
                 );
 
                 // TODO: code duplication with DeclareBaseUnit branch above
@@ -483,7 +483,7 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::ProcedureCall(ProcedureKind::Type, args) => {
+            Statement::ProcedureCall(ProcedureKind::Type, full_span, args) => {
                 assert_eq!(args.len(), 1);
                 let arg = &args[0];
 
@@ -491,10 +491,9 @@ impl BytecodeInterpreter {
                 let idx = self.vm.add_string(
                     m::dimmed("=") + m::whitespace(" ") + arg.get_type_scheme().pretty_print(), // TODO
                 );
-                // TODO: TAMO: We should have the full span of the stmt here
-                self.vm.add_op1(Op::PrintString, idx, arg.full_span());
+                self.vm.add_op1(Op::PrintString, idx, *full_span);
             }
-            Statement::ProcedureCall(kind, args) => {
+            Statement::ProcedureCall(kind, full_span, args) => {
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg);
@@ -512,8 +511,7 @@ impl BytecodeInterpreter {
                     callable_idx,
                     args.len() as u16,
                     spans_idx,
-                    // TODO: TAMO: We should have the full span of the stmt here
-                    args[0].full_span(),
+                    *full_span,
                 );
                 // TODO: check overflow
             }

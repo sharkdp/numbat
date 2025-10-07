@@ -1331,6 +1331,7 @@ impl TypeChecker {
                 }
                 typed_ast::Statement::DefineDerivedUnit(
                     identifier,
+                    identifier_span.extend(&expr.full_span()),
                     expr_checked,
                     decorators.clone(),
                     type_annotation.clone(),
@@ -1680,7 +1681,11 @@ impl TypeChecker {
                     .map(|e| self.elaborate_expression(e))
                     .collect::<Result<Vec<_>>>()?;
 
-                typed_ast::Statement::ProcedureCall(kind.clone(), checked_args)
+                typed_ast::Statement::ProcedureCall(
+                    kind.clone(),
+                    span.extend(&args[0].full_span()),
+                    checked_args,
+                )
             }
             ast::Statement::ProcedureCall(span, kind, args) => {
                 let procedure = ffi::procedures().get(kind).unwrap();
@@ -1749,7 +1754,12 @@ impl TypeChecker {
                     }
                 }
 
-                typed_ast::Statement::ProcedureCall(kind.clone(), checked_args)
+                typed_ast::Statement::ProcedureCall(
+                    kind.clone(),
+                    args.last()
+                        .map_or(*span, |last| span.extend(&last.full_span())),
+                    checked_args,
+                )
             }
             ast::Statement::ModuleImport(_, _) => {
                 unreachable!("Modules should have been inlined by now")
@@ -1839,7 +1849,7 @@ impl TypeChecker {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
 
-        if let typed_ast::Statement::DefineDerivedUnit(_, expr, _, _annotation, type_, _) =
+        if let typed_ast::Statement::DefineDerivedUnit(_, _, expr, _, _annotation, type_, _) =
             &elaborated_statement
         {
             if !type_.unsafe_as_concrete().is_closed() {
