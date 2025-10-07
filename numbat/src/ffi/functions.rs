@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use super::{macros::*, Args};
-use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value, RuntimeError};
+use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value};
 
 use super::{Callable, ForeignFunction, Result};
 

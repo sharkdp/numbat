@@ -7,7 +7,6 @@ use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
 use crate::typed_ast::DType;
 use crate::value::Value;
-use crate::RuntimeError;
 
 pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     use crate::span::{ByteIndex, Span};

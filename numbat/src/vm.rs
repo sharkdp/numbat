@@ -353,8 +353,19 @@ impl Vm {
         }
     }
 
-    pub fn backtrace(&self) -> Vec<Span> {
-        todo!()
+    /// Return a list of function name + the span which triggered the error.
+    /// The deepest elements are returned first.
+    pub fn backtrace(&self) -> Vec<(CompactString, Span)> {
+        self.frames
+            .iter()
+            .rev()
+            .map(|cf| {
+                (
+                    self.bytecode[cf.function_idx].0.clone(),
+                    self.bytecode[cf.function_idx].2[cf.ip.saturating_sub(1)],
+                )
+            })
+            .collect()
     }
 
     // The following functions are helpers for the compilation process
