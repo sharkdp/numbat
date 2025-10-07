@@ -7,7 +7,7 @@ use crate::ast::ProcedureKind;
 use crate::decorator::Decorator;
 use crate::dimension::DimensionRegistry;
 use crate::interpreter::{
-    Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError,
+    Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError, RuntimeErrorKind,
 };
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
@@ -48,6 +48,11 @@ pub struct BytecodeInterpreter {
 }
 
 impl BytecodeInterpreter {
+    /// Return a runtime error on the current instruction.
+    pub fn runtime_error(&self, kind: RuntimeErrorKind) -> RuntimeError {
+        self.vm.runtime_error(kind)
+    }
+
     fn compile_expression(&mut self, expr: &Expression) {
         match expr {
             Expression::Scalar(span, n, _type) => {
@@ -420,7 +425,10 @@ impl BytecodeInterpreter {
                             metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
                         },
                     )
-                    .map_err(RuntimeError::UnitRegistryError)?;
+                    .map_err(|e| {
+                        self.vm
+                            .runtime_error(RuntimeErrorKind::UnitRegistryError(e))
+                    })?;
 
                 let constant_idx = self.vm.add_constant(Constant::Unit(Unit::new_base(
                     unit_name.to_compact_string(),

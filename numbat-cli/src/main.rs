@@ -16,7 +16,7 @@ use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystem
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::session_history::{ParseEvaluationResult, SessionHistory};
-use numbat::{markup as m, RuntimeError};
+use numbat::{markup as m, RuntimeError, RuntimeErrorKind};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
 
@@ -379,11 +379,14 @@ impl Cli {
                     }
 
                     rl.add_history_entry(&line)?;
+                    let mut ctx = self.context.lock().unwrap();
+
                     if interactive && rl.append_history(history_path).is_err() {
-                        self.print_diagnostic(RuntimeError::HistoryWrite(history_path.to_owned()));
+                        ctx.print_diagnostic(ctx.runtime_error(RuntimeErrorKind::HistoryWrite(
+                            history_path.to_owned(),
+                        )));
                     }
 
-                    let mut ctx = self.context.lock().unwrap();
                     match cmd_runner.try_run_command(&line, &mut ctx, rl) {
                         Ok(cf) => match cf {
                             CommandControlFlow::Continue => continue,

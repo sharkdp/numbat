@@ -11,21 +11,21 @@ mod strings;
 
 use std::collections::VecDeque;
 
-use crate::interpreter::RuntimeError;
+use crate::interpreter::{RuntimeError, RuntimeErrorKind};
 use crate::span::Span;
 use crate::value::Value;
 use crate::vm::ExecutionContext;
 
-type ControlFlow = std::ops::ControlFlow<RuntimeError>;
+type ControlFlow = std::ops::ControlFlow<RuntimeErrorKind>;
 
 pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
 
-type Result<T> = std::result::Result<T, Box<RuntimeError>>;
+type Result<T, E = Box<RuntimeError>> = std::result::Result<T, E>;
 
 pub(crate) type Args = VecDeque<Value>;
 
 pub(crate) enum Callable {
-    Function(fn(Args) -> Result<Value>),
+    Function(fn(Args) -> Result<Value, Box<RuntimeErrorKind>>),
     Procedure(fn(&mut ExecutionContext, Args, Vec<Span>) -> ControlFlow),
 }
 

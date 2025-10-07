@@ -6,6 +6,7 @@ use compact_str::{CompactString, ToCompactString};
 use indexmap::IndexMap;
 use num_traits::ToPrimitive;
 
+use crate::interpreter::RuntimeErrorKind;
 use crate::list::NumbatList;
 use crate::span::Span;
 use crate::typed_ast::StructInfo;
@@ -345,6 +346,17 @@ impl Vm {
         self.debug = activate;
     }
 
+    pub(crate) fn runtime_error(&self, kind: RuntimeErrorKind) -> RuntimeError {
+        RuntimeError {
+            kind,
+            backtrace: self.backtrace(),
+        }
+    }
+
+    pub fn backtrace(&self) -> Vec<Span> {
+        todo!()
+    }
+
     // The following functions are helpers for the compilation process
 
     fn current_chunk_mut(&mut self) -> (&mut Vec<u8>, &mut Vec<Span>) {
@@ -663,7 +675,7 @@ impl Vm {
 
                     self.unit_registry
                         .add_derived_unit(unit_name, &base_unit_representation, metadata.clone())
-                        .map_err(RuntimeError::UnitRegistryError)?;
+                        .map_err(|e| self.runtime_error(RuntimeErrorKind::UnitRegistryError(e)))?;
 
                     self.constants[constant_idx as usize] = Constant::Unit(Unit::new_derived(
                         unit_name.clone(),
@@ -696,16 +708,19 @@ impl Vm {
                         Op::Add => &lhs + &rhs,
                         Op::Subtract => &lhs - &rhs,
                         Op::Multiply => Ok(lhs * rhs),
-                        Op::Divide => {
-                            Ok(lhs.checked_div(rhs).ok_or(RuntimeError::DivisionByZero)?)
-                        }
+                        Op::Divide => Ok(lhs
+                            .checked_div(rhs)
+                            .ok_or_else(|| self.runtime_error(RuntimeErrorKind::DivisionByZero))?),
                         Op::Power => lhs.power(rhs),
                         // If the user specifically converted the type of a unit, we should NOT simplify this value
                         // before any operations are applied to it
                         Op::ConvertTo => lhs.convert_to(rhs.unit()).map(Quantity::no_simplify),
                         _ => unreachable!(),
                     };
-                    self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
+                    self.push_quantity(
+                        result
+                            .map_err(|e| self.runtime_error(RuntimeErrorKind::QuantityError(e)))?,
+                    );
                 }
                 op @ (Op::AddToDateTime | Op::SubFromDateTime) => {
                     let rhs = self.pop_quantity();
@@ -717,20 +732,20 @@ impl Vm {
 
                     let seconds_i64 = seconds_f64
                         .to_i64()
-                        .ok_or(RuntimeError::DurationOutOfRange)?;
+                        .ok_or_else(|| self.runtime_error(RuntimeErrorKind::DurationOutOfRange))?;
 
                     let span = jiff::Span::new()
                         .try_seconds(seconds_i64)
-                        .map_err(|_| RuntimeError::DurationOutOfRange)?
+                        .map_err(|_| self.runtime_error(RuntimeErrorKind::DurationOutOfRange))?
                         .nanoseconds((seconds_f64.fract() * 1_000_000_000f64).round() as i64);
 
                     self.push(Value::DateTime(match op {
-                        Op::AddToDateTime => lhs
-                            .checked_add(span)
-                            .map_err(|_| RuntimeError::DateTimeOutOfRange)?,
-                        Op::SubFromDateTime => lhs
-                            .checked_sub(span)
-                            .map_err(|_| RuntimeError::DateTimeOutOfRange)?,
+                        Op::AddToDateTime => lhs.checked_add(span).map_err(|_| {
+                            self.runtime_error(RuntimeErrorKind::DateTimeOutOfRange)
+                        })?,
+                        Op::SubFromDateTime => lhs.checked_sub(span).map_err(|_| {
+                            self.runtime_error(RuntimeErrorKind::DateTimeOutOfRange)
+                        })?,
                         _ => unreachable!(),
                     }));
                 }
@@ -741,10 +756,10 @@ impl Vm {
 
                     let duration = lhs
                         .since(&rhs)
-                        .map_err(|_| RuntimeError::DateTimeOutOfRange)?;
+                        .map_err(|_| self.runtime_error(RuntimeErrorKind::DateTimeOutOfRange))?;
                     let duration = duration
                         .total(jiff::Unit::Second)
-                        .map_err(|_| RuntimeError::DurationOutOfRange)?;
+                        .map_err(|_| self.runtime_error(RuntimeErrorKind::DurationOutOfRange))?;
 
                     let ret = Value::Quantity(Quantity::new(
                         Number::from_f64(duration),
@@ -762,11 +777,11 @@ impl Vm {
 
                     let result = match lhs.partial_cmp_preserve_nan(&rhs) {
                         QuantityOrdering::IncompatibleUnits => {
-                            return Err(Box::new(RuntimeError::QuantityError(
-                                QuantityError::IncompatibleUnits(
+                            return Err(Box::new(self.runtime_error(
+                                RuntimeErrorKind::QuantityError(QuantityError::IncompatibleUnits(
                                     lhs.unit().clone(),
                                     rhs.unit().clone(),
-                                ),
+                                )),
                             )))
                         }
                         QuantityOrdering::NanOperand => false,
@@ -823,9 +838,13 @@ impl Vm {
                     let order = self.read_u16();
 
                     if lhs < 0. {
-                        return Err(Box::new(RuntimeError::FactorialOfNegativeNumber));
+                        return Err(Box::new(
+                            self.runtime_error(RuntimeErrorKind::FactorialOfNegativeNumber),
+                        ));
                     } else if lhs.fract() != 0. {
-                        return Err(Box::new(RuntimeError::FactorialOfNonInteger));
+                        return Err(Box::new(
+                            self.runtime_error(RuntimeErrorKind::FactorialOfNonInteger),
+                        ));
                     }
 
                     self.push_quantity(Quantity::from_scalar(math::factorial(lhs, order)));
@@ -863,8 +882,8 @@ impl Vm {
 
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
-                            let result = (function)(args);
-                            self.push(result?);
+                            let result = (function)(args).map_err(|e| self.runtime_error(*e))?;
+                            self.push(result);
                         }
                         Callable::Procedure(procedure) => {
                             let span_idx = self.read_u16() as usize;
@@ -875,7 +894,7 @@ impl Vm {
                             match result {
                                 std::ops::ControlFlow::Continue(()) => {}
                                 std::ops::ControlFlow::Break(runtime_error) => {
-                                    return Err(Box::new(runtime_error));
+                                    return Err(Box::new(self.runtime_error(runtime_error)));
                                 }
                             }
                         }
@@ -909,8 +928,8 @@ impl Vm {
 
                             match &self.ffi_callables[function_idx].callable {
                                 Callable::Function(function) => {
-                                    let result = (function)(args);
-                                    self.push(result?);
+                                    let result = (function)(args).map_err(|e| self.runtime_error(*e))?;
+                                    self.push(result);
                                 }
                                 Callable::Procedure(..) => unreachable!("Foreign procedures can not be targeted by a function reference"),
                             }
@@ -920,8 +939,11 @@ impl Vm {
 
                             let dt = self.pop_datetime();
 
-                            let tz = jiff::tz::TimeZone::get(&tz_name)
-                                .map_err(|_| RuntimeError::UnknownTimezone(tz_name.to_string()))?;
+                            let tz = jiff::tz::TimeZone::get(&tz_name).map_err(|_| {
+                                self.runtime_error(RuntimeErrorKind::UnknownTimezone(
+                                    tz_name.to_string(),
+                                ))
+                            })?;
 
                             let dt = dt.with_time_zone(tz);
 
@@ -948,10 +970,12 @@ impl Vm {
                         Value::FormatSpecifiers(_) => unreachable!(),
                     };
 
-                    let map_strfmt_error_to_runtime_error = |err| match err {
-                        strfmt::FmtError::Invalid(s) => RuntimeError::InvalidFormatSpecifiers(s),
+                    let map_strfmt_error_to_runtime_error = |this: &Self, err| match err {
+                        strfmt::FmtError::Invalid(s) => {
+                            this.runtime_error(RuntimeErrorKind::InvalidFormatSpecifiers(s))
+                        }
                         strfmt::FmtError::TypeError(s) => {
-                            RuntimeError::InvalidTypeForFormatSpecifiers(s)
+                            this.runtime_error(RuntimeErrorKind::InvalidTypeForFormatSpecifiers(s))
                         }
                         strfmt::FmtError::KeyError(_) => unreachable!(),
                     };
@@ -971,7 +995,9 @@ impl Vm {
                                     let mut str =
                                         strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
                                             .map(CompactString::from)
-                                            .map_err(map_strfmt_error_to_runtime_error)?;
+                                            .map_err(|e| {
+                                                map_strfmt_error_to_runtime_error(self, e)
+                                            })?;
 
                                     let unit_str = q.unit().to_compact_string();
 
@@ -988,7 +1014,7 @@ impl Vm {
 
                                     strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
                                         .map(CompactString::from)
-                                        .map_err(map_strfmt_error_to_runtime_error)?
+                                        .map_err(|e| map_strfmt_error_to_runtime_error(self, e))?
                                 }
                             },
                             Value::FormatSpecifiers(None) => to_str(self.pop()),

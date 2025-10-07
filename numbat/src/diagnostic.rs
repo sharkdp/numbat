@@ -1,7 +1,7 @@
 use codespan_reporting::diagnostic::LabelStyle;
 
 use crate::{
-    interpreter::RuntimeError,
+    interpreter::{RuntimeError, RuntimeErrorKind},
     parser::ParseError,
     pretty_print::PrettyPrint,
     resolver::ResolverError,
@@ -494,13 +494,13 @@ impl ErrorDiagnostic for RuntimeError {
     fn diagnostics(&self) -> Vec<Diagnostic> {
         let inner = format!("{self:#}");
 
-        match self {
-            RuntimeError::AssertFailed(span) => vec![Diagnostic::error()
+        match &self.kind {
+            RuntimeErrorKind::AssertFailed(span) => vec![Diagnostic::error()
                 .with_message("assertion failed")
                 .with_labels(vec![span
                     .diagnostic_label(LabelStyle::Primary)
                     .with_message("assertion failed")])],
-            RuntimeError::AssertEq2Failed(assert_eq2_error) => {
+            RuntimeErrorKind::AssertEq2Failed(assert_eq2_error) => {
                 vec![Diagnostic::error()
                     .with_message("Assertion failed")
                     .with_labels(vec![
@@ -515,7 +515,7 @@ impl ErrorDiagnostic for RuntimeError {
                     ])
                     .with_notes(vec![inner])]
             }
-            RuntimeError::AssertEq3Failed(assert_eq3_error) => {
+            RuntimeErrorKind::AssertEq3Failed(assert_eq3_error) => {
                 let (lhs, rhs) = assert_eq3_error.fmt_comparands();
 
                 vec![Diagnostic::error()
