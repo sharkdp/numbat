@@ -555,9 +555,14 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, RuntimeError> {
                             .backtrace
                             .iter()
                             .filter(|(_, span)| {
-                                let file = self.resolver.files.get(span.code_source_id).unwrap();
-                                // Everything that starts by prelude was not written by the user and must be ignored
-                                !file.name().contains("<builtin>")
+                                if cfg!(debug_assertions) {
+                                    true
+                                } else {
+                                    let file =
+                                        self.resolver.files.get(span.code_source_id).unwrap();
+                                    // Everything that starts by prelude was not written by the user and must be ignored
+                                    !file.name().contains("<builtin>")
+                                }
                             })
                             .take(3)
                             .map(|(_, span)| span.diagnostic_label(LabelStyle::Primary)),
