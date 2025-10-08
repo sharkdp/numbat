@@ -590,7 +590,7 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, RuntimeError> {
                             .map(|(i, _)| i)
                             .last()
                             .unwrap_or_default();
-                        let error_cause = &error_cause[..=last_char_idx].escape_debug();
+                        let error_cause = &error_cause[..=last_char_idx].replace('\n', "\\n");
 
                         format!("{i}: {error_cause}\n\tat {fn_name} - {file_name}:{line}:{col}")
                     },
