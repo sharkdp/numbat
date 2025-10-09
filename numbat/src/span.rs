@@ -58,9 +58,12 @@ impl Span {
     #[inline]
     pub fn in_between(left: Span, right: Span) -> Span {
         debug_assert_eq!(left.code_source_id, right.code_source_id);
+        debug_assert!(left.end <= right.start);
         crate::span::Span {
             start: left.end,
-            end: right.start,
+            // The right.start must be > left.end. But just in case it is not
+            // we'll make the new span points to left.end
+            end: right.start.max(left.end),
             // lhs and rhs should share the same code_source_id
             code_source_id: left.code_source_id,
         }
