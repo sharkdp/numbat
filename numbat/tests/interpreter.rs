@@ -12,14 +12,14 @@ use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
 #[track_caller]
 fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: impl AsRef<str>) {
     let expected_output = expected_output.as_ref();
-    println!("Expecting output '{expected_output}' for code '{code}'");
+    println!("Expecting output {expected_output:?} for code\n{code}");
     if let InterpreterResult::Value(val) = ctx.interpret(code, CodeSource::Internal).unwrap().1 {
         let fmt = PlainTextFormatter {};
 
         let actual_output = fmt.format(&val.pretty_print(), false);
         assert_eq!(actual_output.trim(), expected_output);
     } else {
-        panic!();
+        panic!("Did not receive an interpreter result. Did you try to print the values?");
     }
 }
 
@@ -753,6 +753,20 @@ fn test_overwrite_inner_function() {
         outer()
         ",
         "0",
+    );
+}
+
+#[test]
+fn test_676_where_clause_does_not_leak() {
+    // https://github.com/sharkdp/numbat/issues/676
+    expect_output(
+        "
+        fn foo(x: Scalar) -> Scalar = x + something where something = 1
+        unit something
+
+        1 something
+        ",
+        "1 something",
     );
 }
 
