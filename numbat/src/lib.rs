@@ -764,8 +764,7 @@ impl Context {
 
                             if erc.is_none() {
                                 return Err(Box::new(NumbatError::RuntimeError(
-                                    self.interpreter
-                                        .runtime_error(RuntimeErrorKind::CouldNotLoadExchangeRates),
+                                    self.runtime_error(RuntimeErrorKind::CouldNotLoadExchangeRates),
                                 )));
                             }
                         }
