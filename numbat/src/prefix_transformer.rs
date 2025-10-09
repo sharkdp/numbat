@@ -197,11 +197,11 @@ impl Transformer {
                 }
 
                 if let Some(expr) = body {
-                    self.transform_expression(expr);
+                    fn_body_transformer.transform_expression(expr);
                 }
 
                 for def in local_variables {
-                    self.transform_define_variable(def)?;
+                    fn_body_transformer.transform_define_variable(def)?;
                 }
             }
             Statement::DefineDimension(_, name, _) => {
