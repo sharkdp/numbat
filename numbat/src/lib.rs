@@ -823,8 +823,6 @@ impl Context {
         };
 
         let color = if colorize {
-            // by leaving it in auto we makes sure it can still
-            // chose between true or ansi colors
             ColorChoice::Auto
         } else {
             ColorChoice::Never
