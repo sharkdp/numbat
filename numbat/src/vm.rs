@@ -75,9 +75,10 @@ pub enum Op {
     GreatorOrEqual,
     Equal,
     NotEqual,
-    LogicalAnd,
-    LogicalOr,
     LogicalNeg,
+
+    /// Pop the top value off the stack.
+    Pop,
 
     /// Similar to Add, but has DateTime on the LHS and a quantity on the RHS
     AddToDateTime,
@@ -88,7 +89,13 @@ pub enum Op {
 
     /// Move IP forward by the given offset argument if the popped-of value on
     /// top of the stack is false.
+    PopJumpIfFalse,
+    /// Move IP forward by the given offset argument if the peeked value on
+    /// top of the stack is false.
     JumpIfFalse,
+    /// Move IP forward by the given offset argument if the peeked value on
+    /// top of the stack is true.
+    JumpIfTrue,
     /// Unconditionally move IP forward by the given offset argument
     Jump,
 
@@ -132,7 +139,9 @@ impl Op {
             | Op::GetUpvalue
             | Op::PrintString
             | Op::JoinString
+            | Op::PopJumpIfFalse
             | Op::JumpIfFalse
+            | Op::JumpIfTrue
             | Op::Jump
             | Op::CallCallable
             | Op::AccessStructField
@@ -154,11 +163,10 @@ impl Op {
             | Op::GreatorOrEqual
             | Op::Equal
             | Op::NotEqual
-            | Op::LogicalAnd
-            | Op::LogicalOr
             | Op::LogicalNeg
             | Op::Return
-            | Op::GetLastResult => 0,
+            | Op::GetLastResult
+            | Op::Pop => 0,
         }
     }
 
@@ -187,10 +195,10 @@ impl Op {
             Op::GreatorOrEqual => "GreatorOrEqual",
             Op::Equal => "Equal",
             Op::NotEqual => "NotEqual",
-            Op::LogicalAnd => "LogicalAnd",
-            Op::LogicalOr => "LogicalOr",
             Op::LogicalNeg => "LogicalNeg",
+            Op::PopJumpIfFalse => "PopJumpIfFalse",
             Op::JumpIfFalse => "JumpIfFalse",
+            Op::JumpIfTrue => "JumpIfTrue",
             Op::Jump => "Jump",
             Op::Call => "Call",
             Op::FFICallFunction => "FFICallFunction",
@@ -202,6 +210,7 @@ impl Op {
             Op::BuildStructInstance => "BuildStructInstance",
             Op::AccessStructField => "AccessStructField",
             Op::BuildList => "BuildList",
+            Op::Pop => "Pop",
         }
     }
 }
@@ -585,6 +594,14 @@ impl Vm {
     }
 
     #[track_caller]
+    fn peek_bool(&mut self) -> bool {
+        self.stack
+            .last()
+            .expect("stack should not be empty")
+            .unsafe_as_bool()
+    }
+
+    #[track_caller]
     fn pop_datetime(&mut self) -> jiff::Zoned {
         match self.pop() {
             Value::DateTime(q) => q,
@@ -633,6 +650,9 @@ impl Vm {
                     let constant_idx = self.read_u16();
                     self.stack
                         .push(self.constants[constant_idx as usize].to_value());
+                }
+                Op::Pop => {
+                    self.pop();
                 }
                 Op::ApplyPrefix => {
                     let quantity = self.pop_quantity();
@@ -788,17 +808,6 @@ impl Vm {
                     };
                     self.push(Value::Boolean(result));
                 }
-                op @ (Op::LogicalAnd | Op::LogicalOr) => {
-                    let rhs = self.pop_bool();
-                    let lhs = self.pop_bool();
-
-                    let result = match op {
-                        Op::LogicalAnd => lhs && rhs,
-                        Op::LogicalOr => lhs || rhs,
-                        _ => unreachable!(),
-                    };
-                    self.push_bool(result);
-                }
                 Op::LogicalNeg => {
                     let rhs = self.pop_bool();
                     self.push_bool(!rhs);
@@ -824,9 +833,21 @@ impl Vm {
 
                     self.push_quantity(Quantity::from_scalar(math::factorial(lhs, order)));
                 }
-                Op::JumpIfFalse => {
+                Op::PopJumpIfFalse => {
                     let offset = self.read_u16() as usize;
                     if !self.pop_bool() {
+                        self.current_frame_mut().ip += offset;
+                    }
+                }
+                Op::JumpIfFalse => {
+                    let offset = self.read_u16() as usize;
+                    if !self.peek_bool() {
+                        self.current_frame_mut().ip += offset;
+                    }
+                }
+                Op::JumpIfTrue => {
+                    let offset = self.read_u16() as usize;
+                    if self.peek_bool() {
                         self.current_frame_mut().ip += offset;
                     }
                 }

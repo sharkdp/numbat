@@ -52,9 +52,9 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_bool(self) -> bool {
+    pub fn unsafe_as_bool(&self) -> bool {
         if let Value::Boolean(b) = self {
-            b
+            *b
         } else {
             panic!("Expected value to be a bool");
         }
