@@ -57,6 +57,9 @@ mod(17, 4)        # Modulo
 3 in -> cm        # Unit conversion, can also be → or ➞
 3 in to cm        # Unit conversion with the 'to' keyword
 
+0b011 ⊕ 0b110     # bitwise xor operator
+0b011 xor 0b110   # bitwise xor with the 'xor' keyword
+
 cos(pi/3 + pi)    # Call mathematical functions
 pi/3 + pi |> cos  # Same, 'arg |> f' is equivalent to 'f(arg)'
                   # The '|>' operator has the lowest precedence

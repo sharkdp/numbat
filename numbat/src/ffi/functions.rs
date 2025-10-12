@@ -45,6 +45,8 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
 
         // Math
         insert_function!("mod", mod_, 2..=2);
+        insert_function!(wrapped_shl, 2..=2);
+        insert_function!(wrapped_shr, 2..=2);
 
         insert_function!(abs, 1..=1);
         insert_function!(round, 1..=1);

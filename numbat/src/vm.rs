@@ -77,6 +77,12 @@ pub enum Op {
     NotEqual,
     LogicalAnd,
     LogicalOr,
+    BitwiseOr,
+    BitwiseAnd,
+    BitwiseXor,
+    BitwiseNot,
+    BitShiftLeft,
+    BitShiftRight,
     LogicalNeg,
 
     /// Similar to Add, but has DateTime on the LHS and a quantity on the RHS
@@ -138,6 +144,7 @@ impl Op {
             | Op::AccessStructField
             | Op::BuildList => 1,
             Op::Negate
+            | Op::BitwiseNot
             | Op::Factorial
             | Op::Add
             | Op::AddToDateTime
@@ -156,6 +163,11 @@ impl Op {
             | Op::NotEqual
             | Op::LogicalAnd
             | Op::LogicalOr
+            | Op::BitwiseOr
+            | Op::BitwiseAnd
+            | Op::BitwiseXor
+            | Op::BitShiftRight
+            | Op::BitShiftLeft
             | Op::LogicalNeg
             | Op::Return
             | Op::GetLastResult => 0,
@@ -189,6 +201,12 @@ impl Op {
             Op::NotEqual => "NotEqual",
             Op::LogicalAnd => "LogicalAnd",
             Op::LogicalOr => "LogicalOr",
+            Op::BitwiseOr => "BitwiseOr",
+            Op::BitwiseNot => "BitwiseNot",
+            Op::BitwiseAnd => "BitwiseAnd",
+            Op::BitwiseXor => "BitwiseXor",
+            Op::BitShiftLeft => "BitShiftLeft",
+            Op::BitShiftRight => "BitShiftRight",
             Op::LogicalNeg => "LogicalNeg",
             Op::JumpIfFalse => "JumpIfFalse",
             Op::Jump => "Jump",
@@ -799,9 +817,136 @@ impl Vm {
                     };
                     self.push_bool(result);
                 }
+                Op::BitwiseOr => {
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_quantity();
+
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
+
+                    let result = Ok(lhs | rhs);
+
+                    self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
+                }
+                Op::BitwiseAnd => {
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_quantity();
+
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
+
+                    let result = Ok(lhs & rhs);
+
+                    self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
+                }
+                Op::BitwiseXor => {
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_quantity();
+
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise not operand to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise not operand to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
+
+                    let result = Ok(lhs ^ rhs);
+
+                    self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
+                }
+                Op::BitShiftLeft => {
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_quantity();
+
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    } else if check_rhs < 0. {
+                        return Err(Box::new(RuntimeError::BitwiseShiftOfNegativeInteger));
+                    }
+
+                    let result = Ok(lhs << rhs);
+
+                    self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
+                }
+                Op::BitShiftRight => {
+                    let rhs = self.pop_quantity();
+                    let lhs = self.pop_quantity();
+
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    let check_lhs = lhs
+                        .as_scalar()
+                        .expect("Expected bitwise operands to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. || check_lhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    } else if check_rhs < 0. {
+                        return Err(Box::new(RuntimeError::BitwiseShiftOfNegativeInteger));
+                    }
+
+                    let result = Ok(lhs >> rhs);
+
+                    self.push_quantity(result.map_err(RuntimeError::QuantityError)?);
+                }
                 Op::LogicalNeg => {
                     let rhs = self.pop_bool();
                     self.push_bool(!rhs);
+                }
+                Op::BitwiseNot => {
+                    let rhs = self.pop_quantity();
+
+                    let check_rhs = rhs
+                        .as_scalar()
+                        .expect("Expected bitwise not operand to be scalar")
+                        .to_f64();
+
+                    if check_rhs.fract() != 0. {
+                        return Err(Box::new(RuntimeError::BitwiseOperationOfNonInteger));
+                    }
+                    self.push_quantity(!rhs);
                 }
                 Op::Negate => {
                     let rhs = self.pop_quantity();

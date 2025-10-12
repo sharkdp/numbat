@@ -1300,6 +1300,9 @@ impl PrettyPrint for Expression<'_> {
             UnaryOperator(_, self::UnaryOperator::LogicalNeg, expr, _type) => {
                 m::operator("!") + with_parens(expr)
             }
+            UnaryOperator(_, self::UnaryOperator::BitwiseNot, expr, _type) => {
+                m::operator("~") + with_parens(expr)
+            }
             BinaryOperator(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             BinaryOperatorForDate(_, op, lhs, rhs, _type) => pretty_print_binop(op, lhs, rhs),
             FunctionCall(_, _, name, args, _type) => {

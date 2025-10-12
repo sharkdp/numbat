@@ -1,3 +1,8 @@
+
+use std::ops::{Shl, Shr};
+
+
+
 use super::macros::*;
 use super::Args;
 use super::Result;
@@ -13,6 +18,24 @@ pub fn mod_(mut args: Args) -> Result<Value> {
     let y_value = y.convert_to(x.unit()).unwrap().unsafe_value().to_f64();
 
     return_quantity!(x_value.rem_euclid(y_value), x.unit().clone())
+}
+
+pub fn wrapped_shl(mut args: Args) -> Result<Value> {
+    let lhs = scalar_arg!(args);
+    let rhs = scalar_arg!(args);
+
+    let result =  lhs.shl(rhs).to_f64();  //TODO: Implement wrapped left shift
+
+    return_scalar!(result)
+}
+
+pub fn wrapped_shr(mut args: Args) -> Result<Value> {
+    let lhs = scalar_arg!(args);
+    let rhs = scalar_arg!(args);
+
+    let result = lhs.shr(rhs).to_f64(); //TODO: Implement wrapped right shift
+
+    return_scalar!(result)
 }
 
 // A simple math function with signature 'Fn[(Scalar) -> Scalar]'

@@ -9,6 +9,7 @@ Numbat operators and other language constructs, ordered by precedence form *high
 | exponentiation            | `x^y`, `x**y`                        |
 | multiplication (implicit) | `x y` (*whitespace*)                 |
 | unary negation            | `-x`                                 |
+| bitwise 'not'             | `~x`                                 |
 | division                  | `x per y`                            |
 | division                  | `x / y`, `x ÷ y`                     |
 | multiplication (explicit) | `x * y`, `x · y`, `x × y`            |
@@ -16,7 +17,12 @@ Numbat operators and other language constructs, ordered by precedence form *high
 | addition                  | `x + y`                              |
 | comparisons               | `x < y`, `x <= y`, `x ≤ y`, … `x == y`, `x != y` |
 | logical negation          | `!x`                                 |
+| bitwise shift right       | `x >> y`                             |
+| bitwise shift left        | `x << y`                             |
+| bitwise 'xor'             | `x ⨁ y`, `x xor y`                   |
+| bitwise 'and'             | `x & y`                              |
 | logical 'and'             | `x && y`                             |
+| bitwise 'or'              | <code>x &#124; y</code>              |
 | logical 'or'              | <code>x &#124;&#124; y</code>        |
 | unit conversion           | `x -> y`, `x → y`, `x ➞ y`, `x to y` |
 | conditionals              | `if x then y else z`                 |
@@ -28,6 +34,7 @@ Also, note that `per`-division has a higher precedence than `/`-division. This m
 
 If in doubt, you can always look at the pretty-printing output (second line in the snippet below)
 to make sure that your input was parsed correctly:
+
 ``` numbat
 >>> 1 / meter per second
 
