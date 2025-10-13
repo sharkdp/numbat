@@ -6,7 +6,9 @@ mod highlighter;
 use ansi_formatter::ansi_format;
 use colored::control::SHOULD_COLORIZE;
 use completer::NumbatCompleter;
-use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode};
+use config::{
+    ColorMode, Config, EditMode, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode,
+};
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
@@ -299,6 +301,10 @@ impl Cli {
         let history_path = self.get_history_path()?;
 
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
+        rl.set_edit_mode(match self.config.edit_mode {
+            EditMode::Emacs => rustyline::EditMode::Emacs,
+            EditMode::Vi => rustyline::EditMode::Vi,
+        });
         rl.set_max_history_size(1000)
             .context("Error while configuring history size")?;
         rl.set_completion_type(rustyline::CompletionType::List);
