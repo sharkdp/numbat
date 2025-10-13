@@ -59,6 +59,9 @@ prompt = ">>> "
 # only in interactive mode.
 pretty-print = "auto"
 
+# Controls the edit mode. Can be "emacs", or "vi".
+edit-mode = "emacs"
+
 [exchange-rates]
 # When and if to load exchange rates from the European Central Bank for
 # currency conversions. Can be "on-startup" to always fetch exchange rates

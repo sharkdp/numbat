@@ -49,6 +49,14 @@ pub enum ColorMode {
     Auto,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Eq, Default, Debug, Clone, Copy, ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+pub enum EditMode {
+    #[default]
+    Emacs,
+    Vi,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct Config {
@@ -56,6 +64,7 @@ pub struct Config {
     pub prompt: CompactString,
     pub pretty_print: PrettyPrintMode,
     pub color: ColorMode,
+    pub edit_mode: EditMode,
 
     #[serde(skip)]
     pub enter_repl: bool,
@@ -75,6 +84,7 @@ impl Default for Config {
             intro_banner: IntroBanner::default(),
             pretty_print: PrettyPrintMode::Auto,
             color: ColorMode::default(),
+            edit_mode: EditMode::default(),
             load_prelude: true,
             load_user_init: true,
             exchange_rates: Default::default(),
