@@ -417,7 +417,7 @@ impl Tokenizer {
             let scope = self.scopes.pop().unwrap();
             Ok(scope)
         } else {
-            return Err(TokenizerError {
+            Err(TokenizerError {
                 kind: TokenizerErrorKind::UnexpectedScopeClosing {
                     current_scope: self.scopes.last().copied(),
                     closing_scope_type: scope_type,
@@ -427,7 +427,7 @@ impl Tokenizer {
                     end: self.current,
                     code_source_id: self.code_source_id,
                 },
-            });
+            })
         }
     }
 
@@ -450,7 +450,7 @@ impl Tokenizer {
         self.scopes
             .iter()
             .filter(|scope| scope.scope_type == scope_type)
-            .last()
+            .next_back()
             .map(|scope| scope.scope_start)
     }
 

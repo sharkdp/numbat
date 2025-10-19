@@ -1,7 +1,7 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
+use numbat::Context;
 use numbat::module_importer::BuiltinModuleImporter;
 use numbat::resolver::CodeSource;
-use numbat::Context;
 
 fn import_prelude(c: &mut Criterion) {
     let importer = BuiltinModuleImporter::default();

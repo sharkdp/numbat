@@ -9,7 +9,9 @@ fn numbat() -> Command {
         .unwrap()
         .join("numbat")
         .join("modules");
-    std::env::set_var("NUMBAT_MODULES_PATH", module_path);
+    unsafe {
+        std::env::set_var("NUMBAT_MODULES_PATH", module_path);
+    }
 
     let mut cmd = Command::cargo_bin("numbat").unwrap();
     cmd.arg("--no-init");

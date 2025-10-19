@@ -1,6 +1,6 @@
-use super::macros::*;
 use super::Args;
 use super::Result;
+use super::macros::*;
 
 use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;

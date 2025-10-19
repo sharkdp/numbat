@@ -20,7 +20,7 @@ use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::{FunctionReference, Value};
 use crate::vm::{Constant, ExecutionContext, Op, Vm};
-use crate::{decorator, Type};
+use crate::{Type, decorator};
 
 #[derive(Debug, Clone, Default)]
 pub struct LocalMetadata {

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use super::{macros::*, Args};
+use super::{Args, macros::*};
 use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value};
 
 use super::{Callable, ForeignFunction, Result};

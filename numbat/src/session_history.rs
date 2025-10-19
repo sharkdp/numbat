@@ -127,14 +127,15 @@ mod test {
     #[test]
     fn test_error() {
         let sh = SessionHistory::new();
-        assert!(sh
-            .save(
+        assert!(
+            sh.save(
                 ".", // one place we know writing will fail
                 SessionHistoryOptions {
                     include_err_lines: false,
                     trim_lines: false
                 }
             )
-            .is_err())
+            .is_err()
+        )
     }
 }

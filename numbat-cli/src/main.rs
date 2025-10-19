@@ -18,15 +18,15 @@ use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystem
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::session_history::{ParseEvaluationResult, SessionHistory};
-use numbat::{markup as m, RuntimeErrorKind};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
+use numbat::{RuntimeErrorKind, markup as m};
 
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use clap::Parser;
 use rustyline::config::Configurer;
 use rustyline::{
-    error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter, Validator,
+    Completer, Editor, Helper, Hinter, Validator, error::ReadlineError, history::DefaultHistory,
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
@@ -642,7 +642,9 @@ fn generate_config() -> Result<()> {
         "A default configuration has been written to '{}'.",
         config_file_path.to_string_lossy()
     );
-    println!("Open the file in a text editor. Modify whatever you want to change and remove the other fields");
+    println!(
+        "Open the file in a text editor. Modify whatever you want to change and remove the other fields"
+    );
 
     Ok(())
 }

@@ -391,7 +391,7 @@ impl Vm {
         let (bytecode, spans) = self.current_chunk_mut();
         bytecode.push(op as u8);
         Self::push_u16(bytecode, arg);
-        spans.extend(std::iter::repeat(span).take(3));
+        spans.extend(std::iter::repeat_n(span, 3));
     }
 
     pub(crate) fn add_op2(&mut self, op: Op, arg1: u16, arg2: u16, span: Span) {
@@ -399,7 +399,7 @@ impl Vm {
         bytecode.push(op as u8);
         Self::push_u16(bytecode, arg1);
         Self::push_u16(bytecode, arg2);
-        spans.extend(std::iter::repeat(span).take(5));
+        spans.extend(std::iter::repeat_n(span, 5));
     }
 
     pub(crate) fn add_op3(&mut self, op: Op, arg1: u16, arg2: u16, arg3: u16, span: Span) {
@@ -408,7 +408,7 @@ impl Vm {
         Self::push_u16(bytecode, arg1);
         Self::push_u16(bytecode, arg2);
         Self::push_u16(bytecode, arg3);
-        spans.extend(std::iter::repeat(span).take(7));
+        spans.extend(std::iter::repeat_n(span, 7));
     }
 
     pub fn current_offset(&self) -> u16 {
@@ -793,7 +793,7 @@ impl Vm {
                                     lhs.unit().clone(),
                                     rhs.unit().clone(),
                                 )),
-                            )))
+                            )));
                         }
                         QuantityOrdering::NanOperand => false,
                         QuantityOrdering::Ok(Ordering::Less) => {
@@ -939,10 +939,13 @@ impl Vm {
 
                             match &self.ffi_callables[function_idx].callable {
                                 Callable::Function(function) => {
-                                    let result = (function)(args).map_err(|e| self.runtime_error(*e))?;
+                                    let result =
+                                        (function)(args).map_err(|e| self.runtime_error(*e))?;
                                     self.push(result);
                                 }
-                                Callable::Procedure(..) => unreachable!("Foreign procedures can not be targeted by a function reference"),
+                                Callable::Procedure(..) => unreachable!(
+                                    "Foreign procedures can not be targeted by a function reference"
+                                ),
                             }
                         }
                         FunctionReference::TzConversion(tz_name) => {

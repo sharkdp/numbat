@@ -109,7 +109,9 @@ pub enum ParseErrorKind {
     #[error("Expected '=' or ':' after identifier (and type annotation) in 'let' assignment")]
     ExpectedEqualOrColonAfterLetIdentifier,
 
-    #[error("Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names.")]
+    #[error(
+        "Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names."
+    )]
     ExpectedIdentifierAfterFn,
 
     #[error("Expected identifier")]
@@ -382,10 +384,10 @@ impl<'a> Parser<'a> {
             } else if self.match_exact(tokens, TokenKind::None).is_some() {
                 Ok(Some(AcceptsPrefix::none()))
             } else {
-                return Err(ParseError::new(
+                Err(ParseError::new(
                     ParseErrorKind::UnknownAliasAnnotation,
                     self.peek(tokens).span,
-                ));
+                ))
             }
         } else {
             Ok(None)
@@ -1083,7 +1085,7 @@ impl<'a> Parser<'a> {
                     return Err(ParseError::new(
                         ParseErrorKind::ExpectedIdentifierOrCallAfterPostfixApply,
                         full_span,
-                    ))
+                    ));
                 }
             }
         }
@@ -1424,7 +1426,7 @@ impl<'a> Parser<'a> {
                         return Err(ParseError::new(
                             ParseErrorKind::MissingClosingParen,
                             self.peek(tokens).span,
-                        ))
+                        ));
                     }
                 }
             } else if self.match_exact(tokens, TokenKind::RightParen).is_some() {
@@ -2097,8 +2099,8 @@ mod tests {
     use super::*;
     use crate::{
         ast::{
-            binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
-            struct_, ReplaceSpans,
+            ReplaceSpans, binop, boolean, conditional, factorial, identifier, list, logical_neg,
+            negate, scalar, struct_,
         },
         span::ByteIndex,
     };
@@ -2907,7 +2909,9 @@ mod tests {
         );
 
         parse_as(
-            &["@name(\"Some function\") @description(\"This is a description of some_function.\") fn some_function(x) = 1"],
+            &[
+                "@name(\"Some function\") @description(\"This is a description of some_function.\") fn some_function(x) = 1",
+            ],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "some_function",
@@ -2926,7 +2930,9 @@ mod tests {
         );
 
         parse_as(
-            &["@name(\"Some function\") @example(\"some_function(2)\", \"Use this function:\") @example(\"let some_var = some_function(0)\") fn some_function(x) = 1"],
+            &[
+                "@name(\"Some function\") @example(\"some_function(2)\", \"Use this function:\") @example(\"let some_var = some_function(0)\") fn some_function(x) = 1",
+            ],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "some_function",
@@ -2937,7 +2943,10 @@ mod tests {
                 return_type_annotation: None,
                 decorators: vec![
                     decorator::Decorator::Name("Some function".into()),
-                    decorator::Decorator::Example("some_function(2)".into(), Some("Use this function:".into())),
+                    decorator::Decorator::Example(
+                        "some_function(2)".into(),
+                        Some("Use this function:".into()),
+                    ),
                     decorator::Decorator::Example("let some_var = some_function(0)".into(), None),
                 ],
             },

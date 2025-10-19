@@ -4,10 +4,10 @@ use common::get_test_context;
 
 use compact_str::CompactString;
 use insta::assert_snapshot;
+use numbat::NumbatError;
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
-use numbat::NumbatError;
-use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
+use numbat::{Context, InterpreterResult, pretty_print::PrettyPrint};
 
 #[track_caller]
 fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: impl AsRef<str>) {
@@ -802,7 +802,10 @@ fn test_full_simplify_for_function_calls() {
 
 #[test]
 fn test_datetime_runtime_errors() {
-    expect_failure("datetime(\"2000-01-99\")", "Unrecognized datetime format: failed to parse day in date \"2000-01-99\": day is not valid: parameter 'day' with value 99 is not in the required range of 1..=31");
+    expect_failure(
+        "datetime(\"2000-01-99\")",
+        "Unrecognized datetime format: failed to parse day in date \"2000-01-99\": day is not valid: parameter 'day' with value 99 is not in the required range of 1..=31",
+    );
     expect_failure("now() -> tz(\"Europe/NonExisting\")", "Unknown timezone");
     expect_failure(
         "date(\"2000-01-01\") + 1e100 years",
@@ -849,11 +852,12 @@ fn test_recovery_after_runtime_error() {
         let mut ctx = get_test_context();
 
         expect_failure_with_context(&mut ctx, "let x = 1/0", "Division by zero");
-        assert!(ctx
-            .interpret("let x = 1", CodeSource::Internal)
-            .unwrap()
-            .1
-            .is_continue());
+        assert!(
+            ctx.interpret("let x = 1", CodeSource::Internal)
+                .unwrap()
+                .1
+                .is_continue()
+        );
         expect_output_with_context(&mut ctx, "x", "1");
     }
 }

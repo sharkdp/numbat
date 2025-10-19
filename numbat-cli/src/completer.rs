@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use numbat::{compact_str::CompactString, unicode_input::UNICODE_INPUT, Context};
-use rustyline::completion::{extract_word, Completer, Pair};
+use numbat::{Context, compact_str::CompactString, unicode_input::UNICODE_INPUT};
+use rustyline::completion::{Completer, Pair, extract_word};
 
 pub struct NumbatCompleter {
     pub context: Arc<Mutex<Context>>,
@@ -73,10 +73,11 @@ impl Completer for NumbatCompleter {
 
         // does it look like we're tab-completing a timezone?
         let complete_tz = line.find("tz(").and_then(|convert_pos| {
-            if let Some(quote_pos) = line.rfind('"') {
-                if quote_pos > convert_pos && pos > quote_pos {
-                    return Some(quote_pos + 1);
-                }
+            if let Some(quote_pos) = line.rfind('"')
+                && quote_pos > convert_pos
+                && pos > quote_pos
+            {
+                return Some(quote_pos + 1);
             }
             None
         });
@@ -120,11 +121,8 @@ impl Completer for NumbatCompleter {
             .iter()
             .any(|&s| line[..pos].contains(s));
 
-        let candidates = self
-            .context
-            .lock()
-            .unwrap()
-            .get_completions_for(word_part, add_paren);
+        let binding = self.context.lock().unwrap();
+        let candidates = binding.get_completions_for(word_part, add_paren);
 
         Ok((
             pos_word,

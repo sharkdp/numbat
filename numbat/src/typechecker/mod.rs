@@ -22,15 +22,15 @@ use crate::ast::{
     TypeExpression, TypeParameterBound,
 };
 use crate::dimension::DimensionRegistry;
-use crate::name_resolution::Namespace;
 use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
+use crate::name_resolution::Namespace;
 use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, Type};
 use crate::{decorator, ffi, suggestion};
 
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{CompactString, ToCompactString, format_compact};
 use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResolution};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
@@ -235,13 +235,13 @@ impl TypeChecker {
     fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
         match annotation {
             TypeAnnotation::TypeExpression(dexpr) => {
-                if let TypeExpression::TypeIdentifier(_, name) = dexpr {
-                    if let Some(info) = self.structs.get(name) {
-                        // if we see a struct name here, it's safe to assume it
-                        // isn't accidentally clashing with a dimension, we
-                        // check that earlier.
-                        return Ok(Type::Struct(Box::new(info.clone())));
-                    }
+                if let TypeExpression::TypeIdentifier(_, name) = dexpr
+                    && let Some(info) = self.structs.get(name)
+                {
+                    // if we see a struct name here, it's safe to assume it
+                    // isn't accidentally clashing with a dimension, we
+                    // check that earlier.
+                    return Ok(Type::Struct(Box::new(info.clone())));
                 }
 
                 let mut factors = self
@@ -254,7 +254,7 @@ impl TypeChecker {
                 // Replace BaseDimension("D") with TVar("D") for all type parameters
                 for (factor, _) in Arc::make_mut(&mut factors) {
                     *factor = match factor {
-                        DTypeFactor::BaseDimension(ref n)
+                        &mut DTypeFactor::BaseDimension(ref n)
                             if self
                                 .registry
                                 .introduced_type_parameters
@@ -446,7 +446,7 @@ impl TypeChecker {
 
                     if *op == BinaryOperator::Sub && rhs_is_datetime {
                         let time = DType::base_dimension("Time"); // TODO: error handling
-                                                                  // TODO make sure the "second" unit exists
+                        // TODO make sure the "second" unit exists
 
                         typed_ast::Expression::BinaryOperatorForDate(
                             *span_op,
@@ -1509,55 +1509,48 @@ impl TypeChecker {
                     if self
                         .add_equal_constraint(&return_type_inferred, &return_type)
                         .is_trivially_violated()
+                        && let Some(annotated_return_type) = annotated_return_type
                     {
-                        if let Some(annotated_return_type) = annotated_return_type {
-                            match (&return_type_inferred, annotated_return_type) {
-                                (
-                                    Type::Dimension(dtype_deduced),
-                                    Type::Dimension(dtype_specified),
-                                ) => {
-                                    return Err(Box::new(TypeCheckError::IncompatibleDimensions(
-                                        IncompatibleDimensionsError {
-                                            span_operation: *function_name_span,
-                                            operation: "function return type".into(),
-                                            span_expected: return_type_annotation
-                                                .as_ref()
-                                                .unwrap()
-                                                .full_span(),
-                                            expected_name: "specified return type",
-                                            expected_dimensions: self
-                                                .registry
-                                                .get_derived_entry_names_for(
-                                                    &dtype_specified.to_base_representation(),
-                                                ),
-                                            expected_type: dtype_specified.to_base_representation(),
-                                            span_actual: body
-                                                .as_ref()
-                                                .map(|b| b.full_span())
-                                                .unwrap(),
-                                            actual_name: "   actual return type",
-                                            actual_name_for_fix: "expression in the function body",
-                                            actual_dimensions: self
-                                                .registry
-                                                .get_derived_entry_names_for(
-                                                    &dtype_deduced.to_base_representation(),
-                                                ),
-                                            actual_type: dtype_deduced.to_base_representation(),
-                                        },
-                                    )));
-                                }
-                                (return_type_inferred, type_specified) => {
-                                    return Err(Box::new(
-                                        TypeCheckError::IncompatibleTypesInAnnotation(
-                                            "function definition".into(),
-                                            *function_name_span,
-                                            type_specified,
-                                            return_type_annotation.as_ref().unwrap().full_span(),
-                                            return_type_inferred.clone(),
-                                            body.as_ref().map(|b| b.full_span()).unwrap(),
-                                        ),
-                                    ));
-                                }
+                        match (&return_type_inferred, annotated_return_type) {
+                            (Type::Dimension(dtype_deduced), Type::Dimension(dtype_specified)) => {
+                                return Err(Box::new(TypeCheckError::IncompatibleDimensions(
+                                    IncompatibleDimensionsError {
+                                        span_operation: *function_name_span,
+                                        operation: "function return type".into(),
+                                        span_expected: return_type_annotation
+                                            .as_ref()
+                                            .unwrap()
+                                            .full_span(),
+                                        expected_name: "specified return type",
+                                        expected_dimensions: self
+                                            .registry
+                                            .get_derived_entry_names_for(
+                                                &dtype_specified.to_base_representation(),
+                                            ),
+                                        expected_type: dtype_specified.to_base_representation(),
+                                        span_actual: body.as_ref().map(|b| b.full_span()).unwrap(),
+                                        actual_name: "   actual return type",
+                                        actual_name_for_fix: "expression in the function body",
+                                        actual_dimensions: self
+                                            .registry
+                                            .get_derived_entry_names_for(
+                                                &dtype_deduced.to_base_representation(),
+                                            ),
+                                        actual_type: dtype_deduced.to_base_representation(),
+                                    },
+                                )));
+                            }
+                            (return_type_inferred, type_specified) => {
+                                return Err(Box::new(
+                                    TypeCheckError::IncompatibleTypesInAnnotation(
+                                        "function definition".into(),
+                                        *function_name_span,
+                                        type_specified,
+                                        return_type_annotation.as_ref().unwrap().full_span(),
+                                        return_type_inferred.clone(),
+                                        body.as_ref().map(|b| b.full_span()).unwrap(),
+                                    ),
+                                ));
                             }
                         }
                     }
@@ -1851,12 +1844,11 @@ impl TypeChecker {
 
         if let typed_ast::Statement::DefineDerivedUnit(_, _, expr, _, _annotation, type_, _) =
             &elaborated_statement
+            && !type_.unsafe_as_concrete().is_closed()
         {
-            if !type_.unsafe_as_concrete().is_closed() {
-                return Err(Box::new(
-                    TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(expr.full_span()),
-                ));
-            }
+            return Err(Box::new(
+                TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(expr.full_span()),
+            ));
         }
 
         // Make sure that the user-specified type parameter bounds are properly reflected:

@@ -132,10 +132,10 @@ pub fn examples(decorators: &[Decorator]) -> Vec<(CompactString, Option<CompactS
 
 pub fn contains_aliases_with_prefixes(decorates: &[Decorator]) -> bool {
     for decorator in decorates {
-        if let Decorator::Aliases(aliases) = decorator {
-            if aliases.iter().any(|(_, prefixes, _)| prefixes.is_some()) {
-                return true;
-            }
+        if let Decorator::Aliases(aliases) = decorator
+            && aliases.iter().any(|(_, prefixes, _)| prefixes.is_some())
+        {
+            return true;
         }
     }
 

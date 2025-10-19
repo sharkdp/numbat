@@ -67,8 +67,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: "1.76.0"
     - uses: actions/checkout@v3
     - name: Install wasm-pack
       run: |

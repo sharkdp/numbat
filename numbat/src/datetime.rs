@@ -1,5 +1,5 @@
 use compact_str::{CompactString, ToCompactString};
-use jiff::{civil::DateTime, fmt::rfc2822, tz::TimeZone, Timestamp, Zoned};
+use jiff::{Timestamp, Zoned, civil::DateTime, fmt::rfc2822, tz::TimeZone};
 use std::str::FromStr;
 
 pub fn get_local_timezone_or_utc() -> TimeZone {
@@ -12,10 +12,10 @@ pub fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
     }
 
     // RFC 3339
-    if let Ok(timestamp) = DateTime::strptime("%Y-%m-%dT%H:%M:%S%.fZ", input) {
-        if let zoned @ Ok(_) = timestamp.to_zoned(TimeZone::UTC) {
-            return zoned;
-        }
+    if let Ok(timestamp) = DateTime::strptime("%Y-%m-%dT%H:%M:%S%.fZ", input)
+        && let zoned @ Ok(_) = timestamp.to_zoned(TimeZone::UTC)
+    {
+        return zoned;
     }
 
     // RFC 2822
@@ -52,12 +52,11 @@ pub fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
         // Get the last space-separated word in the input string, and try to parse it
         // as a timezone specifier, then try to match the rest of the string with the
         // given format.
-        if let Some((rest, potential_timezone_name)) = input.rsplit_once(' ') {
-            if let Ok(tz) = TimeZone::get(potential_timezone_name) {
-                if let Ok(datetime) = DateTime::strptime(format, rest) {
-                    return datetime.to_zoned(tz);
-                }
-            }
+        if let Some((rest, potential_timezone_name)) = input.rsplit_once(' ')
+            && let Ok(tz) = TimeZone::get(potential_timezone_name)
+            && let Ok(datetime) = DateTime::strptime(format, rest)
+        {
+            return datetime.to_zoned(tz);
         }
 
         // Without timezone/offset

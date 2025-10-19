@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{CompactString, ToCompactString, format_compact};
 use num_traits::{Pow, ToPrimitive};
 use pretty_dtoa::FmtFloatConfig;
 

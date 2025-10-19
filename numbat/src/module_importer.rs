@@ -67,20 +67,21 @@ impl ModuleImporter for FileSystemImporter {
                 .flatten()
             {
                 let path = entry.path();
-                if path.is_file() && path.extension() == Some(OsStr::new("nbt")) {
-                    if let Ok(relative_path) = path.strip_prefix(root_path) {
-                        let components = relative_path
-                            .components()
-                            .map(|c| {
-                                c.as_os_str()
-                                    .to_string_lossy()
-                                    .trim_end_matches(".nbt")
-                                    .to_compact_string()
-                            })
-                            .collect();
+                if path.is_file()
+                    && path.extension() == Some(OsStr::new("nbt"))
+                    && let Ok(relative_path) = path.strip_prefix(root_path)
+                {
+                    let components = relative_path
+                        .components()
+                        .map(|c| {
+                            c.as_os_str()
+                                .to_string_lossy()
+                                .trim_end_matches(".nbt")
+                                .to_compact_string()
+                        })
+                        .collect();
 
-                        modules.push(ModulePath(components));
-                    }
+                    modules.push(ModulePath(components));
                 }
             }
         }

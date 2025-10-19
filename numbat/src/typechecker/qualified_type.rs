@@ -1,4 +1,4 @@
-use crate::{type_variable::TypeVariable, Type};
+use crate::{Type, type_variable::TypeVariable};
 
 use super::{
     substitutions::{ApplySubstitution, Substitution, SubstitutionError},
