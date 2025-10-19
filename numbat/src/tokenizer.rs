@@ -881,7 +881,7 @@ impl Tokenizer {
     }
 }
 
-pub fn tokenize(input: &str, code_source_id: usize) -> Result<Vec<Token>> {
+pub fn tokenize(input: &str, code_source_id: usize) -> Result<Vec<Token<'_>>> {
     let mut tokenizer = Tokenizer::new(code_source_id);
     tokenizer.scan(input)
 }

@@ -641,7 +641,7 @@ pub enum Statement<'a> {
 }
 
 impl Statement<'_> {
-    pub fn as_expression(&self) -> Option<&Expression> {
+    pub fn as_expression(&self) -> Option<&Expression<'_>> {
         if let Self::Expression(v) = self {
             Some(v)
         } else {
@@ -1385,7 +1385,7 @@ mod tests {
     use crate::markup::{Formatter, PlainTextFormatter};
     use crate::prefix_transformer::Transformer;
 
-    fn parse(code: &str) -> Statement {
+    fn parse(code: &str) -> Statement<'_> {
         let statements = crate::parser::parse(
             "dimension Scalar = 1
                  dimension Length
