@@ -7,8 +7,8 @@ use crate::{
     ast::ProcedureKind,
     ffi::ControlFlow,
     interpreter::{
-        assert_eq::{AssertEq2Error, AssertEq3Error},
         RuntimeErrorKind,
+        assert_eq::{AssertEq2Error, AssertEq3Error},
     },
     pretty_print::PrettyPrint,
     span::Span,

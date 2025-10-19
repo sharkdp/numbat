@@ -7,8 +7,8 @@ use crate::{BaseRepresentation, NameResolutionError, Type};
 use compact_str::CompactString;
 use thiserror::Error;
 
-use super::substitutions::SubstitutionError;
 use super::IncompatibleDimensionsError;
+use super::substitutions::SubstitutionError;
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
@@ -51,10 +51,14 @@ pub enum TypeCheckError {
         num_args: usize,
     },
 
-    #[error("'{1}' can not be used as a type parameter because it is also an existing dimension identifier.")]
+    #[error(
+        "'{1}' can not be used as a type parameter because it is also an existing dimension identifier."
+    )]
     TypeParameterNameClash(Span, String),
 
-    #[error("Foreign function definition (without body) '{1}' needs parameter and return type annotations.")]
+    #[error(
+        "Foreign function definition (without body) '{1}' needs parameter and return type annotations."
+    )]
     ForeignFunctionNeedsTypeAnnotations(Span, String),
 
     #[error("Unknown foreign function (without body) '{1}'")]
@@ -135,16 +139,22 @@ pub enum TypeCheckError {
     #[error(transparent)]
     NameResolutionError(#[from] NameResolutionError),
 
-    #[error("Could not solve the following constraints:\n{0}\n.. while trying to infer types in the (elaborated) statement:\n  {1}\n")]
+    #[error(
+        "Could not solve the following constraints:\n{0}\n.. while trying to infer types in the (elaborated) statement:\n  {1}\n"
+    )]
     ConstraintSolverError(String, String),
 
-    #[error("{1}\nThis error occured while trying to infer types in the (elaborated) statement:\n  {0}\n")]
+    #[error(
+        "{1}\nThis error occured while trying to infer types in the (elaborated) statement:\n  {0}\n"
+    )]
     SubstitutionError(String, SubstitutionError),
 
     #[error("Missing dimension bound for type parameter")]
     MissingDimBound(Span),
 
-    #[error("Type for exponentiation operation can not be inferred for this case, consider adding a type annotation for the base")]
+    #[error(
+        "Type for exponentiation operation can not be inferred for this case, consider adding a type annotation for the base"
+    )]
     ExponentiationNeedsTypeAnnotation(Span),
 
     #[error("Derived unit definitions may not contain generic types. Use a variable instead")]

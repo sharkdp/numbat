@@ -1,8 +1,8 @@
 use compact_str::CompactString;
 
-use super::macros::*;
 use super::Args;
 use super::Result;
+use super::macros::*;
 use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
 use crate::typed_ast::DType;

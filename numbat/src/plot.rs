@@ -2,10 +2,10 @@ use compact_str::CompactString;
 
 #[cfg(feature = "plotting")]
 use plotly::{
+    Bar, Configuration, Layout, Plot, Scatter,
     color::Rgb,
     common::{Font, Line},
     layout::Axis,
-    Bar, Configuration, Layout, Plot, Scatter,
 };
 
 #[cfg(feature = "plotting")]

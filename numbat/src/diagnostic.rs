@@ -1,13 +1,13 @@
 use codespan_reporting::diagnostic::LabelStyle;
 
 use crate::{
+    NameResolutionError,
     interpreter::{RuntimeError, RuntimeErrorKind},
     parser::ParseError,
     pretty_print::PrettyPrint,
     resolver::{Resolver, ResolverError},
     span::Span,
     typechecker::{IncompatibleDimensionsError, TypeCheckError},
-    NameResolutionError,
 };
 
 pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
@@ -18,23 +18,29 @@ pub trait ErrorDiagnostic {
 
 impl ErrorDiagnostic for ParseError {
     fn diagnostics(&self) -> Vec<Diagnostic> {
-        vec![Diagnostic::error()
-            .with_message("while parsing")
-            .with_labels(vec![self
-                .span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(self.kind.to_string())])]
+        vec![
+            Diagnostic::error()
+                .with_message("while parsing")
+                .with_labels(vec![
+                    self.span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(self.kind.to_string()),
+                ]),
+        ]
     }
 }
 
 impl ErrorDiagnostic for ResolverError {
     fn diagnostics(&self) -> Vec<Diagnostic> {
         match self {
-            ResolverError::UnknownModule(span, _) => vec![Diagnostic::error()
-                .with_message("while resolving imports in")
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message("Unknown module")])],
+            ResolverError::UnknownModule(span, _) => vec![
+                Diagnostic::error()
+                    .with_message("while resolving imports in")
+                    .with_labels(vec![
+                        span.diagnostic_label(LabelStyle::Primary)
+                            .with_message("Unknown module"),
+                    ]),
+            ],
             ResolverError::ParseErrors(errors) => {
                 errors.iter().flat_map(|e| e.diagnostics()).collect()
             }
@@ -50,25 +56,30 @@ impl ErrorDiagnostic for NameResolutionError {
                 original_item_type,
                 conflict_span,
                 original_span,
-            } => vec![Diagnostic::error()
-                .with_message("identifier clash in definition")
-                .with_labels(vec![
-                    original_span
-                        .diagnostic_label(LabelStyle::Secondary)
-                        .with_message(if let Some(t) = original_item_type.as_ref() {
-                            format!("Previously defined {t} here")
-                        } else {
-                            "Previously defined here".to_owned()
-                        }),
-                    conflict_span
-                        .diagnostic_label(LabelStyle::Primary)
-                        .with_message("identifier is already in use"),
-                ])],
-            NameResolutionError::ReservedIdentifier(span) => vec![Diagnostic::error()
-                .with_message("reserved identifier may not be used")
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message("reserved identifier")])],
+            } => vec![
+                Diagnostic::error()
+                    .with_message("identifier clash in definition")
+                    .with_labels(vec![
+                        original_span
+                            .diagnostic_label(LabelStyle::Secondary)
+                            .with_message(if let Some(t) = original_item_type.as_ref() {
+                                format!("Previously defined {t} here")
+                            } else {
+                                "Previously defined here".to_owned()
+                            }),
+                        conflict_span
+                            .diagnostic_label(LabelStyle::Primary)
+                            .with_message("identifier is already in use"),
+                    ]),
+            ],
+            NameResolutionError::ReservedIdentifier(span) => vec![
+                Diagnostic::error()
+                    .with_message("reserved identifier may not be used")
+                    .with_labels(vec![
+                        span.diagnostic_label(LabelStyle::Primary)
+                            .with_message("reserved identifier"),
+                    ]),
+            ],
         }
     }
 }
@@ -85,10 +96,11 @@ impl ErrorDiagnostic for TypeCheckError {
                 } else {
                     vec![]
                 };
-                d.with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message("unknown identifier")])
-                    .with_notes(notes)
+                d.with_labels(vec![
+                    span.diagnostic_label(LabelStyle::Primary)
+                        .with_message("unknown identifier"),
+                ])
+                .with_notes(notes)
             }
             TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {
                 operation,
@@ -127,16 +139,19 @@ impl ErrorDiagnostic for TypeCheckError {
             }
             TypeCheckError::NonScalarExponent(span, type_)
             | TypeCheckError::NonScalarFactorialArgument(span, type_) => d
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(format!("{type_}"))])
+                .with_labels(vec![
+                    span.diagnostic_label(LabelStyle::Primary)
+                        .with_message(format!("{type_}")),
+                ])
                 .with_notes(vec![inner_error]),
-            TypeCheckError::UnsupportedConstEvalExpression(span, _) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
-            TypeCheckError::DivisionByZeroInConstEvalExpression(span) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
+            TypeCheckError::UnsupportedConstEvalExpression(span, _) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
+            TypeCheckError::DivisionByZeroInConstEvalExpression(span) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
             TypeCheckError::RegistryError(re) => match re {
                 crate::registry::RegistryError::EntryExists(_) => d.with_notes(vec![inner_error]),
                 crate::registry::RegistryError::UnknownEntry(name, suggestion) => {
@@ -173,26 +188,28 @@ impl ErrorDiagnostic for TypeCheckError {
                 arity,
                 num_args,
             } => {
-                let mut labels = vec![callable_span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(format!(
-                        "{what}was called with {num}, but takes {range}",
-                        what = if callable_definition_span.is_some() {
-                            ""
-                        } else {
-                            "procedure or function object "
-                        },
-                        num = if *num_args == 1 {
-                            "one argument".into()
-                        } else {
-                            format!("{num_args} arguments")
-                        },
-                        range = if arity.start() == arity.end() {
-                            format!("{}", arity.start())
-                        } else {
-                            format!("{} to {}", arity.start(), arity.end())
-                        }
-                    ))];
+                let mut labels = vec![
+                    callable_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(format!(
+                            "{what}was called with {num}, but takes {range}",
+                            what = if callable_definition_span.is_some() {
+                                ""
+                            } else {
+                                "procedure or function object "
+                            },
+                            num = if *num_args == 1 {
+                                "one argument".into()
+                            } else {
+                                format!("{num_args} arguments")
+                            },
+                            range = if arity.start() == arity.end() {
+                                format!("{}", arity.start())
+                            } else {
+                                format!("{} to {}", arity.start(), arity.end())
+                            }
+                        )),
+                ];
                 if let Some(span) = callable_definition_span {
                     labels.insert(
                         0,
@@ -203,9 +220,10 @@ impl ErrorDiagnostic for TypeCheckError {
 
                 d.with_labels(labels)
             }
-            TypeCheckError::TypeParameterNameClash(span, _) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
+            TypeCheckError::TypeParameterNameClash(span, _) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
             TypeCheckError::IncompatibleTypesInCondition(
                 if_span,
                 then_type,
@@ -301,10 +319,12 @@ impl ErrorDiagnostic for TypeCheckError {
                     ])
                     .with_notes(vec![inner_error])
                 } else {
-                    d.with_labels(vec![argument_span
-                        .diagnostic_label(LabelStyle::Primary)
-                        .with_message(argument_type.to_string())])
-                        .with_notes(vec![inner_error])
+                    d.with_labels(vec![
+                        argument_span
+                            .diagnostic_label(LabelStyle::Primary)
+                            .with_message(argument_type.to_string()),
+                    ])
+                    .with_notes(vec![inner_error])
                 }
             }
             TypeCheckError::IncompatibleTypesInList(
@@ -323,9 +343,10 @@ impl ErrorDiagnostic for TypeCheckError {
                 ])
                 .with_notes(vec![inner_error]),
             TypeCheckError::NoDimensionlessBaseUnit(span, unit_name) => d
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error)])
+                .with_labels(vec![
+                    span.diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                ])
                 .with_notes(vec![
                     format!("Use 'unit {unit_name}' for ad-hoc units."),
                     format!("Use 'unit {unit_name}: Scalar = …' for derived units."),
@@ -339,13 +360,15 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::NoFunctionReferenceToGenericFunction(span)
             | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span)
             | TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(span)
-            | TypeCheckError::MultipleTypedHoles(span) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
+            | TypeCheckError::MultipleTypedHoles(span) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
             TypeCheckError::MissingDimension(span, dim) => d
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(format!("Missing dimension '{dim}'"))])
+                .with_labels(vec![
+                    span.diagnostic_label(LabelStyle::Primary)
+                        .with_message(format!("Missing dimension '{dim}'")),
+                ])
                 .with_notes(vec![format!(
                     "This operation requires the '{dim}' dimension to be defined"
                 )]),
@@ -412,9 +435,10 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message("Defined here"),
             ]),
-            TypeCheckError::UnknownStruct(span, _name) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
+            TypeCheckError::UnknownStruct(span, _name) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
             TypeCheckError::UnknownFieldInStructInstantiation(field_span, defn_span, _, _) => d
                 .with_labels(vec![
                     field_span
@@ -460,15 +484,17 @@ impl ErrorDiagnostic for TypeCheckError {
                 ])
             }
             TypeCheckError::MissingDimBound(span) => d
-                .with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error)])
+                .with_labels(vec![
+                    span.diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                ])
                 .with_notes(vec![
-                    "Consider adding `: Dim` after the type parameter".to_owned()
+                    "Consider adding `: Dim` after the type parameter".to_owned(),
                 ]),
-            TypeCheckError::ExponentiationNeedsTypeAnnotation(span) => d.with_labels(vec![span
-                .diagnostic_label(LabelStyle::Primary)
-                .with_message(inner_error)]),
+            TypeCheckError::ExponentiationNeedsTypeAnnotation(span) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
             TypeCheckError::TypedHoleInStatement(span, type_, statement, matches) => {
                 let mut notes = vec![
                     format!("Found a hole of type '{type_}' in the statement:"),
@@ -480,11 +506,12 @@ impl ErrorDiagnostic for TypeCheckError {
                     notes.push(format!("  {}", matches.join(", ")));
                 }
 
-                d.with_labels(vec![span
-                    .diagnostic_label(LabelStyle::Primary)
-                    .with_message(type_)])
-                    .with_message("Found typed hole")
-                    .with_notes(notes)
+                d.with_labels(vec![
+                    span.diagnostic_label(LabelStyle::Primary)
+                        .with_message(type_),
+                ])
+                .with_message("Found typed hole")
+                .with_notes(notes)
             }
         };
         vec![d]
@@ -507,9 +534,10 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, RuntimeError> {
             RuntimeErrorKind::AssertFailed(span) => diag.push(
                 Diagnostic::error()
                     .with_message("Assertion failed")
-                    .with_labels(vec![span
-                        .diagnostic_label(LabelStyle::Primary)
-                        .with_message("assertion failed")]),
+                    .with_labels(vec![
+                        span.diagnostic_label(LabelStyle::Primary)
+                            .with_message("assertion failed"),
+                    ]),
             ),
             RuntimeErrorKind::AssertEq2Failed(assert_eq2_error) => diag.push(
                 Diagnostic::error()

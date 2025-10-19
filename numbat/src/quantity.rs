@@ -1,9 +1,9 @@
 use crate::arithmetic::{Exponent, Power, Rational};
 use crate::number::Number;
 use crate::pretty_print::PrettyPrint;
-use crate::unit::{is_multiple_of, Unit, UnitFactor};
+use crate::unit::{Unit, UnitFactor, is_multiple_of};
 
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{CompactString, ToCompactString, format_compact};
 use itertools::Itertools;
 use num_rational::Ratio;
 use num_traits::{FromPrimitive, Zero};
@@ -159,12 +159,12 @@ impl Quantity {
                 factor.exponent = Exponent::from_integer(1);
                 let factor_unit = Unit::from_factor(factor);
 
-                if let Some(alpha) = is_multiple_of(&unit, &factor_unit) {
-                    if alpha.is_integer() {
-                        let simplified_unit = factor_unit.power(alpha);
-                        if let Ok(q) = self.convert_to(&simplified_unit) {
-                            return q;
-                        }
+                if let Some(alpha) = is_multiple_of(&unit, &factor_unit)
+                    && alpha.is_integer()
+                {
+                    let simplified_unit = factor_unit.power(alpha);
+                    if let Ok(q) = self.convert_to(&simplified_unit) {
+                        return q;
                     }
                 }
             }

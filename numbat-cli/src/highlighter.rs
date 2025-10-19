@@ -1,8 +1,8 @@
 use colored::Colorize;
 use numbat::compact_str::ToCompactString;
 use numbat::keywords::KEYWORDS;
-use numbat::{markup, Context};
-use rustyline::{highlight::Highlighter, CompletionType};
+use numbat::{Context, markup};
+use rustyline::{CompletionType, highlight::Highlighter};
 
 use std::{
     borrow::Cow,

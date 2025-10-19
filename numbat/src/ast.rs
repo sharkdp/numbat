@@ -7,7 +7,7 @@ use crate::{
     arithmetic::Exponent, decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     pretty_print::PrettyPrint,
 };
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{CompactString, ToCompactString, format_compact};
 use itertools::Itertools;
 use num_traits::Signed;
 
@@ -149,23 +149,17 @@ impl Expression<'_> {
 
 #[cfg(test)]
 macro_rules! scalar {
-    ( $num:expr ) => {{
-        crate::ast::Expression::Scalar(Span::dummy(), Number::from_f64($num))
-    }};
+    ( $num:expr ) => {{ crate::ast::Expression::Scalar(Span::dummy(), Number::from_f64($num)) }};
 }
 
 #[cfg(test)]
 macro_rules! identifier {
-    ( $name:expr ) => {{
-        crate::ast::Expression::Identifier(Span::dummy(), $name.into())
-    }};
+    ( $name:expr ) => {{ crate::ast::Expression::Identifier(Span::dummy(), $name.into()) }};
 }
 
 #[cfg(test)]
 macro_rules! boolean {
-    ( $name:expr ) => {{
-        crate::ast::Expression::Boolean(Span::dummy(), $name.into())
-    }};
+    ( $name:expr ) => {{ crate::ast::Expression::Boolean(Span::dummy(), $name.into()) }};
 }
 
 #[cfg(test)]

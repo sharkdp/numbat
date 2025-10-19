@@ -1,4 +1,4 @@
-use compact_str::{format_compact, CompactString};
+use compact_str::{CompactString, format_compact};
 use itertools::Itertools;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
@@ -139,8 +139,10 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
 
                     print!("<pre>");
                     print!("<div class=\"buttons\">");
-                    print!("<button class=\"fa fa-play play-button\" title=\"Run this code\" aria-label=\"Run this code\"  onclick=\" window.open('{}')\"\"></button>",
-                        example_url);
+                    print!(
+                        "<button class=\"fa fa-play play-button\" title=\"Run this code\" aria-label=\"Run this code\"  onclick=\" window.open('{}')\"\"></button>",
+                        example_url
+                    );
                     print!("</div>");
                     print!("<code class=\"language-nbt hljs numbat\">");
                     for l in example_input.lines() {

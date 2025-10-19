@@ -3,6 +3,7 @@ use std::str::{FromStr, SplitWhitespace};
 use compact_str::ToCompactString;
 
 use crate::{
+    Context, ParseError, RuntimeError,
     diagnostic::{ErrorDiagnostic, ResolverDiagnostic},
     help::help_markup,
     interpreter::RuntimeErrorKind,
@@ -11,7 +12,6 @@ use crate::{
     resolver::CodeSource,
     session_history::{SessionHistory, SessionHistoryOptions},
     span::{ByteIndex, Span},
-    Context, ParseError, RuntimeError,
 };
 
 #[derive(Debug, Clone, PartialEq)]

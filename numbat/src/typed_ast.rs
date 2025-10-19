@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{CompactString, ToCompactString, format_compact};
 use indexmap::IndexMap;
 use itertools::Itertools;
 
@@ -11,14 +11,14 @@ use crate::dimension::DimensionRegistry;
 use crate::pretty_print::escape_numbat_string;
 use crate::traversal::{ForAllExpressions, ForAllTypeSchemes};
 use crate::type_variable::TypeVariable;
+use crate::typechecker::TypeCheckError;
 use crate::typechecker::qualified_type::QualifiedType;
 use crate::typechecker::type_scheme::TypeScheme;
-use crate::typechecker::TypeCheckError;
+use crate::{BaseRepresentation, BaseRepresentationFactor, markup as m};
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, span::Span,
 };
-use crate::{markup as m, BaseRepresentation, BaseRepresentationFactor};
 
 /// Dimension type
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -155,11 +155,11 @@ impl DType {
         // Merge powers of equal factors:
         let mut new_factors = Vec::new();
         for (f, n) in self.factors.iter() {
-            if let Some((last_f, last_n)) = new_factors.last_mut() {
-                if f == last_f {
-                    *last_n += n;
-                    continue;
-                }
+            if let Some((last_f, last_n)) = new_factors.last_mut()
+                && f == last_f
+            {
+                *last_n += n;
+                continue;
             }
             new_factors.push((f.clone(), *n));
         }

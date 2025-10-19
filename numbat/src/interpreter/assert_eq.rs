@@ -1,5 +1,5 @@
 use crate::{quantity::Quantity, span::Span, value::Value};
-use compact_str::{format_compact, CompactString};
+use compact_str::{CompactString, format_compact};
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -100,7 +100,11 @@ impl Display for AssertEq3Error {
         let diff_abs = self.fmt_quantity(&self.diff_abs);
         let eps = self.fmt_quantity(&self.eps);
 
-        write!(f, "Assertion failed because the following two quantities differ by {}, which is more than {}:\n  {}\n  {}", diff_abs, eps, lhs, rhs)
+        write!(
+            f,
+            "Assertion failed because the following two quantities differ by {}, which is more than {}:\n  {}\n  {}",
+            diff_abs, eps, lhs, rhs
+        )
     }
 }
 

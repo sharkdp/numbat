@@ -1,12 +1,12 @@
 use compact_str::CompactString;
 
+use crate::Type;
 use crate::ast::{TypeAnnotation, TypeParameterBound};
 use crate::dimension::DimensionRegistry;
 use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::pretty_print_function_signature;
-use crate::Type;
 
 use super::map_stack::MapStack;
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};

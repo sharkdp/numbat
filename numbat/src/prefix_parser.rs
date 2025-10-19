@@ -174,10 +174,10 @@ impl PrefixParser {
             return Err(NameResolutionError::ReservedIdentifier(definition_span));
         }
 
-        if clash_with_other_identifiers {
-            if let Some(original_span) = self.other_identifiers.get(name) {
-                return Err(self.identifier_clash_error(name, definition_span, *original_span));
-            }
+        if clash_with_other_identifiers
+            && let Some(original_span) = self.other_identifiers.get(name)
+        {
+            return Err(self.identifier_clash_error(name, definition_span, *original_span));
         }
 
         match self.parse(name) {

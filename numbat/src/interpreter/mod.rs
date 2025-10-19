@@ -63,7 +63,9 @@ pub enum RuntimeErrorKind {
     DurationOutOfRange,
     #[error("DateTime out of range")]
     DateTimeOutOfRange,
-    #[error("{0}. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
+    #[error(
+        "{0}. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers."
+    )]
     DateFormattingError(String),
 
     #[error("Invalid format specifiers: {0}")]

@@ -1,7 +1,7 @@
 use crate::buffered_writer::BufferedWriter;
 use crate::markup::{FormatType, FormattedString, Formatter};
 
-use compact_str::{format_compact, CompactString};
+use compact_str::{CompactString, format_compact};
 use termcolor::{Color, WriteColor};
 
 pub struct HtmlFormatter;

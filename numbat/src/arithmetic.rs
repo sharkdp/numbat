@@ -1,4 +1,4 @@
-use compact_str::{format_compact, CompactString};
+use compact_str::{CompactString, format_compact};
 use num_rational::Ratio;
 
 pub type Rational = Ratio<i128>;

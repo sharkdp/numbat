@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use crate::{
-    ast::Statement, module_importer::ModuleImporter, parser::parse, span::Span, ParseError,
+    ParseError, ast::Statement, module_importer::ModuleImporter, parser::parse, span::Span,
 };
 
 use codespan_reporting::files::SimpleFiles;

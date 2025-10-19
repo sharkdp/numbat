@@ -7,10 +7,10 @@ keywords = ["language", "compiler", "physics", "units", "calculation"]
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
 version = "1.16.0"
-edition = "2021"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-rust-version = "1.76"
+rust-version = "1.88"
 
 [dependencies]
 thiserror = "2"

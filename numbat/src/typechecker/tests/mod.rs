@@ -1,14 +1,14 @@
 mod type_checking;
 mod type_inference;
 
+use crate::Statement;
 use crate::parser::parse;
 use crate::prefix_transformer::Transformer;
 use crate::typechecker::{Result, TypeCheckError};
 use crate::typed_ast::{self, DType};
-use crate::Statement;
 
-use super::type_scheme::TypeScheme;
 use super::TypeChecker;
+use super::type_scheme::TypeScheme;
 
 const TEST_PRELUDE: &str = "
     dimension Scalar = 1

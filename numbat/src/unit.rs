@@ -5,7 +5,7 @@ use itertools::Itertools;
 use num_traits::{ToPrimitive, Zero};
 
 use crate::{
-    arithmetic::{pretty_exponent, Exponent, Power, Rational},
+    arithmetic::{Exponent, Power, Rational, pretty_exponent},
     number::Number,
     prefix::Prefix,
     prefix_parser::AcceptsPrefix,
