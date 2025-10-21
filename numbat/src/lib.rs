@@ -78,7 +78,7 @@ pub use interpreter::InterpreterResult;
 pub use interpreter::InterpreterSettings;
 pub use interpreter::{RuntimeError, RuntimeErrorKind};
 pub use name_resolution::NameResolutionError;
-pub use parser::ParseError;
+pub use parser::{parse, ParseError};
 pub use registry::BaseRepresentation;
 pub use registry::BaseRepresentationFactor;
 pub use typed_ast::Statement;
