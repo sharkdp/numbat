@@ -86,7 +86,6 @@ impl Span {
         )
     }
 
-    #[cfg(test)]
     pub fn dummy() -> Span {
         Self {
             start: ByteIndex(0),
