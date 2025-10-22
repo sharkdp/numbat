@@ -35,7 +35,7 @@ mod quantity;
 mod registry;
 pub mod resolver;
 pub mod session_history;
-mod span;
+pub mod span;
 mod suggestion;
 mod tokenizer;
 mod traversal;
@@ -670,6 +670,14 @@ impl Context {
 
     pub fn resolver_mut(&mut self) -> &mut Resolver {
         &mut self.resolver
+    }
+
+    pub fn prefix_transformer(&self) -> &Transformer {
+        &self.prefix_transformer
+    }
+
+    pub fn prefix_transformer_mut(&mut self) -> &mut Transformer {
+        &mut self.prefix_transformer
     }
 
     pub fn interpret<'a>(

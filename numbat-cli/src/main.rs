@@ -135,7 +135,7 @@ struct Cli {
 impl Cli {
     fn make_fresh_context() -> Context {
         let mut fs_importer = FileSystemImporter::default();
-        for path in Self::get_modules_paths() {
+        for path in numbat_cli_helpers::get_modules_paths() {
             fs_importer.add_path(path);
         }
 
@@ -154,7 +154,7 @@ impl Cli {
     }
 
     fn new(args: Args) -> Result<Self> {
-        let user_config_path = Self::get_config_path().join("config.toml");
+        let user_config_path = numbat_cli_helpers::get_config_path().join("config.toml");
 
         let mut config = if args.no_config {
             Config::default()
@@ -212,7 +212,7 @@ impl Cli {
         }
 
         if self.config.load_user_init {
-            let user_init_path = Self::get_config_path().join("init.nbt");
+            let user_init_path = numbat_cli_helpers::get_config_path().join("init.nbt");
 
             if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
                 let result = self.parse_and_evaluate(
@@ -569,37 +569,6 @@ impl Cli {
             .print_diagnostic(error, colored::control::SHOULD_COLORIZE.should_colorize())
     }
 
-    fn get_config_path() -> PathBuf {
-        let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        config_dir.join("numbat")
-    }
-
-    fn get_modules_paths() -> Vec<PathBuf> {
-        let mut paths = vec![];
-
-        if let Some(modules_path) = std::env::var_os("NUMBAT_MODULES_PATH") {
-            for path in modules_path.to_string_lossy().split(':') {
-                paths.push(path.into());
-            }
-        }
-
-        paths.push(Self::get_config_path().join("modules"));
-
-        // We read the value of this environment variable at compile time to
-        // allow package maintainers to control the system-wide module path
-        // for Numbat.
-        if let Some(system_module_path) = option_env!("NUMBAT_SYSTEM_MODULE_PATH") {
-            if !system_module_path.is_empty() {
-                paths.push(system_module_path.into());
-            }
-        } else if cfg!(unix) {
-            paths.push("/usr/share/numbat/modules".into());
-        } else {
-            paths.push("C:\\Program Files\\numbat\\modules".into());
-        }
-        paths
-    }
-
     fn get_history_path(&self) -> Result<PathBuf> {
         if let Ok(history) = env::var("NUMBAT_HISTORY") {
             let history_path = PathBuf::from(history);
@@ -618,7 +587,7 @@ impl Cli {
 }
 
 fn generate_config() -> Result<()> {
-    let config_folder_path = Cli::get_config_path();
+    let config_folder_path = numbat_cli_helpers::get_config_path();
     let config_file_path = config_folder_path.join("config.toml");
 
     if config_file_path.exists() {

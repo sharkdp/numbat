@@ -58,7 +58,7 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub(crate) fn new(importer: impl ModuleImporter + 'static) -> Self {
+    pub fn new(importer: impl ModuleImporter + 'static) -> Self {
         Self {
             importer: Arc::new(importer),
             files: SimpleFiles::new(),

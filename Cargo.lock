@@ -1402,12 +1402,20 @@ dependencies = [
  "itertools 0.14.0",
  "jiff",
  "numbat",
+ "numbat-cli-helpers",
  "predicates",
  "rustyline",
  "serde",
  "termcolor",
  "terminal_size",
  "toml",
+]
+
+[[package]]
+name = "numbat-cli-helpers"
+version = "0.1.0"
+dependencies = [
+ "dirs",
 ]
 
 [[package]]
@@ -1423,6 +1431,7 @@ name = "numbat-lsp"
 version = "0.1.0"
 dependencies = [
  "numbat",
+ "numbat-cli-helpers",
  "ropey",
  "tokio",
  "tower-lsp-server",

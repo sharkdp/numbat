@@ -11,13 +11,19 @@ use crate::{
 type Result<T> = std::result::Result<T, NameResolutionError>;
 
 #[derive(Debug, Clone)]
-pub(crate) struct Transformer {
+pub struct Transformer {
     pub prefix_parser: PrefixParser,
 
     pub variable_names: Vec<CompactString>,
     pub function_names: Vec<CompactString>,
     pub unit_names: Vec<Vec<CompactString>>,
     pub dimension_names: Vec<CompactString>,
+}
+
+impl Default for Transformer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Transformer {
