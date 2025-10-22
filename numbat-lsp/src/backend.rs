@@ -6,9 +6,9 @@ use std::{
 
 use numbat::{
     Context, ParseError,
-    module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter, ModuleImporter},
+    module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter},
     pretty_print::PrettyPrint,
-    resolver::{CodeSource, Resolver, ResolverError},
+    resolver::ResolverError,
     span::Span,
     typechecker::{IncompatibleDimensionsError, TypeCheckError, TypeChecker},
 };
@@ -96,7 +96,7 @@ impl LanguageServer for Backend {
         self.client
             .log_message(MessageType::LOG, format!("Document {uri:?} opened"))
             .await;
-        self.parse_content(uri, content, Some(params.text_document.version))
+        self.check_content(uri, content, Some(params.text_document.version))
             .await;
     }
 
@@ -117,7 +117,7 @@ impl LanguageServer for Backend {
         for change in change.content_changes {
             content = change.text;
         }
-        self.parse_content(uri, content, Some(change.text_document.version))
+        self.check_content(uri, content, Some(change.text_document.version))
             .await;
     }
 
@@ -160,107 +160,93 @@ impl LanguageServer for Backend {
 }
 
 impl Backend {
-    async fn parse_content(&self, uri: Uri, content: String, version: Option<i32>) {
+    async fn check_content(&self, uri: Uri, content: String, version: Option<i32>) {
         let id = match self.uri_to_cs_id.read().await.get(&uri) {
             Some(id) => *id,
             None => self.current_cs_id.fetch_add(1, Ordering::Relaxed),
         };
 
-        let (ret, err) = match numbat::parse(&content, id) {
-            Ok(stmts) => (stmts, Vec::new()),
-            Err(e) => e,
-        };
-
         #[allow(clippy::mutable_key_type)]
         let mut diags: HashMap<Uri, Vec<Diagnostic>> = HashMap::new();
 
-        for err in err.iter() {
-            diags
-                .entry(uri.clone())
-                .or_default()
-                .push(parse_error_to_diag(err, &content));
+        let mut fs_importer = FileSystemImporter::default();
+        for path in numbat_cli_helpers::get_modules_paths() {
+            fs_importer.add_path(path);
         }
 
-        if err.is_empty() {
-            let mut fs_importer = FileSystemImporter::default();
-            for path in numbat_cli_helpers::get_modules_paths() {
-                fs_importer.add_path(path);
+        let importer = ChainedImporter::new(
+            Box::new(fs_importer),
+            Box::<BuiltinModuleImporter>::default(),
+        );
+
+        let mut context = Context::new(importer);
+        let statements = context
+            .resolver_mut()
+            .resolve(&content, numbat::resolver::CodeSource::Text);
+        match statements {
+            Err(e @ ResolverError::UnknownModule(span, _)) => {
+                diags.entry(uri.clone()).or_default().push(Diagnostic {
+                    range: Range {
+                        start: byte_index_to_pos(span.start.0 as usize, &content),
+                        end: byte_index_to_pos(span.end.0 as usize, &content),
+                    },
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: Some("Resolver".to_string()),
+                    message: e.to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                });
             }
-
-            let importer = ChainedImporter::new(
-                Box::new(fs_importer),
-                Box::<BuiltinModuleImporter>::default(),
-            );
-
-            let mut context = Context::new(importer);
-            let statements = context
-                .resolver_mut()
-                .resolve(&content, numbat::resolver::CodeSource::Text);
-            match statements {
-                Err(e @ ResolverError::UnknownModule(span, _)) => {
-                    diags.entry(uri.clone()).or_default().push(Diagnostic {
-                        range: Range {
-                            start: byte_index_to_pos(span.start.0 as usize, &content),
-                            end: byte_index_to_pos(span.end.0 as usize, &content),
-                        },
-                        severity: Some(DiagnosticSeverity::ERROR),
-                        code: None,
-                        code_description: None,
-                        source: Some("Resolver".to_string()),
-                        message: e.to_string(),
-                        related_information: None,
-                        tags: None,
-                        data: None,
-                    });
-                }
-                Err(ResolverError::ParseErrors(errors)) => {
-                    // In this case the error targets other files, we must
-                    // load them before we're able to display them
-                    for error in errors {
-                        if let Ok(file) = context.resolver().files.get(error.span.code_source_id) {
-                            let content = file.source().as_str();
-                            let uri = match Uri::from_str(file.name()) {
-                                Ok(uri) => uri,
-                                Err(e) => {
-                                    self.client.log_message(
+            Err(ResolverError::ParseErrors(errors)) => {
+                // In this case the error targets other files, we must
+                // load them before we're able to display them
+                for error in errors {
+                    if let Ok(file) = context.resolver().files.get(error.span.code_source_id) {
+                        let content = file.source().as_str();
+                        let uri = match Uri::from_str(file.name()) {
+                            Ok(uri) => uri,
+                            Err(e) => {
+                                self.client.log_message(
                                         MessageType::WARNING,
                                         format!("Could not return parsing error of distant resource {} while parsing import in {uri:?}: {e}", file.name())
                                     ).await;
-                                    continue;
-                                }
-                            };
-                            diags
-                                .entry(uri)
-                                .or_default()
-                                .push(parse_error_to_diag(&error, content));
-                        }
-                    }
-                }
-                Ok(stmts) => {
-                    let result = context.prefix_transformer_mut().transform(stmts);
-                    match result {
-                        Err(e) => {
-                            let mut diag = self
-                                .name_resolution_error_to_diag(&context, &uri, &content, &e)
-                                .await;
-                            diags.entry(uri.clone()).or_default().append(&mut diag);
-                        }
-                        Ok(stmts) => {
-                            let result = TypeChecker::default().check(&stmts);
-                            match result {
-                                Err(e) => {
-                                    let mut diag = self
-                                        .type_check_error_to_diag(&context, &uri, &content, &e)
-                                        .await;
-                                    diags.entry(uri.clone()).or_default().append(&mut diag);
-                                }
-                                Ok(_stmts) => (),
+                                continue;
                             }
+                        };
+                        diags
+                            .entry(uri)
+                            .or_default()
+                            .push(parse_error_to_diag(&error, content));
+                    }
+                }
+            }
+            Ok(stmts) => {
+                let result = context.prefix_transformer_mut().transform(stmts);
+                match result {
+                    Err(e) => {
+                        let mut diag = self
+                            .name_resolution_error_to_diag(&context, &uri, &content, &e)
+                            .await;
+                        diags.entry(uri.clone()).or_default().append(&mut diag);
+                    }
+                    Ok(stmts) => {
+                        let result = TypeChecker::default().check(&stmts);
+                        match result {
+                            Err(e) => {
+                                let mut diag = self
+                                    .type_check_error_to_diag(&context, &uri, &content, &e)
+                                    .await;
+                                diags.entry(uri.clone()).or_default().append(&mut diag);
+                            }
+                            Ok(_stmts) => (),
                         }
                     }
                 }
-            };
-        }
+            }
+        };
 
         let mut updated_myself = false;
         for (other_uri, diags) in diags.iter() {
@@ -379,8 +365,8 @@ impl Backend {
 
     async fn type_check_error_to_diag(
         &self,
-        context: &Context,
-        self_uri: &Uri,
+        _context: &Context,
+        _self_uri: &Uri,
         self_content: &str,
         error: &TypeCheckError,
     ) -> Vec<Diagnostic> {
@@ -909,6 +895,7 @@ fn span_to_range(span: numbat::span::Span, content: &str) -> Range {
     }
 }
 
+#[allow(dead_code)] // TODO: We'll probably need it later
 fn pos_to_offset(pos: Position, content: &str) -> usize {
     if pos.line == 0 && pos.character == 0 {
         return 0;
@@ -938,8 +925,8 @@ fn pos_to_offset(pos: Position, content: &str) -> usize {
 fn parse_error_to_diag(err: &ParseError, content: &str) -> Diagnostic {
     Diagnostic {
         range: Range {
-            start: byte_index_to_pos(err.span.start.0 as usize, &content),
-            end: byte_index_to_pos(err.span.end.0 as usize, &content),
+            start: byte_index_to_pos(err.span.start.0 as usize, content),
+            end: byte_index_to_pos(err.span.end.0 as usize, content),
         },
         severity: Some(DiagnosticSeverity::ERROR),
         code: None,
