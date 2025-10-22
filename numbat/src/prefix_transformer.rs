@@ -37,6 +37,22 @@ impl Transformer {
         }
     }
 
+    pub fn merge_with(&mut self, other: &Self) {
+        let Self {
+            prefix_parser,
+            variable_names,
+            function_names,
+            unit_names,
+            dimension_names,
+        } = self;
+
+        prefix_parser.merge_with(&other.prefix_parser);
+        variable_names.extend_from_slice(&other.variable_names);
+        function_names.extend_from_slice(&other.function_names);
+        unit_names.extend_from_slice(&other.unit_names);
+        dimension_names.extend_from_slice(&other.dimension_names);
+    }
+
     fn transform_expression(&self, expression: &mut Expression) {
         match expression {
             Expression::Scalar(..) | Expression::Boolean(_, _) | Expression::TypedHole(_) => {}
@@ -152,7 +168,7 @@ impl Transformer {
         Ok(())
     }
 
-    fn transform_statement(&mut self, statement: &mut Statement) -> Result<()> {
+    pub fn transform_statement(&mut self, statement: &mut Statement) -> Result<()> {
         match statement {
             Statement::DefineStruct { .. } | Statement::ModuleImport(_, _) => {}
 

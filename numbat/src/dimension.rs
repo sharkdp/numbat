@@ -6,13 +6,22 @@ use crate::ast::{TypeExpression, TypeParameterBound};
 use crate::registry::{BaseRepresentation, Registry, Result};
 use crate::span::Span;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct DimensionRegistry {
     registry: Registry<()>,
     pub introduced_type_parameters: Vec<(Span, CompactString, Option<TypeParameterBound>)>,
 }
 
 impl DimensionRegistry {
+    pub fn merge_with(&mut self, other: &Self) {
+        let Self {
+            registry,
+            introduced_type_parameters,
+        } = self;
+        registry.merge_with(&other.registry);
+        introduced_type_parameters.extend_from_slice(&other.introduced_type_parameters);
+    }
+
     pub fn get_base_representation(
         &self,
         expression: &TypeExpression,

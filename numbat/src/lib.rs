@@ -1,5 +1,5 @@
 mod arithmetic;
-mod ast;
+pub mod ast;
 #[cfg(feature = "html-formatter")]
 pub mod buffered_writer;
 mod bytecode_interpreter;
@@ -64,7 +64,7 @@ use markup as m;
 use markup::FormatType;
 use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
-use prefix_transformer::Transformer;
+pub use prefix_transformer::Transformer;
 use pretty_print::PrettyPrint;
 
 use resolver::CodeSource;

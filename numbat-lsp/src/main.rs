@@ -1,6 +1,10 @@
 use backend::Backend;
+use file_mapper::FileMapping;
+use tokio::sync::RwLock;
 
 mod backend;
+mod err_to_diag;
+mod file_mapper;
 
 #[tokio::main]
 async fn main() {
@@ -9,10 +13,7 @@ async fn main() {
 
     let (service, socket) = tower_lsp_server::LspService::build(|client| Backend {
         client,
-        files: Default::default(),
-        uri_to_cs_id: Default::default(),
-        cs_id_to_uri: Default::default(),
-        current_cs_id: Default::default(),
+        files: RwLock::new(FileMapping::with_prelude()),
     })
     .finish();
 
