@@ -91,7 +91,7 @@ impl ModuleImporter for FileSystemImporter {
 
 #[derive(RustEmbed)]
 #[folder = "$CARGO_MANIFEST_DIR/modules/"]
-struct BuiltinAssets;
+pub struct BuiltinAssets;
 
 #[derive(Debug, Clone, Default)]
 

@@ -8,7 +8,7 @@ use codespan_reporting::files::SimpleFiles;
 use compact_str::{CompactString, ToCompactString};
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ModulePath(pub Vec<CompactString>);
 
 impl std::fmt::Display for ModulePath {
@@ -19,6 +19,12 @@ impl std::fmt::Display for ModulePath {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ModulePathBorrowed<'a>(pub Vec<&'a str>);
+
+impl ModulePathBorrowed<'_> {
+    pub fn to_owned(&self) -> ModulePath {
+        ModulePath(self.0.iter().map(|s| s.to_compact_string()).collect())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum CodeSource {

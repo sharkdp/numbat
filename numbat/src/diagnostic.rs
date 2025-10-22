@@ -144,14 +144,6 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_message(format!("{type_}")),
                 ])
                 .with_notes(vec![inner_error]),
-            TypeCheckError::UnsupportedConstEvalExpression(span, _) => d.with_labels(vec![
-                span.diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error),
-            ]),
-            TypeCheckError::DivisionByZeroInConstEvalExpression(span) => d.with_labels(vec![
-                span.diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error),
-            ]),
             TypeCheckError::RegistryError(re) => match re {
                 crate::registry::RegistryError::EntryExists(_) => d.with_notes(vec![inner_error]),
                 crate::registry::RegistryError::UnknownEntry(name, suggestion) => {
@@ -220,10 +212,6 @@ impl ErrorDiagnostic for TypeCheckError {
 
                 d.with_labels(labels)
             }
-            TypeCheckError::TypeParameterNameClash(span, _) => d.with_labels(vec![
-                span.diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error),
-            ]),
             TypeCheckError::IncompatibleTypesInCondition(
                 if_span,
                 then_type,
@@ -351,7 +339,12 @@ impl ErrorDiagnostic for TypeCheckError {
                     format!("Use 'unit {unit_name}' for ad-hoc units."),
                     format!("Use 'unit {unit_name}: Scalar = …' for derived units."),
                 ]),
-            TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
+            TypeCheckError::UnsupportedConstEvalExpression(span, _)
+            | TypeCheckError::DivisionByZeroInConstEvalExpression(span)
+            | TypeCheckError::TypeParameterNameClash(span, _)
+            | TypeCheckError::ForeignFunctionNeedsTypeAnnotations(span, _)
+            | TypeCheckError::UnknownStruct(span, _)
+            | TypeCheckError::ExponentiationNeedsTypeAnnotation(span)
             | TypeCheckError::UnknownForeignFunction(span, _)
             | TypeCheckError::NonRationalExponent(span)
             | TypeCheckError::OverflowInConstExpr(span)
@@ -435,10 +428,6 @@ impl ErrorDiagnostic for TypeCheckError {
                     .diagnostic_label(LabelStyle::Secondary)
                     .with_message("Defined here"),
             ]),
-            TypeCheckError::UnknownStruct(span, _name) => d.with_labels(vec![
-                span.diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error),
-            ]),
             TypeCheckError::UnknownFieldInStructInstantiation(field_span, defn_span, _, _) => d
                 .with_labels(vec![
                     field_span
@@ -491,10 +480,6 @@ impl ErrorDiagnostic for TypeCheckError {
                 .with_notes(vec![
                     "Consider adding `: Dim` after the type parameter".to_owned(),
                 ]),
-            TypeCheckError::ExponentiationNeedsTypeAnnotation(span) => d.with_labels(vec![
-                span.diagnostic_label(LabelStyle::Primary)
-                    .with_message(inner_error),
-            ]),
             TypeCheckError::TypedHoleInStatement(span, type_, statement, matches) => {
                 let mut notes = vec![
                     format!("Found a hole of type '{type_}' in the statement:"),

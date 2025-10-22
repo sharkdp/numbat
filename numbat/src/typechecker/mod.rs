@@ -179,7 +179,7 @@ fn proper_function_call<'a>(
     ))
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct TypeChecker {
     structs: HashMap<CompactString, StructInfo>,
     registry: DimensionRegistry,
@@ -205,6 +205,29 @@ struct ElaborationDefinitionArgs<'a, 'b> {
 }
 
 impl TypeChecker {
+    pub fn merge_with(&mut self, other: &Self) {
+        let Self {
+            structs,
+            registry,
+            type_namespace,
+            value_namespace,
+            env,
+            name_generator,
+            constraints,
+        } = self;
+
+        for (k, v) in other.structs.iter() {
+            structs.insert(k.clone(), v.clone());
+        }
+        registry.merge_with(&other.registry);
+        type_namespace.merge_with(&other.type_namespace);
+        value_namespace.merge_with(&other.value_namespace);
+        env.merge_with(&other.env);
+        // TODO: We should do something with the name generator
+        let _ = name_generator;
+        constraints.merge_with(&other.constraints);
+    }
+
     fn fresh_type_variable(&mut self) -> Type {
         Type::TVar(self.name_generator.fresh_type_variable())
     }
@@ -1805,7 +1828,7 @@ impl TypeChecker {
         })
     }
 
-    fn check_statement<'a>(
+    pub fn check_statement<'a>(
         &mut self,
         statement: &ast::Statement<'a>,
     ) -> Result<typed_ast::Statement<'a>> {

@@ -97,6 +97,18 @@ impl PrefixParser {
         }
     }
 
+    pub fn merge_with(&mut self, other: &Self) {
+        let Self {
+            units,
+            other_identifiers,
+            // The list of reserved identifiers never changes
+            reserved_identifiers: _,
+        } = self;
+
+        units.extend(other.units.iter().map(|(k, v)| (k.clone(), v.clone())));
+        other_identifiers.extend(other.other_identifiers.iter().map(|(k, v)| (k.clone(), *v)));
+    }
+
     fn prefixes() -> &'static [(&'static str, &'static [&'static str], Prefix)] {
         PREFIXES.get_or_init(|| {
             vec![

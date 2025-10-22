@@ -54,6 +54,10 @@ pub struct ConstraintSet {
 }
 
 impl ConstraintSet {
+    pub fn merge_with(&mut self, other: &Self) {
+        self.constraints.extend_from_slice(&other.constraints);
+    }
+
     pub fn add(&mut self, constraint: Constraint) -> TrivialResolution {
         let result = constraint.try_trivial_resolution();
 
