@@ -3,7 +3,10 @@ use std::{
     path::PathBuf,
     pin::Pin,
     str::FromStr,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
 use numbat::{
@@ -38,7 +41,7 @@ pub struct File {
 
     // Cached info
     pub transformer: numbat::Transformer,
-    pub type_checker: numbat::typechecker::TypeChecker,
+    pub type_checker: numbat::typechecker::TypeChecker<GlobalNameGenerator>,
 }
 
 impl Drop for File {
@@ -67,6 +70,22 @@ pub struct FileMapping {
     pub prelude_dir: Option<TempDir>,
     // Conf to import files
     pub fs_importer: FileSystemImporter,
+
+    // Typechecker
+    pub global_name_generator: GlobalNameGenerator,
+}
+
+/// A name generator for all files at the same time!
+/// It's used by the typechecker to declare anonymous type.
+#[derive(Clone, Debug, Default)]
+pub struct GlobalNameGenerator(Arc<AtomicUsize>);
+
+impl numbat::typechecker::NameGenerator for GlobalNameGenerator {
+    fn fresh_type_variable(&mut self) -> numbat::TypeVariable {
+        let counter = self.0.fetch_add(1, Ordering::Relaxed);
+        let name = format!("T{counter}");
+        numbat::TypeVariable::new(name)
+    }
 }
 
 impl FileMapping {
@@ -285,7 +304,7 @@ impl FileMapping {
             };
         }
 
-        let mut type_checker = TypeChecker::default();
+        let mut type_checker = TypeChecker::new(self.global_name_generator.clone());
         let mut typed_stmts = vec![];
 
         for statement in ast_transformed_stmts.iter() {

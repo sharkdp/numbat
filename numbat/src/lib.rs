@@ -80,6 +80,7 @@ pub use interpreter::{RuntimeError, RuntimeErrorKind};
 pub use name_resolution::NameResolutionError;
 pub use parser::{ParseError, parse};
 pub use registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
+pub use type_variable::TypeVariable;
 pub use typed_ast::Statement;
 pub use typed_ast::Type;
 use unit::BaseUnitAndFactor;

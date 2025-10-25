@@ -35,7 +35,7 @@ use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResolution};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
 use itertools::Itertools;
-use name_generator::NameGenerator;
+pub use name_generator::{DefaultNameGenerator, NameGenerator};
 use num_traits::Zero;
 
 pub use error::{Result, TypeCheckError};
@@ -54,7 +54,7 @@ fn dtype(e: &Expression) -> Result<DType> {
     }
 }
 
-struct ProperFunctionCallArgs<'a, 'b> {
+struct ProperFunctionCallArgs<'a, 'b, NameGenerator> {
     registry: &'b DimensionRegistry,
     constraints: &'b mut ConstraintSet,
     name_generator: &'b mut NameGenerator,
@@ -66,7 +66,7 @@ struct ProperFunctionCallArgs<'a, 'b> {
     argument_types: Vec<Type>,
 }
 
-fn proper_function_call<'a>(
+fn proper_function_call<'a, NG: NameGenerator>(
     ProperFunctionCallArgs {
         registry,
         constraints,
@@ -77,7 +77,7 @@ fn proper_function_call<'a>(
         signature,
         arguments,
         argument_types,
-    }: ProperFunctionCallArgs<'a, '_>,
+    }: ProperFunctionCallArgs<'a, '_, NG>,
 ) -> Result<typed_ast::Expression<'a>> {
     let FunctionSignature {
         name: _,
@@ -179,8 +179,8 @@ fn proper_function_call<'a>(
     ))
 }
 
-#[derive(Clone, Default, Debug)]
-pub struct TypeChecker {
+#[derive(Clone, Debug)]
+pub struct TypeChecker<NameGenerator = DefaultNameGenerator> {
     structs: HashMap<CompactString, StructInfo>,
     registry: DimensionRegistry,
 
@@ -204,7 +204,25 @@ struct ElaborationDefinitionArgs<'a, 'b> {
     elaboration_kind: &'b str,
 }
 
-impl TypeChecker {
+impl Default for TypeChecker<DefaultNameGenerator> {
+    fn default() -> Self {
+        Self::new(Default::default())
+    }
+}
+
+impl<NG: NameGenerator> TypeChecker<NG> {
+    pub fn new(name_generator: NG) -> Self {
+        Self {
+            structs: Default::default(),
+            registry: Default::default(),
+            type_namespace: Default::default(),
+            value_namespace: Default::default(),
+            env: Default::default(),
+            name_generator,
+            constraints: Default::default(),
+        }
+    }
+
     pub fn merge_with(&mut self, other: &Self) {
         let Self {
             structs,
@@ -212,7 +230,9 @@ impl TypeChecker {
             type_namespace,
             value_namespace,
             env,
-            name_generator,
+            // All typecheckers share the same global name generator.
+            // There is nothing to merge.
+            name_generator: _,
             constraints,
         } = self;
 
@@ -223,8 +243,6 @@ impl TypeChecker {
         type_namespace.merge_with(&other.type_namespace);
         value_namespace.merge_with(&other.value_namespace);
         env.merge_with(&other.env);
-        // TODO: We should do something with the name generator
-        let _ = name_generator;
         constraints.merge_with(&other.constraints);
     }
 
