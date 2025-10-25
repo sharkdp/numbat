@@ -96,6 +96,18 @@ impl<T> Default for Registry<T> {
 }
 
 impl<Metadata: Clone> Registry<Metadata> {
+    pub fn merge_with(&mut self, other: &Self) {
+        let Self {
+            base_entries,
+            derived_entries,
+        } = self;
+
+        base_entries.extend_from_slice(&other.base_entries);
+        for (k, v) in other.derived_entries.iter() {
+            derived_entries.insert(k.clone(), v.clone());
+        }
+    }
+
     pub fn add_base_entry(&mut self, name: &str, metadata: Metadata) -> Result<()> {
         if self.contains(name) {
             return Err(RegistryError::EntryExists(name.to_owned()));

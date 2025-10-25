@@ -26,6 +26,11 @@ pub struct Namespace {
 }
 
 impl Namespace {
+    pub fn merge_with(&mut self, other: &Self) {
+        self.save();
+        self.seen.extend_with(&other.seen);
+    }
+
     pub(crate) fn save(&mut self) {
         self.seen.save()
     }

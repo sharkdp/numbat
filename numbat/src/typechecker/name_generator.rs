@@ -1,6 +1,6 @@
 use crate::type_variable::TypeVariable;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct NameGenerator {
     counter: u64,
 }

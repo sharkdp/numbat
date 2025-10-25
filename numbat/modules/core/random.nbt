@@ -3,3 +3,5 @@ use core::scalar
 @name("Standard uniform distribution sampling")
 @description("Uniformly samples the interval $[0,1)$.")
 fn random() -> Scalar
+
+fn random2() -> Scalar = random()

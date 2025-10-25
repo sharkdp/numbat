@@ -21,13 +21,19 @@ impl<K, V> Default for MapStack<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V> MapStack<K, V> {
+impl<K: Hash + Eq + Clone, V: Clone> MapStack<K, V> {
     fn iter_dict(&self) -> impl Iterator<Item = &HashMap<K, V>> {
         self.stack.iter().rev()
     }
 
     fn iter_dict_mut(&mut self) -> impl Iterator<Item = &mut HashMap<K, V>> {
         self.stack.iter_mut().rev()
+    }
+
+    // If we had A -> B -> C in self and D -> E -> F in other, we want
+    // to ends up with A -> B -> C -> D -> E -> F
+    pub(crate) fn extend_with(&mut self, other: &Self) {
+        self.stack.extend_from_slice(&other.stack);
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
