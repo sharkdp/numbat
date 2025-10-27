@@ -223,7 +223,7 @@ impl<NG: NameGenerator> TypeChecker<NG> {
         }
     }
 
-    pub fn merge_with(&mut self, other: &Self) {
+    pub fn merge_with(&mut self, other: &Self) -> Vec<(CompactString, CompactString)> {
         let Self {
             structs,
             registry,
@@ -239,11 +239,16 @@ impl<NG: NameGenerator> TypeChecker<NG> {
         for (k, v) in other.structs.iter() {
             structs.insert(k.clone(), v.clone());
         }
-        registry.merge_with(&other.registry);
+        let conflicts = match registry.merge_with(&other.registry) {
+            Ok(()) => Vec::new(),
+            Err(c) => c,
+        };
         type_namespace.merge_with(&other.type_namespace);
         value_namespace.merge_with(&other.value_namespace);
         env.merge_with(&other.env);
         constraints.merge_with(&other.constraints);
+
+        conflicts
     }
 
     fn fresh_type_variable(&mut self) -> Type {

@@ -21,7 +21,7 @@ pub enum RegistryError {
     UnknownEntry(String, Option<String>),
 }
 
-pub type Result<T> = std::result::Result<T, RegistryError>;
+pub type Result<T, E = RegistryError> = std::result::Result<T, E>;
 
 pub type BaseEntry = CompactString;
 
@@ -96,15 +96,47 @@ impl<T> Default for Registry<T> {
 }
 
 impl<Metadata: Clone> Registry<Metadata> {
-    pub fn merge_with(&mut self, other: &Self) {
+    #[allow(clippy::type_complexity)]
+    pub fn merge_with(
+        &mut self,
+        other: &Self,
+    ) -> Result<(), Vec<((CompactString, Metadata), (CompactString, Metadata))>> {
         let Self {
             base_entries,
             derived_entries,
         } = self;
 
-        base_entries.extend_from_slice(&other.base_entries);
+        let mut conflicts = Vec::new();
+        for entry in other.base_entries.iter() {
+            if let Some(other) = base_entries.iter().find(|e| entry.0 == e.0) {
+                conflicts.push((entry.clone(), other.clone()));
+            } else if let Some(other) = derived_entries
+                .iter()
+                .map(|(k, (_repr, meta))| (k.clone(), meta.clone()))
+                .find(|e| entry.0 == e.0)
+            {
+                conflicts.push((entry.clone(), other.clone()));
+            } else {
+                base_entries.push(entry.clone());
+            }
+        }
         for (k, v) in other.derived_entries.iter() {
-            derived_entries.insert(k.clone(), v.clone());
+            if let Some(other) = base_entries.iter().find(|e| k == e.0) {
+                conflicts.push(((k.clone(), v.1.clone()), other.clone()));
+            } else if let Some(other) = derived_entries
+                .iter()
+                .map(|(k, (_repr, meta))| (k.clone(), meta.clone()))
+                .find(|e| k.clone() == e.0)
+            {
+                conflicts.push(((k.clone(), v.1.clone()), other.clone()));
+            } else {
+                derived_entries.insert(k.clone(), v.clone());
+            }
+        }
+        if conflicts.is_empty() {
+            Ok(())
+        } else {
+            Err(conflicts)
         }
     }
 

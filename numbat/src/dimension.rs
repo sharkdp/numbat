@@ -13,13 +13,16 @@ pub struct DimensionRegistry {
 }
 
 impl DimensionRegistry {
-    pub fn merge_with(&mut self, other: &Self) {
+    pub fn merge_with(&mut self, other: &Self) -> Result<(), Vec<(CompactString, CompactString)>> {
         let Self {
             registry,
             introduced_type_parameters,
         } = self;
-        registry.merge_with(&other.registry);
+        let result = registry.merge_with(&other.registry);
+        let result = result.map_err(|e| e.into_iter().map(|((sa, _), (sb, _))| (sa, sb)).collect());
         introduced_type_parameters.extend_from_slice(&other.introduced_type_parameters);
+
+        result
     }
 
     pub fn get_base_representation(

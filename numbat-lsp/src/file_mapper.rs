@@ -308,7 +308,7 @@ impl FileMapping {
         let mut typed_stmts = vec![];
 
         for statement in ast_transformed_stmts.iter() {
-            if let ast::Statement::ModuleImport(_span, module_path) = statement {
+            if let ast::Statement::ModuleImport(span, module_path) = statement {
                 // we must load the typechecker state of the other module
                 let module_path = ModulePath(
                     module_path
@@ -321,7 +321,36 @@ impl FileMapping {
                     .load_module(module_path.clone(), None, None, diags_to_publish)
                     .expect("Module have already been loaded in previous phase");
                 let file = self.files.get(&uri).unwrap();
-                type_checker.merge_with(&file.type_checker);
+                let conflicts = type_checker.merge_with(&file.type_checker);
+                for (symbol, _) in conflicts {
+                    diags.push(Diagnostic {
+                        range: span_to_range(*span, &content),
+                        severity: Some(DiagnosticSeverity::ERROR),
+                        code: None,
+                        code_description: None,
+                        source: None,
+                        message: format!("Conflicting identifier {symbol}"),
+                        // TODO: Retrieve the span of the symbol in the other file
+                        related_information: None,
+                        tags: None,
+                        data: None,
+                    });
+                }
+                // If there is an error inside of the imported file we also
+                // want to display it here
+                if !file.diags.is_empty() {
+                    diags.push(Diagnostic {
+                        range: span_to_range(*span, &content),
+                        severity: Some(DiagnosticSeverity::ERROR),
+                        code: None,
+                        code_description: None,
+                        source: None,
+                        message: format!("Cannot import because of {} errors", file.diags.len()),
+                        related_information: None,
+                        tags: None,
+                        data: None,
+                    });
+                }
             } else {
                 match type_checker.check_statement(statement) {
                     Ok(stmt) => typed_stmts.push(stmt),
