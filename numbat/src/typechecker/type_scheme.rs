@@ -74,7 +74,7 @@ impl TypeScheme {
         }
     }
 
-    pub fn instantiate(&self, name_generator: &mut NameGenerator) -> QualifiedType {
+    pub fn instantiate(&self, name_generator: &mut impl NameGenerator) -> QualifiedType {
         if let TypeScheme::Quantified(n_gen, qt) = &self {
             // Replace $gen_i by fresh type variables
 

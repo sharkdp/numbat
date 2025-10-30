@@ -5,6 +5,8 @@ members = [
     "numbat",
     "numbat-exchange-rates",
     "numbat-cli",
+    "numbat-cli-helpers",
+    "numbat-lsp",
 ]
 
 exclude = [

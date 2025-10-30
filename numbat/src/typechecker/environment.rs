@@ -99,6 +99,10 @@ pub struct Environment {
 }
 
 impl Environment {
+    pub fn merge_with(&mut self, other: &Self) {
+        self.identifiers.extend_with(&other.identifiers);
+    }
+
     pub fn add(&mut self, i: Identifier, type_: Type, span: Span, is_unit: bool) {
         self.identifiers.insert(
             i,
@@ -184,7 +188,7 @@ impl Environment {
         }
     }
 
-    pub(crate) fn get_proper_function_reference<'a>(
+    pub fn get_proper_function_reference<'a>(
         &self,
         expr: &crate::ast::Expression<'a>,
     ) -> Option<(&'a str, &FunctionSignature)> {
