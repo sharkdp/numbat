@@ -3,7 +3,7 @@ use crate::{ast, typed_ast};
 
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Zero};
 
-use super::{error::Result, TypeCheckError};
+use super::{TypeCheckError, error::Result};
 
 fn to_rational_exponent(exponent_f64: f64) -> Option<Exponent> {
     Rational::from_f64(exponent_f64)
@@ -16,10 +16,10 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
     let name = match expr {
         typed_ast::Expression::Scalar(span, n, _type) => {
             return Ok(to_rational_exponent(n.to_f64())
-                .ok_or(TypeCheckError::NonRationalExponent(*span))?)
+                .ok_or(TypeCheckError::NonRationalExponent(*span))?);
         }
-        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Negate, ref expr, _) => {
-            return Ok(-evaluate_const_expr(expr)?)
+        typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Negate, expr, _) => {
+            return Ok(-evaluate_const_expr(expr)?);
         }
         typed_ast::Expression::UnaryOperator(_, ast::UnaryOperator::Factorial(_order), _, _) => {
             "factorial"

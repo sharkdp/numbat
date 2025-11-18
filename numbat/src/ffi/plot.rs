@@ -1,6 +1,8 @@
 #[cfg(feature = "plotting")]
 use plotly::Plot;
 
+use crate::interpreter::RuntimeErrorKind;
+
 #[cfg(feature = "plotting")]
 use super::macros::*;
 
@@ -10,7 +12,6 @@ use compact_str::CompactString;
 use super::Args;
 use super::Result;
 use crate::value::Value;
-use crate::RuntimeError;
 
 #[cfg(feature = "plotting")]
 fn line_plot(mut args: Args) -> Plot {
@@ -96,11 +97,13 @@ fn show_plot(plot: Plot) -> CompactString {
 }
 
 #[cfg(feature = "plotting")]
-pub fn show(args: Args) -> Result<Value> {
+pub fn show(args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     // Dynamic dispatch hack since we don't have bounded polymorphism.
     // And no real support for generics in the FFI.
+
+    use crate::interpreter::RuntimeErrorKind;
     let Value::StructInstance(info, _) = args.front().unwrap() else {
-        return Err(Box::new(RuntimeError::UserError(
+        return Err(Box::new(RuntimeErrorKind::UserError(
             "Unsupported argument to 'show'.".into(),
         )));
     };
@@ -110,7 +113,7 @@ pub fn show(args: Args) -> Result<Value> {
     } else if info.name == "BarChart" {
         bar_chart(args)
     } else {
-        return Err(Box::new(RuntimeError::UserError(format!(
+        return Err(Box::new(RuntimeErrorKind::UserError(format!(
             "Unsupported plot type: {}",
             info.name
         ))));
@@ -120,8 +123,8 @@ pub fn show(args: Args) -> Result<Value> {
 }
 
 #[cfg(not(feature = "plotting"))]
-pub fn show(_args: Args) -> Result<Value> {
-    return Err(Box::new(RuntimeError::UserError(
+pub fn show(_args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+    return Err(Box::new(RuntimeErrorKind::UserError(
         "Plotting is currently not supported on this platform.".into(),
     )));
 }

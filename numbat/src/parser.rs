@@ -2,6 +2,7 @@
 //!
 //! Grammar:
 //! ```txt
+//! prog            ::=   statement ((";" | "\n"+) statement)*
 //! statement       ::=   variable_decl | struct_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
 //!
 //! variable_decl   ::=   "let" identifier ( ":" type_annotation ) ? "=" expression
@@ -108,7 +109,9 @@ pub enum ParseErrorKind {
     #[error("Expected '=' or ':' after identifier (and type annotation) in 'let' assignment")]
     ExpectedEqualOrColonAfterLetIdentifier,
 
-    #[error("Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names.")]
+    #[error(
+        "Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names."
+    )]
     ExpectedIdentifierAfterFn,
 
     #[error("Expected identifier")]
@@ -315,6 +318,9 @@ impl<'a> Parser<'a> {
                     // Skip over empty lines
                     self.skip_empty_lines(tokens);
                 }
+                TokenKind::Semicolon => {
+                    self.advance(tokens);
+                }
                 TokenKind::Eof => {
                     break;
                 }
@@ -359,7 +365,10 @@ impl<'a> Parser<'a> {
     /// Must be called after encountering an error.
     fn recover_from_error(&mut self, tokens: &[Token]) {
         // Skip all the tokens until we encounter a newline or EoF.
-        while !matches!(self.peek(tokens).kind, TokenKind::Newline | TokenKind::Eof) {
+        while !matches!(
+            self.peek(tokens).kind,
+            TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof
+        ) {
             self.advance(tokens)
         }
     }
@@ -375,10 +384,10 @@ impl<'a> Parser<'a> {
             } else if self.match_exact(tokens, TokenKind::None).is_some() {
                 Ok(Some(AcceptsPrefix::none()))
             } else {
-                return Err(ParseError::new(
+                Err(ParseError::new(
                     ParseErrorKind::UnknownAliasAnnotation,
                     self.peek(tokens).span,
-                ));
+                ))
             }
         } else {
             Ok(None)
@@ -1081,7 +1090,7 @@ impl<'a> Parser<'a> {
                     return Err(ParseError::new(
                         ParseErrorKind::ExpectedIdentifierOrCallAfterPostfixApply,
                         full_span,
-                    ))
+                    ));
                 }
             }
         }
@@ -1422,7 +1431,7 @@ impl<'a> Parser<'a> {
                         return Err(ParseError::new(
                             ParseErrorKind::MissingClosingParen,
                             self.peek(tokens).span,
-                        ))
+                        ));
                     }
                 }
             } else if self.match_exact(tokens, TokenKind::RightParen).is_some() {
@@ -1958,7 +1967,7 @@ impl<'a> Parser<'a> {
     fn look_ahead_beyond_linebreak(&self, tokens: &[Token], token_kind: TokenKind) -> bool {
         let mut i = self.current;
         while i < tokens.len() {
-            if tokens[i].kind != TokenKind::Newline {
+            if !matches!(tokens[i].kind, TokenKind::Newline | TokenKind::Semicolon) {
                 return tokens[i].kind == token_kind;
             }
             i += 1;
@@ -2011,7 +2020,10 @@ impl<'a> Parser<'a> {
     }
 
     pub fn is_end_of_statement(&self, tokens: &[Token]) -> bool {
-        self.peek(tokens).kind == TokenKind::Newline || self.is_at_end(tokens)
+        matches!(
+            self.peek(tokens).kind,
+            TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof
+        )
     }
 
     pub fn is_at_end(&self, tokens: &[Token]) -> bool {
@@ -2094,8 +2106,8 @@ mod tests {
     use super::*;
     use crate::{
         ast::{
-            binop, boolean, conditional, factorial, identifier, list, logical_neg, negate, scalar,
-            struct_, ReplaceSpans,
+            ReplaceSpans, binop, boolean, conditional, factorial, identifier, list, logical_neg,
+            negate, scalar, struct_,
         },
         span::ByteIndex,
     };
@@ -2904,7 +2916,9 @@ mod tests {
         );
 
         parse_as(
-            &["@name(\"Some function\") @description(\"This is a description of some_function.\") fn some_function(x) = 1"],
+            &[
+                "@name(\"Some function\") @description(\"This is a description of some_function.\") fn some_function(x) = 1",
+            ],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "some_function",
@@ -2923,7 +2937,9 @@ mod tests {
         );
 
         parse_as(
-            &["@name(\"Some function\") @example(\"some_function(2)\", \"Use this function:\") @example(\"let some_var = some_function(0)\") fn some_function(x) = 1"],
+            &[
+                "@name(\"Some function\") @example(\"some_function(2)\", \"Use this function:\") @example(\"let some_var = some_function(0)\") fn some_function(x) = 1",
+            ],
             Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name: "some_function",
@@ -2934,7 +2950,10 @@ mod tests {
                 return_type_annotation: None,
                 decorators: vec![
                     decorator::Decorator::Name("Some function".into()),
-                    decorator::Decorator::Example("some_function(2)".into(), Some("Use this function:".into())),
+                    decorator::Decorator::Example(
+                        "some_function(2)".into(),
+                        Some("Use this function:".into()),
+                    ),
                     decorator::Decorator::Example("let some_var = some_function(0)".into(), None),
                 ],
             },
@@ -3429,6 +3448,46 @@ mod tests {
                         format_specifiers: Some(":0.2"),
                     },
                 ],
+            ),
+        );
+
+        parse_as_expression(
+            &["\"{\"foo\"}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Interpolation {
+                    span: Span::dummy(),
+                    expr: Box::new(Expression::String(
+                        Span::dummy(),
+                        vec![StringPart::Fixed("foo".into())],
+                    )),
+                    format_specifiers: None,
+                }],
+            ),
+        );
+
+        parse_as_expression(
+            &["\"{\"foo {\"bar\"}\"}\""],
+            Expression::String(
+                Span::dummy(),
+                vec![StringPart::Interpolation {
+                    span: Span::dummy(),
+                    expr: Box::new(Expression::String(
+                        Span::dummy(),
+                        vec![
+                            StringPart::Fixed("foo ".into()),
+                            StringPart::Interpolation {
+                                span: Span::dummy(),
+                                expr: Box::new(Expression::String(
+                                    Span::dummy(),
+                                    vec![StringPart::Fixed("bar".into())],
+                                )),
+                                format_specifiers: None,
+                            },
+                        ],
+                    )),
+                    format_specifiers: None,
+                }],
             ),
         );
 

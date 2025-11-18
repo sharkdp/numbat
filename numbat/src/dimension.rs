@@ -1,10 +1,10 @@
 use compact_str::{CompactString, ToCompactString};
 
+use crate::BaseRepresentationFactor;
 use crate::arithmetic::{Exponent, Power};
 use crate::ast::{TypeExpression, TypeParameterBound};
 use crate::registry::{BaseRepresentation, Registry, Result};
 use crate::span::Span;
-use crate::BaseRepresentationFactor;
 
 #[derive(Default, Clone)]
 pub struct DimensionRegistry {

@@ -1123,6 +1123,26 @@ quadratic_equation(2, -1, -1)
 
 </details>
 
+### `cubic_equation` (Solve cubic equations)
+Returns the solutions of the equation a x³ + b x² + c x + e = 0.
+More information [here](https://en.wikipedia.org/wiki/Cubic_equation).
+
+```nbt
+fn cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar>
+```
+
+<details>
+<summary>Examples</summary>
+
+Solve the equation \\( x³ - 6x² + 11x - 6 = 0 \\)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Acubic%5Fequation%281%2C%20%2D6%2C%2011%2C%20%2D6%29')""></button></div><code class="language-nbt hljs numbat">use extra::algebra
+cubic_equation(1, -6, 11, -6)
+
+    = [1, 2, 3]    [List<Scalar>]
+</code></pre>
+
+</details>
+
 ## Trigonometry (extra)
 
 Defined in: `math::trigonometry_extra`

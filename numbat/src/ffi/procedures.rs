@@ -6,12 +6,14 @@ use super::macros::*;
 use crate::{
     ast::ProcedureKind,
     ffi::ControlFlow,
-    interpreter::assert_eq::{AssertEq2Error, AssertEq3Error},
+    interpreter::{
+        RuntimeErrorKind,
+        assert_eq::{AssertEq2Error, AssertEq3Error},
+    },
     pretty_print::PrettyPrint,
     span::Span,
     value::Value,
     vm::ExecutionContext,
-    RuntimeError,
 };
 
 use super::{Args, Callable, ForeignFunction};
@@ -70,7 +72,7 @@ fn assert(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> Con
     if arg!(args).unsafe_as_bool() {
         ControlFlow::Continue(())
     } else {
-        ControlFlow::Break(RuntimeError::AssertFailed(arg_spans[0]))
+        ControlFlow::Break(RuntimeErrorKind::AssertFailed(arg_spans[0]))
     }
 }
 
@@ -84,7 +86,7 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> 
         let lhs = arg!(args);
         let rhs = arg!(args);
 
-        let error = ControlFlow::Break(RuntimeError::AssertEq2Failed(AssertEq2Error {
+        let error = ControlFlow::Break(RuntimeErrorKind::AssertEq2Failed(AssertEq2Error {
             span_lhs,
             lhs: lhs.clone(),
             span_rhs,
@@ -116,25 +118,25 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> 
 
         let lhs_converted = lhs_original.convert_to(eps.unit());
         let lhs_converted = match lhs_converted {
-            Err(e) => return ControlFlow::Break(RuntimeError::QuantityError(e)),
+            Err(e) => return ControlFlow::Break(RuntimeErrorKind::QuantityError(e)),
             Ok(q) => q,
         };
         let rhs_converted = rhs_original.convert_to(eps.unit());
         let rhs_converted = match rhs_converted {
-            Err(e) => return ControlFlow::Break(RuntimeError::QuantityError(e)),
+            Err(e) => return ControlFlow::Break(RuntimeErrorKind::QuantityError(e)),
             Ok(q) => q,
         };
 
         let result = &lhs_converted - &rhs_converted;
 
         match result {
-            Err(e) => ControlFlow::Break(RuntimeError::QuantityError(e)),
+            Err(e) => ControlFlow::Break(RuntimeErrorKind::QuantityError(e)),
             Ok(diff) => {
                 let diff_abs = diff.abs();
                 if diff_abs <= eps {
                     ControlFlow::Continue(())
                 } else {
-                    ControlFlow::Break(RuntimeError::AssertEq3Failed(AssertEq3Error {
+                    ControlFlow::Break(RuntimeErrorKind::AssertEq3Failed(AssertEq3Error {
                         span_lhs,
                         lhs_original,
                         lhs_converted,

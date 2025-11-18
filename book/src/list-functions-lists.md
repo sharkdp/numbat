@@ -229,6 +229,24 @@ Square all elements of a list.
 
 </details>
 
+### `map2`
+Generate a new list by applying a function to each element of the input list. This function takes two inputs: a variable, and the element of the list.
+
+```nbt
+fn map2<A, B, C>(f: Fn[(A, B) -> C], other: A, xs: List<B>) -> List<C>
+```
+
+<details>
+<summary>Examples</summary>
+
+Returns a list of bools corresponding to whether the sublist contains a 2 or not.
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=map2%28contains%2C%202%2C%20%5B%5B0%5D%2C%20%5B2%5D%2C%20%5B1%2C%202%5D%2C%20%5B0%2C%202%2C%203%5D%2C%20%5B%5D%5D%29')""></button></div><code class="language-nbt hljs numbat">map2(contains, 2, [[0], [2], [1, 2], [0, 2, 3], []])
+
+    = [false, true, true, true, false]    [List<Bool>]
+</code></pre>
+
+</details>
+
 ### `filter`
 Filter a list by a predicate.
 

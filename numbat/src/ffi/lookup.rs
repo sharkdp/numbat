@@ -1,14 +1,14 @@
 use compact_str::CompactString;
 
-use super::macros::*;
 use super::Args;
 use super::Result;
+use super::macros::*;
+use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
 use crate::typed_ast::DType;
 use crate::value::Value;
-use crate::RuntimeError;
 
-pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
+pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     use crate::span::{ByteIndex, Span};
     use crate::typed_ast::StructInfo;
     use crate::typed_ast::Type;
@@ -143,7 +143,7 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value> {
             ],
         ))
     } else {
-        Err(Box::new(RuntimeError::ChemicalElementNotFound(
+        Err(Box::new(RuntimeErrorKind::ChemicalElementNotFound(
             pattern.to_string(),
         )))
     }

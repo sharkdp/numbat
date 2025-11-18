@@ -4,22 +4,22 @@ use common::get_test_context;
 
 use compact_str::CompactString;
 use insta::assert_snapshot;
+use numbat::NumbatError;
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
-use numbat::NumbatError;
-use numbat::{pretty_print::PrettyPrint, Context, InterpreterResult};
+use numbat::{Context, InterpreterResult, pretty_print::PrettyPrint};
 
 #[track_caller]
 fn expect_output_with_context(ctx: &mut Context, code: &str, expected_output: impl AsRef<str>) {
     let expected_output = expected_output.as_ref();
-    println!("Expecting output '{expected_output}' for code '{code}'");
+    println!("Expecting output {expected_output:?} for code\n{code}");
     if let InterpreterResult::Value(val) = ctx.interpret(code, CodeSource::Internal).unwrap().1 {
         let fmt = PlainTextFormatter {};
 
         let actual_output = fmt.format(&val.pretty_print(), false);
         assert_eq!(actual_output.trim(), expected_output);
     } else {
-        panic!();
+        panic!("Did not receive an interpreter result. Did you try to print the values?");
     }
 }
 
@@ -305,6 +305,18 @@ fn test_algebra() {
         "infinitely many solutions",
     );
     expect_output_with_context(&mut ctx, "quadratic_equation(1, 1, 1)", "[]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, -6, 11, -6)", "[1, 2, 3]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, 0, 0, -1)", "[1]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, 0, 0, 0)", "[0]");
+    expect_output_with_context(&mut ctx, "cubic_equation(0, 1, -3, 2)", "[1, 2]");
+    expect_output_with_context(&mut ctx, "cubic_equation(0, 0, 1, -4)", "[4]");
+    expect_output_with_context(&mut ctx, "cubic_equation(0, 0, 0, 5)", "[]");
+    expect_output_with_context(&mut ctx, "cubic_equation(1, 1, 1, 1)", "[-1]");
+    expect_failure_with_context(
+        &mut ctx,
+        "cubic_equation(0, 0, 0, 0)",
+        "infinitely many solutions",
+    );
 }
 
 #[test]
@@ -434,6 +446,9 @@ fn test_temperature_conversions() {
 #[test]
 fn test_other_functions() {
     expect_output("sqrt(4)", "2");
+    expect_output("sqrt(-1)", "NaN");
+    expect_output("cbrt(27)", "3");
+    expect_output("cbrt(-64)", "-4");
     expect_output("log10(100000)", "5");
     expect_output("log(e^15)", "15");
     expect_output("ln(e^15)", "15");
@@ -485,6 +500,11 @@ fn test_misc_examples() {
     expect_output("3m/4m", "0.75");
     expect_output("4/2*2", "4");
     expect_output("1/2 Hz -> s", "0.5 s");
+
+    expect_output("let b = \";\"; b", "\";\"");
+    expect_output("let b = \";\"\nb", "\";\"");
+    expect_output("let a = 3m; 5; a", "3 m");
+    expect_output("let a = 3m\n5\na", "3 m");
 }
 
 #[test]
@@ -737,6 +757,20 @@ fn test_overwrite_inner_function() {
 }
 
 #[test]
+fn test_676_where_clause_does_not_leak() {
+    // https://github.com/sharkdp/numbat/issues/676
+    expect_output(
+        "
+        fn foo(x: Scalar) -> Scalar = x + something where something = 1
+        unit something
+
+        1 something
+        ",
+        "1 something",
+    );
+}
+
+#[test]
 fn test_override_constants() {
     expect_output("let x = 1\nlet x = 2\nx", "2");
     expect_output("let pi = 4\npi", "4");
@@ -768,7 +802,10 @@ fn test_full_simplify_for_function_calls() {
 
 #[test]
 fn test_datetime_runtime_errors() {
-    expect_failure("datetime(\"2000-01-99\")", "Unrecognized datetime format: failed to parse day in date \"2000-01-99\": day is not valid: parameter 'day' with value 99 is not in the required range of 1..=31");
+    expect_failure(
+        "datetime(\"2000-01-99\")",
+        "Unrecognized datetime format: failed to parse day in date \"2000-01-99\": day is not valid: parameter 'day' with value 99 is not in the required range of 1..=31",
+    );
     expect_failure("now() -> tz(\"Europe/NonExisting\")", "Unknown timezone");
     expect_failure(
         "date(\"2000-01-01\") + 1e100 years",
@@ -815,11 +852,12 @@ fn test_recovery_after_runtime_error() {
         let mut ctx = get_test_context();
 
         expect_failure_with_context(&mut ctx, "let x = 1/0", "Division by zero");
-        assert!(ctx
-            .interpret("let x = 1", CodeSource::Internal)
-            .unwrap()
-            .1
-            .is_continue());
+        assert!(
+            ctx.interpret("let x = 1", CodeSource::Internal)
+                .unwrap()
+                .1
+                .is_continue()
+        );
         expect_output_with_context(&mut ctx, "x", "1");
     }
 }

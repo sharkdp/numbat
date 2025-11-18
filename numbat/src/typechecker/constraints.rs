@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use compact_str::{format_compact, CompactString};
+use compact_str::{CompactString, format_compact};
 
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
@@ -321,15 +321,13 @@ impl Constraint {
             Constraint::HasField(struct_type, field_name, field_type)
                 if struct_type.is_closed() =>
             {
-                if let Type::Struct(info) = struct_type {
-                    if let Some((_, actual_field_type)) = info.fields.get(field_name) {
-                        Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
-                            actual_field_type.clone(),
-                            field_type.clone(),
-                        )]))
-                    } else {
-                        None
-                    }
+                if let Type::Struct(info) = struct_type
+                    && let Some((_, actual_field_type)) = info.fields.get(field_name)
+                {
+                    Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
+                        actual_field_type.clone(),
+                        field_type.clone(),
+                    )]))
                 } else {
                     None
                 }

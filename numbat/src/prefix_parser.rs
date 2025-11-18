@@ -144,9 +144,8 @@ impl PrefixParser {
                 ("exbi", &["Ei"], Prefix::Binary(60)),
                 ("zebi", &["Zi"], Prefix::Binary(70)),
                 ("yobi", &["Yi"], Prefix::Binary(80)),
-                // The following two prefixes are not yet approved by IEC as of 2023-02-16
-                // ("robi", "Ri", Prefix::Binary(90)),
-                // ("quebi", "Qi", Prefix::Binary(100)),
+                ("robi", &["Ri"], Prefix::Binary(90)),
+                ("quebi", &["Qi"], Prefix::Binary(100)),
             ]
         })
     }
@@ -175,10 +174,10 @@ impl PrefixParser {
             return Err(NameResolutionError::ReservedIdentifier(definition_span));
         }
 
-        if clash_with_other_identifiers {
-            if let Some(original_span) = self.other_identifiers.get(name) {
-                return Err(self.identifier_clash_error(name, definition_span, *original_span));
-            }
+        if clash_with_other_identifiers
+            && let Some(original_span) = self.other_identifiers.get(name)
+        {
+            return Err(self.identifier_clash_error(name, definition_span, *original_span));
         }
 
         match self.parse(name) {

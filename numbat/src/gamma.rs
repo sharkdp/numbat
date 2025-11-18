@@ -1,6 +1,6 @@
 use std::ffi::c_double;
 
-extern "C" {
+unsafe extern "C" {
     fn tgamma(n: c_double) -> c_double;
 }
 

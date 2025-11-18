@@ -5,7 +5,7 @@ use itertools::Itertools;
 use num_traits::{ToPrimitive, Zero};
 
 use crate::{
-    arithmetic::{pretty_exponent, Exponent, Power, Rational},
+    arithmetic::{Exponent, Power, Rational, pretty_exponent},
     number::Number,
     prefix::Prefix,
     prefix_parser::AcceptsPrefix,
@@ -692,11 +692,13 @@ mod tests {
         assert_eq!(Unit::meter().powi(2).to_string(), "m²");
         assert_eq!(Unit::meter().powi(3).to_string(), "m³");
         assert_eq!(Unit::meter().powi(4).to_string(), "m⁴");
-        assert_eq!(Unit::meter().powi(8).to_string(), "m^8");
+        assert_eq!(Unit::meter().powi(8).to_string(), "m⁸");
+        assert_eq!(Unit::meter().powi(16).to_string(), "m¹⁶");
 
         assert_eq!(Unit::meter().powi(-1).to_string(), "m⁻¹");
         assert_eq!(Unit::meter().powi(-4).to_string(), "m⁻⁴");
-        assert_eq!(Unit::meter().powi(-8).to_string(), "m^(-8)");
+        assert_eq!(Unit::meter().powi(-8).to_string(), "m⁻⁸");
+        assert_eq!(Unit::meter().powi(-16).to_string(), "m⁻¹⁶");
 
         assert_eq!(
             (Unit::meter() * Unit::meter() * Unit::second())

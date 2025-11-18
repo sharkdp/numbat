@@ -1,10 +1,10 @@
 use std::{collections::HashMap, error::Error, fmt};
 
-use crate::arithmetic::{pretty_exponent, Exponent, Rational};
+use crate::arithmetic::{Exponent, Rational, pretty_exponent};
 use crate::registry::{BaseRepresentation, BaseRepresentationFactor};
 use crate::span::Span;
 
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{CompactString, ToCompactString, format_compact};
 use itertools::Itertools;
 use num_traits::Zero;
 use unicode_width::UnicodeWidthStr;

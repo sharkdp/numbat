@@ -1,10 +1,10 @@
+use crate::Context;
+use crate::InterpreterSettings;
 /// Print a help, linking the documentation, and live-running some examples
 /// in an isolated context.
 use crate::markup as m;
 use crate::module_importer::BuiltinModuleImporter;
 use crate::resolver::CodeSource;
-use crate::Context;
-use crate::InterpreterSettings;
 
 use std::sync::{Arc, Mutex};
 
@@ -21,22 +21,14 @@ fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
         .interpret_with_settings(&mut settings, input, CodeSource::Internal)
         .expect("No error in 'help' examples");
 
-    let markup =
-        statement_output
-            .lock()
-            .unwrap()
-            .iter()
-            .fold(m::empty(), |accumulated_mk, single_line| {
-                accumulated_mk + m::nl() + m::whitespace("  ") + single_line.clone() + m::nl()
-            })
-            + interpreter_result.to_markup(
-                statements.last(),
-                context.dimension_registry(),
-                true,
-                true,
-            );
-
-    markup
+    statement_output
+        .lock()
+        .unwrap()
+        .iter()
+        .fold(m::empty(), |accumulated_mk, single_line| {
+            accumulated_mk + m::nl() + m::whitespace("  ") + single_line.clone() + m::nl()
+        })
+        + interpreter_result.to_markup(statements.last(), context.dimension_registry(), true, true)
 }
 
 pub fn help_markup() -> m::Markup {

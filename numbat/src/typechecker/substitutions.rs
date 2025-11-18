@@ -1,8 +1,8 @@
 use thiserror::Error;
 
+use crate::Statement;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{DType, DTypeFactor, DefineVariable, Expression, StructInfo, Type};
-use crate::Statement;
 
 #[derive(Debug, Clone)]
 pub struct Substitution(pub Vec<(TypeVariable, Type)>);
@@ -230,11 +230,11 @@ impl ApplySubstitution for Statement<'_> {
             }
             Statement::DefineDimension(_, _) => Ok(()),
             Statement::DefineBaseUnit(_, _, _annotation, type_) => type_.apply(s),
-            Statement::DefineDerivedUnit(_, e, _, _annotation, type_, _) => {
+            Statement::DefineDerivedUnit(_, _, e, _, _annotation, type_, _) => {
                 e.apply(s)?;
                 type_.apply(s)
             }
-            Statement::ProcedureCall(_, args) => {
+            Statement::ProcedureCall(_, _, args) => {
                 for arg in args {
                     arg.apply(s)?;
                 }

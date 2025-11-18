@@ -76,7 +76,7 @@ use typechecker::{TypeCheckError, TypeChecker};
 pub use diagnostic::Diagnostic;
 pub use interpreter::InterpreterResult;
 pub use interpreter::InterpreterSettings;
-pub use interpreter::RuntimeError;
+pub use interpreter::{RuntimeError, RuntimeErrorKind};
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
 pub use registry::BaseRepresentation;
@@ -160,6 +160,10 @@ impl Context {
 
     pub fn use_test_exchange_rates() {
         ExchangeRatesCache::use_test_rates();
+    }
+
+    pub fn runtime_error(&self, kind: RuntimeErrorKind) -> RuntimeError {
+        self.interpreter.runtime_error(kind)
     }
 
     pub fn variable_names(&self) -> impl Iterator<Item = CompactString> + '_ {
@@ -357,103 +361,99 @@ impl Context {
         // Check if it's a unit
         if let PrefixParserResult::UnitIdentifier(_span, prefix, _, full_name) =
             self.prefix_transformer.prefix_parser.parse(keyword)
-        {
-            if let Some(md) = reg
+            && let Some(md) = reg
                 .inner
                 .get_base_representation_for_name(&full_name)
                 .ok()
                 .map(|(_, md)| md)
-            {
-                let mut help = m::text("Unit: ")
-                    + m::unit(md.name.unwrap_or_else(|| keyword.to_compact_string()));
-                if let Some(url) = &md.url {
-                    help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
-                }
-                help += m::nl();
-                if md.aliases.len() > 1 {
-                    help += m::text("Aliases: ")
-                        + m::text(
-                            md.aliases
-                                .iter()
-                                .map(|(x, _)| x.as_str())
-                                .collect::<Vec<_>>()
-                                .join_compact(", "),
-                        )
-                        + m::nl();
-                }
-
-                if let Some(description) = &md.description {
-                    let desc = "Description: ";
-                    let mut lines = description.lines();
-                    help += m::text(desc)
-                        + m::text(
-                            lines
-                                .by_ref()
-                                .next()
-                                .unwrap_or("")
-                                .trim()
-                                .to_compact_string(),
-                        )
-                        + m::nl();
-
-                    for line in lines {
-                        help += m::whitespace(CompactString::const_new(" ").repeat(desc.len()))
-                            + m::text(line.trim().to_compact_string())
-                            + m::nl();
-                    }
-                }
-
-                if matches!(md.type_, Type::Dimension(d) if d.is_scalar()) {
-                    help += m::text("A dimensionless unit ([")
-                        + md.readable_type
-                        + m::text("])")
-                        + m::nl();
-                } else {
-                    help += m::text("A unit of: ") + md.readable_type + m::nl();
-                }
-
-                if let Some(defining_info) = self.interpreter.get_defining_unit(&full_name) {
-                    let x = defining_info
-                        .iter()
-                        .filter(|u| !u.unit_id.is_base())
-                        .map(|unit_factor| unit_factor.unit_id.unit_and_factor())
-                        .next();
-
-                    if !prefix.is_none() {
-                        help += m::nl()
-                            + m::value("1 ")
-                            + m::unit(keyword.to_compact_string())
-                            + m::text(" = ")
-                            + m::value(prefix.factor().pretty_print())
-                            + m::space()
-                            + m::unit(full_name.to_compact_string());
-                    }
-
-                    if let Some(BaseUnitAndFactor(prod, num)) = x {
-                        help += m::nl()
-                            + m::value("1 ")
-                            + m::unit(full_name.to_compact_string())
-                            + m::text(" = ")
-                            + m::value(num.pretty_print())
-                            + m::space()
-                            + prod.pretty_print_with(
-                                |f| f.exponent,
-                                'x',
-                                '/',
-                                true,
-                                Some(m::FormatType::Unit),
-                            );
-                    } else {
-                        help += m::nl()
-                            + m::unit(full_name.to_compact_string())
-                            + m::text(" is a base unit");
-                    }
-                };
-
-                help += m::nl();
-
-                return help;
+        {
+            let mut help =
+                m::text("Unit: ") + m::unit(md.name.unwrap_or_else(|| keyword.to_compact_string()));
+            if let Some(url) = &md.url {
+                help += m::text(" (") + m::string(url_encode(url)) + m::text(")");
             }
+            help += m::nl();
+            if md.aliases.len() > 1 {
+                help += m::text("Aliases: ")
+                    + m::text(
+                        md.aliases
+                            .iter()
+                            .map(|(x, _)| x.as_str())
+                            .collect::<Vec<_>>()
+                            .join_compact(", "),
+                    )
+                    + m::nl();
+            }
+
+            if let Some(description) = &md.description {
+                let desc = "Description: ";
+                let mut lines = description.lines();
+                help += m::text(desc)
+                    + m::text(
+                        lines
+                            .by_ref()
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .to_compact_string(),
+                    )
+                    + m::nl();
+
+                for line in lines {
+                    help += m::whitespace(CompactString::const_new(" ").repeat(desc.len()))
+                        + m::text(line.trim().to_compact_string())
+                        + m::nl();
+                }
+            }
+
+            if matches!(md.type_, Type::Dimension(d) if d.is_scalar()) {
+                help +=
+                    m::text("A dimensionless unit ([") + md.readable_type + m::text("])") + m::nl();
+            } else {
+                help += m::text("A unit of: ") + md.readable_type + m::nl();
+            }
+
+            if let Some(defining_info) = self.interpreter.get_defining_unit(&full_name) {
+                let x = defining_info
+                    .iter()
+                    .filter(|u| !u.unit_id.is_base())
+                    .map(|unit_factor| unit_factor.unit_id.unit_and_factor())
+                    .next();
+
+                if !prefix.is_none() {
+                    help += m::nl()
+                        + m::value("1 ")
+                        + m::unit(keyword.to_compact_string())
+                        + m::text(" = ")
+                        + m::value(prefix.factor().pretty_print())
+                        + m::space()
+                        + m::unit(full_name.to_compact_string());
+                }
+
+                if let Some(BaseUnitAndFactor(prod, num)) = x {
+                    help += m::nl()
+                        + m::value("1 ")
+                        + m::unit(full_name.to_compact_string())
+                        + m::text(" = ")
+                        + m::value(num.pretty_print())
+                        + m::space()
+                        + prod.pretty_print_with(
+                            |f| f.exponent,
+                            'x',
+                            '/',
+                            true,
+                            Some(m::FormatType::Unit),
+                        );
+                } else {
+                    help += m::nl()
+                        + m::unit(full_name.to_compact_string())
+                        + m::text(" is a base unit");
+                }
+            };
+
+            help += m::nl();
+
+            return help;
         };
 
         // Check if it's a dimension
@@ -500,12 +500,11 @@ impl Context {
                 let matching_units: Vec<CompactString> = self
                     .unit_representations()
                     .filter_map(|(_unit_name, (_unit_base_rep, unit_metadata))| {
-                        if let Type::Dimension(unit_dim) = &unit_metadata.type_ {
-                            if unit_dim.to_base_representation() == base_representation {
-                                if let Some((primary_alias, _)) = unit_metadata.aliases.first() {
-                                    return Some(primary_alias.clone());
-                                }
-                            }
+                        if let Type::Dimension(unit_dim) = &unit_metadata.type_
+                            && unit_dim.to_base_representation() == base_representation
+                            && let Some((primary_alias, _)) = unit_metadata.aliases.first()
+                        {
+                            return Some(primary_alias.clone());
                         }
                         None
                     })
@@ -735,51 +734,50 @@ impl Context {
             self.prefix_transformer = prefix_transformer_old.clone();
             self.typechecker = typechecker_old.clone();
 
-            if self.load_currency_module_on_demand {
-                if let Err(NumbatError::TypeCheckError(TypeCheckError::UnknownIdentifier(
+            if self.load_currency_module_on_demand
+                && let Err(NumbatError::TypeCheckError(TypeCheckError::UnknownIdentifier(
                     _,
                     identifier,
                     _,
                 ))) = &result
-                {
-                    const CURRENCY_IDENTIFIERS: &[&str] =
-                        &include!(concat!(env!("OUT_DIR"), "/currencies.rs"));
-                    if CURRENCY_IDENTIFIERS.contains(&identifier.as_str()) {
-                        let mut no_print_settings = InterpreterSettings {
-                            print_fn: Box::new(
-                                move |_: &m::Markup| { // ignore any print statements when loading this module asynchronously
-                                },
-                            ),
-                        };
+            {
+                const CURRENCY_IDENTIFIERS: &[&str] =
+                    &include!(concat!(env!("OUT_DIR"), "/currencies.rs"));
+                if CURRENCY_IDENTIFIERS.contains(&identifier.as_str()) {
+                    let mut no_print_settings = InterpreterSettings {
+                        print_fn: Box::new(
+                            move |_: &m::Markup| { // ignore any print statements when loading this module asynchronously
+                            },
+                        ),
+                    };
 
-                        // We also call this from a thread at program startup, so if a user only starts
-                        // to use currencies later on, this will already be available and return immediately.
-                        // Otherwise, we fetch it now and make sure to block on this call.
-                        {
-                            let erc = ExchangeRatesCache::fetch();
+                    // We also call this from a thread at program startup, so if a user only starts
+                    // to use currencies later on, this will already be available and return immediately.
+                    // Otherwise, we fetch it now and make sure to block on this call.
+                    {
+                        let erc = ExchangeRatesCache::fetch();
 
-                            if erc.is_none() {
-                                return Err(Box::new(NumbatError::RuntimeError(
-                                    RuntimeError::CouldNotLoadExchangeRates,
-                                )));
-                            }
+                        if erc.is_none() {
+                            return Err(Box::new(NumbatError::RuntimeError(
+                                self.runtime_error(RuntimeErrorKind::CouldNotLoadExchangeRates),
+                            )));
                         }
-
-                        let _ = self.interpret_with_settings(
-                            &mut no_print_settings,
-                            "use units::currencies",
-                            CodeSource::Internal,
-                        )?;
-
-                        // Make sure we do not run into an infinite loop in case loading that
-                        // module did not bring in the required currency unit identifier. This
-                        // can happen if the list of currency identifiers is not in sync with
-                        // what the module actually defines.
-                        self.load_currency_module_on_demand = false;
-
-                        // Now we try to evaluate the user expression again:
-                        return self.interpret_with_settings(settings, code, code_source);
                     }
+
+                    let _ = self.interpret_with_settings(
+                        &mut no_print_settings,
+                        "use units::currencies",
+                        CodeSource::Internal,
+                    )?;
+
+                    // Make sure we do not run into an infinite loop in case loading that
+                    // module did not bring in the required currency unit identifier. This
+                    // can happen if the list of currency identifiers is not in sync with
+                    // what the module actually defines.
+                    self.load_currency_module_on_demand = false;
+
+                    // Now we try to evaluate the user expression again:
+                    return self.interpret_with_settings(settings, code, code_source);
                 }
             }
         }
@@ -815,14 +813,19 @@ impl Context {
         Ok((typed_statements, result))
     }
 
-    pub fn print_diagnostic(&self, error: impl ErrorDiagnostic) {
+    pub fn print_diagnostic(&self, error: impl ErrorDiagnostic, colorize: bool) {
         use codespan_reporting::term::{
-            self,
+            self, Config,
             termcolor::{ColorChoice, StandardStream},
-            Config,
         };
 
-        let writer = StandardStream::stderr(ColorChoice::Auto);
+        let color = if colorize {
+            ColorChoice::Auto
+        } else {
+            ColorChoice::Never
+        };
+
+        let writer = StandardStream::stderr(color);
         let config = Config::default();
 
         // we want to be sure no one can write between our diagnostics

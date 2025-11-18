@@ -6,7 +6,7 @@ use num_traits::Zero;
 use thiserror::Error;
 
 use crate::{
-    arithmetic::{pretty_exponent, Exponent, Power, Rational},
+    arithmetic::{Exponent, Power, Rational, pretty_exponent},
     pretty_print::PrettyPrint,
     product::{Canonicalize, Product},
     suggestion,

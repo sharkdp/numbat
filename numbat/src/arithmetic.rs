@@ -1,6 +1,5 @@
-use compact_str::{format_compact, CompactString};
+use compact_str::{CompactString, format_compact};
 use num_rational::Ratio;
-use num_traits::Signed;
 
 pub type Rational = Ratio<i128>;
 pub type Exponent = Rational;
@@ -17,29 +16,25 @@ pub trait Power {
 }
 
 pub fn pretty_exponent(e: &Exponent) -> CompactString {
-    if e == &Ratio::from_integer(5) {
-        CompactString::const_new("⁵")
-    } else if e == &Ratio::from_integer(4) {
-        CompactString::const_new("⁴")
-    } else if e == &Ratio::from_integer(3) {
-        CompactString::const_new("³")
-    } else if e == &Ratio::from_integer(2) {
-        CompactString::const_new("²")
-    } else if e == &Ratio::from_integer(1) {
-        CompactString::const_new("")
-    } else if e == &Ratio::from_integer(-1) {
-        CompactString::const_new("⁻¹")
-    } else if e == &Ratio::from_integer(-2) {
-        CompactString::const_new("⁻²")
-    } else if e == &Ratio::from_integer(-3) {
-        CompactString::const_new("⁻³")
-    } else if e == &Ratio::from_integer(-4) {
-        CompactString::const_new("⁻⁴")
-    } else if e == &Ratio::from_integer(-5) {
-        CompactString::const_new("⁻⁵")
-    } else if e.is_positive() && e.is_integer() {
-        format_compact!("^{e}")
-    } else {
-        format_compact!("^({e})")
+    if !e.is_integer() {
+        return format_compact!("^({e})");
     }
+    let numer = e.numer();
+    if *numer == 1 {
+        return CompactString::new("");
+    }
+    CompactString::from_iter(numer.to_string().chars().map(|c| match c {
+        '-' => '⁻',
+        '0' => '⁰',
+        '1' => '¹',
+        '2' => '²',
+        '3' => '³',
+        '4' => '⁴',
+        '5' => '⁵',
+        '6' => '⁶',
+        '7' => '⁷',
+        '8' => '⁸',
+        '9' => '⁹',
+        _ => unreachable!(),
+    }))
 }

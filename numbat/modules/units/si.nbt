@@ -213,6 +213,7 @@ unit arcminute: Angle = 1 / 60 × degree
 
 @name("Second of arc")
 @url("https://en.wikipedia.org/wiki/Minute_and_second_of_arc")
+@metric_prefixes
 @aliases(arcseconds, arcsec, ″: short)
 unit arcsecond: Angle = 1 / 60 × arcminute
 

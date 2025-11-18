@@ -1,5 +1,7 @@
 pub(crate) mod assert_eq;
 
+use core::fmt;
+
 use crate::{
     dimension::DimensionRegistry,
     markup::Markup,
@@ -18,9 +20,21 @@ use thiserror::Error;
 
 pub use crate::value::Value;
 
+#[derive(Debug, Clone)]
+pub struct RuntimeError {
+    pub kind: RuntimeErrorKind,
+    pub backtrace: Vec<(CompactString, Span)>,
+}
+
+impl fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.kind)
+    }
+}
+
 #[derive(Debug, Clone, Error, PartialEq)]
 #[allow(clippy::large_enum_variant)]
-pub enum RuntimeError {
+pub enum RuntimeErrorKind {
     #[error("Division by zero")]
     DivisionByZero,
     #[error("Expected factorial argument to be a non-negative integer")]
@@ -49,7 +63,9 @@ pub enum RuntimeError {
     DurationOutOfRange,
     #[error("DateTime out of range")]
     DateTimeOutOfRange,
-    #[error("{0}. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers.")]
+    #[error(
+        "{0}. See https://docs.rs/jiff/latest/jiff/fmt/strtime/index.html#conversion-specifications for possible format specifiers."
+    )]
     DateFormattingError(String),
 
     #[error("Invalid format specifiers: {0}")]
@@ -244,9 +260,9 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_runtime_error(input: &str, err_expected: RuntimeError) {
+    fn assert_runtime_error(input: &str, err_expected: RuntimeErrorKind) {
         if let Err(err_actual) = get_interpreter_result(input) {
-            assert_eq!(*err_actual, err_expected);
+            assert_eq!(err_actual.kind, err_expected);
         } else {
             panic!();
         }
@@ -280,7 +296,7 @@ mod tests {
 
         assert_runtime_error(
             "1 meter > alternative_length_base_unit",
-            RuntimeError::QuantityError(QuantityError::IncompatibleUnits(
+            RuntimeErrorKind::QuantityError(QuantityError::IncompatibleUnits(
                 Unit::new_base(
                     CompactString::const_new("meter"),
                     CanonicalName::new("m", AcceptsPrefix::only_short()),
@@ -352,6 +368,6 @@ mod tests {
 
     #[test]
     fn division_by_zero_raises_runtime_error() {
-        assert_runtime_error("1/0", RuntimeError::DivisionByZero);
+        assert_runtime_error("1/0", RuntimeErrorKind::DivisionByZero);
     }
 }

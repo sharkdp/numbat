@@ -1,0 +1,89 @@
+# Submarine Fiber Optic Latency
+#
+# This script models the total latency for data traveling through a submarine
+# fiber optic cable. It calculating propagation delay (distance / speed),
+# processing delays from network equipment like routers, transponders, and
+# optical amplifiers.
+#
+# Note: This model does not include potential latency from Dispersion
+# Compensating Fiber (DCF) or variable network queuing delays (bufferbloat).
+#
+# References:
+# https://www.submarinecablemap.com/submarine-cable/matrix-cable-system
+# https://www.m2optics.com/blog/bid/70587/calculating-optical-fiber-latency
+# https://mapyourtech.com/latency-in-optical-networks-principles-optimization-and-applications/
+
+# Length of cable, example using Matrix Cable System's submarine cable (CGK-SIN)
+let cable_length = 1055 km
+
+# Refractive indexes single mode optical fibers (G.652, G.654,and G.655) from
+# two leading manufacturers that are commonly deployed in networks around the
+# world.
+let refractive_indexes = [1.4677, 1.4682, 1.468, 1.469, 1.467, 1.468, 1.470, 1.470]
+let n = mean(refractive_indexes)
+
+# The speed of light in the fiber optic core.
+let speed_in_fiber = c / n
+
+# --- Path and equipment parameters ---
+
+# Number of routers/switches in the path, at least 2 for a point-to-point link
+let router_count = 2
+# Router and switch processing delay per device, typical value: 0.2 ms to 1 ms
+let router_delay = .4 ms
+
+# Number of OEO transponders, at least 2
+let transponder_count = 2
+# Delay per transponder, typical value: 0.01 ms to 0.1 ms
+let transponder_delay = .05 ms
+
+# Number of amplifiers, tipically spaced every 50 to 80 km
+let amplifier_count = round(cable_length / 70 km)
+# Delay per amplifier. typical value: 0.001 ms to 0.01 ms
+let amplifier_delay = .005 ms
+
+# --- Latency calculation ---
+
+# The time based purely on the speed of light in the fiber
+let propagation_delay = cable_length / speed_in_fiber
+
+# Total equipment and processing delays
+let total_equipment_delay = (router_count * router_delay) + (transponder_count * transponder_delay) + (amplifier_count * amplifier_delay)
+
+let one_way_latency = propagation_delay + total_equipment_delay
+
+print("Cable length: {cable_length}")
+print("Avg. optical fiber refractive index: {n}")
+print("Speed of light in optical fiber: {speed_in_fiber}")
+print("Base Propagation Delay (light in fiber): ~{propagation_delay -> ms}")
+print()
+
+print("-----------------------------")
+print("Equipment & Processing Delays")
+print("-----------------------------")
+print("Router delay: {router_count} router * {router_delay} = {router_count * router_delay}")
+print("Transponder delay: {transponder_count} transponder * {transponder_delay} = {transponder_count * transponder_delay}")
+print("Amplifier delay: {amplifier_count} amplifier * {amplifier_delay} = {amplifier_count * amplifier_delay}")
+print()
+
+print("------------------------")
+print("Final Latency Estimation")
+print("------------------------")
+print("Estimated One-Way Latency: {one_way_latency -> ms}")
+print("Estimated Round-Trip Time (RTT): {one_way_latency * 2 -> ms}")
+print()
+
+print("===============================================================================")
+print("Summary")
+print("===============================================================================")
+print("For a {cable_length} submarine cable, the estimated one-way latency is ~{one_way_latency -> ms:0.2f},")
+print("resulting in a round-trip time (RTT) of ~{one_way_latency * 2 -> ms:0.2f}.")
+print()
+print("This is based on the speed of light in an optical fiber with an average")
+print("refractive index of {n:0.2f}, which is {speed_in_fiber}. This speed is approximately ")
+print("{percentage_change(c, speed_in_fiber):0.2f} of the speed of light in a vacuum.")
+print()
+print("Assuming symmetrical latency, the round-trip time (RTT) is a sum of the")
+print("propagation delay (~{propagation_delay -> ms}) and the cumulative processing delays from")
+print("network appliances (~{total_equipment_delay -> ms}), multiply by 2.")
+print("===============================================================================")

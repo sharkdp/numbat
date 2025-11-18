@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use numbat::{module_importer::FileSystemImporter, resolver::CodeSource, Context, NumbatError};
+use numbat::{Context, NumbatError, module_importer::FileSystemImporter, resolver::CodeSource};
 use once_cell::sync::Lazy;
 
 pub fn get_test_context_without_prelude() -> Context {

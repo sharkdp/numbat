@@ -3,14 +3,15 @@ use std::str::{FromStr, SplitWhitespace};
 use compact_str::ToCompactString;
 
 use crate::{
-    diagnostic::ErrorDiagnostic,
+    Context, ParseError, RuntimeError,
+    diagnostic::{ErrorDiagnostic, ResolverDiagnostic},
     help::help_markup,
+    interpreter::RuntimeErrorKind,
     markup::{self as m, Markup},
     parser::ParseErrorKind,
     resolver::CodeSource,
     session_history::{SessionHistory, SessionHistoryOptions},
     span::{ByteIndex, Span},
-    Context, ParseError, RuntimeError,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -81,11 +82,15 @@ impl From<RuntimeError> for CommandError {
     }
 }
 
-impl ErrorDiagnostic for CommandError {
+impl ErrorDiagnostic for ResolverDiagnostic<'_, CommandError> {
     fn diagnostics(&self) -> Vec<crate::Diagnostic> {
-        match self {
+        match self.error {
             CommandError::Parse(parse_error) => parse_error.diagnostics(),
-            CommandError::Runtime(runtime_error) => runtime_error.diagnostics(),
+            CommandError::Runtime(runtime_error) => ResolverDiagnostic {
+                resolver: self.resolver,
+                error: runtime_error,
+            }
+            .diagnostics(),
         }
     }
 }
@@ -120,7 +125,7 @@ struct SaveCmdArgs<'session, 'input> {
 }
 
 impl SaveCmdArgs<'_, '_> {
-    fn save(&self) -> Result<(), Box<RuntimeError>> {
+    fn save(&self) -> Result<(), Box<RuntimeErrorKind>> {
         let Self {
             session_history,
             dst,
@@ -403,7 +408,9 @@ impl<Editor> CommandRunner<Editor> {
             }
             Command::Clear { clear_fn } => clear_fn(editor),
             Command::Save(save_args) => {
-                save_args.save().map_err(|err| Box::new((*err).into()))?;
+                save_args
+                    .save()
+                    .map_err(|err| CommandError::Runtime(ctx.interpreter.runtime_error(*err)))?;
                 CommandControlFlow::Continue
             }
             Command::Reset { ctx_ctor, clear_fn } => {

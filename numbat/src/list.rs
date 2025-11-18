@@ -7,7 +7,7 @@
 
 use std::{collections::VecDeque, fmt, sync::Arc};
 
-use crate::{value::Value, RuntimeError};
+use crate::{interpreter::RuntimeErrorKind, value::Value};
 
 /// Reference counted list / list view
 #[derive(Clone, Eq)]
@@ -76,9 +76,9 @@ impl<T> NumbatList<T> {
 
     /// Return the tail of the list without the first element.
     /// Return an error if the list is empty.
-    pub fn tail(&mut self) -> Result<(), Box<RuntimeError>> {
+    pub fn tail(&mut self) -> Result<(), Box<RuntimeErrorKind>> {
         if self.is_empty() {
-            return Err(Box::new(RuntimeError::EmptyList));
+            return Err(Box::new(RuntimeErrorKind::EmptyList));
         }
         if let Some(view) = &mut self.view {
             view.0 += 1;
@@ -236,7 +236,7 @@ mod test {
         assert!(list.is_empty());
         assert_eq!(alloc, Arc::as_ptr(&list.alloc));
 
-        assert_eq!(list.tail(), Err(Box::new(RuntimeError::EmptyList)));
+        assert_eq!(list.tail(), Err(Box::new(RuntimeErrorKind::EmptyList)));
     }
 
     #[test]

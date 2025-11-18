@@ -6,7 +6,7 @@
 
 use itertools::Itertools;
 use numbat::{
-    module_importer::FileSystemImporter, resolver::CodeSource, BaseRepresentationFactor, Context,
+    BaseRepresentationFactor, Context, module_importer::FileSystemImporter, resolver::CodeSource,
 };
 
 fn main() {

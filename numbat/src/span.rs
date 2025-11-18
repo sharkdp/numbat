@@ -49,6 +49,26 @@ pub struct Span {
 }
 
 impl Span {
+    /// Returns a new span covering everything in-between left and right.
+    /// Should only be used when left and right comes from the same file.
+    /// If they're not we're going to:
+    /// - panic in debug mode
+    /// - return the code_source_id of the left part in release mode
+    #[track_caller]
+    #[inline]
+    pub fn in_between(left: Span, right: Span) -> Span {
+        debug_assert_eq!(left.code_source_id, right.code_source_id);
+        debug_assert!(left.end <= right.start);
+        crate::span::Span {
+            start: left.end,
+            // The right.start must be > left.end. But just in case it is not
+            // we'll make the new span points to left.end
+            end: right.start.max(left.end),
+            // lhs and rhs should share the same code_source_id
+            code_source_id: left.code_source_id,
+        }
+    }
+
     pub fn extend(&self, other: &Span) -> Span {
         assert_eq!(self.code_source_id, other.code_source_id);
         Span {

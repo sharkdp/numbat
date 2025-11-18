@@ -1,4 +1,4 @@
-use crate::{type_variable::TypeVariable, Type};
+use crate::{Type, type_variable::TypeVariable};
 
 use super::{
     substitutions::{ApplySubstitution, Substitution, SubstitutionError},
@@ -23,11 +23,11 @@ impl Bounds {
         self.0.is_empty()
     }
 
-    pub fn iter(&self) -> std::slice::Iter<Bound> {
+    pub fn iter(&self) -> std::slice::Iter<'_, Bound> {
         self.0.iter()
     }
 
-    pub fn iter_mut(&mut self) -> std::slice::IterMut<Bound> {
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Bound> {
         self.0.iter_mut()
     }
 

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::{CompactString, ToCompactString, format_compact};
 use indexmap::IndexMap;
 use itertools::Itertools;
 
@@ -11,14 +11,14 @@ use crate::dimension::DimensionRegistry;
 use crate::pretty_print::escape_numbat_string;
 use crate::traversal::{ForAllExpressions, ForAllTypeSchemes};
 use crate::type_variable::TypeVariable;
+use crate::typechecker::TypeCheckError;
 use crate::typechecker::qualified_type::QualifiedType;
 use crate::typechecker::type_scheme::TypeScheme;
-use crate::typechecker::TypeCheckError;
+use crate::{BaseRepresentation, BaseRepresentationFactor, markup as m};
 use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, span::Span,
 };
-use crate::{markup as m, BaseRepresentation, BaseRepresentationFactor};
 
 /// Dimension type
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -155,11 +155,11 @@ impl DType {
         // Merge powers of equal factors:
         let mut new_factors = Vec::new();
         for (f, n) in self.factors.iter() {
-            if let Some((last_f, last_n)) = new_factors.last_mut() {
-                if f == last_f {
-                    *last_n += n;
-                    continue;
-                }
+            if let Some((last_f, last_n)) = new_factors.last_mut()
+                && f == last_f
+            {
+                *last_n += n;
+                continue;
             }
             new_factors.push((f.clone(), *n));
         }
@@ -630,18 +630,19 @@ pub enum Statement<'a> {
     ),
     DefineDerivedUnit(
         &'a str,
+        Span,
         Expression<'a>,
         Vec<Decorator<'a>>,
         Option<TypeAnnotation>,
         TypeScheme,
         Markup,
     ),
-    ProcedureCall(crate::ast::ProcedureKind, Vec<Expression<'a>>),
+    ProcedureCall(crate::ast::ProcedureKind, Span, Vec<Expression<'a>>),
     DefineStruct(StructInfo),
 }
 
 impl Statement<'_> {
-    pub fn as_expression(&self) -> Option<&Expression> {
+    pub fn as_expression(&self) -> Option<&Expression<'_>> {
         if let Self::Expression(v) = self {
             Some(v)
         } else {
@@ -724,11 +725,11 @@ impl Statement<'_> {
             }
             Statement::DefineDimension(_, _) => {}
             Statement::DefineBaseUnit(_, _, _, _) => {}
-            Statement::DefineDerivedUnit(_, _, _, type_annotation, type_, readable_type) => {
+            Statement::DefineDerivedUnit(_, _, _, _, type_annotation, type_, readable_type) => {
                 *readable_type =
                     Self::create_readable_type(registry, type_, type_annotation, false);
             }
-            Statement::ProcedureCall(_, _) => {}
+            Statement::ProcedureCall(_, _, _) => {}
             Statement::DefineStruct(_) => {}
         }
     }
@@ -1081,6 +1082,7 @@ impl PrettyPrint for Statement<'_> {
             }
             Statement::DefineDerivedUnit(
                 identifier,
+                _,
                 expr,
                 decorators,
                 _annotation,
@@ -1099,7 +1101,7 @@ impl PrettyPrint for Statement<'_> {
                     + m::space()
                     + expr.pretty_print()
             }
-            Statement::ProcedureCall(kind, args) => {
+            Statement::ProcedureCall(kind, _, args) => {
                 let identifier = match kind {
                     ProcedureKind::Print => "print",
                     ProcedureKind::Assert => "assert",
@@ -1384,7 +1386,7 @@ mod tests {
     use crate::markup::{Formatter, PlainTextFormatter};
     use crate::prefix_transformer::Transformer;
 
-    fn parse(code: &str) -> Statement {
+    fn parse(code: &str) -> Statement<'_> {
         let statements = crate::parser::parse(
             "dimension Scalar = 1
                  dimension Length

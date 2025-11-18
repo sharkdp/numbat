@@ -173,6 +173,7 @@ for the standard paths on other operating systems).
 
 ## Contact us
 
+This project is maintained by [David Peter](https://github.com/sharkdp) and [Mads M. Jensen](https://github.com/Goju-Ryu).
 To contact us, either [open a GitHub issue](https://github.com/sharkdp/numbat/issues/new/choose)
 or [discussion](https://github.com/sharkdp/numbat/discussions), or pop into our
 [Discord server](https://discord.gg/kAaVTsat4D).

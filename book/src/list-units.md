@@ -223,9 +223,9 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Volume` | [UK tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `imperial_tablespoon`, `UK_tablespoon`, `UK_tablespoons`, `UK_tbsp` |
 | `Volume` | [UK teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `imperial_teaspoon`, `imperial_teaspoons`, `UK_teaspoon`, `UK_teaspoons`, `UK_tsp` |
 | `Volume` | [Litre](https://en.wikipedia.org/wiki/Litre) | `l`, `L`, `liter`, `liters`, `litre`, `litres` |
+| `Volume` | [Metric tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `metric_tablespoon`, `metric_tablespoons`, `metric_tbsp` |
+| `Volume` | [Metric teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `metric_teaspoon`, `metric_teaspoons`, `metric_tsp` |
 | `Volume` | [US liquid pint](https://en.wikipedia.org/wiki/Pint) | `pint`, `pints` |
 | `Volume` | [Swimming pool](https://en.wikipedia.org/wiki/Olympic-size_swimming_pool) | `swimmingpool` |
-| `Volume` | [Metric tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `tablespoon`, `tablespoons`, `tbsp` |
-| `Volume` | [Metric teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `teaspoon`, `teaspoons`, `tsp` |
-| `Volume` | [US tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `US_tablespoon`, `US_tablespoons`, `US_tbsp` |
-| `Volume` | [US teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `US_teaspoon`, `US_teaspoons`, `US_tsp` |
+| `Volume` | [US tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `tablespoon`, `tablespoons`, `tbsp` |
+| `Volume` | [US teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `teaspoon`, `teaspoons`, `tsp` |

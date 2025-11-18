@@ -6,29 +6,31 @@ mod highlighter;
 use ansi_formatter::ansi_format;
 use colored::control::SHOULD_COLORIZE;
 use completer::NumbatCompleter;
-use config::{ColorMode, Config, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode};
+use config::{
+    ColorMode, Config, EditMode, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode,
+};
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::command::{CommandControlFlow, CommandRunner};
-use numbat::diagnostic::ErrorDiagnostic;
+use numbat::diagnostic::{ErrorDiagnostic, ResolverDiagnostic};
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::session_history::{ParseEvaluationResult, SessionHistory};
-use numbat::{markup as m, RuntimeError};
 use numbat::{Context, NumbatError};
 use numbat::{InterpreterSettings, NameResolutionError};
+use numbat::{RuntimeErrorKind, markup as m};
 
-use anyhow::{bail, Context as AnyhowContext, Result};
+use anyhow::{Context as AnyhowContext, Result, bail};
 use clap::Parser;
 use rustyline::config::Configurer;
 use rustyline::{
-    error::ReadlineError, history::DefaultHistory, Completer, Editor, Helper, Hinter, Validator,
+    Completer, Editor, Helper, Hinter, Validator, error::ReadlineError, history::DefaultHistory,
 };
 use rustyline::{EventHandler, Highlighter, KeyCode, KeyEvent, Modifiers};
 
-use std::io::IsTerminal;
+use std::io::{IsTerminal, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::{env, fs, thread};
@@ -299,6 +301,10 @@ impl Cli {
         let history_path = self.get_history_path()?;
 
         let mut rl = Editor::<NumbatHelper, DefaultHistory>::new()?;
+        rl.set_edit_mode(match self.config.edit_mode {
+            EditMode::Emacs => rustyline::EditMode::Emacs,
+            EditMode::Vi => rustyline::EditMode::Vi,
+        });
         rl.set_max_history_size(1000)
             .context("Error while configuring history size")?;
         rl.set_completion_type(rustyline::CompletionType::List);
@@ -379,11 +385,20 @@ impl Cli {
                     }
 
                     rl.add_history_entry(&line)?;
+                    let mut ctx = self.context.lock().unwrap();
+
                     if interactive && rl.append_history(history_path).is_err() {
-                        self.print_diagnostic(RuntimeError::HistoryWrite(history_path.to_owned()));
+                        ctx.print_diagnostic(
+                            ResolverDiagnostic {
+                                resolver: ctx.resolver(),
+                                error: &ctx.runtime_error(RuntimeErrorKind::HistoryWrite(
+                                    history_path.to_owned(),
+                                )),
+                            },
+                            colored::control::SHOULD_COLORIZE.should_colorize(),
+                        );
                     }
 
-                    let mut ctx = self.context.lock().unwrap();
                     match cmd_runner.try_run_command(&line, &mut ctx, rl) {
                         Ok(cf) => match cf {
                             CommandControlFlow::Continue => continue,
@@ -391,7 +406,13 @@ impl Cli {
                             CommandControlFlow::NotACommand => {}
                         },
                         Err(err) => {
-                            ctx.print_diagnostic(*err);
+                            ctx.print_diagnostic(
+                                ResolverDiagnostic {
+                                    resolver: ctx.resolver(),
+                                    error: &*err,
+                                },
+                                colored::control::SHOULD_COLORIZE.should_colorize(),
+                            );
                             continue;
                         }
                     }
@@ -523,7 +544,14 @@ impl Cli {
                 execution_mode.exit_status_in_case_of_error()
             }
             Err(NumbatError::RuntimeError(e)) => {
-                self.print_diagnostic(e);
+                let ctx = self.context.lock().unwrap();
+                ctx.print_diagnostic(
+                    ResolverDiagnostic {
+                        resolver: ctx.resolver(),
+                        error: &e,
+                    },
+                    colored::control::SHOULD_COLORIZE.should_colorize(),
+                );
                 execution_mode.exit_status_in_case_of_error()
             }
         };
@@ -535,7 +563,10 @@ impl Cli {
     }
 
     fn print_diagnostic(&mut self, error: impl ErrorDiagnostic) {
-        self.context.lock().unwrap().print_diagnostic(error)
+        self.context
+            .lock()
+            .unwrap()
+            .print_diagnostic(error, colored::control::SHOULD_COLORIZE.should_colorize())
     }
 
     fn get_config_path() -> PathBuf {
@@ -611,7 +642,9 @@ fn generate_config() -> Result<()> {
         "A default configuration has been written to '{}'.",
         config_file_path.to_string_lossy()
     );
-    println!("Open the file in a text editor. Modify whatever you want to change and remove the other fields");
+    println!(
+        "Open the file in a text editor. Modify whatever you want to change and remove the other fields"
+    );
 
     Ok(())
 }
@@ -628,7 +661,8 @@ fn main() {
     }
 
     if let Err(e) = Cli::new(args).and_then(|mut cli| cli.run()) {
-        eprintln!("{e:#}");
+        let mut stdout = termcolor::StandardStream::stderr(termcolor::ColorChoice::Never);
+        writeln!(stdout, "{e:#}").unwrap();
         std::process::exit(1);
     }
 }
