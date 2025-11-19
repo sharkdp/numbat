@@ -542,7 +542,12 @@ impl Tokenizer {
             ')' => TokenKind::RightParen,
             '[' => TokenKind::LeftBracket,
             ']' => TokenKind::RightBracket,
-            '{' if self.last_token == Some(TokenKind::Identifier) => {
+            '{' if self.last_token == Some(TokenKind::Identifier)
+                // TODO: @sharkdp, do you think that makes sense?
+                // I'm not sure I understand why we were doing this if
+                // previously
+                || self.last_token == Some(TokenKind::GreaterThan) =>
+            {
                 self.open_scope(ScopeType::Curly)?;
                 TokenKind::LeftCurly
             }

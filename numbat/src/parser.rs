@@ -447,7 +447,7 @@ impl<'a> Parser<'a> {
         } else if self.match_exact(tokens, TokenKind::Use).is_some() {
             self.parse_use(tokens)
         } else if self.match_exact(tokens, TokenKind::Struct).is_some() {
-            self.parse_struct(tokens)
+            self.parse_struct_definition(tokens)
         } else if self.match_any(tokens, PROCEDURES).is_some() {
             self.parse_procedure(tokens)
         } else {
@@ -937,7 +937,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_struct(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
+    fn parse_struct_definition(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         let name = self.identifier(tokens)?;
         let name_span = self.last(tokens).unwrap().span;
 
@@ -1527,7 +1527,6 @@ impl<'a> Parser<'a> {
             Ok(Expression::TypedHole(span))
         } else if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             let span = self.last(tokens).unwrap().span;
-            let type_parameters = self.parse_generic_parameters(tokens)?;
 
             if self.match_exact(tokens, TokenKind::LeftCurly).is_some() {
                 self.skip_empty_lines(tokens);
@@ -1578,7 +1577,8 @@ impl<'a> Parser<'a> {
                     full_span,
                     ident_span: span,
                     name: identifier.lexeme,
-                    type_parameters,
+                    // Currently, we can't explicitely set the generic parameters
+                    type_parameters: Vec::new(),
                     fields,
                 });
             }
@@ -3027,6 +3027,12 @@ mod tests {
     }
 
     #[test]
+    fn function_call_bug_with_gt() {
+        assert_snapshot!(snap_parse(
+            "x < 0"), @r#"Expression(BinaryOperator { op: LessThan, lhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(1), code_source_id: 0 }, "x"), rhs: Scalar(Span { start: ByteIndex(4), end: ByteIndex(5), code_source_id: 0 }, Number(0.0)), span_op: Some(Span { start: ByteIndex(2), end: ByteIndex(3), code_source_id: 0 }) })"#);
+    }
+
+    #[test]
     fn function_call() {
         parse_as_expression(
             &["foo()"],
@@ -3561,6 +3567,7 @@ mod tests {
             },
         );
 
+        // Nothing special when we instantiate a generic struct
         parse_as_expression(
             &["Foo {foo: 1, bar: 2}"],
             struct_! {
@@ -3570,23 +3577,7 @@ mod tests {
             },
         );
 
-        parse_as_expression(
-            &["Foo<A: Dim, B> {foo: 1, bar: 2m}"],
-            Expression::InstantiateStruct {
-                full_span: Span::dummy(),
-                ident_span: Span::dummy(),
-                name: "Foo",
-                type_parameters: vec![
-                    (Span::dummy(), "A", Some(TypeParameterBound::Dim)),
-                    (Span::dummy(), "B", None),
-                ],
-                fields: vec![
-                    (Span::dummy(), "foo", scalar!(1.0)),
-                    (Span::dummy(), "bar", binop!(scalar!(2.0), Mul, identifier!("m"))),
-                ],
-            },
-        );
-
+        // Nothing special when we instantiate a generic struct
         parse_as_expression(
             &["Foo {foo: 1, bar: 2}.foo"],
             Expression::AccessField(
