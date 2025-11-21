@@ -79,7 +79,7 @@ impl ApplySubstitution for Type {
                 return_type.apply(s)
             }
             Type::Struct(info) => {
-                for (_, field_type) in info.fields.values_mut() {
+                for (_, field_type, _) in info.fields.values_mut() {
                     field_type.apply(s)?;
                 }
                 Ok(())
@@ -141,8 +141,9 @@ impl ApplySubstitution for DType {
 
 impl ApplySubstitution for StructInfo {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
-        for (_, field_type) in self.fields.values_mut() {
+        for (_, field_type, type_scheme) in self.fields.values_mut() {
             field_type.apply(s)?;
+            type_scheme.apply(s)?;
         }
         Ok(())
     }

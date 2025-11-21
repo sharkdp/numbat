@@ -44,7 +44,7 @@ type DtypeFactorPower = (DTypeFactor, Exponent);
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DType {
     // Always in canonical form
-    factors: Arc<Vec<DtypeFactorPower>>,
+    pub factors: Arc<Vec<DtypeFactorPower>>,
 }
 
 impl DType {
@@ -288,7 +288,7 @@ pub struct StructInfo {
     pub definition_span: Span,
     pub name: CompactString,
     pub type_parameters: Vec<(Span, CompactString, Option<TypeParameterBound>)>,
-    pub fields: IndexMap<CompactString, (Span, Type)>,
+    pub fields: IndexMap<CompactString, (Span, Type, TypeScheme)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -330,7 +330,7 @@ impl std::fmt::Display for Type {
                     "{name} {{{}}}",
                     fields
                         .iter()
-                        .map(|(n, (_, t))| n.to_string() + ": " + &t.to_string())
+                        .map(|(n, (_, t, _))| n.to_string() + ": " + &t.to_string())
                         .join(", ")
                 )
             }
@@ -420,7 +420,7 @@ impl Type {
             }
             Type::Struct(info) => {
                 let mut vars = vec![];
-                for (_, (_, t)) in &info.fields {
+                for (_, (_, t, _)) in &info.fields {
                     vars.extend(t.type_variables(including_type_parameters));
                 }
                 vars
@@ -1128,7 +1128,7 @@ impl PrettyPrint for Statement<'_> {
                     } else {
                         m::space()
                             + Itertools::intersperse(
-                                fields.iter().map(|(n, (_, t))| {
+                                fields.iter().map(|(n, (_, t, _))| {
                                     m::identifier(n.clone())
                                         + m::operator(":")
                                         + m::space()

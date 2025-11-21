@@ -697,6 +697,22 @@ fn declare_generic_structs() {
 }
 
 #[test]
+fn instantiate_generic_structs() {
+    // Simple test
+    assert_successful_typecheck(
+        "
+        struct Kef<I> {
+            foo: I,
+        }
+
+        Kef {
+            foo: 12,
+        }
+        ",
+    );
+}
+
+#[test]
 fn lists() {
     assert_successful_typecheck("[]");
     assert_successful_typecheck("[1]");

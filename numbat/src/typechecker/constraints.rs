@@ -322,7 +322,7 @@ impl Constraint {
                 if struct_type.is_closed() =>
             {
                 if let Type::Struct(info) = struct_type
-                    && let Some((_, actual_field_type)) = info.fields.get(field_name)
+                    && let Some((_, actual_field_type, _)) = info.fields.get(field_name)
                 {
                     Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
                         actual_field_type.clone(),

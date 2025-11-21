@@ -34,6 +34,7 @@ use compact_str::{CompactString, ToCompactString, format_compact};
 use const_evaluation::evaluate_const_expr;
 use constraints::{Constraint, ConstraintSet, ConstraintSolverError, TrivialResolution};
 use environment::{Environment, FunctionMetadata, FunctionSignature};
+use indexmap::IndexMap;
 use itertools::Itertools;
 use name_generator::NameGenerator;
 use num_traits::Zero;
@@ -947,21 +948,29 @@ impl TypeChecker {
                     .map(|(_, n, v)| Ok((*n, self.elaborate_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
-                let Some(mut struct_info) = self.structs.get(name).cloned() else {
+                let Some(struct_info) = self.structs.get(name).cloned() else {
                     return Err(Box::new(TypeCheckError::UnknownStruct(
                         *ident_span,
                         name.to_owned(),
                     )));
                 };
 
-                for generic in struct_info.type_parameters.iter_mut() {
-                    if let Some(ref mut bound) = generic.2 {
-                        if let Some(parameter) =
-                            type_parameters.iter().find(|(_, n, _)| n == &generic.1)
-                        {
-                            generic.2 = parameter.2.clone();
-                        }
+                assert!(
+                    type_parameters.is_empty(),
+                    "We can't specify type parameters on struct instantiation currently"
+                );
+
+                // Map the original names of the generic parameters to their
+                // new fresh name.
+                let mut fresh_generics = HashMap::new();
+
+                for (span, name, bound) in struct_info.type_parameters.iter() {
+                    let ty = self.fresh_type_variable();
+                    match bound {
+                        Some(TypeParameterBound::Dim) => self.add_dtype_constraint(&ty).ok(),
+                        None => (),
                     }
+                    fresh_generics.insert(name, (span, bound, ty));
                 }
 
                 let mut seen_fields = HashMap::new();
@@ -979,7 +988,8 @@ impl TypeChecker {
                         ));
                     }
 
-                    let Some((expected_field_span, expected_type)) = struct_info.fields.get(*field)
+                    let Some((_expected_field_span, _expected_type, type_scheme)) =
+                        struct_info.fields.get(*field)
                     else {
                         return Err(Box::new(TypeCheckError::UnknownFieldInStructInstantiation(
                             *span,
@@ -989,26 +999,52 @@ impl TypeChecker {
                         )));
                     };
 
+                    // TODO: Just got the type scheme from here !!!!!!!!!!
+                    // We should be able to instantiate it and it should only contains T0
+                    let expected_type = type_scheme.instantiate(&mut self.name_generator);
+                    eprintln!("Loaded from DB: {expected_type:#?}");
                     let found_type = &expr.get_type();
+
+                    // HERE WE SHOULD QUALIFY/QUANTIFY THE STRUCT
+                    dbg!(&fresh_generics);
+                    dbg!(&expected_type);
+                    eprintln!("Looking at field {field} with type: {found_type:?}");
+                    let found_type = match found_type {
+                        Type::TPar(name) => match fresh_generics.get(&name) {
+                            Some(t) => {
+                                println!("Replaced {name} by {:?}", t.2);
+                                t.2.clone()
+                            }
+                            None => Type::TPar(name.to_compact_string()),
+                        },
+                        a => a.clone(),
+                        // _ => todo!("Got {found_type:?} instead of a TPar"),
+                    };
                     if self
-                        .add_equal_constraint(found_type, expected_type)
+                        .add_equal_constraint(&found_type, &expected_type.inner)
                         .is_trivially_violated()
                     {
+                        /*
                         return Err(Box::new(TypeCheckError::IncompatibleTypesForStructField(
                             *expected_field_span,
                             expected_type.clone(),
                             expr.full_span(),
                             found_type.clone(),
                         )));
+                        */
                     }
 
                     seen_fields.insert(field, *span);
                 }
+                eprintln!("{:?}", self.constraints);
 
                 let missing_fields = {
                     let mut fields = struct_info.fields.clone();
                     fields.retain(|f, _| !seen_fields.contains_key(&f.as_str()));
-                    fields.into_iter().map(|(n, (_, t))| (n, t)).collect_vec()
+                    fields
+                        .into_iter()
+                        .map(|(n, (_, t, _))| (n, t))
+                        .collect_vec()
                 };
 
                 if !missing_fields.is_empty() {
@@ -1043,7 +1079,7 @@ impl TypeChecker {
                         )));
                     };
 
-                    let Some((_, field_type)) = struct_info.fields.get(field_name) else {
+                    let Some((_, field_type, _)) = struct_info.fields.get(field_name) else {
                         return Err(Box::new(TypeCheckError::UnknownFieldAccess(
                             *ident_span,
                             expr.full_span(),
@@ -1782,10 +1818,21 @@ impl TypeChecker {
                     )
                     .map_err(|err| Box::new(err.into()))?;
 
-                for (span, name, bound) in type_parameters {
+                self.env.save();
+                self.type_namespace.save();
+                self.value_namespace.save();
+
+                for (span, type_parameter, bound) in type_parameters {
+                    if self.type_namespace.has_identifier(type_parameter) {
+                        return Err(Box::new(TypeCheckError::TypeParameterNameClash(
+                            *span,
+                            type_parameter.to_string(),
+                        )));
+                    }
+
                     self.type_namespace
                         .add_identifier(
-                            name.to_compact_string(),
+                            type_parameter.to_compact_string(),
                             *span,
                             CompactString::const_new("type parameter"),
                         )
@@ -1793,12 +1840,24 @@ impl TypeChecker {
 
                     self.registry.introduced_type_parameters.push((
                         *span,
-                        name.to_compact_string(),
+                        type_parameter.to_compact_string(),
                         bound.clone(),
                     ));
+
+                    match bound {
+                        Some(TypeParameterBound::Dim) => {
+                            self.add_dtype_constraint(&Type::TPar(
+                                type_parameter.to_compact_string(),
+                            ))
+                            .ok();
+                        }
+                        None => {}
+                    }
                 }
 
-                let mut seen_fields = HashMap::new();
+                // contains everything the fields contains plus the `TypeScheme`
+                let mut typed_fields = IndexMap::new();
+                // Help us keep track of which generics parameters have been used or not
                 let mut generic_seen = vec![false; type_parameters.len()];
 
                 for (span, field, type_) in fields {
@@ -1809,7 +1868,8 @@ impl TypeChecker {
                             generic_seen[i] = true;
                         }
                     }
-                    if let Some(other_span) = seen_fields.get(field) {
+                    let field = field.to_compact_string();
+                    if let Some((other_span, _, _)) = typed_fields.get(&field) {
                         return Err(Box::new(TypeCheckError::DuplicateFieldInStructDefinition(
                             *span,
                             *other_span,
@@ -1817,7 +1877,12 @@ impl TypeChecker {
                         )));
                     }
 
-                    seen_fields.insert(field, *span);
+                    let field_type = self.type_from_annotation(type_)?;
+                    let scheme = TypeScheme::make_quantified(field_type.clone());
+
+                    self.env
+                        .add_scheme(field.clone(), scheme.clone(), *span, false);
+                    typed_fields.insert(field, (*span, field_type.clone(), scheme));
                 }
 
                 for (i, seen) in generic_seen.iter().enumerate() {
@@ -1831,6 +1896,10 @@ impl TypeChecker {
                     }
                 }
 
+                self.env.restore();
+                self.type_namespace.restore();
+                self.value_namespace.restore();
+
                 let struct_info = StructInfo {
                     definition_span: *struct_name_span,
                     name: struct_name.to_compact_string(),
@@ -1838,16 +1907,9 @@ impl TypeChecker {
                         .iter()
                         .map(|(span, name, bound)| (*span, name.to_compact_string(), bound.clone()))
                         .collect(),
-                    fields: fields
-                        .iter()
-                        .map(|(span, name, type_)| {
-                            Ok((
-                                name.to_compact_string(),
-                                (*span, self.type_from_annotation(type_)?),
-                            ))
-                        })
-                        .collect::<Result<_>>()?,
+                    fields: typed_fields,
                 };
+                eprintln!("Writing struct `{struct_name}`: {struct_info:#?}");
                 self.structs
                     .insert(struct_name.to_compact_string(), struct_info.clone());
 

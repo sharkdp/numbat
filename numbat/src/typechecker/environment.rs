@@ -125,6 +125,7 @@ impl Environment {
         signature: FunctionSignature,
         metadata: FunctionMetadata,
     ) {
+        eprintln!("Adding function to DB: {signature:#?}");
         self.identifiers
             .insert(v, IdentifierKind::Function(signature, metadata));
     }
@@ -163,7 +164,10 @@ impl Environment {
         name: &str,
     ) -> Option<(&FunctionSignature, &FunctionMetadata)> {
         match self.find(name) {
-            Some(IdentifierKind::Function(signature, metadata)) => Some((signature, metadata)),
+            Some(IdentifierKind::Function(signature, metadata)) => {
+                eprintln!("Get function info: {signature:#?}");
+                Some((signature, metadata))
+            }
             _ => None,
         }
     }
@@ -191,7 +195,7 @@ impl Environment {
         match expr {
             crate::ast::Expression::Identifier(_, name) => self
                 .get_function_info(name)
-                .map(|(signature, _)| (*name, signature)),
+                .map(|(signature, _)| (*name, dbg!(signature))),
             _ => None,
         }
     }

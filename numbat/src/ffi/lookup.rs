@@ -5,6 +5,7 @@ use super::Result;
 use super::macros::*;
 use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
+use crate::typechecker::type_scheme::TypeScheme;
 use crate::typed_ast::DType;
 use crate::value::Value;
 
@@ -30,54 +31,102 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value, Box<Runti
 
         let type_scalar = Type::Dimension(DType::scalar());
 
-        let mut fields: IndexMap<CompactString, (Span, Type)> = IndexMap::new();
+        let mut fields: IndexMap<CompactString, (Span, Type, TypeScheme)> = IndexMap::new();
         fields.insert(
             CompactString::const_new("symbol"),
-            (unknown_span, Type::String),
+            (
+                unknown_span,
+                Type::String,
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("name"),
-            (unknown_span, Type::String),
+            (
+                unknown_span,
+                Type::String,
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("atomic_number"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("group"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("group_name"),
-            (unknown_span, Type::String),
+            (
+                unknown_span,
+                Type::String,
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("period"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("melting_point_kelvin"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("boiling_point_kelvin"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("density_gram_per_cm3"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("electron_affinity_electronvolt"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("ionization_energy_electronvolt"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
         fields.insert(
             CompactString::const_new("vaporization_heat_kilojoule_per_mole"),
-            (unknown_span, type_scalar.clone()),
+            (
+                unknown_span,
+                type_scalar.clone(),
+                TypeScheme::concrete(Type::String),
+            ),
         );
 
         let info = StructInfo {
