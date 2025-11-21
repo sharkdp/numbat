@@ -49,6 +49,7 @@ fn type_c() -> DType {
     DType::base_dimension("A").multiply(&DType::base_dimension("B"))
 }
 
+#[track_caller]
 fn run_typecheck(input: &str) -> Result<typed_ast::Statement<'_>> {
     let statements = parse(TEST_PRELUDE, 0)
         .expect("No parse errors for inputs in this test suite")
@@ -64,6 +65,7 @@ fn run_typecheck(input: &str) -> Result<typed_ast::Statement<'_>> {
         .map(|mut statements_checked| statements_checked.pop().unwrap())
 }
 
+#[track_caller]
 fn assert_successful_typecheck(input: &str) {
     if let Err(err) = dbg!(run_typecheck(input)) {
         panic!("Input was expected to typecheck successfully, but failed with: {err:?}")

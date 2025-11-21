@@ -287,6 +287,21 @@ impl TypeAnnotation {
             TypeAnnotation::List(span, _) => *span,
         }
     }
+
+    // Return `true` if the type id is used somewhere in the expression.
+    pub fn uses_type_id(&self, tid: &str) -> bool {
+        match self {
+            TypeAnnotation::TypeExpression(type_expression) => type_expression.uses_type_id(tid),
+            TypeAnnotation::Bool(_) => false,
+            TypeAnnotation::String(_) => false,
+            TypeAnnotation::DateTime(_) => false,
+            TypeAnnotation::Fn(_, type_annotations, type_annotation) => {
+                type_annotations.iter().any(|expr| expr.uses_type_id(tid))
+                    | type_annotation.uses_type_id(tid)
+            }
+            TypeAnnotation::List(_, type_annotation) => type_annotation.uses_type_id(tid),
+        }
+    }
 }
 
 impl PrettyPrint for TypeAnnotation {
@@ -322,7 +337,6 @@ impl PrettyPrint for TypeAnnotation {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum TypeExpression {
     Unity(Span),
     TypeIdentifier(Span, CompactString),
@@ -351,6 +365,21 @@ impl TypeExpression {
                 Some(span_op) => span_op.extend(&lhs.full_span()).extend(span_exponent),
                 None => lhs.full_span().extend(span_exponent),
             },
+        }
+    }
+
+    // Return `true` if the type id is used somewhere in the expression.
+    pub fn uses_type_id(&self, tid: &str) -> bool {
+        match self {
+            TypeExpression::Unity(_) => false,
+            TypeExpression::TypeIdentifier(_, compact_string) => compact_string == tid,
+            TypeExpression::Multiply(_, type_expression, type_expression1) => {
+                type_expression.uses_type_id(tid) | type_expression1.uses_type_id(tid)
+            }
+            TypeExpression::Divide(_, type_expression, type_expression1) => {
+                type_expression.uses_type_id(tid) | type_expression1.uses_type_id(tid)
+            }
+            TypeExpression::Power(_, type_expression, _, _) => type_expression.uses_type_id(tid),
         }
     }
 }

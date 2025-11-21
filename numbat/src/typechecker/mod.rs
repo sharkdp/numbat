@@ -1782,10 +1782,6 @@ impl TypeChecker {
                     )
                     .map_err(|err| Box::new(err.into()))?;
 
-                // Save the type namespace to avoid polluting the type namespace with our local generic parameters
-                self.env.save();
-                self.type_namespace.save();
-
                 for (span, name, bound) in type_parameters {
                     self.type_namespace
                         .add_identifier(
@@ -1806,15 +1802,13 @@ impl TypeChecker {
                 let mut generic_seen = vec![false; type_parameters.len()];
 
                 for (span, field, type_) in fields {
-                    if let TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(_, name)) =
-                        type_
-                    {
-                        if let Some(index) = type_parameters.iter().position(|(_, n, _)| n == name)
-                        {
-                            generic_seen[index] = true;
+                    for (i, ty) in type_parameters.iter().enumerate() {
+                        // We must not stop early as multiple generic parameters
+                        // may be used for the same field
+                        if type_.uses_type_id(ty.1) {
+                            generic_seen[i] = true;
                         }
                     }
-
                     if let Some(other_span) = seen_fields.get(field) {
                         return Err(Box::new(TypeCheckError::DuplicateFieldInStructDefinition(
                             *span,
@@ -1856,9 +1850,6 @@ impl TypeChecker {
                 };
                 self.structs
                     .insert(struct_name.to_compact_string(), struct_info.clone());
-
-                self.env.restore();
-                self.type_namespace.restore();
 
                 typed_ast::Statement::DefineStruct(struct_info)
             }

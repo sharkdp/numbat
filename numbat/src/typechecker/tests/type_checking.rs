@@ -639,6 +639,64 @@ fn structs() {
 }
 
 #[test]
+fn declare_generic_structs() {
+    // Simple test
+    assert_successful_typecheck(
+        "
+        struct Kef<I, R> {
+            foo: I,
+            bar: R,
+            boo: Scalar,
+        }
+        ",
+    );
+
+    // With bounds
+    assert_successful_typecheck(
+        "
+        struct Kef<I, R: Dim> {
+            foo: I,
+            bar: R,
+        }
+        ",
+    );
+
+    // Both generic parameters are used for the same field
+    assert_successful_typecheck(
+        "
+        struct Kef<I, R: Dim> {
+            fun: Fn[(I) -> R],
+            no_fun: bool,
+        }
+        ",
+    );
+
+    // Use the same generic parameter multiple times
+    assert_successful_typecheck(
+        "
+        struct Kef<I, R: Dim> {
+            foo: I,
+            bar: R,
+            bb: Scalar,
+            kef: R,
+            kouf: I,
+        }
+        ",
+    );
+
+    // Error if you forget to use one of the generic parameter
+    assert!(matches!(
+        get_typecheck_error("
+            struct Kef<I, R> {
+                fun: I,
+                no_fun: bool,
+            }
+        "),
+        TypeCheckError::UnusedGenericParameterInStructureDefinition(_, param) if param == "R"
+    ));
+}
+
+#[test]
 fn lists() {
     assert_successful_typecheck("[]");
     assert_successful_typecheck("[1]");
