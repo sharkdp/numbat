@@ -75,8 +75,8 @@ The following functions are available for date and time handling:
 - `get_local_timezone() -> String`: Returns the users local timezone
 - `unixtime(dt: DateTime) -> Scalar`: Converts a `DateTime` to a UNIX timestamp.
 - `from_unixtime(ut: Scalar) -> DateTime`: Converts a UNIX timestamp to a `DateTime` object.
-- `calendar_add(dt: DateTime, span: Time)`: Add a span of time to a `DateTime` object, taking proper calendar arithmetic into accound.
-- `calendar_sub(dt: DateTime, span: Time)`: Subtract a span of time from a `DateTime` object, taking proper calendar arithmetic into accound.
+- `calendar_add(dt: DateTime, span: Time)`: Add a span of time to a `DateTime` object, taking proper calendar arithmetic into account.
+- `calendar_sub(dt: DateTime, span: Time)`: Subtract a span of time from a `DateTime` object, taking proper calendar arithmetic into account.
 - `weekday(dt: DateTime) -> String`: Returns the weekday of a `DateTime` object as a string.
 - `human(duration: Time) -> String`: Converts a `Time` to a human-readable string in days, hours, minutes and seconds.
 - `julian_date(dt: DateTime) -> Scalar`: Convert a `DateTime` to a [Julian date](https://en.wikipedia.org/wiki/Julian_day).
