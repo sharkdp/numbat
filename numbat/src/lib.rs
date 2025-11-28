@@ -1,5 +1,5 @@
 mod arithmetic;
-mod ast;
+pub mod ast;
 #[cfg(feature = "html-formatter")]
 pub mod buffered_writer;
 mod bytecode_interpreter;
@@ -35,12 +35,12 @@ mod quantity;
 mod registry;
 pub mod resolver;
 pub mod session_history;
-mod span;
+pub mod span;
 mod suggestion;
 mod tokenizer;
 mod traversal;
 mod type_variable;
-mod typechecker;
+pub mod typechecker;
 mod typed_ast;
 pub mod unicode_input;
 mod unit;
@@ -64,7 +64,7 @@ use markup as m;
 use markup::FormatType;
 use markup::Markup;
 use module_importer::{ModuleImporter, NullImporter};
-use prefix_transformer::Transformer;
+pub use prefix_transformer::Transformer;
 use pretty_print::PrettyPrint;
 
 use resolver::CodeSource;
@@ -78,9 +78,9 @@ pub use interpreter::InterpreterResult;
 pub use interpreter::InterpreterSettings;
 pub use interpreter::{RuntimeError, RuntimeErrorKind};
 pub use name_resolution::NameResolutionError;
-pub use parser::ParseError;
-pub use registry::BaseRepresentation;
-pub use registry::BaseRepresentationFactor;
+pub use parser::{ParseError, parse};
+pub use registry::{BaseRepresentation, BaseRepresentationFactor, RegistryError};
+pub use type_variable::TypeVariable;
 pub use typed_ast::Statement;
 pub use typed_ast::Type;
 use unit::BaseUnitAndFactor;
@@ -670,6 +670,14 @@ impl Context {
 
     pub fn resolver_mut(&mut self) -> &mut Resolver {
         &mut self.resolver
+    }
+
+    pub fn prefix_transformer(&self) -> &Transformer {
+        &self.prefix_transformer
+    }
+
+    pub fn prefix_transformer_mut(&mut self) -> &mut Transformer {
+        &mut self.prefix_transformer
     }
 
     pub fn interpret<'a>(

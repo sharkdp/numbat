@@ -84,9 +84,7 @@ struct UnitInfo {
 #[derive(Debug, Clone)]
 pub struct PrefixParser {
     units: IndexMap<CompactString, UnitInfo>,
-
     other_identifiers: HashMap<CompactString, Span>,
-
     reserved_identifiers: &'static [&'static str],
 }
 
@@ -97,6 +95,18 @@ impl PrefixParser {
             other_identifiers: HashMap::new(),
             reserved_identifiers: &["_", "ans"],
         }
+    }
+
+    pub fn merge_with(&mut self, other: &Self) {
+        let Self {
+            units,
+            other_identifiers,
+            // The list of reserved identifiers never changes
+            reserved_identifiers: _,
+        } = self;
+
+        units.extend(other.units.iter().map(|(k, v)| (k.clone(), v.clone())));
+        other_identifiers.extend(other.other_identifiers.iter().map(|(k, v)| (k.clone(), *v)));
     }
 
     fn prefixes() -> &'static [(&'static str, &'static [&'static str], Prefix)] {
@@ -188,7 +198,7 @@ impl PrefixParser {
         }
     }
 
-    pub fn add_unit(
+    pub(crate) fn add_unit(
         &mut self,
         unit_name: &str,
         accepts_prefix: AcceptsPrefix,
@@ -237,7 +247,11 @@ impl PrefixParser {
         Ok(())
     }
 
-    pub fn add_other_identifier(&mut self, identifier: &str, definition_span: Span) -> Result<()> {
+    pub(crate) fn add_other_identifier(
+        &mut self,
+        identifier: &str,
+        definition_span: Span,
+    ) -> Result<()> {
         self.ensure_name_is_available(identifier, definition_span, false)?;
 
         self.other_identifiers
@@ -294,6 +308,12 @@ impl PrefixParser {
         }
 
         PrefixParserResult::Identifier(input)
+    }
+}
+
+impl Default for PrefixParser {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

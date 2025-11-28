@@ -167,4 +167,4 @@ pub enum TypeCheckError {
     MultipleTypedHoles(Span),
 }
 
-pub type Result<T> = std::result::Result<T, Box<TypeCheckError>>;
+pub type Result<T, E = Box<TypeCheckError>> = std::result::Result<T, E>;
