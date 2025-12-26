@@ -17,6 +17,7 @@ anyhow = "1"
 rustyline = { version = "16.0.0", features = ["derive"] }
 dirs = "6"
 numbat = { version = "1.16.0", path = "../numbat" }
+numbat-cli-helpers = { path = "../numbat-cli-helpers" }
 colored = "3"
 itertools = "0.14"
 toml = { version = "0.8.8", features = ["parse"] }
