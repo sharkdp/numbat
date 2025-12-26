@@ -1,6 +1,5 @@
 use crate::Context;
 use crate::InterpreterSettings;
-use crate::command::HelpKind;
 /// Print a help, linking the documentation, and live-running some examples
 /// in an isolated context.
 use crate::markup as m;
@@ -32,7 +31,7 @@ fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
         + interpreter_result.to_markup(statements.last(), context.dimension_registry(), true, true)
 }
 
-fn basic_help_markup() -> m::Markup {
+pub fn basic_help_markup() -> m::Markup {
     let mut output = m::nl()
         + m::text("Numbat is a statically typed programming language for scientific computations")
         + m::nl()
@@ -59,19 +58,10 @@ fn basic_help_markup() -> m::Markup {
         output += evaluate_example(&mut example_context, example) + m::nl();
     }
 
-    output += m::text("Numbat supports a number of commands. Use ")
+    output += m::text("Use ")
         + m::string("help commands")
-        + m::text(" for more info.")
+        + m::text(" to see a list of available commands.")
         + m::nl();
 
     output
-}
-
-pub fn help_markup(help_kind: HelpKind) -> m::Markup {
-    match help_kind {
-        HelpKind::BasicHelp => basic_help_markup(),
-        // AllCommands is handled by CommandRunner::all_commands_markup()
-        // which knows which commands are enabled
-        HelpKind::AllCommands => unreachable!(),
-    }
 }

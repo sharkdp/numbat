@@ -5,9 +5,9 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 
 use numbat::buffered_writer::BufferedWriter;
-use numbat::command::{CommandControlFlow, CommandRunner, HelpKind};
+use numbat::command::{CommandControlFlow, CommandRunner};
 use numbat::diagnostic::{ErrorDiagnostic, ResolverDiagnostic};
-use numbat::help::help_markup;
+use numbat::help::basic_help_markup;
 use numbat::html_formatter::{HtmlFormatter, HtmlWriter};
 use numbat::markup::Formatter;
 use numbat::module_importer::BuiltinModuleImporter;
@@ -52,17 +52,10 @@ impl InterpreterOutput {
     }
 }
 
-/// Result of trying to run a command.
-/// If `is_command` is false, the input was not a command and should be interpreted as code.
-/// If `is_command` is true, `output` contains the command's output (if any).
-/// `is_error` indicates whether an error occurred while running the command.
-/// `should_clear` indicates whether the terminal should be cleared.
-/// `should_reset` indicates whether the Numbat instance should be reset.
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct CommandResult {
     pub is_command: bool,
-    pub is_error: bool,
     pub should_clear: bool,
     pub should_reset: bool,
     output: String,
@@ -196,7 +189,7 @@ impl Numbat {
     }
 
     pub fn help(&self) -> JsValue {
-        self.format(&help_markup(HelpKind::BasicHelp), true).into()
+        self.format(&basic_help_markup(), true).into()
     }
 
     /// Try to run the input as a command.
@@ -224,14 +217,12 @@ impl Numbat {
         match result {
             Ok(control_flow) => CommandResult {
                 is_command: control_flow != CommandControlFlow::NotACommand,
-                is_error: false,
                 should_clear,
                 should_reset: control_flow == CommandControlFlow::Reset,
                 output,
             },
             Err(err) => CommandResult {
                 is_command: true,
-                is_error: true,
                 should_clear: false,
                 should_reset: false,
                 output: self.format_command_error(&*err),

@@ -43,7 +43,6 @@ function interpret(input) {
     var cmd_result = numbat.try_run_command(input);
 
     if (cmd_result.is_command) {
-        // Handle command side effects
         if (cmd_result.should_reset) {
             numbat = create_numbat_instance();
             numbat.interpret("use units::currencies");
