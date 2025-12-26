@@ -19,6 +19,7 @@ necessary changes for the upcoming release.
 - [ ] Update the `numbat` version in `book/src/cli-installation.md`.
 - [ ] Run `deploy.sh` (or at least `build.sh`) in `numbat-wasm/` to
       update the `Cargo.lock` file.
+- [ ] Update the version and date in `CITATION.cff`.
 
 ## Pre-release checks and updates
 
