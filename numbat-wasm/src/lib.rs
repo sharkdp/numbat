@@ -57,14 +57,14 @@ impl InterpreterOutput {
 /// If `is_command` is true, `output` contains the command's output (if any).
 /// `is_error` indicates whether an error occurred while running the command.
 /// `should_clear` indicates whether the terminal should be cleared.
-/// `should_quit` indicates whether the session should end (not applicable in web context).
+/// `should_reset` indicates whether the Numbat instance should be reset.
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct CommandResult {
     pub is_command: bool,
     pub is_error: bool,
     pub should_clear: bool,
-    pub should_quit: bool,
+    pub should_reset: bool,
     output: String,
 }
 
@@ -204,6 +204,8 @@ impl Numbat {
     /// and if so, what output it produced and any side effects needed.
     pub fn try_run_command(&mut self, input: &str) -> CommandResult {
         let mut output = String::new();
+        let mut should_clear = false;
+        let mut should_reset = false;
 
         let result = {
             let mut cmd_runner = CommandRunner::<()>::new()
@@ -211,48 +213,34 @@ impl Numbat {
                     let fmt = JqueryTerminalFormatter {};
                     output.push_str(&fmt.format(markup, true));
                 })
-                .enable_clear(|_| CommandControlFlow::Continue)
-                .enable_quit();
+                .enable_clear(|_| {
+                    should_clear = true;
+                    CommandControlFlow::Continue
+                })
+                .enable_reset(|| {
+                    should_reset = true;
+                    // Return a dummy context; the JS side will recreate the Numbat instance
+                    Context::new_without_importer()
+                });
 
             cmd_runner.try_run_command(input, &mut self.ctx, &mut ())
         };
 
-        // Check if it was a clear command by checking the input
-        let input_trimmed = input.trim();
-        let should_clear = input_trimmed == "clear";
-
         match result {
-            Ok(CommandControlFlow::NotACommand) => CommandResult {
-                is_command: false,
-                is_error: false,
-                should_clear: false,
-                should_quit: false,
-                output: String::new(),
-            },
-            Ok(CommandControlFlow::Continue) => CommandResult {
-                is_command: true,
+            Ok(control_flow) => CommandResult {
+                is_command: control_flow != CommandControlFlow::NotACommand,
                 is_error: false,
                 should_clear,
-                should_quit: false,
+                should_reset,
                 output,
             },
-            Ok(CommandControlFlow::Return) => CommandResult {
+            Err(err) => CommandResult {
                 is_command: true,
-                is_error: false,
+                is_error: true,
                 should_clear: false,
-                should_quit: true,
-                output,
+                should_reset: false,
+                output: self.format_command_error(&*err),
             },
-            Err(err) => {
-                let diagnostic_output = self.format_command_error(&*err);
-                CommandResult {
-                    is_command: true,
-                    is_error: true,
-                    should_clear: false,
-                    should_quit: false,
-                    output: diagnostic_output,
-                }
-            }
         }
     }
 

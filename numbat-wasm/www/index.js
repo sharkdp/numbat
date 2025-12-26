@@ -38,25 +38,20 @@ function interpret(input) {
         return;
     }
 
-    // Handle 'reset' specially since it needs to recreate the Numbat instance
-    if (input_trimmed == "reset") {
-        numbat = create_numbat_instance();
-        numbat.interpret("use units::currencies");
-        combined_input = "";
-        updateUrlQuery(null);
-        this.clear();
-        return;
-    }
-
-    // Try to run as a command first
     var cmd_result = numbat.try_run_command(input);
 
     if (cmd_result.is_command) {
         // Handle command side effects
-        if (cmd_result.should_clear) {
+        if (cmd_result.should_reset) {
+            numbat = create_numbat_instance();
+            numbat.interpret("use units::currencies");
+            combined_input = "";
+            updateUrlQuery(null);
+            this.clear();
+        } else if (cmd_result.should_clear) {
             this.clear();
         }
-        // Note: should_quit is ignored in the web context
+
         return cmd_result.output;
     }
 
