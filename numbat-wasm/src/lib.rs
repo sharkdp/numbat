@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 
 use numbat::buffered_writer::BufferedWriter;
-use numbat::command::HelpKind;
+use numbat::command::{CommandControlFlow, CommandRunner, HelpKind};
 use numbat::diagnostic::{ErrorDiagnostic, ResolverDiagnostic};
 use numbat::help::help_markup;
 use numbat::html_formatter::{HtmlFormatter, HtmlWriter};
@@ -13,8 +13,8 @@ use numbat::markup::Formatter;
 use numbat::module_importer::BuiltinModuleImporter;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::{markup as m, NameResolutionError, NumbatError};
 use numbat::{Context, InterpreterSettings};
+use numbat::{NameResolutionError, NumbatError, markup as m};
 
 use jquery_terminal_formatter::{JqueryTerminalFormatter, JqueryTerminalWriter};
 
@@ -46,6 +46,30 @@ pub struct InterpreterOutput {
 
 #[wasm_bindgen]
 impl InterpreterOutput {
+    #[wasm_bindgen(getter)]
+    pub fn output(&self) -> String {
+        self.output.clone()
+    }
+}
+
+/// Result of trying to run a command.
+/// If `is_command` is false, the input was not a command and should be interpreted as code.
+/// If `is_command` is true, `output` contains the command's output (if any).
+/// `is_error` indicates whether an error occurred while running the command.
+/// `should_clear` indicates whether the terminal should be cleared.
+/// `should_quit` indicates whether the session should end (not applicable in web context).
+#[wasm_bindgen]
+#[derive(Debug, Clone)]
+pub struct CommandResult {
+    pub is_command: bool,
+    pub is_error: bool,
+    pub should_clear: bool,
+    pub should_quit: bool,
+    output: String,
+}
+
+#[wasm_bindgen]
+impl CommandResult {
     #[wasm_bindgen(getter)]
     pub fn output(&self) -> String {
         self.output.clone()
@@ -173,6 +197,82 @@ impl Numbat {
 
     pub fn help(&self) -> JsValue {
         self.format(&help_markup(HelpKind::BasicHelp), true).into()
+    }
+
+    /// Try to run the input as a command.
+    /// Returns a CommandResult indicating whether the input was a command,
+    /// and if so, what output it produced and any side effects needed.
+    pub fn try_run_command(&mut self, input: &str) -> CommandResult {
+        let mut output = String::new();
+
+        let result = {
+            let mut cmd_runner = CommandRunner::<()>::new()
+                .print_with(|markup: &m::Markup| {
+                    let fmt = JqueryTerminalFormatter {};
+                    output.push_str(&fmt.format(markup, true));
+                })
+                .enable_clear(|_| CommandControlFlow::Continue)
+                .enable_quit();
+
+            cmd_runner.try_run_command(input, &mut self.ctx, &mut ())
+        };
+
+        // Check if it was a clear command by checking the input
+        let input_trimmed = input.trim();
+        let should_clear = input_trimmed == "clear";
+
+        match result {
+            Ok(CommandControlFlow::NotACommand) => CommandResult {
+                is_command: false,
+                is_error: false,
+                should_clear: false,
+                should_quit: false,
+                output: String::new(),
+            },
+            Ok(CommandControlFlow::Continue) => CommandResult {
+                is_command: true,
+                is_error: false,
+                should_clear,
+                should_quit: false,
+                output,
+            },
+            Ok(CommandControlFlow::Return) => CommandResult {
+                is_command: true,
+                is_error: false,
+                should_clear: false,
+                should_quit: true,
+                output,
+            },
+            Err(err) => {
+                let diagnostic_output = self.format_command_error(&*err);
+                CommandResult {
+                    is_command: true,
+                    is_error: true,
+                    should_clear: false,
+                    should_quit: false,
+                    output: diagnostic_output,
+                }
+            }
+        }
+    }
+
+    fn format_command_error(&self, error: &numbat::command::CommandError) -> String {
+        use codespan_reporting::term::{self, Config};
+
+        let mut writer: Box<dyn BufferedWriter> = match self.format_type {
+            FormatType::JqueryTerminal => Box::new(JqueryTerminalWriter::new()),
+            FormatType::Html => Box::new(HtmlWriter::new()),
+        };
+        let config = Config::default();
+
+        let resolver = self.ctx.resolver();
+        let diagnostic = ResolverDiagnostic { resolver, error };
+
+        for diag in diagnostic.diagnostics() {
+            term::emit(&mut writer, &config, &resolver.files, &diag).unwrap();
+        }
+
+        writer.to_string()
     }
 
     pub fn print_info(&mut self, keyword: &str) -> JsValue {
