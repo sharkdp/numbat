@@ -127,7 +127,7 @@ Thank you for packaging Numbat! This section contains instructions that are not 
 to create a Numbat package, but provide users with the best-possible experience on your target platform.
 
 Numbat has a [standard library](./prelude.md) that is written in Numbat itself. The sources for this
-so called "prelude" are available in the [`numbat/modules`](https://github.com/sharkdp/numbat/tree/master/numbat/modules) folder.
+so called "prelude" are available in the [`numbat/modules`](https://github.com/sharkdp/numbat/tree/main/numbat/modules) folder.
 We also include this `modules` folder in the pre-built [GitHub releases](https://github.com/sharkdp/numbat/releases).
 Installing this folder as part of the package installation is not necessary for Numbat to work, as the prelude is also
 stored inside the `numbat` binary. But ideally, this folder should be made available for users. There are three reasons for this:

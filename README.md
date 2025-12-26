@@ -79,7 +79,7 @@ This means you will either get a (descriptive) error message, or you can trust t
 </summary>
 <p></p>
 
-Numbat aims to provide [descriptive and helpful error messages](https://github.com/sharkdp/numbat/blob/master/assets/numbat-error.png).
+Numbat aims to provide [descriptive and helpful error messages](https://github.com/sharkdp/numbat/blob/main/assets/numbat-error.png).
 </details>
 
 <details>
@@ -100,7 +100,7 @@ readline interface, including all the usual features like a command history, Ctr
 <p></p>
 
 The whole system of physical dimensions and units is specified Numbat's standard library, which is
-[written in the Numbat language](https://github.com/sharkdp/numbat/tree/master/numbat/modules) itself. It is therefore
+[written in the Numbat language](https://github.com/sharkdp/numbat/tree/main/numbat/modules) itself. It is therefore
 easily extensible by [providing a `init.nbt` file](https://numbat.dev/doc/cli-customization.html). For example,
 a single line (`unit bathtub = 150 L`) is usually enough to add a new unit. Users can even choose to write their
 own `prelude` module, allowing for arbitrary modifications to the unit system.
