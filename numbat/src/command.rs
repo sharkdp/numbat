@@ -6,7 +6,6 @@ use crate::{
     Context, ParseError, RuntimeError,
     diagnostic::{ErrorDiagnostic, ResolverDiagnostic},
     help::help_markup,
-    interpreter::RuntimeErrorKind,
     markup::{self as m, Markup},
     parser::ParseErrorKind,
     resolver::CodeSource,
@@ -104,74 +103,27 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, CommandError> {
     }
 }
 
-enum Command<'session, 'input, Editor> {
-    Help {
-        help_kind: HelpKind,
-        print_fn: fn(&Markup),
-    },
-    Info {
-        item: &'input str,
-        print_fn: fn(&Markup),
-    },
-    List {
-        items: Option<ListItems>,
-        print_fn: fn(&Markup),
-    },
-    Clear {
-        clear_fn: fn(&mut Editor) -> CommandControlFlow,
-    },
-    Save(SaveCmdArgs<'session, 'input>),
-    Reset {
-        ctx_ctor: fn() -> Context,
-        clear_fn: Option<fn(&mut Editor) -> CommandControlFlow>,
-    },
+enum ParsedCommand<'session, 'input> {
+    Help { help_kind: HelpKind },
+    Info { item: &'input str },
+    List { items: Option<ListItems> },
+    Clear,
+    Save { session_history: &'session SessionHistory, dst: &'input str },
+    Reset,
     Quit,
 }
 
-struct SaveCmdArgs<'session, 'input> {
-    session_history: &'session SessionHistory,
-    dst: &'input str,
-    print_fn: Option<fn(&Markup)>,
-}
-
-impl SaveCmdArgs<'_, '_> {
-    fn save(&self) -> Result<(), Box<RuntimeErrorKind>> {
-        let Self {
-            session_history,
-            dst,
-            print_fn,
-        } = self;
-
-        session_history.save(
-            dst,
-            SessionHistoryOptions {
-                include_err_lines: false,
-                trim_lines: true,
-            },
-        )?;
-
-        if let Some(print_markup) = print_fn {
-            let markup = m::text("successfully saved session history to")
-                + m::space()
-                + m::string(dst.to_compact_string());
-            print_markup(&markup)
-        }
-
-        Ok(())
-    }
-}
-
-pub struct CommandRunner<Editor = ()> {
-    print_markup: Option<fn(&Markup)>,
-    clear: Option<fn(&mut Editor) -> CommandControlFlow>,
+pub struct CommandRunner<'a, Editor = ()> {
+    print_markup: Option<Box<dyn FnMut(&Markup) + 'a>>,
+    clear: Option<Box<dyn FnMut(&mut Editor) -> CommandControlFlow + 'a>>,
     session_history: Option<SessionHistory>,
-    ctx_ctor: Option<fn() -> Context>,
+    ctx_ctor: Option<Box<dyn FnMut() -> Context + 'a>>,
     quit: Option<()>,
 }
 
 // cannot be derived because `#[derive(Default)]` introduces the bound `Editor:
 // Default`, which is not necessary
-impl<Editor> Default for CommandRunner<Editor> {
+impl<Editor> Default for CommandRunner<'_, Editor> {
     fn default() -> Self {
         Self {
             print_markup: None,
@@ -183,18 +135,21 @@ impl<Editor> Default for CommandRunner<Editor> {
     }
 }
 
-impl<Editor> CommandRunner<Editor> {
+impl<'a, Editor> CommandRunner<'a, Editor> {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn print_with(mut self, action: fn(&Markup)) -> Self {
-        self.print_markup = Some(action);
+    pub fn print_with(mut self, action: impl FnMut(&Markup) + 'a) -> Self {
+        self.print_markup = Some(Box::new(action));
         self
     }
 
-    pub fn enable_clear(mut self, action: fn(&mut Editor) -> CommandControlFlow) -> Self {
-        self.clear = Some(action);
+    pub fn enable_clear(
+        mut self,
+        action: impl FnMut(&mut Editor) -> CommandControlFlow + 'a,
+    ) -> Self {
+        self.clear = Some(Box::new(action));
         self
     }
 
@@ -203,8 +158,8 @@ impl<Editor> CommandRunner<Editor> {
         self
     }
 
-    pub fn enable_reset(mut self, ctx_ctor: fn() -> Context) -> Self {
-        self.ctx_ctor = Some(ctx_ctor);
+    pub fn enable_reset(mut self, ctx_ctor: impl FnMut() -> Context + 'a) -> Self {
+        self.ctx_ctor = Some(Box::new(ctx_ctor));
         self
     }
 
@@ -220,11 +175,11 @@ impl<Editor> CommandRunner<Editor> {
         session_history.push(line.to_compact_string(), result);
     }
 
-    fn get_command<'a, 'b>(
-        &'a self,
+    fn parse_command<'s, 'b>(
+        &'s self,
         line: &'b str,
         ctx: &mut Context,
-    ) -> Result<Option<Command<'a, 'b, Editor>>, Box<CommandError>> {
+    ) -> Result<Option<ParsedCommand<'s, 'b>>, Box<CommandError>> {
         let Some(mut parser) = CommandParser::new(
             line,
             ctx.resolver_mut().add_code_source(CodeSource::Text, line),
@@ -244,9 +199,9 @@ impl<Editor> CommandRunner<Editor> {
         // with an if-let guard. https://github.com/rust-lang/rust/issues/51114
         Ok(Some(match &parser.command_kind {
             CommandKind::Help => {
-                let &Some(print_fn) = print_markup else {
+                if print_markup.is_none() {
                     return Ok(None);
-                };
+                }
 
                 let help_arg = parser.args.next();
 
@@ -273,12 +228,12 @@ impl<Editor> CommandRunner<Editor> {
                     }
                 };
 
-                Command::Help { help_kind, print_fn }
+                ParsedCommand::Help { help_kind }
             }
             CommandKind::Info => {
-                let &Some(print_fn) = print_markup else {
+                if print_markup.is_none() {
                     return Ok(None);
-                };
+                }
                 let err_msg = "`info` requires exactly one argument, the item to get info on";
                 let Some(item) = parser.args.next() else {
                     return Err(Box::new(parser.err_at_idx(0, err_msg).into()));
@@ -288,12 +243,12 @@ impl<Editor> CommandRunner<Editor> {
                     return Err(Box::new(parser.err_through_end_from(1, err_msg).into()));
                 }
 
-                Command::Info { item, print_fn }
+                ParsedCommand::Info { item }
             }
             CommandKind::List => {
-                let &Some(print_fn) = print_markup else {
+                if print_markup.is_none() {
                     return Ok(None);
-                };
+                }
 
                 let items = parser.args.next();
 
@@ -324,25 +279,23 @@ impl<Editor> CommandRunner<Editor> {
                     }
                 };
 
-                Command::List { items, print_fn }
+                ParsedCommand::List { items }
             }
             CommandKind::Clear => {
-                let &Some(clear_fn) = clear else {
+                if clear.is_none() {
                     return Ok(None);
-                };
+                }
 
                 parser
                     .ensure_zero_args("clear", "")
                     .map_err(|err| Box::new(err.into()))?;
 
-                Command::Clear { clear_fn }
+                ParsedCommand::Clear
             }
             CommandKind::Save => {
                 let Some(session_history) = session_history else {
                     return Ok(None);
                 };
-
-                let print_fn = print_markup.as_ref().copied();
 
                 let dst = parser.args.next().unwrap_or("history.nbt");
 
@@ -357,30 +310,26 @@ impl<Editor> CommandRunner<Editor> {
                     ));
                 }
 
-                Command::Save(SaveCmdArgs {
+                ParsedCommand::Save {
                     session_history,
                     dst,
-                    print_fn,
-                })
+                }
             }
             CommandKind::Reset => {
-                let &Some(ctx_ctor) = ctx_ctor else {
+                if ctx_ctor.is_none() {
                     return Ok(None);
-                };
+                }
 
                 parser
                     .ensure_zero_args("reset", "")
                     .map_err(|err| Box::new(err.into()))?;
 
-                Command::Reset {
-                    ctx_ctor,
-                    clear_fn: *clear,
-                }
+                ParsedCommand::Reset
             }
             CommandKind::Quit(quit_alias) => {
-                let Some(_) = quit else {
+                if quit.is_none() {
                     return Ok(None);
-                };
+                }
 
                 parser
                     .ensure_zero_args(
@@ -392,7 +341,7 @@ impl<Editor> CommandRunner<Editor> {
                     )
                     .map_err(|err| Box::new(err.into()))?;
 
-                Command::Quit
+                ParsedCommand::Quit
             }
         }))
     }
@@ -408,25 +357,30 @@ impl<Editor> CommandRunner<Editor> {
     /// that's because it's not a command at all, or it's a disabled command), then this
     /// returns `CommandControlFlow::NotACommand`.
     pub fn try_run_command(
-        &self,
+        &mut self,
         line: &str,
         ctx: &mut Context,
         editor: &mut Editor,
     ) -> Result<CommandControlFlow, Box<CommandError>> {
-        let Some(output) = self.get_command(line, ctx)? else {
+        let Some(parsed) = self.parse_command(line, ctx)? else {
             return Ok(CommandControlFlow::NotACommand);
         };
 
-        Ok(match output {
-            Command::Help { help_kind, print_fn } => {
-                print_fn(&help_markup(help_kind));
+        Ok(match parsed {
+            ParsedCommand::Help { help_kind } => {
+                if let Some(print_fn) = self.print_markup.as_mut() {
+                    print_fn(&help_markup(help_kind));
+                }
                 CommandControlFlow::Continue
             }
-            Command::Info { item, print_fn } => {
-                print_fn(&ctx.print_info_for_keyword(item));
+            ParsedCommand::Info { item } => {
+                let markup = ctx.print_info_for_keyword(item);
+                if let Some(print_fn) = self.print_markup.as_mut() {
+                    print_fn(&markup);
+                }
                 CommandControlFlow::Continue
             }
-            Command::List { items, print_fn } => {
+            ParsedCommand::List { items } => {
                 let markup = match items {
                     None => ctx.print_environment(),
                     Some(ListItems::Functions) => ctx.print_functions(),
@@ -434,24 +388,46 @@ impl<Editor> CommandRunner<Editor> {
                     Some(ListItems::Variables) => ctx.print_variables(),
                     Some(ListItems::Units) => ctx.print_units(),
                 };
-                print_fn(&markup);
+                if let Some(print_fn) = self.print_markup.as_mut() {
+                    print_fn(&markup);
+                }
                 CommandControlFlow::Continue
             }
-            Command::Clear { clear_fn } => clear_fn(editor),
-            Command::Save(save_args) => {
-                save_args
-                    .save()
-                    .map_err(|err| CommandError::Runtime(ctx.interpreter.runtime_error(*err)))?;
-                CommandControlFlow::Continue
-            }
-            Command::Reset { ctx_ctor, clear_fn } => {
-                *ctx = ctx_ctor();
-                match clear_fn {
-                    Some(clear_fn) => clear_fn(editor),
-                    None => CommandControlFlow::Continue,
+            ParsedCommand::Clear => {
+                if let Some(clear_fn) = self.clear.as_mut() {
+                    clear_fn(editor)
+                } else {
+                    CommandControlFlow::Continue
                 }
             }
-            Command::Quit => CommandControlFlow::Return,
+            ParsedCommand::Save { session_history, dst } => {
+                session_history.save(
+                    dst,
+                    SessionHistoryOptions {
+                        include_err_lines: false,
+                        trim_lines: true,
+                    },
+                ).map_err(|err| CommandError::Runtime(ctx.interpreter.runtime_error(*err)))?;
+
+                if let Some(print_fn) = self.print_markup.as_mut() {
+                    let markup = m::text("successfully saved session history to")
+                        + m::space()
+                        + m::string(dst.to_compact_string());
+                    print_fn(&markup);
+                }
+                CommandControlFlow::Continue
+            }
+            ParsedCommand::Reset => {
+                if let Some(ctx_ctor) = self.ctx_ctor.as_mut() {
+                    *ctx = ctx_ctor();
+                }
+                if let Some(clear_fn) = self.clear.as_mut() {
+                    clear_fn(editor)
+                } else {
+                    CommandControlFlow::Continue
+                }
+            }
+            ParsedCommand::Quit => CommandControlFlow::Return,
         })
     }
 }
@@ -579,21 +555,21 @@ mod test {
         Quit,
     }
 
-    impl<'b, Editor> Command<'_, 'b, Editor> {
-        fn into_bare(self) -> BareCommand<'b> {
-            match self {
-                Command::Help { help_kind, .. } => BareCommand::Help { help_kind },
-                Command::Info { item, .. } => BareCommand::Info { item },
-                Command::List { items, .. } => BareCommand::List { items },
-                Command::Clear { clear_fn: _ } => BareCommand::Clear,
-                Command::Save(SaveCmdArgs { dst, .. }) => BareCommand::Save { dst },
-                Command::Reset { .. } => BareCommand::Reset,
-                Command::Quit => BareCommand::Quit,
+    impl<'a> From<ParsedCommand<'_, 'a>> for BareCommand<'a> {
+        fn from(cmd: ParsedCommand<'_, 'a>) -> Self {
+            match cmd {
+                ParsedCommand::Help { help_kind } => BareCommand::Help { help_kind },
+                ParsedCommand::Info { item } => BareCommand::Info { item },
+                ParsedCommand::List { items } => BareCommand::List { items },
+                ParsedCommand::Clear => BareCommand::Clear,
+                ParsedCommand::Save { dst, .. } => BareCommand::Save { dst },
+                ParsedCommand::Reset => BareCommand::Reset,
+                ParsedCommand::Quit => BareCommand::Quit,
             }
         }
     }
 
-    fn new_runner() -> CommandRunner<()> {
+    fn new_runner() -> CommandRunner<'static, ()> {
         CommandRunner::new()
             .print_with(|_| {})
             .enable_clear(|_| CommandControlFlow::Continue)
@@ -618,13 +594,13 @@ mod test {
         input: &'static str,
         expected: BareCommand,
     ) {
-        let cmd = runner.get_command(input, ctx).unwrap().unwrap();
-        assert_eq!(expected, cmd.into_bare());
+        let cmd = runner.parse_command(input, ctx).unwrap().unwrap();
+        assert_eq!(expected, cmd.into());
     }
 
     #[track_caller]
     fn expect_fail(runner: &CommandRunner<()>, ctx: &mut Context, input: &'static str) {
-        assert!(runner.get_command(input, ctx).is_err());
+        assert!(runner.parse_command(input, ctx).is_err());
     }
 
     #[test]
@@ -890,7 +866,7 @@ mod test {
     #[test]
     fn test_runner() {
         fn test_case(
-            runner: &CommandRunner<()>,
+            runner: &mut CommandRunner<()>,
             ctx: &mut Context,
             input: &'static str,
             expected: CommandControlFlow,
@@ -904,26 +880,25 @@ mod test {
 
         let mut ctx = Context::new_without_importer();
 
-        let runner = CommandRunner::new().print_with(|_| {}).enable_quit();
+        let mut runner = CommandRunner::new().print_with(|_| {}).enable_quit();
 
-        test_case(&runner, &mut ctx, "help", CommandControlFlow::Continue);
-        test_case(&runner, &mut ctx, "list", CommandControlFlow::Continue);
+        test_case(&mut runner, &mut ctx, "help", CommandControlFlow::Continue);
+        test_case(&mut runner, &mut ctx, "list", CommandControlFlow::Continue);
         test_case(
-            &runner,
+            &mut runner,
             &mut ctx,
             // won't be found, but that's fine
             "info item",
             CommandControlFlow::Continue,
         );
-        test_case(&runner, &mut ctx, "clear", CommandControlFlow::NotACommand);
+        test_case(&mut runner, &mut ctx, "clear", CommandControlFlow::NotACommand);
         test_case(
-            &runner,
+            &mut runner,
             &mut ctx,
             "save dst",
             CommandControlFlow::NotACommand,
         );
-        test_case(&runner, &mut ctx, "quit", CommandControlFlow::Return);
-        test_case(&runner, &mut ctx, "exit", CommandControlFlow::Return);
+        test_case(&mut runner, &mut ctx, "quit", CommandControlFlow::Return);
+        test_case(&mut runner, &mut ctx, "exit", CommandControlFlow::Return);
     }
-
 }

@@ -38,44 +38,37 @@ function interpret(input) {
         return;
     }
 
-    if (input_trimmed == "clear") {
-        this.clear();
-        var output = "";
-    } else if (input_trimmed == "reset") {
+    // Handle 'reset' specially since it needs to recreate the Numbat instance
+    if (input_trimmed == "reset") {
         numbat = create_numbat_instance();
         numbat.interpret("use units::currencies");
         combined_input = "";
         updateUrlQuery(null);
         this.clear();
-    } else if (input_trimmed == "list") {
-        output = numbat.print_environment();
-    } else if (input_trimmed == "list functions") {
-        output = numbat.print_functions();
-    } else if (input_trimmed == "list dimensions") {
-        output = numbat.print_dimensions();
-    } else if (input_trimmed == "list variables") {
-        output = numbat.print_variables();
-    } else if (input_trimmed == "list units") {
-        output = numbat.print_units();
-    } else if (input_trimmed == "help" || input_trimmed == "?") {
-        output = numbat.help();
-    } else {
-        var result = { is_error: false };
-        if (input_trimmed.startsWith("info ")) {
-            var keyword = input_trimmed.substring(4).trim();
-            output = numbat.print_info(keyword);
-        } else {
-            result = numbat.interpret(input);
-            output = result.output;
-        }
-
-        if (!result.is_error) {
-            combined_input += input.trim() + "⏎";
-            updateUrlQuery(combined_input);
-        }
+        return;
     }
 
-    return output;
+    // Try to run as a command first
+    var cmd_result = numbat.try_run_command(input);
+
+    if (cmd_result.is_command) {
+        // Handle command side effects
+        if (cmd_result.should_clear) {
+            this.clear();
+        }
+        // Note: should_quit is ignored in the web context
+        return cmd_result.output;
+    }
+
+    // Not a command - interpret as Numbat code
+    var result = numbat.interpret(input);
+
+    if (!result.is_error) {
+        combined_input += input.trim() + "⏎";
+        updateUrlQuery(combined_input);
+    }
+
+    return result.output;
 }
 
 const parsedTerminalHeightInPixels = parseInt(
