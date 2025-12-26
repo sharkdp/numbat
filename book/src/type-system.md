@@ -139,7 +139,8 @@ requires that:
     * `expr1` is also of type `Scalar`
     * `expr2` can be *evaluated at compile time* and yields a rational number.
 
-> **Remark**:
+> [!NOTE]
+>
 > We would probably need to enter the world of *dependent types* if we wanted to fully
 > support exponentiation expressions without the limitations above. For example, consider
 > the function `f(x, n) = x^n`. The return type of that function *depends on the value*
