@@ -238,19 +238,19 @@ impl Context {
         formatter.format(entries, format_type)
     }
 
-    pub fn print_functions(&self) -> Markup {
+    fn print_functions(&self) -> Markup {
         self.print_sorted(self.function_names().collect(), FormatType::Identifier)
     }
 
-    pub fn print_dimensions(&self) -> Markup {
+    fn print_dimensions(&self) -> Markup {
         self.print_sorted(self.dimension_names().into(), FormatType::TypeIdentifier)
     }
 
-    pub fn print_variables(&self) -> Markup {
+    fn print_variables(&self) -> Markup {
         self.print_sorted(self.variable_names().collect(), FormatType::Identifier)
     }
 
-    pub fn print_units(&self) -> Markup {
+    fn print_units(&self) -> Markup {
         let units = self.unit_names().iter().flatten().cloned().collect();
         self.print_sorted(units, FormatType::Unit)
     }

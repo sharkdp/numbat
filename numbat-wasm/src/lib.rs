@@ -168,26 +168,6 @@ impl Numbat {
         }
     }
 
-    pub fn print_environment(&self) -> JsValue {
-        self.format(&self.ctx.print_environment(), false).into()
-    }
-
-    pub fn print_functions(&self) -> JsValue {
-        self.format(&self.ctx.print_functions(), false).into()
-    }
-
-    pub fn print_dimensions(&self) -> JsValue {
-        self.format(&self.ctx.print_dimensions(), false).into()
-    }
-
-    pub fn print_variables(&self) -> JsValue {
-        self.format(&self.ctx.print_variables(), false).into()
-    }
-
-    pub fn print_units(&self) -> JsValue {
-        self.format(&self.ctx.print_units(), false).into()
-    }
-
     pub fn help(&self) -> JsValue {
         self.format(&basic_help_markup(), true).into()
     }
