@@ -176,6 +176,138 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
         session_history.push(line.to_compact_string(), result);
     }
 
+    fn help_markup(&self, help_kind: HelpKind) -> m::Markup {
+        match help_kind {
+            HelpKind::BasicHelp => help_markup(HelpKind::BasicHelp),
+            HelpKind::AllCommands => self.all_commands_markup(),
+        }
+    }
+
+    fn all_commands_markup(&self) -> m::Markup {
+        fn m_cmd(cmd: &'static str) -> m::Markup {
+            m::keyword(cmd)
+        }
+
+        fn m_arg(arg: &'static str) -> m::Markup {
+            m::value(arg)
+        }
+
+        fn cmd(
+            cmd: &'static str,
+            args: impl AsRef<[&'static str]>,
+            aliases: impl AsRef<[&'static str]>,
+            help: &'static str,
+        ) -> m::Markup {
+            cmd_fmt(cmd, args, aliases, m::text(help))
+        }
+
+        fn cmd_fmt(
+            cmd: &'static str,
+            args: impl AsRef<[&'static str]>,
+            aliases: impl AsRef<[&'static str]>,
+            help: m::Markup,
+        ) -> m::Markup {
+            let indent = m::text("  ");
+            let mut output = indent;
+            output += m_cmd(cmd);
+            for arg in args.as_ref() {
+                output += m::space();
+                output += m_arg(arg)
+            }
+
+            output += m::text(": ");
+            output += help;
+
+            let aliases = aliases.as_ref();
+            let mut aliases_iter = aliases.iter();
+            if let Some(first_alias) = aliases_iter.next() {
+                if aliases.len() == 1 {
+                    output += m::text(" (alias: ");
+                } else {
+                    output += m::text(" (aliases: ");
+                }
+                output += m_cmd(first_alias);
+
+                for alias in aliases_iter {
+                    output += m::text(", ");
+                    output += m_cmd(alias);
+                }
+                output += m::text(")");
+            }
+
+            output += m::nl();
+
+            output
+        }
+
+        let mut output = m::nl()
+            + m::text("Numbat supports the following commands:")
+            + m::nl()
+            + cmd("help", [], ["?"], "show a basic introduction to Numbat")
+            + cmd(
+                "help",
+                ["commands"],
+                ["?"],
+                "show the list of Numbat commands and information about them",
+            )
+            + cmd(
+                "info",
+                ["<identifier>"],
+                [],
+                "get more info about a particular item, such as a function, variable, or unit",
+            )
+            + cmd("list", [], [], "show all currently defined items")
+            + cmd_fmt(
+                "list",
+                ["<what>"],
+                [],
+                m::text("show all currently defined items of the specified type, where ")
+                    + m_arg("<what>")
+                    + m::text(" is one of ")
+                    + m_arg("functions")
+                    + m::text(", ")
+                    + m_arg("definitions")
+                    + m::text(", ")
+                    + m_arg("variables")
+                    + m::text(", or ")
+                    + m_arg("units"),
+            );
+
+        if self.clear.is_some() {
+            output += cmd("clear", [], [], "clear the current screen contents");
+        }
+
+        if self.session_history.is_some() {
+            output += cmd_fmt(
+                "save",
+                [],
+                [],
+                m::text("save the current session history to ")
+                    + m_arg("history.nbt")
+                    + m::text(" in the current directory"),
+            );
+            output += cmd_fmt(
+                "save",
+                ["<dst>"],
+                [],
+                m::text("save the current session history to file ")
+                    + m_arg("<dst>")
+                    + m::text("; the recommended file extension is ")
+                    + m::string(".nbt"),
+            );
+        }
+
+        if self.reset.is_some() {
+            output += cmd("reset", [], [], "reset the interpreter state");
+        }
+
+        if self.quit.is_some() {
+            output += cmd("exit", [], ["quit"], "exit Numbat");
+        }
+
+        output
+    }
+
     fn parse_command<'s, 'b>(
         &'s self,
         line: &'b str,
@@ -369,8 +501,9 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
 
         Ok(match parsed {
             ParsedCommand::Help { help_kind } => {
+                let markup = self.help_markup(help_kind);
                 if let Some(print_fn) = self.print_markup.as_mut() {
-                    print_fn(&help_markup(help_kind));
+                    print_fn(&markup);
                 }
                 CommandControlFlow::Continue
             }
