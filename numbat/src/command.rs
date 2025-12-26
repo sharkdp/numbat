@@ -69,6 +69,7 @@ pub enum HelpKind {
 pub enum CommandControlFlow {
     Continue,
     Return,
+    Reset,
     NotACommand,
 }
 
@@ -117,7 +118,7 @@ pub struct CommandRunner<'a, Editor = ()> {
     print_markup: Option<Box<dyn FnMut(&Markup) + 'a>>,
     clear: Option<Box<dyn FnMut(&mut Editor) -> CommandControlFlow + 'a>>,
     session_history: Option<SessionHistory>,
-    ctx_ctor: Option<Box<dyn FnMut() -> Context + 'a>>,
+    reset: Option<()>,
     quit: Option<()>,
 }
 
@@ -129,7 +130,7 @@ impl<Editor> Default for CommandRunner<'_, Editor> {
             print_markup: None,
             clear: None,
             session_history: None,
-            ctx_ctor: None,
+            reset: None,
             quit: None,
         }
     }
@@ -158,8 +159,8 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
         self
     }
 
-    pub fn enable_reset(mut self, ctx_ctor: impl FnMut() -> Context + 'a) -> Self {
-        self.ctx_ctor = Some(Box::new(ctx_ctor));
+    pub fn enable_reset(mut self) -> Self {
+        self.reset = Some(());
         self
     }
 
@@ -191,7 +192,7 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
             print_markup,
             clear,
             session_history,
-            ctx_ctor,
+            reset,
             quit,
         } = self;
 
@@ -316,7 +317,7 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                 }
             }
             CommandKind::Reset => {
-                if ctx_ctor.is_none() {
+                if reset.is_none() {
                     return Ok(None);
                 }
 
@@ -418,14 +419,10 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                 CommandControlFlow::Continue
             }
             ParsedCommand::Reset => {
-                if let Some(ctx_ctor) = self.ctx_ctor.as_mut() {
-                    *ctx = ctx_ctor();
-                }
                 if let Some(clear_fn) = self.clear.as_mut() {
-                    clear_fn(editor)
-                } else {
-                    CommandControlFlow::Continue
+                    let _ = clear_fn(editor);
                 }
+                CommandControlFlow::Reset
             }
             ParsedCommand::Quit => CommandControlFlow::Return,
         })
@@ -574,7 +571,7 @@ mod test {
             .print_with(|_| {})
             .enable_clear(|_| CommandControlFlow::Continue)
             .enable_save(SessionHistory::new())
-            .enable_reset(Context::new_without_importer)
+            .enable_reset()
             .enable_quit()
     }
 

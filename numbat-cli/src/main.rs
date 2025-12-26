@@ -373,7 +373,7 @@ impl Cli {
                 Err(_) => CommandControlFlow::Return,
             })
             .enable_save(SessionHistory::default())
-            .enable_reset(Self::make_fresh_context)
+            .enable_reset()
             .enable_quit();
 
         loop {
@@ -403,6 +403,10 @@ impl Cli {
                         Ok(cf) => match cf {
                             CommandControlFlow::Continue => continue,
                             CommandControlFlow::Return => return Ok(()),
+                            CommandControlFlow::Reset => {
+                                *ctx = Self::make_fresh_context();
+                                continue;
+                            }
                             CommandControlFlow::NotACommand => {}
                         },
                         Err(err) => {
