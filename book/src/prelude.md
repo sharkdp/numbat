@@ -7,6 +7,6 @@ mathematical functions, constants but also dimension definitions, unit
 definitions and physical constants.
 
 You can find the full source code of the standard library
-[on GitHub](https://github.com/sharkdp/numbat/tree/master).
+[on GitHub](https://github.com/sharkdp/numbat/tree/main).
 
 This chapter is a reference to the prelude module.

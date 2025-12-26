@@ -47,5 +47,5 @@
         "type": "git",
         "url": "https://github.com/sharkdp/numbat.git"
     },
-    "homepage": "https://github.com/sharkdp/numbat/blob/master/vscode-extension/README.md"
+    "homepage": "https://github.com/sharkdp/numbat/blob/main/vscode-extension/README.md"
 }
