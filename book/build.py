@@ -30,7 +30,7 @@ def generate_example(
         fout.write(f"# {title}\n")
         if insert_run_link:
             fout.write(
-                f'<a href="{url}"><i class="fa fa-play"></i> Run this example</a>\n'
+                f'<a href="{url}"><i class="fa-solid fa-play"></i> Run this example</a>\n'
             )
         fout.write("\n")
         fout.write("``` numbat\n")
@@ -139,7 +139,7 @@ def list_of_functions(file_name, document):
                         stdout=f,
                         text=True,
                         env=env,
-                        check=True
+                        check=True,
                     )
                 except subprocess.CalledProcessError as e:
                     sys.exit(e.returncode)

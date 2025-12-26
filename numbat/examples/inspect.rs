@@ -140,7 +140,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     print!("<pre>");
                     print!("<div class=\"buttons\">");
                     print!(
-                        "<button class=\"fa fa-play play-button\" title=\"Run this code\" aria-label=\"Run this code\" onclick=\" window.open('{}')\"></button>",
+                        "<button class=\"fa-solid fa-play play-button\" title=\"Run this code\" aria-label=\"Run this code\" onclick=\" window.open('{}')\"></button>",
                         example_url
                     );
                     print!("</div>");
