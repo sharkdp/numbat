@@ -1,7 +1,7 @@
 use numbat::buffered_writer::BufferedWriter;
 use numbat::markup::{FormatType, FormattedString, Formatter};
 
-use numbat::compact_str::{format_compact, CompactString};
+use numbat::compact_str::{CompactString, format_compact};
 use termcolor::{Color, WriteColor};
 
 pub struct JqueryTerminalFormatter;

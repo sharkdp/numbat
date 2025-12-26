@@ -5,7 +5,7 @@ use compact_str::ToCompactString;
 use crate::{
     Context, ParseError, RuntimeError,
     diagnostic::{ErrorDiagnostic, ResolverDiagnostic},
-    help::help_markup,
+    help::basic_help_markup,
     markup::{self as m, Markup},
     parser::ParseErrorKind,
     resolver::CodeSource,
@@ -59,7 +59,7 @@ impl FromStr for CommandKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum HelpKind {
+enum HelpKind {
     BasicHelp,
     AllCommands,
 }
@@ -105,11 +105,20 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, CommandError> {
 }
 
 enum ParsedCommand<'session, 'input> {
-    Help { help_kind: HelpKind },
-    Info { item: &'input str },
-    List { items: Option<ListItems> },
+    Help {
+        help_kind: HelpKind,
+    },
+    Info {
+        item: &'input str,
+    },
+    List {
+        items: Option<ListItems>,
+    },
     Clear,
-    Save { session_history: &'session SessionHistory, dst: &'input str },
+    Save {
+        session_history: &'session SessionHistory,
+        dst: &'input str,
+    },
     Reset,
     Quit,
 }
@@ -178,7 +187,7 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
 
     fn help_markup(&self, help_kind: HelpKind) -> m::Markup {
         match help_kind {
-            HelpKind::BasicHelp => help_markup(HelpKind::BasicHelp),
+            HelpKind::BasicHelp => basic_help_markup(),
             HelpKind::AllCommands => self.all_commands_markup(),
         }
     }
@@ -191,6 +200,9 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
         fn m_arg(arg: &'static str) -> m::Markup {
             m::value(arg)
         }
+
+        // Column width for command + args (not including indent)
+        const CMD_COLUMN_WIDTH: usize = 18;
 
         fn cmd(
             cmd: &'static str,
@@ -210,12 +222,20 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
             let indent = m::text("  ");
             let mut output = indent;
             output += m_cmd(cmd);
-            for arg in args.as_ref() {
+
+            // Calculate the width of command + args
+            let args = args.as_ref();
+            let mut cmd_width = cmd.len();
+            for arg in args {
                 output += m::space();
-                output += m_arg(arg)
+                output += m_arg(arg);
+                cmd_width += 1 + arg.len(); // space + arg
             }
 
-            output += m::text(": ");
+            // Pad to align descriptions
+            let padding = CMD_COLUMN_WIDTH.saturating_sub(cmd_width);
+            let padding_str = " ".repeat(padding).to_compact_string();
+            output += m::whitespace(padding_str);
             output += help;
 
             let aliases = aliases.as_ref();
@@ -241,29 +261,25 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
         }
 
         let mut output = m::nl()
-            + m::text("Numbat supports the following commands:")
-            + m::nl()
             + cmd("help", [], ["?"], "show a basic introduction to Numbat")
             + cmd(
                 "help",
                 ["commands"],
-                ["?"],
-                "show the list of Numbat commands and information about them",
+                [],
+                "brief description of all available commands",
             )
             + cmd(
                 "info",
                 ["<identifier>"],
                 [],
-                "get more info about a particular item, such as a function, variable, or unit",
+                "get more information about functions, variables, units or dimensions",
             )
             + cmd("list", [], [], "show all currently defined items")
             + cmd_fmt(
                 "list",
                 ["<what>"],
                 [],
-                m::text("show all currently defined items of the specified type, where ")
-                    + m_arg("<what>")
-                    + m::text(" is one of ")
+                m::text("show all currently defined ")
                     + m_arg("functions")
                     + m::text(", ")
                     + m_arg("definitions")
@@ -273,36 +289,36 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                     + m_arg("units"),
             );
 
-        if self.clear.is_some() {
-            output += cmd("clear", [], [], "clear the current screen contents");
-        }
-
         if self.session_history.is_some() {
             output += cmd_fmt(
                 "save",
                 [],
                 [],
                 m::text("save the current session history to ")
-                    + m_arg("history.nbt")
+                    + m::string("history.nbt")
                     + m::text(" in the current directory"),
             );
             output += cmd_fmt(
                 "save",
-                ["<dst>"],
+                ["<path>"],
                 [],
-                m::text("save the current session history to file ")
-                    + m_arg("<dst>")
-                    + m::text("; the recommended file extension is ")
-                    + m::string(".nbt"),
+                m::text("save the current session history to file")
+                    + m::text("(the recommended file extension is ")
+                    + m::string(".nbt")
+                    + m::text(")"),
             );
         }
 
+        if self.clear.is_some() {
+            output += cmd("clear", [], [], "clear the console output");
+        }
+
         if self.reset.is_some() {
-            output += cmd("reset", [], [], "reset the interpreter state");
+            output += cmd("reset", [], [], "completely reset the interpreter state");
         }
 
         if self.quit.is_some() {
-            output += cmd("exit", [], ["quit"], "exit Numbat");
+            output += cmd("exit", [], ["quit"], "close this session");
         }
 
         output
@@ -534,14 +550,19 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                     CommandControlFlow::Continue
                 }
             }
-            ParsedCommand::Save { session_history, dst } => {
-                session_history.save(
-                    dst,
-                    SessionHistoryOptions {
-                        include_err_lines: false,
-                        trim_lines: true,
-                    },
-                ).map_err(|err| CommandError::Runtime(ctx.interpreter.runtime_error(*err)))?;
+            ParsedCommand::Save {
+                session_history,
+                dst,
+            } => {
+                session_history
+                    .save(
+                        dst,
+                        SessionHistoryOptions {
+                            include_err_lines: false,
+                            trim_lines: true,
+                        },
+                    )
+                    .map_err(|err| CommandError::Runtime(ctx.interpreter.runtime_error(*err)))?;
 
                 if let Some(print_fn) = self.print_markup.as_mut() {
                     let markup = m::text("successfully saved session history to")
@@ -1021,7 +1042,12 @@ mod test {
             "info item",
             CommandControlFlow::Continue,
         );
-        test_case(&mut runner, &mut ctx, "clear", CommandControlFlow::NotACommand);
+        test_case(
+            &mut runner,
+            &mut ctx,
+            "clear",
+            CommandControlFlow::NotACommand,
+        );
         test_case(
             &mut runner,
             &mut ctx,
