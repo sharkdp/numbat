@@ -12,6 +12,8 @@ async function fetch_exchange_rates() {
         numbat.set_exchange_rates(xml_content);
     } catch (error) {
         console.error("Failed to load currency exchange rates from the European Central Bank");
+        // Load the units anyway
+        numbat.interpret("use units::currencies");
         return;
     }
 }

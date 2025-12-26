@@ -205,7 +205,6 @@ impl Numbat {
     pub fn try_run_command(&mut self, input: &str) -> CommandResult {
         let mut output = String::new();
         let mut should_clear = false;
-        let mut should_reset = false;
 
         let result = {
             let mut cmd_runner = CommandRunner::<()>::new()
@@ -217,11 +216,7 @@ impl Numbat {
                     should_clear = true;
                     CommandControlFlow::Continue
                 })
-                .enable_reset(|| {
-                    should_reset = true;
-                    // Return a dummy context; the JS side will recreate the Numbat instance
-                    Context::new_without_importer()
-                });
+                .enable_reset();
 
             cmd_runner.try_run_command(input, &mut self.ctx, &mut ())
         };
@@ -231,7 +226,7 @@ impl Numbat {
                 is_command: control_flow != CommandControlFlow::NotACommand,
                 is_error: false,
                 should_clear,
-                should_reset,
+                should_reset: control_flow == CommandControlFlow::Reset,
                 output,
             },
             Err(err) => CommandResult {

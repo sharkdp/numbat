@@ -48,7 +48,10 @@ impl ExchangeRatesCache {
 
     #[cfg(not(feature = "fetch-exchangerates"))]
     pub fn fetch() -> MutexGuard<'static, Option<ExchangeRates>> {
-        EXCHANGE_RATES.get().unwrap().lock().unwrap()
+        EXCHANGE_RATES
+            .get_or_init(|| Mutex::new(None))
+            .lock()
+            .unwrap()
     }
 
     pub fn use_test_rates() {
