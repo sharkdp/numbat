@@ -44,7 +44,7 @@ necessary changes for the upcoming release.
       appear when the CI run *for the Git tag* has finished).
 - [ ] Publish to crates.io by running the following in a *clean* repository.
       One way to do this is to clone a fresh copy.
-      ``` bash
+      ```
       cargo publish --workspace
       ```
 - [ ] Deploy the documentation by running `bash book/deploy.sh`.
