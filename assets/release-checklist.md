@@ -28,7 +28,7 @@ necessary changes for the upcoming release.
       new version).
 - [ ] Push all changes and wait for CI to succeed (before continuing with the
       next section).
-- [ ] Run `cargo publish --dry-run -p numbat` to make sure that it will succeed later
+- [ ] Run `cargo publish --dry-run --workspace` to make sure that it will succeed later
       (after creating the GitHub release).
 
 ## Release
@@ -42,13 +42,9 @@ necessary changes for the upcoming release.
       the release notes, edit, and then publish the release.
 - [ ] Check if the binary deployment works (archives and Debian packages should
       appear when the CI run *for the Git tag* has finished).
-- [ ] Publish to crates.io by running `cargo publish` in a *clean* repository.
+- [ ] Publish to crates.io by running the following in a *clean* repository.
       One way to do this is to clone a fresh copy.
       ``` bash
-      # optional, if there were any changes:
-      cargo publish -p numbat-exchange-rates
-
-      cargo publish -p numbat
-      cargo publish -p numbat-cli
+      cargo publish --workspace
       ```
 - [ ] Deploy the documentation by running `bash book/deploy.sh`.
