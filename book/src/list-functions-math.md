@@ -16,7 +16,7 @@ fn id<A>(x: A) -> A
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=id%288%20kg%29')""></button></div><code class="language-nbt hljs numbat">id(8 kg)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=id%288%20kg%29')"></button></div><code class="language-nbt hljs numbat">id(8 kg)
 
     = 8 kg    [Mass]
 </code></pre>
@@ -34,7 +34,7 @@ fn abs<T: Dim>(x: T) -> T
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=abs%28%2D22%2E2%20m%29')""></button></div><code class="language-nbt hljs numbat">abs(-22.2 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=abs%28%2D22%2E2%20m%29')"></button></div><code class="language-nbt hljs numbat">abs(-22.2 m)
 
     = 22.2 m    [Length]
 </code></pre>
@@ -52,7 +52,7 @@ fn sqrt<D: Dim>(x: D^2) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=sqrt%284%20are%29%20%2D%3E%20m')""></button></div><code class="language-nbt hljs numbat">sqrt(4 are) -> m
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=sqrt%284%20are%29%20%2D%3E%20m')"></button></div><code class="language-nbt hljs numbat">sqrt(4 are) -> m
 
     = 20 m    [Length]
 </code></pre>
@@ -70,7 +70,7 @@ fn cbrt<D: Dim>(x: D^3) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=cbrt%288%20L%29%20%2D%3E%20cm')""></button></div><code class="language-nbt hljs numbat">cbrt(8 L) -> cm
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=cbrt%288%20L%29%20%2D%3E%20cm')"></button></div><code class="language-nbt hljs numbat">cbrt(8 L) -> cm
 
     = 20.0 cm    [Length]
 </code></pre>
@@ -87,7 +87,7 @@ fn sqr<D: Dim>(x: D) -> D^2
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=sqr%287%29')""></button></div><code class="language-nbt hljs numbat">sqr(7)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=sqr%287%29')"></button></div><code class="language-nbt hljs numbat">sqr(7)
 
     = 49
 </code></pre>
@@ -105,12 +105,12 @@ fn round(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=round%285%2E5%29')""></button></div><code class="language-nbt hljs numbat">round(5.5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=round%285%2E5%29')"></button></div><code class="language-nbt hljs numbat">round(5.5)
 
     = 6
 </code></pre>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=round%28%2D5%2E5%29')""></button></div><code class="language-nbt hljs numbat">round(-5.5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=round%28%2D5%2E5%29')"></button></div><code class="language-nbt hljs numbat">round(-5.5)
 
     = -6
 </code></pre>
@@ -128,13 +128,13 @@ fn round_in<D: Dim>(base: D, value: D) -> D
 <summary>Examples</summary>
 
 Round in meters.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=round%5Fin%28m%2C%205%2E3%20m%29')""></button></div><code class="language-nbt hljs numbat">round_in(m, 5.3 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=round%5Fin%28m%2C%205%2E3%20m%29')"></button></div><code class="language-nbt hljs numbat">round_in(m, 5.3 m)
 
     = 5 m    [Length]
 </code></pre>
 
 Round in centimeters.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=round%5Fin%28cm%2C%205%2E3%20m%29')""></button></div><code class="language-nbt hljs numbat">round_in(cm, 5.3 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=round%5Fin%28cm%2C%205%2E3%20m%29')"></button></div><code class="language-nbt hljs numbat">round_in(cm, 5.3 m)
 
     = 530 cm    [Length]
 </code></pre>
@@ -152,7 +152,7 @@ fn floor(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=floor%285%2E5%29')""></button></div><code class="language-nbt hljs numbat">floor(5.5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=floor%285%2E5%29')"></button></div><code class="language-nbt hljs numbat">floor(5.5)
 
     = 5
 </code></pre>
@@ -170,13 +170,13 @@ fn floor_in<D: Dim>(base: D, value: D) -> D
 <summary>Examples</summary>
 
 Floor in meters.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=floor%5Fin%28m%2C%205%2E7%20m%29')""></button></div><code class="language-nbt hljs numbat">floor_in(m, 5.7 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=floor%5Fin%28m%2C%205%2E7%20m%29')"></button></div><code class="language-nbt hljs numbat">floor_in(m, 5.7 m)
 
     = 5 m    [Length]
 </code></pre>
 
 Floor in centimeters.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=floor%5Fin%28cm%2C%205%2E7%20m%29')""></button></div><code class="language-nbt hljs numbat">floor_in(cm, 5.7 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=floor%5Fin%28cm%2C%205%2E7%20m%29')"></button></div><code class="language-nbt hljs numbat">floor_in(cm, 5.7 m)
 
     = 570 cm    [Length]
 </code></pre>
@@ -194,7 +194,7 @@ fn ceil(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=ceil%285%2E5%29')""></button></div><code class="language-nbt hljs numbat">ceil(5.5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=ceil%285%2E5%29')"></button></div><code class="language-nbt hljs numbat">ceil(5.5)
 
     = 6
 </code></pre>
@@ -212,13 +212,13 @@ fn ceil_in<D: Dim>(base: D, value: D) -> D
 <summary>Examples</summary>
 
 Ceil in meters.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=ceil%5Fin%28m%2C%205%2E3%20m%29')""></button></div><code class="language-nbt hljs numbat">ceil_in(m, 5.3 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=ceil%5Fin%28m%2C%205%2E3%20m%29')"></button></div><code class="language-nbt hljs numbat">ceil_in(m, 5.3 m)
 
     = 6 m    [Length]
 </code></pre>
 
 Ceil in centimeters.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=ceil%5Fin%28cm%2C%205%2E3%20m%29')""></button></div><code class="language-nbt hljs numbat">ceil_in(cm, 5.3 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=ceil%5Fin%28cm%2C%205%2E3%20m%29')"></button></div><code class="language-nbt hljs numbat">ceil_in(cm, 5.3 m)
 
     = 530 cm    [Length]
 </code></pre>
@@ -236,12 +236,12 @@ fn trunc(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=trunc%285%2E5%29')""></button></div><code class="language-nbt hljs numbat">trunc(5.5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=trunc%285%2E5%29')"></button></div><code class="language-nbt hljs numbat">trunc(5.5)
 
     = 5
 </code></pre>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=trunc%28%2D5%2E5%29')""></button></div><code class="language-nbt hljs numbat">trunc(-5.5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=trunc%28%2D5%2E5%29')"></button></div><code class="language-nbt hljs numbat">trunc(-5.5)
 
     = -5
 </code></pre>
@@ -259,13 +259,13 @@ fn trunc_in<D: Dim>(base: D, value: D) -> D
 <summary>Examples</summary>
 
 Truncate in meters.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=trunc%5Fin%28m%2C%205%2E7%20m%29')""></button></div><code class="language-nbt hljs numbat">trunc_in(m, 5.7 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=trunc%5Fin%28m%2C%205%2E7%20m%29')"></button></div><code class="language-nbt hljs numbat">trunc_in(m, 5.7 m)
 
     = 5 m    [Length]
 </code></pre>
 
 Truncate in centimeters.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=trunc%5Fin%28cm%2C%205%2E7%20m%29')""></button></div><code class="language-nbt hljs numbat">trunc_in(cm, 5.7 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=trunc%5Fin%28cm%2C%205%2E7%20m%29')"></button></div><code class="language-nbt hljs numbat">trunc_in(cm, 5.7 m)
 
     = 570 cm    [Length]
 </code></pre>
@@ -286,17 +286,17 @@ fn fract(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%280%2E0%29')""></button></div><code class="language-nbt hljs numbat">fract(0.0)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=fract%280%2E0%29')"></button></div><code class="language-nbt hljs numbat">fract(0.0)
 
     = 0
 </code></pre>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%285%2E5%29')""></button></div><code class="language-nbt hljs numbat">fract(5.5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=fract%285%2E5%29')"></button></div><code class="language-nbt hljs numbat">fract(5.5)
 
     = 0.5
 </code></pre>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fract%28%2D5%2E5%29')""></button></div><code class="language-nbt hljs numbat">fract(-5.5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=fract%28%2D5%2E5%29')"></button></div><code class="language-nbt hljs numbat">fract(-5.5)
 
     = -0.5
 </code></pre>
@@ -314,7 +314,7 @@ fn mod<T: Dim>(a: T, b: T) -> T
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=mod%2827%2C%205%29')""></button></div><code class="language-nbt hljs numbat">mod(27, 5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=mod%2827%2C%205%29')"></button></div><code class="language-nbt hljs numbat">mod(27, 5)
 
     = 2
 </code></pre>
@@ -336,7 +336,7 @@ fn exp(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=exp%284%29')""></button></div><code class="language-nbt hljs numbat">exp(4)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=exp%284%29')"></button></div><code class="language-nbt hljs numbat">exp(4)
 
     = 54.5982
 </code></pre>
@@ -354,7 +354,7 @@ fn ln(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=ln%2820%29')""></button></div><code class="language-nbt hljs numbat">ln(20)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=ln%2820%29')"></button></div><code class="language-nbt hljs numbat">ln(20)
 
     = 2.99573
 </code></pre>
@@ -372,7 +372,7 @@ fn log(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=log%2820%29')""></button></div><code class="language-nbt hljs numbat">log(20)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=log%2820%29')"></button></div><code class="language-nbt hljs numbat">log(20)
 
     = 2.99573
 </code></pre>
@@ -390,7 +390,7 @@ fn log10(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=log10%28100%29')""></button></div><code class="language-nbt hljs numbat">log10(100)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=log10%28100%29')"></button></div><code class="language-nbt hljs numbat">log10(100)
 
     = 2
 </code></pre>
@@ -408,7 +408,7 @@ fn log2(x: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=log2%28256%29')""></button></div><code class="language-nbt hljs numbat">log2(256)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=log2%28256%29')"></button></div><code class="language-nbt hljs numbat">log2(256)
 
     = 8
 </code></pre>
@@ -532,7 +532,7 @@ fn maximum<D: Dim>(xs: List<D>) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=maximum%28%5B30%20cm%2C%202%20m%5D%29')""></button></div><code class="language-nbt hljs numbat">maximum([30 cm, 2 m])
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=maximum%28%5B30%20cm%2C%202%20m%5D%29')"></button></div><code class="language-nbt hljs numbat">maximum([30 cm, 2 m])
 
     = 2 m    [Length]
 </code></pre>
@@ -549,7 +549,7 @@ fn minimum<D: Dim>(xs: List<D>) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=minimum%28%5B30%20cm%2C%202%20m%5D%29')""></button></div><code class="language-nbt hljs numbat">minimum([30 cm, 2 m])
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=minimum%28%5B30%20cm%2C%202%20m%5D%29')"></button></div><code class="language-nbt hljs numbat">minimum([30 cm, 2 m])
 
     = 30 cm    [Length]
 </code></pre>
@@ -567,7 +567,7 @@ fn mean<D: Dim>(xs: List<D>) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=mean%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29')""></button></div><code class="language-nbt hljs numbat">mean([1 m, 2 m, 300 cm])
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=mean%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29')"></button></div><code class="language-nbt hljs numbat">mean([1 m, 2 m, 300 cm])
 
     = 2 m    [Length]
 </code></pre>
@@ -585,7 +585,7 @@ fn variance<D: Dim>(xs: List<D>) -> D^2
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=variance%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29')""></button></div><code class="language-nbt hljs numbat">variance([1 m, 2 m, 300 cm])
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=variance%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29')"></button></div><code class="language-nbt hljs numbat">variance([1 m, 2 m, 300 cm])
 
     = 0.666667 m²    [Area]
 </code></pre>
@@ -603,7 +603,7 @@ fn stdev<D: Dim>(xs: List<D>) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=stdev%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29')""></button></div><code class="language-nbt hljs numbat">stdev([1 m, 2 m, 300 cm])
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=stdev%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29')"></button></div><code class="language-nbt hljs numbat">stdev([1 m, 2 m, 300 cm])
 
     = 0.816497 m    [Length]
 </code></pre>
@@ -621,7 +621,7 @@ fn median<D: Dim>(xs: List<D>) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=median%28%5B1%20m%2C%202%20m%2C%20400%20cm%5D%29')""></button></div><code class="language-nbt hljs numbat">median([1 m, 2 m, 400 cm])
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=median%28%5B1%20m%2C%202%20m%2C%20400%20cm%5D%29')"></button></div><code class="language-nbt hljs numbat">median([1 m, 2 m, 400 cm])
 
     = 2 m    [Length]
 </code></pre>
@@ -643,12 +643,12 @@ fn factorial(n: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=factorial%284%29')""></button></div><code class="language-nbt hljs numbat">factorial(4)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=factorial%284%29')"></button></div><code class="language-nbt hljs numbat">factorial(4)
 
     = 24
 </code></pre>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=4%21')""></button></div><code class="language-nbt hljs numbat">4!
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=4%21')"></button></div><code class="language-nbt hljs numbat">4!
 
     = 24
 </code></pre>
@@ -666,7 +666,7 @@ fn falling_factorial(n: Scalar, k: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=falling%5Ffactorial%284%2C%202%29')""></button></div><code class="language-nbt hljs numbat">falling_factorial(4, 2)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=falling%5Ffactorial%284%2C%202%29')"></button></div><code class="language-nbt hljs numbat">falling_factorial(4, 2)
 
     = 12
 </code></pre>
@@ -684,7 +684,7 @@ fn binom(n: Scalar, k: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=binom%285%2C%202%29')""></button></div><code class="language-nbt hljs numbat">binom(5, 2)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=binom%285%2C%202%29')"></button></div><code class="language-nbt hljs numbat">binom(5, 2)
 
     = 10
 </code></pre>
@@ -702,7 +702,7 @@ fn fibonacci(n: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=fibonacci%285%29')""></button></div><code class="language-nbt hljs numbat">fibonacci(5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=fibonacci%285%29')"></button></div><code class="language-nbt hljs numbat">fibonacci(5)
 
     = 5
 </code></pre>
@@ -720,7 +720,7 @@ fn lucas(n: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=lucas%285%29')""></button></div><code class="language-nbt hljs numbat">lucas(5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=lucas%285%29')"></button></div><code class="language-nbt hljs numbat">lucas(5)
 
     = 11
 </code></pre>
@@ -738,7 +738,7 @@ fn catalan(n: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=catalan%285%29')""></button></div><code class="language-nbt hljs numbat">catalan(5)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=catalan%285%29')"></button></div><code class="language-nbt hljs numbat">catalan(5)
 
     = 42
 </code></pre>
@@ -852,7 +852,7 @@ fn gcd(a: Scalar, b: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=gcd%2860%2C%2042%29')""></button></div><code class="language-nbt hljs numbat">gcd(60, 42)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=gcd%2860%2C%2042%29')"></button></div><code class="language-nbt hljs numbat">gcd(60, 42)
 
     = 6
 </code></pre>
@@ -870,7 +870,7 @@ fn lcm(a: Scalar, b: Scalar) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=lcm%2814%2C%204%29')""></button></div><code class="language-nbt hljs numbat">lcm(14, 4)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=lcm%2814%2C%204%29')"></button></div><code class="language-nbt hljs numbat">lcm(14, 4)
 
     = 28
 </code></pre>
@@ -893,7 +893,7 @@ fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X, Δx: X) -> Y / X
 <summary>Examples</summary>
 
 Compute the derivative of \\( f(x) = x² -x -1 \\) at \\( x=1 \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2D%20x%20%2D%201%0Adiff%28polynomial%2C%201%2C%201e%2D10%29')""></button></div><code class="language-nbt hljs numbat">use numerics::diff
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2D%20x%20%2D%201%0Adiff%28polynomial%2C%201%2C%201e%2D10%29')"></button></div><code class="language-nbt hljs numbat">use numerics::diff
 fn polynomial(x) = x² - x - 1
 diff(polynomial, 1, 1e-10)
 
@@ -901,7 +901,7 @@ diff(polynomial, 1, 1e-10)
 </code></pre>
 
 Compute the free fall velocity after \\( t=2 s \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%2C%201e%2D10%20s%29%0Avelocity%282%20s%29')""></button></div><code class="language-nbt hljs numbat">use numerics::diff
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%2C%201e%2D10%20s%29%0Avelocity%282%20s%29')"></button></div><code class="language-nbt hljs numbat">use numerics::diff
 fn distance(t) = 0.5 g0 t²
 fn velocity(t) = diff(distance, t, 1e-10 s)
 velocity(2 s)
@@ -923,7 +923,7 @@ fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y
 <summary>Examples</summary>
 
 Find the root of \\( f(x) = x² +x -2 \\) in the interval \\( [0, 100] \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2Bx%20%2D2%0Aroot%5Fbisect%28f%2C%200%2C%20100%2C%200%2E01%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">use numerics::solve
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2Bx%20%2D2%0Aroot%5Fbisect%28f%2C%200%2C%20100%2C%200%2E01%2C%200%2E01%29')"></button></div><code class="language-nbt hljs numbat">use numerics::solve
 fn f(x) = x² +x -2
 root_bisect(f, 0, 100, 0.01, 0.01)
 
@@ -944,7 +944,7 @@ fn root_newton<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X
 <summary>Examples</summary>
 
 Find a root of \\( f(x) = x² -3x +2 \\) using Newton's method.
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2D3x%20%2B2%0Afn%20f%5Fprime%28x%29%20%3D%202x%20%2D3%0Aroot%5Fnewton%28f%2C%20f%5Fprime%2C%200%20%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">use numerics::solve
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2D3x%20%2B2%0Afn%20f%5Fprime%28x%29%20%3D%202x%20%2D3%0Aroot%5Fnewton%28f%2C%20f%5Fprime%2C%200%20%2C%200%2E01%29')"></button></div><code class="language-nbt hljs numbat">use numerics::solve
 fn f(x) = x² -3x +2
 fn f_prime(x) = 2x -3
 root_newton(f, f_prime, 0 , 0.01)
@@ -966,7 +966,7 @@ fn fixed_point<X: Dim>(f: Fn[(X) -> X], x0: X, ε: X) -> X
 <summary>Examples</summary>
 
 Compute the fixed poin of \\( f(x) = x/2 -1 \\).
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Afixed%5Fpoint%0Afn%20function%28x%29%20%3D%20x%2F2%20%2D%201%0Afixed%5Fpoint%28function%2C%200%2C%200%2E01%29')""></button></div><code class="language-nbt hljs numbat">use numerics::fixed_point
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Afixed%5Fpoint%0Afn%20function%28x%29%20%3D%20x%2F2%20%2D%201%0Afixed%5Fpoint%28function%2C%200%2C%200%2E01%29')"></button></div><code class="language-nbt hljs numbat">use numerics::fixed_point
 fn function(x) = x/2 - 1
 fixed_point(function, 0, 0.01)
 
@@ -990,7 +990,7 @@ fn increase_by<D: Dim>(percentage: Scalar, quantity: D) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=72%20%E2%82%AC%20%7C%3E%20increase%5Fby%2815%25%29')""></button></div><code class="language-nbt hljs numbat">72 € |> increase_by(15%)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=72%20%E2%82%AC%20%7C%3E%20increase%5Fby%2815%25%29')"></button></div><code class="language-nbt hljs numbat">72 € |> increase_by(15%)
 
     = 82.8 €    [Money]
 </code></pre>
@@ -1008,7 +1008,7 @@ fn decrease_by<D: Dim>(percentage: Scalar, quantity: D) -> D
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=210%20cm%20%7C%3E%20decrease%5Fby%2810%25%29')""></button></div><code class="language-nbt hljs numbat">210 cm |> decrease_by(10%)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=210%20cm%20%7C%3E%20decrease%5Fby%2810%25%29')"></button></div><code class="language-nbt hljs numbat">210 cm |> decrease_by(10%)
 
     = 189 cm    [Length]
 </code></pre>
@@ -1026,7 +1026,7 @@ fn percentage_change<D: Dim>(old: D, new: D) -> Scalar
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=percentage%5Fchange%2835%20kg%2C%2042%20kg%29')""></button></div><code class="language-nbt hljs numbat">percentage_change(35 kg, 42 kg)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=percentage%5Fchange%2835%20kg%2C%2042%20kg%29')"></button></div><code class="language-nbt hljs numbat">percentage_change(35 kg, 42 kg)
 
     = 20 %
 </code></pre>
@@ -1047,7 +1047,7 @@ fn hypot2<T: Dim>(x: T, y: T) -> T
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=hypot2%283%20m%2C%204%20m%29')""></button></div><code class="language-nbt hljs numbat">hypot2(3 m, 4 m)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=hypot2%283%20m%2C%204%20m%29')"></button></div><code class="language-nbt hljs numbat">hypot2(3 m, 4 m)
 
     = 5 m    [Length]
 </code></pre>
@@ -1064,7 +1064,7 @@ fn hypot3<T: Dim>(x: T, y: T, z: T) -> T
 <details>
 <summary>Examples</summary>
 
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=hypot3%288%2C%209%2C%2012%29')""></button></div><code class="language-nbt hljs numbat">hypot3(8, 9, 12)
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=hypot3%288%2C%209%2C%2012%29')"></button></div><code class="language-nbt hljs numbat">hypot3(8, 9, 12)
 
     = 17
 </code></pre>
@@ -1115,7 +1115,7 @@ fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B^2 / A) -> List<B / A>
 <summary>Examples</summary>
 
 Solve the equation \\( 2x² -x -1 = 0 \\)
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Aquadratic%5Fequation%282%2C%20%2D1%2C%20%2D1%29')""></button></div><code class="language-nbt hljs numbat">use extra::algebra
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Aquadratic%5Fequation%282%2C%20%2D1%2C%20%2D1%29')"></button></div><code class="language-nbt hljs numbat">use extra::algebra
 quadratic_equation(2, -1, -1)
 
     = [1, -0.5]    [List<Scalar>]
@@ -1135,7 +1135,7 @@ fn cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar>
 <summary>Examples</summary>
 
 Solve the equation \\( x³ - 6x² + 11x - 6 = 0 \\)
-<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code"  onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Acubic%5Fequation%281%2C%20%2D6%2C%2011%2C%20%2D6%29')""></button></div><code class="language-nbt hljs numbat">use extra::algebra
+<pre><div class="buttons"><button class="fa fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Acubic%5Fequation%281%2C%20%2D6%2C%2011%2C%20%2D6%29')"></button></div><code class="language-nbt hljs numbat">use extra::algebra
 cubic_equation(1, -6, 11, -6)
 
     = [1, 2, 3]    [List<Scalar>]

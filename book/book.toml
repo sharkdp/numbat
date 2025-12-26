@@ -1,14 +1,15 @@
 [book]
 authors = ["David Peter"]
 language = "en"
-multilingual = false
 src = "src"
 title = "Numbat - scientific calculator with full support for physical units"
 
 [output.html]
 mathjax-support = true
 smart-punctuation = true
+sidebar-header-nav = false
 additional-js = ["numbat.js"]
 
-[output.linkcheck]
-warning-policy = "ignore"
+# TODO: Doesn't work at the moment
+#[output.linkcheck]
+#warning-policy = "ignore"

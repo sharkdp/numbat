@@ -45,20 +45,19 @@ The following operations are supported for `DateTime` objects:
 | `DateTime` | `-` | `Time` | New `DateTime` by subtracting the duration from the date |
 | `DateTime` | `->` | `tz("…")` | Converts the datetime to the specified time zone. Note that you can use tab-completion for time zone names. |
 
-<div class="warning">
+> [!WARNING]
+>
+> You can directly add `days`, `months` and `years` to a given date (`now() + 3 months`), but note that the result might not be what you expect.
+> The unit `day` is defined as having a length of 24 hours. But due to daylight
+> saving time, days can be shorter or longer than that. A `month` is defined
+> as 1/12 of a `year`, but calendar months have varying lengths. And a `year`
+> is defined as the average length of a
+> [tropical](https://en.wikipedia.org/wiki/Tropical_year) year. But a calendar
+> year can have 365 or 366 days, depending on whether it is a leap year or not.
+>
+> If you want to take all of these factors into account, you should use the `calendar_add`/`calendar_sub` functions instead of directly adding or
+> subtracting `days`, `months`, or `years`.
 
-**Warning**: You can directly add `days`, `months` and `years` to a given date (`now() + 3 months`), but note that the result might not be what you expect.
-The unit `day` is defined as having a length of 24 hours. But due to daylight
-saving time, days can be shorter or longer than that. A `month` is defined
-as 1/12 of a `year`, but calendar months have varying lengths. And a `year`
-is defined as the average length of a
-[tropical](https://en.wikipedia.org/wiki/Tropical_year) year. But a calendar
-year can have 365 or 366 days, depending on whether it is a leap year or not.
-
-If you want to take all of these factors into account, you should use the `calendar_add`/`calendar_sub` functions instead of directly adding or
-subtracting `days`, `months`, or `years`.
-
-</div>
 
 ## Date, time, and duration functions
 
