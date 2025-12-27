@@ -2,7 +2,7 @@
 
 # Syntax overview
 
-``` numbat
+```numbat
 # This is a line comment. It can span over
 # multiple lines
 

@@ -6,6 +6,6 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 cd "$SCRIPT_DIR"
 
-python build.py
+uv run python build_docs.py
 
-rsync --delete --archive --stats --progress --human-readable book/html/ shark.fish:numbat.dev/doc/
+rsync --delete --archive --stats --progress --human-readable site/ shark.fish:numbat.dev/doc/
