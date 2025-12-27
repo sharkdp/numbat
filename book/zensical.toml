@@ -111,6 +111,7 @@ scheme = "slate"
 toggle = { icon = "lucide/sun", name = "Switch to light mode" }
 
 [project.extensions]
+"admonition" = {}
 "pymdownx.arithmatex" = { generic = true }
 "pymdownx.highlight" = { anchor_linenums = true }
 "pymdownx.superfences" = {}
