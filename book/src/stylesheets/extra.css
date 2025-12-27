@@ -1,0 +1,30 @@
+/* Custom Numbat color scheme */
+
+:root {
+  /* Primary color: #7d80da */
+  --md-primary-fg-color: #7d80da;
+  --md-primary-fg-color--light: #9a9ce3;
+  --md-primary-fg-color--dark: #6264c7;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffb3;
+
+  /* Accent color: #EF767A */
+  --md-accent-fg-color: #EF767A;
+  --md-accent-fg-color--transparent: #EF767A1a;
+  --md-accent-bg-color: #ffffff;
+  --md-accent-bg-color--light: #ffffffb3;
+}
+
+/* Dark mode adjustments */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #7d80da;
+  --md-primary-fg-color--light: #9a9ce3;
+  --md-primary-fg-color--dark: #6264c7;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffb3;
+
+  --md-accent-fg-color: #EF767A;
+  --md-accent-fg-color--transparent: #EF767A1a;
+  --md-accent-bg-color: #ffffff;
+  --md-accent-bg-color--light: #ffffffb3;
+}
