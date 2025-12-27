@@ -91,6 +91,8 @@ nav = [
 ]
 
 [project.theme]
+favicon = "assets/favicon.svg"
+logo = "assets/favicon.svg"
 features = [
   "navigation.instant",
   "navigation.tracking",
