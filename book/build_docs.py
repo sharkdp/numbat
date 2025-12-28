@@ -24,7 +24,7 @@ def generate_example(
 ):
     """Generate a markdown file from a Numbat example file."""
     path_in = SCRIPT_DIR.parent / "examples" / f"{filename}.nbt"
-    path_out = SCRIPT_DIR / "src" / f"example-{filename}.md"
+    path_out = SCRIPT_DIR / "src" / "examples" / f"example-{filename}.md"
     print(f"Generating: {path_out}")
 
     code = []
@@ -41,7 +41,9 @@ def generate_example(
         fout.write(f"# {title}\n")
         if insert_run_link:
             fout.write("\n")
-            fout.write(f'[:material-play-circle: Run this example]({url}){{ .md-button }}\n')
+            fout.write(
+                f"[:material-play-circle: Run this example]({url}){{ .md-button }}\n"
+            )
         fout.write("\n")
         fout.write("```numbat\n")
         fout.writelines(code)
@@ -111,7 +113,7 @@ def generate_units_list():
 
 def list_of_functions(file_name, document):
     """Generate function reference documentation for a set of modules."""
-    path = SCRIPT_DIR / "src" / f"list-functions-{file_name}.md"
+    path = SCRIPT_DIR / "src" / "prelude" / f"list-functions-{file_name}.md"
 
     with open(path, "w", encoding="utf-8") as f:
         print(f"# {document['title']}\n", file=f, flush=True)
@@ -176,17 +178,36 @@ def generate_all_function_lists():
             "title": "Mathematical functions",
             "sections": [
                 {"title": "Basics", "modules": ["core::functions"]},
-                {"title": "Transcendental functions", "modules": ["math::transcendental"]},
+                {
+                    "title": "Transcendental functions",
+                    "modules": ["math::transcendental"],
+                },
                 {"title": "Trigonometry", "modules": ["math::trigonometry"]},
                 {"title": "Statistics", "modules": ["math::statistics"]},
                 {"title": "Combinatorics", "modules": ["math::combinatorics"]},
-                {"title": "Random sampling, distributions", "modules": ["core::random", "math::distributions"]},
+                {
+                    "title": "Random sampling, distributions",
+                    "modules": ["core::random", "math::distributions"],
+                },
                 {"title": "Number theory", "modules": ["math::number_theory"]},
-                {"title": "Numerical methods", "modules": ["numerics::diff", "numerics::solve", "numerics::fixed_point"]},
-                {"title": "Percentage calculations", "modules": ["math::percentage_calculations"]},
+                {
+                    "title": "Numerical methods",
+                    "modules": [
+                        "numerics::diff",
+                        "numerics::solve",
+                        "numerics::fixed_point",
+                    ],
+                },
+                {
+                    "title": "Percentage calculations",
+                    "modules": ["math::percentage_calculations"],
+                },
                 {"title": "Geometry", "modules": ["math::geometry"]},
                 {"title": "Algebra", "modules": ["extra::algebra"]},
-                {"title": "Trigonometry (extra)", "modules": ["math::trigonometry_extra"]},
+                {
+                    "title": "Trigonometry (extra)",
+                    "modules": ["math::trigonometry_extra"],
+                },
             ],
         },
     )
@@ -226,7 +247,10 @@ def generate_all_function_lists():
                 {"title": "Quantities", "modules": ["core::quantities"]},
                 {"title": "Chemical elements", "modules": ["chemistry::elements"]},
                 {"title": "Mixed unit conversion", "modules": ["units::mixed"]},
-                {"title": "Temperature conversion", "modules": ["physics::temperature_conversion"]},
+                {
+                    "title": "Temperature conversion",
+                    "modules": ["physics::temperature_conversion"],
+                },
                 {"title": "Color format conversion", "modules": ["extra::color"]},
             ],
         },

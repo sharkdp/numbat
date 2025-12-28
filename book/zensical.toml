@@ -1,94 +1,96 @@
 [project]
 site_name = "Numbat"
-site_description = "Scientific calculator with full support for physical units"
 site_url = "https://numbat.dev/doc/"
+site_description = "Scientific calculator with full support for physical units"
+site_author = "David Peter"
 repo_url = "https://github.com/sharkdp/numbat"
 docs_dir = "src"
 site_dir = "site"
+language = "en"
 extra_css = ["stylesheets/extra.css"]
 
 nav = [
-  # Home
-  { "Home" = "index.md" },
-
-  # Getting started
-  { "Introduction" = "introduction.md" },
-  { "Tutorial" = "tutorial.md" },
-  { "Example programs" = [
-    "examples.md",
-    "example-acidity.md",
-    "example-barometric_formula.md",
-    "example-body_mass_index.md",
-    "example-factorial.md",
-    "example-pipe_flow_rate.md",
-    "example-medication_dosage.md",
-    "example-molarity.md",
-    "example-musical_note_frequency.md",
-    "example-paper_size.md",
-    "example-population_growth.md",
-    "example-recipe.md",
-    "example-voyager.md",
-    "example-xkcd_681.md",
-    "example-xkcd_687.md",
-    "example-xkcd_2585.md",
-    "example-xkcd_2812.md",
+  { "Getting started" = [
+    "index.md",
+    "tutorial.md",
+    { "Example programs" = [
+      "examples/index.md",
+      "examples/example-acidity.md",
+      "examples/example-barometric_formula.md",
+      "examples/example-body_mass_index.md",
+      "examples/example-factorial.md",
+      "examples/example-pipe_flow_rate.md",
+      "examples/example-medication_dosage.md",
+      "examples/example-molarity.md",
+      "examples/example-musical_note_frequency.md",
+      "examples/example-paper_size.md",
+      "examples/example-population_growth.md",
+      "examples/example-recipe.md",
+      "examples/example-voyager.md",
+      "examples/example-xkcd_681.md",
+      "examples/example-xkcd_687.md",
+      "examples/example-xkcd_2585.md",
+      "examples/example-xkcd_2812.md",
+    ] },
   ] },
 
-  # Numbat language reference
-  { "Basics" = [
-    "basics.md",
-    "number-notation.md",
-    "unit-notation.md",
-    "operations.md",
-    "constant-definitions.md",
-    "unit-conversions.md",
-    "conversion-functions.md",
-    "function-definitions.md",
-    "conditionals.md",
-    "lists.md",
-    "structs.md",
-    "date-and-time.md",
-    "procedures.md",
-  ] },
-  { "Advanced" = [
-    "advanced.md",
-    "dimension-definitions.md",
-    "unit-definitions.md",
-    "example-numbat_syntax.md",
+  { "Numbat basics" = [
+    "basics/index.md",
+    "basics/number-notation.md",
+    "basics/unit-notation.md",
+    "basics/operations.md",
+    "basics/constant-definitions.md",
+    "basics/unit-conversions.md",
+    "basics/conversion-functions.md",
+    "basics/function-definitions.md",
+    "basics/conditionals.md",
+    "basics/lists.md",
+    "basics/structs.md",
+    "basics/date-and-time.md",
+    "basics/procedures.md",
   ] },
 
-  # Standard library reference
-  { "The prelude" = "prelude.md" },
-  { "Predefined functions" = [
-    "predefined-functions.md",
-    "list-functions-math.md",
-    "list-functions-lists.md",
-    "list-functions-strings.md",
-    "list-functions-datetime.md",
-    "list-functions-other.md",
-  ] },
-  { "Predefined constants" = "list-constants.md" },
-  { "List of units" = "list-units.md" },
 
-  # Command line tool
-  { "CLI" = [
-    "cli-installation.md",
-    "cli-usage.md",
-    "cli-customization.md",
+  { "Advanced topics" = [
+    "advanced/index.md",
+    "advanced/dimension-definitions.md",
+    "advanced/unit-definitions.md",
+    "examples/example-numbat_syntax.md",
+    "type-system.md",
   ] },
 
-  # Web version
-  { "Web version" = "web-usage.md" },
+  { "Standard library reference" = [
+    "prelude/prelude.md",
+    { "List of functions" = [
+      "prelude/list-functions-math.md",
+      "prelude/list-functions-lists.md",
+      "prelude/list-functions-strings.md",
+      "prelude/list-functions-datetime.md",
+      "prelude/list-functions-other.md",
+    ] },
+    { "Predefined constants" = "prelude/list-constants.md" },
+    { "List of units" = "prelude/list-units.md" },
+  ] },
 
-  # Notes for developers
-  { "Type system" = "type-system.md" },
 
-  # Other topics
-  { "IDE / editor integration" = "editor-integration.md" },
-  { "Comparison with other tools" = "comparison.md" },
+  { "Command-line version" = [
+    "cli/installation.md",
+    "cli/usage.md",
+    "cli/customization.md",
+  ] },
 
-  # Support
-  { "Contact us" = "contact-us.md" },
+  { "Web version" = [
+    "web/usage.md",
+  ] },
+
+  { "Other topics" = [
+    "editor-integration.md",
+    "comparison.md",
+  ] },
+
+  { "Support" = [
+    "contact-us.md",
+  ] },
 ]
 
 [project.theme]
@@ -99,7 +101,7 @@ features = [
   "navigation.instant",
   "navigation.tracking",
   "navigation.sections",
-  "navigation.expand",
+  "navigation.indexes",
   "navigation.top",
   "toc.follow",
 ]
