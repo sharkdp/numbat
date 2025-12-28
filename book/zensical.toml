@@ -7,6 +7,7 @@ repo_url = "https://github.com/sharkdp/numbat"
 docs_dir = "src"
 site_dir = "site"
 language = "en"
+edit_uri = "edit/main/book/src/"
 extra_css = ["stylesheets/extra.css"]
 
 nav = [
@@ -98,6 +99,7 @@ favicon = "assets/favicon.svg"
 logo = "assets/favicon.svg"
 font.code = "Fira Mono"
 features = [
+  "navigation.footer",
   "navigation.instant",
   "navigation.instant.prefetch",
   "navigation.tracking",
@@ -105,9 +107,13 @@ features = [
   "navigation.indexes",
   "navigation.top",
   "toc.follow",
+  "content.action.edit",
 ]
 palette.primary = "custom"
 palette.accent = "custom"
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
 
 [project.extensions]
 "admonition" = {}
@@ -121,3 +127,11 @@ extra_javascript = [
   "javascripts/mathjax.js",
   { url = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", defer = true },
 ]
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/sharkdp/numbat"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/discord"
+link = "https://discord.gg/kAaVTsat4D"
