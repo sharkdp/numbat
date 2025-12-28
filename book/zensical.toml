@@ -60,8 +60,8 @@ nav = [
     "type-system.md",
   ] },
 
-  { "Standard library reference" = [
-    "prelude/prelude.md",
+  { "Standard library" = [
+    "prelude/index.md",
     { "List of functions" = [
       "prelude/list-functions-math.md",
       "prelude/list-functions-lists.md",
@@ -75,12 +75,14 @@ nav = [
 
 
   { "Command-line version" = [
+    "cli/index.md",
     "cli/installation.md",
     "cli/usage.md",
     "cli/customization.md",
-  ] },
+  ], "icon" = "lucide/terminal" },
 
   { "Web version" = [
+    "web/index.md",
     "web/usage.md",
   ] },
 
