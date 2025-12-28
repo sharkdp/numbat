@@ -2,7 +2,7 @@
 
 # Acidity
 
-[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Compute+the+pH+%28acidity%29+of+a+solution+based%0A%23+on+the+activity+of+hydrogen+ions%0A%23%0A%23+https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FPH%0A%0Afn+pH_acidity%28activity_hplus%3A+Molarity%29+-%3E+Scalar+%3D%0A++++-+log10%28activity_hplus+%2F+%28mol+%2F+L%29%29%0A%0Aprint%28pH_acidity%285e-6+mol+%2F+L%29%29%0A){ .md-button }
+[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Compute+the+pH+%28acidity%29+of+a+solution+based%0A%23+on+the+activity+of+hydrogen+ions%0A%23%0A%23+https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FPH%0A%0Afn+pH_acidity%28activity_hplus%3A+Molarity%29+-%3E+Scalar+%3D%0A++++-+log10%28activity_hplus+%2F+%28mol+%2F+L%29%29%0A%0Aprint%28pH_acidity%285e-6+mol+%2F+L%29%29%0A){ .md-button .md-button--primary }
 
 ```numbat
 # Compute the pH (acidity) of a solution based

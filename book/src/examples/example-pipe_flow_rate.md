@@ -2,7 +2,7 @@
 
 # Flow rate in a pipe
 
-[:material-play-circle: Run this example](https://numbat.dev/?q=%23+This+script+calculates+and+prints+the+flow+rate+in+a+pipe%0A%23+using+the+Hagen-Poiseuille+equation.+It+assumes+the+dynamic%0A%23+viscosity+of+water+and+allows+for+inputs+of+pipe+radius%2C%0A%23+pipe+length%2C+and+pressure+difference.%0A%0Alet+%CE%BC_water%3A+DynamicViscosity+%3D+1+mPa%C2%B7s%0A%0Afn+flow_rate%28radius%3A+Length%2C+length%3A+Length%2C+%CE%94p%3A+Pressure%29+-%3E+FlowRate+%3D%0A++++%CF%80+%C3%97+radius%5E4+%C3%97+%CE%94p+%2F+%288+%CE%BC_water+%C3%97+length%29%0A%0Alet+pipe_radius+%3D+1+cm%0Alet+pipe_length+%3D+10+m%0Alet+%CE%94p+%3D+0.1+bar%0A%0Alet+Q+%3D+flow_rate%28pipe_radius%2C+pipe_length%2C+%CE%94p%29%0Aprint%28%22Flow+rate%3A+%7BQ+-%3E+L%2Fs%7D%22%29%0A){ .md-button }
+[:material-play-circle: Run this example](https://numbat.dev/?q=%23+This+script+calculates+and+prints+the+flow+rate+in+a+pipe%0A%23+using+the+Hagen-Poiseuille+equation.+It+assumes+the+dynamic%0A%23+viscosity+of+water+and+allows+for+inputs+of+pipe+radius%2C%0A%23+pipe+length%2C+and+pressure+difference.%0A%0Alet+%CE%BC_water%3A+DynamicViscosity+%3D+1+mPa%C2%B7s%0A%0Afn+flow_rate%28radius%3A+Length%2C+length%3A+Length%2C+%CE%94p%3A+Pressure%29+-%3E+FlowRate+%3D%0A++++%CF%80+%C3%97+radius%5E4+%C3%97+%CE%94p+%2F+%288+%CE%BC_water+%C3%97+length%29%0A%0Alet+pipe_radius+%3D+1+cm%0Alet+pipe_length+%3D+10+m%0Alet+%CE%94p+%3D+0.1+bar%0A%0Alet+Q+%3D+flow_rate%28pipe_radius%2C+pipe_length%2C+%CE%94p%29%0Aprint%28%22Flow+rate%3A+%7BQ+-%3E+L%2Fs%7D%22%29%0A){ .md-button .md-button--primary }
 
 ```numbat
 # This script calculates and prints the flow rate in a pipe
