@@ -52,13 +52,13 @@ In interactive command-line mode, you can use the following key bindings. Most i
 
 | Key sequence | Action |
 |--------------|--------|
-| `Tab`, `Ctrl`-`I` | Auto-completion |
-| `Ctrl`-`D` | Quit |
-| `Ctrl`-`L` | Clear screen |
-| `Up`, `Down` | Browse command history |
-| `Ctrl`-`R` | Search command history |
-| `Ctrl`-`C` | Clear the current line |
-| `Alt`-`Enter` | Insert newline |
-| `Home`, `Ctrl`-`A` | Move cursor to the beginning of the line |
-| `End`, `Ctrl`-`E` | Move cursor to the end of the line |
-| `Ctrl`-`W` | Delete word leading up to cursor |
+| ++tab++ / ++ctrl+i++ | Auto-completion |
+| ++ctrl+d++ | Quit |
+| ++ctrl+l++ | Clear screen |
+| ++up++ / ++down++ | Browse command history |
+| ++ctrl+r++ | Search command history |
+| ++ctrl+c++ | Clear the current line |
+| ++alt+enter++ | Insert newline |
+| ++home++ / ++ctrl+a++ | Move cursor to the beginning of the line |
+| ++end++ / ++ctrl+e++ | Move cursor to the end of the line |
+| ++ctrl+w++ | Delete word leading up to cursor |

@@ -121,6 +121,7 @@ repo = "fontawesome/brands/github"
 "pymdownx.highlight" = { anchor_linenums = true }
 "pymdownx.superfences" = {}
 "pymdownx.details" = {}
+"pymdownx.keys" = {}
 
 [project.extra]
 extra_javascript = [

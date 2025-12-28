@@ -39,23 +39,23 @@ In interactive command-line mode, you can use the following key bindings. Most i
 
 | Key sequence | Action |
 |--------------|--------|
-| `Tab` | Auto-completion |
-| `Ctrl`-`L` | Clear screen |
-| `Up`, `Down` | Browse command history |
-| `Ctrl`-`R` | Search command history |
-| `Ctrl`-`C` | Clear the current line |
-| `Shift`-`Enter` | Insert newline |
-| `Home`, `Ctrl`-`A` | Move cursor to the beginning of the line |
-| `End`, `Ctrl`-`E` | Move cursor to the end of the line |
-| `Ctrl`-`Left`, `Ctrl`-`Right` | Move cursor one word left/right |
-| `Ctrl`-`K` | Remove text to the right of the cursor |
-| `Ctrl`-`U` | Remove text to the left of the cursor |
+| ++tab++ | Auto-completion |
+| ++ctrl+l++ | Clear screen |
+| ++up++ / ++down++ | Browse command history |
+| ++ctrl+r++ | Search command history |
+| ++ctrl+c++ | Clear the current line |
+| ++shift+enter++ | Insert newline |
+| ++home++ / ++ctrl+a++ | Move cursor to the beginning of the line |
+| ++end++ / ++ctrl+e++ | Move cursor to the end of the line |
+| ++ctrl+left++ / ++ctrl+right++ | Move cursor one word left/right |
+| ++ctrl+k++ | Remove text to the right of the cursor |
+| ++ctrl+u++ | Remove text to the left of the cursor |
 
 ## Sharing calculations
 
 To share the result of a calculation with someone else, you can just copy the URL from
 your browers address bar. As you enter new lines in the terminal, your input will be
 appended to the URL to build up something like
-[`https://numbat.dev/?q=let+P0+%3D+50_000+people%0A…`](https://numbat.dev/?q=let+P0+%3D+50_000+people%0Alet+growth_rate+%3D+2%25+per+year%0A%0Afn+population(t%3A+Time)+%3D%0A++++P0+×+e^(growth_rate·t)+%7C%3E+round%0A%0Aprint("P(20+years)+%3D+{population(20+years)}"))
+[`https://numbat.dev/?q=let+P0+%3D+50_000+people%0A…`](https://numbat.dev/?q=let+P0+%3D+50_000+people%0Alet+growth_rate+%3D+2%25+per+year%0A%0Afn+population%28t%3A+Time%29+%3D%0A++++P0+%C3%97+e%5E%28growth_rate%C2%B7t%29+%7C%3E+round_in%28people%29%0A%0Aprint%28%22P%2820+years%29+%3D+%7Bpopulation%2820+years%29%7D%22%29%E2%8F%8E)
 that you can just copy and share. To reset the state and clear the URL, use the `reset`
 command (see above).
