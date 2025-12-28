@@ -127,7 +127,7 @@ def generate_units_list():
 
 def list_of_functions(file_name, document):
     """Generate function reference documentation for a set of modules."""
-    path = SCRIPT_DIR / "src" / "prelude" / f"list-functions-{file_name}.md"
+    path = SCRIPT_DIR / "src" / "prelude" / "functions" / f"{file_name}.md"
 
     with open(path, "w", encoding="utf-8") as f:
         if icon := document.get("icon"):
@@ -191,6 +191,9 @@ def generate_all_function_lists():
     """Generate all function reference documentation."""
     print("Generating function reference files...")
 
+    # Ensure the functions directory exists
+    (SCRIPT_DIR / "src" / "prelude" / "functions").mkdir(parents=True, exist_ok=True)
+
     list_of_functions(
         "math",
         {
@@ -236,7 +239,7 @@ def generate_all_function_lists():
         "lists",
         {
             "title": "List-related functions",
-            "icon": "lucide/list",
+            "icon": "lucide/brackets",
             "sections": [{"modules": ["core::lists"]}],
         },
     )
@@ -245,7 +248,7 @@ def generate_all_function_lists():
         "strings",
         {
             "title": "String-related functions",
-            "icon": "lucide/text",
+            "icon": "lucide/quote",
             "sections": [{"modules": ["core::strings"]}],
         },
     )

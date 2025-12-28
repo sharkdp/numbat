@@ -2,7 +2,6 @@
 title: Numbat
 hide:
   - footer
-icon: lucide/square-play
 ---
 
 # Numbat

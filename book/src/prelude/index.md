@@ -1,6 +1,5 @@
 ---
 title: Standard library
-icon: lucide/package
 ---
 
 Numbat comes with a special module called `prelude` that is always loaded on
