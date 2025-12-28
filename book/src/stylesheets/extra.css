@@ -30,20 +30,26 @@
 }
 
 /* Numbat syntax highlighting - from numbat.dev/articles */
+/* Supports both ```numbat and ```nbt */
 
 div.language-numbat.highlight,
 div.language-numbat.highlight > pre,
-div.language-numbat.highlight > pre > code {
+div.language-numbat.highlight > pre > code,
+div.language-nbt.highlight,
+div.language-nbt.highlight > pre,
+div.language-nbt.highlight > pre > code {
   background: #fcfcfc !important;
   background-color: #fcfcfc !important;
 }
 
-.language-numbat code {
+.language-numbat code,
+.language-nbt code {
   color: #333;
 }
 
 /* Keywords: bright purple */
-.language-numbat .k {
+.language-numbat .k,
+.language-nbt .k {
   color: #c802ff !important;
 }
 
@@ -51,7 +57,11 @@ div.language-numbat.highlight > pre > code {
 .language-numbat .s,
 .language-numbat .s1,
 .language-numbat .s2,
-.language-numbat .sd {
+.language-numbat .sd,
+.language-nbt .s,
+.language-nbt .s1,
+.language-nbt .s2,
+.language-nbt .sd {
   color: #27a85f !important;
 }
 
@@ -60,50 +70,67 @@ div.language-numbat.highlight > pre > code {
 .language-numbat .mf,
 .language-numbat .mh,
 .language-numbat .mo,
-.language-numbat .mb {
+.language-numbat .mb,
+.language-nbt .mi,
+.language-nbt .mf,
+.language-nbt .mh,
+.language-nbt .mo,
+.language-nbt .mb {
   color: #0040ff !important;
 }
 
 /* Types/Dimensions: magenta-pink */
 .language-numbat .nc,
-.language-numbat .kt {
+.language-numbat .kt,
+.language-nbt .nc,
+.language-nbt .kt {
   color: #ca3b63 !important;
 }
 
-/* Variables/Units: dark purple */
+/* Variables/Units: black */
 .language-numbat .nv,
-.language-numbat .n {
-  color: #5c12a6 !important;
+.language-numbat .n,
+.language-nbt .nv,
+.language-nbt .n {
+  color: #333 !important;
 }
 
 /* Operators: red */
-.language-numbat .o {
+.language-numbat .o,
+.language-nbt .o {
   color: #db2828 !important;
 }
 
 /* Comments: gray */
 .language-numbat .c,
 .language-numbat .c1,
-.language-numbat .cm {
+.language-numbat .cm,
+.language-nbt .c,
+.language-nbt .c1,
+.language-nbt .cm {
   color: #8c8c8c !important;
 }
 
 /* REPL prompts: gray */
-.language-numbat .cs {
+.language-numbat .cs,
+.language-nbt .cs {
   color: #8c8c8c !important;
 }
 
 /* Decorators: green */
-.language-numbat .nd {
+.language-numbat .nd,
+.language-nbt .nd {
   color: #27a85f !important;
 }
 
 /* Punctuation */
-.language-numbat .p {
+.language-numbat .p,
+.language-nbt .p {
   color: #333 !important;
 }
 
 /* Other names (Greek letters, etc.) */
-.language-numbat .no {
+.language-numbat .no,
+.language-nbt .no {
   color: #5c12a6 !important;
 }

@@ -4,8 +4,6 @@ title: Numbat
 
 # Numbat
 
-> *"You see, Vergon 6 was once filled with the super-dense substance known as dark matter, each pound of which weighs over 10,000 pounds."* — Futurama, S1E4
-
 Numbat is a statically typed programming language for scientific computations
 with first class support for physical dimensions and units.
 
@@ -57,4 +55,10 @@ The real strength of Numbat, however, is to perform calculations with physical u
 ```
 
 Read the [tutorial](./tutorial.md) to learn more about the language or look at some [example programs](./examples.md).
-You can also jump directly to the [syntax reference](./example-numbat_syntax.md).
+You can also jump directly to the [syntax reference](./examples/example-numbat_syntax.md).
+You can install Numbat by following the instructions in [this guide](./cli-installation.md).
+
+
+!!! quote
+
+    *"You see, Vergon 6 was once filled with the super-dense substance known as dark matter, each pound of which weighs over 10,000 pounds."* — Futurama, S1E4
