@@ -2,42 +2,7 @@
 icon: lucide/bug-play
 ---
 
-# Printing, testing, debugging
-
-## Printing
-
-Numbat has a builtin `print` procedure that can be used to print the value of an expression:
-
-```nbt
-print(2 km/h)
-print(3 ft < 1 m)
-```
-
-You can also print out simple messages as strings. This is particularly useful when combined
-with string interpolation to print results of a computation:
-
-```nbt
-let radius: Length = sqrt(footballfield / 4 pi) -> meter
-print("A football field would fit on a sphere of radius {radius}")
-```
-
-You can use almost every expression inside a string interpolation field. For example:
-
-```nbt
-print("3² + 4² = {hypot2(3, 4)}²")
-
-let speed = 25 km/h
-print("Speed of the bicycle: {speed} ({speed -> mph})")
-```
-
-Format specifiers are also supported in interpolations. For instance:
-
-```nbt
-print("{pi:0.2f}")  # Prints "3.14"
-```
-
-For more information on supported format specifiers, please see
-[this page](https://doc.rust-lang.org/std/fmt/#formatting-parameters).
+# Testing and debugging
 
 ## Testing
 
