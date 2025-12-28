@@ -1,3 +1,7 @@
+---
+icon: lucide/atom
+---
+
 # Dimension definitions
 
 New (physical) dimensions can be introduced with the `dimension` keyword. Similar like for [units](./unit-definitions.md), there are base dimensions (like *length*, *time* and *mass*) and dimensions that are derived from those base dimensions (like *momentum*, which is *mass* · *length* / *time*). Base dimensions are simply introduced by declaring their name:

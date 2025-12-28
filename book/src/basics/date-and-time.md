@@ -1,3 +1,7 @@
+---
+icon: lucide/clock
+---
+
 # Date and time
 
 Numbat supports date and time handling based on the [proleptic Gregorian calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar),

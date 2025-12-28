@@ -1,3 +1,7 @@
+---
+icon: lucide/ellipsis
+---
+
 # Other functions
 
 [Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Color format conversion](#color-format-conversion)

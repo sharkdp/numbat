@@ -1,3 +1,7 @@
+---
+icon: lucide/puzzle
+---
+
 # IDE / editor integration
 
 There is syntax highlighting support for the following IDEs / text editors:

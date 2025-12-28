@@ -1,3 +1,7 @@
+---
+icon: lucide/book-open
+---
+
 # Usage
 
 ## Modes

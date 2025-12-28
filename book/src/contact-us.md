@@ -1,3 +1,7 @@
+---
+icon: lucide/message-circle
+---
+
 # Contact us
 
 To contact us, either [open a GitHub issue](https://github.com/sharkdp/numbat/issues/new/choose)

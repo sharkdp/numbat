@@ -1,4 +1,8 @@
-# Operations and precedence
+---
+icon: lucide/diff
+---
+
+# Operations
 
 Numbat operators and other language constructs, ordered by precedence form *high* to *low*:
 
@@ -20,7 +24,7 @@ Numbat operators and other language constructs, ordered by precedence form *high
 | logical 'or'              | <code>x &#124;&#124; y</code>        |
 | unit conversion           | `x -> y`, `x → y`, `x ➞ y`, `x to y` |
 | conditionals              | `if x then y else z`                 |
-| reverse function call     | `x \|> f`                            |
+| reverse function call     | `x |> f`                             |
 
 Note that *implicit* multiplication has a higher precedence than division, i.e. `50 cm / 2 m` will be parsed as `50 cm / (2 m)`.
 

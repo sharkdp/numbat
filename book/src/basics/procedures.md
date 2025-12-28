@@ -1,3 +1,7 @@
+---
+icon: lucide/bug-play
+---
+
 # Printing, testing, debugging
 
 ## Printing

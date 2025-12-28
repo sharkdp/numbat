@@ -1,3 +1,7 @@
+---
+icon: lucide/braces
+---
+
 # Structs
 
 Numbat has compound data structures in the form of structs:

@@ -1,3 +1,7 @@
+---
+icon: lucide/download
+---
+
 # Installation
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/numbat.svg?columns=3)](https://repology.org/project/numbat/versions)

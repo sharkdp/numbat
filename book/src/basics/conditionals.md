@@ -1,3 +1,7 @@
+---
+icon: lucide/git-branch
+---
+
 # Conditionals
 
 Numbat has `if-then-else` conditional expressions with the following

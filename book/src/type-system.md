@@ -1,3 +1,7 @@
+---
+icon: lucide/shapes
+---
+
 # Type system
 
 Numbat is a language with a special type system that treats *physical dimensions* as types.

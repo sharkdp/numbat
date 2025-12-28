@@ -1,3 +1,7 @@
+---
+icon: lucide/decimals-arrow-right
+---
+
 # Number notation
 
 Numbers in Numbat can be written in the following forms:

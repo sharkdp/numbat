@@ -1,3 +1,7 @@
+---
+icon: lucide/ruler
+---
+
 # Unit notation
 
 Most units can be entered in the same way that they would appear in textbook calculations. They

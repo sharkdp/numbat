@@ -1,3 +1,7 @@
+---
+icon: lucide/clock
+---
+
 # Date and time
 
 See [this page](./date-and-time.md) for a general introduction to date and time handling in Numbat.

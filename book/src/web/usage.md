@@ -1,3 +1,7 @@
+---
+icon: lucide/book-open
+---
+
 # Usage
 
 The browser-based version of Numbat is available at <https://numbat.dev/>.

@@ -1,4 +1,8 @@
-# Function definitions
+---
+icon: lucide/function-square
+---
+
+# Functions
 
 Numbat comes with a large number of [predefined functions](./predefined-functions.md), but
 it is also possible to add new functions. A function definition is introduced with

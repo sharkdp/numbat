@@ -1,3 +1,7 @@
+---
+icon: lucide/list
+---
+
 # List-related functions
 
 Defined in: `core::lists`

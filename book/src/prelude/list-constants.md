@@ -1,3 +1,7 @@
+---
+icon: lucide/pi
+---
+
 # Constants
 
 ## Mathematical

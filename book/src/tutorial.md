@@ -1,3 +1,7 @@
+---
+icon: lucide/graduation-cap
+---
+
 # Tutorial
 
 In this tutorial, you will use Numbat to calculate how many bananas you would need to power a
