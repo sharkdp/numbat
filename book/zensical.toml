@@ -42,12 +42,13 @@ nav = [
     "basics/conversions.md",
     "basics/operations.md",
     "basics/variables.md",
-    "basics/conditionals.md",
-    "basics/functions.md",
+    "basics/printing-strings.md",
     "basics/lists.md",
     "basics/structs.md",
+    "basics/conditionals.md",
+    "basics/functions.md",
     "basics/date-and-time.md",
-    "basics/procedures.md",
+    "basics/testing-debugging.md",
   ] },
 
 
