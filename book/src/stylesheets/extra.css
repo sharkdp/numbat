@@ -112,7 +112,9 @@ div.language-nbt.highlight>pre>code {
 
 /* REPL prompts: gray */
 .language-numbat .cs,
-.language-nbt .cs {
+.language-nbt .cs,
+.language-numbat .gp,
+.language-nbt .gp {
   color: #8c8c8c !important;
 }
 

@@ -7,6 +7,7 @@ This lexer is used by Zensical/MkDocs for syntax highlighting in documentation.
 from pygments.lexer import RegexLexer, bygroups, words
 from pygments.token import (
     Comment,
+    Generic,
     Keyword,
     Name,
     Number,
@@ -32,8 +33,8 @@ class NumbatLexer(RegexLexer):
             (r"\s+", Whitespace),
             # Comments
             (r"#.*$", Comment.Single),
-            # REPL prompts (common in documentation)
-            (r"^>>>.*$", Comment.Special),
+            # REPL prompts (common in documentation) - match prompt, code after continues normally
+            (r">>>", Generic.Prompt),
             # Strings
             (r'"[^"]*"', String.Double),
             # Decorators/Attributes
