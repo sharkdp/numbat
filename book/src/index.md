@@ -54,9 +54,9 @@ The real strength of Numbat, however, is to perform calculations with physical u
     = 1.87855 eV    [Energy]
 ```
 
-Read the [tutorial](./tutorial.md) to learn more about the language or look at some [example programs](./examples.md).
-You can also jump directly to the [syntax reference](./examples/example-numbat_syntax.md).
-You can install Numbat by following the instructions in [this guide](./cli-installation.md).
+Read the [tutorial](./tutorial.md){ data-preview } to learn more about the language or look at some [example programs](./examples.md).
+You can also jump directly to the [syntax reference](./examples/example-numbat_syntax.md){ data-preview }.
+You can install Numbat by following the instructions in [this guide](./cli/installation.md){ data-preview }.
 
 
 !!! quote

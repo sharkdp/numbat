@@ -99,20 +99,15 @@ logo = "assets/favicon.svg"
 font.code = "Fira Mono"
 features = [
   "navigation.instant",
+  "navigation.instant.prefetch",
   "navigation.tracking",
   "navigation.sections",
   "navigation.indexes",
   "navigation.top",
   "toc.follow",
 ]
-
-[[project.theme.palette]]
-scheme = "default"
-toggle = { icon = "lucide/moon", name = "Switch to dark mode" }
-
-[[project.theme.palette]]
-scheme = "slate"
-toggle = { icon = "lucide/sun", name = "Switch to light mode" }
+palette.primary = "custom"
+palette.accent = "custom"
 
 [project.extensions]
 "admonition" = {}

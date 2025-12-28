@@ -29,15 +29,14 @@
   --md-accent-bg-color--light: #ffffffb3;
 }
 
-/* Numbat syntax highlighting - from numbat.dev/articles */
-/* Supports both ```numbat and ```nbt */
+/* Syntax highlighting */
 
 div.language-numbat.highlight,
-div.language-numbat.highlight > pre,
-div.language-numbat.highlight > pre > code,
+div.language-numbat.highlight>pre,
+div.language-numbat.highlight>pre>code,
 div.language-nbt.highlight,
-div.language-nbt.highlight > pre,
-div.language-nbt.highlight > pre > code {
+div.language-nbt.highlight>pre,
+div.language-nbt.highlight>pre>code {
   background: #fcfcfc !important;
   background-color: #fcfcfc !important;
 }
