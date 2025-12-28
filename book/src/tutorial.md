@@ -95,18 +95,21 @@ This allows us to finally answer the original question (for a [typical US househ
 household_power(10000 kWh) / power_per_banana
 ```
 
-This should give you a result of roughly 4×10<sup style="line-height: 0">14</sup> bananas[^note].
+This should give you a result of roughly 4×10<sup style="line-height: 0">14</sup> bananas.
 
 <p align="center"><img src="https://what-if.xkcd.com/imgs/a/158/10bunches.png"></p>
 
 
-## Attribution
+!!! note
 
-The images in this tutorial are from [https://what-if.xkcd.com/158/](https://what-if.xkcd.com/158/). They are licensed
-under the [Creative Commons Attribution-NonCommercial 2.5 License](https://creativecommons.org/licenses/by-nc/2.5/).
-Details and usage notes can be found at [https://xkcd.com/license.html](https://xkcd.com/license.html).
+    Interestingly, the *what if* article comes up with a result of 300 quadrillion bananas,
+    or 3 × 10<sup style="line-height: 0">17</sup>. This is a factor of 1000 higher. This seems like a
+    mistake in the original source. All of our other intermediate results are consistent with what has
+    been computed in the original article.
 
-[^note]: Interestingly, the *what if* article comes up with a result of 300 quadrillion bananas,
-or 3 × 10<sup style="line-height: 0">17</sup>. This is a factor of 1000 higher. This seems like a
-mistake in the original source. All of our other intermediate results are consistent with what has
-been computed in the original article.
+
+!!! info
+
+    The images in this tutorial are from [https://what-if.xkcd.com/158/](https://what-if.xkcd.com/158/). They are licensed
+    under the [Creative Commons Attribution-NonCommercial 2.5 License](https://creativecommons.org/licenses/by-nc/2.5/).
+    Details and usage notes can be found at [https://xkcd.com/license.html](https://xkcd.com/license.html).
