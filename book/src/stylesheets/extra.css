@@ -28,3 +28,82 @@
   --md-accent-bg-color: #ffffff;
   --md-accent-bg-color--light: #ffffffb3;
 }
+
+/* Numbat syntax highlighting - from numbat.dev/articles */
+
+div.language-numbat.highlight,
+div.language-numbat.highlight > pre,
+div.language-numbat.highlight > pre > code {
+  background: #fcfcfc !important;
+  background-color: #fcfcfc !important;
+}
+
+.language-numbat code {
+  color: #333;
+}
+
+/* Keywords: bright purple */
+.language-numbat .k {
+  color: #c802ff !important;
+}
+
+/* Strings: green */
+.language-numbat .s,
+.language-numbat .s1,
+.language-numbat .s2,
+.language-numbat .sd {
+  color: #27a85f !important;
+}
+
+/* Numbers/Values: blue */
+.language-numbat .mi,
+.language-numbat .mf,
+.language-numbat .mh,
+.language-numbat .mo,
+.language-numbat .mb {
+  color: #0040ff !important;
+}
+
+/* Types/Dimensions: magenta-pink */
+.language-numbat .nc,
+.language-numbat .kt {
+  color: #ca3b63 !important;
+}
+
+/* Variables/Units: dark purple */
+.language-numbat .nv,
+.language-numbat .n {
+  color: #5c12a6 !important;
+}
+
+/* Operators: red */
+.language-numbat .o {
+  color: #db2828 !important;
+}
+
+/* Comments: gray */
+.language-numbat .c,
+.language-numbat .c1,
+.language-numbat .cm {
+  color: #8c8c8c !important;
+}
+
+/* REPL prompts: gray */
+.language-numbat .cs {
+  color: #8c8c8c !important;
+}
+
+/* Decorators: green */
+.language-numbat .nd {
+  color: #27a85f !important;
+}
+
+/* Punctuation */
+.language-numbat .p {
+  color: #333 !important;
+}
+
+/* Other names (Greek letters, etc.) */
+.language-numbat .no {
+  color: #5c12a6 !important;
+}
