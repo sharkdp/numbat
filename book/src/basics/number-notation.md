@@ -27,7 +27,6 @@ You can use the `bin`, `oct`, `dec` and `hex` functions to convert numbers to bi
 respectively. You can call those using `hex(2^16 - 1)`, but they are also available as targets of the conversion operator `->`/`to`,
 so you can write expressions like:
 
-Examples:
 ```nbt
 0xffee -> bin
 42 -> oct

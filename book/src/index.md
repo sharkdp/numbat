@@ -1,5 +1,7 @@
 ---
 title: Numbat
+hide:
+  - footer
 ---
 
 # Numbat
