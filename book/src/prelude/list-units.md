@@ -1,3 +1,7 @@
+---
+icon: lucide/ruler
+---
+
 <!-- NOTE! This file is auto-generated -->
 
 # List of supported units

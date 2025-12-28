@@ -1,3 +1,7 @@
+---
+icon: lucide/pencil-ruler
+---
+
 # Unit definitions
 
 New units of measurement can be introduced with the `unit` keyword. There are two types of units: base units and derived units.

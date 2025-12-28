@@ -1,3 +1,7 @@
+---
+icon: lucide/settings
+---
+
 # Customization
 
 ## Startup

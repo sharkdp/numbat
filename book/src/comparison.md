@@ -1,3 +1,7 @@
+---
+icon: lucide/scale
+---
+
 # Comparison with other tools
 
 The following table provides a comparison of Numbat with other scientific calculators and programming languages. This comparison

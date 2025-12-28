@@ -1,3 +1,7 @@
+---
+icon: lucide/text
+---
+
 # String-related functions
 
 Defined in: `core::strings`

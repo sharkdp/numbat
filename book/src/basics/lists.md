@@ -1,3 +1,7 @@
+---
+icon: lucide/brackets
+---
+
 # Lists
 
 Numbat has a built-in data type for lists. The elements can be of any type, including other lists.
