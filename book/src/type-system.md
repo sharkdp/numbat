@@ -139,7 +139,7 @@ requires that:
     * `expr1` is also of type `Scalar`
     * `expr2` can be *evaluated at compile time* and yields a rational number.
 
-!!! note
+!!! info
 
     We would probably need to enter the world of *dependent types* if we wanted to fully
     support exponentiation expressions without the limitations above. For example, consider

@@ -34,7 +34,7 @@ fn braking_distance(v: Velocity) -> Length = v × t_reaction + (v² / (2 µ × g
 In particular, note that the type of the function argument `v` is correctly inferred as
 `Velocity`, and the return type is `Length`.
 
-!!! note
+!!! info
 
     This is possible because the types of `t_reaction`, `µ`, and `g0` (gravitational acceleration)
     are known. The `+` operator imposes a *constraint* on the types: two quantities can
