@@ -2,6 +2,7 @@
 site_name = "Numbat"
 site_description = "Scientific calculator with full support for physical units"
 site_url = "https://numbat.dev/doc/"
+repo_url = "https://github.com/sharkdp/numbat"
 docs_dir = "src"
 site_dir = "site"
 extra_css = ["stylesheets/extra.css"]
