@@ -2,7 +2,7 @@
 
 # Barometric formula
 
-[:material-play-circle: Run this example](https://numbat.dev/?q=%23+This+script+calculates+the+air+pressure+at+a+specified%0A%23+height+above+sea+level+using+the+barometric+formula.%0A%0Alet+p0%3A+Pressure+%3D+1+atm%0Alet+t0%3A+Temperature+%3D+288.15+K%0A%0Adimension+TemperatureGradient+%3D+Temperature+%2F+Length%0Alet+lapse_rate%3A+TemperatureGradient+%3D+0.65+K+%2F+100+m%0A%0Afn+air_pressure%28height%3A+Length%29+-%3E+Pressure+%3D%0A++++p0+%C2%B7+%281+-+lapse_rate+%C2%B7+height+%2F+t0%29%5E5.255%0A%0Aprint%28%22Air+pressure+1500+m+above+sea+level%3A+%7Bair_pressure%281500+m%29+-%3E+hPa%7D%22%29%0A){ .md-button }
+[:material-play-circle: Run this example](https://numbat.dev/?q=%23+This+script+calculates+the+air+pressure+at+a+specified%0A%23+height+above+sea+level+using+the+barometric+formula.%0A%0Alet+p0%3A+Pressure+%3D+1+atm%0Alet+t0%3A+Temperature+%3D+288.15+K%0A%0Adimension+TemperatureGradient+%3D+Temperature+%2F+Length%0Alet+lapse_rate%3A+TemperatureGradient+%3D+0.65+K+%2F+100+m%0A%0Afn+air_pressure%28height%3A+Length%29+-%3E+Pressure+%3D%0A++++p0+%C2%B7+%281+-+lapse_rate+%C2%B7+height+%2F+t0%29%5E5.255%0A%0Aprint%28%22Air+pressure+1500+m+above+sea+level%3A+%7Bair_pressure%281500+m%29+-%3E+hPa%7D%22%29%0A){ .md-button .md-button--primary }
 
 ```numbat
 # This script calculates the air pressure at a specified

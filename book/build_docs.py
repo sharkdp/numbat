@@ -42,7 +42,7 @@ def generate_example(
         if insert_run_link:
             fout.write("\n")
             fout.write(
-                f"[:material-play-circle: Run this example]({url}){{ .md-button }}\n"
+                f"[:material-play-circle: Run this example]({url}){{ .md-button .md-button--primary }}\n"
             )
         fout.write("\n")
         fout.write("```numbat\n")
@@ -99,7 +99,7 @@ def generate_all_examples():
 
 def generate_units_list():
     """Generate the list of units documentation."""
-    path_units = SCRIPT_DIR / "src" / "list-units.md"
+    path_units = SCRIPT_DIR / "src" / "prelude" / "list-units.md"
     print("Generating list of units...")
 
     with open(path_units, "w", encoding="utf-8") as f:

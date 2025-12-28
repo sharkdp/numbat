@@ -2,7 +2,7 @@
 
 # Recipe
 
-[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Scale+ingredient+quantities+based+on+desired+servings.%0A%0A%40aliases%28servings%29%0Aunit+serving%0A%0Alet+original_recipe_servings+%3D+2+servings%0Alet+desired_servings+%3D+3+servings%0A%0Afn+scale%28quantity%29+%3D%0A++++quantity+%C3%97+desired_servings+%2F+original_recipe_servings%0A%0Aprint%28%22Milk%3A++++++++++%7Bscale%28500+ml%29%7D%22%29%0Aprint%28%22Flour%3A+++++++++%7Bscale%28250+g%29%7D%22%29%0Aprint%28%22Sugar%3A+++++++++%7Bscale%282+cups%29%7D%22%29%0Aprint%28%22Baking+powder%3A+%7Bscale%284+tablespoons%29%7D%22%29%0A){ .md-button }
+[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Scale+ingredient+quantities+based+on+desired+servings.%0A%0A%40aliases%28servings%29%0Aunit+serving%0A%0Alet+original_recipe_servings+%3D+2+servings%0Alet+desired_servings+%3D+3+servings%0A%0Afn+scale%28quantity%29+%3D%0A++++quantity+%C3%97+desired_servings+%2F+original_recipe_servings%0A%0Aprint%28%22Milk%3A++++++++++%7Bscale%28500+ml%29%7D%22%29%0Aprint%28%22Flour%3A+++++++++%7Bscale%28250+g%29%7D%22%29%0Aprint%28%22Sugar%3A+++++++++%7Bscale%282+cups%29%7D%22%29%0Aprint%28%22Baking+powder%3A+%7Bscale%284+tablespoons%29%7D%22%29%0A){ .md-button .md-button--primary }
 
 ```numbat
 # Scale ingredient quantities based on desired servings.

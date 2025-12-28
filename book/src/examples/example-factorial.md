@@ -2,7 +2,7 @@
 
 # Factorial
 
-[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Naive+factorial+implementation+to+showcase+recursive%0A%23+functions+and+conditionals.%0A%0Afn+factorial%28n%29+%3D%0A++if+n+%3C+1%0A++++then+1%0A++++else+n+%C3%97+factorial%28n+-+1%29%0A%0A%23+Compare+result+with+the+builtin+factorial+operator%0Aassert_eq%28factorial%2810%29%2C+10%21%29%0A){ .md-button }
+[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Naive+factorial+implementation+to+showcase+recursive%0A%23+functions+and+conditionals.%0A%0Afn+factorial%28n%29+%3D%0A++if+n+%3C+1%0A++++then+1%0A++++else+n+%C3%97+factorial%28n+-+1%29%0A%0A%23+Compare+result+with+the+builtin+factorial+operator%0Aassert_eq%28factorial%2810%29%2C+10%21%29%0A){ .md-button .md-button--primary }
 
 ```numbat
 # Naive factorial implementation to showcase recursive

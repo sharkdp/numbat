@@ -2,7 +2,7 @@
 
 # Musical note frequency
 
-[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Musical+note+frequencies+in+the+12+equal+temperament+system%0A%0Alet+frequency_A4%3A+Frequency+%3D+440+Hz++%23+the+A+above+middle+C%2C+A4%0A%0Afn+note_frequency%28n%3A+Scalar%29+-%3E+Frequency+%3D+frequency_A4+%2A+2%5E%28n+%2F+12%29%0A%0Aprint%28%22A5%3A+%7Bnote_frequency%2812%29%7D%22%29++%23+one+octave+higher+up%2C+880+Hz%0Aprint%28%22E4%3A+%7Bnote_frequency%287%29%7D%22%29%0Aprint%28%22C4%3A+%7Bnote_frequency%28-3%29%7D%22%29%0A){ .md-button }
+[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Musical+note+frequencies+in+the+12+equal+temperament+system%0A%0Alet+frequency_A4%3A+Frequency+%3D+440+Hz++%23+the+A+above+middle+C%2C+A4%0A%0Afn+note_frequency%28n%3A+Scalar%29+-%3E+Frequency+%3D+frequency_A4+%2A+2%5E%28n+%2F+12%29%0A%0Aprint%28%22A5%3A+%7Bnote_frequency%2812%29%7D%22%29++%23+one+octave+higher+up%2C+880+Hz%0Aprint%28%22E4%3A+%7Bnote_frequency%287%29%7D%22%29%0Aprint%28%22C4%3A+%7Bnote_frequency%28-3%29%7D%22%29%0A){ .md-button .md-button--primary }
 
 ```numbat
 # Musical note frequencies in the 12 equal temperament system
