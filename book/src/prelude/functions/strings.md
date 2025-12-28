@@ -1,5 +1,5 @@
 ---
-icon: lucide/text
+icon: lucide/quote
 ---
 
 # String-related functions

@@ -1,7 +1,3 @@
----
-icon: lucide/file-sliders
----
-
 # Basics
 
 This chapter introduces language features that are required

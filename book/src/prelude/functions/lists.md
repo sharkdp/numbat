@@ -1,5 +1,5 @@
 ---
-icon: lucide/list
+icon: lucide/brackets
 ---
 
 # List-related functions

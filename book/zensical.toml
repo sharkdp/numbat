@@ -63,13 +63,14 @@ nav = [
   { "Standard library" = [
     "prelude/index.md",
     { "List of functions" = [
-      "prelude/list-functions-math.md",
-      "prelude/list-functions-lists.md",
-      "prelude/list-functions-strings.md",
-      "prelude/list-functions-datetime.md",
-      "prelude/list-functions-other.md",
+      "prelude/functions/index.md",
+      "prelude/functions/math.md",
+      "prelude/functions/lists.md",
+      "prelude/functions/strings.md",
+      "prelude/functions/datetime.md",
+      "prelude/functions/other.md",
     ] },
-    { "Predefined constants" = "prelude/list-constants.md" },
+    { "List of constants" = "prelude/list-constants.md" },
     { "List of units" = "prelude/list-units.md" },
   ] },
 
