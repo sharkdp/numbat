@@ -9,6 +9,10 @@ site_dir = "site"
 language = "en"
 edit_uri = "edit/main/book/src/"
 extra_css = ["stylesheets/extra.css"]
+extra_javascript = [
+  "javascripts/mathjax.js",
+  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js",
+]
 
 nav = [
   { "Getting started" = [
@@ -118,19 +122,19 @@ palette.accent = "custom"
 [project.theme.icon]
 repo = "fontawesome/brands/github"
 
-[project.extensions]
-"admonition" = {}
-"pymdownx.arithmatex" = { generic = true }
-"pymdownx.highlight" = { anchor_linenums = true }
-"pymdownx.superfences" = {}
-"pymdownx.details" = {}
-"pymdownx.keys" = {}
+[project.markdown_extensions.admonition]
 
-[project.extra]
-extra_javascript = [
-  "javascripts/mathjax.js",
-  { url = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", defer = true },
-]
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+
+[project.markdown_extensions.pymdownx.superfences]
+
+[project.markdown_extensions.pymdownx.details]
+
+[project.markdown_extensions.pymdownx.keys]
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"

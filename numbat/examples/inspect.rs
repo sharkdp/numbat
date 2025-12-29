@@ -167,7 +167,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
     }
 }
 
-// Replace $..$ with \\( .. \\) for mdbook.
+// Replace $..$ with \( .. \) for MathJax/arithmatex.
 fn replace_equation_delimiters(text_in: &str) -> CompactString {
     let mut text_out = CompactString::with_capacity(text_in.len());
     // TODO: handle \$ in math
@@ -175,9 +175,9 @@ fn replace_equation_delimiters(text_in: &str) -> CompactString {
         if i % 2 == 0 {
             text_out.push_str(part);
         } else {
-            text_out.push_str("\\\\( ");
+            text_out.push_str("\\( ");
             text_out.push_str(part);
-            text_out.push_str(" \\\\)");
+            text_out.push_str(" \\)");
         }
     }
     text_out

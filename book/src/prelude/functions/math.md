@@ -28,7 +28,7 @@ fn id<A>(x: A) -> A
 </details>
 
 ### `abs` (Absolute value)
-Return the absolute value \\( |x| \\) of the input. This works for quantities, too: `abs(-5 m) = 5 m`.
+Return the absolute value \( |x| \) of the input. This works for quantities, too: `abs(-5 m) = 5 m`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.abs).
 
 ```nbt
@@ -46,7 +46,7 @@ fn abs<T: Dim>(x: T) -> T
 </details>
 
 ### `sqrt` (Square root)
-Return the square root \\( \sqrt{x} \\) of the input: `sqrt(121 m^2) = 11 m`.
+Return the square root \( \sqrt{x} \) of the input: `sqrt(121 m^2) = 11 m`.
 More information [here](https://en.wikipedia.org/wiki/Square_root).
 
 ```nbt
@@ -64,7 +64,7 @@ fn sqrt<D: Dim>(x: D^2) -> D
 </details>
 
 ### `cbrt` (Cube root)
-Return the cube root \\( \sqrt[3]{x} \\) of the input: `cbrt(8 m^3) = 2 m`.
+Return the cube root \( \sqrt[3]{x} \) of the input: `cbrt(8 m^3) = 2 m`.
 More information [here](https://en.wikipedia.org/wiki/Cube_root).
 
 ```nbt
@@ -82,7 +82,7 @@ fn cbrt<D: Dim>(x: D^3) -> D
 </details>
 
 ### `sqr` (Square function)
-Return the square of the input, \\( x^2 \\): `sqr(5 m) = 25 m^2`.
+Return the square of the input, \( x^2 \): `sqr(5 m) = 25 m^2`.
 
 ```nbt
 fn sqr<D: Dim>(x: D) -> D^2
@@ -99,7 +99,7 @@ fn sqr<D: Dim>(x: D) -> D^2
 </details>
 
 ### `round` (Rounding)
-Round to the nearest integer. If the value is half-way between two integers, round away from \\( 0 \\). See also: `round_in`.
+Round to the nearest integer. If the value is half-way between two integers, round away from \( 0 \). See also: `round_in`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.round).
 
 ```nbt
@@ -146,7 +146,7 @@ Round in centimeters.
 </details>
 
 ### `floor` (Floor function)
-Returns the largest integer less than or equal to \\( x \\). See also: `floor_in`.
+Returns the largest integer less than or equal to \( x \). See also: `floor_in`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.floor).
 
 ```nbt
@@ -188,7 +188,7 @@ Floor in centimeters.
 </details>
 
 ### `ceil` (Ceil function)
-Returns the smallest integer greater than or equal to \\( x \\). See also: `ceil_in`.
+Returns the smallest integer greater than or equal to \( x \). See also: `ceil_in`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.ceil).
 
 ```nbt
@@ -230,7 +230,7 @@ Ceil in centimeters.
 </details>
 
 ### `trunc` (Truncation)
-Returns the integer part of \\( x \\). Non-integer numbers are always truncated towards zero. See also: `trunc_in`.
+Returns the integer part of \( x \). Non-integer numbers are always truncated towards zero. See also: `trunc_in`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.trunc).
 
 ```nbt
@@ -277,8 +277,8 @@ Truncate in centimeters.
 </details>
 
 ### `fract` (Fractional part)
-Returns the fractional part of \\( x \\), i.e. the remainder when divided by 1.
-  If \\( x < 0 \\), then so will be `fract(x)`. Note that due to floating point error, a
+Returns the fractional part of \( x \), i.e. the remainder when divided by 1.
+  If \( x < 0 \), then so will be `fract(x)`. Note that due to floating point error, a
   number’s fractional part can be slightly “off”; for instance, `fract(1.2) ==
   0.1999...996 != 0.2`.
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.fract).
@@ -308,7 +308,7 @@ fn fract(x: Scalar) -> Scalar
 </details>
 
 ### `mod` (Modulo)
-Calculates the least nonnegative remainder of \\( a (\mod b) \\).
+Calculates the least nonnegative remainder of \( a (\mod b) \).
 More information [here](https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid).
 
 ```nbt
@@ -330,7 +330,7 @@ fn mod<T: Dim>(a: T, b: T) -> T
 Defined in: `math::transcendental`
 
 ### `exp` (Exponential function)
-The exponential function, \\( e^x \\).
+The exponential function, \( e^x \).
 More information [here](https://en.wikipedia.org/wiki/Exponential_function).
 
 ```nbt
@@ -348,7 +348,7 @@ fn exp(x: Scalar) -> Scalar
 </details>
 
 ### `ln` (Natural logarithm)
-The natural logarithm with base \\( e \\).
+The natural logarithm with base \( e \).
 More information [here](https://en.wikipedia.org/wiki/Natural_logarithm).
 
 ```nbt
@@ -366,7 +366,7 @@ fn ln(x: Scalar) -> Scalar
 </details>
 
 ### `log` (Natural logarithm)
-The natural logarithm with base \\( e \\).
+The natural logarithm with base \( e \).
 More information [here](https://en.wikipedia.org/wiki/Natural_logarithm).
 
 ```nbt
@@ -384,7 +384,7 @@ fn log(x: Scalar) -> Scalar
 </details>
 
 ### `log10` (Common logarithm)
-The common logarithm with base \\( 10 \\).
+The common logarithm with base \( 10 \).
 More information [here](https://en.wikipedia.org/wiki/Common_logarithm).
 
 ```nbt
@@ -402,7 +402,7 @@ fn log10(x: Scalar) -> Scalar
 </details>
 
 ### `log2` (Binary logarithm)
-The binary logarithm with base \\( 2 \\).
+The binary logarithm with base \( 2 \).
 More information [here](https://en.wikipedia.org/wiki/Binary_logarithm).
 
 ```nbt
@@ -420,7 +420,7 @@ fn log2(x: Scalar) -> Scalar
 </details>
 
 ### `gamma` (Gamma function)
-The gamma function, \\( \Gamma(x) \\).
+The gamma function, \( \Gamma(x) \).
 More information [here](https://en.wikipedia.org/wiki/Gamma_function).
 
 ```nbt
@@ -660,7 +660,7 @@ fn factorial(n: Scalar) -> Scalar
 </details>
 
 ### `falling_factorial` (Falling factorial)
-Equal to \\( n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1) \\) (k terms total). If n is an integer, this is the number of k-element permutations from a set of size n. k must always be an integer.
+Equal to \( n⋅(n-1)⋅…⋅(n-k+2)⋅(n-k+1) \) (k terms total). If n is an integer, this is the number of k-element permutations from a set of size n. k must always be an integer.
 More information [here](https://en.wikipedia.org/wiki/Falling_and_rising_factorials).
 
 ```nbt
@@ -678,7 +678,7 @@ fn falling_factorial(n: Scalar, k: Scalar) -> Scalar
 </details>
 
 ### `binom` (Binomial coefficient)
-Equal to falling_factorial(n, k)/k!, this is the coefficient of \\( x^k \\) in the series expansion of \\( (1+x)^n \\) (see “binomial series”). If n is an integer, then this this is the number of k-element subsets of a set of size n, often read "n choose k". k must always be an integer.
+Equal to falling_factorial(n, k)/k!, this is the coefficient of \( x^k \) in the series expansion of \( (1+x)^n \) (see “binomial series”). If n is an integer, then this this is the number of k-element subsets of a set of size n, often read "n choose k". k must always be an integer.
 More information [here](https://en.wikipedia.org/wiki/Binomial_coefficient).
 
 ```nbt
@@ -696,7 +696,7 @@ fn binom(n: Scalar, k: Scalar) -> Scalar
 </details>
 
 ### `fibonacci` (Fibonacci numbers)
-The nth Fibonacci number, where n is a nonnegative integer. The Fibonacci sequence is given by \\( F_0=0 \\), \\( F_1=1 \\), and \\( F_n=F_{n-1}+F_{n-2} \\) for \\( n≥2 \\). The first several elements, starting with \\( n=0 \\), are \\( 0, 1, 1, 2, 3, 5, 8, 13 \\).
+The nth Fibonacci number, where n is a nonnegative integer. The Fibonacci sequence is given by \( F_0=0 \), \( F_1=1 \), and \( F_n=F_{n-1}+F_{n-2} \) for \( n≥2 \). The first several elements, starting with \( n=0 \), are \( 0, 1, 1, 2, 3, 5, 8, 13 \).
 More information [here](https://en.wikipedia.org/wiki/Fibonacci_sequence).
 
 ```nbt
@@ -714,7 +714,7 @@ fn fibonacci(n: Scalar) -> Scalar
 </details>
 
 ### `lucas` (Lucas numbers)
-The nth Lucas number, where n is a nonnegative integer. The Lucas sequence is given by \\( L_0=2 \\), \\( L_1=1 \\), and \\( L_n=L_{n-1}+L_{n-2} \\) for \\( n≥2 \\). The first several elements, starting with \\( n=0 \\), are \\( 2, 1, 3, 4, 7, 11, 18, 29 \\).
+The nth Lucas number, where n is a nonnegative integer. The Lucas sequence is given by \( L_0=2 \), \( L_1=1 \), and \( L_n=L_{n-1}+L_{n-2} \) for \( n≥2 \). The first several elements, starting with \( n=0 \), are \( 2, 1, 3, 4, 7, 11, 18, 29 \).
 More information [here](https://en.wikipedia.org/wiki/Lucas_number).
 
 ```nbt
@@ -732,7 +732,7 @@ fn lucas(n: Scalar) -> Scalar
 </details>
 
 ### `catalan` (Catalan numbers)
-The nth Catalan number, where n is a nonnegative integer. The Catalan sequence is given by \\( C_n=\frac{1}{n+1}\binom{2n}{n}=\binom{2n}{n}-\binom{2n}{n+1} \\). The first several elements, starting with \\( n=0 \\), are \\( 1, 1, 2, 5, 14, 42, 132, 429 \\).
+The nth Catalan number, where n is a nonnegative integer. The Catalan sequence is given by \( C_n=\frac{1}{n+1}\binom{2n}{n}=\binom{2n}{n}-\binom{2n}{n+1} \). The first several elements, starting with \( n=0 \), are \( 1, 1, 2, 5, 14, 42, 132, 429 \).
 More information [here](https://en.wikipedia.org/wiki/Catalan_number).
 
 ```nbt
@@ -754,14 +754,14 @@ fn catalan(n: Scalar) -> Scalar
 Defined in: `core::random`, `math::distributions`
 
 ### `random` (Standard uniform distribution sampling)
-Uniformly samples the interval \\( [0,1) \\).
+Uniformly samples the interval \( [0,1) \).
 
 ```nbt
 fn random() -> Scalar
 ```
 
 ### `rand_uniform` (Continuous uniform distribution sampling)
-Uniformly samples the interval \\( [a,b) \\) if \\( a \le b \\) or \\( [b,a) \\) if \\( b<a \\) using inversion sampling.
+Uniformly samples the interval \( [a,b) \) if \( a \le b \) or \( [b,a) \) if \( b<a \) using inversion sampling.
 More information [here](https://en.wikipedia.org/wiki/Continuous_uniform_distribution).
 
 ```nbt
@@ -769,7 +769,7 @@ fn rand_uniform<T: Dim>(a: T, b: T) -> T
 ```
 
 ### `rand_int` (Discrete uniform distribution sampling)
-Uniformly samples integers from the interval \\( [a, b] \\).
+Uniformly samples integers from the interval \( [a, b] \).
 More information [here](https://en.wikipedia.org/wiki/Discrete_uniform_distribution).
 
 ```nbt
@@ -777,7 +777,7 @@ fn rand_int(a: Scalar, b: Scalar) -> Scalar
 ```
 
 ### `rand_bernoulli` (Bernoulli distribution sampling)
-Samples a Bernoulli random variable. That is, \\( 1 \\) with probability \\( p \\) and \\( 0 \\) with probability \\( 1-p \\). The parameter \\( p \\) must be a probability (\\( 0 \le p \le 1 \\)).
+Samples a Bernoulli random variable. That is, \( 1 \) with probability \( p \) and \( 0 \) with probability \( 1-p \). The parameter \( p \) must be a probability (\( 0 \le p \le 1 \)).
 More information [here](https://en.wikipedia.org/wiki/Bernoulli_distribution).
 
 ```nbt
@@ -785,8 +785,8 @@ fn rand_bernoulli(p: Scalar) -> Scalar
 ```
 
 ### `rand_binom` (Binomial distribution sampling)
-Samples a binomial distribution by doing \\( n \\) Bernoulli trials with probability \\( p \\).
-              The parameter \\( n \\) must be a positive integer, the parameter \\( p \\) must be a probability (\\( 0 \le p \le 1 \\)).
+Samples a binomial distribution by doing \( n \) Bernoulli trials with probability \( p \).
+              The parameter \( n \) must be a positive integer, the parameter \( p \) must be a probability (\( 0 \le p \le 1 \)).
 More information [here](https://en.wikipedia.org/wiki/Binomial_distribution).
 
 ```nbt
@@ -794,7 +794,7 @@ fn rand_binom(n: Scalar, p: Scalar) -> Scalar
 ```
 
 ### `rand_norm` (Normal distribution sampling)
-Samples a normal distribution with mean \\( \mu \\) and standard deviation \\( \sigma \\) using the Box-Muller transform.
+Samples a normal distribution with mean \( \mu \) and standard deviation \( \sigma \) using the Box-Muller transform.
 More information [here](https://en.wikipedia.org/wiki/Normal_distribution).
 
 ```nbt
@@ -802,7 +802,7 @@ fn rand_norm<T: Dim>(μ: T, σ: T) -> T
 ```
 
 ### `rand_geom` (Geometric distribution sampling)
-Samples a geometric distribution (the distribution of the number of Bernoulli trials with probability \\( p \\) needed to get one success) by inversion sampling. The parameter \\( p \\) must be a probability (\\( 0 \le p \le 1 \\)).
+Samples a geometric distribution (the distribution of the number of Bernoulli trials with probability \( p \) needed to get one success) by inversion sampling. The parameter \( p \) must be a probability (\( 0 \le p \le 1 \)).
 More information [here](https://en.wikipedia.org/wiki/Geometric_distribution).
 
 ```nbt
@@ -810,7 +810,7 @@ fn rand_geom(p: Scalar) -> Scalar
 ```
 
 ### `rand_poisson` (Poisson distribution sampling)
-Sampling a poisson distribution with rate \\( \lambda \\), that is, the distribution of the number of events occurring in a fixed interval if these events occur with mean rate \\( \lambda \\). The rate parameter \\( \lambda \\) must be non-negative.
+Sampling a poisson distribution with rate \( \lambda \), that is, the distribution of the number of events occurring in a fixed interval if these events occur with mean rate \( \lambda \). The rate parameter \( \lambda \) must be non-negative.
 More information [here](https://en.wikipedia.org/wiki/Poisson_distribution).
 
 ```nbt
@@ -818,7 +818,7 @@ fn rand_poisson(λ: Scalar) -> Scalar
 ```
 
 ### `rand_expon` (Exponential distribution sampling)
-Sampling an exponential distribution (the distribution of the distance between events in a Poisson process with rate \\( \lambda \\)) using inversion sampling. The rate parameter \\( \lambda \\) must be positive.
+Sampling an exponential distribution (the distribution of the distance between events in a Poisson process with rate \( \lambda \)) using inversion sampling. The rate parameter \( \lambda \) must be positive.
 More information [here](https://en.wikipedia.org/wiki/Exponential_distribution).
 
 ```nbt
@@ -826,7 +826,7 @@ fn rand_expon<T: Dim>(λ: T) -> 1 / T
 ```
 
 ### `rand_lognorm` (Log-normal distribution sampling)
-Sampling a log-normal distribution, that is, a distribution whose logarithm is a normal distribution with mean \\( \mu \\) and standard deviation \\( \sigma \\).
+Sampling a log-normal distribution, that is, a distribution whose logarithm is a normal distribution with mean \( \mu \) and standard deviation \( \sigma \).
 More information [here](https://en.wikipedia.org/wiki/Log-normal_distribution).
 
 ```nbt
@@ -834,7 +834,7 @@ fn rand_lognorm(μ: Scalar, σ: Scalar) -> Scalar
 ```
 
 ### `rand_pareto` (Pareto distribution sampling)
-Sampling a Pareto distribution with minimum value `min` and shape parameter \\( \alpha \\) using inversion sampling. Both parameters must be positive.
+Sampling a Pareto distribution with minimum value `min` and shape parameter \( \alpha \) using inversion sampling. Both parameters must be positive.
 More information [here](https://en.wikipedia.org/wiki/Pareto_distribution).
 
 ```nbt
@@ -846,7 +846,7 @@ fn rand_pareto<T: Dim>(α: Scalar, min: T) -> T
 Defined in: `math::number_theory`
 
 ### `gcd` (Greatest common divisor)
-The largest positive integer that divides each of the integers \\( a \\) and \\( b \\).
+The largest positive integer that divides each of the integers \( a \) and \( b \).
 More information [here](https://en.wikipedia.org/wiki/Greatest_common_divisor).
 
 ```nbt
@@ -864,7 +864,7 @@ fn gcd(a: Scalar, b: Scalar) -> Scalar
 </details>
 
 ### `lcm` (Least common multiple)
-The smallest positive integer that is divisible by both \\( a \\) and \\( b \\).
+The smallest positive integer that is divisible by both \( a \) and \( b \).
 More information [here](https://en.wikipedia.org/wiki/Least_common_multiple).
 
 ```nbt
@@ -886,7 +886,7 @@ fn lcm(a: Scalar, b: Scalar) -> Scalar
 Defined in: `numerics::diff`, `numerics::solve`, `numerics::fixed_point`
 
 ### `diff` (Numerical differentiation)
-Compute the numerical derivative of the function \\( f \\) at point \\( x \\) using the central difference method.
+Compute the numerical derivative of the function \( f \) at point \( x \) using the central difference method.
 More information [here](https://en.wikipedia.org/wiki/Numerical_differentiation).
 
 ```nbt
@@ -896,7 +896,7 @@ fn diff<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x: X, Δx: X) -> Y / X
 <details>
 <summary>Examples</summary>
 
-Compute the derivative of \\( f(x) = x² -x -1 \\) at \\( x=1 \\).
+Compute the derivative of \( f(x) = x² -x -1 \) at \( x=1 \).
 <pre><div class="buttons"><button class="fa-solid fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20polynomial%28x%29%20%3D%20x%C2%B2%20%2D%20x%20%2D%201%0Adiff%28polynomial%2C%201%2C%201e%2D10%29')"></button></div><code class="language-nbt hljs numbat">use numerics::diff
 fn polynomial(x) = x² - x - 1
 diff(polynomial, 1, 1e-10)
@@ -904,7 +904,7 @@ diff(polynomial, 1, 1e-10)
     = 1.0
 </code></pre>
 
-Compute the free fall velocity after \\( t=2 s \\).
+Compute the free fall velocity after \( t=2 s \).
 <pre><div class="buttons"><button class="fa-solid fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20distance%28t%29%20%3D%200%2E5%20g0%20t%C2%B2%0Afn%20velocity%28t%29%20%3D%20diff%28distance%2C%20t%2C%201e%2D10%20s%29%0Avelocity%282%20s%29')"></button></div><code class="language-nbt hljs numbat">use numerics::diff
 fn distance(t) = 0.5 g0 t²
 fn velocity(t) = diff(distance, t, 1e-10 s)
@@ -916,7 +916,7 @@ velocity(2 s)
 </details>
 
 ### `root_bisect` (Bisection method)
-Find the root of the function \\( f \\) in the interval \\( [x_1, x_2] \\) using the bisection method. The function \\( f \\) must be continuous and \\( f(x_1) \cdot f(x_2) < 0 \\).
+Find the root of the function \( f \) in the interval \( [x_1, x_2] \) using the bisection method. The function \( f \) must be continuous and \( f(x_1) \cdot f(x_2) < 0 \).
 More information [here](https://en.wikipedia.org/wiki/Bisection_method).
 
 ```nbt
@@ -926,7 +926,7 @@ fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y
 <details>
 <summary>Examples</summary>
 
-Find the root of \\( f(x) = x² +x -2 \\) in the interval \\( [0, 100] \\).
+Find the root of \( f(x) = x² +x -2 \) in the interval \( [0, 100] \).
 <pre><div class="buttons"><button class="fa-solid fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2Bx%20%2D2%0Aroot%5Fbisect%28f%2C%200%2C%20100%2C%200%2E01%2C%200%2E01%29')"></button></div><code class="language-nbt hljs numbat">use numerics::solve
 fn f(x) = x² +x -2
 root_bisect(f, 0, 100, 0.01, 0.01)
@@ -937,7 +937,7 @@ root_bisect(f, 0, 100, 0.01, 0.01)
 </details>
 
 ### `root_newton` (Newton's method)
-Find the root of the function \\( f(x) \\) and its derivative \\( f'(x) \\) using Newton's method.
+Find the root of the function \( f(x) \) and its derivative \( f'(x) \) using Newton's method.
 More information [here](https://en.wikipedia.org/wiki/Newton%27s_method).
 
 ```nbt
@@ -947,7 +947,7 @@ fn root_newton<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X
 <details>
 <summary>Examples</summary>
 
-Find a root of \\( f(x) = x² -3x +2 \\) using Newton's method.
+Find a root of \( f(x) = x² -3x +2 \) using Newton's method.
 <pre><div class="buttons"><button class="fa-solid fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Asolve%0Afn%20f%28x%29%20%3D%20x%C2%B2%20%2D3x%20%2B2%0Afn%20f%5Fprime%28x%29%20%3D%202x%20%2D3%0Aroot%5Fnewton%28f%2C%20f%5Fprime%2C%200%20%2C%200%2E01%29')"></button></div><code class="language-nbt hljs numbat">use numerics::solve
 fn f(x) = x² -3x +2
 fn f_prime(x) = 2x -3
@@ -959,7 +959,7 @@ root_newton(f, f_prime, 0 , 0.01)
 </details>
 
 ### `fixed_point` (Fixed-point iteration)
-Compute the approximate fixed point of a function \\( f: X \rightarrow X \\) starting from \\( x_0 \\), until \\( |f(x) - x| < ε \\).
+Compute the approximate fixed point of a function \( f: X \rightarrow X \) starting from \( x_0 \), until \( |f(x) - x| < ε \).
 More information [here](https://en.wikipedia.org/wiki/Fixed-point_iteration).
 
 ```nbt
@@ -969,7 +969,7 @@ fn fixed_point<X: Dim>(f: Fn[(X) -> X], x0: X, ε: X) -> X
 <details>
 <summary>Examples</summary>
 
-Compute the fixed poin of \\( f(x) = x/2 -1 \\).
+Compute the fixed poin of \( f(x) = x/2 -1 \).
 <pre><div class="buttons"><button class="fa-solid fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20numerics%3A%3Afixed%5Fpoint%0Afn%20function%28x%29%20%3D%20x%2F2%20%2D%201%0Afixed%5Fpoint%28function%2C%200%2C%200%2E01%29')"></button></div><code class="language-nbt hljs numbat">use numerics::fixed_point
 fn function(x) = x/2 - 1
 fixed_point(function, 0, 0.01)
@@ -1042,7 +1042,7 @@ fn percentage_change<D: Dim>(old: D, new: D) -> Scalar
 Defined in: `math::geometry`
 
 ### `hypot2`
-The length of the hypotenuse of a right-angled triangle \\( \sqrt{x^2+y^2} \\).
+The length of the hypotenuse of a right-angled triangle \( \sqrt{x^2+y^2} \).
 
 ```nbt
 fn hypot2<T: Dim>(x: T, y: T) -> T
@@ -1059,7 +1059,7 @@ fn hypot2<T: Dim>(x: T, y: T) -> T
 </details>
 
 ### `hypot3`
-The Euclidean norm of a 3D vector \\( \sqrt{x^2+y^2+z^2} \\).
+The Euclidean norm of a 3D vector \( \sqrt{x^2+y^2+z^2} \).
 
 ```nbt
 fn hypot3<T: Dim>(x: T, y: T, z: T) -> T
@@ -1076,28 +1076,28 @@ fn hypot3<T: Dim>(x: T, y: T, z: T) -> T
 </details>
 
 ### `circle_area`
-The area of a circle, \\( \pi r^2 \\).
+The area of a circle, \( \pi r^2 \).
 
 ```nbt
 fn circle_area<L: Dim>(radius: L) -> L^2
 ```
 
 ### `circle_circumference`
-The circumference of a circle, \\( 2\pi r \\).
+The circumference of a circle, \( 2\pi r \).
 
 ```nbt
 fn circle_circumference<L: Dim>(radius: L) -> L
 ```
 
 ### `sphere_area`
-The surface area of a sphere, \\( 4\pi r^2 \\).
+The surface area of a sphere, \( 4\pi r^2 \).
 
 ```nbt
 fn sphere_area<L: Dim>(radius: L) -> L^2
 ```
 
 ### `sphere_volume`
-The volume of a sphere, \\( \frac{4}{3}\pi r^3 \\).
+The volume of a sphere, \( \frac{4}{3}\pi r^3 \).
 
 ```nbt
 fn sphere_volume<L: Dim>(radius: L) -> L^3
@@ -1118,7 +1118,7 @@ fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B^2 / A) -> List<B / A>
 <details>
 <summary>Examples</summary>
 
-Solve the equation \\( 2x² -x -1 = 0 \\)
+Solve the equation \( 2x² -x -1 = 0 \)
 <pre><div class="buttons"><button class="fa-solid fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Aquadratic%5Fequation%282%2C%20%2D1%2C%20%2D1%29')"></button></div><code class="language-nbt hljs numbat">use extra::algebra
 quadratic_equation(2, -1, -1)
 
@@ -1138,7 +1138,7 @@ fn cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar>
 <details>
 <summary>Examples</summary>
 
-Solve the equation \\( x³ - 6x² + 11x - 6 = 0 \\)
+Solve the equation \( x³ - 6x² + 11x - 6 = 0 \)
 <pre><div class="buttons"><button class="fa-solid fa-play play-button" title="Run this code" aria-label="Run this code" onclick=" window.open('https://numbat.dev/?q=use%20extra%3A%3Aalgebra%0Acubic%5Fequation%281%2C%20%2D6%2C%2011%2C%20%2D6%29')"></button></div><code class="language-nbt hljs numbat">use extra::algebra
 cubic_equation(1, -6, 11, -6)
 

@@ -16,8 +16,8 @@ assert_eq(q1, q2, ε)
 ```
 
 where the first version tests for exact equality while the second version tests for approximate
-equality \\( |q_1-q_2| <= \epsilon \\) with a specified accuracy of \\( \epsilon \\).
-Note that the input quantities are converted to the units of \\( \epsilon \\) before comparison.
+equality \( |q_1-q_2| <= \epsilon \) with a specified accuracy of \( \epsilon \).
+Note that the input quantities are converted to the units of \( \epsilon \) before comparison.
 For example:
 
 ```nbt
@@ -49,4 +49,8 @@ You can use the builtin `type` procedure to see the type (or physical dimension)
 >>> type(2 < 3)
 
   Bool
+
+>>> type(sqrt)
+
+  forall A: Dim. Fn[(A²) -> A]
 ```

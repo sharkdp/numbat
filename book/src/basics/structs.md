@@ -4,23 +4,31 @@ icon: lucide/braces
 
 # Structs
 
-Numbat has compound data structures in the form of structs:
+Numbat has compound data structures in the form of structs. A struct can be defined using the `struct` keyword, followed by the list of fields and their types. For example:
 
 ```nbt
-struct Vector {
-  x: Length,
-  y: Length,
+struct Element {
+    name: String,
+    atomic_number: Scalar,
+    density: MassDensity,
 }
+```
 
-let origin   = Vector { x: 0 m, y: 0 m }
-let position = Vector { x: 6 m, y: 8 m }
+Structs can be instantiated by providing values for each field:
 
-# Struct fields can be accessed using `.field` notation
-let x = position.x
+```nbt
+let tungsten = Element {
+    name: "Tungsten",
+    atomic_number: 74,
+    density: 19.25 g/cm³,
+}
+```
 
-# A function with a struct as a parameter
-fn euclidean_distance(a: Vector, b: Vector) =
-  sqrt((a.x - b.x)² + (a.y - b.y)²)
+Fields can be accessed using dot notation:
 
-assert_eq(euclidean_distance(origin, position), 10 m)
+```nbt
+let mass = 1 kg
+let side_length = cbrt(mass / tungsten.density) -> cm
+
+print("A {tungsten.name} cube with a mass of {mass} has a side length of {side_length:.2}.")
 ```
