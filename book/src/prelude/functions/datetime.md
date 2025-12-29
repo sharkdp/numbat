@@ -234,3 +234,4 @@ fn human(time: Time) -> String
         = "52 minutes + 35.693 seconds"    [String]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=century%2F1e6%20%2D%3E%20human){ .md-button }
+
