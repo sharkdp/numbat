@@ -99,7 +99,7 @@ This allows us to finally answer the original question (for a [typical US househ
 household_power(10000 kWh) / power_per_banana
 ```
 
-This should give you a result of roughly 4×10<sup style="line-height: 0">14</sup> bananas.
+This should give you a result of roughly 4×10<sup>14</sup> bananas.
 
 <p align="center"><img src="https://what-if.xkcd.com/imgs/a/158/10bunches.png"></p>
 
@@ -107,7 +107,7 @@ This should give you a result of roughly 4×10<sup style="line-height: 0">14</su
 !!! note
 
     Interestingly, the *what if* article comes up with a result of 300 quadrillion bananas,
-    or 3 × 10<sup style="line-height: 0">17</sup>. This is a factor of 1000 higher. This seems like a
+    or 3 × 10<sup>17</sup>. This is a factor of 1000 higher. This seems like a
     mistake in the original source. All of our other intermediate results are consistent with what has
     been computed in the original article.
 

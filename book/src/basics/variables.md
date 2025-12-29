@@ -22,7 +22,7 @@ let Q: FlowRate = π × pipe_radius^4 × Δp / (8 μ_water × pipe_length)
 !!! info
 
     Variables in Numbat are *immutable*. Once defined, their value cannot be changed.
-    However, you always redefine a variable by introducing a new definition with the same name:
+    However, you can always redefine a variable by introducing a new definition with the same name:
     ```nbt
     let numbers = "1 2 3"
     let numbers = split(numbers, " ")

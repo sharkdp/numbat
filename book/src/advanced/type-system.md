@@ -82,7 +82,7 @@ let lapse_rate = 0.65 K / 100 m
 fn air_pressure(height: Length) -> Pressure =
   p0 · (1 - lapse_rate · height / t0)^5.255
 ```
-See [this chapter](./basics/functions.md) for more details on the type inference algorithm.
+See [this chapter](../basics/functions.md) for more details on the type inference algorithm.
 
 
 ## Generic types

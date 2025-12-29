@@ -35,7 +35,7 @@ Entries higher up in the list take precedence.
 |`<builtin>`|Builtin modules inside the `numbat` binary|
 
 Note that the System-location might be different for some installation methods.
-Refer to your [package manager for details](./cli-installation.html#guidelines-for-package-maintainers).
+Refer to your [package manager for details](./installation.md#guidelines-for-package-maintainers).
 
 ## Customization
 
