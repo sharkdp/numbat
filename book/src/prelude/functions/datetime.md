@@ -4,7 +4,7 @@ icon: lucide/clock
 
 # Date and time
 
-See [this page](../../basics/date-and-time.md) for a general introduction to date and time handling in Numbat.
+See [this page](./date-and-time.md) for a general introduction to date and time handling in Numbat.
 
 Defined in: `datetime::functions`, `datetime::human`
 
@@ -16,7 +16,7 @@ fn now() -> DateTime
 ```
 
 ### `datetime`
-Parses a string (date and time) into a `DateTime` object. See [here](../../basics/date-and-time.md#date-time-formats) for an overview of the supported formats.
+Parses a string (date and time) into a `DateTime` object. See [here](./date-and-time.md#date-time-formats) for an overview of the supported formats.
 
 ```nbt
 fn datetime(input: String) -> DateTime

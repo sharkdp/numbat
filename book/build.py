@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
 """
-Build script for Numbat documentation using Zensical.
-
 This script:
 1. Generates example files from examples/*.nbt
 2. Generates function reference files via cargo run --example=inspect

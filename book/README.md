@@ -22,7 +22,7 @@ This will start a development server at `http://localhost:8000` with live reload
 To build the documentation (including auto-generated content):
 
 ```bash
-uv run python build_docs.py
+uv run build
 ```
 
 This will:
