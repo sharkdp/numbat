@@ -89,80 +89,69 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
         println!("```");
         println!();
 
-        if !examples.is_empty() {
-            println!("<details>");
-            println!("<summary>Examples</summary>");
-            println!();
+        for (example_code, example_description) in examples {
+            let mut example_ctx = prelude_ctx.clone();
+            let extra_import = if !example_ctx
+                .resolver()
+                .imported_modules
+                .contains(&module_path)
+            {
+                format!("use {}\n", module)
+            } else {
+                "".into()
+            };
+            let _result = example_ctx
+                .interpret(&extra_import, CodeSource::Internal)
+                .unwrap();
 
-            for (example_code, example_description) in examples {
-                let mut example_ctx = prelude_ctx.clone();
-                let extra_import = if !example_ctx
-                    .resolver()
-                    .imported_modules
-                    .contains(&module_path)
-                {
-                    format!("use {}\n", module)
-                } else {
-                    "".into()
-                };
-                let _result = example_ctx
-                    .interpret(&extra_import, CodeSource::Internal)
-                    .unwrap();
+            if let Ok((statements, results)) =
+                example_ctx.interpret(&example_code, CodeSource::Internal)
+            {
+                let example_input = extra_import + &example_code;
 
-                if let Ok((statements, results)) =
-                    example_ctx.interpret(&example_code, CodeSource::Internal)
-                {
-                    let example_input = extra_import + &example_code;
+                // Encode the example url
+                let example_url = format!(
+                    "https://numbat.dev/?q={}",
+                    percent_encoding::utf8_percent_encode(
+                        &example_input,
+                        percent_encoding::NON_ALPHANUMERIC
+                    )
+                );
 
-                    //Encode the example url
-                    let example_url = format!(
-                        "https://numbat.dev/?q={}",
-                        percent_encoding::utf8_percent_encode(
-                            &example_input,
-                            percent_encoding::NON_ALPHANUMERIC
-                        )
-                    );
+                // Assemble the example output
+                let result_markup = results.to_markup(
+                    statements.last(),
+                    example_ctx.dimension_registry(),
+                    true,
+                    true,
+                );
+                let example_output = &plain_text_format(&result_markup, false);
 
-                    //Assemble the example output
-                    let result_markup = results.to_markup(
-                        statements.last(),
-                        example_ctx.dimension_registry(),
-                        true,
-                        true,
-                    );
-                    let example_output = &plain_text_format(&result_markup, false);
-
-                    //Print the example
-                    if let Some(example_description) = example_description {
-                        println!("{}", replace_equation_delimiters(&example_description));
-                    }
-
-                    print!("<pre>");
-                    print!("<div class=\"buttons\">");
-                    print!(
-                        "<button class=\"fa-solid fa-play play-button\" title=\"Run this code\" aria-label=\"Run this code\" onclick=\" window.open('{}')\"></button>",
-                        example_url
-                    );
-                    print!("</div>");
-                    print!("<code class=\"language-nbt hljs numbat\">");
-                    for l in example_input.lines() {
-                        println!("{}", l);
-                    }
-                    println!();
-                    for l in example_output.lines() {
-                        println!("{}", l);
-                    }
-                    println!("</code></pre>");
-                    println!();
-                } else {
-                    eprintln!(
-                        "Error: Example \"{example_code}\" of function {fn_name} did not run successfully."
-                    );
-                    exit(1);
+                // Print the example as an admonition
+                let title = example_description
+                    .map(|d| replace_equation_delimiters(&d).to_string())
+                    .unwrap_or_else(|| "Example".to_string());
+                println!("!!! example \"{}\"", title);
+                println!("    ```nbt");
+                for l in example_input.lines() {
+                    println!("    {}", l);
                 }
+                println!();
+                for l in example_output.lines() {
+                    println!("    {}", l);
+                }
+                println!("    ```");
+                println!(
+                    "    [:material-play-circle: Run this example]({}){{ .md-button }}",
+                    example_url
+                );
+                println!();
+            } else {
+                eprintln!(
+                    "Error: Example \"{example_code}\" of function {fn_name} did not run successfully."
+                );
+                exit(1);
             }
-            println!("</details>");
-            println!();
         }
     }
 }
