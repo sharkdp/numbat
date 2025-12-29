@@ -285,7 +285,7 @@ def build_site():
     """Run zensical build."""
     print("Building documentation with zensical...")
     result = subprocess.run(
-        ["zensical", "build"],
+        ["zensical", "build", "--strict"],
         cwd=SCRIPT_DIR,
     )
     return result.returncode
