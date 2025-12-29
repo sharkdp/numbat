@@ -61,7 +61,7 @@ nav = [
     "advanced/dimension-definitions.md",
     "advanced/unit-definitions.md",
     "examples/example-numbat_syntax.md",
-    "type-system.md",
+    "advanced/type-system.md",
   ] },
 
   { "Standard library" = [
