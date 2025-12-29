@@ -39,14 +39,15 @@ There is a set of special commands that only work in interactive mode:
 
 | Command | Action |
 |---------|--------|
-| `list` | List all functions, dimensions, variables and units |
-| `list <what>` | Where `<what>` can be `functions`, `dimensions`, `variables`, `units` |
-| `info <identifier>` | Get more information about units, dimensions, variables, and functions |
-| `clear` | Clear screen |
-| `help`, `?` | View short help text |
-| `save` | Save the current session history to file `history.nbt` in the current directory |
-| `save <dst>` | Save the current session history to file `<dst>` relative to the current working directory |
-| `quit`, `exit` | Quit the session |
+| `help`, `?` | Show a basic introduction to Numbat |
+| `help commands` | Brief description of all available commands |
+| `info <identifier>` | Get more information about functions, variables, units, or dimensions |
+| `list` | Show all currently defined items |
+| `list <what>` | Show all currently defined `functions`, `dimensions`, `variables`, or `units` |
+| `save` | Save the current session history to `history.nbt` in the current directory |
+| `save <path>` | Save the current session history to file (recommended extension: `.nbt`) |
+| `clear` | Clear the console output |
+| `quit`, `exit` | Close this session |
 
 ### Key bindings
 

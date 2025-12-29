@@ -24,16 +24,17 @@ The special identifiers `ans` and `_` refer to the result of the last calculatio
 
 ## Commands
 
-There is a set of special commands that only work in the web version:
+There is a set of special commands available in the web version:
 
 | Command | Action |
 |---------|--------|
-| `list` | List all functions, dimensions, variables and units |
-| `list <what>` | Where `<what>` can be `functions`, `dimensions`, `variables`, `units` |
-| `info <identifier>` | Get more information about units, dimensions, variables, and functions |
-| `clear` | Clear screen |
-| `help`, `?` | View short help text |
-| `reset` | Reset state (clear constants, functions, units, …) |
+| `help`, `?` | Show a basic introduction to Numbat |
+| `help commands` | Brief description of all available commands |
+| `info <identifier>` | Get more information about functions, variables, units, or dimensions |
+| `list` | Show all currently defined items |
+| `list <what>` | Show all currently defined `functions`, `dimensions`, `variables`, or `units` |
+| `clear` | Clear the console output |
+| `reset` | Completely reset the interpreter state |
 
 ## Key bindings
 
