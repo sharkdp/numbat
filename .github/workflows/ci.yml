@@ -46,19 +46,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: dtolnay/rust-toolchain@stable
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v5
-    - name: Install mdbook
-      run: |
-        cargo install mdbook
-        cargo install mdbook-linkcheck
+    - uses: actions/checkout@v4
+    - uses: astral-sh/setup-uv@v4
     - name: Build documentation
       run: |
         cd book
-        python build.py
+        uv run build
         if [ -n "$(git status --porcelain)" ]; then
           echo "Documentation not up to date."
-          echo "Make sure to run 'build.py' in the book/ folder"
+          echo "Make sure to run 'uv run build' in the book/ folder"
           exit 1
         fi
 
