@@ -1,6 +1,6 @@
 [project]
 site_name = "Numbat"
-site_url = "https://numbat.dev/doc/"
+site_url = "https://numbat.dev/docs/"
 site_description = "Scientific calculator with full support for physical units"
 site_author = "David Peter"
 repo_url = "https://github.com/sharkdp/numbat"
