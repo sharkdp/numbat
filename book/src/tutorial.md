@@ -22,7 +22,7 @@ let occurrence = 0.0117%
 let molar_mass = 40 g / mol
 ```
 
-New constants are [introduced with the `let` keyword](./constant-definitions.md). We
+New variables are [introduced with the `let` keyword](./basics/variables.md). We
 define these physical quantities with their respective physical units (`years`,
 `percent`, `g / mol`) in order to profit from Numbat's unit-safety and unit-conversion
 features later on.
@@ -36,7 +36,7 @@ Numbat's auto-completion functionality. Instead of typing out `halflife`, just t
 let decay_rate = ln(2) / halflife
 ```
 
-As you can see, we can use typical [mathematical functions](./list-functions-math.md) such as the
+As you can see, we can use typical [mathematical functions](./prelude/functions/math.md) such as the
 natural logarithm `ln`. Next, we are interested how much radioactivity comes from a certain
 mass of potassium:
 
@@ -54,7 +54,7 @@ calculation at the units-level, Numbat would detect that and show an error.
 Unit safety is a powerful concept not just because you can eliminate an entire category
 of errors, but also because it makes your computations more readable.
 
-We are interested in the radioactivity of bananas, so we first [introduce a new (base) unit](./unit-definitions.md):
+We are interested in the radioactivity of bananas, so we first [introduce a new (base) unit](./advanced/unit-definitions.md):
 
 ``` numbat
 unit banana
@@ -84,10 +84,10 @@ This also works with custom units since Numbat adds new physical dimensions (typ
 let power_per_banana: Power / Banana = radioactivity_banana * energy_per_decay
 ```
 
-You'll also notice that types can be combined via [mathematical operators](./operations.md) such as `/` in this example.
+You'll also notice that types can be combined via [mathematical operators](./basics/operations.md) such as `/` in this example.
 
 How many bananas we need to power a household is going to depend on the average power consumption
-of that household. So we are [defining a simple function](./function-definitions.md)
+of that household. So we are [defining a simple function](./basics/functions.md)
 
 ```numbat
 fn household_power(annual_consumption: Energy) -> Power = annual_consumption / year

@@ -16,7 +16,7 @@ Lists can be created using the `[…]` syntax. For example:
 The type of a list is written as `List<T>`, where `T` is the type of the elements. The types of the lists
 above are `List<Length>`, `List<String>`, and `List<List<Scalar>>`, respectively.
 
-The standard library provides a [number of functions](./list-functions-lists.md) to work with lists. Some
+The standard library provides a [number of functions](../prelude/functions/lists.md) to work with lists. Some
 useful things to do with lists are:
 ```nbt
 # Get the length of a list
