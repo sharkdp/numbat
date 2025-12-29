@@ -15,123 +15,82 @@
   --md-accent-bg-color--light: #ffffffb3;
 }
 
-/* Dark mode adjustments */
-[data-md-color-scheme="slate"] {
-  --md-primary-fg-color: #7d80da;
-  --md-primary-fg-color--light: #9a9ce3;
-  --md-primary-fg-color--dark: #6264c7;
-  --md-primary-bg-color: #ffffff;
-  --md-primary-bg-color--light: #ffffffb3;
-
-  --md-accent-fg-color: #EF767A;
-  --md-accent-fg-color--transparent: #EF767A1a;
-  --md-accent-bg-color: #ffffff;
-  --md-accent-bg-color--light: #ffffffb3;
-}
-
 /* Syntax highlighting */
 
-div.language-numbat.highlight,
-div.language-numbat.highlight>pre,
-div.language-numbat.highlight>pre>code,
-div.language-nbt.highlight,
-div.language-nbt.highlight>pre,
-div.language-nbt.highlight>pre>code {
-  background: #fcfcfc !important;
-  background-color: #fcfcfc !important;
+.highlight,
+.highlight>pre,
+.highlight>pre>code {
+  background: #f7f7f7 !important;
+  background-color: #f7f7f7 !important;
 }
 
-.language-numbat code,
-.language-nbt code {
+.highlight code {
   color: #333;
 }
 
 /* Keywords: bright purple */
-.language-numbat .k,
-.language-nbt .k {
+.highlight .k {
   color: #c802ff !important;
 }
 
 /* Strings: green */
-.language-numbat .s,
-.language-numbat .s1,
-.language-numbat .s2,
-.language-numbat .sd,
-.language-nbt .s,
-.language-nbt .s1,
-.language-nbt .s2,
-.language-nbt .sd {
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .sd {
   color: #27a85f !important;
 }
 
 /* Numbers/Values: blue */
-.language-numbat .mi,
-.language-numbat .mf,
-.language-numbat .mh,
-.language-numbat .mo,
-.language-numbat .mb,
-.language-nbt .mi,
-.language-nbt .mf,
-.language-nbt .mh,
-.language-nbt .mo,
-.language-nbt .mb {
+.highlight .mi,
+.highlight .mf,
+.highlight .mh,
+.highlight .mo,
+.highlight .mb {
   color: #0040ff !important;
 }
 
 /* Types/Dimensions: magenta-pink */
-.language-numbat .nc,
-.language-numbat .kt,
-.language-nbt .nc,
-.language-nbt .kt {
+.highlight .nc,
+.highlight .kt {
   color: #ca3b63 !important;
 }
 
 /* Variables/Units: black */
-.language-numbat .nv,
-.language-numbat .n,
-.language-nbt .nv,
-.language-nbt .n {
+.highlight .nv,
+.highlight .n {
   color: #333 !important;
 }
 
 /* Operators: red */
-.language-numbat .o,
-.language-nbt .o {
+.highlight .o {
   color: #db2828 !important;
 }
 
 /* Comments: gray */
-.language-numbat .c,
-.language-numbat .c1,
-.language-numbat .cm,
-.language-nbt .c,
-.language-nbt .c1,
-.language-nbt .cm {
-  color: #8c8c8c !important;
+.highlight .c,
+.highlight .c1,
+.highlight .cm {
+  color: #757575 !important;
 }
 
 /* REPL prompts: gray */
-.language-numbat .cs,
-.language-nbt .cs,
-.language-numbat .gp,
-.language-nbt .gp {
+.highlight .cs,
+.highlight .gp {
   color: #8c8c8c !important;
 }
 
 /* Decorators: green */
-.language-numbat .nd,
-.language-nbt .nd {
+.highlight .nd {
   color: #27a85f !important;
 }
 
 /* Punctuation */
-.language-numbat .p,
-.language-nbt .p {
+.highlight .p {
   color: #333 !important;
 }
 
 /* Other names (Greek letters, etc.) */
-.language-numbat .no,
-.language-nbt .no {
+.highlight .no {
   color: #5c12a6 !important;
 }
