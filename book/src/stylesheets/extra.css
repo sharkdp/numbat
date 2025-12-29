@@ -94,3 +94,13 @@
 .highlight .no {
   color: #5c12a6 !important;
 }
+
+/* Quote admonition: light green background */
+.admonition.quote {
+  border-color: #64dd17;
+  background-color: rgba(100, 221, 23, 0.1) !important;
+}
+
+.admonition.quote>.admonition-title::before {
+  background-color: #64dd17;
+}

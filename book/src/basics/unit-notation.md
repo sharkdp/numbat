@@ -31,3 +31,33 @@ sin(30 degrees)
 ```
 
 Note that Numbat also allows you to [define new units](../advanced/unit-definitions.md).
+
+!!! quote
+
+    In metric, one milliliter of water occupies one cubic centimeter, weighs one gram, and requires one calorie of energy to heat up by one degree centigrade — which is 1 percent of the difference between its freezing point and its boiling point. An amount of hydrogen weighing the same amount has exactly one mole of atoms in it. Whereas in the American system, the answer to *‘How much energy does it take to boil a room-temperature gallon of water?’* is *‘Go fuck yourself,’* because you can’t directly relate any of those quantities.
+
+    Josh Bazell, Wild Thing
+
+!!! example "How much energy does it take to boil a room-temperature gallon of water?"
+
+    The amount of heat needed to uniformly raise the temperature of a substance by \( \Delta T \)
+    is given by \( Q = m \cdot c \cdot \Delta T \), where \( m \) is the mass and \( c \) is the specific heat
+    capacity of the substance.
+
+    ```nbt
+    let density_water = 1 kg / L  # at sea level
+    let mass_water = 1 gallon × density_water
+
+    let c_water = 1 cal / g K
+
+    let ΔT = from_fahrenheit(212) - from_fahrenheit(70)
+
+    let heat = mass_water × c_water × ΔT
+
+    print("Energy to boil 1 gallon of room-temperature water:")
+    print("  {heat -> kJ}")
+    print("  {heat -> BTU}")
+    print("  {heat -> kWh}")
+    ```
+
+    [:material-play-circle: Run this example](https://numbat.dev/?q=let+density_water+%3D+1+kg+%2F+L++%23+at+sea+level%0Alet+mass_water+%3D+1+gallon+%C3%97+density_water%0A%0Alet+c_water+%3D+1+cal+%2F+g+K%0A%0Alet+%CE%94T+%3D+from_fahrenheit%28212%29+-+from_fahrenheit%2870%29%0A%0Alet+heat+%3D+mass_water+%C3%97+c_water+%C3%97+%CE%94T%0A%0Aprint%28%22Energy+to+boil+1+gallon+of+room-temperature+water%3A%22%29%0Aprint%28%22++%7Bheat+-%3E+kJ%7D%22%29%0Aprint%28%22++%7Bheat+-%3E+BTU%7D%22%29%0Aprint%28%22++%7Bheat+-%3E+kWh%7D%22%29%E2%8F%8E){ .md-button .md-button--primary }
