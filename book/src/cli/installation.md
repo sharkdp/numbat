@@ -107,7 +107,7 @@ the archive and place the `numbat`/`numbat.exe` binary in a folder that is on yo
 
 Note that the `modules` folder that is included in the archives is not strictly required to run Numbat. It serves more
 as a reference for interested users. However, if you want to get the best possible experience or if you are
-a package maintainer, please follow [these guidelines](./cli-installation.md#guidelines-for-package-maintainers).
+a package maintainer, please follow [these guidelines](#guidelines-for-package-maintainers).
 
 ## From source
 
@@ -130,8 +130,8 @@ cargo install numbat-cli
 Thank you for packaging Numbat! This section contains instructions that are not strictly necessary
 to create a Numbat package, but provide users with the best-possible experience on your target platform.
 
-Numbat has a [standard library](./prelude.md) that is written in Numbat itself. The sources for this
-so called "prelude" are available in the [`numbat/modules`](https://github.com/sharkdp/numbat/tree/main/numbat/modules) folder.
+Numbat has a [standard library](../prelude/index.md) that is written in Numbat itself. The sources for this
+so-called "prelude" are available in the [`numbat/modules`](https://github.com/sharkdp/numbat/tree/main/numbat/modules) folder.
 We also include this `modules` folder in the pre-built [GitHub releases](https://github.com/sharkdp/numbat/releases).
 Installing this folder as part of the package installation is not necessary for Numbat to work, as the prelude is also
 stored inside the `numbat` binary. But ideally, this folder should be made available for users. There are three reasons for this:
@@ -141,11 +141,11 @@ stored inside the `numbat` binary. But ideally, this folder should be made avail
   will let you know that this identifier is already in use, and has been previously defined at a certain location inside the
   standard library. If the corresponding module is available as a file on the users system, they will see the proper path and
   can read the corresponding file.
-- Users might want to make changes to the prelude. Ideally, this should be done via a [user module folder](./cli-customization.md),
+- Users might want to make changes to the prelude. Ideally, this should be done via a [user module folder](./customization.md),
   but the system-wide folder can serve as a template.
 
 In order for this to work, the `modules` folder should ideally be placed in the [standard location for the
-target operating system](./cli-customization.md). If this is not possible, package maintainers can customize
+target operating system](./customization.md). If this is not possible, package maintainers can customize
 numbat during compilation by setting the environment variable `NUMBAT_SYSTEM_MODULE_PATH` to the final locatiom.
 If this variable is set during compilation, the specified path will be compiled into the `numbat` binary.
 

@@ -39,7 +39,7 @@ or misrepresented, please [let us know](https://github.com/sharkdp/numbat/issues
   and units of measurement. The language is probably more powerful than Numbat, but lacks a static type system. It's also
   a imperative/OOP language, while Numbat is a functional/declarative language. Frink is not open-source.
 - [GNU Units](https://www.gnu.org/software/units/) is probably the most comprehensive tool in terms of pre-defined units.
-  Numbat makes it very easy to define [custom units](./unit-definitions.md). If you think that a unit should be part
+  Numbat makes it very easy to define [custom units](./advanced/unit-definitions.md). If you think that a unit should be part
   of the standard library, please [let us know](https://github.com/sharkdp/numbat/issues).
 - [Wolfram Alpha](https://www.wolframalpha.com/) is a very powerful tool, but it's focused on single-line queries instead
   of longer computations. The query language lacks a strict syntax (which some might consider a feature). The tool is not
@@ -50,5 +50,5 @@ or misrepresented, please [let us know](https://github.com/sharkdp/numbat/issues
 - [F#](https://fsharp.org/) is the only programming language that we know of that comes close in terms of having an
   expressive type system that is based on units of measure. In fact, Numbats type system is heavily inspired by F#,
   except that it uses physical dimensions instead of physical units on the type level. Both languages have
-  full [type inference](./function-definitions.md#type-inference). F# is not listed above, as it's not really suitable
+  full [type inference](./basics/functions.md#type-inference). F# is not listed above, as it's not really suitable
   as a scientific calculator.

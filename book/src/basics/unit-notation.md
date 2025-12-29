@@ -7,7 +7,7 @@ icon: lucide/ruler
 Most units can be entered in the same way that they would appear in textbook calculations. They
 usually have a long form (`meter`, `degrees`, `byte`, …), a plural form (`meters`, `degrees`, `bytes`),
 and a short alias (`m`, `°`, `B`). For a full list of supported units, see
-[this page](./list-units.md).
+[this page](../prelude/list-units.md).
 
 All SI-accepted units support [metric prefixes](https://en.wikipedia.org/wiki/Metric_prefix) (`mm`, `cm`, `km`, ... or `millimeter`, `centimeter`, `kilometer`, ...)
 and — where sensible — units allow for [binary prefixes](https://en.wikipedia.org/wiki/Binary_prefix) (`MiB`, `GiB`, ... or `mebibyte`, `gibibyte`, ...). Note
@@ -30,4 +30,4 @@ sin(30 degrees)
 6 mebibyte
 ```
 
-Note that Numbat also allows you to [define new units](./unit-definitions.md).
+Note that Numbat also allows you to [define new units](../advanced/unit-definitions.md).
