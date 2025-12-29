@@ -28,6 +28,29 @@ expression on the right hand side — but only the unit part will be extracted. 
   x2 = 10.8 km/h
 ```
 
+
+!!! quote
+
+    *"The metric system is the tool of the devil! My car gets 40 rods to the hogshead and that's the way I likes it."* — Grandpa Simpson, A Star Is Burns (S06E18)
+
+!!! example
+
+    To convert the mileage of Grandpa's car to miles per gallon, you can write:
+
+    ```nbt
+    >>> 40 rods / hogshead -> mpg
+
+        = 0.00198413 mi/gal    [Length⁻²]
+    ```
+
+    And for supporters of [Marge's side](https://www.youtube.com/watch?v=Y9XcWqBl8Xs) could use something like:
+
+    ```nbt
+    100 km / (40 rods / hogshead) -> l
+
+        = 118548 l    [Volume]
+    ```
+
 ## Conversion functions
 
 The conversion operator `->` (or `to`) can not just be used for unit conversions, but also for other types of conversions.

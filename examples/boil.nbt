@@ -1,0 +1,23 @@
+# In metric, one milliliter of water occupies one cubic centimeter, weighs one
+# gram, and requires one calorie of energy to heat up by one degree centigrade —
+# which is 1 percent of the difference between its freezing point and its boiling
+# point. An amount of hydrogen weighing the same amount has exactly one mole of
+# atoms in it. Whereas in the American system, the answer to ‘How much energy
+# does it take to boil a room-temperature gallon of water?’ is ‘Go fuck
+# yourself,’ because you can’t directly relate any of those quantities.
+#
+# Josh Bazell, Wild Thing
+
+let density_water = 1 kg / L  # at sea level
+let mass_water = 1 gallon × density_water
+
+let c_water = 1 cal / g K
+
+let ΔT = from_fahrenheit(212) - from_fahrenheit(70)
+
+let heat = mass_water × c_water × ΔT
+
+print("Energy to boil 1 gallon of room-temperature water:")
+print("  {heat -> kJ}")
+print("  {heat -> BTU}")
+print("  {heat -> kWh}")
