@@ -30,5 +30,5 @@ Fields can be accessed using dot notation:
 let mass = 1 kg
 let side_length = cbrt(mass / tungsten.density) -> cm
 
-print("A {tungsten.name} cube with a mass of {mass} has a side length of {side_length:.2}.")
+print("A tungsten cube with a mass of {mass} has a side length of {side_length:.2}.")
 ```
