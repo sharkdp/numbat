@@ -38,7 +38,7 @@ pub fn basic_help_markup() -> m::Markup {
         + m::text("with first class support for physical dimensions and units. Please refer to")
         + m::nl()
         + m::text("the full documentation online at ")
-        + m::string("https://numbat.dev/doc/")
+        + m::string("https://numbat.dev/docs/")
         + m::text(" or try one of these ")
         + m::nl()
         + m::text("examples:")

@@ -221,7 +221,7 @@ fn julian_date(dt: DateTime) -> Time
 
 ### `human` (Human-readable time duration)
 Converts a time duration to a human-readable string in days, hours, minutes and seconds.
-More information [here](https://numbat.dev/doc/date-and-time.html).
+More information [here](https://numbat.dev/docs/basics/date-and-time/).
 
 ```nbt
 fn human(time: Time) -> String
@@ -234,4 +234,3 @@ fn human(time: Time) -> String
         = "52 minutes + 35.693 seconds"    [String]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=century%2F1e6%20%2D%3E%20human){ .md-button }
-

@@ -6,10 +6,10 @@
 
 [Try online!]: https://numbat.dev/
 [Features]: #key-features
-[Documentation]: https://numbat.dev/doc/
-[Tutorial]: https://numbat.dev/doc/tutorial.html
-[Syntax reference]: https://numbat.dev/doc/example-numbat_syntax.html
-[Installation]: https://numbat.dev/doc/cli-installation.html
+[Documentation]: https://numbat.dev/docs/
+[Tutorial]: https://numbat.dev/docs/tutorial/
+[Syntax reference]: https://numbat.dev/docs/examples/example-numbat_syntax/
+[Installation]: https://numbat.dev/docs/cli/installation/
 [Discord]: https://discord.gg/kAaVTsat4D
 [Development]: #development
 
@@ -34,7 +34,7 @@ Numbat has a static type system where physical dimensions like `Length` and `Tim
 Definitions of constants and functions can optionally contain type annotations that will be statically enforced.
 If the types are not specified, they will be inferred (`Speed`, `Money` and `Frequency` in the screenshot).
 
-See [this article](https://numbat.dev/doc/type-system.html) to learn more about Numbat's type system.
+See [this article](https://numbat.dev/docs/advanced/type-system/) to learn more about Numbat's type system.
 </details>
 
 <details>
@@ -44,10 +44,10 @@ See [this article](https://numbat.dev/doc/type-system.html) to learn more about 
 <p></p>
 
 Numbat is focused on computations with units. Units are therefore treated as first-class citizens. They can be
-[entered in various ways](https://numbat.dev/doc/unit-notation.html) (`km/h` or `kilometer/hour`, `GiB` or
+[entered in various ways](https://numbat.dev/docs/basics/unit-notation/) (`km/h` or `kilometer/hour`, `GiB` or
 `gibibytes`, `°` or `degree`, `m²` or `m^2`).
-New units can be [introduced](https://numbat.dev/doc/unit-definitions.html) on the spot (`unit pixel`).
-Compatible units can be converted easily [using the `->` operator](https://numbat.dev/doc/unit-conversions.html) (`30 km/h -> mph`, `1 mrad -> degree`, `5 in + 2 ft -> cm`, `27 weeks -> days`).
+New units can be [introduced](https://numbat.dev/docs/advanced/unit-definitions/) on the spot (`unit pixel`).
+Compatible units can be converted easily [using the `->` operator](https://numbat.dev/docs/basics/conversions/) (`30 km/h -> mph`, `1 mrad -> degree`, `5 in + 2 ft -> cm`, `27 weeks -> days`).
 And unit expressions are simplified using various heuristics (`15 km/h * 30 min = 7.5 km`).
 </details>
 
@@ -57,10 +57,10 @@ And unit expressions are simplified using various heuristics (`15 km/h * 30 min 
 </summary>
 <p></p>
 
-Numbat's [standard library](https://numbat.dev/doc/prelude.html) comes with a large number of physical dimensions and units (SI, US Customary, Imperial, Nautical, Astronomical, Atomic, Nuclear, …).
-See [this reference page](https://numbat.dev/doc/list-units.html) for a complete overview.
-It also contains a lot of [mathematical and physical constants](https://numbat.dev/doc/list-constants.html)
-as well as a large range of [pre-defined functions](https://numbat.dev/doc/list-functions.html).
+Numbat's [standard library](https://numbat.dev/docs/prelude/) comes with a large number of physical dimensions and units (SI, US Customary, Imperial, Nautical, Astronomical, Atomic, Nuclear, …).
+See [this reference page](https://numbat.dev/docs/prelude/list-units/) for a complete overview.
+It also contains a lot of [mathematical and physical constants](https://numbat.dev/docs/prelude/list-constants/)
+as well as a large range of [pre-defined functions](https://numbat.dev/docs/prelude/functions/).
 </details>
 
 <details>
@@ -101,7 +101,7 @@ readline interface, including all the usual features like a command history, Ctr
 
 The whole system of physical dimensions and units is specified Numbat's standard library, which is
 [written in the Numbat language](https://github.com/sharkdp/numbat/tree/main/numbat/modules) itself. It is therefore
-easily extensible by [providing a `init.nbt` file](https://numbat.dev/doc/cli-customization.html). For example,
+easily extensible by [providing a `init.nbt` file](https://numbat.dev/docs/cli/customization/). For example,
 a single line (`unit bathtub = 150 L`) is usually enough to add a new unit. Users can even choose to write their
 own `prelude` module, allowing for arbitrary modifications to the unit system.
 </details>
@@ -140,7 +140,7 @@ please consider contributing. Or try [GNU units](https://www.gnu.org/software/un
 
 ## Installation
 
-See [this page](https://numbat.dev/doc/cli-installation.html) for details on how to install the native command-line version of Numbat.
+See [this page](https://numbat.dev/docs/cli/installation/) for details on how to install the native command-line version of Numbat.
 
 ## Development
 
@@ -168,7 +168,7 @@ the `NUMBAT_MODULES_PATH` environment variable to the `numbat/modules/` folder. 
 you don't have to recompile Numbat to see your changes.
 
 Alternatively, you can create a symlink from `~/.config/numbat/modules` to the `numbat/modules/`
-folder in the repository (see [this page](https://numbat.dev/doc/cli-customization.html#module-paths)
+folder in the repository (see [this page](https://numbat.dev/docs/cli/customization/#module-paths)
 for the standard paths on other operating systems).
 
 ## Contact us

@@ -8,4 +8,4 @@ cd "$SCRIPT_DIR"
 
 uv run build
 
-rsync --delete --archive --stats --progress --human-readable site/ shark.fish:numbat.dev/doc/
+rsync --delete --archive --stats --progress --human-readable site/ shark.fish:numbat.dev/docs/
