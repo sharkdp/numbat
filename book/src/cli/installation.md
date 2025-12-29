@@ -146,7 +146,7 @@ stored inside the `numbat` binary. But ideally, this folder should be made avail
 
 In order for this to work, the `modules` folder should ideally be placed in the [standard location for the
 target operating system](./customization.md). If this is not possible, package maintainers can customize
-numbat during compilation by setting the environment variable `NUMBAT_SYSTEM_MODULE_PATH` to the final locatiom.
+numbat during compilation by setting the environment variable `NUMBAT_SYSTEM_MODULE_PATH` to the final location.
 If this variable is set during compilation, the specified path will be compiled into the `numbat` binary.
 
 In order to test that everything is working as intended, you can open `numbat` and type `let meter = 2`. The

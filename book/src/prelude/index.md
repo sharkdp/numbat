@@ -14,6 +14,6 @@ definitions and physical constants.
     the prelude module.
 
 You can find the full source code of the standard library
-[on GitHub](https://github.com/sharkdp/numbat/tree/main).
+[on GitHub](https://github.com/sharkdp/numbat/tree/main/numbat/modules).
 
 This chapter includes a reference to the prelude module.
