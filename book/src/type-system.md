@@ -18,8 +18,10 @@ Note that certain *runtime* errors (like division-by-zero) can still occur.
 
 
 Types in Numbat can be combined in various ways to produce new types.
-In its most general form, a type can be thought of as a product of physical (base) dimensions \\( D_k \\) with exponents \\( \alpha_k \in \mathbb{Q} \\):
-\\[ \prod_k D_k^{\alpha_k} \\]
+In its most general form, a type can be thought of as a product of physical (base) dimensions \( D_k \) with exponents \( \alpha_k \in \mathbb{Q} \):
+
+\[ \prod_k D_k^{\alpha_k} \]
+
 For example, the type *Energy* can be represented as *Mass¹ × Length² × Time⁻²*.
 
 ### Multiplication
@@ -34,7 +36,7 @@ dimension ElectricCharge = Current * Time
 
 ### Exponentiation
 
-We can also raise units to arbitrary powers \\( n \in \mathbb{Q} \\), by simply multiplying each \\( \alpha_k \\) with \\( n \\). The syntax uses the `^` exponentiation operator:
+We can also raise units to arbitrary powers \( n \in \mathbb{Q} \), by simply multiplying each \( \alpha_k \) with \( n \). The syntax uses the `^` exponentiation operator:
 ``` numbat
 dimension Length
 dimension Volume = Length^3

@@ -36,18 +36,3 @@ To build without regenerating auto-generated content:
 ```bash
 uv run zensical build
 ```
-
-## Deployment
-
-To build and deploy to the production server:
-
-```bash
-./deploy.sh
-```
-
-## Structure
-
-- `src/` - Markdown source files
-- `zensical.toml` - Zensical configuration
-- `build_docs.py` - Build script that generates auto-generated content
-- `site/` - Generated static site (gitignored)

@@ -487,7 +487,7 @@ fn fahrenheit(t_kelvin: Temperature) -> Scalar
 Defined in: `extra::color`
 
 ### `rgb`
-Create a `Color` from RGB (red, green, blue) values in the range \\( [0, 256) \\).
+Create a `Color` from RGB (red, green, blue) values in the range \( [0, 256) \).
 
 ```nbt
 fn rgb(red: Scalar, green: Scalar, blue: Scalar) -> Color
