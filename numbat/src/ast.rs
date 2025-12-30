@@ -324,6 +324,8 @@ impl PrettyPrint for TypeAnnotation {
 pub enum TypeExpression {
     Unity(Span),
     TypeIdentifier(Span, CompactString),
+    /// A generic type instantiation like `SomeStruct<A, B>`
+    GenericType(Span, CompactString, Vec<TypeAnnotation>),
     Multiply(Span, Box<TypeExpression>, Box<TypeExpression>),
     Divide(Span, Box<TypeExpression>, Box<TypeExpression>),
     Power(
@@ -339,6 +341,7 @@ impl TypeExpression {
         match self {
             TypeExpression::Unity(s) => *s,
             TypeExpression::TypeIdentifier(s, _) => *s,
+            TypeExpression::GenericType(s, _, _) => *s,
             TypeExpression::Multiply(span_op, lhs, rhs) => {
                 span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
             }
@@ -357,6 +360,7 @@ fn with_parens(dexpr: &TypeExpression) -> Markup {
     match dexpr {
         expr @ (TypeExpression::Unity(..)
         | TypeExpression::TypeIdentifier(..)
+        | TypeExpression::GenericType(..)
         | TypeExpression::Power(..)) => expr.pretty_print(),
         expr @ (TypeExpression::Multiply(..) | TypeExpression::Divide(..)) => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
@@ -370,6 +374,16 @@ impl PrettyPrint for TypeExpression {
             TypeExpression::Unity(_) => m::type_identifier("1"),
             TypeExpression::TypeIdentifier(_, ident) => {
                 m::type_identifier(ident.to_compact_string())
+            }
+            TypeExpression::GenericType(_, ident, args) => {
+                let mut markup = m::type_identifier(ident.to_compact_string()) + m::operator("<");
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        markup = markup + m::operator(",") + m::space();
+                    }
+                    markup = markup + arg.pretty_print();
+                }
+                markup + m::operator(">")
             }
             TypeExpression::Multiply(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
@@ -507,6 +521,11 @@ impl ReplaceSpans for TypeExpression {
                 Box::new(lhs.replace_spans()),
                 Span::dummy(),
                 *exp,
+            ),
+            TypeExpression::GenericType(_, name, args) => TypeExpression::GenericType(
+                Span::dummy(),
+                name.clone(),
+                args.iter().map(|a| a.replace_spans()).collect(),
             ),
         }
     }

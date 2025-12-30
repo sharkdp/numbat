@@ -115,6 +115,14 @@ pub enum TypeCheckError {
     #[error("Unknown struct '{1}")]
     UnknownStruct(Span, String),
 
+    #[error("Wrong number of type arguments for '{type_name}': expected {expected}, got {actual}")]
+    WrongNumberOfTypeArguments {
+        span: Span,
+        type_name: String,
+        expected: usize,
+        actual: usize,
+    },
+
     #[error("Field '{2}' does not exist in struct '{3}'")]
     UnknownFieldInStructInstantiation(Span, Span, String, String),
 

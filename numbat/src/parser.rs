@@ -1923,11 +1923,29 @@ impl<'a> Parser<'a> {
                     token.span,
                 ));
             }
-            let span = self.last(tokens).unwrap().span;
-            Ok(TypeExpression::TypeIdentifier(
-                span,
-                token.lexeme.to_compact_string(),
-            ))
+            let ident_span = self.last(tokens).unwrap().span;
+            let ident = token.lexeme.to_compact_string();
+
+            // Check for generic type arguments like `SomeStruct<A, B>`
+            if self.match_exact(tokens, TokenKind::LessThan).is_some() {
+                let mut type_args = vec![];
+                if self.peek(tokens).kind != TokenKind::GreaterThan {
+                    type_args.push(self.type_annotation(tokens)?);
+                    while self.match_exact(tokens, TokenKind::Comma).is_some() {
+                        type_args.push(self.type_annotation(tokens)?);
+                    }
+                }
+                if self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
+                    return Err(ParseError::new(
+                        ParseErrorKind::ExpectedCommaOrRightAngleBracket,
+                        self.peek(tokens).span,
+                    ));
+                }
+                let full_span = ident_span.extend(&self.last(tokens).unwrap().span);
+                Ok(TypeExpression::GenericType(full_span, ident, type_args))
+            } else {
+                Ok(TypeExpression::TypeIdentifier(ident_span, ident))
+            }
         } else if let Some(number) = self.match_exact(tokens, TokenKind::Number) {
             let span = self.last(tokens).unwrap().span;
             if number.lexeme != "1" {

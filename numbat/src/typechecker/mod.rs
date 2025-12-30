@@ -244,6 +244,50 @@ impl TypeChecker {
                     return Ok(Type::Struct(Box::new(info.clone())));
                 }
 
+                if let TypeExpression::GenericType(span, name, type_args) = dexpr {
+                    let Some(struct_info) = self.structs.get(name) else {
+                        return Err(Box::new(TypeCheckError::UnknownStruct(
+                            *span,
+                            name.to_string(),
+                        )));
+                    };
+
+                    // Check that the number of type arguments matches the number of type parameters
+                    if type_args.len() != struct_info.type_parameters.len() {
+                        return Err(Box::new(TypeCheckError::WrongNumberOfTypeArguments {
+                            span: *span,
+                            type_name: name.to_string(),
+                            expected: struct_info.type_parameters.len(),
+                            actual: type_args.len(),
+                        }));
+                    }
+
+                    // Build substitution from type parameters to type arguments
+                    let mut substitution = Substitution::empty();
+                    for ((_, param_name, _), arg) in
+                        struct_info.type_parameters.iter().zip(type_args.iter())
+                    {
+                        let arg_type = self.type_from_annotation(arg)?;
+                        substitution.extend(Substitution::single(
+                            TypeVariable::new(param_name),
+                            arg_type,
+                        ));
+                    }
+
+                    // Create instantiated struct with substituted field types
+                    let mut instantiated_fields = struct_info.fields.clone();
+                    for (_, field_type) in instantiated_fields.values_mut() {
+                        field_type.apply(&substitution).ok();
+                    }
+
+                    return Ok(Type::Struct(Box::new(StructInfo {
+                        definition_span: struct_info.definition_span,
+                        name: struct_info.name.clone(),
+                        type_parameters: vec![], // Type parameters have been instantiated
+                        fields: instantiated_fields,
+                    })));
+                }
+
                 let mut factors = self
                     .registry
                     .get_base_representation(dexpr)
@@ -969,13 +1013,16 @@ impl TypeChecker {
                         .type_parameters
                         .iter()
                         .zip(fresh_vars.iter())
-                        .fold(Substitution::empty(), |mut subst, ((_, name, _), fresh_var)| {
-                            subst.extend(Substitution::single(
-                                TypeVariable::new(name),
-                                Type::TVar(fresh_var.clone()),
-                            ));
-                            subst
-                        });
+                        .fold(
+                            Substitution::empty(),
+                            |mut subst, ((_, name, _), fresh_var)| {
+                                subst.extend(Substitution::single(
+                                    TypeVariable::new(name),
+                                    Type::TVar(fresh_var.clone()),
+                                ));
+                                subst
+                            },
+                        );
 
                     // Add dtype constraints for type parameters with Dim bounds
                     for ((_, _, bound), fresh_var) in
@@ -1859,7 +1906,9 @@ impl TypeChecker {
                     match bound {
                         Some(TypeParameterBound::Dim) => {
                             typechecker_struct
-                                .add_dtype_constraint(&Type::TPar(type_parameter.to_compact_string()))
+                                .add_dtype_constraint(&Type::TPar(
+                                    type_parameter.to_compact_string(),
+                                ))
                                 .ok();
                         }
                         None => {}
@@ -1883,7 +1932,9 @@ impl TypeChecker {
                     name: struct_name.to_compact_string(),
                     type_parameters: type_parameters
                         .iter()
-                        .map(|(span, name, bound)| (*span, (*name).to_compact_string(), bound.clone()))
+                        .map(|(span, name, bound)| {
+                            (*span, (*name).to_compact_string(), bound.clone())
+                        })
                         .collect(),
                     fields: fields
                         .iter()

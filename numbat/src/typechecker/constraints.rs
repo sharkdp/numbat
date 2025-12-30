@@ -282,6 +282,22 @@ impl Constraint {
                     t1.as_ref().clone(),
                 )]))
             }
+            Constraint::Equal(Type::Struct(info1), Type::Struct(info2))
+                if info1.name == info2.name && info1.fields.len() == info2.fields.len() =>
+            {
+                // Decompose struct equality into field equality constraints
+                let new_constraints = info1
+                    .fields
+                    .iter()
+                    .filter_map(|(name, (_, type1))| {
+                        info2
+                            .fields
+                            .get(name)
+                            .map(|(_, type2)| Constraint::Equal(type1.clone(), type2.clone()))
+                    })
+                    .collect();
+                Some(Satisfied::with_new_constraints(new_constraints))
+            }
             Constraint::Equal(Type::TVar(tv), Type::Dimension(d))
             | Constraint::Equal(Type::Dimension(d), Type::TVar(tv)) => {
                 Some(Satisfied::with_new_constraints(vec![Constraint::Equal(
