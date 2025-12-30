@@ -144,17 +144,24 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_message(format!("{type_}")),
                 ])
                 .with_notes(vec![inner_error]),
-            TypeCheckError::RegistryError(re) => match re {
-                crate::registry::RegistryError::EntryExists(_) => d.with_notes(vec![inner_error]),
+            TypeCheckError::DimensionRegistryError(e) => match &e.err {
+                crate::registry::RegistryError::EntryExists(_) => d.with_labels(vec![
+                    e.span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                ]),
                 crate::registry::RegistryError::UnknownEntry(name, suggestion) => {
-                    d.with_notes(vec![format!(
-                        "Unknown dimension '{name}'{maybe_suggestion}",
-                        maybe_suggestion = if let Some(suggestion) = suggestion {
-                            format!(" did you mean '{suggestion}'?")
-                        } else {
-                            "".into()
-                        }
-                    )])
+                    let notes = if let Some(suggestion) = suggestion {
+                        vec![format!("Did you mean '{suggestion}'?")]
+                    } else {
+                        vec![]
+                    };
+                    d.with_labels(vec![
+                        e.span
+                            .diagnostic_label(LabelStyle::Primary)
+                            .with_message(format!("Unknown dimension '{name}'")),
+                    ])
+                    .with_notes(notes)
                 }
             },
             TypeCheckError::IncompatibleAlternativeDimensionExpression(
