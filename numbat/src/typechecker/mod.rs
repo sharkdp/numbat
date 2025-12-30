@@ -953,6 +953,54 @@ impl TypeChecker {
                     )));
                 };
 
+                // For generic structs, instantiate type parameters with fresh type variables
+                let instantiated_struct_info = if struct_info.type_parameters.is_empty() {
+                    struct_info.clone()
+                } else {
+                    // Generate fresh type variables for each type parameter
+                    let fresh_vars: Vec<_> = struct_info
+                        .type_parameters
+                        .iter()
+                        .map(|_| self.name_generator.fresh_type_variable())
+                        .collect();
+
+                    // Build substitution mapping type parameter names to fresh type variables
+                    let substitution = struct_info
+                        .type_parameters
+                        .iter()
+                        .zip(fresh_vars.iter())
+                        .fold(Substitution::empty(), |mut subst, ((_, name, _), fresh_var)| {
+                            subst.extend(Substitution::single(
+                                TypeVariable::new(name),
+                                Type::TVar(fresh_var.clone()),
+                            ));
+                            subst
+                        });
+
+                    // Add dtype constraints for type parameters with Dim bounds
+                    for ((_, _, bound), fresh_var) in
+                        struct_info.type_parameters.iter().zip(fresh_vars.iter())
+                    {
+                        if let Some(TypeParameterBound::Dim) = bound {
+                            self.add_dtype_constraint(&Type::TVar(fresh_var.clone()))
+                                .ok();
+                        }
+                    }
+
+                    // Create instantiated StructInfo with substituted field types
+                    let mut instantiated_fields = struct_info.fields.clone();
+                    for (_, field_type) in instantiated_fields.values_mut() {
+                        field_type.apply(&substitution).ok();
+                    }
+
+                    StructInfo {
+                        definition_span: struct_info.definition_span,
+                        name: struct_info.name.clone(),
+                        type_parameters: vec![], // Type parameters have been instantiated
+                        fields: instantiated_fields,
+                    }
+                };
+
                 let mut seen_fields = HashMap::new();
 
                 for ((field, expr), span) in
@@ -968,13 +1016,14 @@ impl TypeChecker {
                         ));
                     }
 
-                    let Some((expected_field_span, expected_type)) = struct_info.fields.get(*field)
+                    let Some((expected_field_span, expected_type)) =
+                        instantiated_struct_info.fields.get(*field)
                     else {
                         return Err(Box::new(TypeCheckError::UnknownFieldInStructInstantiation(
                             *span,
-                            struct_info.definition_span,
+                            instantiated_struct_info.definition_span,
                             field.to_string(),
-                            struct_info.name.to_string(),
+                            instantiated_struct_info.name.to_string(),
                         )));
                     };
 
@@ -995,7 +1044,7 @@ impl TypeChecker {
                 }
 
                 let missing_fields = {
-                    let mut fields = struct_info.fields.clone();
+                    let mut fields = instantiated_struct_info.fields.clone();
                     fields.retain(|f, _| !seen_fields.contains_key(&f.as_str()));
                     fields.into_iter().map(|(n, (_, t))| (n, t)).collect_vec()
                 };
@@ -1004,7 +1053,7 @@ impl TypeChecker {
                     return Err(Box::new(
                         TypeCheckError::MissingFieldsInStructInstantiation(
                             *full_span,
-                            struct_info.definition_span,
+                            instantiated_struct_info.definition_span,
                             missing_fields,
                         ),
                     ));
@@ -1013,7 +1062,7 @@ impl TypeChecker {
                 typed_ast::Expression::InstantiateStruct(
                     *full_span,
                     fields_checked,
-                    struct_info.clone(),
+                    instantiated_struct_info,
                 )
             }
             ast::Expression::AccessField(full_span, ident_span, expr, field_name) => {
