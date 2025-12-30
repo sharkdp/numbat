@@ -18,14 +18,24 @@ fn line_plot(mut args: Args) -> Plot {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let ys = fields.pop().unwrap();
     let xs = fields.pop().unwrap();
-    let y_unit = fields.pop().unwrap().unsafe_as_string();
     let y_label = fields.pop().unwrap().unsafe_as_string();
-    let x_unit = fields.pop().unwrap().unsafe_as_string();
     let x_label = fields.pop().unwrap().unsafe_as_string();
+
+    let xs = xs.unsafe_as_list();
+    let ys = ys.unsafe_as_list();
+
+    let x_unit = {
+        let x0 = xs.clone().head().unwrap().unsafe_as_quantity();
+        x0.unit().clone() // TODO: avoid cloning
+    };
+    let y_unit = {
+        let y0 = ys.clone().head().unwrap().unsafe_as_quantity();
+        y0.unit().clone() // TODO: avoid cloning
+    };
 
     let x_label = format!(
         "{x_label}{x_unit}",
-        x_unit = if x_unit.is_empty() {
+        x_unit = if x_unit.is_scalar() {
             "".into()
         } else {
             format!(" [{}]", x_unit)
@@ -33,7 +43,7 @@ fn line_plot(mut args: Args) -> Plot {
     );
     let y_label = format!(
         "{y_label}{y_unit}",
-        y_unit = if y_unit.is_empty() {
+        y_unit = if y_unit.is_scalar() {
             "".into()
         } else {
             format!(" [{}]", y_unit)
@@ -41,13 +51,11 @@ fn line_plot(mut args: Args) -> Plot {
     );
 
     let xs = xs
-        .unsafe_as_list()
         .iter()
         .cloned()
         .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
         .collect::<Vec<_>>();
     let ys = ys
-        .unsafe_as_list()
         .iter()
         .cloned()
         .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
