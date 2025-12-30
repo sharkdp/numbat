@@ -2,9 +2,11 @@ mod common;
 
 use common::get_test_context;
 
+use codespan_reporting::term::{self, Config, termcolor::NoColor};
 use compact_str::CompactString;
 use insta::assert_snapshot;
 use numbat::NumbatError;
+use numbat::diagnostic::ErrorDiagnostic;
 use numbat::markup::{Formatter, PlainTextFormatter};
 use numbat::resolver::CodeSource;
 use numbat::{Context, InterpreterResult, pretty_print::PrettyPrint};
@@ -106,6 +108,32 @@ fn get_error_message(code: &str) -> String {
         e.to_string()
     } else {
         panic!();
+    }
+}
+
+/// Render the full diagnostic output with span information
+#[track_caller]
+fn get_diagnostic_output(code: &str) -> String {
+    let mut ctx = get_test_context();
+    if let Err(e) = ctx.interpret(code, CodeSource::Internal) {
+        let mut output = NoColor::new(Vec::new());
+        let config = Config::default();
+
+        let diagnostics: Vec<_> = match &*e {
+            NumbatError::ResolverError(e) => e.diagnostics(),
+            NumbatError::NameResolutionError(e) => e.diagnostics(),
+            NumbatError::TypeCheckError(e) => e.diagnostics(),
+            NumbatError::RuntimeError(_) => {
+                panic!("RuntimeError diagnostics require ResolverDiagnostic wrapper")
+            }
+        };
+
+        for diagnostic in diagnostics {
+            term::emit(&mut output, &config, &ctx.resolver().files, &diagnostic).unwrap();
+        }
+        String::from_utf8(output.into_inner()).unwrap()
+    } else {
+        panic!("Expected error but code succeeded");
     }
 }
 
@@ -580,6 +608,51 @@ fn test_type_check_errors() {
     expect_failure(
         "fn sin(x)=0",
         "Identifier is already in use by the foreign function: 'sin'",
+    );
+}
+
+#[test]
+fn test_unknown_dimension_error() {
+    // Typo in dimension name: "Lenght" instead of "Length"
+    assert_snapshot!(
+        get_diagnostic_output("unit my_length: Lenght"),
+        @r###"
+error: while type checking
+  ┌─ <internal:3>:1:17
+  │
+1 │ unit my_length: Lenght
+  │                 ^^^^^^ Unknown dimension 'Lenght'
+  │
+  = Did you mean 'Length'?
+"###
+    );
+
+    // Unknown dimension in a derived dimension definition
+    assert_snapshot!(
+        get_diagnostic_output("dimension Foo = Lenght * Time"),
+        @r###"
+error: while type checking
+  ┌─ <internal:3>:1:17
+  │
+1 │ dimension Foo = Lenght * Time
+  │                 ^^^^^^ Unknown dimension 'Lenght'
+  │
+  = Did you mean 'Length'?
+"###
+    );
+
+    // Unknown dimension in function parameter type
+    assert_snapshot!(
+        get_diagnostic_output("fn speed(x: Velocty) -> Scalar = 1"),
+        @r###"
+error: while type checking
+  ┌─ <internal:3>:1:13
+  │
+1 │ fn speed(x: Velocty) -> Scalar = 1
+  │             ^^^^^^^ Unknown dimension 'Velocty'
+  │
+  = Did you mean 'Velocity'?
+"###
     );
 }
 

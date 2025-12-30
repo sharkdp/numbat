@@ -1,5 +1,5 @@
+use crate::dimension::DimensionRegistryError;
 use crate::ffi::ArityRange;
-use crate::registry::RegistryError;
 use crate::span::Span;
 use crate::typed_ast::BinaryOperator;
 use crate::{BaseRepresentation, NameResolutionError, Type};
@@ -31,7 +31,7 @@ pub enum TypeCheckError {
     DivisionByZeroInConstEvalExpression(Span),
 
     #[error("{0}")]
-    RegistryError(RegistryError),
+    DimensionRegistryError(#[from] DimensionRegistryError),
 
     #[error("Incompatible alternative expressions have been provided for dimension '{0}'")]
     IncompatibleAlternativeDimensionExpression(

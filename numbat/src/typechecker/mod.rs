@@ -248,7 +248,7 @@ impl TypeChecker {
                     .registry
                     .get_base_representation(dexpr)
                     .map(DType::from)
-                    .map_err(TypeCheckError::RegistryError)?
+                    .map_err(TypeCheckError::from)?
                     .into_factors();
 
                 // Replace BaseDimension("D") with TVar("D") for all type parameters
@@ -1263,7 +1263,7 @@ impl TypeChecker {
                     let dtype: DType = self
                         .registry
                         .get_base_representation(dexpr)
-                        .map_err(TypeCheckError::RegistryError)?
+                        .map_err(TypeCheckError::from)?
                         .into();
 
                     if dtype.is_scalar() {
@@ -1275,13 +1275,16 @@ impl TypeChecker {
 
                     dtype
                 } else {
+                    use crate::dimension::DimensionRegistryError;
                     use heck::ToUpperCamelCase;
                     // In a unit definition like 'unit pixel' without a specified type,
                     // we add a new type for the user
                     let type_name = unit_name.to_upper_camel_case();
                     self.registry
                         .add_base_dimension(&type_name)
-                        .map_err(TypeCheckError::RegistryError)?
+                        .map_err(|err| {
+                            TypeCheckError::from(DimensionRegistryError { span: *span, err })
+                        })?
                         .into()
                 };
                 for (name, _) in decorator::name_and_aliases(unit_name, decorators) {
@@ -1627,7 +1630,7 @@ impl TypeChecker {
                 if let Some(dexpr) = dexprs.first() {
                     self.registry
                         .add_derived_dimension(name, dexpr)
-                        .map_err(TypeCheckError::RegistryError)?;
+                        .map_err(TypeCheckError::from)?;
 
                     let base_representation = self
                         .registry
@@ -1638,7 +1641,7 @@ impl TypeChecker {
                         let alternative_base_representation = self
                             .registry
                             .get_base_representation(alternative_expr)
-                            .map_err(TypeCheckError::RegistryError)?;
+                            .map_err(TypeCheckError::from)?;
                         if alternative_base_representation != base_representation {
                             return Err(Box::new(
                                 TypeCheckError::IncompatibleAlternativeDimensionExpression(
@@ -1652,9 +1655,13 @@ impl TypeChecker {
                         }
                     }
                 } else {
-                    self.registry
-                        .add_base_dimension(name)
-                        .map_err(TypeCheckError::RegistryError)?;
+                    use crate::dimension::DimensionRegistryError;
+                    self.registry.add_base_dimension(name).map_err(|err| {
+                        TypeCheckError::from(DimensionRegistryError {
+                            span: *name_span,
+                            err,
+                        })
+                    })?;
                 }
                 typed_ast::Statement::DefineDimension(name, dexprs.clone())
             }

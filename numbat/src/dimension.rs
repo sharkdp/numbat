@@ -1,10 +1,21 @@
 use compact_str::{CompactString, ToCompactString};
+use thiserror::Error;
 
 use crate::BaseRepresentationFactor;
 use crate::arithmetic::{Exponent, Power};
 use crate::ast::{TypeExpression, TypeParameterBound};
-use crate::registry::{BaseRepresentation, Registry, Result};
+use crate::registry::{BaseRepresentation, Registry, RegistryError};
 use crate::span::Span;
+
+/// Error from dimension registry operations, including the span where the error occurred
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("{err}")]
+pub struct DimensionRegistryError {
+    pub span: Span,
+    pub err: RegistryError,
+}
+
+pub type Result<T> = std::result::Result<T, DimensionRegistryError>;
 
 #[derive(Default, Clone)]
 pub struct DimensionRegistry {
@@ -19,7 +30,7 @@ impl DimensionRegistry {
     ) -> Result<BaseRepresentation> {
         match expression {
             TypeExpression::Unity(_) => Ok(BaseRepresentation::unity()),
-            TypeExpression::TypeIdentifier(_, name) => {
+            TypeExpression::TypeIdentifier(span, name) => {
                 if self
                     .introduced_type_parameters
                     .iter()
@@ -33,6 +44,7 @@ impl DimensionRegistry {
                     self.registry
                         .get_base_representation_for_name(name)
                         .map(|r| r.0)
+                        .map_err(|err| DimensionRegistryError { span: *span, err })
                 }
             }
             TypeExpression::Multiply(_, lhs, rhs) => {
@@ -53,7 +65,10 @@ impl DimensionRegistry {
         }
     }
 
-    pub fn get_base_representation_for_name(&self, name: &str) -> Result<BaseRepresentation> {
+    pub fn get_base_representation_for_name(
+        &self,
+        name: &str,
+    ) -> crate::registry::Result<BaseRepresentation> {
         self.registry
             .get_base_representation_for_name(name)
             .map(|t| t.0)
@@ -67,7 +82,10 @@ impl DimensionRegistry {
             .get_derived_entry_names_for(base_representation)
     }
 
-    pub fn add_base_dimension(&mut self, name: &str) -> Result<BaseRepresentation> {
+    pub fn add_base_dimension(
+        &mut self,
+        name: &str,
+    ) -> crate::registry::Result<BaseRepresentation> {
         self.registry.add_base_entry(name, ())?;
         Ok(self
             .registry
@@ -83,7 +101,11 @@ impl DimensionRegistry {
     ) -> Result<BaseRepresentation> {
         let base_representation = self.get_base_representation(expression)?;
         self.registry
-            .add_derived_entry(name, base_representation, ())?;
+            .add_derived_entry(name, base_representation, ())
+            .map_err(|err| DimensionRegistryError {
+                span: expression.full_span(),
+                err,
+            })?;
         Ok(self
             .registry
             .get_base_representation_for_name(name)
