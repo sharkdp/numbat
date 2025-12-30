@@ -249,8 +249,10 @@ impl DType {
                 DTypeFactor::TVar(TypeVariable::Named(name)) => {
                     factors.push(BaseRepresentationFactor(name.clone(), *n));
                 }
-                DTypeFactor::TVar(TypeVariable::Quantified(_)) => {
-                    unreachable!("Unexpected quantified type")
+                DTypeFactor::TVar(TypeVariable::Quantified(id)) => {
+                    // Quantified type variables can appear during constraint solving
+                    // before they're fully resolved
+                    factors.push(BaseRepresentationFactor(format!("?{id}").into(), *n));
                 }
                 DTypeFactor::TPar(name) => {
                     factors.push(BaseRepresentationFactor(name.clone(), *n));
@@ -452,7 +454,24 @@ impl Type {
                     .collect(),
                 Box::new(return_type.instantiate(type_variables)),
             ),
-            t @ Type::Struct(_) => t.clone(),
+            Type::Struct(info) => {
+                let instantiated_fields = info
+                    .fields
+                    .iter()
+                    .map(|(name, (span, field_type))| {
+                        (
+                            name.clone(),
+                            (*span, field_type.instantiate(type_variables)),
+                        )
+                    })
+                    .collect();
+                Type::Struct(Box::new(StructInfo {
+                    definition_span: info.definition_span,
+                    name: info.name.clone(),
+                    type_parameters: info.type_parameters.clone(),
+                    fields: instantiated_fields,
+                }))
+            }
             Type::List(element_type) => {
                 Type::List(Box::new(element_type.instantiate(type_variables)))
             }

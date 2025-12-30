@@ -62,6 +62,13 @@ impl DimensionRegistry {
             TypeExpression::Power(_, expr, _, outer_exponent) => {
                 Ok(self.get_base_representation(expr)?.power(*outer_exponent))
             }
+            TypeExpression::GenericType(span, name, _) => {
+                // Generic types like SomeStruct<A> are not dimension expressions
+                Err(DimensionRegistryError {
+                    span: *span,
+                    err: crate::registry::RegistryError::UnknownEntry(name.to_string(), None),
+                })
+            }
         }
     }
 

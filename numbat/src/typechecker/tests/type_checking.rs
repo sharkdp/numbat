@@ -639,6 +639,37 @@ fn structs() {
 }
 
 #[test]
+fn generic_structs() {
+    // Basic generic struct with two type parameters
+    assert_successful_typecheck(
+        "
+        struct Tuple<X, Y> {
+            x: X,
+            y: Y,
+        }
+
+        let t = Tuple { x: 1 a, y: 1 b }
+        let x: A = t.x
+        let y: B = t.y
+        ",
+    );
+
+    // We use proper unification constraint solving:
+    assert_successful_typecheck(
+        "
+        struct Rate<D: Dim> {
+            inner: D / A,
+        }
+
+        fn get_d<D: Dim>(r: Rate<D>) -> D = r.inner * a
+
+        let r = Rate { inner: b / a }
+        let quantity: B = get_d(r)
+        ",
+    );
+}
+
+#[test]
 fn lists() {
     assert_successful_typecheck("[]");
     assert_successful_typecheck("[1]");

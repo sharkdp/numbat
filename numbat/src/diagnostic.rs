@@ -505,6 +505,10 @@ impl ErrorDiagnostic for TypeCheckError {
                 .with_message("Found typed hole")
                 .with_notes(notes)
             }
+            TypeCheckError::WrongNumberOfTypeArguments { span, .. } => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
         };
         vec![d]
     }
