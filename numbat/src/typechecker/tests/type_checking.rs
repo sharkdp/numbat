@@ -696,6 +696,31 @@ fn generic_structs() {
         ",
     );
 
+    // Nested generics
+    assert_successful_typecheck(
+        "
+        struct Wrapper<X> {
+            inner: X,
+        }
+
+        let w: Wrapper<Wrapper<A>> = Wrapper { inner: Wrapper { inner: 1 a } }
+        let x: A = w.inner.inner
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Wrapper<X> {
+                inner: X,
+            }
+
+            let w: Wrapper<Wrapper<B>> = Wrapper { inner: Wrapper { inner: 1 a } }
+            "
+        ),
+        TypeCheckError::ConstraintSolverError(..)
+    ));
+
     // Using a generic struct without type arguments is an error
     assert!(matches!(
         get_typecheck_error(
