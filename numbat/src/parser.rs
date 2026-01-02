@@ -6,9 +6,10 @@
 //! statement       ::=   variable_decl | struct_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
 //!
 //! variable_decl   ::=   "let" identifier ( ":" type_annotation ) ? "=" expression
-//! struct_decl     ::=   "struct" identifier "{" ( identifier ":" type_annotation "," )* ( identifier ":" type_annotation "," ? ) ? "}"
-//! function_decl   ::=   "fn" identifier ( fn_decl_generic ) ? fn_decl_param ( "->" type_annotation ) ? ( "=" expression ) ?
-//! fn_decl_generic ::=   "<" ( identifier "," ) * identifier ">"
+//! struct_decl     ::=   "struct" identifier ( type_params ) ? "{" ( identifier ":" type_annotation "," )* ( identifier ":" type_annotation "," ? ) ? "}"
+//! function_decl   ::=   "fn" identifier ( type_params ) ? fn_decl_param ( "->" type_annotation ) ? ( "=" expression ) ?
+//! type_params     ::=   "<" ( type_param "," ) * type_param ">"
+//! type_param      ::=   identifier ( ":" "Dim" ) ?
 //! fn_decl_param   ::=   "(" ( identifier ( ":" type_annotation ) ? "," )* ( identifier ( ":" type_annotation ) ) ? ")"
 //! dimension_decl  ::=   "dimension" identifier ( "=" dimension_expr ) *
 //! unit_decl       ::=   decorator * "unit" ( ":" dimension_expr ) ? ( "=" expression ) ?
@@ -22,7 +23,7 @@
 //! dim_factor      ::=   dim_power ( (multiply | divide) dim_power ) *
 //! dim_power       ::=   dim_primary ( power dim_exponent | unicode_exponent ) ?
 //! dim_exponent    ::=   integer | minus dim_exponent | "(" dim_exponent ( divide dim_exponent ) ? ")"
-//! dim_primary     ::=   identifier | "1" | "(" dimension_expr ")"
+//! dim_primary     ::=   identifier ( "<" type_annotation ( "," type_annotation ) * ">" ) ? | "1" | "(" dimension_expr ")"
 //!
 //! expression      ::=   postfix_apply
 //! postfix_apply   ::=   condition ( "|>" identifier ) *
