@@ -34,6 +34,10 @@ impl Substitution {
         }
         self.0.extend(other.0);
     }
+
+    pub fn append(&mut self, v: TypeVariable, t: Type) {
+        self.extend(Substitution::single(v, t));
+    }
 }
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]

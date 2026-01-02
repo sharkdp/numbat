@@ -259,10 +259,7 @@ impl TypeChecker {
                         struct_info.type_parameters.iter().zip(type_args.iter())
                     {
                         let arg_type = self.type_from_annotation(arg)?;
-                        substitution.extend(Substitution::single(
-                            TypeVariable::new(param_name),
-                            arg_type,
-                        ));
+                        substitution.append(TypeVariable::new(param_name), arg_type);
                     }
 
                     // Create instantiated struct with substituted field types
@@ -1007,10 +1004,7 @@ impl TypeChecker {
                         .fold(
                             Substitution::empty(),
                             |mut subst, ((_, name, _), fresh_var)| {
-                                subst.extend(Substitution::single(
-                                    TypeVariable::new(name),
-                                    Type::TVar(fresh_var.clone()),
-                                ));
+                                subst.append(TypeVariable::new(name), Type::TVar(fresh_var.clone()));
                                 subst
                             },
                         );
