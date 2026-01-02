@@ -667,6 +667,28 @@ fn generic_structs() {
         let quantity: B = get_d(r)
         ",
     );
+
+    // Using a generic struct without type arguments is an error
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Wrapper<D: Dim> { inner: D }
+            let x: Wrapper = Wrapper { inner: 1 a }
+            "
+        ),
+        TypeCheckError::WrongNumberOfTypeArguments { .. }
+    ));
+
+    // Wrong number of type arguments
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Tuple<X: Dim, Y: Dim> { x: X, y: Y }
+            let p: Tuple<A> = Tuple { x: 1 a, y: 1 b }
+            "
+        ),
+        TypeCheckError::WrongNumberOfTypeArguments { .. }
+    ));
 }
 
 #[test]

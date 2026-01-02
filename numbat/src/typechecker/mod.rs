@@ -238,11 +238,6 @@ impl TypeChecker {
                 if let TypeExpression::TypeIdentifier(span, name, type_args) = dexpr
                     && let Some(struct_info) = self.structs.get(name)
                 {
-                    if type_args.is_empty() {
-                        // Non-generic struct
-                        return Ok(Type::Struct(Box::new(struct_info.clone())));
-                    }
-
                     // Check that the number of type arguments matches the number of type parameters
                     if type_args.len() != struct_info.type_parameters.len() {
                         return Err(Box::new(TypeCheckError::WrongNumberOfTypeArguments {
@@ -251,6 +246,11 @@ impl TypeChecker {
                             expected: struct_info.type_parameters.len(),
                             actual: type_args.len(),
                         }));
+                    }
+
+                    if type_args.is_empty() {
+                        // Non-generic struct
+                        return Ok(Type::Struct(Box::new(struct_info.clone())));
                     }
 
                     // Build substitution from type parameters to type arguments

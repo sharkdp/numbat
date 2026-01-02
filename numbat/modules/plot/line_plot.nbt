@@ -20,7 +20,7 @@ fn line_plot<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x_start: X, x_end: X) -> LinePlot<
   where
     xs = linspace(x_start, x_end, _num_points_for_line_plot)
 
-fn xlabel(label: String, plot: LinePlot) -> LinePlot =
+fn xlabel<X: Dim, Y: Dim>(label: String, plot: LinePlot<X, Y>) -> LinePlot<X, Y> =
   LinePlot {  # TODO: this would be much nicer with some form of struct update syntax: `plot { x_label: label }`
     x_label: label,
     y_label: plot.y_label,
@@ -28,7 +28,7 @@ fn xlabel(label: String, plot: LinePlot) -> LinePlot =
     ys: plot.ys,
   }
 
-fn ylabel(label: String, plot: LinePlot) -> LinePlot =
+fn ylabel<X: Dim, Y: Dim>(label: String, plot: LinePlot<X, Y>) -> LinePlot<X, Y> =
   LinePlot {
     x_label: plot.x_label,
     y_label: label,
