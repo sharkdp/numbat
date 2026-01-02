@@ -30,15 +30,7 @@ impl DimensionRegistry {
     ) -> Result<BaseRepresentation> {
         match expression {
             TypeExpression::Unity(_) => Ok(BaseRepresentation::unity()),
-            TypeExpression::TypeIdentifier(span, name, type_args) => {
-                // Generic types like SomeStruct<A> are not dimension expressions
-                if !type_args.is_empty() {
-                    return Err(DimensionRegistryError {
-                        span: *span,
-                        err: crate::registry::RegistryError::UnknownEntry(name.to_string(), None),
-                    });
-                }
-
+            TypeExpression::TypeIdentifier(span, name, _) => {
                 if self
                     .introduced_type_parameters
                     .iter()
