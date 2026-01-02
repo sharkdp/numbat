@@ -152,6 +152,13 @@ impl ApplySubstitution for DType {
 
 impl ApplySubstitution for StructInfo {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
+        // Apply substitution to type arguments
+        if let StructKind::Instance(type_args) = &mut self.kind {
+            for arg in type_args {
+                arg.apply(s)?;
+            }
+        }
+        // Apply substitution to field types
         for (_, field_type) in self.fields.values_mut() {
             field_type.apply(s)?;
         }
