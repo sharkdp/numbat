@@ -1,0 +1,37 @@
+use core::functions
+
+struct Vec<D: Dim> {
+    x: D,
+    y: D,
+    z: D,
+}
+
+@description("Create a 3D vector from its components.")
+fn vec<D: Dim>(x: D, y: D, z: D) -> Vec<D> =
+    Vec { x: x, y: y, z: z }
+
+@description("Add two 3D vectors.")
+fn add<D: Dim>(v1: Vec<D>, v2: Vec<D>) -> Vec<D> =
+    vec(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
+
+@description("Multiply a 3D vector by a scalar.")
+fn multiply<A: Dim, D: Dim>(alpha: A, v: Vec<D>) -> Vec<A * D> =
+    vec(alpha * v.x, alpha * v.y, alpha * v.z)
+
+@description("Compute the dot product of two 3D vectors.")
+fn dot_product<A: Dim, B: Dim>(v1: Vec<A>, v2: Vec<B>) -> A * B =
+    v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
+
+@description("Compute the norm (squared length) of a 3D vector.")
+fn norm<D: Dim>(v: Vec<D>) -> D^2 = dot_product(v, v)
+
+@description("Compute the length of a 3D vector.")
+fn length<D: Dim>(v: Vec<D>) -> D = sqrt(norm(v))
+
+@description("Compute the cross product of two 3D vectors.")
+fn cross<D1: Dim, D2: Dim>(v1: Vec<D1>, v2: Vec<D2>) -> Vec<D1 * D2> =
+    vec(
+        v1.y * v2.z - v1.z * v2.y,
+        v1.z * v2.x - v1.x * v2.z,
+        v1.x * v2.y - v1.y * v2.x,
+    )
