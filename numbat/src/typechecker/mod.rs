@@ -1495,7 +1495,7 @@ impl TypeChecker {
                             *span,
                             CompactString::const_new("type parameter"),
                         )
-                        .ok(); // TODO: is this call even correct?
+                        .ok();
 
                     self.registry.introduced_type_parameters.push((
                         *span,
@@ -1903,23 +1903,12 @@ impl TypeChecker {
                             *span,
                             "type parameter".to_compact_string(),
                         )
-                        .ok(); // TODO: is this call even correct?
+                        .ok();
 
                     typechecker_struct
                         .registry
                         .introduced_type_parameters
                         .push((*span, type_parameter.to_compact_string(), bound.clone()));
-
-                    match bound {
-                        Some(TypeParameterBound::Dim) => {
-                            typechecker_struct
-                                .add_dtype_constraint(&Type::TPar(
-                                    type_parameter.to_compact_string(),
-                                ))
-                                .ok();
-                        }
-                        None => {}
-                    }
                 }
 
                 for (span, field, _) in fields {
