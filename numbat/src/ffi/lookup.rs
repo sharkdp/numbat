@@ -10,8 +10,8 @@ use crate::value::Value;
 
 pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     use crate::span::{ByteIndex, Span};
-    use crate::typed_ast::{StructInfo, StructKind};
     use crate::typed_ast::Type;
+    use crate::typed_ast::{StructInfo, StructKind};
     use indexmap::IndexMap;
     use mendeleev::{Electronvolt, GramPerCubicCentimeter, Kelvin, KiloJoulePerMole};
     use std::sync::Arc;

@@ -2,7 +2,9 @@ use thiserror::Error;
 
 use crate::Statement;
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{DType, DTypeFactor, DefineVariable, Expression, StructInfo, StructKind, Type};
+use crate::typed_ast::{
+    DType, DTypeFactor, DefineVariable, Expression, StructInfo, StructKind, Type,
+};
 
 #[derive(Debug, Clone)]
 pub struct Substitution(pub Vec<(TypeVariable, Type)>);
