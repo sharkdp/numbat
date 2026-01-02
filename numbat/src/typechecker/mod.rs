@@ -27,7 +27,7 @@ use crate::name_resolution::Namespace;
 use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, Type};
+use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, StructKind, Type};
 use crate::{decorator, ffi, suggestion};
 
 use compact_str::{CompactString, ToCompactString, format_compact};
@@ -238,27 +238,40 @@ impl TypeChecker {
                 if let TypeExpression::TypeIdentifier(span, name, type_args) = dexpr
                     && let Some(struct_info) = self.structs.get(name)
                 {
+                    // Get the type parameters from the struct definition
+                    let type_parameters = match &struct_info.kind {
+                        StructKind::Definition(params) => params,
+                        StructKind::Instance(_) => {
+                            unreachable!("Struct registry should only contain definitions")
+                        }
+                    };
+
                     // Check that the number of type arguments matches the number of type parameters
-                    if type_args.len() != struct_info.type_parameters.len() {
+                    if type_args.len() != type_parameters.len() {
                         return Err(Box::new(TypeCheckError::WrongNumberOfTypeArguments {
                             span: *span,
                             type_name: name.to_string(),
-                            expected: struct_info.type_parameters.len(),
+                            expected: type_parameters.len(),
                             actual: type_args.len(),
                         }));
                     }
 
                     if type_args.is_empty() {
-                        // Non-generic struct
-                        return Ok(Type::Struct(Box::new(struct_info.clone())));
+                        // Non-generic struct: create an instance with empty type arguments
+                        return Ok(Type::Struct(Box::new(StructInfo {
+                            definition_span: struct_info.definition_span,
+                            name: struct_info.name.clone(),
+                            kind: StructKind::Instance(vec![]),
+                            fields: struct_info.fields.clone(),
+                        })));
                     }
 
                     // Build substitution from type parameters to type arguments
                     let mut substitution = Substitution::empty();
-                    for ((_, param_name, _), arg) in
-                        struct_info.type_parameters.iter().zip(type_args.iter())
-                    {
+                    let mut concrete_type_args = Vec::new();
+                    for ((_, param_name, _), arg) in type_parameters.iter().zip(type_args.iter()) {
                         let arg_type = self.type_from_annotation(arg)?;
+                        concrete_type_args.push(arg_type.clone());
                         substitution.append(TypeVariable::new(param_name), arg_type);
                     }
 
@@ -271,7 +284,7 @@ impl TypeChecker {
                     return Ok(Type::Struct(Box::new(StructInfo {
                         definition_span: struct_info.definition_span,
                         name: struct_info.name.clone(),
-                        type_parameters: vec![], // Type parameters have been instantiated
+                        kind: StructKind::Instance(concrete_type_args),
                         fields: instantiated_fields,
                     })));
                 }
@@ -986,50 +999,63 @@ impl TypeChecker {
                 };
 
                 // For generic structs, instantiate type parameters with fresh type variables
-                let instantiated_struct_info = if struct_info.type_parameters.is_empty() {
-                    struct_info.clone()
-                } else {
-                    // Generate fresh type variables for each type parameter
-                    let fresh_vars: Vec<_> = struct_info
-                        .type_parameters
-                        .iter()
-                        .map(|_| self.name_generator.fresh_type_variable())
-                        .collect();
-
-                    // Build substitution mapping type parameter names to fresh type variables
-                    let substitution = struct_info
-                        .type_parameters
-                        .iter()
-                        .zip(fresh_vars.iter())
-                        .fold(
-                            Substitution::empty(),
-                            |mut subst, ((_, name, _), fresh_var)| {
-                                subst.append(TypeVariable::new(name), Type::TVar(fresh_var.clone()));
-                                subst
-                            },
-                        );
-
-                    // Add dtype constraints for type parameters with Dim bounds
-                    for ((_, _, bound), fresh_var) in
-                        struct_info.type_parameters.iter().zip(fresh_vars.iter())
-                    {
-                        if let Some(TypeParameterBound::Dim) = bound {
-                            self.add_dtype_constraint(&Type::TVar(fresh_var.clone()))
-                                .ok();
+                let instantiated_struct_info = match &struct_info.kind {
+                    StructKind::Definition(type_parameters) if type_parameters.is_empty() => {
+                        // Non-generic struct: create instance with empty type arguments
+                        StructInfo {
+                            definition_span: struct_info.definition_span,
+                            name: struct_info.name.clone(),
+                            kind: StructKind::Instance(vec![]),
+                            fields: struct_info.fields.clone(),
                         }
                     }
+                    StructKind::Definition(type_parameters) => {
+                        // Generate fresh type variables for each type parameter
+                        let fresh_vars: Vec<_> = type_parameters
+                            .iter()
+                            .map(|_| self.name_generator.fresh_type_variable())
+                            .collect();
 
-                    // Create instantiated StructInfo with substituted field types
-                    let mut instantiated_fields = struct_info.fields.clone();
-                    for (_, field_type) in instantiated_fields.values_mut() {
-                        field_type.apply(&substitution).ok();
+                        // Build substitution mapping type parameter names to fresh type variables
+                        let substitution = type_parameters
+                            .iter()
+                            .zip(fresh_vars.iter())
+                            .fold(
+                                Substitution::empty(),
+                                |mut subst, ((_, name, _), fresh_var)| {
+                                    subst
+                                        .append(TypeVariable::new(name), Type::TVar(fresh_var.clone()));
+                                    subst
+                                },
+                            );
+
+                        // Add dtype constraints for type parameters with Dim bounds
+                        for ((_, _, bound), fresh_var) in
+                            type_parameters.iter().zip(fresh_vars.iter())
+                        {
+                            if let Some(TypeParameterBound::Dim) = bound {
+                                self.add_dtype_constraint(&Type::TVar(fresh_var.clone()))
+                                    .ok();
+                            }
+                        }
+
+                        // Create instantiated StructInfo with substituted field types
+                        let mut instantiated_fields = struct_info.fields.clone();
+                        for (_, field_type) in instantiated_fields.values_mut() {
+                            field_type.apply(&substitution).ok();
+                        }
+
+                        StructInfo {
+                            definition_span: struct_info.definition_span,
+                            name: struct_info.name.clone(),
+                            kind: StructKind::Instance(
+                                fresh_vars.iter().map(|v| Type::TVar(v.clone())).collect(),
+                            ),
+                            fields: instantiated_fields,
+                        }
                     }
-
-                    StructInfo {
-                        definition_span: struct_info.definition_span,
-                        name: struct_info.name.clone(),
-                        type_parameters: vec![], // Type parameters have been instantiated
-                        fields: instantiated_fields,
+                    StructKind::Instance(_) => {
+                        unreachable!("Struct registry should only contain definitions")
                     }
                 };
 
@@ -1915,12 +1941,14 @@ impl TypeChecker {
                 let struct_info = StructInfo {
                     definition_span: *struct_name_span,
                     name: struct_name.to_compact_string(),
-                    type_parameters: type_parameters
-                        .iter()
-                        .map(|(span, name, bound)| {
-                            (*span, (*name).to_compact_string(), bound.clone())
-                        })
-                        .collect(),
+                    kind: StructKind::Definition(
+                        type_parameters
+                            .iter()
+                            .map(|(span, name, bound)| {
+                                (*span, (*name).to_compact_string(), bound.clone())
+                            })
+                            .collect(),
+                    ),
                     fields: fields
                         .iter()
                         .map(|(span, name, type_)| {

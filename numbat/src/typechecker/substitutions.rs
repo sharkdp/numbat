@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::Statement;
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{DType, DTypeFactor, DefineVariable, Expression, StructInfo, Type};
+use crate::typed_ast::{DType, DTypeFactor, DefineVariable, Expression, StructInfo, StructKind, Type};
 
 #[derive(Debug, Clone)]
 pub struct Substitution(pub Vec<(TypeVariable, Type)>);
@@ -83,6 +83,13 @@ impl ApplySubstitution for Type {
                 return_type.apply(s)
             }
             Type::Struct(info) => {
+                // Apply substitution to type arguments
+                if let StructKind::Instance(type_args) = &mut info.kind {
+                    for arg in type_args {
+                        arg.apply(s)?;
+                    }
+                }
+                // Apply substitution to field types
                 for (_, field_type) in info.fields.values_mut() {
                     field_type.apply(s)?;
                 }

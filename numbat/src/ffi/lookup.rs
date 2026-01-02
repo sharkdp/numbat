@@ -10,7 +10,7 @@ use crate::value::Value;
 
 pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     use crate::span::{ByteIndex, Span};
-    use crate::typed_ast::StructInfo;
+    use crate::typed_ast::{StructInfo, StructKind};
     use crate::typed_ast::Type;
     use indexmap::IndexMap;
     use mendeleev::{Electronvolt, GramPerCubicCentimeter, Kelvin, KiloJoulePerMole};
@@ -82,7 +82,7 @@ pub fn _get_chemical_element_data_raw(mut args: Args) -> Result<Value, Box<Runti
 
         let info = StructInfo {
             name: CompactString::const_new("_ChemicalElementRaw"),
-            type_parameters: vec![],
+            kind: StructKind::Instance(vec![]),
             definition_span: unknown_span,
             fields,
         };
