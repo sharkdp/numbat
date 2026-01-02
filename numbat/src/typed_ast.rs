@@ -416,6 +416,28 @@ impl Type {
     pub fn to_readable_type(&self, registry: &DimensionRegistry) -> Markup {
         match self {
             Type::Dimension(d) => d.to_readable_type(registry),
+            Type::Struct(info) => {
+                let mut markup = m::type_identifier(info.name.clone());
+                if let StructKind::Instance(type_args) = &info.kind {
+                    if !type_args.is_empty() {
+                        markup = markup + m::operator("<");
+                        markup = markup
+                            + Itertools::intersperse(
+                                type_args.iter().map(|t| t.to_readable_type(registry)),
+                                m::operator(",") + m::space(),
+                            )
+                            .sum();
+                        markup = markup + m::operator(">");
+                    }
+                }
+                markup
+            }
+            Type::List(element_type) => {
+                m::type_identifier("List")
+                    + m::operator("<")
+                    + element_type.to_readable_type(registry)
+                    + m::operator(">")
+            }
             _ => self.pretty_print(),
         }
     }

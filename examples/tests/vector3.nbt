@@ -1,0 +1,18 @@
+use extra::vector3
+
+# Basic angular momentum computation
+let r = vec(3 m, 4 m, 0 m)
+let v = vec(-10 m / s, 0, 0)
+
+let mass = 5 kg
+let p = multiply(mass, v)
+
+let l_z = cross(r, p).z
+
+assert_eq(l_z, 200 kg m² / s)
+
+# Make sure that these variables have the expected types:
+let _r: Vec<Length> = r
+let _v: Vec<Velocity> = v
+let _p: Vec<Momentum> = p
+let _l_z: AngularMomentum = l_z
