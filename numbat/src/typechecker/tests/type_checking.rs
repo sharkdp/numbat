@@ -640,6 +640,20 @@ fn structs() {
 
 #[test]
 fn generic_structs() {
+    // Basic generic struct with one type parameter
+    assert_successful_typecheck(
+        "
+        struct Wrapper<X> {
+            inner: X,
+        }
+
+        let w = Wrapper { inner: 1 a }
+        let x: A = w.inner
+
+        let w2: Wrapper<A> = Wrapper { inner: 1 a }
+        ",
+    );
+
     // Basic generic struct with two type parameters
     assert_successful_typecheck(
         "
@@ -651,8 +665,25 @@ fn generic_structs() {
         let t = Tuple { x: 1 a, y: 1 b }
         let x: A = t.x
         let y: B = t.y
+
+        let t2: Tuple<A, B> = Tuple { x: 1 a, y: 1 b }
         ",
     );
+
+    // Error if type arguments do not match annotation:
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Wrapper<X> {
+                inner: X,
+            }
+
+            let w: Wrapper<A> = Wrapper { inner: 1 b }
+            "
+        ),
+        // TODO: This could be improved to give a more specific error message
+        TypeCheckError::ConstraintSolverError(..)
+    ));
 
     // We use proper unification constraint solving:
     assert_successful_typecheck(
@@ -661,10 +692,7 @@ fn generic_structs() {
             inner: D / A,
         }
 
-        fn get_d<D: Dim>(r: Rate<D>) -> D = r.inner * a
-
-        let r = Rate { inner: b / a }
-        let quantity: B = get_d(r)
+        let r: Rate<B> = Rate { inner: b / a }
         ",
     );
 
