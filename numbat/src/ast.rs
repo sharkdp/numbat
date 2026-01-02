@@ -323,9 +323,8 @@ impl PrettyPrint for TypeAnnotation {
 
 pub enum TypeExpression {
     Unity(Span),
-    TypeIdentifier(Span, CompactString),
-    /// A generic type instantiation like `SomeStruct<A, B>`
-    GenericType(Span, CompactString, Vec<TypeAnnotation>),
+    /// A type identifier, optionally with type arguments like `SomeStruct<A, B>`
+    TypeIdentifier(Span, CompactString, Vec<TypeAnnotation>),
     Multiply(Span, Box<TypeExpression>, Box<TypeExpression>),
     Divide(Span, Box<TypeExpression>, Box<TypeExpression>),
     Power(
@@ -340,8 +339,7 @@ impl TypeExpression {
     pub fn full_span(&self) -> Span {
         match self {
             TypeExpression::Unity(s) => *s,
-            TypeExpression::TypeIdentifier(s, _) => *s,
-            TypeExpression::GenericType(s, _, _) => *s,
+            TypeExpression::TypeIdentifier(s, _, _) => *s,
             TypeExpression::Multiply(span_op, lhs, rhs) => {
                 span_op.extend(&lhs.full_span()).extend(&rhs.full_span())
             }
@@ -360,7 +358,6 @@ fn with_parens(dexpr: &TypeExpression) -> Markup {
     match dexpr {
         expr @ (TypeExpression::Unity(..)
         | TypeExpression::TypeIdentifier(..)
-        | TypeExpression::GenericType(..)
         | TypeExpression::Power(..)) => expr.pretty_print(),
         expr @ (TypeExpression::Multiply(..) | TypeExpression::Divide(..)) => {
             m::operator("(") + expr.pretty_print() + m::operator(")")
@@ -372,18 +369,19 @@ impl PrettyPrint for TypeExpression {
     fn pretty_print(&self) -> Markup {
         match self {
             TypeExpression::Unity(_) => m::type_identifier("1"),
-            TypeExpression::TypeIdentifier(_, ident) => {
-                m::type_identifier(ident.to_compact_string())
-            }
-            TypeExpression::GenericType(_, ident, args) => {
-                let mut markup = m::type_identifier(ident.to_compact_string()) + m::operator("<");
-                for (i, arg) in args.iter().enumerate() {
-                    if i > 0 {
-                        markup = markup + m::operator(",") + m::space();
+            TypeExpression::TypeIdentifier(_, ident, type_args) => {
+                let mut markup = m::type_identifier(ident.to_compact_string());
+                if !type_args.is_empty() {
+                    markup = markup + m::operator("<");
+                    for (i, arg) in type_args.iter().enumerate() {
+                        if i > 0 {
+                            markup = markup + m::operator(",") + m::space();
+                        }
+                        markup = markup + arg.pretty_print();
                     }
-                    markup = markup + arg.pretty_print();
+                    markup = markup + m::operator(">");
                 }
-                markup + m::operator(">")
+                markup
             }
             TypeExpression::Multiply(_, lhs, rhs) => {
                 lhs.pretty_print() + m::space() + m::operator("×") + m::space() + rhs.pretty_print()
@@ -503,9 +501,11 @@ impl ReplaceSpans for TypeExpression {
     fn replace_spans(&self) -> Self {
         match self {
             TypeExpression::Unity(_) => TypeExpression::Unity(Span::dummy()),
-            TypeExpression::TypeIdentifier(_, d) => {
-                TypeExpression::TypeIdentifier(Span::dummy(), d.clone())
-            }
+            TypeExpression::TypeIdentifier(_, name, type_args) => TypeExpression::TypeIdentifier(
+                Span::dummy(),
+                name.clone(),
+                type_args.iter().map(|a| a.replace_spans()).collect(),
+            ),
             TypeExpression::Multiply(_, lhs, rhs) => TypeExpression::Multiply(
                 Span::dummy(),
                 Box::new(lhs.replace_spans()),
@@ -521,11 +521,6 @@ impl ReplaceSpans for TypeExpression {
                 Box::new(lhs.replace_spans()),
                 Span::dummy(),
                 *exp,
-            ),
-            TypeExpression::GenericType(_, name, args) => TypeExpression::GenericType(
-                Span::dummy(),
-                name.clone(),
-                args.iter().map(|a| a.replace_spans()).collect(),
             ),
         }
     }

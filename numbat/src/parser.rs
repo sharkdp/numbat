@@ -1943,9 +1943,9 @@ impl<'a> Parser<'a> {
                     ));
                 }
                 let full_span = ident_span.extend(&self.last(tokens).unwrap().span);
-                Ok(TypeExpression::GenericType(full_span, ident, type_args))
+                Ok(TypeExpression::TypeIdentifier(full_span, ident, type_args))
             } else {
-                Ok(TypeExpression::TypeIdentifier(ident_span, ident))
+                Ok(TypeExpression::TypeIdentifier(ident_span, ident, vec![]))
             }
         } else if let Some(number) = self.match_exact(tokens, TokenKind::Number) {
             let span = self.last(tokens).unwrap().span;
@@ -2560,7 +2560,7 @@ mod tests {
                 identifier: "x",
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
                 type_annotation: Some(TypeAnnotation::TypeExpression(
-                    TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
+                    TypeExpression::TypeIdentifier(Span::dummy(), "Length".into(), vec![]),
                 )),
                 decorators: Vec::new(),
             }),
@@ -2574,7 +2574,7 @@ mod tests {
                 identifier: "x",
                 expr: binop!(scalar!(1.0), Mul, identifier!("meter")),
                 type_annotation: Some(TypeAnnotation::TypeExpression(
-                    TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
+                    TypeExpression::TypeIdentifier(Span::dummy(), "Length".into(), vec![]),
                 )),
                 decorators: vec![
                     decorator::Decorator::Name("myvar".into()),
@@ -2646,10 +2646,12 @@ mod tests {
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
+                        vec![],
                     )),
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
+                        vec![],
                     )),
                 )],
             ),
@@ -2665,8 +2667,9 @@ mod tests {
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
+                        vec![],
                     )),
-                    Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Time".into())),
+                    Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Time".into(), vec![])),
                 )],
             ),
         );
@@ -2681,6 +2684,7 @@ mod tests {
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
+                        vec![],
                     )),
                     Span::dummy(),
                     Rational::from_integer(2),
@@ -2697,12 +2701,13 @@ mod tests {
                     Span::dummy(),
                     Box::new(TypeExpression::Multiply(
                         Span::dummy(),
-                        Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Mass".into())),
+                        Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Mass".into(), vec![])),
                         Box::new(TypeExpression::Power(
                             Some(Span::dummy()),
                             Box::new(TypeExpression::TypeIdentifier(
                                 Span::dummy(),
                                 "Length".into(),
+                                vec![],
                             )),
                             Span::dummy(),
                             Rational::from_integer(2),
@@ -2710,7 +2715,7 @@ mod tests {
                     )),
                     Box::new(TypeExpression::Power(
                         Some(Span::dummy()),
-                        Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Time".into())),
+                        Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Time".into(), vec![])),
                         Span::dummy(),
                         Rational::from_integer(2),
                     )),
@@ -2728,6 +2733,7 @@ mod tests {
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
                         "Length".into(),
+                        vec![],
                     )),
                     Span::dummy(),
                     Rational::new(12345, 67890),
@@ -2768,7 +2774,7 @@ mod tests {
                 body: Some(scalar!(1.0)),
                 local_variables: vec![],
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
-                    TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
+                    TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into(), vec![]),
                 )),
                 decorators: vec![],
             },
@@ -2848,14 +2854,14 @@ mod tests {
                         Span::dummy(),
                         "x",
                         Some(TypeAnnotation::TypeExpression(
-                            TypeExpression::TypeIdentifier(Span::dummy(), "Length".into()),
+                            TypeExpression::TypeIdentifier(Span::dummy(), "Length".into(), vec![]),
                         )),
                     ),
                     (
                         Span::dummy(),
                         "y",
                         Some(TypeAnnotation::TypeExpression(
-                            TypeExpression::TypeIdentifier(Span::dummy(), "Time".into()),
+                            TypeExpression::TypeIdentifier(Span::dummy(), "Time".into(), vec![]),
                         )),
                     ),
                     (
@@ -2868,6 +2874,7 @@ mod tests {
                                 Box::new(TypeExpression::TypeIdentifier(
                                     Span::dummy(),
                                     "Length".into(),
+                                    vec![],
                                 )),
                                 Span::dummy(),
                                 Rational::new(3, 1),
@@ -2877,6 +2884,7 @@ mod tests {
                                 Box::new(TypeExpression::TypeIdentifier(
                                     Span::dummy(),
                                     "Time".into(),
+                                    vec![],
                                 )),
                                 Span::dummy(),
                                 Rational::new(2, 1),
@@ -2887,7 +2895,7 @@ mod tests {
                 body: Some(scalar!(1.0)),
                 local_variables: vec![],
                 return_type_annotation: Some(TypeAnnotation::TypeExpression(
-                    TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into()),
+                    TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into(), vec![]),
                 )),
                 decorators: vec![],
             },
@@ -2903,7 +2911,7 @@ mod tests {
                     Span::dummy(),
                     "x",
                     Some(TypeAnnotation::TypeExpression(
-                        TypeExpression::TypeIdentifier(Span::dummy(), "X".into()),
+                        TypeExpression::TypeIdentifier(Span::dummy(), "X".into(), vec![]),
                     )),
                 )],
                 body: Some(scalar!(1.0)),
@@ -2923,7 +2931,7 @@ mod tests {
                     Span::dummy(),
                     "x",
                     Some(TypeAnnotation::TypeExpression(
-                        TypeExpression::TypeIdentifier(Span::dummy(), "X".into()),
+                        TypeExpression::TypeIdentifier(Span::dummy(), "X".into(), vec![]),
                     )),
                 )],
                 body: Some(scalar!(1.0)),
@@ -3535,6 +3543,7 @@ mod tests {
                         TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
                             Span::dummy(),
                             CompactString::const_new("Scalar"),
+                            vec![],
                         )),
                     ),
                     (
@@ -3543,6 +3552,7 @@ mod tests {
                         TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
                             Span::dummy(),
                             CompactString::const_new("Scalar"),
+                            vec![],
                         )),
                     ),
                 ],
@@ -3565,6 +3575,7 @@ mod tests {
                         TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
                             Span::dummy(),
                             CompactString::const_new("T"),
+                            vec![],
                         )),
                     ),
                     (
@@ -3573,6 +3584,7 @@ mod tests {
                         TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
                             Span::dummy(),
                             CompactString::const_new("D"),
+                            vec![],
                         )),
                     ),
                     (Span::dummy(), "name", TypeAnnotation::String(Span::dummy())),

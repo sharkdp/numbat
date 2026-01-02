@@ -235,22 +235,13 @@ impl TypeChecker {
     fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
         match annotation {
             TypeAnnotation::TypeExpression(dexpr) => {
-                if let TypeExpression::TypeIdentifier(_, name) = dexpr
-                    && let Some(info) = self.structs.get(name)
+                if let TypeExpression::TypeIdentifier(span, name, type_args) = dexpr
+                    && let Some(struct_info) = self.structs.get(name)
                 {
-                    // if we see a struct name here, it's safe to assume it
-                    // isn't accidentally clashing with a dimension, we
-                    // check that earlier.
-                    return Ok(Type::Struct(Box::new(info.clone())));
-                }
-
-                if let TypeExpression::GenericType(span, name, type_args) = dexpr {
-                    let Some(struct_info) = self.structs.get(name) else {
-                        return Err(Box::new(TypeCheckError::UnknownStruct(
-                            *span,
-                            name.to_string(),
-                        )));
-                    };
+                    if type_args.is_empty() {
+                        // Non-generic struct
+                        return Ok(Type::Struct(Box::new(struct_info.clone())));
+                    }
 
                     // Check that the number of type arguments matches the number of type parameters
                     if type_args.len() != struct_info.type_parameters.len() {
