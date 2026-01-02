@@ -9,9 +9,12 @@ let p = multiply(mass, v)
 
 let l_z = cross(r, p).z
 
+# Check values
+assert_eq(norm(r), 25 m²)
+assert_eq(length(r), 5 m)
 assert_eq(l_z, 200 kg m² / s)
 
-# Make sure that these variables have the expected types:
+# Check types
 let _r: Vec<Length> = r
 let _v: Vec<Velocity> = v
 let _p: Vec<Momentum> = p
