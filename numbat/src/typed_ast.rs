@@ -285,11 +285,20 @@ impl From<BaseRepresentation> for DType {
     }
 }
 
+/// Represents whether a struct is a generic definition or a concrete instance
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StructKind {
+    /// Generic struct definition with type parameters (e.g., `struct Vec<D: Dim>`)
+    Definition(Vec<(Span, CompactString, Option<TypeParameterBound>)>),
+    /// Instantiated struct with concrete type arguments (e.g., `Vec<Length>`)
+    Instance(Vec<Type>),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructInfo {
     pub definition_span: Span,
     pub name: CompactString,
-    pub type_parameters: Vec<(Span, CompactString, Option<TypeParameterBound>)>,
+    pub kind: StructKind,
     pub fields: IndexMap<CompactString, (Span, Type)>,
 }
 
@@ -326,11 +335,20 @@ impl std::fmt::Display for Type {
                 )
             }
             Type::Struct(info) => {
-                let StructInfo { name, fields, .. } = info.as_ref();
+                write!(f, "{}", info.name)?;
+                if let StructKind::Instance(type_args) = &info.kind {
+                    if !type_args.is_empty() {
+                        write!(
+                            f,
+                            "<{}>",
+                            type_args.iter().map(|t| t.to_string()).join(", ")
+                        )?;
+                    }
+                }
                 write!(
                     f,
-                    "{name} {{{}}}",
-                    fields
+                    " {{{}}}",
+                    info.fields
                         .iter()
                         .map(|(n, (_, t))| n.to_string() + ": " + &t.to_string())
                         .join(", ")
@@ -368,7 +386,22 @@ impl PrettyPrint for Type {
                     + return_type.pretty_print()
                     + m::operator("]")
             }
-            Type::Struct(info) => m::type_identifier(info.name.clone()),
+            Type::Struct(info) => {
+                let mut markup = m::type_identifier(info.name.clone());
+                if let StructKind::Instance(type_args) = &info.kind {
+                    if !type_args.is_empty() {
+                        markup = markup + m::operator("<");
+                        markup = markup
+                            + Itertools::intersperse(
+                                type_args.iter().map(|t| t.pretty_print()),
+                                m::operator(",") + m::space(),
+                            )
+                            .sum();
+                        markup = markup + m::operator(">");
+                    }
+                }
+                markup
+            }
             Type::List(element_type) => {
                 m::type_identifier("List")
                     + m::operator("<")
@@ -465,10 +498,19 @@ impl Type {
                         )
                     })
                     .collect();
+                let instantiated_kind = match &info.kind {
+                    StructKind::Definition(params) => StructKind::Definition(params.clone()),
+                    StructKind::Instance(type_args) => StructKind::Instance(
+                        type_args
+                            .iter()
+                            .map(|t| t.instantiate(type_variables))
+                            .collect(),
+                    ),
+                };
                 Type::Struct(Box::new(StructInfo {
                     definition_span: info.definition_span,
                     name: info.name.clone(),
-                    type_parameters: info.type_parameters.clone(),
+                    kind: instantiated_kind,
                     fields: instantiated_fields,
                 }))
             }

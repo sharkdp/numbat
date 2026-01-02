@@ -4,7 +4,7 @@ use compact_str::{CompactString, format_compact};
 
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{DType, DTypeFactor, Type};
+use crate::typed_ast::{DType, DTypeFactor, StructKind, Type};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintSolverError {
@@ -281,6 +281,24 @@ impl Constraint {
                     s1.as_ref().clone(),
                     t1.as_ref().clone(),
                 )]))
+            }
+            Constraint::Equal(Type::Struct(info1), Type::Struct(info2))
+                if info1.name == info2.name =>
+            {
+                // Generate equality constraints for type arguments
+                match (&info1.kind, &info2.kind) {
+                    (StructKind::Instance(args1), StructKind::Instance(args2))
+                        if args1.len() == args2.len() =>
+                    {
+                        let new_constraints = args1
+                            .iter()
+                            .zip(args2.iter())
+                            .map(|(t1, t2)| Constraint::Equal(t1.clone(), t2.clone()))
+                            .collect();
+                        Some(Satisfied::with_new_constraints(new_constraints))
+                    }
+                    _ => None,
+                }
             }
             Constraint::Equal(Type::TVar(tv), Type::Dimension(d))
             | Constraint::Equal(Type::Dimension(d), Type::TVar(tv)) => {
