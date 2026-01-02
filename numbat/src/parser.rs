@@ -280,6 +280,10 @@ static PROCEDURES: &[TokenKind] = &[
 struct Parser<'a> {
     current: usize,
     decorator_stack: Vec<Decorator<'a>>,
+    /// When we split `>=` into `>` and `=`, we store the span of the `=` here.
+    /// This is used for parsing something like `let v: Vec<Length>= ...`, where
+    /// the `>=` is being tokenized as a TokenKind::GreaterOrEqual.
+    pending_equals: Option<Span>,
 }
 
 impl<'a> Parser<'a> {
@@ -287,6 +291,7 @@ impl<'a> Parser<'a> {
         Parser {
             current: 0,
             decorator_stack: vec![],
+            pending_equals: None,
         }
     }
 
@@ -428,7 +433,7 @@ impl<'a> Parser<'a> {
         let mut type_parameters = vec![];
         // Parsing the generic parameters if there are any
         if self.match_exact(tokens, TokenKind::LessThan).is_some() {
-            while self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
+            while !self.match_closing_angle_bracket(tokens) {
                 if let Some(type_parameter_name) = self.match_exact(tokens, TokenKind::Identifier) {
                     let bound = if self.match_exact(tokens, TokenKind::Colon).is_some() {
                         match self.match_exact(tokens, TokenKind::Identifier) {
@@ -454,7 +459,7 @@ impl<'a> Parser<'a> {
                     type_parameters.push((span, type_parameter_name.lexeme, bound));
 
                     if self.match_exact(tokens, TokenKind::Comma).is_none()
-                        && self.peek(tokens).kind != TokenKind::GreaterThan
+                        && !self.peek_closing_angle_bracket(tokens)
                     {
                         return Err(ParseError {
                             kind: ParseErrorKind::ExpectedCommaOrRightAngleBracket,
@@ -1784,7 +1789,7 @@ impl<'a> Parser<'a> {
 
             let element_type = self.type_annotation(tokens)?;
 
-            if self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
+            if !self.match_closing_angle_bracket(tokens) {
                 return Err(ParseError::new(
                     ParseErrorKind::ExpectedTokenInListType("'>'"),
                     self.peek(tokens).span,
@@ -1930,13 +1935,13 @@ impl<'a> Parser<'a> {
             // Check for generic type arguments like `SomeStruct<A, B>`
             if self.match_exact(tokens, TokenKind::LessThan).is_some() {
                 let mut type_args = vec![];
-                if self.peek(tokens).kind != TokenKind::GreaterThan {
+                if !self.peek_closing_angle_bracket(tokens) {
                     type_args.push(self.type_annotation(tokens)?);
                     while self.match_exact(tokens, TokenKind::Comma).is_some() {
                         type_args.push(self.type_annotation(tokens)?);
                     }
                 }
-                if self.match_exact(tokens, TokenKind::GreaterThan).is_none() {
+                if !self.match_closing_angle_bracket(tokens) {
                     return Err(ParseError::new(
                         ParseErrorKind::ExpectedCommaOrRightAngleBracket,
                         self.peek(tokens).span,
@@ -1973,6 +1978,12 @@ impl<'a> Parser<'a> {
         tokens: &'b [Token<'a>],
         token_kind: TokenKind,
     ) -> Option<&'b Token<'a>> {
+        // Handle pending equals from a split '>=' token
+        if token_kind == TokenKind::Equal && self.pending_equals.take().is_some() {
+            // Return the previous token (the >=) as a stand-in
+            // The span was already recorded when we split it
+            return self.last(tokens);
+        }
         let token = self.peek(tokens);
         if token.kind == token_kind {
             self.advance(tokens);
@@ -1980,6 +1991,37 @@ impl<'a> Parser<'a> {
         } else {
             None
         }
+    }
+
+    /// Match a closing `>` for generic type parameters/arguments.
+    /// This handles the case where `>=` was tokenized as a single token.
+    fn match_closing_angle_bracket(&mut self, tokens: &[Token<'a>]) -> bool {
+        let token = self.peek(tokens);
+        match token.kind {
+            TokenKind::GreaterThan => {
+                self.advance(tokens);
+                true
+            }
+            TokenKind::GreaterOrEqual => {
+                // Split the >= token: consume the > part and save the = for later
+                self.pending_equals = Some(Span {
+                    start: token.span.start + 1,
+                    end: token.span.end,
+                    code_source_id: token.span.code_source_id,
+                });
+                self.advance(tokens);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// Check if the next token is a `>` (or `>=` which can be split)
+    fn peek_closing_angle_bracket(&self, tokens: &[Token<'a>]) -> bool {
+        matches!(
+            self.peek(tokens).kind,
+            TokenKind::GreaterThan | TokenKind::GreaterOrEqual
+        )
     }
 
     fn look_ahead_beyond_linebreak(&self, tokens: &[Token], token_kind: TokenKind) -> bool {
@@ -2566,6 +2608,27 @@ mod tests {
             }),
         );
 
+        // Test that generic types parse correctly without space before '='
+        // (regression test for '>=' being tokenized as a single token)
+        parse_as(
+            &["let x:Foo<A>=1"],
+            Statement::DefineVariable(DefineVariable {
+                identifier_span: Span::dummy(),
+                identifier: "x",
+                expr: scalar!(1.0),
+                type_annotation: Some(TypeAnnotation::TypeExpression(
+                    TypeExpression::TypeIdentifier(
+                        Span::dummy(),
+                        "Foo".into(),
+                        vec![TypeAnnotation::TypeExpression(
+                            TypeExpression::TypeIdentifier(Span::dummy(), "A".into(), vec![]),
+                        )],
+                    ),
+                )),
+                decorators: Vec::new(),
+            }),
+        );
+
         // same as above, but with some decorators
         parse_as(
             &["@name(\"myvar\") @aliases(foo, bar) let x: Length = 1 * meter"],
@@ -2669,7 +2732,11 @@ mod tests {
                         "Length".into(),
                         vec![],
                     )),
-                    Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Time".into(), vec![])),
+                    Box::new(TypeExpression::TypeIdentifier(
+                        Span::dummy(),
+                        "Time".into(),
+                        vec![],
+                    )),
                 )],
             ),
         );
@@ -2701,7 +2768,11 @@ mod tests {
                     Span::dummy(),
                     Box::new(TypeExpression::Multiply(
                         Span::dummy(),
-                        Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Mass".into(), vec![])),
+                        Box::new(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Mass".into(),
+                            vec![],
+                        )),
                         Box::new(TypeExpression::Power(
                             Some(Span::dummy()),
                             Box::new(TypeExpression::TypeIdentifier(
@@ -2715,7 +2786,11 @@ mod tests {
                     )),
                     Box::new(TypeExpression::Power(
                         Some(Span::dummy()),
-                        Box::new(TypeExpression::TypeIdentifier(Span::dummy(), "Time".into(), vec![])),
+                        Box::new(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Time".into(),
+                            vec![],
+                        )),
                         Span::dummy(),
                         Rational::from_integer(2),
                     )),
