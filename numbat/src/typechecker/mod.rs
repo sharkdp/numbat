@@ -1011,30 +1011,26 @@ impl TypeChecker {
                     }
                     StructKind::Definition(type_parameters) => {
                         // Generate fresh type variables for each type parameter
-                        let fresh_vars: Vec<_> = type_parameters
+                        let variables: Vec<_> = type_parameters
                             .iter()
                             .map(|_| self.name_generator.fresh_type_variable())
                             .collect();
 
                         // Build substitution mapping type parameter names to fresh type variables
-                        let substitution = type_parameters
-                            .iter()
-                            .zip(fresh_vars.iter())
-                            .fold(
-                                Substitution::empty(),
-                                |mut subst, ((_, name, _), fresh_var)| {
-                                    subst
-                                        .append(TypeVariable::new(name), Type::TVar(fresh_var.clone()));
-                                    subst
-                                },
-                            );
+                        let substitution = type_parameters.iter().zip(variables.iter()).fold(
+                            Substitution::empty(),
+                            |mut subst, ((_, name, _), variable)| {
+                                subst.append(TypeVariable::new(name), Type::TVar(variable.clone()));
+                                subst
+                            },
+                        );
 
-                        // Add dtype constraints for type parameters with Dim bounds
-                        for ((_, _, bound), fresh_var) in
-                            type_parameters.iter().zip(fresh_vars.iter())
+                        // Add dtype constraints for type parameters with `Dim` bounds
+                        for ((_, _, bound), variable) in
+                            type_parameters.iter().zip(variables.iter())
                         {
                             if let Some(TypeParameterBound::Dim) = bound {
-                                self.add_dtype_constraint(&Type::TVar(fresh_var.clone()))
+                                self.add_dtype_constraint(&Type::TVar(variable.clone()))
                                     .ok();
                             }
                         }
@@ -1049,7 +1045,7 @@ impl TypeChecker {
                             definition_span: struct_info.definition_span,
                             name: struct_info.name.clone(),
                             kind: StructKind::Instance(
-                                fresh_vars.iter().map(|v| Type::TVar(v.clone())).collect(),
+                                variables.iter().map(|v| Type::TVar(v.clone())).collect(),
                             ),
                             fields: instantiated_fields,
                         }
