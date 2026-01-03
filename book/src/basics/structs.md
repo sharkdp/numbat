@@ -32,3 +32,28 @@ let side_length = cbrt(mass / tungsten.density) -> cm
 
 print("A tungsten cube with a mass of {mass} has a side length of {side_length:.2}.")
 ```
+
+## Generic structs
+
+Structs can be generic over type parameters. Type parameters are declared in angle brackets after the struct name:
+
+```nbt
+struct Tuple<A, B> {
+    first: A,
+    second: B,
+}
+
+let t = Tuple { first: "hello", second: 42 }
+```
+
+If you want to constrain a type parameter to be a dimension type, use the `Dim` bound:
+
+```nbt
+struct Vec<X: Dim> {
+    x: X,
+    y: X,
+}
+
+let position = Vec { x: 1 m, y: 2 m }
+let velocity: Vec<Velocity> = Vec { x: 1 m/s, y: 2 m/s }
+```
