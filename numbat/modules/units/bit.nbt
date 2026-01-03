@@ -17,6 +17,10 @@ unit bit: DigitalInformation
 @aliases(B: short, byte: both, bytes: both, Byte: both, Bytes: both, octet, octets, Octet, Octets)
 unit byte: DigitalInformation = 8 bit
 
+@name("KB is a non-standard but commonly used abbreviation for kilobyte")
+@url("https://en.wikipedia.org/wiki/Kilobyte")
+unit KB: DigitalInformation = kB
+
 @name("Bits per second")
 @url("https://en.wikipedia.org/wiki/Bit_per_second")
 @metric_prefixes
