@@ -14,7 +14,7 @@ use super::Result;
 use crate::value::Value;
 
 #[cfg(feature = "plotting")]
-fn line_plot(mut args: Args) -> Plot {
+fn line_plot(mut args: Args) -> Result<Plot, Box<RuntimeErrorKind>> {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let ys = fields.pop().unwrap();
     let xs = fields.pop().unwrap();
@@ -24,14 +24,14 @@ fn line_plot(mut args: Args) -> Plot {
     let xs = xs.unsafe_as_list();
     let ys = ys.unsafe_as_list();
 
-    let x_unit = {
-        let x0 = xs.clone().head().unwrap().unsafe_as_quantity();
-        x0.unit().clone() // TODO: avoid cloning
+    let get_unit = |list: &crate::list::NumbatList<Value>| {
+        list.iter()
+            .next()
+            .map(|v| v.clone().unsafe_as_quantity().unit().clone())
+            .ok_or_else(|| Box::new(RuntimeErrorKind::UserError("Cannot plot empty data".into())))
     };
-    let y_unit = {
-        let y0 = ys.clone().head().unwrap().unsafe_as_quantity();
-        y0.unit().clone() // TODO: avoid cloning
-    };
+    let x_unit = get_unit(&xs)?;
+    let y_unit = get_unit(&ys)?;
 
     let x_label = format!(
         "{x_label}{x_unit}",
@@ -61,15 +61,14 @@ fn line_plot(mut args: Args) -> Plot {
         .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
         .collect::<Vec<_>>();
 
-    crate::plot::line_plot(xs, ys, &x_label, &y_label)
+    Ok(crate::plot::line_plot(xs, ys, &x_label, &y_label))
 }
 
 #[cfg(feature = "plotting")]
-fn bar_chart(mut args: Args) -> Plot {
+fn bar_chart(mut args: Args) -> Result<Plot, Box<RuntimeErrorKind>> {
     let mut fields = arg!(args).unsafe_as_struct_fields();
     let x_labels = fields.pop().unwrap();
     let values = fields.pop().unwrap();
-    let value_unit = fields.pop().unwrap().unsafe_as_string();
     let value_label = fields.pop().unwrap().unsafe_as_string();
 
     let x_labels = x_labels
@@ -78,8 +77,15 @@ fn bar_chart(mut args: Args) -> Plot {
         .cloned()
         .map(|e| e.unsafe_as_string())
         .collect::<Vec<_>>();
+
+    let values = values.unsafe_as_list();
+    let value_unit = values
+        .iter()
+        .next()
+        .map(|v| v.clone().unsafe_as_quantity().unit().clone())
+        .ok_or_else(|| Box::new(RuntimeErrorKind::UserError("Cannot plot empty data".into())))?;
+
     let values = values
-        .unsafe_as_list()
         .iter()
         .cloned()
         .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
@@ -87,14 +93,14 @@ fn bar_chart(mut args: Args) -> Plot {
 
     let value_label = format!(
         "{value_label}{value_unit}",
-        value_unit = if value_unit.is_empty() {
+        value_unit = if value_unit.is_scalar() {
             "".into()
         } else {
             format!(" [{}]", value_unit)
         }
     );
 
-    crate::plot::bar_chart(values, x_labels, &value_label)
+    Ok(crate::plot::bar_chart(values, x_labels, &value_label))
 }
 
 #[cfg(feature = "plotting")]
@@ -117,9 +123,9 @@ pub fn show(args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     };
 
     let plot = if info.name == "LinePlot" {
-        line_plot(args)
+        line_plot(args)?
     } else if info.name == "BarChart" {
-        bar_chart(args)
+        bar_chart(args)?
     } else {
         return Err(Box::new(RuntimeErrorKind::UserError(format!(
             "Unsupported plot type: {}",
