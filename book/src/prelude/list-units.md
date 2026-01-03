@@ -36,6 +36,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `DataRate` | [Bits per second](https://en.wikipedia.org/wiki/Bit_per_second) | `bps` |
 | `DigitalInformation` | [Bit](https://en.wikipedia.org/wiki/Bit) | `bit`, `bits` |
 | `DigitalInformation` | [Byte](https://en.wikipedia.org/wiki/Byte) | `B`, `byte`, `Byte`, `bytes`, `Bytes`, `octet`, `Octet`, `octets`, `Octets` |
+| `DigitalInformation` | [KB is a non-standard but commonly used abbreviation for kilobyte](https://en.wikipedia.org/wiki/Kilobyte) | `KB` |
 | `Dot` | [Dot](https://en.wikipedia.org/wiki/Dots_per_inch) | `dot`, `dots` |
 | `Dot / Length` | [Dots per inch](https://en.wikipedia.org/wiki/Dots_per_inch) | `dpi` |
 | `DynamicViscosity` | [Poise](https://en.wikipedia.org/wiki/Poise_(unit)) | `poise` |
