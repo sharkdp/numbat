@@ -26,6 +26,7 @@ pub struct UnitMetadata {
     pub description: Option<CompactString>,
     pub binary_prefixes: bool,
     pub metric_prefixes: bool,
+    pub code_source_id: usize,
 }
 
 #[derive(Clone)]

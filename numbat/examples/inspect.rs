@@ -9,7 +9,7 @@ use std::process::exit;
 
 const AUTO_GENERATED_HINT: &str = "<!-- NOTE! This file is auto-generated -->";
 
-fn inspect_units(ctx: &Context) {
+fn inspect_units(ctx: &Context, prelude_ctx: &Context) {
     println!("{AUTO_GENERATED_HINT}
 
 # List of supported units
@@ -26,12 +26,12 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
         .unit_representations()
         .sorted_by_key(|(u, (_, m))| (m.readable_type.to_string(), u.to_lowercase()))
     {
-        let mut names = unit_metadata.aliases;
+        let mut names = unit_metadata.aliases.clone();
         names.sort_by_key(|(n, _)| n.to_lowercase());
         let names = names.iter().map(|(n, _)| n).join("`, `");
 
-        let url = unit_metadata.url;
-        let name = unit_metadata.name.unwrap_or(unit_name.clone());
+        let url = unit_metadata.url.clone();
+        let name = unit_metadata.name.clone().unwrap_or(unit_name.clone());
 
         let name_with_url = if let Some(url) = url {
             format_compact!("[{name}]({url})")
@@ -39,9 +39,29 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
             name.clone()
         };
 
-        let readable_type = unit_metadata.readable_type;
+        // Check if this unit requires an explicit import
+        let code_source = ctx.resolver().get_code_source(unit_metadata.code_source_id);
+        let import_note = if let CodeSource::Module(ref module_path, _) = code_source {
+            let module_str = module_path.to_string();
+            if module_str == "units::currencies" {
+                // Don't show import hint for currencies
+                String::new()
+            } else if !prelude_ctx
+                .resolver()
+                .imported_modules
+                .contains(module_path)
+            {
+                format!(" <br/> (`use {module_path}`)")
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
 
-        println!("| `{readable_type}` | {name_with_url} | `{names}` |");
+        let readable_type = unit_metadata.readable_type.clone();
+
+        println!("| `{readable_type}` | {name_with_url} | `{names}`{import_note} |");
     }
 }
 
@@ -192,7 +212,7 @@ fn main() {
     args.next();
     if let Some(arg) = args.next() {
         match arg.as_str() {
-            "units" => inspect_units(&ctx),
+            "units" => inspect_units(&ctx, &example_ctx),
             "functions" => {
                 let module = args.next().unwrap();
                 inspect_functions_in_module(&ctx, &example_ctx, module)

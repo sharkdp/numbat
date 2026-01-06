@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
 
-use crate::ast::ProcedureKind;
+use crate::ast::{ProcedureKind, TypeAnnotation};
 use crate::decorator::Decorator;
 use crate::dimension::DimensionRegistry;
 use crate::interpreter::{
@@ -399,7 +399,7 @@ impl BytecodeInterpreter {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DefineBaseUnit(unit_name, decorators, annotation, type_) => {
+            Statement::DefineBaseUnit(unit_name, span, decorators, annotation, type_) => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.to_compact_string(), ap))
                     .collect();
@@ -412,7 +412,7 @@ impl BytecodeInterpreter {
                             type_: type_.to_concrete_type(), // Base unit types can never be generic
                             readable_type: annotation
                                 .as_ref()
-                                .map(|a| a.pretty_print())
+                                .map(|a: &TypeAnnotation| a.pretty_print())
                                 .unwrap_or(type_.to_readable_type(dimension_registry, false)),
                             aliases,
                             name: decorator::name(decorators).map(CompactString::from),
@@ -423,6 +423,7 @@ impl BytecodeInterpreter {
                             description: decorator::description(decorators),
                             binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                             metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
+                            code_source_id: span.code_source_id,
                         },
                     )
                     .map_err(|e| {
@@ -474,6 +475,7 @@ impl BytecodeInterpreter {
                         description: decorator::description(decorators),
                         binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                         metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
+                        code_source_id: full_span.code_source_id,
                     },
                 ); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
 

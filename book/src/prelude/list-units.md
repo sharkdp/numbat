@@ -48,7 +48,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Energy` | [Calorie](https://en.wikipedia.org/wiki/Calorie) | `cal`, `calorie`, `calories` |
 | `Energy` | [Electron volt](https://en.wikipedia.org/wiki/Electronvolt) | `electronvolt`, `electronvolts`, `eV` |
 | `Energy` | [Erg](https://en.wikipedia.org/wiki/Erg) | `erg`, `ergs` |
-| `Energy` | [Hartree](https://en.wikipedia.org/wiki/Hartree) | `hartree`, `hartrees` |
+| `Energy` | [Hartree](https://en.wikipedia.org/wiki/Hartree) | `hartree`, `hartrees` <br/> (`use units::hartree`) |
 | `Energy` | [Joule](https://en.wikipedia.org/wiki/Joule) | `J`, `joule`, `joules` |
 | `Energy` | [Planck energy](https://en.wikipedia.org/wiki/Planck_energy) | `planck_energy` |
 | `Energy` | [Rydberg unit of energy](https://en.wikipedia.org/wiki/Rydberg_constant) | `Ry` |
@@ -72,19 +72,19 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `KinematicViscosity` | [Stokes](https://en.wikipedia.org/wiki/Stokes_(unit)) | `St`, `stokes` |
 | `Length` | [Ångström](https://en.wikipedia.org/wiki/Angstrom) | `angstrom`, `angstroms`, `Å`, `Å` |
 | `Length` | [Astronomical unit](https://en.wikipedia.org/wiki/Astronomical_unit) | `astronomicalunit`, `astronomicalunits`, `au`, `AU` |
-| `Length` | [Bohr](https://en.wikipedia.org/wiki/Hartree_atomic_units) | `bohr` |
-| `Length` | [Earth radius](https://en.wikipedia.org/wiki/Earth) | `earth_radius` |
+| `Length` | [Bohr](https://en.wikipedia.org/wiki/Hartree_atomic_units) | `bohr` <br/> (`use units::hartree`) |
+| `Length` | [Earth radius](https://en.wikipedia.org/wiki/Earth) | `earth_radius` <br/> (`use extra::astronomy`) |
 | `Length` | [Fathom](https://en.wikipedia.org/wiki/Fathom) | `fathom`, `fathoms` |
 | `Length` | [Fermi](https://en.wikipedia.org/wiki/Femtometre) | `fermi` |
 | `Length` | [Foot](https://en.wikipedia.org/wiki/Foot_(unit)) | `feet`, `foot`, `ft` |
 | `Length` | [Furlong](https://en.wikipedia.org/wiki/Furlong) | `furlong`, `furlongs` |
 | `Length` | [Inch](https://en.wikipedia.org/wiki/Inch) | `in`, `inch`, `inches` |
-| `Length` | [Jupiter radius](https://en.wikipedia.org/wiki/Jupiter) | `jupiter_radius` |
+| `Length` | [Jupiter radius](https://en.wikipedia.org/wiki/Jupiter) | `jupiter_radius` <br/> (`use extra::astronomy`) |
 | `Length` | [League](https://en.wikipedia.org/wiki/League_(unit)) | `league`, `leagues` |
-| `Length` | [Light-second](https://en.wikipedia.org/wiki/Light-second) | `lightsecond`, `lightseconds`, `lsec` |
+| `Length` | [Light-second](https://en.wikipedia.org/wiki/Light-second) | `lightsecond`, `lightseconds`, `lsec` <br/> (`use extra::astronomy`) |
 | `Length` | [Light-year](https://en.wikipedia.org/wiki/Light-year) | `lightyear`, `lightyears`, `ly`, `lyr` |
-| `Length` | [Lunar radius](https://en.wikipedia.org/wiki/Moon#Size_and_mass) | `lunar_radius` |
-| `Length` | [Mars radius](https://en.wikipedia.org/wiki/Mars) | `mars_radius` |
+| `Length` | [Lunar radius](https://en.wikipedia.org/wiki/Moon#Size_and_mass) | `lunar_radius` <br/> (`use extra::astronomy`) |
+| `Length` | [Mars radius](https://en.wikipedia.org/wiki/Mars) | `mars_radius` <br/> (`use extra::astronomy`) |
 | `Length` | [Metre](https://en.wikipedia.org/wiki/Metre) | `m`, `meter`, `meters`, `metre`, `metres` |
 | `Length` | [Micron](https://en.wikipedia.org/wiki/Micrometre) | `micron` |
 | `Length` | [Mile](https://en.wikipedia.org/wiki/Mile) | `mi`, `mile`, `miles` |
@@ -94,8 +94,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Length` | [Rack unit](https://en.wikipedia.org/wiki/Rack_unit) | `rackunit`, `rackunits`, `RU`, `U` |
 | `Length` | [US rod](https://en.wikipedia.org/wiki/Rod_(unit)) | `perch`, `rod`, `rods` |
 | `Length` | [Smoot](https://en.wikipedia.org/wiki/Smoot) | `smoot` |
-| `Length` | [Solar radius](https://en.wikipedia.org/wiki/Sun) | `solar_radius` |
-| `Length` | [Stoney length](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_length` |
+| `Length` | [Solar radius](https://en.wikipedia.org/wiki/Sun) | `solar_radius` <br/> (`use extra::astronomy`) |
+| `Length` | [Stoney length](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_length` <br/> (`use units::stoney`) |
 | `Length` | [Thousandth of an inch](https://en.wikipedia.org/wiki/Thousandth_of_an_inch) | `mil`, `mils`, `thou` |
 | `Length` | [Yard](https://en.wikipedia.org/wiki/Yard) | `yard`, `yards`, `yd` |
 | `Length / Volume` | [Miles per gallon](https://en.wikipedia.org/wiki/Fuel_economy_in_automobiles) | `mpg` |
@@ -110,21 +110,21 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `MagneticFluxDensity` | [Gauss](https://en.wikipedia.org/wiki/Gauss_(unit)) | `gauss` |
 | `MagneticFluxDensity` | [Tesla](https://en.wikipedia.org/wiki/Tesla_(unit)) | `T`, `tesla`, `teslas` |
 | `Mass` | [Dalton](https://en.wikipedia.org/wiki/Dalton) | `Da`, `dalton`, `daltons` |
-| `Mass` | [Earth mass](https://en.wikipedia.org/wiki/Earth) | `earth_mass` |
+| `Mass` | [Earth mass](https://en.wikipedia.org/wiki/Earth) | `earth_mass` <br/> (`use extra::astronomy`) |
 | `Mass` | [Firkin](https://en.wikipedia.org/wiki/Firkin_(unit)) | `firkin`, `firkins` |
 | `Mass` | [Grain](https://en.wikipedia.org/wiki/Grain_(unit)) | `grain`, `grains` |
 | `Mass` | [Gram](https://en.wikipedia.org/wiki/Gram) | `g`, `gram`, `gramme`, `grammes`, `grams` |
-| `Mass` | [Jupiter mass](https://en.wikipedia.org/wiki/Jupiter) | `jupiter_mass` |
+| `Mass` | [Jupiter mass](https://en.wikipedia.org/wiki/Jupiter) | `jupiter_mass` <br/> (`use extra::astronomy`) |
 | `Mass` | [Hundredweight](https://en.wikipedia.org/wiki/Hundredweight) | `cwt`, `long_hundredweight` |
 | `Mass` | [Long ton](https://en.wikipedia.org/wiki/Long_ton) | `long_ton`, `long_tons` |
-| `Mass` | [Lunar mass](https://en.wikipedia.org/wiki/Moon#Size_and_mass) | `lunar_mass` |
-| `Mass` | [Mars mass](https://en.wikipedia.org/wiki/Mars) | `mars_mass` |
+| `Mass` | [Lunar mass](https://en.wikipedia.org/wiki/Moon#Size_and_mass) | `lunar_mass` <br/> (`use extra::astronomy`) |
+| `Mass` | [Mars mass](https://en.wikipedia.org/wiki/Mars) | `mars_mass` <br/> (`use extra::astronomy`) |
 | `Mass` | [Ounce](https://en.wikipedia.org/wiki/Ounce) | `ounce`, `ounces`, `oz` |
 | `Mass` | [Planck mass](https://en.wikipedia.org/wiki/Planck_mass) | `planck_mass` |
 | `Mass` | [Pound](https://en.wikipedia.org/wiki/Pound_(mass)) | `lb`, `lbs`, `pound`, `pounds` |
-| `Mass` | [Solar mass](https://en.wikipedia.org/wiki/Sun) | `solar_mass` |
+| `Mass` | [Solar mass](https://en.wikipedia.org/wiki/Sun) | `solar_mass` <br/> (`use extra::astronomy`) |
 | `Mass` | [Stone](https://en.wikipedia.org/wiki/Stone_(unit)) | `stone` |
-| `Mass` | [Stoney mass](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_mass` |
+| `Mass` | [Stoney mass](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_mass` <br/> (`use units::stoney`) |
 | `Mass` | [Tonne](https://en.wikipedia.org/wiki/Tonne) | `metricton`, `ton`, `tonne`, `tonnes`, `tons` |
 | `Molality` | [Molal](https://en.wikipedia.org/wiki/Molality) | `molal` |
 | `Molarity` | [Molar](https://en.wikipedia.org/wiki/Molar_concentration) | `molar` |
@@ -173,7 +173,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Pressure` | [Pascal](https://en.wikipedia.org/wiki/Pascal_(unit)) | `Pa`, `pascal`, `pascals` |
 | `Pressure` | [Pound-force per square inch](https://en.wikipedia.org/wiki/Pounds_per_square_inch) | `psi`, `PSI` |
 | `Pressure` | [Torr](https://en.wikipedia.org/wiki/Torr) | `torr` |
-| `RadiantFlux` | [Solar luminosity](https://en.wikipedia.org/wiki/Solar_luminosity) | `solar_luminosity` |
+| `RadiantFlux` | [Solar luminosity](https://en.wikipedia.org/wiki/Solar_luminosity) | `solar_luminosity` <br/> (`use extra::astronomy`) |
 | `Scalar` | [Billion](https://en.wikipedia.org/wiki/Billion) | `billion` |
 | `Scalar` | [Dozen](https://en.wikipedia.org/wiki/Dozen) | `dozen` |
 | `Scalar` | [Hundred](https://en.wikipedia.org/wiki/100_(number)) | `hundred` |
@@ -189,8 +189,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Scalar` | [Thousand](https://en.wikipedia.org/wiki/1000_(number)) | `thousand` |
 | `Scalar` | [Trillion](https://en.wikipedia.org/wiki/Trillion) | `trillion` |
 | `SolidAngle` | [Steradian](https://en.wikipedia.org/wiki/Steradian) | `sr`, `steradian`, `steradians` |
-| `SpectralFluxDensity` | [Jansky](https://en.wikipedia.org/wiki/Jansky) | `jansky`, `janskys`, `Jy` |
-| `SpectralFluxDensity` | [Solar flux unit](https://en.wikipedia.org/wiki/Solar_flux_unit) | `sfu`, `solarfluxunit`, `solarfluxunits` |
+| `SpectralFluxDensity` | [Jansky](https://en.wikipedia.org/wiki/Jansky) | `jansky`, `janskys`, `Jy` <br/> (`use extra::astronomy`) |
+| `SpectralFluxDensity` | [Solar flux unit](https://en.wikipedia.org/wiki/Solar_flux_unit) | `sfu`, `solarfluxunit`, `solarfluxunits` <br/> (`use extra::astronomy`) |
 | `Temperature` | [Kelvin](https://en.wikipedia.org/wiki/Kelvin) | `K`, `kelvin`, `kelvins` |
 | `Temperature` | [Planck temperature](https://en.wikipedia.org/wiki/Planck_temperature) | `planck_temperature` |
 | `Time` | [Century](https://en.wikipedia.org/wiki/Century) | `centuries`, `century` |
@@ -206,7 +206,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Time` | [Planck time](https://en.wikipedia.org/wiki/Planck_time) | `planck_time` |
 | `Time` | [Second](https://en.wikipedia.org/wiki/Second) | `s`, `sec`, `second`, `seconds` |
 | `Time` | [Sidereal day](https://en.wikipedia.org/wiki/Sidereal_time#Sidereal_day) | `sidereal_day`, `sidereal_days` |
-| `Time` | [Stoney time](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_time` |
+| `Time` | [Stoney time](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_time` <br/> (`use units::stoney`) |
 | `Time` | [Week](https://en.wikipedia.org/wiki/Week) | `week`, `weeks` |
 | `Time` | [Tropical year](https://en.wikipedia.org/wiki/Tropical_year) | `tropical_year`, `tropical_years`, `year`, `years`, `yr` |
 | `Velocity` | [Knot](https://en.wikipedia.org/wiki/Knot_(unit)) | `kn`, `knot`, `knots`, `kt` |

@@ -1401,6 +1401,7 @@ impl TypeChecker {
 
                 typed_ast::Statement::DefineBaseUnit(
                     unit_name,
+                    *span,
                     decorators.clone(),
                     type_annotation.clone().map(TypeAnnotation::TypeExpression),
                     TypeScheme::concrete(Type::Dimension(type_specified)),

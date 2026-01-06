@@ -249,7 +249,7 @@ impl ApplySubstitution for Statement<'_> {
                 fn_type.apply(s)
             }
             Statement::DefineDimension(_, _) => Ok(()),
-            Statement::DefineBaseUnit(_, _, _annotation, type_) => type_.apply(s),
+            Statement::DefineBaseUnit(_, _, _, _annotation, type_) => type_.apply(s),
             Statement::DefineDerivedUnit(_, _, e, _, _annotation, type_, _) => {
                 e.apply(s)?;
                 type_.apply(s)
