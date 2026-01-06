@@ -722,7 +722,12 @@ impl Vm {
                         Op::Divide => Ok(lhs
                             .checked_div(rhs)
                             .ok_or_else(|| self.runtime_error(RuntimeErrorKind::DivisionByZero))?),
-                        Op::Power => lhs.power(rhs),
+                        Op::Power => Ok(lhs.power(rhs).map_err(|e| match e {
+                            QuantityError::ZeroToNegativePower => {
+                                self.runtime_error(RuntimeErrorKind::DivisionByZero)
+                            }
+                            _ => self.runtime_error(RuntimeErrorKind::QuantityError(e)),
+                        })?),
                         // If the user specifically converted the type of a unit, we should NOT simplify this value
                         // before any operations are applied to it
                         Op::ConvertTo => lhs.convert_to(rhs.unit()).map(Quantity::no_simplify),
