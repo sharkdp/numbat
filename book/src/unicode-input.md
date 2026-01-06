@@ -1,5 +1,5 @@
 ---
-icon: lucide/type
+icon: lucide/text-cursor-input
 ---
 
 # Unicode input
