@@ -17,9 +17,6 @@ pub enum QuantityError {
 
     #[error("Non-rational exponent")]
     NonRationalExponent,
-
-    #[error("Zero raised to a negative power")]
-    ZeroToNegativePower,
 }
 
 pub type Result<T> = std::result::Result<T, QuantityError>;
@@ -242,18 +239,18 @@ impl Quantity {
         &self.value
     }
 
-    pub fn power(self, exp: Quantity) -> Result<Self> {
+    pub fn checked_power(self, exp: Quantity) -> Result<Option<Self>> {
         let exponent_as_scalar = exp.as_scalar()?.to_f64();
         if exponent_as_scalar < 0.0 && self.is_zero() {
-            Err(QuantityError::ZeroToNegativePower)
+            Ok(None)
         } else {
-            Ok(Quantity::new_f64(
+            Ok(Some(Quantity::new_f64(
                 self.value.to_f64().powf(exponent_as_scalar),
                 self.unit.power(
                     Rational::from_f64(exponent_as_scalar)
                         .ok_or(QuantityError::NonRationalExponent)?,
                 ),
-            ))
+            )))
         }
     }
 
@@ -501,8 +498,9 @@ mod tests {
         }
         {
             let volume = length
-                .power(Quantity::from_scalar(3.0))
-                .expect("exponent is scalar");
+                .checked_power(Quantity::from_scalar(3.0))
+                .expect("exponent is scalar")
+                .expect("no zero to negative power");
 
             let volume_in_centimeter3 = volume
                 .convert_to(&centimeter.powi(3))

@@ -247,6 +247,7 @@ fn test_exponentiation() {
 
     expect_failure("0^(-1)", "Division by zero");
     expect_failure("0^(-2)", "Division by zero");
+    expect_failure("(0m)^(-2)", "Division by zero");
 }
 
 #[test]
