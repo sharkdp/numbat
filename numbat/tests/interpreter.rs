@@ -244,6 +244,9 @@ fn test_exponentiation() {
     expect_output("2⁻¹", "0.5");
     expect_output("2⁻²", "0.25");
     expect_output("10⁻⁵", "0.00001");
+
+    expect_failure("0^(-1)", "Division by zero");
+    expect_failure("0^(-2)", "Division by zero");
 }
 
 #[test]
