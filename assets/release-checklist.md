@@ -11,12 +11,9 @@ necessary changes for the upcoming release.
       last release by running `git diff vX.Y.Z.. numbat-exchange-rates`. If that
       is the case, bump the version in `numbat-exchange-rates/Cargo.toml`.
 - [ ] Update versions and dependencies in the following files:
-      ```
-      numbat/Cargo.toml numbat-cli/Cargo.toml
-      ```
-      `Cargo.toml`. Run `cargo build` to update `Cargo.lock`.
+      `numbat/Cargo.toml`, `numbat-cli/Cargo.toml`. Run `cargo build` to update `Cargo.lock`.
       Make sure to `git add` the `Cargo.lock` changes as well.
-- [ ] Update the `numbat` version in `book/src/cli-installation.md`.
+- [ ] Update the `numbat` version in `book/src/cli/installation.md`.
 - [ ] Run `deploy.sh` (or at least `build.sh`) in `numbat-wasm/` to
       update the `Cargo.lock` file.
 - [ ] Update the version and date in `CITATION.cff`.
