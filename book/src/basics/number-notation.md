@@ -46,3 +46,14 @@ this in a similar style to the previous examples:
 273 |> base(3)
 144 |> base(12)
 ```
+
+## Number representation
+
+Internally, Numbat uses [64-bit floating-point](https://en.wikipedia.org/wiki/Double-precision_floating-point_format)
+numbers to represent all numeric values. This limits precision to approximately 15–16 significant decimal digits.
+While this is sufficient for most scientific and engineering calculations, you might run into problems if you compute
+differences between very large integers and expect to get an exact integer result.
+
+!!! info "Future plans"
+    We are planning to switch to an arbitrary-precision numeric type in the future.
+    See [issue #4](https://github.com/sharkdp/numbat/issues/4) for details.
