@@ -88,6 +88,21 @@ function setup() {
             },
             completion(inp, cb) {
                 cb(numbat.get_completions_for(inp));
+            },
+            keymap: {
+                'TAB': function(e, original) {
+                    // Handle unicode completion (e.g., \alpha -> α)
+                    var cmd = this.get_command();
+                    var unicodeResult = numbat.get_unicode_completion(cmd);
+                    if (unicodeResult.length === 2) {
+                        var patternLen = unicodeResult[0];
+                        var replacement = unicodeResult[1];
+                        var newCmd = cmd.slice(0, -patternLen) + replacement;
+                        this.set_command(newCmd);
+                    } else {
+                        original(e);
+                    }
+                }
             }
         });
 

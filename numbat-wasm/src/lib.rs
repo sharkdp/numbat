@@ -14,6 +14,7 @@ use numbat::module_importer::BuiltinModuleImporter;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
 use numbat::{Context, InterpreterSettings};
+use numbat::unicode_input::UNICODE_INPUT;
 use numbat::{NameResolutionError, NumbatError, markup as m};
 
 use jquery_terminal_formatter::{JqueryTerminalFormatter, JqueryTerminalWriter};
@@ -239,6 +240,23 @@ impl Numbat {
             .get_completions_for(input, false)
             .map(|s| s.trim().trim_end_matches('(').into())
             .collect()
+    }
+
+    /// Check if input ends with a unicode shortcut pattern (e.g., \alpha).
+    /// Returns [pattern_length, replacement] if found, or empty array if not.
+    pub fn get_unicode_completion(&self, input: &str) -> Vec<JsValue> {
+        for (patterns, replacement) in UNICODE_INPUT {
+            for pattern in *patterns {
+                let backslash_pattern = format!("\\{pattern}");
+                if input.ends_with(&backslash_pattern) {
+                    return vec![
+                        JsValue::from(backslash_pattern.len() as u32),
+                        JsValue::from_str(replacement),
+                    ];
+                }
+            }
+        }
+        vec![]
     }
 
     fn print_diagnostic(&self, error: &dyn ErrorDiagnostic) -> InterpreterOutput {
