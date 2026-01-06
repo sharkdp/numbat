@@ -707,6 +707,7 @@ pub enum Statement<'a> {
     DefineDimension(&'a str, Vec<TypeExpression>),
     DefineBaseUnit(
         &'a str,
+        Span,
         Vec<Decorator<'a>>,
         Option<TypeAnnotation>,
         TypeScheme,
@@ -807,7 +808,7 @@ impl Statement<'_> {
                 }
             }
             Statement::DefineDimension(_, _) => {}
-            Statement::DefineBaseUnit(_, _, _, _) => {}
+            Statement::DefineBaseUnit(_, _, _, _, _) => {}
             Statement::DefineDerivedUnit(_, _, _, _, type_annotation, type_, readable_type) => {
                 *readable_type =
                     Self::create_readable_type(registry, type_, type_annotation, false);
@@ -1151,7 +1152,7 @@ impl PrettyPrint for Statement<'_> {
                     )
                     .sum()
             }
-            Statement::DefineBaseUnit(identifier, decorators, annotation, type_) => {
+            Statement::DefineBaseUnit(identifier, _, decorators, annotation, type_) => {
                 decorator_markup(decorators)
                     + m::keyword("unit")
                     + m::space()
@@ -1160,7 +1161,7 @@ impl PrettyPrint for Statement<'_> {
                     + m::space()
                     + annotation
                         .as_ref()
-                        .map(|a| a.pretty_print())
+                        .map(|a: &TypeAnnotation| a.pretty_print())
                         .unwrap_or(type_.pretty_print())
             }
             Statement::DefineDerivedUnit(

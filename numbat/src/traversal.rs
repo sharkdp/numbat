@@ -94,7 +94,7 @@ impl ForAllTypeSchemes for Statement<'_> {
                 f(fn_type);
             }
             Statement::DefineDimension(_, _) => {}
-            Statement::DefineBaseUnit(_, _, _annotation, type_) => {
+            Statement::DefineBaseUnit(_, _, _, _annotation, type_) => {
                 f(type_);
             }
             Statement::DefineDerivedUnit(_, _, expr, _, _annotation, type_, _) => {
@@ -131,7 +131,7 @@ impl ForAllExpressions for Statement<'_> {
                 }
             }
             Statement::DefineDimension(_, _) => {}
-            Statement::DefineBaseUnit(_, _, _, _) => {}
+            Statement::DefineBaseUnit(_, _, _, _, _) => {}
             Statement::DefineDerivedUnit(_, _, expr, _, _, _, _) => expr.for_all_expressions(f),
             Statement::ProcedureCall(_, _, args) => {
                 for arg in args {
