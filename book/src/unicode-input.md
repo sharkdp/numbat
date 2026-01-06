@@ -69,9 +69,16 @@ This feature is available in both the [command-line version](cli/usage.md) and t
 | `\percent` | % | Percent |
 | `\perthousand` | ‰ | Per mille |
 | `\pertenthousand` | ‱ | Per ten thousand |
-| `\sterling` | £ | Pound sterling |
-| `\yen` | ¥ | Yen |
+| `\dollar` | $ | US dollar |
 | `\euro` | € | Euro |
+| `\sterling`, `\pound` | £ | Pound sterling |
+| `\yen` | ¥ | Japanese yen |
+| `\rupee` | ₹ | Indian rupee |
+| `\won` | ₩ | South Korean won |
+| `\lira` | ₺ | Turkish lira |
+| `\peso` | ₱ | Philippine peso |
+| `\baht` | ฿ | Thai baht |
+| `\shekel` | ₪ | Israeli shekel |
 | `\hbar` | ℏ | Reduced Planck constant |
 | `\planck` | ℎ | Planck constant |
 

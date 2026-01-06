@@ -76,10 +76,18 @@ pub const UNICODE_INPUT: &[(&[&str], &str)] = &[
     (&["chi"], "χ"),
     (&["psi"], "ψ"),
     (&["omega"], "ω"),
-    // Units
-    (&["sterling"], "£"),
-    (&["yen"], "¥"),
+    // Currency
+    (&["dollar"], "$"),
     (&["euro"], "€"),
+    (&["sterling", "pound"], "£"),
+    (&["yen"], "¥"),
+    (&["rupee"], "₹"),
+    (&["won"], "₩"),
+    (&["lira"], "₺"),
+    (&["peso"], "₱"),
+    (&["baht"], "฿"),
+    (&["shekel"], "₪"),
+    // Units
     (&["degree"], "°"),
     (&["arcmin"], "′"),
     (&["arcsec"], "″"),
