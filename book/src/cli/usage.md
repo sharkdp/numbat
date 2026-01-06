@@ -57,7 +57,7 @@ In interactive command-line mode, you can use the following key bindings. Most i
 
 | Key sequence | Action |
 |--------------|--------|
-| ++tab++ / ++ctrl+i++ | Auto-completion |
+| ++tab++ / ++ctrl+i++ | Auto-completion and [Unicode input](../unicode-input.md) |
 | ++ctrl+d++ | Quit |
 | ++ctrl+l++ | Clear screen |
 | ++up++ / ++down++ | Browse command history |

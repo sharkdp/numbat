@@ -92,6 +92,7 @@ nav = [
   ] },
 
   { "Other topics" = [
+    "unicode-input.md",
     "editor-integration.md",
     "comparison.md",
   ] },
