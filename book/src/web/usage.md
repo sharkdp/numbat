@@ -44,7 +44,7 @@ In interactive command-line mode, you can use the following key bindings. Most i
 
 | Key sequence | Action |
 |--------------|--------|
-| ++tab++ | Auto-completion |
+| ++tab++ | Auto-completion and [Unicode input](../unicode-input.md) |
 | ++ctrl+l++ | Clear screen |
 | ++up++ / ++down++ | Browse command history |
 | ++ctrl+r++ | Search command history |
