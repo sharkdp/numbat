@@ -17,6 +17,9 @@ pub enum QuantityError {
 
     #[error("Non-rational exponent")]
     NonRationalExponent,
+
+    #[error("Zero raised to a negative power")]
+    ZeroToNegativePower,
 }
 
 pub type Result<T> = std::result::Result<T, QuantityError>;
