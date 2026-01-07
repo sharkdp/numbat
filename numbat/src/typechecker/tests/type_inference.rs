@@ -425,4 +425,23 @@ fn typed_holes() {
         get_typecheck_error("let x: C = ?(a, b)"),
         TypeCheckError::TypedHoleInStatement(_, type_, _, _) if type_ == "Fn[(A, B) -> A × B]"
     ));
+
+    // Local bindings (where-clause variables) should appear in relevant matches
+    assert!(matches!(
+        get_typecheck_error("fn f() = a + ? where x: A = a"),
+        TypeCheckError::TypedHoleInStatement(_, _, _, ref matches) if matches.contains(&"x".to_string())
+    ));
+
+    // Function parameters should appear in relevant matches
+    assert!(matches!(
+        get_typecheck_error("fn f(x: A) = x + ?"),
+        TypeCheckError::TypedHoleInStatement(_, _, _, ref matches) if matches.contains(&"x".to_string())
+    ));
+
+    // Both parameters and where-clause variables should appear
+    assert!(matches!(
+        get_typecheck_error("fn f(x: A) = x + ? where y: A = a"),
+        TypeCheckError::TypedHoleInStatement(_, _, _, ref matches)
+            if matches.contains(&"x".to_string()) && matches.contains(&"y".to_string())
+    ));
 }
