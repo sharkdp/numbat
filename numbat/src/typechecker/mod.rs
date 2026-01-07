@@ -2048,18 +2048,28 @@ impl TypeChecker {
 
         // Check if there is a typed hole in the statement
         if let Some((span, type_of_hole)) = elaborated_statement.find_typed_hole()? {
+            let global_matches = self
+                .env
+                .iter_relevant_matches()
+                .filter(|(_, t)| t == &type_of_hole)
+                .map(|(n, _)| n.to_string());
+
+            let local_matches = elaborated_statement
+                .local_bindings()
+                .into_iter()
+                .filter(|(_, t)| t == &type_of_hole)
+                .map(|(n, _)| n.to_string());
+
+            let relevant_matches: Vec<String> =
+                local_matches.chain(global_matches).take(10).collect();
+
             return Err(Box::new(TypeCheckError::TypedHoleInStatement(
                 span,
                 type_of_hole
                     .to_readable_type(&self.registry, true)
                     .to_string(),
                 elaborated_statement.pretty_print().to_string(),
-                self.env
-                    .iter_relevant_matches()
-                    .filter(|(_, t)| t == &type_of_hole)
-                    .take(10)
-                    .map(|(n, _)| n.to_string())
-                    .collect(),
+                relevant_matches,
             )));
         }
 

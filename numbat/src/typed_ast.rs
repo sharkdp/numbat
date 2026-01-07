@@ -855,6 +855,40 @@ impl Statement<'_> {
             Ok(hole)
         }
     }
+
+    /// Returns an iterator over local bindings (name, type) in the statement.
+    /// This includes local variables in `where` clauses and function parameters.
+    pub(crate) fn local_bindings(&self) -> Vec<(&str, TypeScheme)> {
+        match self {
+            Statement::DefineFunction(_, _, _, parameters, _, local_variables, fn_type, _, _) => {
+                let mut bindings = Vec::new();
+
+                if let TypeScheme::Concrete(Type::Fn(param_types, _))
+                | TypeScheme::Quantified(
+                    _,
+                    crate::typechecker::qualified_type::QualifiedType {
+                        inner: Type::Fn(param_types, _),
+                        ..
+                    },
+                ) = fn_type
+                {
+                    for ((_, param_name, _, _), param_type) in
+                        parameters.iter().zip(param_types.iter())
+                    {
+                        bindings
+                            .push((*param_name, TypeScheme::make_quantified(param_type.clone())));
+                    }
+                }
+
+                for DefineVariable(name, _, _, _, type_, _) in local_variables {
+                    bindings.push((*name, type_.clone()));
+                }
+
+                bindings
+            }
+            _ => Vec::new(),
+        }
+    }
 }
 
 impl Expression<'_> {
