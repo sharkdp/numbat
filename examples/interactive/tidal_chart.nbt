@@ -1,0 +1,59 @@
+# Tidal Chart for Ko Samui, Gulf of Thailand (9.5°N, 100.0°E)
+#
+# This example plots tidal heights using harmonic constituents.
+#
+# Tidal constituent data from:
+#   https://www.researchgate.net/figure/The-tidal-constituents-at-Ko-Samui-and-Laem-Ngop-stations_tbl1_330511904
+
+struct Constituent {
+    period: Time,
+    amplitude: Length,
+    phase: Angle,
+}
+
+fn height(c: Constituent, t: Time) -> Length =
+    c.amplitude cos(2π t / c.period + c.phase)
+
+# The Gulf of Thailand has predominantly DIURNAL tides, meaning
+# K1 and O1 dominate over the semidiurnal M2 and S2 components.
+# This results in typically one high and one low tide per day.
+
+# Principal lunar semidiurnal
+let M2 = Constituent {
+  period: 12.4206012 hours,
+  amplitude: 16.2 cm,
+  phase: 310.9°
+}
+
+# Principal solar semidiurnal
+let S2 = Constituent {
+  period: 12 hours,
+  amplitude: 8.6 cm,
+  phase: 31.1°
+}
+
+# Lunisolar diurnal (dominant)
+let K1 = Constituent {
+  period: 23.9344696 hours,
+  amplitude: 36.5 cm,
+  phase: 176.7°
+}
+
+# Principal lunar diurnal
+let O1 = Constituent {
+  period: 25.8193416 hours,
+  amplitude: 25.6 cm,
+  phase: 126.3°
+}
+
+let mean_sea_level = 0.5 m
+
+fn tide_height(t: Time) -> Length = mean_sea_level + height(M2, t) + height(S2, t) + height(K1, t) + height(O1, t)
+
+let t_start = 0 days
+let duration = 30 days
+
+line_plot(tide_height, t_start, t_start + duration) |>
+  xlabel("Time") |>
+  ylabel("Tide Height") |>
+  show
