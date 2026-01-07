@@ -62,6 +62,7 @@ nav = [
     "advanced/unit-definitions.md",
     "examples/example-numbat_syntax.md",
     "advanced/type-system.md",
+    "advanced/typed-holes.md",
   ] },
 
   { "Standard library" = [
