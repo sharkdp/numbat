@@ -1,0 +1,4 @@
+use core::scalar
+
+@description("Print the value of the argument and return it. Useful for debugging.")
+fn inspect<A>(x: A) -> A

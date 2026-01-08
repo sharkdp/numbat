@@ -267,6 +267,7 @@ def generate_all_function_lists():
             "icon": "lucide/ellipsis",
             "sections": [
                 {"title": "Error handling", "modules": ["core::error"]},
+                {"title": "Debugging", "modules": ["core::debug"]},
                 {"title": "Floating point", "modules": ["core::numbers"]},
                 {"title": "Quantities", "modules": ["core::quantities"]},
                 {"title": "Chemical elements", "modules": ["chemistry::elements"]},
