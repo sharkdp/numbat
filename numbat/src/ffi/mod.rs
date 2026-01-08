@@ -29,7 +29,7 @@ pub(crate) struct Arg {
 pub(crate) type Args = VecDeque<Arg>;
 
 pub(crate) enum Callable {
-    Function(fn(Args) -> Result<Value, Box<RuntimeErrorKind>>),
+    Function(fn(&mut ExecutionContext, Args) -> Result<Value, Box<RuntimeErrorKind>>),
     Procedure(fn(&mut ExecutionContext, Args, Vec<Span>) -> ControlFlow),
 }
 

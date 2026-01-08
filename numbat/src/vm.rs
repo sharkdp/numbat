@@ -896,7 +896,8 @@ impl Vm {
 
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
-                            let result = (function)(args).map_err(|e| self.runtime_error(*e))?;
+                            let result =
+                                (function)(ctx, args).map_err(|e| self.runtime_error(*e))?;
                             self.push(result);
                         }
                         Callable::Procedure(procedure) => {
@@ -942,8 +943,8 @@ impl Vm {
 
                             match &self.ffi_callables[function_idx].callable {
                                 Callable::Function(function) => {
-                                    let result =
-                                        (function)(args).map_err(|e| self.runtime_error(*e))?;
+                                    let result = (function)(ctx, args)
+                                        .map_err(|e| self.runtime_error(*e))?;
                                     self.push(result);
                                 }
                                 Callable::Procedure(..) => unreachable!(
