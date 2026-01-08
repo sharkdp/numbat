@@ -313,8 +313,6 @@ pub struct Vm {
     ffi_callables: IndexMap<&'static str, &'static ForeignFunction>,
 
     /// Metadata for FFI call arguments (spans and types).
-    /// Spans are used for assertion error messages, types for functions like `inspect`.
-    /// Indexed by [start_idx..start_idx+num_args] where start_idx is stored in bytecode.
     ffi_call_args: Vec<FfiCallArg>,
 
     /// The call stack
@@ -892,7 +890,7 @@ impl Vm {
                         fp: self.stack.len() - num_args,
                     })
                 }
-                Op::FFICallFunction => {
+                Op::FFICallFunction | Op::FFICallProcedure => {
                     let function_idx = self.read_u16() as usize;
                     let num_args = self.read_u16() as usize;
                     let call_args_start = self.read_u16() as usize;
@@ -917,35 +915,6 @@ impl Vm {
                             let result =
                                 (function)(ctx, args).map_err(|e| self.runtime_error(*e))?;
                             self.push(result);
-                        }
-                        Callable::Procedure(_) => {
-                            unreachable!("FFICallFunction should not be used for procedures")
-                        }
-                    }
-                }
-                Op::FFICallProcedure => {
-                    let function_idx = self.read_u16() as usize;
-                    let num_args = self.read_u16() as usize;
-                    let call_args_start = self.read_u16() as usize;
-                    let foreign_function = &self.ffi_callables[function_idx];
-
-                    debug_assert!(foreign_function.arity.contains(&num_args));
-
-                    let call_args =
-                        self.ffi_call_args[call_args_start..call_args_start + num_args].to_vec();
-                    let mut args = VecDeque::new();
-                    for i in 0..num_args {
-                        let call_arg = &call_args[num_args - 1 - i];
-                        args.push_front(Arg {
-                            value: self.pop(),
-                            type_: call_arg.type_.clone(),
-                            span: call_arg.span,
-                        });
-                    }
-
-                    match &self.ffi_callables[function_idx].callable {
-                        Callable::Function(_) => {
-                            unreachable!("FFICallProcedure should not be used for functions")
                         }
                         Callable::Procedure(procedure) => {
                             let result = (procedure)(ctx, args);
