@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use super::{Args, macros::*};
+use crate::vm::ExecutionContext;
 use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value};
 
 use super::{Callable, ForeignFunction, Result};
@@ -118,38 +119,44 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
     })
 }
 
-fn error(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn error(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     Err(Box::new(RuntimeErrorKind::UserError(
         arg!(args).unsafe_as_string().to_string(),
     )))
 }
 
-fn value_of(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn value_of(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
 
     return_scalar!(quantity.unsafe_value().to_f64())
 }
 
-fn has_unit(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn has_unit(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
     let unit_query = quantity_arg!(args);
 
     return_boolean!(quantity.is_zero() || quantity.unit() == unit_query.unit())
 }
 
-fn is_dimensionless(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn is_dimensionless(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
 
     return_boolean!(quantity.as_scalar().is_ok())
 }
 
-fn unit_name(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn unit_name(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
 
     return_string!(from = &quantity.unit().to_string())
 }
 
-fn quantity_cast(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn quantity_cast(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let value_from = quantity_arg!(args);
     let _ = quantity_arg!(args);
 

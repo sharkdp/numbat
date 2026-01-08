@@ -14,12 +14,16 @@ use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
 use crate::value::FunctionReference;
 use crate::value::Value;
+use crate::vm::ExecutionContext;
 
-pub fn now(_args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn now(_ctx: &mut ExecutionContext, _args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     return_datetime!(Zoned::now())
 }
 
-pub fn datetime(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn datetime(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let input = string_arg!(args);
 
     let output = datetime::parse_datetime(&input)
@@ -28,7 +32,10 @@ pub fn datetime(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     return_datetime!(output)
 }
 
-pub fn format_datetime(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn format_datetime(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let format = string_arg!(args);
     let dt = datetime_arg!(args);
 
@@ -43,14 +50,17 @@ pub fn format_datetime(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     return_string!(owned = output)
 }
 
-pub fn get_local_timezone(_args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn get_local_timezone(
+    _ctx: &mut ExecutionContext,
+    _args: Args,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let local_tz = datetime::get_local_timezone_or_utc();
     let tz_name = local_tz.iana_name().unwrap_or("<unknown timezone>");
 
     return_string!(borrowed = tz_name)
 }
 
-pub fn tz(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn tz(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     let tz = string_arg!(args);
 
     Ok(Value::FunctionReference(FunctionReference::TzConversion(
@@ -58,7 +68,10 @@ pub fn tz(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     )))
 }
 
-pub fn unixtime(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn unixtime(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let input = datetime_arg!(args);
 
     let output = input.timestamp().as_second();
@@ -66,7 +79,10 @@ pub fn unixtime(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     return_scalar!(output as f64)
 }
 
-pub fn from_unixtime(mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn from_unixtime(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let timestamp = quantity_arg!(args).unsafe_value().to_f64() as i64;
 
     let dt = Timestamp::from_second(timestamp)
@@ -101,14 +117,17 @@ fn calendar_add(
     return_datetime!(output)
 }
 
-pub fn _add_days(args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn _add_days(_ctx: &mut ExecutionContext, args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     calendar_add(args, "day", |n| Span::new().try_days(n))
 }
 
-pub fn _add_months(args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn _add_months(
+    _ctx: &mut ExecutionContext,
+    args: Args,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     calendar_add(args, "month", |n| Span::new().try_months(n))
 }
 
-pub fn _add_years(args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn _add_years(_ctx: &mut ExecutionContext, args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     calendar_add(args, "year", |n| Span::new().try_years(n))
 }
