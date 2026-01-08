@@ -13,6 +13,7 @@ use std::collections::VecDeque;
 
 use crate::interpreter::{RuntimeError, RuntimeErrorKind};
 use crate::span::Span;
+use crate::typechecker::type_scheme::TypeScheme;
 use crate::value::Value;
 use crate::vm::ExecutionContext;
 
@@ -24,6 +25,7 @@ type Result<T, E = Box<RuntimeError>> = std::result::Result<T, E>;
 
 pub(crate) struct Arg {
     pub value: Value,
+    pub type_: TypeScheme,
 }
 
 pub(crate) type Args = VecDeque<Arg>;

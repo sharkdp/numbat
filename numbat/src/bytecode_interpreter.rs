@@ -19,7 +19,7 @@ use crate::typed_ast::{
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::{FunctionReference, Value};
-use crate::vm::{Constant, ExecutionContext, Op, Vm};
+use crate::vm::{Constant, ExecutionContext, FfiCallArg, Op, Vm};
 use crate::{Type, decorator};
 
 #[derive(Debug, Clone, Default)]
@@ -186,8 +186,21 @@ impl BytecodeInterpreter {
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
                     // TODO: check overflow:
-                    self.vm
-                        .add_op2(Op::FFICallFunction, idx, args.len() as u16, *full_span);
+                    let call_args: Vec<FfiCallArg> = args
+                        .iter()
+                        .map(|a| FfiCallArg {
+                            span: a.full_span(),
+                            type_: a.get_type_scheme(),
+                        })
+                        .collect();
+                    let call_args_idx = self.vm.add_ffi_call_args(call_args);
+                    self.vm.add_op3(
+                        Op::FFICallFunction,
+                        idx,
+                        args.len() as u16,
+                        call_args_idx,
+                        *full_span,
+                    );
                 } else {
                     let idx = self.vm.get_function_idx(name);
 
@@ -240,7 +253,16 @@ impl BytecodeInterpreter {
                 // Put the callable on top of the stack
                 self.compile_expression(callable);
 
-                self.vm.add_op1(Op::CallCallable, args.len() as u16, *span);
+                let call_args: Vec<FfiCallArg> = args
+                    .iter()
+                    .map(|a| FfiCallArg {
+                        span: a.full_span(),
+                        type_: a.get_type_scheme(),
+                    })
+                    .collect();
+                let call_args_idx = self.vm.add_ffi_call_args(call_args);
+                self.vm
+                    .add_op2(Op::CallCallable, args.len() as u16, call_args_idx, *span);
             }
             Expression::Boolean(span, val) => {
                 let index = self.vm.add_constant(Constant::Boolean(*val));
@@ -513,14 +535,20 @@ impl BytecodeInterpreter {
 
                 let callable_idx = self.vm.get_ffi_callable_idx(name).unwrap();
 
-                let arg_spans = args.iter().map(|a| a.full_span()).collect();
-                let spans_idx = self.vm.add_procedure_arg_span(arg_spans);
+                let call_args: Vec<FfiCallArg> = args
+                    .iter()
+                    .map(|a| FfiCallArg {
+                        span: a.full_span(),
+                        type_: a.get_type_scheme(),
+                    })
+                    .collect();
+                let call_args_idx = self.vm.add_ffi_call_args(call_args);
 
                 self.vm.add_op3(
                     Op::FFICallProcedure,
                     callable_idx,
                     args.len() as u16,
-                    spans_idx,
+                    call_args_idx,
                     *full_span,
                 );
                 // TODO: check overflow

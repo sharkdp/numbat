@@ -128,9 +128,13 @@ fn error(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<Runti
 }
 
 fn inspect(ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
-    let value = arg!(args);
-    (ctx.print_fn)(&(crate::markup::text("inspect: ") + value.pretty_print()));
-    Ok(value)
+    let arg = args.pop_front().unwrap();
+    let output = crate::markup::text("inspect: ")
+        + arg.value.pretty_print()
+        + crate::markup::text(" : ")
+        + arg.type_.pretty_print();
+    (ctx.print_fn)(&output);
+    Ok(arg.value)
 }
 
 fn value_of(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
