@@ -1,5 +1,6 @@
 use compact_str::{CompactString, format_compact};
 use itertools::Itertools;
+use numbat::InterpreterSettings;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
 use numbat::resolver::CodeSource;
@@ -124,9 +125,15 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                 .interpret(&extra_import, CodeSource::Internal)
                 .unwrap();
 
-            if let Ok((statements, results)) =
-                example_ctx.interpret(&example_code, CodeSource::Internal)
-            {
+            // Use no-op print function to suppress any print output (e.g. from `inspect`)
+            let mut settings = InterpreterSettings {
+                print_fn: Box::new(|_| {}),
+            };
+            if let Ok((statements, results)) = example_ctx.interpret_with_settings(
+                &mut settings,
+                &example_code,
+                CodeSource::Internal,
+            ) {
                 let example_input = extra_import + &example_code;
 
                 // Encode the example url
