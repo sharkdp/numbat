@@ -128,11 +128,14 @@ fn error(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<Runti
 }
 
 fn inspect(ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+    use crate::markup as m;
+
     let arg = args.pop_front().unwrap();
-    let output = crate::markup::text("inspect: ")
+    let output = m::text("inspect: ")
         + arg.value.pretty_print()
-        + crate::markup::text(" : ")
-        + arg.type_.pretty_print();
+        + m::dimmed("    [")
+        + arg.type_.pretty_print()
+        + m::dimmed("]");
     (ctx.print_fn)(&output);
     Ok(arg.value)
 }
