@@ -54,3 +54,19 @@ You can use the builtin `type` procedure to see the type (or physical dimension)
 
   forall A: Dim. Fn[(A²) -> A]
 ```
+
+The `inspect` function can be used to print the value of an expression while
+returning it unchanged. This is useful for debugging intermediate values in a
+longer computation without restructuring the code:
+
+```nbt
+>>> inspect(1 + 1) * 3
+inspect: 2
+6
+
+>>> [1, 2, 3] |> map(inspect) |> sum
+inspect: 1
+inspect: 2
+inspect: 3
+6
+```

@@ -4,7 +4,7 @@ icon: lucide/ellipsis
 
 # Other functions
 
-[Error handling](#error-handling) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Color format conversion](#color-format-conversion)
+[Error handling](#error-handling) · [Debugging](#debugging) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Color format conversion](#color-format-conversion)
 
 ## Error handling
 
@@ -15,6 +15,17 @@ Throw an error with the specified message. Stops the execution of the program.
 
 ```nbt
 fn error<T>(message: String) -> T
+```
+
+## Debugging
+
+Defined in: `core::debug`
+
+### `inspect`
+Print the value of the argument and return it. Useful for debugging.
+
+```nbt
+fn inspect<A>(x: A) -> A
 ```
 
 ## Floating point

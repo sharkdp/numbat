@@ -1,0 +1,6 @@
+# inspect
+
+assert_eq(inspect(0), 0)
+assert_eq(inspect(1 m), 1 m)
+assert_eq(inspect("test"), "test")
+assert_eq(inspect([1, 2, 3]), [1, 2, 3])

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use super::{Args, macros::*};
+use crate::pretty_print::PrettyPrint;
 use crate::vm::ExecutionContext;
 use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value};
 
@@ -38,6 +39,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
 
         // Core
         insert_function!(error, 1..=1);
+        insert_function!(inspect, 1..=1);
         insert_function!(value_of, 1..=1);
         insert_function!(has_unit, 2..=2);
         insert_function!(is_dimensionless, 1..=1);
@@ -123,6 +125,12 @@ fn error(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<Runti
     Err(Box::new(RuntimeErrorKind::UserError(
         arg!(args).unsafe_as_string().to_string(),
     )))
+}
+
+fn inspect(ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+    let value = arg!(args);
+    (ctx.print_fn)(&(crate::markup::text("inspect: ") + value.pretty_print()));
+    Ok(value)
 }
 
 fn value_of(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
