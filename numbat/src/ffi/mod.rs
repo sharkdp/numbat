@@ -26,13 +26,14 @@ type Result<T, E = Box<RuntimeError>> = std::result::Result<T, E>;
 pub(crate) struct Arg {
     pub value: Value,
     pub type_: TypeScheme,
+    pub span: Span,
 }
 
 pub(crate) type Args = VecDeque<Arg>;
 
 pub(crate) enum Callable {
     Function(fn(&mut ExecutionContext, Args) -> Result<Value, Box<RuntimeErrorKind>>),
-    Procedure(fn(&mut ExecutionContext, Args, Vec<Span>) -> ControlFlow),
+    Procedure(fn(&mut ExecutionContext, Args) -> ControlFlow),
 }
 
 pub(crate) struct ForeignFunction {

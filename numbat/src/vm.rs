@@ -314,7 +314,8 @@ pub struct Vm {
 
     /// Metadata for FFI call arguments (spans and types).
     /// Spans are used for assertion error messages, types for functions like `inspect`.
-    ffi_call_args: Vec<Vec<FfiCallArg>>,
+    /// Indexed by [start_idx..start_idx+num_args] where start_idx is stored in bytecode.
+    ffi_call_args: Vec<FfiCallArg>,
 
     /// The call stack
     frames: Vec<CallFrame>,
@@ -511,9 +512,10 @@ impl Vm {
     }
 
     pub(crate) fn add_ffi_call_args(&mut self, args: Vec<FfiCallArg>) -> u16 {
-        self.ffi_call_args.push(args);
+        let start_idx = self.ffi_call_args.len();
+        self.ffi_call_args.extend(args);
         assert!(self.ffi_call_args.len() <= u16::MAX as usize);
-        (self.ffi_call_args.len() - 1) as u16
+        start_idx as u16
     }
 
     pub fn disassemble(&self) {
@@ -893,17 +895,20 @@ impl Vm {
                 Op::FFICallFunction => {
                     let function_idx = self.read_u16() as usize;
                     let num_args = self.read_u16() as usize;
-                    let call_args_idx = self.read_u16() as usize;
+                    let call_args_start = self.read_u16() as usize;
                     let foreign_function = &self.ffi_callables[function_idx];
 
                     debug_assert!(foreign_function.arity.contains(&num_args));
 
-                    let call_args = self.ffi_call_args[call_args_idx].clone();
+                    let call_args =
+                        self.ffi_call_args[call_args_start..call_args_start + num_args].to_vec();
                     let mut args = VecDeque::new();
                     for i in 0..num_args {
+                        let call_arg = &call_args[num_args - 1 - i];
                         args.push_front(Arg {
                             value: self.pop(),
-                            type_: call_args[num_args - 1 - i].type_.clone(),
+                            type_: call_arg.type_.clone(),
+                            span: call_arg.span,
                         });
                     }
 
@@ -921,27 +926,29 @@ impl Vm {
                 Op::FFICallProcedure => {
                     let function_idx = self.read_u16() as usize;
                     let num_args = self.read_u16() as usize;
-                    let call_args_idx = self.read_u16() as usize;
+                    let call_args_start = self.read_u16() as usize;
                     let foreign_function = &self.ffi_callables[function_idx];
 
                     debug_assert!(foreign_function.arity.contains(&num_args));
 
-                    let call_args = self.ffi_call_args[call_args_idx].clone();
+                    let call_args =
+                        self.ffi_call_args[call_args_start..call_args_start + num_args].to_vec();
                     let mut args = VecDeque::new();
                     for i in 0..num_args {
+                        let call_arg = &call_args[num_args - 1 - i];
                         args.push_front(Arg {
                             value: self.pop(),
-                            type_: call_args[num_args - 1 - i].type_.clone(),
+                            type_: call_arg.type_.clone(),
+                            span: call_arg.span,
                         });
                     }
-                    let spans: Vec<Span> = call_args.iter().map(|a| a.span).collect();
 
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(_) => {
                             unreachable!("FFICallProcedure should not be used for functions")
                         }
                         Callable::Procedure(procedure) => {
-                            let result = (procedure)(ctx, args, spans);
+                            let result = (procedure)(ctx, args);
 
                             match result {
                                 std::ops::ControlFlow::Continue(()) => {}
@@ -954,7 +961,7 @@ impl Vm {
                 }
                 Op::CallCallable => {
                     let num_args = self.read_u16() as usize;
-                    let call_args_idx = self.read_u16() as usize;
+                    let call_args_start = self.read_u16() as usize;
 
                     let callable = self.pop();
                     match callable.unsafe_as_function_reference() {
@@ -974,12 +981,16 @@ impl Vm {
                                 .expect("Foreign function exists")
                                 as usize;
 
-                            let call_args = self.ffi_call_args[call_args_idx].clone();
+                            let call_args = self.ffi_call_args
+                                [call_args_start..call_args_start + num_args]
+                                .to_vec();
                             let mut args = VecDeque::new();
                             for i in 0..num_args {
+                                let call_arg = &call_args[num_args - 1 - i];
                                 args.push_front(Arg {
                                     value: self.pop(),
-                                    type_: call_args[num_args - 1 - i].type_.clone(),
+                                    type_: call_arg.type_.clone(),
+                                    span: call_arg.span,
                                 });
                             }
 
