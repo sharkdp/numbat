@@ -11,7 +11,6 @@ use crate::{
         assert_eq::{AssertEq2Error, AssertEq3Error},
     },
     pretty_print::PrettyPrint,
-    span::Span,
     value::Value,
     vm::ExecutionContext,
 };
@@ -51,7 +50,7 @@ pub(crate) fn procedures() -> &'static HashMap<ProcedureKind, ForeignFunction> {
     })
 }
 
-fn print(ctx: &mut ExecutionContext, mut args: Args, _: Vec<Span>) -> ControlFlow {
+fn print(ctx: &mut ExecutionContext, mut args: Args) -> ControlFlow {
     assert!(args.len() <= 1);
 
     if args.is_empty() {
@@ -66,25 +65,28 @@ fn print(ctx: &mut ExecutionContext, mut args: Args, _: Vec<Span>) -> ControlFlo
     ControlFlow::Continue(())
 }
 
-fn assert(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> ControlFlow {
+fn assert(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
     assert!(args.len() == 1);
 
-    if arg!(args).unsafe_as_bool() {
+    let arg = args.pop_front().unwrap();
+    if arg.value.unsafe_as_bool() {
         ControlFlow::Continue(())
     } else {
-        ControlFlow::Break(RuntimeErrorKind::AssertFailed(arg_spans[0]))
+        ControlFlow::Break(RuntimeErrorKind::AssertFailed(arg.span))
     }
 }
 
-fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> ControlFlow {
+fn assert_eq(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
     assert!(args.len() == 2 || args.len() == 3);
 
-    let span_lhs = arg_spans[0];
-    let span_rhs = arg_spans[1];
+    let lhs_arg = args.pop_front().unwrap();
+    let rhs_arg = args.pop_front().unwrap();
+    let span_lhs = lhs_arg.span;
+    let span_rhs = rhs_arg.span;
 
-    if args.len() == 2 {
-        let lhs = arg!(args);
-        let rhs = arg!(args);
+    if args.is_empty() {
+        let lhs = lhs_arg.value;
+        let rhs = rhs_arg.value;
 
         let error = ControlFlow::Break(RuntimeErrorKind::AssertEq2Failed(AssertEq2Error {
             span_lhs,
@@ -112,8 +114,8 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args, arg_spans: Vec<Span>) -> 
             error
         }
     } else {
-        let lhs_original = quantity_arg!(args);
-        let rhs_original = quantity_arg!(args);
+        let lhs_original = lhs_arg.value.unsafe_as_quantity();
+        let rhs_original = rhs_arg.value.unsafe_as_quantity();
         let eps = quantity_arg!(args);
 
         let lhs_converted = lhs_original.convert_to(eps.unit());
