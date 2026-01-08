@@ -22,7 +22,11 @@ pub(crate) type ArityRange = std::ops::RangeInclusive<usize>;
 
 type Result<T, E = Box<RuntimeError>> = std::result::Result<T, E>;
 
-pub(crate) type Args = VecDeque<Value>;
+pub(crate) struct Arg {
+    pub value: Value,
+}
+
+pub(crate) type Args = VecDeque<Arg>;
 
 pub(crate) enum Callable {
     Function(fn(Args) -> Result<Value, Box<RuntimeErrorKind>>),
