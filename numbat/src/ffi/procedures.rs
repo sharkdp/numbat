@@ -81,17 +81,15 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
 
     let lhs_arg = args.pop_front().unwrap();
     let rhs_arg = args.pop_front().unwrap();
-    let span_lhs = lhs_arg.span;
-    let span_rhs = rhs_arg.span;
 
     if args.is_empty() {
         let lhs = lhs_arg.value;
         let rhs = rhs_arg.value;
 
         let error = ControlFlow::Break(RuntimeErrorKind::AssertEq2Failed(AssertEq2Error {
-            span_lhs,
+            span_lhs: lhs_arg.span,
             lhs: lhs.clone(),
-            span_rhs,
+            span_rhs: rhs_arg.span,
             rhs: rhs.clone(),
         }));
 
@@ -139,10 +137,10 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
                     ControlFlow::Continue(())
                 } else {
                     ControlFlow::Break(RuntimeErrorKind::AssertEq3Failed(AssertEq3Error {
-                        span_lhs,
+                        span_lhs: lhs_arg.span,
                         lhs_original,
                         lhs_converted,
-                        span_rhs,
+                        span_rhs: rhs_arg.span,
                         rhs_original,
                         rhs_converted,
                         eps,
