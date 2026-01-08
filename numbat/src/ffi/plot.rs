@@ -116,7 +116,7 @@ pub fn show(args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     // And no real support for generics in the FFI.
 
     use crate::interpreter::RuntimeErrorKind;
-    let Value::StructInstance(info, _) = args.front().unwrap() else {
+    let Value::StructInstance(info, _) = &args.front().unwrap().value else {
         return Err(Box::new(RuntimeErrorKind::UserError(
             "Unsupported argument to 'show'.".into(),
         )));

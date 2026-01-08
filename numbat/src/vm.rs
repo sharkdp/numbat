@@ -11,7 +11,7 @@ use crate::list::NumbatList;
 use crate::span::Span;
 use crate::typed_ast::StructInfo;
 use crate::{
-    ffi::{self, ArityRange, Callable, ForeignFunction},
+    ffi::{self, Arg, ArityRange, Callable, ForeignFunction},
     interpreter::{InterpreterResult, PrintFunction, Result, RuntimeError},
     markup::Markup,
     math,
@@ -891,7 +891,7 @@ impl Vm {
 
                     let mut args = VecDeque::new();
                     for _ in 0..num_args {
-                        args.push_front(self.pop());
+                        args.push_front(Arg { value: self.pop() });
                     }
 
                     match &self.ffi_callables[function_idx].callable {
@@ -937,7 +937,7 @@ impl Vm {
 
                             let mut args = VecDeque::new();
                             for _ in 0..num_args {
-                                args.push_front(self.pop());
+                                args.push_front(Arg { value: self.pop() });
                             }
 
                             match &self.ffi_callables[function_idx].callable {

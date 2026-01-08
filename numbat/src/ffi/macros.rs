@@ -2,7 +2,7 @@
 
 macro_rules! arg {
     ($args:ident) => {
-        $args.pop_front().unwrap()
+        $args.pop_front().unwrap().value
     };
 }
 pub(crate) use arg;
