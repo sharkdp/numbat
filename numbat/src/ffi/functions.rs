@@ -129,13 +129,21 @@ fn error(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<Runti
 
 fn inspect(ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
     use crate::markup as m;
+    use crate::typechecker::type_scheme::TypeScheme;
 
     let arg = args.pop_front().unwrap();
-    let output = m::text("inspect: ")
-        + arg.value.pretty_print()
-        + m::dimmed("    [")
-        + arg.type_.pretty_print()
-        + m::dimmed("]");
+
+    // Only show the type if it's concrete (not a quantified/generic type)
+    let type_markup = match &arg.type_ {
+        TypeScheme::Quantified(n_gen, _) if *n_gen > 0 => m::empty(),
+        _ => {
+            m::dimmed("    [")
+                + arg.type_.to_readable_type(ctx.dimension_registry, false)
+                + m::dimmed("]")
+        }
+    };
+
+    let output = m::text("inspect: ") + arg.value.pretty_print() + type_markup;
     (ctx.print_fn)(&output);
     Ok(arg.value)
 }

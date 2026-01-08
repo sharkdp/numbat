@@ -561,9 +561,14 @@ impl BytecodeInterpreter {
         Ok(())
     }
 
-    fn run(&mut self, settings: &mut InterpreterSettings) -> Result<InterpreterResult> {
+    fn run(
+        &mut self,
+        settings: &mut InterpreterSettings,
+        dimension_registry: &DimensionRegistry,
+    ) -> Result<InterpreterResult> {
         let mut ctx = ExecutionContext {
             print_fn: &mut settings.print_fn,
+            dimension_registry,
         };
 
         self.vm.disassemble();
@@ -627,7 +632,7 @@ impl Interpreter for BytecodeInterpreter {
             self.compile_statement(statement, dimension_registry)?;
         }
 
-        self.run(settings)
+        self.run(settings, dimension_registry)
     }
 
     fn get_unit_registry(&self) -> &UnitRegistry {

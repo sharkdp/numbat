@@ -22,11 +22,27 @@ fn error<T>(message: String) -> T
 Defined in: `core::debug`
 
 ### `inspect`
-Print the value of the argument and return it. Useful for debugging.
+Print the value (and type) of the argument and return it. Useful for debugging.
 
 ```nbt
-fn inspect<A>(x: A) -> A
+fn inspect<T>(x: T) -> T
 ```
+
+!!! example "Example"
+    ```nbt
+    inspect(36 km / 1.5 hours) * 1 day
+
+        = 576 km    [Length]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=inspect%2836%20km%20%2F%201%2E5%20hours%29%20%2A%201%20day){ .md-button }
+
+!!! example "Example"
+    ```nbt
+    range(1, 3) |> map(sqr) |> map(inspect) |> sum
+
+        = 14
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=range%281%2C%203%29%20%7C%3E%20map%28sqr%29%20%7C%3E%20map%28inspect%29%20%7C%3E%20sum){ .md-button }
 
 ## Floating point
 

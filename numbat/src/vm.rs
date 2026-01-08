@@ -6,6 +6,7 @@ use compact_str::{CompactString, ToCompactString};
 use indexmap::IndexMap;
 use num_traits::ToPrimitive;
 
+use crate::dimension::DimensionRegistry;
 use crate::interpreter::RuntimeErrorKind;
 use crate::list::NumbatList;
 use crate::span::Span;
@@ -270,6 +271,7 @@ impl CallFrame {
 
 pub struct ExecutionContext<'a> {
     pub print_fn: &'a mut PrintFunction,
+    pub dimension_registry: &'a DimensionRegistry,
 }
 
 /// Metadata for a single FFI call argument
@@ -1174,8 +1176,10 @@ fn vm_basic() {
     vm.add_op(Op::Return, Span::dummy());
 
     let mut print_fn = |_: &Markup| {};
+    let dimension_registry = DimensionRegistry::default();
     let mut ctx = ExecutionContext {
         print_fn: &mut print_fn,
+        dimension_registry: &dimension_registry,
     };
 
     assert_eq!(
