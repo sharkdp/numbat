@@ -873,6 +873,22 @@ More information [here](https://en.wikipedia.org/wiki/Runge-Kutta_methods).
 fn dsolve_runge_kutta<X: Dim, Y: Dim>(f: Fn[(X, Y) -> Y / X], x_0: X, x_e: X, y_0: Y, steps: Scalar) -> RungeKuttaResult<X, Y>
 ```
 
+### `dsolve_adaptive_runge_kutta` (Adaptive Runge-Kutta method)
+Solve the ordinary differential equation \( y' = f(x, y) \) on the interval \( x \in [x_0, x_e] \) with initial conditions \( y(x_0) = y_0 \) using the fifth-order Dormand-Prince method with adaptive step size control.
+More information [here](https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method).
+
+```nbt
+fn dsolve_adaptive_runge_kutta<X: Dim, Y: Dim>(f: Fn[(X, Y) -> Y / X], x_0: X, x_e: X, y_0: Y, atol: Y, rtol: Scalar) -> RungeKuttaResult<X, Y>
+```
+
+!!! example "Solve \( y' = -0.5y \) with \( y(0) = 1 \)."
+    ```nbt
+    use numerics::diff
+    fn decay(x, y) = -0.5 × y
+    dsolve_adaptive_runge_kutta(decay, 0, 10, 1, 1e-6, 1e-3)
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=use%20numerics%3A%3Adiff%0Afn%20decay%28x%2C%20y%29%20%3D%20%2D0%2E5%20%C3%97%20y%0Adsolve%5Fadaptive%5Frunge%5Fkutta%28decay%2C%200%2C%2010%2C%201%2C%201e%2D6%2C%201e%2D3%29){ .md-button }
+
 ### `root_bisect` (Bisection method)
 Find the root of the function \( f \) in the interval \( [x_1, x_2] \) using the bisection method. The function \( f \) must be continuous and \( f(x_1) \cdot f(x_2) < 0 \).
 More information [here](https://en.wikipedia.org/wiki/Bisection_method).
