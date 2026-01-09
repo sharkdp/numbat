@@ -2,6 +2,7 @@
 use plotly::Plot;
 
 use crate::interpreter::RuntimeErrorKind;
+use crate::typechecker::type_scheme::TypeScheme;
 #[allow(unused_imports)]
 use crate::vm::ExecutionContext;
 
@@ -113,7 +114,11 @@ fn show_plot(plot: Plot) -> CompactString {
 }
 
 #[cfg(feature = "plotting")]
-pub fn show(_ctx: &mut ExecutionContext, args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn show(
+    _ctx: &mut ExecutionContext,
+    args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     // Dynamic dispatch hack since we don't have bounded polymorphism.
     // And no real support for generics in the FFI.
 
@@ -139,7 +144,11 @@ pub fn show(_ctx: &mut ExecutionContext, args: Args) -> Result<Value, Box<Runtim
 }
 
 #[cfg(not(feature = "plotting"))]
-pub fn show(_ctx: &mut ExecutionContext, _args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+pub fn show(
+    _ctx: &mut ExecutionContext,
+    _args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     return Err(Box::new(RuntimeErrorKind::UserError(
         "Plotting is currently not supported on this platform.".into(),
     )));
