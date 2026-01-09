@@ -20,7 +20,7 @@ use crate::typed_ast::{
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::{FunctionReference, Value};
-use crate::vm::{Constant, ExecutionContext, FfiCallArg, Op, Vm};
+use crate::vm::{Constant, ExecutionContext, FfiCallArg, FfiCallArgs, Op, Vm};
 use crate::{Type, decorator};
 
 #[derive(Debug, Clone, Default)]
@@ -219,6 +219,7 @@ impl BytecodeInterpreter {
                 full_span,
                 name,
                 args,
+                type_scheme,
                 ..
             } => {
                 // Put all arguments on top of the stack
@@ -228,13 +229,16 @@ impl BytecodeInterpreter {
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
                     // TODO: check overflow:
-                    let call_args: Vec<FfiCallArg> = args
-                        .iter()
-                        .map(|a: &typed_ast::Expression| FfiCallArg {
-                            span: a.full_span(),
-                            type_: a.get_type_scheme(),
-                        })
-                        .collect();
+                    let call_args = FfiCallArgs {
+                        args: args
+                            .iter()
+                            .map(|a: &typed_ast::Expression| FfiCallArg {
+                                span: a.full_span(),
+                                type_: a.get_type_scheme(),
+                            })
+                            .collect(),
+                        return_type: Some(type_scheme.clone()),
+                    };
                     let call_args_idx = self.vm.add_ffi_call_args(call_args);
                     self.vm.add_op3(
                         Op::FFICallFunction,
@@ -300,7 +304,7 @@ impl BytecodeInterpreter {
                 full_span,
                 callable,
                 args,
-                ..
+                type_scheme,
             } => {
                 // Put all arguments on top of the stack
                 for arg in args {
@@ -310,13 +314,16 @@ impl BytecodeInterpreter {
                 // Put the callable on top of the stack
                 self.compile_expression(callable);
 
-                let call_args: Vec<FfiCallArg> = args
-                    .iter()
-                    .map(|a| FfiCallArg {
-                        span: a.full_span(),
-                        type_: a.get_type_scheme(),
-                    })
-                    .collect();
+                let call_args = FfiCallArgs {
+                    args: args
+                        .iter()
+                        .map(|a| FfiCallArg {
+                            span: a.full_span(),
+                            type_: a.get_type_scheme(),
+                        })
+                        .collect(),
+                    return_type: Some(type_scheme.clone()),
+                };
                 let call_args_idx = self.vm.add_ffi_call_args(call_args);
                 self.vm.add_op2(
                     Op::CallCallable,
@@ -610,13 +617,16 @@ impl BytecodeInterpreter {
 
                 let callable_idx = self.vm.get_ffi_callable_idx(name).unwrap();
 
-                let call_args: Vec<FfiCallArg> = args
-                    .iter()
-                    .map(|a: &typed_ast::Expression| FfiCallArg {
-                        span: a.full_span(),
-                        type_: a.get_type_scheme(),
-                    })
-                    .collect();
+                let call_args = FfiCallArgs {
+                    args: args
+                        .iter()
+                        .map(|a: &typed_ast::Expression| FfiCallArg {
+                            span: a.full_span(),
+                            type_: a.get_type_scheme(),
+                        })
+                        .collect(),
+                    return_type: None,
+                };
                 let call_args_idx = self.vm.add_ffi_call_args(call_args);
 
                 self.vm.add_op3(

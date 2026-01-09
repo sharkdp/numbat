@@ -3,6 +3,7 @@ use std::sync::OnceLock;
 
 use super::{Args, macros::*};
 use crate::pretty_print::PrettyPrint;
+use crate::typechecker::type_scheme::TypeScheme;
 use crate::vm::ExecutionContext;
 use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value};
 
@@ -45,6 +46,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
         insert_function!(is_dimensionless, 1..=1);
         insert_function!(unit_name, 1..=1);
         insert_function!(quantity_cast, 2..=2);
+        insert_function!("parse", parse, 1..=1);
 
         // Math
         insert_function!("mod", mod_, 2..=2);
@@ -121,13 +123,21 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
     })
 }
 
-fn error(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn error(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     Err(Box::new(RuntimeErrorKind::UserError(
         arg!(args).unsafe_as_string().to_string(),
     )))
 }
 
-fn inspect(ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn inspect(
+    ctx: &mut ExecutionContext,
+    mut args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     use crate::markup as m;
     use crate::typechecker::type_scheme::TypeScheme;
 
@@ -148,13 +158,21 @@ fn inspect(ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<Runt
     Ok(arg.value)
 }
 
-fn value_of(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn value_of(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
 
     return_scalar!(quantity.unsafe_value().to_f64())
 }
 
-fn has_unit(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn has_unit(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
     let unit_query = quantity_arg!(args);
 
@@ -164,13 +182,18 @@ fn has_unit(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<Ru
 fn is_dimensionless(
     _ctx: &mut ExecutionContext,
     mut args: Args,
+    _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
 
     return_boolean!(quantity.as_scalar().is_ok())
 }
 
-fn unit_name(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<RuntimeErrorKind>> {
+fn unit_name(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
 
     return_string!(from = &quantity.unit().to_string())
@@ -179,9 +202,24 @@ fn unit_name(_ctx: &mut ExecutionContext, mut args: Args) -> Result<Value, Box<R
 fn quantity_cast(
     _ctx: &mut ExecutionContext,
     mut args: Args,
+    _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
     let value_from = quantity_arg!(args);
     let _ = quantity_arg!(args);
 
     Ok(Value::Quantity(value_from))
+}
+
+fn parse(
+    _ctx: &mut ExecutionContext,
+    mut args: Args,
+    return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
+    let _input = string_arg!(args);
+
+    eprintln!("Parse return_type: {}", return_type.pretty_print());
+
+    Err(Box::new(RuntimeErrorKind::UserError(
+        "Not implemented yet".into(),
+    )))
 }

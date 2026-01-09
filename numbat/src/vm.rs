@@ -281,6 +281,14 @@ pub struct FfiCallArg {
     pub type_: TypeScheme,
 }
 
+/// Metadata for an FFI call (arguments and return type)
+#[derive(Clone)]
+pub struct FfiCallArgs {
+    pub args: Vec<FfiCallArg>,
+    /// Return type for FFI functions. None for procedures.
+    pub return_type: Option<TypeScheme>,
+}
+
 #[derive(Clone)]
 pub struct Vm {
     /// The actual code and spans of the program, structured by function name. The code
@@ -314,8 +322,8 @@ pub struct Vm {
     /// List of registered native/foreign functions
     ffi_callables: IndexMap<&'static str, &'static ForeignFunction>,
 
-    /// Metadata for FFI call arguments (spans and types).
-    ffi_call_args: Vec<FfiCallArg>,
+    /// Metadata for FFI calls (argument spans/types and return type).
+    ffi_call_args: Vec<FfiCallArgs>,
 
     /// The call stack
     frames: Vec<CallFrame>,
@@ -511,11 +519,11 @@ impl Vm {
         Some(position as u16)
     }
 
-    pub(crate) fn add_ffi_call_args(&mut self, args: Vec<FfiCallArg>) -> u16 {
-        let start_idx = self.ffi_call_args.len();
-        self.ffi_call_args.extend(args);
+    pub(crate) fn add_ffi_call_args(&mut self, call_args: FfiCallArgs) -> u16 {
+        let idx = self.ffi_call_args.len();
+        self.ffi_call_args.push(call_args);
         assert!(self.ffi_call_args.len() <= u16::MAX as usize);
-        start_idx as u16
+        idx as u16
     }
 
     pub fn disassemble(&self) {
@@ -899,16 +907,15 @@ impl Vm {
                 Op::FFICallFunction | Op::FFICallProcedure => {
                     let function_idx = self.read_u16() as usize;
                     let num_args = self.read_u16() as usize;
-                    let call_args_start = self.read_u16() as usize;
+                    let call_args_idx = self.read_u16() as usize;
                     let foreign_function = &self.ffi_callables[function_idx];
 
                     debug_assert!(foreign_function.arity.contains(&num_args));
 
-                    let call_args =
-                        self.ffi_call_args[call_args_start..call_args_start + num_args].to_vec();
+                    let ffi_call_args = self.ffi_call_args[call_args_idx].clone();
                     let mut args = VecDeque::new();
                     for i in 0..num_args {
-                        let call_arg = &call_args[num_args - 1 - i];
+                        let call_arg = &ffi_call_args.args[num_args - 1 - i];
                         args.push_front(Arg {
                             value: self.pop(),
                             type_: call_arg.type_.clone(),
@@ -918,8 +925,12 @@ impl Vm {
 
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
-                            let result =
-                                (function)(ctx, args).map_err(|e| self.runtime_error(*e))?;
+                            let return_type = ffi_call_args
+                                .return_type
+                                .as_ref()
+                                .expect("FFI functions must have a return type");
+                            let result = (function)(ctx, args, return_type)
+                                .map_err(|e| self.runtime_error(*e))?;
                             self.push(result);
                         }
                         Callable::Procedure(procedure) => {
@@ -936,7 +947,7 @@ impl Vm {
                 }
                 Op::CallCallable => {
                     let num_args = self.read_u16() as usize;
-                    let call_args_start = self.read_u16() as usize;
+                    let call_args_idx = self.read_u16() as usize;
 
                     let callable = self.pop();
                     match callable.unsafe_as_function_reference() {
@@ -956,12 +967,10 @@ impl Vm {
                                 .expect("Foreign function exists")
                                 as usize;
 
-                            let call_args = self.ffi_call_args
-                                [call_args_start..call_args_start + num_args]
-                                .to_vec();
+                            let ffi_call_args = self.ffi_call_args[call_args_idx].clone();
                             let mut args = VecDeque::new();
                             for i in 0..num_args {
-                                let call_arg = &call_args[num_args - 1 - i];
+                                let call_arg = &ffi_call_args.args[num_args - 1 - i];
                                 args.push_front(Arg {
                                     value: self.pop(),
                                     type_: call_arg.type_.clone(),
@@ -971,7 +980,11 @@ impl Vm {
 
                             match &self.ffi_callables[function_idx].callable {
                                 Callable::Function(function) => {
-                                    let result = (function)(ctx, args)
+                                    let return_type = ffi_call_args
+                                        .return_type
+                                        .as_ref()
+                                        .expect("FFI functions must have a return type");
+                                    let result = (function)(ctx, args, return_type)
                                         .map_err(|e| self.runtime_error(*e))?;
                                     self.push(result);
                                 }
