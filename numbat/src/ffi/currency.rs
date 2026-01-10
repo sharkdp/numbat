@@ -4,12 +4,14 @@ use super::macros::*;
 use crate::currency::ExchangeRatesCache;
 use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
+use crate::typechecker::type_scheme::TypeScheme;
 use crate::value::Value;
 use crate::vm::ExecutionContext;
 
 pub fn exchange_rate(
     _ctx: &mut ExecutionContext,
     mut args: Args,
+    _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
     let rate = string_arg!(args);
 
