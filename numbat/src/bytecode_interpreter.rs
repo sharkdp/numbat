@@ -323,6 +323,22 @@ impl BytecodeInterpreter {
             Expression::TypedHole(_, _) => {
                 unreachable!("Typed holes cause type inference errors")
             }
+            Expression::MethodCall(_, full_span, receiver, method_name, args, struct_type, _) => {
+                self.compile_expression(receiver);
+                for arg in args {
+                    self.compile_expression(arg);
+                }
+                let struct_info = match struct_type.to_concrete_type() {
+                    Type::Struct(info) => info,
+                    _ => unreachable!(
+                        "Method call on non-struct type should be prevented by type checker"
+                    ),
+                };
+                let mangled = format!("{}::{}", struct_info.name, method_name);
+                let idx = self.vm.get_function_idx(&mangled);
+                self.vm
+                    .add_op2(Op::Call, idx, (args.len() + 1) as u16, *full_span);
+            }
         };
     }
 
@@ -555,6 +571,42 @@ impl BytecodeInterpreter {
             }
             Statement::DefineStruct(struct_info) => {
                 self.vm.add_struct_info(struct_info);
+            }
+            Statement::DefineImpl {
+                struct_info,
+                methods,
+                ..
+            } => {
+                self.vm.add_struct_info(struct_info);
+
+                for compiled_method in methods {
+                    if let Some(body) = &compiled_method.body {
+                        self.vm.begin_function(&compiled_method.mangled_name);
+
+                        self.locals.push(vec![]);
+
+                        let current_depth = self.current_depth();
+                        for param_name in &compiled_method.parameters {
+                            self.locals[current_depth].push(Local {
+                                identifiers: [param_name.clone()].into(),
+                                metadata: LocalMetadata::default(),
+                            });
+                        }
+
+                        for local_var in &compiled_method.local_variables {
+                            self.compile_define_variable(local_var);
+                        }
+
+                        self.compile_expression(body);
+                        self.vm.add_op(Op::Return, body.full_span());
+
+                        self.locals.pop();
+                        self.vm.end_function();
+
+                        self.functions
+                            .insert(compiled_method.mangled_name.clone(), false);
+                    }
+                }
             }
         }
 

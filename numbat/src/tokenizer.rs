@@ -113,6 +113,8 @@ pub enum TokenKind {
     Unit,
     Use,
     Struct,
+    Impl,
+    Self_,
 
     Long,
     Short,
@@ -485,6 +487,8 @@ impl Tokenizer {
             m.insert("unit", TokenKind::Unit);
             m.insert("use", TokenKind::Use);
             m.insert("struct", TokenKind::Struct);
+            m.insert("impl", TokenKind::Impl);
+            m.insert("self", TokenKind::Self_);
             m.insert("long", TokenKind::Long);
             m.insert("short", TokenKind::Short);
             m.insert("both", TokenKind::Both);

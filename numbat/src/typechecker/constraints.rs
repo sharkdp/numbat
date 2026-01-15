@@ -3,6 +3,7 @@ use std::sync::Arc;
 use compact_str::{CompactString, format_compact};
 
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
+use super::type_scheme::TypeScheme;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{DType, DTypeFactor, StructKind, Type};
 
@@ -192,6 +193,8 @@ pub enum Constraint {
     IsDType(Type),
     EqualScalar(DType),
     HasField(Type, CompactString, Type),
+    /// Constraint for method calls: (receiver_type, method_name, arg_types, return_type)
+    HasMethod(Type, CompactString, Vec<Type>, Type),
 }
 
 impl Constraint {
@@ -222,6 +225,10 @@ impl Constraint {
             Constraint::EqualScalar(_) => TrivialResolution::Unknown,
             Constraint::HasField(_, _, _) => {
                 // Trivial resolution handling for structs is done directly in the type checker
+                TrivialResolution::Unknown
+            }
+            Constraint::HasMethod(_, _, _, _) => {
+                // Method resolution is deferred
                 TrivialResolution::Unknown
             }
         }
@@ -351,6 +358,51 @@ impl Constraint {
                 }
             }
             Constraint::HasField(_, _, _) => None,
+            Constraint::HasMethod(struct_type, method_name, arg_types, return_type)
+                if struct_type.is_closed() =>
+            {
+                if let Type::Struct(info) = struct_type
+                    && let Some(method_info) = info.methods.get(method_name)
+                {
+                    // Get the function type and check it matches
+                    let fn_type = match &method_info.fn_type {
+                        TypeScheme::Concrete(t) => t.clone(),
+                        TypeScheme::Quantified(_, qt) => qt.inner.clone(),
+                    };
+
+                    if let Type::Fn(param_types, ret_type) = fn_type {
+                        // param_types[0] is self, rest are the method parameters
+                        let expected_arg_count = param_types.len().saturating_sub(1);
+                        if arg_types.len() == expected_arg_count {
+                            // Create equality constraints for arguments and return type
+                            let mut new_constraints = vec![];
+
+                            // Add constraint for return type
+                            new_constraints.push(Constraint::Equal(
+                                ret_type.as_ref().clone(),
+                                return_type.clone(),
+                            ));
+
+                            // Add constraints for arguments (skip self parameter)
+                            for (param_type, arg_type) in
+                                param_types.iter().skip(1).zip(arg_types.iter())
+                            {
+                                new_constraints
+                                    .push(Constraint::Equal(param_type.clone(), arg_type.clone()));
+                            }
+
+                            Some(Satisfied::with_new_constraints(new_constraints))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+            Constraint::HasMethod(_, _, _, _) => None,
         }
     }
 
@@ -363,6 +415,16 @@ impl Constraint {
             Constraint::EqualScalar(d) => format_compact!("  {d} = Scalar"),
             Constraint::HasField(struct_type, field_name, field_type) => {
                 format_compact!("HasField({struct_type}, \"{field_name}\", {field_type})")
+            }
+            Constraint::HasMethod(struct_type, method_name, arg_types, return_type) => {
+                let args_str = arg_types
+                    .iter()
+                    .map(|t| t.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format_compact!(
+                    "HasMethod({struct_type}, \"{method_name}\", [{args_str}], {return_type})"
+                )
             }
         }
     }
@@ -391,6 +453,13 @@ impl ApplySubstitution for Constraint {
             Constraint::HasField(struct_type, _, field_type) => {
                 struct_type.apply(substitution)?;
                 field_type.apply(substitution)?;
+            }
+            Constraint::HasMethod(struct_type, _, arg_types, return_type) => {
+                struct_type.apply(substitution)?;
+                for arg_type in arg_types {
+                    arg_type.apply(substitution)?;
+                }
+                return_type.apply(substitution)?;
             }
         }
         Ok(())

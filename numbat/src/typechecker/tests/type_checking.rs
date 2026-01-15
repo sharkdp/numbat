@@ -861,3 +861,281 @@ fn instantiation() {
         TypeCheckError::ConstraintSolverError(..)
     ));
 }
+
+#[test]
+fn methods_basic() {
+    // Basic method on non-generic struct
+    assert_successful_typecheck(
+        "
+        struct Point { x: A, y: A }
+        impl Point {
+            fn get_x(self) -> A = self.x
+        }
+        let my_point = Point { x: 1a, y: 2a }
+        let my_x: A = my_point.get_x()
+        ",
+    );
+
+    // Method with additional parameters
+    assert_successful_typecheck(
+        "
+        struct Container { value: A }
+        impl Container {
+            fn scale(self, factor: Scalar) -> A = self.value * factor
+        }
+        let my_container = Container { value: 5a }
+        let my_result: A = my_container.scale(3)
+        ",
+    );
+
+    // Multiple methods in one impl block
+    assert_successful_typecheck(
+        "
+        struct Pair { first: A, second: B }
+        impl Pair {
+            fn get_first(self) -> A = self.first
+            fn get_second(self) -> B = self.second
+            fn product(self) -> C = self.first * self.second
+        }
+        let my_pair = Pair { first: 2a, second: 3b }
+        let my_first: A = my_pair.get_first()
+        let my_second: B = my_pair.get_second()
+        let my_prod: C = my_pair.product()
+        ",
+    );
+
+    // Methods calling other methods in same impl block
+    assert_successful_typecheck(
+        "
+        struct Vec2 { x: A, y: A }
+        impl Vec2 {
+            fn norm_squared(self) -> A^2 = self.x^2 + self.y^2
+            fn uses_norm(self) -> A^2 = self.norm_squared() * 2
+        }
+        let my_vec = Vec2 { x: 3a, y: 4a }
+        let my_norm: A^2 = my_vec.uses_norm()
+        ",
+    );
+}
+
+#[test]
+fn methods_generic_structs() {
+    // Method on generic struct with Dim bound
+    assert_successful_typecheck(
+        "
+        struct GenericVec<D: Dim> { x: D, y: D }
+        impl<D: Dim> GenericVec<D> {
+            fn norm_squared(self) -> D^2 = self.x^2 + self.y^2
+        }
+        let my_gvec = GenericVec { x: 3a, y: 4a }
+        let my_gnorm: A^2 = my_gvec.norm_squared()
+        ",
+    );
+
+    // Method with different impl type param names than struct definition
+    assert_successful_typecheck(
+        "
+        struct MyVec<X: Dim> { x: X, y: X }
+        impl<D: Dim> MyVec<D> {
+            fn norm_squared(self) -> D^2 = self.x^2 + self.y^2
+        }
+        let my_mvec = MyVec { x: 3a, y: 4a }
+        let my_mnorm: A^2 = my_mvec.norm_squared()
+        ",
+    );
+
+    // Multiple type parameters with different names
+    assert_successful_typecheck(
+        "
+        struct Tuple<X, Y> { first: X, second: Y }
+        impl<A1, B1> Tuple<A1, B1> {
+            fn get_first(self) -> A1 = self.first
+            fn get_second(self) -> B1 = self.second
+        }
+        let my_tuple = Tuple { first: 1a, second: 2b }
+        let my_tfirst: A = my_tuple.get_first()
+        let my_tsecond: B = my_tuple.get_second()
+        ",
+    );
+
+    // Generic method on generic struct
+    assert_successful_typecheck(
+        "
+        struct Container<D: Dim> { value: D }
+        impl<D: Dim> Container<D> {
+            fn multiply<S: Dim>(self, factor: S) -> D * S = self.value * factor
+        }
+        let my_cont = Container { value: 5a }
+        let my_cresult: C = my_cont.multiply(2b)
+        ",
+    );
+
+    // Non-dimension type parameters
+    assert_successful_typecheck(
+        "
+        struct Holder<T> { item: T }
+        impl<X> Holder<X> {
+            fn get(self) -> X = self.item
+        }
+        let my_holder1 = Holder { item: \"hello\" }
+        let my_str: String = my_holder1.get()
+        let my_holder2 = Holder { item: true }
+        let my_bool: Bool = my_holder2.get()
+        ",
+    );
+
+    // Mixed dimension and non-dimension type params
+    assert_successful_typecheck(
+        "
+        struct Labeled<D: Dim, L> { value: D, label: L }
+        impl<V: Dim, T> Labeled<V, T> {
+            fn get_value(self) -> V = self.value
+            fn get_label(self) -> T = self.label
+        }
+        let my_labeled = Labeled { value: 10a, label: \"length\" }
+        let my_lval: A = my_labeled.get_value()
+        let my_llab: String = my_labeled.get_label()
+        ",
+    );
+}
+
+#[test]
+fn methods_errors() {
+    // Impl for unknown struct
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            impl UnknownStruct {
+                fn foo(self) -> Scalar = 1
+            }
+            "
+        ),
+        TypeCheckError::ImplForUnknownStruct(_, name) if name == "UnknownStruct"
+    ));
+
+    // Unknown method call
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct TestFoo { x: A }
+            let my_foo = TestFoo { x: 1a }
+            my_foo.unknown_method()
+            "
+        ),
+        TypeCheckError::UnknownMethod(_, _, method, _) if method == "unknown_method"
+    ));
+
+    // Method call on non-struct type
+    assert!(matches!(
+        get_typecheck_error("(1a).some_method()"),
+        TypeCheckError::MethodCallOnNonStructType(_, _, method, _) if method == "some_method"
+    ));
+
+    // Method with wrong arity - too few arguments
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct TestBar { x: A }
+            impl TestBar {
+                fn baz(self, y: A) -> A = self.x + y
+            }
+            let my_bar = TestBar { x: 1a }
+            my_bar.baz()
+            "
+        ),
+        TypeCheckError::WrongArity { callable_name, arity, num_args: 0, .. }
+            if callable_name == "TestBar.baz" && arity == (1..=1)
+    ));
+
+    // Method with wrong arity - too many arguments
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct TestQux { x: A }
+            impl TestQux {
+                fn quux(self) -> A = self.x
+            }
+            let my_qux = TestQux { x: 1a }
+            my_qux.quux(1a, 2a)
+            "
+        ),
+        TypeCheckError::WrongArity { callable_name, arity, num_args: 2, .. }
+            if callable_name == "TestQux.quux" && arity == (0..=0)
+    ));
+
+    // Duplicate method in impl block
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct TestDup { x: A }
+            impl TestDup {
+                fn dup_method(self) -> A = self.x
+                fn dup_method(self) -> A = self.x * 2
+            }
+            "
+        ),
+        TypeCheckError::DuplicateMethodInImpl(_, method, _) if method == "dup_method"
+    ));
+
+    // Wrong number of type parameters in impl - too few
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct TestWrapper<D: Dim> { inner: D }
+            impl TestWrapper {
+                fn get(self) -> Scalar = 1
+            }
+            "
+        ),
+        TypeCheckError::ImplTypeParameterMismatch {
+            expected: 1,
+            actual: 0,
+            ..
+        }
+    ));
+
+    // Wrong number of type parameters in impl - too many
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct TestSimple { x: A }
+            impl<D: Dim> TestSimple {
+                fn get(self) -> D = self.x
+            }
+            "
+        ),
+        TypeCheckError::ImplTypeParameterMismatch {
+            expected: 0,
+            actual: 1,
+            ..
+        }
+    ));
+
+    // Incompatible return type
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct TestRet { x: A }
+            impl TestRet {
+                fn wrong_ret(self) -> B = self.x
+            }
+            "
+        ),
+        TypeCheckError::IncompatibleDimensions(..)
+    ));
+
+    // Type mismatch in method call arguments
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct TestArg { x: A }
+            impl TestArg {
+                fn add(self, y: A) -> A = self.x + y
+            }
+            let my_arg = TestArg { x: 1a }
+            my_arg.add(1b)
+            "
+        ),
+        TypeCheckError::IncompatibleTypesInFunctionCall(..)
+    ));
+}

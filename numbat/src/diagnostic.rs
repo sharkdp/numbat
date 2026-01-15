@@ -509,6 +509,47 @@ impl ErrorDiagnostic for TypeCheckError {
                 span.diagnostic_label(LabelStyle::Primary)
                     .with_message(inner_error),
             ]),
+            TypeCheckError::MethodCallOnNonStructType(method_span, expr_span, _method, type_) => d
+                .with_labels(vec![
+                    method_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    expr_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(type_.to_string()),
+                ]),
+            TypeCheckError::UnknownMethod(method_span, expr_span, _method, struct_name) => d
+                .with_labels(vec![
+                    method_span
+                        .diagnostic_label(LabelStyle::Primary)
+                        .with_message(inner_error),
+                    expr_span
+                        .diagnostic_label(LabelStyle::Secondary)
+                        .with_message(format!("type is '{struct_name}'")),
+                ]),
+            TypeCheckError::ImplForUnknownStruct(span, _) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
+            TypeCheckError::ImplTypeParameterMismatch {
+                impl_span,
+                struct_span,
+                ..
+            } => d.with_labels(vec![
+                impl_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                struct_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("struct defined here"),
+            ]),
+            TypeCheckError::DuplicateMethodInImpl(span, _, first_span) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                first_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("first definition here"),
+            ]),
         };
         vec![d]
     }

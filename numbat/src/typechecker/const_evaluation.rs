@@ -97,6 +97,7 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
         typed_ast::Expression::AccessField(_, _, _, _, _, _) => "access field of struct",
         typed_ast::Expression::List(_, _, _) => "lists",
         typed_ast::Expression::TypedHole(_, _) => "typed hole",
+        typed_ast::Expression::MethodCall(_, _, _, _, _, _, _) => "method call",
     };
 
     Err(Box::new(TypeCheckError::UnsupportedConstEvalExpression(
