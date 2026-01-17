@@ -220,9 +220,6 @@ impl Transformer {
             }
             Statement::DefineImpl { methods, .. } => {
                 for method in methods.iter_mut() {
-                    // Methods are not registered in function_names since they're accessed
-                    // via dot notation, not as standalone functions
-
                     let mut method_body_transformer = self.clone();
 
                     method_body_transformer

@@ -219,6 +219,32 @@ impl TypeChecker {
         self.constraints.add_dtype_constraint(type_)
     }
 
+    fn register_type_parameter(
+        &mut self,
+        span: Span,
+        name: &str,
+        bound: &Option<TypeParameterBound>,
+    ) {
+        self.type_namespace
+            .add_identifier(
+                name.to_compact_string(),
+                span,
+                CompactString::const_new("type parameter"),
+            )
+            .ok();
+
+        self.registry.introduced_type_parameters.push((
+            span,
+            name.to_compact_string(),
+            bound.clone(),
+        ));
+
+        if let Some(TypeParameterBound::Dim) = bound {
+            self.add_dtype_constraint(&Type::TPar(name.to_compact_string()))
+                .ok();
+        }
+    }
+
     fn enforce_dtype(&mut self, type_: &Type, span: Span) -> Result<()> {
         if self
             .constraints
@@ -1671,30 +1697,7 @@ impl TypeChecker {
                             type_parameter.to_string(),
                         )));
                     }
-
-                    self.type_namespace
-                        .add_identifier(
-                            type_parameter.to_compact_string(),
-                            *span,
-                            CompactString::const_new("type parameter"),
-                        )
-                        .ok();
-
-                    self.registry.introduced_type_parameters.push((
-                        *span,
-                        type_parameter.to_compact_string(),
-                        bound.clone(),
-                    ));
-
-                    match bound {
-                        Some(TypeParameterBound::Dim) => {
-                            self.add_dtype_constraint(&Type::TPar(
-                                type_parameter.to_compact_string(),
-                            ))
-                            .ok();
-                        }
-                        None => {}
-                    }
+                    self.register_type_parameter(*span, type_parameter, bound);
                 }
 
                 let mut typed_parameters = vec![];
@@ -2172,26 +2175,7 @@ impl TypeChecker {
                 let mut impl_typechecker = self.clone();
 
                 for (span, type_parameter, bound) in type_parameters {
-                    impl_typechecker
-                        .type_namespace
-                        .add_identifier(
-                            type_parameter.to_compact_string(),
-                            *span,
-                            CompactString::const_new("type parameter"),
-                        )
-                        .ok();
-
-                    impl_typechecker.registry.introduced_type_parameters.push((
-                        *span,
-                        type_parameter.to_compact_string(),
-                        bound.clone(),
-                    ));
-
-                    if let Some(TypeParameterBound::Dim) = bound {
-                        impl_typechecker
-                            .add_dtype_constraint(&Type::TPar(type_parameter.to_compact_string()))
-                            .ok();
-                    }
+                    impl_typechecker.register_type_parameter(*span, type_parameter, bound);
                 }
 
                 // Build self type (use Dimension for type params since fields use dimension types)
@@ -2247,28 +2231,7 @@ impl TypeChecker {
                     sig_typechecker.type_namespace.save();
 
                     for (span, type_parameter, bound) in &method.type_parameters {
-                        sig_typechecker
-                            .type_namespace
-                            .add_identifier(
-                                type_parameter.to_compact_string(),
-                                *span,
-                                CompactString::const_new("type parameter"),
-                            )
-                            .ok();
-
-                        sig_typechecker.registry.introduced_type_parameters.push((
-                            *span,
-                            type_parameter.to_compact_string(),
-                            bound.clone(),
-                        ));
-
-                        if let Some(TypeParameterBound::Dim) = bound {
-                            sig_typechecker
-                                .add_dtype_constraint(&Type::TPar(
-                                    type_parameter.to_compact_string(),
-                                ))
-                                .ok();
-                        }
+                        sig_typechecker.register_type_parameter(*span, type_parameter, bound);
                     }
 
                     let mut typed_parameters = vec![(method.self_span, self_type.clone())];
@@ -2405,27 +2368,7 @@ impl TypeChecker {
                     method_typechecker.value_namespace.save();
 
                     for (span, type_parameter, bound) in &method.type_parameters {
-                        method_typechecker
-                            .type_namespace
-                            .add_identifier(
-                                type_parameter.to_compact_string(),
-                                *span,
-                                CompactString::const_new("type parameter"),
-                            )
-                            .ok();
-
-                        method_typechecker
-                            .registry
-                            .introduced_type_parameters
-                            .push((*span, type_parameter.to_compact_string(), bound.clone()));
-
-                        if let Some(TypeParameterBound::Dim) = bound {
-                            method_typechecker
-                                .add_dtype_constraint(&Type::TPar(
-                                    type_parameter.to_compact_string(),
-                                ))
-                                .ok();
-                        }
+                        method_typechecker.register_type_parameter(*span, type_parameter, bound);
                     }
 
                     method_typechecker.env.add_scheme(
