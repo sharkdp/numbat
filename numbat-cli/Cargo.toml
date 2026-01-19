@@ -37,3 +37,14 @@ predicates = "3"
 [[bin]]
 name = "numbat"
 path = "src/main.rs"
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/numbat-v{ version }-{ target }{ archive-suffix }"
+bin-dir = "numbat-v{ version }-{ target }/{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-fmt = "zip"
+
+[package.metadata.binstall.overrides.i686-pc-windows-msvc]
+pkg-fmt = "zip"
