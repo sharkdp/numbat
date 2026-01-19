@@ -151,3 +151,7 @@ requires that:
     support exponentiation expressions without the limitations above. For example, consider
     the function `f(x, n) = x^n`. The return type of that function *depends on the value*
     of the parameter `n`.
+
+!!! quote
+
+    *"They asked me how well I understood theoretical physics. I said I had a theoretical degree in physics. They said welcome aboard."* — Fantastic, Fallout: New Vegas
