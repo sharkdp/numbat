@@ -14,59 +14,96 @@ impl ForAllTypeSchemes for StructInfo {
 impl ForAllTypeSchemes for Expression<'_> {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
         match self {
-            Expression::Scalar(_, _, type_) => f(type_),
-            Expression::Identifier(_, _, type_) => f(type_),
-            Expression::UnitIdentifier(_, _, _, _, type_) => f(type_),
-            Expression::UnaryOperator(_, _, expr, type_) => {
+            Expression::Scalar { type_scheme, .. } => f(type_scheme),
+            Expression::Identifier { type_scheme, .. } => f(type_scheme),
+            Expression::UnitIdentifier { type_scheme, .. } => f(type_scheme),
+            Expression::UnaryOperator {
+                expr, type_scheme, ..
+            } => {
                 expr.for_all_type_schemes(f);
-                f(type_);
+                f(type_scheme);
             }
-            Expression::BinaryOperator(_, _, lhs, rhs, type_) => {
+            Expression::BinaryOperator {
+                lhs,
+                rhs,
+                type_scheme,
+                ..
+            } => {
                 lhs.for_all_type_schemes(f);
                 rhs.for_all_type_schemes(f);
-                f(type_);
+                f(type_scheme);
             }
-            Expression::BinaryOperatorForDate(_, _, lhs, rhs, type_) => {
+            Expression::BinaryOperatorForDate {
+                lhs,
+                rhs,
+                type_scheme,
+                ..
+            } => {
                 lhs.for_all_type_schemes(f);
                 rhs.for_all_type_schemes(f);
-                f(type_);
+                f(type_scheme);
             }
-            Expression::FunctionCall(_, _, _, args, type_) => {
+            Expression::FunctionCall {
+                args, type_scheme, ..
+            } => {
                 for arg in args {
                     arg.for_all_type_schemes(f);
                 }
-                f(type_)
+                f(type_scheme)
             }
-            Expression::CallableCall(_, callable, args, type_) => {
+            Expression::CallableCall {
+                callable,
+                args,
+                type_scheme,
+                ..
+            } => {
                 callable.for_all_type_schemes(f);
                 for arg in args {
                     arg.for_all_type_schemes(f);
                 }
-                f(type_)
+                f(type_scheme)
             }
             Expression::Boolean(_, _) => {}
-            Expression::Condition(_, if_, then_, else_) => {
-                if_.for_all_type_schemes(f);
-                then_.for_all_type_schemes(f);
-                else_.for_all_type_schemes(f);
+            Expression::Condition {
+                condition,
+                then_expr,
+                else_expr,
+                ..
+            } => {
+                condition.for_all_type_schemes(f);
+                then_expr.for_all_type_schemes(f);
+                else_expr.for_all_type_schemes(f);
             }
             Expression::String(_, _) => {}
-            Expression::InstantiateStruct(_, initializers, info) => {
-                for (_, expr) in initializers {
+            Expression::InstantiateStruct {
+                fields,
+                struct_info,
+                ..
+            } => {
+                for (_, expr) in fields {
                     expr.for_all_type_schemes(f);
                 }
-                info.for_all_type_schemes(f);
+                struct_info.for_all_type_schemes(f);
             }
-            Expression::AccessField(_, _, expr, _, struct_type, field_type) => {
+            Expression::AccessField {
+                expr,
+                struct_type,
+                field_type,
+                ..
+            } => {
                 expr.for_all_type_schemes(f);
                 f(struct_type);
                 f(field_type);
             }
-            Expression::List(_, elements, type_) => {
+            Expression::List {
+                elements,
+                type_scheme,
+                ..
+            } => {
                 for element in elements {
                     element.for_all_type_schemes(f);
                 }
-                f(type_);
+                f(type_scheme);
             }
             Expression::TypedHole(_, type_) => {
                 f(type_);
@@ -79,14 +116,21 @@ impl ForAllTypeSchemes for Statement<'_> {
     fn for_all_type_schemes(&mut self, f: &mut dyn FnMut(&mut TypeScheme)) {
         match self {
             Statement::Expression(expr) => expr.for_all_type_schemes(f),
-            Statement::DefineVariable(DefineVariable(_, _, expr, _annotation, type_, _)) => {
+            Statement::DefineVariable(DefineVariable {
+                expr, type_scheme, ..
+            }) => {
                 expr.for_all_type_schemes(f);
-                f(type_);
+                f(type_scheme);
             }
-            Statement::DefineFunction(_, _, _, _, body, local_variables, fn_type, _, _) => {
+            Statement::DefineFunction {
+                body,
+                local_variables,
+                fn_type,
+                ..
+            } => {
                 for local_variable in local_variables {
-                    local_variable.2.for_all_type_schemes(f);
-                    f(&mut local_variable.4);
+                    local_variable.expr.for_all_type_schemes(f);
+                    f(&mut local_variable.type_scheme);
                 }
                 if let Some(body) = body {
                     body.for_all_type_schemes(f);
@@ -94,14 +138,16 @@ impl ForAllTypeSchemes for Statement<'_> {
                 f(fn_type);
             }
             Statement::DefineDimension(_, _) => {}
-            Statement::DefineBaseUnit(_, _, _, _annotation, type_) => {
-                f(type_);
+            Statement::DefineBaseUnit { type_scheme, .. } => {
+                f(type_scheme);
             }
-            Statement::DefineDerivedUnit(_, _, expr, _, _annotation, type_, _) => {
+            Statement::DefineDerivedUnit {
+                expr, type_scheme, ..
+            } => {
                 expr.for_all_type_schemes(f);
-                f(type_);
+                f(type_scheme);
             }
-            Statement::ProcedureCall(_, _, args) => {
+            Statement::ProcedureCall { args, .. } => {
                 for arg in args {
                     arg.for_all_type_schemes(f);
                 }
@@ -119,21 +165,23 @@ impl ForAllExpressions for Statement<'_> {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
         match self {
             Statement::Expression(expr) => expr.for_all_expressions(f),
-            Statement::DefineVariable(DefineVariable(_, _, expr, _, _, _)) => {
-                expr.for_all_expressions(f)
-            }
-            Statement::DefineFunction(_, _, _, _, body, local_variables, _, _, _) => {
+            Statement::DefineVariable(DefineVariable { expr, .. }) => expr.for_all_expressions(f),
+            Statement::DefineFunction {
+                body,
+                local_variables,
+                ..
+            } => {
                 for local_variable in local_variables {
-                    local_variable.2.for_all_expressions(f);
+                    local_variable.expr.for_all_expressions(f);
                 }
                 if let Some(body) = body {
                     body.for_all_expressions(f);
                 }
             }
             Statement::DefineDimension(_, _) => {}
-            Statement::DefineBaseUnit(_, _, _, _, _) => {}
-            Statement::DefineDerivedUnit(_, _, expr, _, _, _, _) => expr.for_all_expressions(f),
-            Statement::ProcedureCall(_, _, args) => {
+            Statement::DefineBaseUnit { .. } => {}
+            Statement::DefineDerivedUnit { expr, .. } => expr.for_all_expressions(f),
+            Statement::ProcedureCall { args, .. } => {
                 for arg in args {
                     arg.for_all_expressions(f);
                 }
@@ -147,45 +195,50 @@ impl ForAllExpressions for Expression<'_> {
     fn for_all_expressions(&self, f: &mut dyn FnMut(&Expression)) {
         f(self);
         match self {
-            Expression::Scalar(_, _, _) => {}
-            Expression::Identifier(_, _, _) => {}
-            Expression::UnitIdentifier(_, _, _, _, _) => {}
-            Expression::UnaryOperator(_, _, expr, _) => expr.for_all_expressions(f),
-            Expression::BinaryOperator(_, _, lhs, rhs, _) => {
+            Expression::Scalar { .. } => {}
+            Expression::Identifier { .. } => {}
+            Expression::UnitIdentifier { .. } => {}
+            Expression::UnaryOperator { expr, .. } => expr.for_all_expressions(f),
+            Expression::BinaryOperator { lhs, rhs, .. } => {
                 lhs.for_all_expressions(f);
                 rhs.for_all_expressions(f);
             }
-            Expression::BinaryOperatorForDate(_, _, lhs, rhs, _) => {
+            Expression::BinaryOperatorForDate { lhs, rhs, .. } => {
                 lhs.for_all_expressions(f);
                 rhs.for_all_expressions(f);
             }
-            Expression::FunctionCall(_, _, _, args, _) => {
+            Expression::FunctionCall { args, .. } => {
                 for arg in args {
                     arg.for_all_expressions(f);
                 }
             }
-            Expression::CallableCall(_, callable, args, _) => {
+            Expression::CallableCall { callable, args, .. } => {
                 callable.for_all_expressions(f);
                 for arg in args {
                     arg.for_all_expressions(f);
                 }
             }
             Expression::Boolean(_, _) => {}
-            Expression::Condition(_, if_, then_, else_) => {
-                if_.for_all_expressions(f);
-                then_.for_all_expressions(f);
-                else_.for_all_expressions(f);
+            Expression::Condition {
+                condition,
+                then_expr,
+                else_expr,
+                ..
+            } => {
+                condition.for_all_expressions(f);
+                then_expr.for_all_expressions(f);
+                else_expr.for_all_expressions(f);
             }
             Expression::String(_, _) => {}
-            Expression::InstantiateStruct(_, initializers, _) => {
-                for (_, expr) in initializers {
+            Expression::InstantiateStruct { fields, .. } => {
+                for (_, expr) in fields {
                     expr.for_all_expressions(f);
                 }
             }
-            Expression::AccessField(_, _, expr, _, _, _) => {
+            Expression::AccessField { expr, .. } => {
                 expr.for_all_expressions(f);
             }
-            Expression::List(_, elements, _) => {
+            Expression::List { elements, .. } => {
                 for element in elements {
                     element.for_all_expressions(f);
                 }

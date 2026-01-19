@@ -1080,18 +1080,28 @@ impl<'a> Parser<'a> {
                 Expression::Identifier(span, ident) => {
                     full_span = full_span.extend(&span);
 
-                    expr = Expression::FunctionCall(
-                        span,
+                    expr = Expression::FunctionCall {
+                        ident_span: span,
                         full_span,
-                        Box::new(Expression::Identifier(span, ident)),
-                        vec![expr],
-                    );
+                        callable: Box::new(Expression::Identifier(span, ident)),
+                        args: vec![expr],
+                    };
                 }
-                Expression::FunctionCall(call_span, fn_full_span, call, mut params) => {
+                Expression::FunctionCall {
+                    ident_span: call_span,
+                    full_span: fn_full_span,
+                    callable: call,
+                    args: mut params,
+                } => {
                     full_span = full_span.extend(&fn_full_span);
 
                     params.push(expr);
-                    expr = Expression::FunctionCall(call_span, full_span, call, params);
+                    expr = Expression::FunctionCall {
+                        ident_span: call_span,
+                        full_span,
+                        callable: call,
+                        args: params,
+                    };
                 }
                 _other => {
                     return Err(ParseError::new(
@@ -1135,12 +1145,12 @@ impl<'a> Parser<'a> {
 
             let else_expr = self.condition(tokens)?;
 
-            Ok(Expression::Condition(
-                span_if,
-                Box::new(condition_expr),
-                Box::new(then_expr),
-                Box::new(else_expr),
-            ))
+            Ok(Expression::Condition {
+                span: span_if,
+                condition: Box::new(condition_expr),
+                then_expr: Box::new(then_expr),
+                else_expr: Box::new(else_expr),
+            })
         } else {
             self.conversion(tokens)
         }
@@ -1399,18 +1409,23 @@ impl<'a> Parser<'a> {
         loop {
             if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
                 let args = self.arguments(tokens)?;
-                expr = Expression::FunctionCall(
-                    expr.full_span(),
-                    expr.full_span().extend(&self.last(tokens).unwrap().span),
-                    Box::new(expr),
+                expr = Expression::FunctionCall {
+                    ident_span: expr.full_span(),
+                    full_span: expr.full_span().extend(&self.last(tokens).unwrap().span),
+                    callable: Box::new(expr),
                     args,
-                );
+                };
             } else if self.match_exact(tokens, TokenKind::Period).is_some() {
                 let ident = self.identifier(tokens)?;
                 let ident_span = self.last(tokens).unwrap().span;
                 let full_span = expr.full_span().extend(&ident_span);
 
-                expr = Expression::AccessField(full_span, ident_span, Box::new(expr), ident)
+                expr = Expression::AccessField {
+                    full_span,
+                    ident_span,
+                    expr: Box::new(expr),
+                    field_name: ident,
+                }
             } else {
                 return Ok(expr);
             }
@@ -3131,32 +3146,32 @@ mod tests {
     fn function_call() {
         parse_as_expression(
             &["foo()"],
-            Expression::FunctionCall(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(identifier!("foo")),
-                vec![],
-            ),
+            Expression::FunctionCall {
+                ident_span: Span::dummy(),
+                full_span: Span::dummy(),
+                callable: Box::new(identifier!("foo")),
+                args: vec![],
+            },
         );
 
         parse_as_expression(
             &["foo(1)"],
-            Expression::FunctionCall(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(identifier!("foo")),
-                vec![scalar!(1.0)],
-            ),
+            Expression::FunctionCall {
+                ident_span: Span::dummy(),
+                full_span: Span::dummy(),
+                callable: Box::new(identifier!("foo")),
+                args: vec![scalar!(1.0)],
+            },
         );
 
         parse_as_expression(
             &["foo(1,2,3)"],
-            Expression::FunctionCall(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(identifier!("foo")),
-                vec![scalar!(1.0), scalar!(2.0), scalar!(3.0)],
-            ),
+            Expression::FunctionCall {
+                ident_span: Span::dummy(),
+                full_span: Span::dummy(),
+                callable: Box::new(identifier!("foo")),
+                args: vec![scalar!(1.0), scalar!(2.0), scalar!(3.0)],
+            },
         );
 
         // https://github.com/sharkdp/numbat/issues/507
@@ -3164,22 +3179,16 @@ mod tests {
             "tamo(
               2 m,
               5 m
-            )"), @r###"
-        Expression(FunctionCall(Span { start: ByteIndex(0), end: ByteIndex(4), code_source_id: 0 }, Span { start: ByteIndex(0), end: ByteIndex(56), code_source_id: 0 }, Identifier(Span { start: ByteIndex(0), end: ByteIndex(4), code_source_id: 0 }, "tamo"), [BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(20), end: ByteIndex(21), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(22), end: ByteIndex(23), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(39), end: ByteIndex(40), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: ByteIndex(41), end: ByteIndex(42), code_source_id: 0 }, "m"), span_op: None }]))
-        "###);
+            )"), @r#"Expression(FunctionCall { ident_span: Span { start: ByteIndex(0), end: ByteIndex(4), code_source_id: 0 }, full_span: Span { start: ByteIndex(0), end: ByteIndex(56), code_source_id: 0 }, callable: Identifier(Span { start: ByteIndex(0), end: ByteIndex(4), code_source_id: 0 }, "tamo"), args: [BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(20), end: ByteIndex(21), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(22), end: ByteIndex(23), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(39), end: ByteIndex(40), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: ByteIndex(41), end: ByteIndex(42), code_source_id: 0 }, "m"), span_op: None }] })"#);
 
         assert_snapshot!(snap_parse(
             "kefir(
               2 m,
               5 m,
-            )"), @r###"
-        Expression(FunctionCall(Span { start: ByteIndex(0), end: ByteIndex(5), code_source_id: 0 }, Span { start: ByteIndex(0), end: ByteIndex(58), code_source_id: 0 }, Identifier(Span { start: ByteIndex(0), end: ByteIndex(5), code_source_id: 0 }, "kefir"), [BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(21), end: ByteIndex(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(23), end: ByteIndex(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(40), end: ByteIndex(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: ByteIndex(42), end: ByteIndex(43), code_source_id: 0 }, "m"), span_op: None }]))
-        "###);
+            )"), @r#"Expression(FunctionCall { ident_span: Span { start: ByteIndex(0), end: ByteIndex(5), code_source_id: 0 }, full_span: Span { start: ByteIndex(0), end: ByteIndex(58), code_source_id: 0 }, callable: Identifier(Span { start: ByteIndex(0), end: ByteIndex(5), code_source_id: 0 }, "kefir"), args: [BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(21), end: ByteIndex(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(23), end: ByteIndex(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(40), end: ByteIndex(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: ByteIndex(42), end: ByteIndex(43), code_source_id: 0 }, "m"), span_op: None }] })"#);
         assert_snapshot!(snap_parse(
             "echo(
-            )"), @r###"
-        Expression(FunctionCall(Span { start: ByteIndex(0), end: ByteIndex(4), code_source_id: 0 }, Span { start: ByteIndex(0), end: ByteIndex(19), code_source_id: 0 }, Identifier(Span { start: ByteIndex(0), end: ByteIndex(4), code_source_id: 0 }, "echo"), []))
-        "###);
+            )"), @r#"Expression(FunctionCall { ident_span: Span { start: ByteIndex(0), end: ByteIndex(4), code_source_id: 0 }, full_span: Span { start: ByteIndex(0), end: ByteIndex(19), code_source_id: 0 }, callable: Identifier(Span { start: ByteIndex(0), end: ByteIndex(4), code_source_id: 0 }, "echo"), args: [] })"#);
         assert_snapshot!(snap_parse(
             "jax(
               2 m,
@@ -3195,32 +3204,32 @@ mod tests {
     fn callable_calls() {
         parse_as_expression(
             &["(returns_fn())()"],
-            Expression::FunctionCall(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(Expression::FunctionCall(
-                    Span::dummy(),
-                    Span::dummy(),
-                    Box::new(identifier!("returns_fn")),
-                    vec![],
-                )),
-                vec![],
-            ),
+            Expression::FunctionCall {
+                ident_span: Span::dummy(),
+                full_span: Span::dummy(),
+                callable: Box::new(Expression::FunctionCall {
+                    ident_span: Span::dummy(),
+                    full_span: Span::dummy(),
+                    callable: Box::new(identifier!("returns_fn")),
+                    args: vec![],
+                }),
+                args: vec![],
+            },
         );
 
         parse_as_expression(
             &["returns_fn()()"],
-            Expression::FunctionCall(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(Expression::FunctionCall(
-                    Span::dummy(),
-                    Span::dummy(),
-                    Box::new(identifier!("returns_fn")),
-                    vec![],
-                )),
-                vec![],
-            ),
+            Expression::FunctionCall {
+                ident_span: Span::dummy(),
+                full_span: Span::dummy(),
+                callable: Box::new(Expression::FunctionCall {
+                    ident_span: Span::dummy(),
+                    full_span: Span::dummy(),
+                    callable: Box::new(identifier!("returns_fn")),
+                    args: vec![],
+                }),
+                args: vec![],
+            },
         );
     }
 
@@ -3228,21 +3237,21 @@ mod tests {
     fn postfix_apply() {
         parse_as_expression(
             &["1 + 1 |> foo"],
-            Expression::FunctionCall(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(identifier!("foo")),
-                vec![binop!(scalar!(1.0), Add, scalar!(1.0))],
-            ),
+            Expression::FunctionCall {
+                ident_span: Span::dummy(),
+                full_span: Span::dummy(),
+                callable: Box::new(identifier!("foo")),
+                args: vec![binop!(scalar!(1.0), Add, scalar!(1.0))],
+            },
         );
         parse_as_expression(
             &["1 + 1 |> kefir(2)"],
-            Expression::FunctionCall(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(identifier!("kefir")),
-                vec![scalar!(2.0), binop!(scalar!(1.0), Add, scalar!(1.0))],
-            ),
+            Expression::FunctionCall {
+                ident_span: Span::dummy(),
+                full_span: Span::dummy(),
+                callable: Box::new(identifier!("kefir")),
+                args: vec![scalar!(2.0), binop!(scalar!(1.0), Add, scalar!(1.0))],
+            },
         );
 
         should_fail_with(&["1 |> print()"], ParseErrorKind::InlineProcedureUsage);
@@ -3678,16 +3687,16 @@ mod tests {
 
         parse_as_expression(
             &["Foo {foo: 1, bar: 2}.foo"],
-            Expression::AccessField(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(struct_! {
+            Expression::AccessField {
+                full_span: Span::dummy(),
+                ident_span: Span::dummy(),
+                expr: Box::new(struct_! {
                     Foo,
                     foo: scalar!(1.0),
                     bar: scalar!(2.0)
                 }),
-                "foo",
-            ),
+                field_name: "foo",
+            },
         );
     }
 

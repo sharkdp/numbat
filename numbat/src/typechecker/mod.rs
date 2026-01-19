@@ -170,13 +170,13 @@ fn proper_function_call<'a>(
         }
     }
 
-    Ok(typed_ast::Expression::FunctionCall(
-        *span,
-        *full_span,
-        function_name,
-        arguments,
-        TypeScheme::concrete(return_type.as_ref().clone()),
-    ))
+    Ok(typed_ast::Expression::FunctionCall {
+        full_span: *full_span,
+        ident_span: *span,
+        name: function_name,
+        args: arguments,
+        type_scheme: TypeScheme::concrete(return_type.as_ref().clone()),
+    })
 }
 
 #[derive(Clone, Default)]
@@ -354,15 +354,17 @@ impl TypeChecker {
             {
                 let polymorphic_zero_type = self.fresh_type_variable();
                 self.add_dtype_constraint(&polymorphic_zero_type).ok();
-                typed_ast::Expression::Scalar(
-                    *span,
-                    *n,
-                    TypeScheme::concrete(polymorphic_zero_type),
-                )
+                typed_ast::Expression::Scalar {
+                    span: *span,
+                    value: *n,
+                    type_scheme: TypeScheme::concrete(polymorphic_zero_type),
+                }
             }
-            ast::Expression::Scalar(span, n) => {
-                typed_ast::Expression::Scalar(*span, *n, TypeScheme::concrete(Type::scalar()))
-            }
+            ast::Expression::Scalar(span, n) => typed_ast::Expression::Scalar {
+                span: *span,
+                value: *n,
+                type_scheme: TypeScheme::concrete(Type::scalar()),
+            },
             ast::Expression::Identifier(span, name) => {
                 let type_scheme = self.identifier_type(*span, name)?.clone();
 
@@ -378,9 +380,18 @@ impl TypeChecker {
                     }
                 };
 
-                typed_ast::Expression::Identifier(*span, name, TypeScheme::concrete(ty))
+                typed_ast::Expression::Identifier {
+                    span: *span,
+                    name,
+                    type_scheme: TypeScheme::concrete(ty),
+                }
             }
-            ast::Expression::UnitIdentifier(span, prefix, name, full_name) => {
+            ast::Expression::UnitIdentifier {
+                span,
+                prefix,
+                name,
+                full_name,
+            } => {
                 let type_scheme = self.identifier_type(*span, name)?.clone();
 
                 let qt = type_scheme.instantiate(&mut self.name_generator);
@@ -389,13 +400,13 @@ impl TypeChecker {
                     self.constraints.add(Constraint::IsDType(t.clone())).ok();
                 }
 
-                typed_ast::Expression::UnitIdentifier(
-                    *span,
-                    *prefix,
-                    name.clone(),
-                    full_name.clone(),
-                    TypeScheme::concrete(qt.inner),
-                )
+                typed_ast::Expression::UnitIdentifier {
+                    span: *span,
+                    prefix: *prefix,
+                    name: name.clone(),
+                    full_name: full_name.clone(),
+                    type_scheme: TypeScheme::concrete(qt.inner),
+                }
             }
             ast::Expression::UnaryOperator { op, expr, span_op } => {
                 let checked_expr = self.elaborate_expression(expr)?;
@@ -426,12 +437,12 @@ impl TypeChecker {
                     }
                 }
 
-                typed_ast::Expression::UnaryOperator(
-                    *span_op,
-                    *op,
-                    Box::new(checked_expr),
-                    TypeScheme::concrete(type_),
-                )
+                typed_ast::Expression::UnaryOperator {
+                    span: *span_op,
+                    op: *op,
+                    expr: Box::new(checked_expr),
+                    type_scheme: TypeScheme::concrete(type_),
+                }
             }
             ast::Expression::BinaryOperator {
                 op,
@@ -473,12 +484,12 @@ impl TypeChecker {
                         )));
                     }
 
-                    typed_ast::Expression::CallableCall(
-                        lhs.full_span(),
-                        Box::new(rhs_checked),
-                        vec![lhs_checked],
-                        TypeScheme::concrete(*return_type),
-                    )
+                    typed_ast::Expression::CallableCall {
+                        full_span: lhs.full_span(),
+                        callable: Box::new(rhs_checked),
+                        args: vec![lhs_checked],
+                        type_scheme: TypeScheme::concrete(*return_type),
+                    }
                 } else if lhs_type == Type::DateTime {
                     // DateTime types need special handling here, since they're not scalars with dimensions,
                     // yet some select binary operators can be applied to them
@@ -493,23 +504,23 @@ impl TypeChecker {
                         let time = DType::base_dimension("Time"); // TODO: error handling
                         // TODO make sure the "second" unit exists
 
-                        typed_ast::Expression::BinaryOperatorForDate(
-                            *span_op,
-                            *op,
-                            Box::new(lhs_checked),
-                            Box::new(rhs_checked),
-                            TypeScheme::concrete(Type::Dimension(time)),
-                        )
+                        typed_ast::Expression::BinaryOperatorForDate {
+                            op_span: *span_op,
+                            op: *op,
+                            lhs: Box::new(lhs_checked),
+                            rhs: Box::new(rhs_checked),
+                            type_scheme: TypeScheme::concrete(Type::Dimension(time)),
+                        }
                     } else if (*op == BinaryOperator::Add || *op == BinaryOperator::Sub)
                         && rhs_is_time
                     {
-                        typed_ast::Expression::BinaryOperatorForDate(
-                            *span_op,
-                            *op,
-                            Box::new(lhs_checked),
-                            Box::new(rhs_checked),
-                            TypeScheme::concrete(Type::DateTime),
-                        )
+                        typed_ast::Expression::BinaryOperatorForDate {
+                            op_span: *span_op,
+                            op: *op,
+                            lhs: Box::new(lhs_checked),
+                            rhs: Box::new(rhs_checked),
+                            type_scheme: TypeScheme::concrete(Type::DateTime),
+                        }
                     } else {
                         return Err(Box::new(TypeCheckError::IncompatibleTypesInOperator(
                             span_op.unwrap_or_else(|| {
@@ -803,23 +814,28 @@ impl TypeChecker {
                         }
                     };
 
-                    typed_ast::Expression::BinaryOperator(
-                        *span_op,
-                        *op,
-                        Box::new(lhs_checked),
-                        Box::new(rhs_checked),
-                        TypeScheme::concrete(type_),
-                    )
+                    typed_ast::Expression::BinaryOperator {
+                        op_span: *span_op,
+                        op: *op,
+                        lhs: Box::new(lhs_checked),
+                        rhs: Box::new(rhs_checked),
+                        type_scheme: TypeScheme::concrete(type_),
+                    }
                 }
             }
-            ast::Expression::FunctionCall(span, full_span, callable, args) => {
+            ast::Expression::FunctionCall {
+                ident_span: span,
+                full_span,
+                callable,
+                args,
+            } => {
                 let arguments_checked = args
                     .iter()
                     .map(|a| self.elaborate_expression(a))
                     .collect::<Result<Vec<_>>>()?;
                 let argument_types = arguments_checked
                     .iter()
-                    .map(|e| e.get_type())
+                    .map(|e: &typed_ast::Expression| e.get_type())
                     .collect::<Vec<Type>>();
 
                 // There are two options here. The 'callable' can either be a direct reference
@@ -914,12 +930,12 @@ impl TypeChecker {
                         }
                     }
 
-                    typed_ast::Expression::CallableCall(
-                        *full_span,
-                        Box::new(callable_checked),
-                        arguments_checked,
-                        TypeScheme::concrete(return_type),
-                    )
+                    typed_ast::Expression::CallableCall {
+                        full_span: *full_span,
+                        callable: Box::new(callable_checked),
+                        args: arguments_checked,
+                        type_scheme: TypeScheme::concrete(return_type),
+                    }
                 }
             }
             ast::Expression::Boolean(span, val) => typed_ast::Expression::Boolean(*span, *val),
@@ -941,7 +957,12 @@ impl TypeChecker {
                     })
                     .collect::<Result<_>>()?,
             ),
-            ast::Expression::Condition(span, condition, then, else_) => {
+            ast::Expression::Condition {
+                span,
+                condition,
+                then_expr: then,
+                else_expr: else_,
+            } => {
                 let condition = self.elaborate_expression(condition)?;
 
                 if self
@@ -972,12 +993,12 @@ impl TypeChecker {
                     )));
                 }
 
-                typed_ast::Expression::Condition(
-                    *span,
-                    Box::new(condition),
-                    Box::new(then),
-                    Box::new(else_),
-                )
+                typed_ast::Expression::Condition {
+                    span: *span,
+                    condition: Box::new(condition),
+                    then_expr: Box::new(then),
+                    else_expr: Box::new(else_),
+                }
             }
             ast::Expression::InstantiateStruct {
                 full_span,
@@ -1113,13 +1134,18 @@ impl TypeChecker {
                     ));
                 }
 
-                typed_ast::Expression::InstantiateStruct(
-                    *full_span,
-                    fields_checked,
-                    instantiated_struct_info,
-                )
+                typed_ast::Expression::InstantiateStruct {
+                    span: *full_span,
+                    fields: fields_checked,
+                    struct_info: instantiated_struct_info,
+                }
             }
-            ast::Expression::AccessField(full_span, ident_span, expr, field_name) => {
+            ast::Expression::AccessField {
+                full_span,
+                ident_span,
+                expr,
+                field_name,
+            } => {
                 let field_name = *field_name;
                 let expr_checked = self.elaborate_expression(expr)?;
 
@@ -1159,14 +1185,14 @@ impl TypeChecker {
                     field_type
                 };
 
-                Expression::AccessField(
-                    *ident_span,
-                    *full_span,
-                    Box::new(expr_checked),
+                Expression::AccessField {
+                    full_span: *full_span,
+                    ident_span: *ident_span,
+                    expr: Box::new(expr_checked),
                     field_name,
-                    TypeScheme::concrete(type_),
-                    TypeScheme::concrete(field_type),
-                )
+                    struct_type: TypeScheme::concrete(type_),
+                    field_type: TypeScheme::concrete(field_type),
+                }
             }
             ast::Expression::List(span, elements) => {
                 let elements_checked = elements
@@ -1205,11 +1231,11 @@ impl TypeChecker {
                     }
                 }
 
-                typed_ast::Expression::List(
-                    *span,
-                    elements_checked,
-                    TypeScheme::concrete(result_element_type),
-                )
+                typed_ast::Expression::List {
+                    span: *span,
+                    elements: elements_checked,
+                    type_scheme: TypeScheme::concrete(result_element_type),
+                }
             }
             ast::Expression::TypedHole(span) => {
                 let type_ = self.fresh_type_variable();
@@ -1331,14 +1357,14 @@ impl TypeChecker {
                 .map_err(|err| Box::new(err.into()))?;
         }
 
-        Ok(typed_ast::DefineVariable(
-            identifier,
-            decorators.clone(),
-            expr_checked,
-            type_annotation.clone(),
-            TypeScheme::concrete(type_deduced),
-            crate::markup::empty(),
-        ))
+        Ok(typed_ast::DefineVariable {
+            name: identifier,
+            decorators: decorators.clone(),
+            expr: expr_checked,
+            type_annotation: type_annotation.clone(),
+            type_scheme: TypeScheme::concrete(type_deduced),
+            readable_type: crate::markup::empty(),
+        })
     }
 
     fn elaborate_statement<'a>(
@@ -1399,13 +1425,13 @@ impl TypeChecker {
                     );
                 }
 
-                typed_ast::Statement::DefineBaseUnit(
-                    unit_name,
-                    *span,
-                    decorators.clone(),
-                    type_annotation.clone().map(TypeAnnotation::TypeExpression),
-                    TypeScheme::concrete(Type::Dimension(type_specified)),
-                )
+                typed_ast::Statement::DefineBaseUnit {
+                    name: unit_name,
+                    identifier_span: *span,
+                    decorators: decorators.clone(),
+                    type_annotation: type_annotation.clone().map(TypeAnnotation::TypeExpression),
+                    type_scheme: TypeScheme::concrete(Type::Dimension(type_specified)),
+                }
             }
             ast::Statement::DefineDerivedUnit {
                 identifier_span,
@@ -1436,15 +1462,15 @@ impl TypeChecker {
                         true,
                     );
                 }
-                typed_ast::Statement::DefineDerivedUnit(
-                    identifier,
-                    identifier_span.extend(&expr.full_span()),
-                    expr_checked,
-                    decorators.clone(),
-                    type_annotation.clone(),
-                    TypeScheme::Concrete(type_deduced),
-                    crate::markup::empty(),
-                )
+                typed_ast::Statement::DefineDerivedUnit {
+                    name: identifier,
+                    identifier_span: identifier_span.extend(&expr.full_span()),
+                    expr: expr_checked,
+                    decorators: decorators.clone(),
+                    type_annotation: type_annotation.clone(),
+                    type_scheme: TypeScheme::Concrete(type_deduced),
+                    readable_type: crate::markup::empty(),
+                }
             }
             ast::Statement::DefineFunction {
                 function_name_span,
@@ -1697,14 +1723,14 @@ impl TypeChecker {
                     metadata.clone(),
                 );
 
-                typed_ast::Statement::DefineFunction(
+                typed_ast::Statement::DefineFunction {
                     function_name,
-                    decorators.clone(),
-                    type_parameters
+                    decorators: decorators.clone(),
+                    type_parameters: type_parameters
                         .iter()
                         .map(|(_, name, bound)| (*name, bound.clone()))
                         .collect(),
-                    typed_parameters
+                    parameters: typed_parameters
                         .iter()
                         .map(|(span, name, _, type_annotation)| {
                             (
@@ -1715,12 +1741,12 @@ impl TypeChecker {
                             )
                         })
                         .collect(),
-                    body_checked,
-                    typed_local_variables,
+                    body: body_checked,
+                    local_variables: typed_local_variables,
                     fn_type,
-                    return_type_annotation.clone(),
-                    crate::markup::empty(),
-                )
+                    return_type_annotation: return_type_annotation.clone(),
+                    readable_return_type: crate::markup::empty(),
+                }
             }
             ast::Statement::DefineDimension(name_span, name, dexprs) => {
                 self.type_namespace
@@ -1785,11 +1811,11 @@ impl TypeChecker {
                     .map(|e| self.elaborate_expression(e))
                     .collect::<Result<Vec<_>>>()?;
 
-                typed_ast::Statement::ProcedureCall(
-                    kind.clone(),
-                    span.extend(&args[0].full_span()),
-                    checked_args,
-                )
+                typed_ast::Statement::ProcedureCall {
+                    kind: kind.clone(),
+                    span: span.extend(&args[0].full_span()),
+                    args: checked_args,
+                }
             }
             ast::Statement::ProcedureCall(span, kind, args) => {
                 let procedure = ffi::procedures().get(kind).unwrap();
@@ -1858,12 +1884,13 @@ impl TypeChecker {
                     }
                 }
 
-                typed_ast::Statement::ProcedureCall(
-                    kind.clone(),
-                    args.last()
+                typed_ast::Statement::ProcedureCall {
+                    kind: kind.clone(),
+                    span: args
+                        .last()
                         .map_or(*span, |last| span.extend(&last.full_span())),
-                    checked_args,
-                )
+                    args: checked_args,
+                }
             }
             ast::Statement::ModuleImport(_, _) => {
                 unreachable!("Modules should have been inlined by now")
@@ -1990,9 +2017,10 @@ impl TypeChecker {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
 
-        if let typed_ast::Statement::DefineDerivedUnit(_, _, expr, _, _annotation, type_, _) =
-            &elaborated_statement
-            && !type_.unsafe_as_concrete().is_closed()
+        if let typed_ast::Statement::DefineDerivedUnit {
+            expr, type_scheme, ..
+        } = &elaborated_statement
+            && !type_scheme.unsafe_as_concrete().is_closed()
         {
             return Err(Box::new(
                 TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(expr.full_span()),

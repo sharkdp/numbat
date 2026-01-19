@@ -171,59 +171,96 @@ impl ApplySubstitution for StructInfo {
 impl ApplySubstitution for Expression<'_> {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
-            Expression::Scalar(_, _, type_) => type_.apply(s),
-            Expression::Identifier(_, _, type_) => type_.apply(s),
-            Expression::UnitIdentifier(_, _, _, _, type_) => type_.apply(s),
-            Expression::UnaryOperator(_, _, expr, type_) => {
+            Expression::Scalar { type_scheme, .. } => type_scheme.apply(s),
+            Expression::Identifier { type_scheme, .. } => type_scheme.apply(s),
+            Expression::UnitIdentifier { type_scheme, .. } => type_scheme.apply(s),
+            Expression::UnaryOperator {
+                expr, type_scheme, ..
+            } => {
                 expr.apply(s)?;
-                type_.apply(s)
+                type_scheme.apply(s)
             }
-            Expression::BinaryOperator(_, _, lhs, rhs, type_) => {
+            Expression::BinaryOperator {
+                lhs,
+                rhs,
+                type_scheme,
+                ..
+            } => {
                 lhs.apply(s)?;
                 rhs.apply(s)?;
-                type_.apply(s)
+                type_scheme.apply(s)
             }
-            Expression::BinaryOperatorForDate(_, _, lhs, rhs, type_) => {
+            Expression::BinaryOperatorForDate {
+                lhs,
+                rhs,
+                type_scheme,
+                ..
+            } => {
                 lhs.apply(s)?;
                 rhs.apply(s)?;
-                type_.apply(s)
+                type_scheme.apply(s)
             }
-            Expression::FunctionCall(_, _, _, arguments, return_type) => {
-                for arg in arguments {
+            Expression::FunctionCall {
+                args, type_scheme, ..
+            } => {
+                for arg in args {
                     arg.apply(s)?;
                 }
-                return_type.apply(s)
+                type_scheme.apply(s)
             }
-            Expression::CallableCall(_, callable, arguments, return_type) => {
+            Expression::CallableCall {
+                callable,
+                args,
+                type_scheme,
+                ..
+            } => {
                 callable.apply(s)?;
-                for arg in arguments {
+                for arg in args {
                     arg.apply(s)?;
                 }
-                return_type.apply(s)
+                type_scheme.apply(s)
             }
             Expression::Boolean(_, _) => Ok(()),
-            Expression::Condition(_, if_, then_, else_) => {
-                if_.apply(s)?;
-                then_.apply(s)?;
-                else_.apply(s)
+            Expression::Condition {
+                condition,
+                then_expr,
+                else_expr,
+                ..
+            } => {
+                condition.apply(s)?;
+                then_expr.apply(s)?;
+                else_expr.apply(s)
             }
             Expression::String(_, _) => Ok(()),
-            Expression::InstantiateStruct(_, initializers, info) => {
-                for (_, expr) in initializers {
+            Expression::InstantiateStruct {
+                fields,
+                struct_info,
+                ..
+            } => {
+                for (_, expr) in fields {
                     expr.apply(s)?;
                 }
-                info.apply(s)
+                struct_info.apply(s)
             }
-            Expression::AccessField(_, _, instance, _, struct_type, field_type) => {
-                instance.apply(s)?;
+            Expression::AccessField {
+                expr,
+                struct_type,
+                field_type,
+                ..
+            } => {
+                expr.apply(s)?;
                 struct_type.apply(s)?;
                 field_type.apply(s)
             }
-            Expression::List(_, elements, element_type) => {
+            Expression::List {
+                elements,
+                type_scheme,
+                ..
+            } => {
                 for element in elements {
                     element.apply(s)?;
                 }
-                element_type.apply(s)
+                type_scheme.apply(s)
             }
             Expression::TypedHole(_, type_) => type_.apply(s),
         }
@@ -234,14 +271,21 @@ impl ApplySubstitution for Statement<'_> {
     fn apply(&mut self, s: &Substitution) -> Result<(), SubstitutionError> {
         match self {
             Statement::Expression(e) => e.apply(s),
-            Statement::DefineVariable(DefineVariable(_, _, e, _annotation, type_, _)) => {
-                e.apply(s)?;
-                type_.apply(s)
+            Statement::DefineVariable(DefineVariable {
+                expr, type_scheme, ..
+            }) => {
+                expr.apply(s)?;
+                type_scheme.apply(s)
             }
-            Statement::DefineFunction(_, _, _, _, body, local_variables, fn_type, _, _) => {
+            Statement::DefineFunction {
+                body,
+                local_variables,
+                fn_type,
+                ..
+            } => {
                 for local_variable in local_variables {
-                    local_variable.2.apply(s)?;
-                    local_variable.4.apply(s)?;
+                    local_variable.expr.apply(s)?;
+                    local_variable.type_scheme.apply(s)?;
                 }
                 if let Some(body) = body {
                     body.apply(s)?;
@@ -249,12 +293,14 @@ impl ApplySubstitution for Statement<'_> {
                 fn_type.apply(s)
             }
             Statement::DefineDimension(_, _) => Ok(()),
-            Statement::DefineBaseUnit(_, _, _, _annotation, type_) => type_.apply(s),
-            Statement::DefineDerivedUnit(_, _, e, _, _annotation, type_, _) => {
-                e.apply(s)?;
-                type_.apply(s)
+            Statement::DefineBaseUnit { type_scheme, .. } => type_scheme.apply(s),
+            Statement::DefineDerivedUnit {
+                expr, type_scheme, ..
+            } => {
+                expr.apply(s)?;
+                type_scheme.apply(s)
             }
-            Statement::ProcedureCall(_, _, args) => {
+            Statement::ProcedureCall { args, .. } => {
                 for arg in args {
                     arg.apply(s)?;
                 }
