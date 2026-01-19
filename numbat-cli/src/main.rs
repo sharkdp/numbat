@@ -153,6 +153,47 @@ impl Cli {
         context
     }
 
+    fn initialize_context(&mut self) -> Result<()> {
+        if self.config.load_prelude {
+            let result = self.parse_and_evaluate(
+                "use prelude",
+                CodeSource::Internal,
+                ExecutionMode::Normal,
+                PrettyPrintMode::Never,
+            );
+            if result.control_flow.is_break() {
+                bail!("Interpreter error in Prelude code")
+            }
+        }
+
+        if self.config.load_user_init {
+            let user_init_path = Self::get_config_path().join("init.nbt");
+
+            if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
+                let result = self.parse_and_evaluate(
+                    &user_init_code,
+                    CodeSource::File(user_init_path),
+                    ExecutionMode::Normal,
+                    PrettyPrintMode::Never,
+                );
+                if result.control_flow.is_break() {
+                    bail!("Interpreter error in user initialization code")
+                }
+            }
+        }
+
+        if self.config.load_prelude
+            && self.config.exchange_rates.fetching_policy != ExchangeRateFetchingPolicy::Never
+        {
+            self.context
+                .lock()
+                .unwrap()
+                .load_currency_module_on_demand(true);
+        }
+
+        Ok(())
+    }
+
     fn new(args: Args) -> Result<Self> {
         let user_config_path = Self::get_config_path().join("config.toml");
 
@@ -199,42 +240,7 @@ impl Cli {
             ColorMode::Auto => (), // Let colored itself decide whether coloring should occur or not
         }
 
-        if self.config.load_prelude {
-            let result = self.parse_and_evaluate(
-                "use prelude",
-                CodeSource::Internal,
-                ExecutionMode::Normal,
-                PrettyPrintMode::Never,
-            );
-            if result.control_flow.is_break() {
-                bail!("Interpreter error in Prelude code")
-            }
-        }
-
-        if self.config.load_user_init {
-            let user_init_path = Self::get_config_path().join("init.nbt");
-
-            if let Ok(user_init_code) = fs::read_to_string(&user_init_path) {
-                let result = self.parse_and_evaluate(
-                    &user_init_code,
-                    CodeSource::File(user_init_path),
-                    ExecutionMode::Normal,
-                    PrettyPrintMode::Never,
-                );
-                if result.control_flow.is_break() {
-                    bail!("Interpreter error in user initialization code")
-                }
-            }
-        }
-
-        if self.config.load_prelude
-            && self.config.exchange_rates.fetching_policy != ExchangeRateFetchingPolicy::Never
-        {
-            self.context
-                .lock()
-                .unwrap()
-                .load_currency_module_on_demand(true);
-        }
+        self.initialize_context()?;
 
         let mut code_and_source = Vec::new();
 
@@ -405,6 +411,8 @@ impl Cli {
                             CommandControlFlow::Return => return Ok(()),
                             CommandControlFlow::Reset => {
                                 *ctx = Self::make_fresh_context();
+                                drop(ctx);
+                                let _ = self.initialize_context();
                                 continue;
                             }
                             CommandControlFlow::NotACommand => {}
