@@ -201,7 +201,7 @@ impl Cli {
 
         if self.config.load_prelude {
             let result = self.parse_and_evaluate(
-                "use prelude",
+                "use prelude::*",
                 CodeSource::Internal,
                 ExecutionMode::Normal,
                 PrettyPrintMode::Never,

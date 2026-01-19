@@ -1,17 +1,17 @@
-use core::error
-use core::functions
-use math::constants
-use math::trigonometry
-use core::lists
+use core::error::*
+use core::functions::*
+use math::constants::*
+use math::trigonometry::*
+use core::lists::*
 
-fn _qe_solution<A: Dim, B: Dim>(a: A, b: B, c: B² / A, sign: Scalar) -> B / A =
+pub fn _qe_solution<A: Dim, B: Dim>(a: A, b: B, c: B² / A, sign: Scalar) -> B / A =
   (-b + sign × sqrt(b² - 4 a c)) / 2 a
 
 @name("Solve quadratic equations")
 @url("https://en.wikipedia.org/wiki/Quadratic_equation")
 @description("Returns the solutions of the equation a x² + b x + c = 0")
 @example("quadratic_equation(2, -1, -1)", "Solve the equation $2x² -x -1 = 0$")
-fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A> =
+pub fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A> =
   if a == 0
     then if b == 0
       then if c == 0
@@ -24,10 +24,10 @@ fn quadratic_equation<A: Dim, B: Dim>(a: A, b: B, c: B² / A) -> List<B / A> =
         then [-b / 2 a]
         else [_qe_solution(a, b, c, 1), _qe_solution(a, b, c, -1)]
 
-fn _solve_reduced_less_solution(theta: Scalar, k: Scalar, radius: Scalar) -> Scalar =
+pub fn _solve_reduced_less_solution(theta: Scalar, k: Scalar, radius: Scalar) -> Scalar =
   2 * radius * cos( (theta + 2 k pi) / 3 )
 
-fn _solve_reduced_less(a: Scalar, b2: Scalar) -> List<Scalar> = 
+pub fn _solve_reduced_less(a: Scalar, b2: Scalar) -> List<Scalar> = 
   [
     _solve_reduced_less_solution(theta, 0, radius),
     _solve_reduced_less_solution(theta, 1, radius),
@@ -36,17 +36,17 @@ fn _solve_reduced_less(a: Scalar, b2: Scalar) -> List<Scalar> =
   where radius = sqrt(-a/3) 
     and theta = acos(b2 / (radius^3))
 
-fn _solve_reduced_greater(b2: Scalar, delta: Scalar) -> List<Scalar> = 
+pub fn _solve_reduced_greater(b2: Scalar, delta: Scalar) -> List<Scalar> = 
   [cbrt(b2+rd) + cbrt(b2-rd)]
   where rd = sqrt(delta)
 
-fn _solve_reduced_equal(b2: Scalar) -> List<Scalar> = 
+pub fn _solve_reduced_equal(b2: Scalar) -> List<Scalar> = 
   if b2 == 0 
     then [0]
     else [2*cbrt_b2, -cbrt_b2]
   where cbrt_b2 = cbrt(b2)
 
-fn _solve_reduced(a: Scalar, b: Scalar) -> List<Scalar> = 
+pub fn _solve_reduced(a: Scalar, b: Scalar) -> List<Scalar> = 
   if delta < 0 
     then _solve_reduced_less(a, b2)
     else if delta == 0 
@@ -55,9 +55,9 @@ fn _solve_reduced(a: Scalar, b: Scalar) -> List<Scalar> =
   where b2 = - b/2 
     and delta = b2^2 + (a/3)^3
 
-fn _translation_solutions(p: Scalar, y: Scalar) -> Scalar = y - p /3
+pub fn _translation_solutions(p: Scalar, y: Scalar) -> Scalar = y - p /3
 
-fn _solve_true_cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar> =
+pub fn _solve_true_cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar> =
   map2(_translation_solutions, p, _solve_reduced(q - p^2/3, 2 * p^3 / 27 - p * q / 3 + r))
   where p = b/a 
     and q = c/a 
@@ -67,7 +67,7 @@ fn _solve_true_cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> Lis
 @url("https://en.wikipedia.org/wiki/Cubic_equation")
 @description("Returns the solutions of the equation a x³ + b x² + c x + e = 0")
 @example("cubic_equation(1, -6, 11, -6)", "Solve the equation $x³ - 6x² + 11x - 6 = 0$")
-fn cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar> = 
+pub fn cubic_equation(a: Scalar, b: Scalar, c: Scalar, e: Scalar) -> List<Scalar> = 
   if a == 0 
     then sort(quadratic_equation(b, c, e)) 
     else sort(_solve_true_cubic_equation(a, b, c, e))

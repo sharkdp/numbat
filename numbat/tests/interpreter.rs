@@ -322,7 +322,7 @@ fn test_function_inverses() {
 fn test_algebra() {
     let mut ctx = get_test_context();
     let _ = ctx
-        .interpret("use extra::algebra", CodeSource::Internal)
+        .interpret("use extra::algebra::*", CodeSource::Internal)
         .unwrap();
     expect_output_with_context(&mut ctx, "quadratic_equation(1, 0, -1)", "[1, -1]");
     expect_output_with_context(&mut ctx, "quadratic_equation(0, 9, 3)", "[-0.333333]");
@@ -1131,4 +1131,13 @@ mod tests {
             "###);
         }
     }
+}
+
+#[test]
+fn test_private_identifier_access() {
+    // _str_find is a private helper in core::strings that should not be accessible from user code
+    expect_failure(
+        "_str_find(\"a\", 0, \"abc\")",
+        "Cannot access private identifier",
+    );
 }

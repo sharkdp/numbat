@@ -1,6 +1,6 @@
-use units::si
+use units::si::*
 
-struct _ChemicalElementRaw {
+pub struct _ChemicalElementRaw {
     symbol: String,
     name: String,
     atomic_number: Scalar,
@@ -15,9 +15,9 @@ struct _ChemicalElementRaw {
     vaporization_heat_kilojoule_per_mole: Scalar,
 }
 
-fn _get_chemical_element_data_raw(pattern: String) -> _ChemicalElementRaw
+pub fn _get_chemical_element_data_raw(pattern: String) -> _ChemicalElementRaw
 
-struct ChemicalElement {
+pub struct ChemicalElement {
     symbol: String,
     name: String,
     atomic_number: Scalar,
@@ -32,7 +32,7 @@ struct ChemicalElement {
     vaporization_heat: MolarEnthalpyOfVaporization,
 }
 
-fn _convert_from_raw(raw: _ChemicalElementRaw) -> ChemicalElement =
+pub fn _convert_from_raw(raw: _ChemicalElementRaw) -> ChemicalElement =
     ChemicalElement {
         symbol: raw.symbol,
         name: raw.name,
@@ -52,5 +52,5 @@ fn _convert_from_raw(raw: _ChemicalElementRaw) -> ChemicalElement =
 @description("Get properties of a chemical element by its symbol or name (case-insensitive).")
 @example("element(\"H\")", "Get the entire element struct for hydrogen.")
 @example("element(\"hydrogen\").ionization_energy", "Get the ionization energy of hydrogen.")
-fn element(pattern: String) -> ChemicalElement =
+pub fn element(pattern: String) -> ChemicalElement =
     _convert_from_raw(_get_chemical_element_data_raw(pattern))

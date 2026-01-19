@@ -1,29 +1,29 @@
-use core::lists
-use plot::common
+use core::lists::*
+use plot::common::*
 
-struct BarChart<V: Dim> {
+pub struct BarChart<V: Dim> {
   value_label: String,
   values: List<V>,
   x_labels: List<String>,
 }
 
-fn _default_label(n: Scalar) -> String = "{n}"
+pub fn _default_label(n: Scalar) -> String = "{n}"
 
-fn bar_chart<V: Dim>(values: List<V>) -> BarChart<V> =
+pub fn bar_chart<V: Dim>(values: List<V>) -> BarChart<V> =
   BarChart {
     value_label: "",
     values: values,
     x_labels: map(_default_label, range(1, len(values))),
   }
 
-fn xlabels<V: Dim>(ls: List<String>, chart: BarChart<V>) -> BarChart<V> =
+pub fn xlabels<V: Dim>(ls: List<String>, chart: BarChart<V>) -> BarChart<V> =
   BarChart {
     value_label: chart.value_label,
     values: chart.values,
     x_labels: ls,
   }
 
-fn value_label<V: Dim>(label: String, chart: BarChart<V>) -> BarChart<V> =
+pub fn value_label<V: Dim>(label: String, chart: BarChart<V>) -> BarChart<V> =
   BarChart {
     value_label: label,
     values: chart.values,

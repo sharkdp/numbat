@@ -41,6 +41,36 @@ impl ErrorDiagnostic for ResolverError {
                             .with_message("Unknown module"),
                     ]),
             ],
+            ResolverError::CyclicImport(span, module_path) => vec![
+                Diagnostic::error()
+                    .with_message("while resolving imports")
+                    .with_labels(vec![
+                        span.diagnostic_label(LabelStyle::Primary)
+                            .with_message(format!("Cyclic import of module '{}'", module_path)),
+                    ]),
+            ],
+            ResolverError::ItemNotFound { span, module, item } => vec![
+                Diagnostic::error()
+                    .with_message("while resolving imports")
+                    .with_labels(vec![
+                        span.diagnostic_label(LabelStyle::Primary)
+                            .with_message(format!(
+                                "Item '{}' not found in module '{}'",
+                                item, module
+                            )),
+                    ]),
+            ],
+            ResolverError::PrivateItem { span, module, item } => vec![
+                Diagnostic::error()
+                    .with_message("while resolving imports")
+                    .with_labels(vec![
+                        span.diagnostic_label(LabelStyle::Primary)
+                            .with_message(format!(
+                                "Cannot import private item '{}' from module '{}'",
+                                item, module
+                            )),
+                    ]),
+            ],
             ResolverError::ParseErrors(errors) => {
                 errors.iter().flat_map(|e| e.diagnostics()).collect()
             }
@@ -102,6 +132,10 @@ impl ErrorDiagnostic for TypeCheckError {
                 ])
                 .with_notes(notes)
             }
+            TypeCheckError::PrivateIdentifier(span, _) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message("private identifier cannot be accessed from this module"),
+            ]),
             TypeCheckError::IncompatibleDimensions(IncompatibleDimensionsError {
                 operation,
                 span_operation,

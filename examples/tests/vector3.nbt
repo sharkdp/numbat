@@ -1,4 +1,4 @@
-use extra::vector3
+use extra::vector3::*
 
 # Basic angular momentum computation
 let r = vec(3 m, 4 m, 0 m)

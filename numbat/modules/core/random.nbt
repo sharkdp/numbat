@@ -1,5 +1,5 @@
-use core::scalar
+use core::scalar::*
 
 @name("Standard uniform distribution sampling")
 @description("Uniformly samples the interval $[0,1)$.")
-fn random() -> Scalar
+pub fn random() -> Scalar

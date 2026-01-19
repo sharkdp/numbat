@@ -715,6 +715,11 @@ impl Context {
 
         let typechecker_old = self.typechecker.clone();
 
+        // Pass the set of module source IDs to the typechecker for visibility checking.
+        // Items defined in these sources will have visibility enforced.
+        let module_source_ids = self.resolver.get_module_source_ids();
+        self.typechecker.set_module_source_ids(module_source_ids);
+
         let result = self
             .typechecker
             .check(&transformed_statements)

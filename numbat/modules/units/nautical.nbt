@@ -1,11 +1,11 @@
-use units::si
+use units::si::*
 
 @name("Knot")
 @url("https://en.wikipedia.org/wiki/Knot_(unit)")
 @aliases(knots, kn: short, kt: short)
-unit knot: Velocity = 463 m / 900 s
+pub unit knot: Velocity = 463 m / 900 s
 
 @name("Nautical Mile")
 @url("https://en.wikipedia.org/wiki/Nautical_mile")
 @aliases(nautical_miles, NM: short, nmi: short)
-unit nautical_mile: Length = 1852 m
+pub unit nautical_mile: Length = 1852 m

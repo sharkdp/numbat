@@ -208,11 +208,11 @@ fn prepare_context() -> Context {
 
 fn main() {
     let mut ctx = prepare_context();
-    let _result = ctx.interpret("use all", CodeSource::Internal).unwrap();
+    let _result = ctx.interpret("use all::*", CodeSource::Internal).unwrap();
 
     let mut example_ctx = prepare_context();
     let _result = example_ctx
-        .interpret("use prelude", CodeSource::Internal)
+        .interpret("use prelude::*", CodeSource::Internal)
         .unwrap();
 
     let mut args = std::env::args();

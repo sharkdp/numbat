@@ -68,8 +68,8 @@ use std::num::NonZeroUsize;
 
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{
-    BinaryOperator, DefineVariable, Expression, ProcedureKind, Statement, StringPart,
-    TypeAnnotation, TypeExpression, TypeParameterBound, UnaryOperator,
+    BinaryOperator, DefineVariable, Expression, ImportKind, ProcedureKind, Statement, StringPart,
+    TypeAnnotation, TypeExpression, TypeParameterBound, UnaryOperator, Visibility,
 };
 use crate::decorator::{self, Decorator};
 use crate::number::Number;
@@ -180,6 +180,9 @@ pub enum ParseErrorKind {
 
     #[error("Expected module name after double colon (::)")]
     ExpectedModuleNameAfterDoubleColon,
+
+    #[error("Expected '::*' or '::item_name' after module path")]
+    ExpectedGlobOrItemAfterModulePath,
 
     #[error("Overflow in number literal")]
     OverflowInNumberLiteral,
@@ -480,6 +483,7 @@ impl<'a> Parser<'a> {
 
     fn statement(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
         if !(self.peek(tokens).kind == TokenKind::At
+            || self.peek(tokens).kind == TokenKind::Pub
             || self.peek(tokens).kind == TokenKind::Unit
             || self.peek(tokens).kind == TokenKind::Let
             || self.peek(tokens).kind == TokenKind::Fn
@@ -491,21 +495,28 @@ impl<'a> Parser<'a> {
             });
         }
 
+        // Check for optional `pub` visibility modifier
+        let visibility = if self.match_exact(tokens, TokenKind::Pub).is_some() {
+            Visibility::Public
+        } else {
+            Visibility::Private
+        };
+
         if self.match_exact(tokens, TokenKind::Let).is_some() {
-            self.parse_variable(tokens, true)
+            self.parse_variable(tokens, true, visibility)
                 .map(Statement::DefineVariable)
         } else if self.match_exact(tokens, TokenKind::Fn).is_some() {
-            self.parse_function_declaration(tokens)
+            self.parse_function_declaration(tokens, visibility)
         } else if self.match_exact(tokens, TokenKind::Dimension).is_some() {
-            self.parse_dimension_declaration(tokens)
+            self.parse_dimension_declaration(tokens, visibility)
         } else if self.match_exact(tokens, TokenKind::At).is_some() {
             self.parse_decorators(tokens)
         } else if self.match_exact(tokens, TokenKind::Unit).is_some() {
-            self.parse_unit_declaration(tokens)
+            self.parse_unit_declaration(tokens, visibility)
         } else if self.match_exact(tokens, TokenKind::Use).is_some() {
             self.parse_use(tokens)
         } else if self.match_exact(tokens, TokenKind::Struct).is_some() {
-            self.parse_struct(tokens)
+            self.parse_struct(tokens, visibility)
         } else if self.match_any(tokens, PROCEDURES).is_some() {
             self.parse_procedure(tokens)
         } else {
@@ -517,6 +528,7 @@ impl<'a> Parser<'a> {
         &mut self,
         tokens: &[Token<'a>],
         flush_decorators: bool,
+        visibility: Visibility,
     ) -> Result<DefineVariable<'a>> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             let identifier_span = self.last(tokens).unwrap().span;
@@ -561,6 +573,7 @@ impl<'a> Parser<'a> {
                     expr,
                     type_annotation,
                     decorators,
+                    visibility,
                 })
             }
         } else {
@@ -571,7 +584,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_function_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
+    fn parse_function_declaration(
+        &mut self,
+        tokens: &[Token<'a>],
+        visibility: Visibility,
+    ) -> Result<Statement<'a>> {
         if let Some(fn_name) = self.match_exact(tokens, TokenKind::Identifier) {
             let function_name_span = self.last(tokens).unwrap().span;
             let type_parameters = self.type_parameters(tokens)?;
@@ -641,7 +658,10 @@ impl<'a> Parser<'a> {
                 {
                     let keyword_span = self.last(tokens).unwrap().span;
                     self.skip_empty_lines(tokens);
-                    if let Ok(local_variable) = self.parse_variable(tokens, false) {
+                    // Local variables are always private
+                    if let Ok(local_variable) =
+                        self.parse_variable(tokens, false, Visibility::Private)
+                    {
                         local_variables.push(local_variable);
                     } else {
                         return Err(ParseError {
@@ -656,7 +676,10 @@ impl<'a> Parser<'a> {
                     {
                         let keyword_span = self.last(tokens).unwrap().span;
                         self.skip_empty_lines(tokens);
-                        if let Ok(local_variable) = self.parse_variable(tokens, false) {
+                        // Local variables are always private
+                        if let Ok(local_variable) =
+                            self.parse_variable(tokens, false, Visibility::Private)
+                        {
                             local_variables.push(local_variable);
                         } else {
                             return Err(ParseError {
@@ -689,6 +712,7 @@ impl<'a> Parser<'a> {
                 local_variables,
                 return_type_annotation,
                 decorators,
+                visibility,
             })
         } else {
             Err(ParseError {
@@ -698,7 +722,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_dimension_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
+    fn parse_dimension_declaration(
+        &mut self,
+        tokens: &[Token<'a>],
+        visibility: Visibility,
+    ) -> Result<Statement<'a>> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             if identifier.lexeme.starts_with("__") {
                 return Err(ParseError::new(
@@ -716,17 +744,19 @@ impl<'a> Parser<'a> {
                     dexprs.push(self.dimension_expression(tokens)?);
                 }
 
-                Ok(Statement::DefineDimension(
-                    identifier.span,
-                    identifier.lexeme,
-                    dexprs,
-                ))
+                Ok(Statement::DefineDimension {
+                    dimension_name_span: identifier.span,
+                    dimension_name: identifier.lexeme,
+                    type_exprs: dexprs,
+                    visibility,
+                })
             } else {
-                Ok(Statement::DefineDimension(
-                    identifier.span,
-                    identifier.lexeme,
-                    vec![],
-                ))
+                Ok(Statement::DefineDimension {
+                    dimension_name_span: identifier.span,
+                    dimension_name: identifier.lexeme,
+                    type_exprs: vec![],
+                    visibility,
+                })
             }
         } else {
             Err(ParseError {
@@ -853,7 +883,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_unit_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
+    fn parse_unit_declaration(
+        &mut self,
+        tokens: &[Token<'a>],
+        visibility: Visibility,
+    ) -> Result<Statement<'a>> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             let identifier_span = self.last(tokens).unwrap().span;
             let (type_annotation_span, dexpr) =
@@ -886,21 +920,24 @@ impl<'a> Parser<'a> {
                     type_annotation_span,
                     type_annotation: dexpr.map(TypeAnnotation::TypeExpression),
                     decorators,
+                    visibility,
                 })
             } else if dexpr.is_some() {
-                Ok(Statement::DefineBaseUnit(
-                    identifier_span,
+                Ok(Statement::DefineBaseUnit {
+                    unit_name_span: identifier_span,
                     unit_name,
-                    dexpr,
+                    type_annotation: dexpr,
                     decorators,
-                ))
+                    visibility,
+                })
             } else if self.is_end_of_statement(tokens) {
-                Ok(Statement::DefineBaseUnit(
-                    identifier_span,
+                Ok(Statement::DefineBaseUnit {
+                    unit_name_span: identifier_span,
                     unit_name,
-                    None,
+                    type_annotation: None,
                     decorators,
-                ))
+                    visibility,
+                })
             } else {
                 Err(ParseError {
                     kind: ParseErrorKind::ExpectedColonOrEqualAfterUnitIdentifier,
@@ -921,7 +958,18 @@ impl<'a> Parser<'a> {
         if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
             let mut module_path = vec![identifier.lexeme];
 
+            // Parse the module path: module::submodule::...
             while self.match_exact(tokens, TokenKind::DoubleColon).is_some() {
+                // Check for glob import: use module::*
+                if self.match_exact(tokens, TokenKind::Multiply).is_some() {
+                    span = span.extend(&self.last(tokens).unwrap().span);
+                    return Ok(Statement::ModuleImport(
+                        span,
+                        ModulePathBorrowed(module_path),
+                        ImportKind::Glob,
+                    ));
+                }
+
                 if let Some(identifier) = self.match_exact(tokens, TokenKind::Identifier) {
                     module_path.push(identifier.lexeme);
                 } else {
@@ -931,11 +979,24 @@ impl<'a> Parser<'a> {
                     });
                 }
             }
+
+            // At this point we have parsed: use module::submodule::item
+            // The last element is the item name, everything before is the module path
+            if module_path.len() < 2 {
+                // Just "use module" without ::* or ::item
+                return Err(ParseError {
+                    kind: ParseErrorKind::ExpectedGlobOrItemAfterModulePath,
+                    span: self.peek(tokens).span,
+                });
+            }
+
+            let item_name = module_path.pop().unwrap();
             span = span.extend(&self.last(tokens).unwrap().span);
 
             Ok(Statement::ModuleImport(
                 span,
                 ModulePathBorrowed(module_path),
+                ImportKind::Item(item_name),
             ))
         } else {
             Err(ParseError {
@@ -945,7 +1006,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_struct(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
+    fn parse_struct(
+        &mut self,
+        tokens: &[Token<'a>],
+        visibility: Visibility,
+    ) -> Result<Statement<'a>> {
         let name = self.identifier(tokens)?;
         let name_span = self.last(tokens).unwrap().span;
         let type_parameters = self.type_parameters(tokens)?;
@@ -1003,6 +1068,7 @@ impl<'a> Parser<'a> {
             struct_name: name,
             type_parameters,
             fields,
+            visibility,
         })
     }
 
@@ -2592,6 +2658,7 @@ mod tests {
                 expr: scalar!(1.0),
                 type_annotation: None,
                 decorators: Vec::new(),
+                visibility: Visibility::Private,
             }),
         );
 
@@ -2605,6 +2672,7 @@ mod tests {
                     TypeExpression::TypeIdentifier(Span::dummy(), "Length".into(), vec![]),
                 )),
                 decorators: Vec::new(),
+                visibility: Visibility::Private,
             }),
         );
 
@@ -2626,6 +2694,7 @@ mod tests {
                     ),
                 )),
                 decorators: Vec::new(),
+                visibility: Visibility::Private,
             }),
         );
 
@@ -2662,6 +2731,7 @@ mod tests {
                         ),
                     ]),
                 ],
+                visibility: Visibility::Private,
             }),
         );
 
@@ -2692,7 +2762,12 @@ mod tests {
     fn dimension_definition() {
         parse_as(
             &["dimension px"],
-            Statement::DefineDimension(Span::dummy(), "px", vec![]),
+            Statement::DefineDimension {
+                dimension_name_span: Span::dummy(),
+                dimension_name: "px",
+                type_exprs: vec![],
+                visibility: Visibility::Private,
+            },
         );
 
         parse_as(
@@ -2701,10 +2776,10 @@ mod tests {
                 "dimension Area = Length × Length",
                 "dimension Area =\n  Length × Length",
             ],
-            Statement::DefineDimension(
-                Span::dummy(),
-                "Area",
-                vec![TypeExpression::Multiply(
+            Statement::DefineDimension {
+                dimension_name_span: Span::dummy(),
+                dimension_name: "Area",
+                type_exprs: vec![TypeExpression::Multiply(
                     Span::dummy(),
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
@@ -2717,15 +2792,16 @@ mod tests {
                         vec![],
                     )),
                 )],
-            ),
+                visibility: Visibility::Private,
+            },
         );
 
         parse_as(
             &["dimension Velocity = Length / Time"],
-            Statement::DefineDimension(
-                Span::dummy(),
-                "Velocity",
-                vec![TypeExpression::Divide(
+            Statement::DefineDimension {
+                dimension_name_span: Span::dummy(),
+                dimension_name: "Velocity",
+                type_exprs: vec![TypeExpression::Divide(
                     Span::dummy(),
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
@@ -2738,15 +2814,16 @@ mod tests {
                         vec![],
                     )),
                 )],
-            ),
+                visibility: Visibility::Private,
+            },
         );
 
         parse_as(
             &["dimension Area = Length^2"],
-            Statement::DefineDimension(
-                Span::dummy(),
-                "Area",
-                vec![TypeExpression::Power(
+            Statement::DefineDimension {
+                dimension_name_span: Span::dummy(),
+                dimension_name: "Area",
+                type_exprs: vec![TypeExpression::Power(
                     Some(Span::dummy()),
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
@@ -2756,15 +2833,16 @@ mod tests {
                     Span::dummy(),
                     Rational::from_integer(2),
                 )],
-            ),
+                visibility: Visibility::Private,
+            },
         );
 
         parse_as(
             &["dimension Energy = Mass * Length^2 / Time^2"],
-            Statement::DefineDimension(
-                Span::dummy(),
-                "Energy",
-                vec![TypeExpression::Divide(
+            Statement::DefineDimension {
+                dimension_name_span: Span::dummy(),
+                dimension_name: "Energy",
+                type_exprs: vec![TypeExpression::Divide(
                     Span::dummy(),
                     Box::new(TypeExpression::Multiply(
                         Span::dummy(),
@@ -2795,15 +2873,16 @@ mod tests {
                         Rational::from_integer(2),
                     )),
                 )],
-            ),
+                visibility: Visibility::Private,
+            },
         );
 
         parse_as(
             &["dimension X = Length^(12345/67890)"],
-            Statement::DefineDimension(
-                Span::dummy(),
-                "X",
-                vec![TypeExpression::Power(
+            Statement::DefineDimension {
+                dimension_name_span: Span::dummy(),
+                dimension_name: "X",
+                type_exprs: vec![TypeExpression::Power(
                     Some(Span::dummy()),
                     Box::new(TypeExpression::TypeIdentifier(
                         Span::dummy(),
@@ -2813,7 +2892,8 @@ mod tests {
                     Span::dummy(),
                     Rational::new(12345, 67890),
                 )],
-            ),
+                visibility: Visibility::Private,
+            },
         );
 
         // Regression test, found using fuzzing. This should result in an error, but not panic
@@ -2836,6 +2916,7 @@ mod tests {
                 local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -2852,6 +2933,7 @@ mod tests {
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into(), vec![]),
                 )),
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -2866,6 +2948,7 @@ mod tests {
                 local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -2880,6 +2963,7 @@ mod tests {
                 local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -2897,6 +2981,7 @@ mod tests {
                 local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -2915,6 +3000,7 @@ mod tests {
                 local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -2973,6 +3059,7 @@ mod tests {
                     TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into(), vec![]),
                 )),
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -2993,6 +3080,7 @@ mod tests {
                 local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -3013,6 +3101,7 @@ mod tests {
                 local_variables: vec![],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -3034,6 +3123,7 @@ mod tests {
                         "This is a description of some_function.".into(),
                     ),
                 ],
+                visibility: Visibility::Private,
             },
         );
 
@@ -3057,6 +3147,7 @@ mod tests {
                     ),
                     decorator::Decorator::Example("let some_var = some_function(0)".into(), None),
                 ],
+                visibility: Visibility::Private,
             },
         );
 
@@ -3074,9 +3165,11 @@ mod tests {
                     expr: binop!(identifier!("x"), Mul, scalar!(2.0)),
                     type_annotation: None,
                     decorators: vec![],
+                    visibility: Visibility::Private,
                 }],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -3097,6 +3190,7 @@ mod tests {
                         expr: binop!(identifier!("x"), Add, identifier!("x")),
                         type_annotation: None,
                         decorators: vec![],
+                        visibility: Visibility::Private,
                     },
                     DefineVariable {
                         identifier_span: Span::dummy(),
@@ -3104,10 +3198,12 @@ mod tests {
                         expr: binop!(identifier!("y"), Add, identifier!("x")),
                         type_annotation: None,
                         decorators: vec![],
+                        visibility: Visibility::Private,
                     },
                 ],
                 return_type_annotation: None,
                 decorators: vec![],
+                visibility: Visibility::Private,
             },
         );
 
@@ -3631,6 +3727,7 @@ mod tests {
                         )),
                     ),
                 ],
+                visibility: Visibility::Private,
             },
         );
 
@@ -3664,6 +3761,7 @@ mod tests {
                     ),
                     (Span::dummy(), "name", TypeAnnotation::String(Span::dummy())),
                 ],
+                visibility: Visibility::Private,
             },
         );
 
@@ -3748,14 +3846,14 @@ mod tests {
             let cool = 50
             let tamo = * 30\x20
             assert_eq(tamo + cool == 80)
-            30m"), @r###"
+            30m"), @r#"
         Successfully parsed:
-        DefineVariable(DefineVariable { identifier_span: Span { start: ByteIndex(17), end: ByteIndex(21), code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: ByteIndex(24), end: ByteIndex(26), code_source_id: 0 }, Number(50.0)), type_annotation: None, decorators: [] })
+        DefineVariable(DefineVariable { identifier_span: Span { start: ByteIndex(17), end: ByteIndex(21), code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: ByteIndex(24), end: ByteIndex(26), code_source_id: 0 }, Number(50.0)), type_annotation: None, decorators: [], visibility: Private })
         ProcedureCall(Span { start: ByteIndex(68), end: ByteIndex(77), code_source_id: 0 }, AssertEq, [BinaryOperator { op: Equal, lhs: BinaryOperator { op: Add, lhs: Identifier(Span { start: ByteIndex(78), end: ByteIndex(82), code_source_id: 0 }, "tamo"), rhs: Identifier(Span { start: ByteIndex(85), end: ByteIndex(89), code_source_id: 0 }, "cool"), span_op: Some(Span { start: ByteIndex(83), end: ByteIndex(84), code_source_id: 0 }) }, rhs: Scalar(Span { start: ByteIndex(93), end: ByteIndex(95), code_source_id: 0 }, Number(80.0)), span_op: Some(Span { start: ByteIndex(90), end: ByteIndex(92), code_source_id: 0 }) }])
         Expression(BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(109), end: ByteIndex(111), code_source_id: 0 }, Number(30.0)), rhs: Identifier(Span { start: ByteIndex(111), end: ByteIndex(112), code_source_id: 0 }, "m"), span_op: None })
         Errors encountered:
         Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: ByteIndex(50), end: ByteIndex(51), code_source_id: 0 } }
-        "###);
+        "#);
         // error on a multiline let
         assert_snapshot!(snap_parse(
             "

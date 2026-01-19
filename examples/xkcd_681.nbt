@@ -2,7 +2,7 @@
 #
 # https://xkcd.com/681/
 
-use extra::astronomy
+use extra::astronomy::*
 
 fn well_depth(mass: Mass, radius: Length) -> Length =
     G × mass / (g0 × radius) -> km

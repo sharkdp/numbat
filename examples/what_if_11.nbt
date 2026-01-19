@@ -5,7 +5,7 @@
 #
 # https://what-if.xkcd.com/11/
 
-use extra::astronomy
+use extra::astronomy::*
 
 @aliases(birds)
 unit bird

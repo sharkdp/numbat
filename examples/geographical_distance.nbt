@@ -6,7 +6,7 @@
 # - http://www.movable-type.co.uk/scripts/latlong-vincenty.html
 # - https://en.wikipedia.org/wiki/Vincenty%27s_formulae
 
-use numerics::fixed_point
+use numerics::fixed_point::*
 
 struct LatLon {
   name: String,

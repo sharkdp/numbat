@@ -1,77 +1,77 @@
-use units::imperial
+use units::imperial::*
 
 # Smallest addressable element on a digital display
-dimension Pixel
+pub dimension Pixel
 
 @name("Pixel")
 @url("https://en.wikipedia.org/wiki/Pixel")
 @metric_prefixes
 @aliases(pixels, px: short)
-unit pixel: Pixel
+pub unit pixel: Pixel
 
 @name("Pixels per inch")
 @url("https://en.wikipedia.org/wiki/Pixels_per_inch")
-unit ppi: Pixel / Length = pixel / inch
+pub unit ppi: Pixel / Length = pixel / inch
 
 
 # Smallest possible output resolution on a printing device
-dimension Dot
+pub dimension Dot
 
 @name("Dot")
 @url("https://en.wikipedia.org/wiki/Dots_per_inch")
 @aliases(dots)
-unit dot: Dot
+pub unit dot: Dot
 
 @name("Dots per inch")
 @url("https://en.wikipedia.org/wiki/Dots_per_inch")
-unit dpi: Dot / Length = dots / inch
+pub unit dpi: Dot / Length = dots / inch
 
 
 # A single image in a (video) sequence
-dimension Frame
+pub dimension Frame
 
 @name("Frame")
 @url("https://en.wikipedia.org/wiki/Frame_rate")
 @aliases(frames)
-unit frame: Frame
+pub unit frame: Frame
 
 @name("Frames per second")
 @url("https://en.wikipedia.org/wiki/Frame_rate")
-unit fps: Frame / Time = frame / second
+pub unit fps: Frame / Time = frame / second
 
 # Basic unit of time in music
-dimension Beat
+pub dimension Beat
 
 @name("Beat")
 @url("https://en.wikipedia.org/wiki/Beat_(music)")
 @aliases(beats)
-unit beat: Beat
+pub unit beat: Beat
 
 @name("Beats per minute")
 @url("https://en.wikipedia.org/wiki/Tempo")
 @aliases(BPM: short)
-unit bpm: Beat / Time = beat / minute
+pub unit bpm: Beat / Time = beat / minute
 
 # A separate or limited portion or quantity of something
-dimension Piece
+pub dimension Piece
 
 @name("Piece")
 @aliases(pieces)
-unit piece: Piece
+pub unit piece: Piece
 
 
 # A human being
-dimension Person
+pub dimension Person
 
 @name("Person")
 @aliases(persons, people, capita)
-unit person: Person
+pub unit person: Person
 
 # A unit for counting lines of code
-dimension LinesOfCode
+pub dimension LinesOfCode
 
 @name("Lines of code")
 @url("https://en.wikipedia.org/wiki/Source_lines_of_code")
 @metric_prefixes
 @aliases(LOC: short, SLOC: short)
-unit LOC: LinesOfCode
+pub unit LOC: LinesOfCode

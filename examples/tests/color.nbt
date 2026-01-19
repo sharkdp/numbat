@@ -1,4 +1,4 @@
-use extra::color
+use extra::color::*
 
 assert_eq(0x000000 -> color, black)
 assert_eq(0xffffff -> color, white)

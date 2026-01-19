@@ -52,7 +52,7 @@ pub fn basic_help_markup() -> m::Markup {
         r#"print("Energy of red photons: {ℏ ω -> eV}")"#,
     ];
     let mut example_context = Context::new(BuiltinModuleImporter::default());
-    let _use_prelude_output = evaluate_example(&mut example_context, "use prelude");
+    let _use_prelude_output = evaluate_example(&mut example_context, "use prelude::*");
     for example in examples.iter() {
         output += m::text(">>> ") + m::text(*example) + m::nl();
         output += evaluate_example(&mut example_context, example) + m::nl();

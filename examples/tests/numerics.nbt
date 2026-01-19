@@ -1,6 +1,6 @@
-use numerics::solve
-use numerics::diff
-use numerics::fixed_point
+use numerics::solve::*
+use numerics::diff::*
+use numerics::fixed_point::*
 
 # Root finding
 

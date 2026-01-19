@@ -1,7 +1,7 @@
 use compact_str::CompactString;
 
 use crate::Type;
-use crate::ast::{TypeAnnotation, TypeParameterBound};
+use crate::ast::{TypeAnnotation, TypeParameterBound, Visibility};
 use crate::dimension::DimensionRegistry;
 use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
@@ -13,6 +13,18 @@ use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use super::type_scheme::TypeScheme;
 
 type Identifier = CompactString;
+
+/// Visibility information for an identifier, including its visibility
+/// and the code source ID where it was defined.
+#[derive(Clone, Debug)]
+pub struct VisibilityInfo {
+    pub visibility: Visibility,
+    pub source_id: usize,
+    /// Whether this item is from a module import.
+    /// Visibility is only enforced for module-imported items.
+    /// User-defined items (from REPL/files) are always accessible.
+    pub from_module: bool,
+}
 
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
@@ -96,27 +108,65 @@ impl IdentifierKind {
 #[derive(Clone, Debug, Default)]
 pub struct Environment {
     identifiers: MapStack<Identifier, IdentifierKind>,
+    /// Visibility information for each identifier
+    visibility_info: MapStack<Identifier, VisibilityInfo>,
 }
 
 impl Environment {
-    pub fn add(&mut self, i: Identifier, type_: Type, span: Span, is_unit: bool) {
+    pub fn add(
+        &mut self,
+        i: Identifier,
+        type_: Type,
+        span: Span,
+        is_unit: bool,
+        visibility: Visibility,
+        from_module: bool,
+    ) {
+        let source_id = span.code_source_id;
         self.identifiers.insert(
-            i,
+            i.clone(),
             IdentifierKind::Normal(TypeScheme::Concrete(type_), span, is_unit),
+        );
+        self.visibility_info.insert(
+            i,
+            VisibilityInfo {
+                visibility,
+                source_id,
+                from_module,
+            },
         );
     }
 
-    pub fn add_scheme(&mut self, i: Identifier, scheme: TypeScheme, span: Span, is_unit: bool) {
+    pub fn add_scheme(
+        &mut self,
+        i: Identifier,
+        scheme: TypeScheme,
+        span: Span,
+        is_unit: bool,
+        visibility: Visibility,
+        from_module: bool,
+    ) {
+        let source_id = span.code_source_id;
         self.identifiers
-            .insert(i, IdentifierKind::Normal(scheme, span, is_unit));
+            .insert(i.clone(), IdentifierKind::Normal(scheme, span, is_unit));
+        self.visibility_info.insert(
+            i,
+            VisibilityInfo {
+                visibility,
+                source_id,
+                from_module,
+            },
+        );
     }
 
     pub(crate) fn save(&mut self) {
         self.identifiers.save();
+        self.visibility_info.save();
     }
 
     pub(crate) fn restore(&mut self) {
         self.identifiers.restore();
+        self.visibility_info.restore();
     }
 
     pub(crate) fn add_function(
@@ -124,22 +174,57 @@ impl Environment {
         v: CompactString,
         signature: FunctionSignature,
         metadata: FunctionMetadata,
+        visibility: Visibility,
+        from_module: bool,
     ) {
+        let source_id = signature.definition_span.code_source_id;
         self.identifiers
-            .insert(v, IdentifierKind::Function(signature, metadata));
+            .insert(v.clone(), IdentifierKind::Function(signature, metadata));
+        self.visibility_info.insert(
+            v,
+            VisibilityInfo {
+                visibility,
+                source_id,
+                from_module,
+            },
+        );
     }
 
     pub fn add_predefined(&mut self, v: Identifier, type_: TypeScheme) {
         self.identifiers
             .insert(v, IdentifierKind::Predefined(type_));
+        // Predefined identifiers are always public and have no source module
     }
 
     pub(crate) fn get_identifier_type(&self, v: &str) -> Option<TypeScheme> {
         self.find(v).map(|k| k.get_type())
     }
 
+    /// Get visibility info for an identifier, if it exists
+    pub(crate) fn get_visibility_info(&self, v: &str) -> Option<&VisibilityInfo> {
+        self.visibility_info.get(v)
+    }
+
+    #[allow(dead_code)]
     pub(crate) fn iter_identifiers(&self) -> impl Iterator<Item = &Identifier> {
         self.identifiers.keys()
+    }
+
+    /// Iterate over identifiers that are accessible from a given source.
+    /// An identifier is accessible if it's public, or if it's from the same source.
+    pub(crate) fn iter_accessible_identifiers(
+        &self,
+        current_source_id: Option<usize>,
+    ) -> impl Iterator<Item = &Identifier> {
+        self.identifiers.keys().filter(move |id| {
+            match self.visibility_info.get(id.as_str()) {
+                Some(info) => {
+                    info.visibility == Visibility::Public
+                        || current_source_id == Some(info.source_id)
+                }
+                None => true, // Predefined identifiers are always accessible
+            }
+        })
     }
 
     pub fn iter_relevant_matches(&self) -> impl Iterator<Item = (&Identifier, TypeScheme)> {

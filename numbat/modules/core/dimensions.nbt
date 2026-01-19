@@ -1,85 +1,85 @@
 ### Physical dimensions
 
-dimension Angle = 1  # SI: plane angle
-dimension SolidAngle = Angle^2
+pub dimension Angle = 1  # SI: plane angle
+pub dimension SolidAngle = Angle^2
 
-dimension Length
-dimension Area = Length^2
-dimension Volume = Length^3
-dimension Wavenumber = 1 / Length
+pub dimension Length
+pub dimension Area = Length^2
+pub dimension Volume = Length^3
+pub dimension Wavenumber = 1 / Length
 
-dimension Time
-dimension Frequency = 1 / Time
-dimension Velocity = Length / Time
-dimension Acceleration = Length / Time^2
-dimension Jerk = Length / Time^3
-dimension FlowRate = Volume / Time
+pub dimension Time
+pub dimension Frequency = 1 / Time
+pub dimension Velocity = Length / Time
+pub dimension Acceleration = Length / Time^2
+pub dimension Jerk = Length / Time^3
+pub dimension FlowRate = Volume / Time
 
-dimension Mass
-dimension Momentum = Mass × Velocity
-dimension Force = Mass × Acceleration = Momentum / Time
-dimension Energy = Momentum^2 / Mass = Mass × Velocity^2 = Force × Length  # also: work, amount of heat
-dimension Power = Energy / Time = Force × Velocity
-dimension Pressure = Force / Area = Energy / Volume  # also: stress
-dimension Action = Energy × Time
-dimension MassDensity = Mass / Length^3
-dimension MomentOfInertia = Mass × Length^2 / Angle^2
-dimension AngularMomentum = MomentOfInertia × Angle / Time = Mass × Length^2 / Time / Angle
-dimension Torque = Length × Force / Angle  # also: moment of force
-dimension EnergyDensity = Energy / Volume
-dimension MassFlow = Mass / Time
+pub dimension Mass
+pub dimension Momentum = Mass × Velocity
+pub dimension Force = Mass × Acceleration = Momentum / Time
+pub dimension Energy = Momentum^2 / Mass = Mass × Velocity^2 = Force × Length  # also: work, amount of heat
+pub dimension Power = Energy / Time = Force × Velocity
+pub dimension Pressure = Force / Area = Energy / Volume  # also: stress
+pub dimension Action = Energy × Time
+pub dimension MassDensity = Mass / Length^3
+pub dimension MomentOfInertia = Mass × Length^2 / Angle^2
+pub dimension AngularMomentum = MomentOfInertia × Angle / Time = Mass × Length^2 / Time / Angle
+pub dimension Torque = Length × Force / Angle  # also: moment of force
+pub dimension EnergyDensity = Energy / Volume
+pub dimension MassFlow = Mass / Time
 
-dimension Current
-dimension ElectricCharge = Current × Time
-dimension Voltage = Energy / ElectricCharge = Power / Current  # ISQ: electric tension, SI: electric potential difference
-dimension Capacitance = ElectricCharge / Voltage
-dimension ElectricResistance = Voltage / Current
-dimension Resistivity = ElectricResistance × Length
-dimension ElectricConductance = 1 / ElectricResistance
-dimension Conductivity = ElectricConductance / Length
-dimension MagneticFluxDensity = Force / (ElectricCharge × Velocity)
-dimension MagneticFlux = MagneticFluxDensity × Area = Voltage × Time
-dimension MagneticFieldStrength = Current / Length
-dimension Inductance = MagneticFlux / Current
-dimension ElectricChargeDensity = ElectricCharge / Volume
-dimension CurrentDensity = Current / Area
-dimension ElectricDipoleMoment = ElectricCharge × Length
-dimension ElectricQuadrupoleMoment = ElectricCharge × Length^2
-dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
-dimension ElectricFieldStrength = Voltage / Length
-dimension ElectricDisplacementFieldStrength = ElectricCharge / Area
-dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3 × Angle = ElectricDisplacementFieldStrength / ElectricFieldStrength × Angle
-dimension MagneticPermeability = Length × Mass / Time^2 / Current^2 / Angle = MagneticFluxDensity / MagneticFieldStrength / Angle
-dimension Polarizability = ElectricDipoleMoment / ElectricFieldStrength = Current^2 × Time^4 / Mass
-dimension ElectricMobility = Velocity / ElectricFieldStrength
+pub dimension Current
+pub dimension ElectricCharge = Current × Time
+pub dimension Voltage = Energy / ElectricCharge = Power / Current  # ISQ: electric tension, SI: electric potential difference
+pub dimension Capacitance = ElectricCharge / Voltage
+pub dimension ElectricResistance = Voltage / Current
+pub dimension Resistivity = ElectricResistance × Length
+pub dimension ElectricConductance = 1 / ElectricResistance
+pub dimension Conductivity = ElectricConductance / Length
+pub dimension MagneticFluxDensity = Force / (ElectricCharge × Velocity)
+pub dimension MagneticFlux = MagneticFluxDensity × Area = Voltage × Time
+pub dimension MagneticFieldStrength = Current / Length
+pub dimension Inductance = MagneticFlux / Current
+pub dimension ElectricChargeDensity = ElectricCharge / Volume
+pub dimension CurrentDensity = Current / Area
+pub dimension ElectricDipoleMoment = ElectricCharge × Length
+pub dimension ElectricQuadrupoleMoment = ElectricCharge × Length^2
+pub dimension MagneticDipoleMoment = Current × Area = Torque / MagneticFluxDensity
+pub dimension ElectricFieldStrength = Voltage / Length
+pub dimension ElectricDisplacementFieldStrength = ElectricCharge / Area
+pub dimension ElectricPermittivity = Time^4 × Current^2 / Mass / Length^3 × Angle = ElectricDisplacementFieldStrength / ElectricFieldStrength × Angle
+pub dimension MagneticPermeability = Length × Mass / Time^2 / Current^2 / Angle = MagneticFluxDensity / MagneticFieldStrength / Angle
+pub dimension Polarizability = ElectricDipoleMoment / ElectricFieldStrength = Current^2 × Time^4 / Mass
+pub dimension ElectricMobility = Velocity / ElectricFieldStrength
 
-dimension Temperature
-dimension Entropy = Energy / Temperature
-dimension HeatCapacity = Energy / Temperature
-dimension SpecificHeatCapacity = HeatCapacity / Mass
-dimension ThermalConductivity = Power / (Length × Temperature)
-dimension ThermalTransmittance = Power / (Length^2 × Temperature)
+pub dimension Temperature
+pub dimension Entropy = Energy / Temperature
+pub dimension HeatCapacity = Energy / Temperature
+pub dimension SpecificHeatCapacity = HeatCapacity / Mass
+pub dimension ThermalConductivity = Power / (Length × Temperature)
+pub dimension ThermalTransmittance = Power / (Length^2 × Temperature)
 
-dimension AmountOfSubstance
-dimension MolarMass = Mass / AmountOfSubstance
-dimension MolarVolume = Volume / AmountOfSubstance
-dimension CatalyticActivity = AmountOfSubstance / Time
-dimension Molarity = AmountOfSubstance / Volume
-dimension Molality = AmountOfSubstance / Mass
-dimension ChemicalPotential = Energy / AmountOfSubstance
-dimension MolarEnthalpyOfVaporization = Energy / AmountOfSubstance
-dimension MolarHeatCapacity = HeatCapacity / AmountOfSubstance
+pub dimension AmountOfSubstance
+pub dimension MolarMass = Mass / AmountOfSubstance
+pub dimension MolarVolume = Volume / AmountOfSubstance
+pub dimension CatalyticActivity = AmountOfSubstance / Time
+pub dimension Molarity = AmountOfSubstance / Volume
+pub dimension Molality = AmountOfSubstance / Mass
+pub dimension ChemicalPotential = Energy / AmountOfSubstance
+pub dimension MolarEnthalpyOfVaporization = Energy / AmountOfSubstance
+pub dimension MolarHeatCapacity = HeatCapacity / AmountOfSubstance
 
-dimension LuminousIntensity
-dimension LuminousFlux = LuminousIntensity × Angle^2
-dimension Illuminance = LuminousFlux / Area
-dimension Luminance = LuminousIntensity / Area
-dimension Irradiance = Power / Area
+pub dimension LuminousIntensity
+pub dimension LuminousFlux = LuminousIntensity × Angle^2
+pub dimension Illuminance = LuminousFlux / Area
+pub dimension Luminance = LuminousIntensity / Area
+pub dimension Irradiance = Power / Area
 
-dimension Activity = 1 / Time
-dimension AbsorbedDose = Energy / Mass
-dimension EquivalentDose = Energy / Mass  # also: dose equivalent
-dimension SpecificActivity = Activity / Mass
+pub dimension Activity = 1 / Time
+pub dimension AbsorbedDose = Energy / Mass
+pub dimension EquivalentDose = Energy / Mass  # also: dose equivalent
+pub dimension SpecificActivity = Activity / Mass
 
-dimension DynamicViscosity = Pressure × Time
-dimension KinematicViscosity = Length^2 / Time
+pub dimension DynamicViscosity = Pressure × Time
+pub dimension KinematicViscosity = Length^2 / Time
