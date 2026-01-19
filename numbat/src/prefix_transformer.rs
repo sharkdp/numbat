@@ -42,12 +42,17 @@ impl Transformer {
                     full_name,
                 ) = self.prefix_parser.parse(identifier)
                 {
-                    *expression = Expression::UnitIdentifier(*span, prefix, unit_name, full_name);
+                    *expression = Expression::UnitIdentifier {
+                        span: *span,
+                        prefix,
+                        name: unit_name,
+                        full_name,
+                    };
                 } else {
                     *expression = Expression::Identifier(*span, identifier);
                 }
             }
-            Expression::UnitIdentifier(_, _, _, _) => {
+            Expression::UnitIdentifier { .. } => {
                 unreachable!("Prefixed identifiers should not exist prior to this stage")
             }
             Expression::UnaryOperator { expr, .. } => self.transform_expression(expr),
@@ -56,12 +61,17 @@ impl Transformer {
                 self.transform_expression(lhs);
                 self.transform_expression(rhs);
             }
-            Expression::FunctionCall(_, _, _, args) => {
+            Expression::FunctionCall { args, .. } => {
                 for arg in args {
                     self.transform_expression(arg);
                 }
             }
-            Expression::Condition(_, condition, then_expr, else_expr) => {
+            Expression::Condition {
+                condition,
+                then_expr,
+                else_expr,
+                ..
+            } => {
                 self.transform_expression(condition);
                 self.transform_expression(then_expr);
                 self.transform_expression(else_expr);
@@ -79,7 +89,7 @@ impl Transformer {
                     self.transform_expression(arg);
                 }
             }
-            Expression::AccessField(_, _, expr, _) => {
+            Expression::AccessField { expr, .. } => {
                 self.transform_expression(expr);
             }
             Expression::List(_, elements) => {

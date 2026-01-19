@@ -78,7 +78,12 @@ pub enum StringPart<'a> {
 pub enum Expression<'a> {
     Scalar(Span, Number),
     Identifier(Span, &'a str),
-    UnitIdentifier(Span, Prefix, CompactString, CompactString), // can't easily be made &'a str
+    UnitIdentifier {
+        span: Span,
+        prefix: Prefix,
+        name: CompactString,      // can't easily be made &'a str
+        full_name: CompactString, // can't easily be made &'a str
+    },
     TypedHole(Span),
     UnaryOperator {
         op: UnaryOperator,
@@ -91,22 +96,32 @@ pub enum Expression<'a> {
         rhs: Box<Expression<'a>>,
         span_op: Option<Span>, // not available for implicit multiplication and unicode exponents
     },
-    FunctionCall(Span, Span, Box<Expression<'a>>, Vec<Expression<'a>>),
+    FunctionCall {
+        ident_span: Span,
+        full_span: Span,
+        callable: Box<Expression<'a>>,
+        args: Vec<Expression<'a>>,
+    },
     Boolean(Span, bool),
     String(Span, Vec<StringPart<'a>>),
-    Condition(
-        Span,
-        Box<Expression<'a>>,
-        Box<Expression<'a>>,
-        Box<Expression<'a>>,
-    ),
+    Condition {
+        span: Span,
+        condition: Box<Expression<'a>>,
+        then_expr: Box<Expression<'a>>,
+        else_expr: Box<Expression<'a>>,
+    },
     InstantiateStruct {
         full_span: Span,
         ident_span: Span,
         name: &'a str,
         fields: Vec<(Span, &'a str, Expression<'a>)>,
     },
-    AccessField(Span, Span, Box<Expression<'a>>, &'a str),
+    AccessField {
+        full_span: Span,
+        ident_span: Span,
+        expr: Box<Expression<'a>>,
+        field_name: &'a str,
+    },
     List(Span, Vec<Expression<'a>>),
 }
 
@@ -115,7 +130,7 @@ impl Expression<'_> {
         match self {
             Expression::Scalar(span, _) => *span,
             Expression::Identifier(span, _) => *span,
-            Expression::UnitIdentifier(span, _, _, _) => *span,
+            Expression::UnitIdentifier { span, .. } => *span,
             Expression::UnaryOperator {
                 op: _,
                 expr,
@@ -133,14 +148,14 @@ impl Expression<'_> {
                 }
                 span
             }
-            Expression::FunctionCall(_identifier_span, full_span, _, _) => *full_span,
+            Expression::FunctionCall { full_span, .. } => *full_span,
             Expression::Boolean(span, _) => *span,
-            Expression::Condition(span_if, _, _, then_expr) => {
-                span_if.extend(&then_expr.full_span())
-            }
+            Expression::Condition {
+                span, else_expr, ..
+            } => span.extend(&else_expr.full_span()),
             Expression::String(span, _) => *span,
             Expression::InstantiateStruct { full_span, .. } => *full_span,
-            Expression::AccessField(full_span, _ident_span, _, _) => *full_span,
+            Expression::AccessField { full_span, .. } => *full_span,
             Expression::List(span, _) => *span,
             Expression::TypedHole(span) => *span,
         }
@@ -210,12 +225,12 @@ macro_rules! binop {
 #[cfg(test)]
 macro_rules! conditional {
     ( $cond:expr, $lhs:expr, $rhs: expr ) => {{
-        crate::ast::Expression::Condition(
-            Span::dummy(),
-            Box::new($cond),
-            Box::new($lhs),
-            Box::new($rhs),
-        )
+        crate::ast::Expression::Condition {
+            span: Span::dummy(),
+            condition: Box::new($cond),
+            then_expr: Box::new($lhs),
+            else_expr: Box::new($rhs),
+        }
     }};
 }
 
@@ -550,9 +565,17 @@ impl ReplaceSpans for Expression<'_> {
         match self {
             Expression::Scalar(_, name) => Expression::Scalar(Span::dummy(), *name),
             Expression::Identifier(_, name) => Expression::Identifier(Span::dummy(), name),
-            Expression::UnitIdentifier(_, prefix, name, full_name) => {
-                Expression::UnitIdentifier(Span::dummy(), *prefix, name.clone(), full_name.clone())
-            }
+            Expression::UnitIdentifier {
+                prefix,
+                name,
+                full_name,
+                ..
+            } => Expression::UnitIdentifier {
+                span: Span::dummy(),
+                prefix: *prefix,
+                name: name.clone(),
+                full_name: full_name.clone(),
+            },
             Expression::UnaryOperator {
                 op,
                 expr,
@@ -573,19 +596,27 @@ impl ReplaceSpans for Expression<'_> {
                 rhs: Box::new(rhs.replace_spans()),
                 span_op: Some(Span::dummy()),
             },
-            Expression::FunctionCall(_, _, callable, args) => Expression::FunctionCall(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(callable.replace_spans()),
-                args.iter().map(|a| a.replace_spans()).collect(),
-            ),
+            Expression::FunctionCall { callable, args, .. } => Expression::FunctionCall {
+                ident_span: Span::dummy(),
+                full_span: Span::dummy(),
+                callable: Box::new(callable.replace_spans()),
+                args: args
+                    .iter()
+                    .map(|a: &Expression| a.replace_spans())
+                    .collect(),
+            },
             Expression::Boolean(_, val) => Expression::Boolean(Span::dummy(), *val),
-            Expression::Condition(_, condition, then, else_) => Expression::Condition(
-                Span::dummy(),
-                Box::new(condition.replace_spans()),
-                Box::new(then.replace_spans()),
-                Box::new(else_.replace_spans()),
-            ),
+            Expression::Condition {
+                condition,
+                then_expr,
+                else_expr,
+                ..
+            } => Expression::Condition {
+                span: Span::dummy(),
+                condition: Box::new(condition.replace_spans()),
+                then_expr: Box::new(then_expr.replace_spans()),
+                else_expr: Box::new(else_expr.replace_spans()),
+            },
             Expression::String(_, parts) => Expression::String(
                 Span::dummy(),
                 parts.iter().map(|p| p.replace_spans()).collect(),
@@ -599,12 +630,14 @@ impl ReplaceSpans for Expression<'_> {
                     .map(|(_, n, v)| (Span::dummy(), *n, v.replace_spans()))
                     .collect(),
             },
-            Expression::AccessField(_, _, expr, attr) => Expression::AccessField(
-                Span::dummy(),
-                Span::dummy(),
-                Box::new(expr.replace_spans()),
-                attr,
-            ),
+            Expression::AccessField {
+                expr, field_name, ..
+            } => Expression::AccessField {
+                full_span: Span::dummy(),
+                ident_span: Span::dummy(),
+                expr: Box::new(expr.replace_spans()),
+                field_name,
+            },
             Expression::List(_, elements) => Expression::List(
                 Span::dummy(),
                 elements.iter().map(|e| e.replace_spans()).collect(),

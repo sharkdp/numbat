@@ -13,6 +13,7 @@ use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
+use crate::typed_ast;
 use crate::typed_ast::{
     BinaryOperator, DefineVariable, Expression, Statement, StringPart, UnaryOperator,
 };
@@ -55,11 +56,15 @@ impl BytecodeInterpreter {
 
     fn compile_expression(&mut self, expr: &Expression) {
         match expr {
-            Expression::Scalar(span, n, _type) => {
-                let index = self.vm.add_constant(Constant::Scalar(n.to_f64()));
+            Expression::Scalar { span, value, .. } => {
+                let index = self.vm.add_constant(Constant::Scalar(value.to_f64()));
                 self.vm.add_op1(Op::LoadConstant, index, *span);
             }
-            Expression::Identifier(span, identifier, _type) => {
+            Expression::Identifier {
+                span,
+                name: identifier,
+                ..
+            } => {
                 // Searching in reverse order ensures that we find the innermost identifier of that name first (shadowing)
 
                 let current_depth = self.locals.len() - 1;
@@ -90,7 +95,12 @@ impl BytecodeInterpreter {
                     unreachable!("Unknown identifier '{identifier}'")
                 }
             }
-            Expression::UnitIdentifier(span, prefix, unit_name, _full_name, _type) => {
+            Expression::UnitIdentifier {
+                span,
+                prefix,
+                name: unit_name,
+                ..
+            } => {
                 let index = self
                     .unit_name_to_constant_index
                     .get(unit_name)
@@ -103,19 +113,40 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(Op::ApplyPrefix, prefix_idx, *span);
                 }
             }
-            Expression::UnaryOperator(span, UnaryOperator::Negate, rhs, _type) => {
+            Expression::UnaryOperator {
+                span,
+                op: UnaryOperator::Negate,
+                expr: rhs,
+                ..
+            } => {
                 self.compile_expression(rhs);
                 self.vm.add_op(Op::Negate, *span);
             }
-            Expression::UnaryOperator(span, UnaryOperator::Factorial(order), lhs, _type) => {
+            Expression::UnaryOperator {
+                span,
+                op: UnaryOperator::Factorial(order),
+                expr: lhs,
+                ..
+            } => {
                 self.compile_expression(lhs);
                 self.vm.add_op1(Op::Factorial, order.get() as u16, *span);
             }
-            Expression::UnaryOperator(span, UnaryOperator::LogicalNeg, lhs, _type) => {
+            Expression::UnaryOperator {
+                span,
+                op: UnaryOperator::LogicalNeg,
+                expr: lhs,
+                ..
+            } => {
                 self.compile_expression(lhs);
                 self.vm.add_op(Op::LogicalNeg, *span);
             }
-            Expression::BinaryOperator(span, operator, lhs, rhs, _type) => {
+            Expression::BinaryOperator {
+                op_span,
+                op: operator,
+                lhs,
+                rhs,
+                ..
+            } => {
                 self.compile_expression(lhs);
                 self.compile_expression(rhs);
 
@@ -137,17 +168,23 @@ impl BytecodeInterpreter {
                 };
                 self.vm.add_op(
                     op,
-                    span.unwrap_or_else(|| {
+                    op_span.unwrap_or_else(|| {
                         crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
                     }),
                 );
             }
-            Expression::BinaryOperatorForDate(span, operator, lhs, rhs, type_) => {
+            Expression::BinaryOperatorForDate {
+                op_span,
+                op: operator,
+                lhs,
+                rhs,
+                type_scheme,
+            } => {
                 self.compile_expression(lhs);
                 self.compile_expression(rhs);
 
                 // if the result is a duration:
-                let op = if type_.is_dtype() {
+                let op = if type_scheme.is_dtype() {
                     // the VM will need to return a value with the units of Seconds.  so look up that unit here, and push it
                     // onto the stack, so the VM can easily reference it.
                     // TODO: We do not want to hard-code 'second' here. Instead, we might
@@ -158,7 +195,7 @@ impl BytecodeInterpreter {
                     self.vm.add_op1(
                         Op::LoadConstant,
                         *second_idx.unwrap(),
-                        span.unwrap_or_else(|| {
+                        op_span.unwrap_or_else(|| {
                             crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
                         }),
                     );
@@ -173,12 +210,17 @@ impl BytecodeInterpreter {
 
                 self.vm.add_op(
                     op,
-                    span.unwrap_or_else(|| {
+                    op_span.unwrap_or_else(|| {
                         crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
                     }),
                 );
             }
-            Expression::FunctionCall(_span, full_span, name, args, _type) => {
+            Expression::FunctionCall {
+                full_span,
+                name,
+                args,
+                ..
+            } => {
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg);
@@ -188,7 +230,7 @@ impl BytecodeInterpreter {
                     // TODO: check overflow:
                     let call_args: Vec<FfiCallArg> = args
                         .iter()
-                        .map(|a| FfiCallArg {
+                        .map(|a: &typed_ast::Expression| FfiCallArg {
                             span: a.full_span(),
                             type_: a.get_type_scheme(),
                         })
@@ -208,16 +250,20 @@ impl BytecodeInterpreter {
                         .add_op2(Op::Call, idx, args.len() as u16, *full_span); // TODO: check overflow
                 }
             }
-            Expression::InstantiateStruct(span, exprs, struct_info) => {
+            Expression::InstantiateStruct {
+                span,
+                fields,
+                struct_info,
+            } => {
                 // structs must be consistently ordered in the VM, so we reorder
                 // the field values so that they are evaluated in the order the
                 // struct fields are defined.
 
-                let sorted_exprs = exprs
+                let sorted_fields = fields
                     .iter()
                     .sorted_by_key(|(n, _)| struct_info.fields.get_index_of(*n).unwrap());
 
-                for (_, expr) in sorted_exprs.rev() {
+                for (_, expr) in sorted_fields.rev() {
                     self.compile_expression(expr);
                 }
 
@@ -226,11 +272,17 @@ impl BytecodeInterpreter {
                 self.vm.add_op2(
                     Op::BuildStructInstance,
                     struct_info_idx,
-                    exprs.len() as u16,
+                    fields.len() as u16,
                     *span,
                 );
             }
-            Expression::AccessField(_span, full_span, expr, attr, struct_type, _result_type) => {
+            Expression::AccessField {
+                full_span,
+                expr,
+                field_name,
+                struct_type,
+                ..
+            } => {
                 self.compile_expression(expr);
 
                 let Type::Struct(ref struct_info) = struct_type.to_concrete_type() else {
@@ -239,12 +291,17 @@ impl BytecodeInterpreter {
                     );
                 };
 
-                let idx = struct_info.fields.get_index_of(*attr).unwrap();
+                let idx = struct_info.fields.get_index_of(*field_name).unwrap();
 
                 self.vm
                     .add_op1(Op::AccessStructField, idx as u16, *full_span);
             }
-            Expression::CallableCall(span, callable, args, _type) => {
+            Expression::CallableCall {
+                full_span,
+                callable,
+                args,
+                ..
+            } => {
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg);
@@ -261,8 +318,12 @@ impl BytecodeInterpreter {
                     })
                     .collect();
                 let call_args_idx = self.vm.add_ffi_call_args(call_args);
-                self.vm
-                    .add_op2(Op::CallCallable, args.len() as u16, call_args_idx, *span);
+                self.vm.add_op2(
+                    Op::CallCallable,
+                    args.len() as u16,
+                    call_args_idx,
+                    *full_span,
+                );
             }
             Expression::Boolean(span, val) => {
                 let index = self.vm.add_constant(Constant::Boolean(*val));
@@ -291,7 +352,12 @@ impl BytecodeInterpreter {
                 self.vm
                     .add_op1(Op::JoinString, string_parts.len() as u16, *span); // TODO: this can overflow
             }
-            Expression::Condition(span, condition, then_expr, else_expr) => {
+            Expression::Condition {
+                span,
+                condition,
+                then_expr,
+                else_expr,
+            } => {
                 self.compile_expression(condition);
 
                 let if_jump_offset = self.vm.current_offset() + 1; // +1 for the opcode
@@ -313,7 +379,7 @@ impl BytecodeInterpreter {
                 self.vm
                     .patch_u16_value_at(else_jump_offset, end_offset - (else_jump_offset + 2));
             }
-            Expression::List(span, elements, _) => {
+            Expression::List { span, elements, .. } => {
                 for element in elements {
                     self.compile_expression(element);
                 }
@@ -327,8 +393,12 @@ impl BytecodeInterpreter {
     }
 
     fn compile_define_variable(&mut self, define_variable: &DefineVariable) {
-        let DefineVariable(identifier, decorators, expr, _annotation, _type, _readable_type) =
-            define_variable;
+        let DefineVariable {
+            name: identifier,
+            decorators,
+            expr,
+            ..
+        } = define_variable;
         let current_depth = self.current_depth();
 
         // For variables, we ignore the prefix info and only use the names
@@ -362,17 +432,13 @@ impl BytecodeInterpreter {
             Statement::DefineVariable(define_variable) => {
                 self.compile_define_variable(define_variable);
             }
-            Statement::DefineFunction(
-                name,
-                _decorators,
-                _type_parameters,
+            Statement::DefineFunction {
+                function_name: name,
                 parameters,
-                Some(expr),
+                body: Some(expr),
                 local_variables,
-                _function_type,
-                _return_type_annotation,
-                _readable_return_type,
-            ) => {
+                ..
+            } => {
                 self.vm.begin_function(name);
 
                 self.locals.push(vec![]);
@@ -398,17 +464,12 @@ impl BytecodeInterpreter {
 
                 self.functions.insert(name.to_compact_string(), false);
             }
-            Statement::DefineFunction(
-                name,
-                _decorators,
-                _type_parameters,
+            Statement::DefineFunction {
+                function_name: name,
                 parameters,
-                None,
-                _local_variables,
-                _return_type,
-                _return_type_annotation,
-                _readable_return_type,
-            ) => {
+                body: None,
+                ..
+            } => {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
 
@@ -421,7 +482,13 @@ impl BytecodeInterpreter {
                 // Declaring a dimension is like introducing a new type. The information
                 // is only relevant for the type checker. Nothing happens at run time.
             }
-            Statement::DefineBaseUnit(unit_name, span, decorators, annotation, type_) => {
+            Statement::DefineBaseUnit {
+                name: unit_name,
+                identifier_span: span,
+                decorators,
+                type_annotation,
+                type_scheme,
+            } => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.to_compact_string(), ap))
                     .collect();
@@ -431,11 +498,11 @@ impl BytecodeInterpreter {
                     .add_base_unit(
                         unit_name,
                         UnitMetadata {
-                            type_: type_.to_concrete_type(), // Base unit types can never be generic
-                            readable_type: annotation
+                            type_: type_scheme.to_concrete_type(), // Base unit types can never be generic
+                            readable_type: type_annotation
                                 .as_ref()
                                 .map(|a: &TypeAnnotation| a.pretty_print())
-                                .unwrap_or(type_.to_readable_type(dimension_registry, false)),
+                                .unwrap_or(type_scheme.to_readable_type(dimension_registry, false)),
                             aliases,
                             name: decorator::name(decorators).map(CompactString::from),
                             canonical_name: decorator::get_canonical_unit_name(
@@ -462,15 +529,15 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::DefineDerivedUnit(
-                unit_name,
-                full_span,
+            Statement::DefineDerivedUnit {
+                name: unit_name,
+                identifier_span: full_span,
                 expr,
                 decorators,
-                annotation,
-                type_,
-                _readable_type,
-            ) => {
+                type_annotation,
+                type_scheme,
+                ..
+            } => {
                 let aliases = decorator::name_and_aliases(unit_name, decorators)
                     .map(|(name, ap)| (name.to_compact_string(), ap))
                     .collect();
@@ -485,11 +552,11 @@ impl BytecodeInterpreter {
                 let unit_information_idx = self.vm.add_unit_information(
                     unit_name,
                     UnitMetadata {
-                        type_: type_.to_concrete_type(), // We guarantee that derived-unit definitions do not contain generics, so no TGen(..)s can escape
-                        readable_type: annotation
+                        type_: type_scheme.to_concrete_type(), // We guarantee that derived-unit definitions do not contain generics, so no TGen(..)s can escape
+                        readable_type: type_annotation
                             .as_ref()
-                            .map(|a| a.pretty_print())
-                            .unwrap_or(type_.to_readable_type(dimension_registry, false)),
+                            .map(|a: &TypeAnnotation| a.pretty_print())
+                            .unwrap_or(type_scheme.to_readable_type(dimension_registry, false)),
                         aliases,
                         name: decorator::name(decorators).map(CompactString::from),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
@@ -515,7 +582,11 @@ impl BytecodeInterpreter {
                         .insert(name.into(), constant_idx);
                 }
             }
-            Statement::ProcedureCall(ProcedureKind::Type, full_span, args) => {
+            Statement::ProcedureCall {
+                kind: ProcedureKind::Type,
+                span: full_span,
+                args,
+            } => {
                 assert_eq!(args.len(), 1);
                 let arg = &args[0];
 
@@ -525,7 +596,11 @@ impl BytecodeInterpreter {
                 );
                 self.vm.add_op1(Op::PrintString, idx, *full_span);
             }
-            Statement::ProcedureCall(kind, full_span, args) => {
+            Statement::ProcedureCall {
+                kind,
+                span: full_span,
+                args,
+            } => {
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg);
@@ -537,7 +612,7 @@ impl BytecodeInterpreter {
 
                 let call_args: Vec<FfiCallArg> = args
                     .iter()
-                    .map(|a| FfiCallArg {
+                    .map(|a: &typed_ast::Expression| FfiCallArg {
                         span: a.full_span(),
                         type_: a.get_type_scheme(),
                     })
