@@ -68,8 +68,8 @@ use std::num::NonZeroUsize;
 
 use crate::arithmetic::{Exponent, Rational};
 use crate::ast::{
-    BinaryOperator, DefineVariable, Expression, ProcedureKind, Statement, StringPart,
-    TypeAnnotation, TypeExpression, TypeParameterBound, UnaryOperator,
+    BinaryOperator, DefineVariable, Expression, MethodDefinition, ProcedureKind, Statement,
+    StringPart, TypeAnnotation, TypeExpression, TypeParameterBound, UnaryOperator,
 };
 use crate::decorator::{self, Decorator};
 use crate::number::Number;
@@ -252,6 +252,18 @@ pub enum ParseErrorKind {
 
     #[error("Invalid command: {0}")]
     InvalidCommand(String),
+
+    #[error("Expected '{{' after impl declaration")]
+    ExpectedLeftCurlyAfterImpl,
+
+    #[error("Expected 'fn' keyword in impl block")]
+    ExpectedFnInImplBlock,
+
+    #[error("Expected 'self' as first parameter in method")]
+    ExpectedSelfAsFirstParameter,
+
+    #[error("Expected ')' or ',' after 'self' in method")]
+    ExpectedRightParenOrCommaAfterSelf,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -506,6 +518,8 @@ impl<'a> Parser<'a> {
             self.parse_use(tokens)
         } else if self.match_exact(tokens, TokenKind::Struct).is_some() {
             self.parse_struct(tokens)
+        } else if self.match_exact(tokens, TokenKind::Impl).is_some() {
+            self.parse_impl(tokens)
         } else if self.match_any(tokens, PROCEDURES).is_some() {
             self.parse_procedure(tokens)
         } else {
@@ -731,6 +745,117 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedIdentifierAfterDimension,
+                span: self.peek(tokens).span,
+            })
+        }
+    }
+
+    /// Parse a single decorator (after the @ has been consumed)
+    fn parse_single_decorator(&mut self, tokens: &[Token<'a>]) -> Result<Decorator<'a>> {
+        if let Some(decorator) = self.match_exact(tokens, TokenKind::Identifier) {
+            match decorator.lexeme {
+                "metric_prefixes" => Ok(Decorator::MetricPrefixes),
+                "binary_prefixes" => Ok(Decorator::BinaryPrefixes),
+                "aliases" => {
+                    if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+                        let aliases = self.list_of_aliases(tokens)?;
+                        Ok(Decorator::Aliases(aliases))
+                    } else {
+                        Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek(tokens).span,
+                        })
+                    }
+                }
+                "url" | "name" | "description" => {
+                    if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+                        if let Some(token) = self.match_exact(tokens, TokenKind::StringFixed) {
+                            if self.match_exact(tokens, TokenKind::RightParen).is_none() {
+                                return Err(ParseError::new(
+                                    ParseErrorKind::MissingClosingParen,
+                                    self.peek(tokens).span,
+                                ));
+                            }
+
+                            let content = strip_and_escape(token.lexeme);
+
+                            match decorator.lexeme {
+                                "url" => Ok(Decorator::Url(content)),
+                                "name" => Ok(Decorator::Name(content)),
+                                "description" => Ok(Decorator::Description(content)),
+                                _ => unreachable!(),
+                            }
+                        } else {
+                            Err(ParseError {
+                                kind: ParseErrorKind::ExpectedString,
+                                span: self.peek(tokens).span,
+                            })
+                        }
+                    } else {
+                        Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek(tokens).span,
+                        })
+                    }
+                }
+                "example" => {
+                    if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+                        if let Some(token_code) = self.match_exact(tokens, TokenKind::StringFixed) {
+                            if self.match_exact(tokens, TokenKind::Comma).is_some() {
+                                if let Some(token_description) =
+                                    self.match_exact(tokens, TokenKind::StringFixed)
+                                {
+                                    if self.match_exact(tokens, TokenKind::RightParen).is_none() {
+                                        return Err(ParseError::new(
+                                            ParseErrorKind::MissingClosingParen,
+                                            self.peek(tokens).span,
+                                        ));
+                                    }
+
+                                    Ok(Decorator::Example(
+                                        strip_and_escape(token_code.lexeme),
+                                        Some(strip_and_escape(token_description.lexeme)),
+                                    ))
+                                } else {
+                                    Err(ParseError {
+                                        kind: ParseErrorKind::ExpectedString,
+                                        span: self.peek(tokens).span,
+                                    })
+                                }
+                            } else {
+                                if self.match_exact(tokens, TokenKind::RightParen).is_none() {
+                                    return Err(ParseError::new(
+                                        ParseErrorKind::MissingClosingParen,
+                                        self.peek(tokens).span,
+                                    ));
+                                }
+
+                                Ok(Decorator::Example(
+                                    strip_and_escape(token_code.lexeme),
+                                    None,
+                                ))
+                            }
+                        } else {
+                            Err(ParseError {
+                                kind: ParseErrorKind::ExpectedString,
+                                span: self.peek(tokens).span,
+                            })
+                        }
+                    } else {
+                        Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek(tokens).span,
+                        })
+                    }
+                }
+                _ => Err(ParseError {
+                    kind: ParseErrorKind::UnknownDecorator,
+                    span: decorator.span,
+                }),
+            }
+        } else {
+            Err(ParseError {
+                kind: ParseErrorKind::ExpectedDecoratorName,
                 span: self.peek(tokens).span,
             })
         }
@@ -1003,6 +1128,218 @@ impl<'a> Parser<'a> {
             struct_name: name,
             type_parameters,
             fields,
+        })
+    }
+
+    fn parse_impl(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
+        let impl_span = self.last(tokens).unwrap().span;
+        let type_parameters = self.type_parameters(tokens)?;
+        let name = self.identifier(tokens)?;
+        let struct_name_span = self.last(tokens).unwrap().span;
+
+        let struct_type_args = if self.match_exact(tokens, TokenKind::LessThan).is_some() {
+            let mut args = vec![self.type_annotation(tokens)?];
+            while self.match_exact(tokens, TokenKind::Comma).is_some() {
+                args.push(self.type_annotation(tokens)?);
+            }
+            if !self.match_closing_angle_bracket(tokens) {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedCommaOrRightAngleBracket,
+                    self.peek(tokens).span,
+                ));
+            }
+            args
+        } else {
+            vec![]
+        };
+
+        if self.match_exact(tokens, TokenKind::LeftCurly).is_none() {
+            return Err(ParseError::new(
+                ParseErrorKind::ExpectedLeftCurlyAfterImpl,
+                self.peek(tokens).span,
+            ));
+        }
+
+        self.skip_empty_lines(tokens);
+
+        let mut methods = vec![];
+        while self.match_exact(tokens, TokenKind::RightCurly).is_none() {
+            self.skip_empty_lines(tokens);
+
+            let mut method_decorators = vec![];
+            while self.match_exact(tokens, TokenKind::At).is_some() {
+                let decorator = self.parse_single_decorator(tokens)?;
+                method_decorators.push(decorator);
+                self.skip_empty_lines(tokens);
+            }
+
+            if self.match_exact(tokens, TokenKind::Fn).is_some() {
+                methods.push(
+                    self.parse_method_declaration_with_decorators(tokens, method_decorators)?,
+                );
+            } else if self.peek(tokens).kind == TokenKind::RightCurly {
+                break;
+            } else {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedFnInImplBlock,
+                    self.peek(tokens).span,
+                ));
+            }
+            self.skip_empty_lines(tokens);
+        }
+
+        Ok(Statement::DefineImpl {
+            impl_span,
+            type_parameters,
+            struct_name_span,
+            struct_name: name,
+            struct_type_args,
+            methods,
+        })
+    }
+
+    fn parse_method_declaration_with_decorators(
+        &mut self,
+        tokens: &[Token<'a>],
+        decorators: Vec<Decorator<'a>>,
+    ) -> Result<MethodDefinition<'a>> {
+        let fn_name = self
+            .match_exact(tokens, TokenKind::Identifier)
+            .ok_or_else(|| {
+                ParseError::new(
+                    ParseErrorKind::ExpectedIdentifierAfterFn,
+                    self.peek(tokens).span,
+                )
+            })?;
+        let function_name_span = self.last(tokens).unwrap().span;
+        let type_parameters = self.type_parameters(tokens)?;
+
+        if self.match_exact(tokens, TokenKind::LeftParen).is_none() {
+            return Err(ParseError::new(
+                ParseErrorKind::ExpectedLeftParenInFunctionDefinition,
+                self.peek(tokens).span,
+            ));
+        }
+
+        self.skip_empty_lines(tokens);
+
+        if self.match_exact(tokens, TokenKind::Self_).is_none() {
+            return Err(ParseError::new(
+                ParseErrorKind::ExpectedSelfAsFirstParameter,
+                self.peek(tokens).span,
+            ));
+        }
+        let self_span = self.last(tokens).unwrap().span;
+
+        self.skip_empty_lines(tokens);
+
+        let mut parameters = vec![];
+
+        if self.match_exact(tokens, TokenKind::RightParen).is_none() {
+            if self.match_exact(tokens, TokenKind::Comma).is_none() {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedRightParenOrCommaAfterSelf,
+                    self.peek(tokens).span,
+                ));
+            }
+
+            self.skip_empty_lines(tokens);
+
+            while self.match_exact(tokens, TokenKind::RightParen).is_none() {
+                if let Some(param_name) = self.match_exact(tokens, TokenKind::Identifier) {
+                    let span = self.last(tokens).unwrap().span;
+                    let param_type = if self.match_exact(tokens, TokenKind::Colon).is_some() {
+                        Some(self.type_annotation(tokens)?)
+                    } else {
+                        None
+                    };
+
+                    parameters.push((span, param_name.lexeme, param_type));
+
+                    self.skip_empty_lines(tokens);
+                    let has_comma = self.match_exact(tokens, TokenKind::Comma).is_some();
+                    self.skip_empty_lines(tokens);
+
+                    if self.match_exact(tokens, TokenKind::RightParen).is_some() {
+                        break;
+                    }
+
+                    if !has_comma && self.peek(tokens).kind != TokenKind::RightParen {
+                        return Err(ParseError::new(
+                            ParseErrorKind::ExpectedCommaEllipsisOrRightParenInFunctionDefinition,
+                            self.peek(tokens).span,
+                        ));
+                    }
+                } else {
+                    return Err(ParseError::new(
+                        ParseErrorKind::ExpectedParameterNameInFunctionDefinition,
+                        self.peek(tokens).span,
+                    ));
+                }
+            }
+        }
+
+        // Parse optional return type annotation
+        let return_type_annotation = if self.match_exact(tokens, TokenKind::Arrow).is_some() {
+            Some(self.type_annotation(tokens)?)
+        } else {
+            None
+        };
+
+        // Parse optional body and local variables
+        let (body, local_variables) = if self.match_exact(tokens, TokenKind::Equal).is_none() {
+            (None, vec![])
+        } else {
+            self.skip_empty_lines(tokens);
+            let body = self.expression(tokens)?;
+
+            let mut local_variables = Vec::new();
+
+            if self
+                .match_exact_beyond_linebreaks(tokens, TokenKind::Where)
+                .is_some()
+            {
+                let keyword_span = self.last(tokens).unwrap().span;
+                self.skip_empty_lines(tokens);
+                if let Ok(local_variable) = self.parse_variable(tokens, false) {
+                    local_variables.push(local_variable);
+                } else {
+                    return Err(ParseError::new(
+                        ParseErrorKind::ExpectedLocalVariableDefinition,
+                        keyword_span,
+                    ));
+                }
+
+                while self
+                    .match_exact_beyond_linebreaks(tokens, TokenKind::And)
+                    .is_some()
+                {
+                    let keyword_span = self.last(tokens).unwrap().span;
+                    self.skip_empty_lines(tokens);
+                    if let Ok(local_variable) = self.parse_variable(tokens, false) {
+                        local_variables.push(local_variable);
+                    } else {
+                        return Err(ParseError::new(
+                            ParseErrorKind::ExpectedLocalVariableDefinition,
+                            keyword_span,
+                        ));
+                    }
+                }
+            }
+
+            (Some(body), local_variables)
+        };
+
+        Ok(MethodDefinition {
+            function_name_span,
+            function_name: fn_name.lexeme,
+            type_parameters,
+            self_span,
+            parameters,
+            body,
+            local_variables,
+            return_type_annotation,
+            decorators,
         })
     }
 
@@ -1408,9 +1745,24 @@ impl<'a> Parser<'a> {
             } else if self.match_exact(tokens, TokenKind::Period).is_some() {
                 let ident = self.identifier(tokens)?;
                 let ident_span = self.last(tokens).unwrap().span;
-                let full_span = expr.full_span().extend(&ident_span);
 
-                expr = Expression::AccessField(full_span, ident_span, Box::new(expr), ident)
+                // Check if this is a method call (followed by '(')
+                if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+                    let args = self.arguments(tokens)?;
+                    let full_span = expr.full_span().extend(&self.last(tokens).unwrap().span);
+
+                    expr = Expression::MethodCall {
+                        full_span,
+                        method_span: ident_span,
+                        receiver: Box::new(expr),
+                        method_name: ident,
+                        args,
+                    };
+                } else {
+                    // Field access
+                    let full_span = expr.full_span().extend(&ident_span);
+                    expr = Expression::AccessField(full_span, ident_span, Box::new(expr), ident);
+                }
             } else {
                 return Ok(expr);
             }
@@ -1589,6 +1941,10 @@ impl<'a> Parser<'a> {
             }
 
             Ok(Expression::Identifier(span, identifier.lexeme))
+        } else if let Some(self_token) = self.match_exact(tokens, TokenKind::Self_) {
+            // Allow 'self' to be used as an identifier in method bodies
+            let span = self.last(tokens).unwrap().span;
+            Ok(Expression::Identifier(span, self_token.lexeme))
         } else if let Some(inner) = self.match_any(tokens, &[TokenKind::True, TokenKind::False]) {
             Ok(Expression::Boolean(
                 inner.span,
@@ -1716,6 +2072,7 @@ impl<'a> Parser<'a> {
             self.peek(tokens).kind,
             TokenKind::Number
                 | TokenKind::Identifier
+                | TokenKind::Self_
                 | TokenKind::LeftParen
                 | TokenKind::QuestionMark
         )

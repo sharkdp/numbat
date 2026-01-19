@@ -89,6 +89,7 @@ pub fn _get_chemical_element_data_raw(
             kind: StructKind::Instance(vec![]),
             definition_span: unknown_span,
             fields,
+            methods: IndexMap::new(),
         };
         Ok(Value::StructInstance(
             Arc::new(info),

@@ -141,3 +141,16 @@ struct Vec2<D: Dim> {            # A generic struct with type parameter
     x: D,
     y: D,
 }
+
+impl<D: Dim> Vec2<D> {           # Define methods for a struct
+    fn norm(self) -> D² = self.x² + self.y²
+
+    fn scale<S: Dim>(self, scalar: S) -> Vec2<S × D> =
+        Vec2 {
+            x: scalar × self.x,
+            y: scalar × self.y,
+        }
+}
+
+let v = Vec2 { x: 3 meter, y: 4 meter }
+v.norm()                        # Call a method

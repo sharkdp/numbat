@@ -226,6 +226,14 @@ impl ApplySubstitution for Expression<'_> {
                 element_type.apply(s)
             }
             Expression::TypedHole(_, type_) => type_.apply(s),
+            Expression::MethodCall(_, _, receiver, _, args, struct_type, return_type) => {
+                receiver.apply(s)?;
+                for arg in args {
+                    arg.apply(s)?;
+                }
+                struct_type.apply(s)?;
+                return_type.apply(s)
+            }
         }
     }
 }
@@ -263,6 +271,10 @@ impl ApplySubstitution for Statement<'_> {
             Statement::DefineStruct(info) => {
                 info.apply(s)?;
 
+                Ok(())
+            }
+            Statement::DefineImpl { struct_info, .. } => {
+                struct_info.apply(s)?;
                 Ok(())
             }
         }

@@ -82,6 +82,12 @@ impl Transformer {
             Expression::AccessField(_, _, expr, _) => {
                 self.transform_expression(expr);
             }
+            Expression::MethodCall { receiver, args, .. } => {
+                self.transform_expression(receiver);
+                for arg in args {
+                    self.transform_expression(arg);
+                }
+            }
             Expression::List(_, elements) => {
                 for e in elements {
                     self.transform_expression(e);
@@ -210,6 +216,29 @@ impl Transformer {
             Statement::ProcedureCall(_, _, args) => {
                 for arg in args {
                     self.transform_expression(arg);
+                }
+            }
+            Statement::DefineImpl { methods, .. } => {
+                for method in methods.iter_mut() {
+                    let mut method_body_transformer = self.clone();
+
+                    method_body_transformer
+                        .prefix_parser
+                        .add_other_identifier("self", method.self_span)?;
+
+                    for (param_span, param, _) in &method.parameters {
+                        method_body_transformer
+                            .prefix_parser
+                            .add_other_identifier(param, *param_span)?;
+                    }
+
+                    if let Some(ref mut expr) = method.body {
+                        method_body_transformer.transform_expression(expr);
+                    }
+
+                    for def in &mut method.local_variables {
+                        method_body_transformer.transform_define_variable(def)?;
+                    }
                 }
             }
         }

@@ -11,8 +11,10 @@ struct Constituent {
     phase: Angle,
 }
 
-fn height(c: Constituent, t: Time) -> Length =
-    c.amplitude cos(2π t / c.period + c.phase)
+impl Constituent {
+    fn height(self, t: Time) -> Length =
+        self.amplitude × cos(2π × t / self.period + self.phase)
+}
 
 # The Gulf of Thailand has predominantly DIURNAL tides, meaning
 # K1 and O1 dominate over the semidiurnal M2 and S2 components.
@@ -48,7 +50,7 @@ let O1 = Constituent {
 
 let mean_sea_level = 0.5 m
 
-fn tide_height(t: Time) -> Length = mean_sea_level + height(M2, t) + height(S2, t) + height(K1, t) + height(O1, t)
+fn tide_height(t: Time) -> Length = mean_sea_level + M2.height(t) + S2.height(t) + K1.height(t) + O1.height(t)
 
 let t_start = 0 days
 let duration = 30 days

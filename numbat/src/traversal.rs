@@ -71,6 +71,14 @@ impl ForAllTypeSchemes for Expression<'_> {
             Expression::TypedHole(_, type_) => {
                 f(type_);
             }
+            Expression::MethodCall(_, _, receiver, _, args, struct_type, return_type) => {
+                receiver.for_all_type_schemes(f);
+                for arg in args {
+                    arg.for_all_type_schemes(f);
+                }
+                f(struct_type);
+                f(return_type);
+            }
         }
     }
 }
@@ -107,6 +115,7 @@ impl ForAllTypeSchemes for Statement<'_> {
                 }
             }
             Statement::DefineStruct(info) => info.for_all_type_schemes(f),
+            Statement::DefineImpl { struct_info, .. } => struct_info.for_all_type_schemes(f),
         }
     }
 }
@@ -139,6 +148,7 @@ impl ForAllExpressions for Statement<'_> {
                 }
             }
             Statement::DefineStruct(_) => {}
+            Statement::DefineImpl { .. } => {}
         }
     }
 }
@@ -191,6 +201,12 @@ impl ForAllExpressions for Expression<'_> {
                 }
             }
             Expression::TypedHole(_, _) => {}
+            Expression::MethodCall(_, _, receiver, _, args, _, _) => {
+                receiver.for_all_expressions(f);
+                for arg in args {
+                    arg.for_all_expressions(f);
+                }
+            }
         }
     }
 }

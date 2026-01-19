@@ -16,6 +16,8 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use indexmap::IndexMap;
+
 use crate::arithmetic::Exponent;
 use crate::ast::{
     self, BinaryOperator, DefineVariable, ProcedureKind, StringPart, TypeAnnotation,
@@ -217,6 +219,32 @@ impl TypeChecker {
         self.constraints.add_dtype_constraint(type_)
     }
 
+    fn register_type_parameter(
+        &mut self,
+        span: Span,
+        name: &str,
+        bound: &Option<TypeParameterBound>,
+    ) {
+        self.type_namespace
+            .add_identifier(
+                name.to_compact_string(),
+                span,
+                CompactString::const_new("type parameter"),
+            )
+            .ok();
+
+        self.registry.introduced_type_parameters.push((
+            span,
+            name.to_compact_string(),
+            bound.clone(),
+        ));
+
+        if let Some(TypeParameterBound::Dim) = bound {
+            self.add_dtype_constraint(&Type::TPar(name.to_compact_string()))
+                .ok();
+        }
+    }
+
     fn enforce_dtype(&mut self, type_: &Type, span: Span) -> Result<()> {
         if self
             .constraints
@@ -263,6 +291,7 @@ impl TypeChecker {
                             name: struct_info.name.clone(),
                             kind: StructKind::Instance(vec![]),
                             fields: struct_info.fields.clone(),
+                            methods: struct_info.methods.clone(),
                         })));
                     }
 
@@ -286,6 +315,7 @@ impl TypeChecker {
                         name: struct_info.name.clone(),
                         kind: StructKind::Instance(concrete_type_args),
                         fields: instantiated_fields,
+                        methods: struct_info.methods.clone(),
                     })));
                 }
 
@@ -1007,6 +1037,7 @@ impl TypeChecker {
                             name: struct_info.name.clone(),
                             kind: StructKind::Instance(vec![]),
                             fields: struct_info.fields.clone(),
+                            methods: struct_info.methods.clone(),
                         }
                     }
                     StructKind::Definition(type_parameters) => {
@@ -1048,6 +1079,7 @@ impl TypeChecker {
                                 variables.iter().map(|v| Type::TVar(v.clone())).collect(),
                             ),
                             fields: instantiated_fields,
+                            methods: struct_info.methods.clone(),
                         }
                     }
                     StructKind::Instance(_) => {
@@ -1214,6 +1246,182 @@ impl TypeChecker {
             ast::Expression::TypedHole(span) => {
                 let type_ = self.fresh_type_variable();
                 typed_ast::Expression::TypedHole(*span, TypeScheme::concrete(type_))
+            }
+            ast::Expression::MethodCall {
+                full_span,
+                method_span,
+                receiver,
+                method_name,
+                args,
+            } => {
+                let receiver_checked = self.elaborate_expression(receiver)?;
+                let receiver_type = receiver_checked.get_type();
+
+                let arguments_checked = args
+                    .iter()
+                    .map(|a| self.elaborate_expression(a))
+                    .collect::<Result<Vec<_>>>()?;
+                let argument_types: Vec<Type> =
+                    arguments_checked.iter().map(|e| e.get_type()).collect();
+
+                if receiver_type.is_closed() {
+                    let Type::Struct(ref struct_info) = receiver_type else {
+                        return Err(Box::new(TypeCheckError::MethodCallOnNonStructType(
+                            *method_span,
+                            receiver.full_span(),
+                            method_name.to_string(),
+                            receiver_type.clone(),
+                        )));
+                    };
+
+                    let struct_definition =
+                        self.structs.get(&struct_info.name).ok_or_else(|| {
+                            TypeCheckError::UnknownStruct(
+                                *method_span,
+                                struct_info.name.to_string(),
+                            )
+                        })?;
+
+                    let Some(method_info) = struct_definition.methods.get(*method_name) else {
+                        return Err(Box::new(TypeCheckError::UnknownMethod(
+                            *method_span,
+                            receiver.full_span(),
+                            method_name.to_string(),
+                            struct_info.name.to_string(),
+                        )));
+                    };
+
+                    let struct_type_params = match &struct_definition.kind {
+                        StructKind::Definition(params) => params.clone(),
+                        StructKind::Instance(_) => vec![],
+                    };
+                    let method_fn_type = method_info.fn_type.clone();
+                    let method_type_params = method_info.type_parameters.clone();
+                    let method_definition_span = method_info.definition_span;
+
+                    let instance_type_args = match &struct_info.kind {
+                        StructKind::Instance(args) => args.clone(),
+                        StructKind::Definition(_) => vec![],
+                    };
+
+                    // Fresh type variables for struct type params (allows DType substitution to work)
+                    let fresh_vars: Vec<_> = struct_type_params
+                        .iter()
+                        .map(|(_, _, bound)| {
+                            let fresh_var = self.name_generator.fresh_type_variable();
+                            if let Some(TypeParameterBound::Dim) = bound {
+                                self.constraints
+                                    .add_dtype_constraint(&Type::TVar(fresh_var.clone()))
+                                    .ok();
+                            }
+                            fresh_var
+                        })
+                        .collect();
+
+                    let struct_substitution = Substitution(
+                        struct_type_params
+                            .iter()
+                            .zip(fresh_vars.iter())
+                            .map(|((_, name, _), var)| {
+                                (TypeVariable::new(name.clone()), Type::TVar(var.clone()))
+                            })
+                            .collect(),
+                    );
+
+                    for (var, arg) in fresh_vars.iter().zip(instance_type_args.iter()) {
+                        self.add_equal_constraint(&Type::TVar(var.clone()), arg)
+                            .ok();
+                    }
+
+                    let mut fn_type = method_fn_type.to_concrete_type();
+                    fn_type.apply(&struct_substitution).ok();
+
+                    // Fresh type variables for method's own type parameters
+                    let method_type_param_substitution = Substitution(
+                        method_type_params
+                            .iter()
+                            .map(|(_, name, bound)| {
+                                let fresh_var = self.name_generator.fresh_type_variable();
+                                if let Some(TypeParameterBound::Dim) = bound {
+                                    self.constraints
+                                        .add_dtype_constraint(&Type::TVar(fresh_var.clone()))
+                                        .ok();
+                                }
+                                (TypeVariable::new(name.clone()), Type::TVar(fresh_var))
+                            })
+                            .collect(),
+                    );
+                    fn_type.apply(&method_type_param_substitution).ok();
+
+                    let Type::Fn(parameter_types, return_type) = fn_type else {
+                        unreachable!("Method type should be a function type");
+                    };
+
+                    let expected_args = parameter_types.len() - 1; // excludes self
+                    if arguments_checked.len() != expected_args {
+                        return Err(Box::new(TypeCheckError::WrongArity {
+                            callable_span: *method_span,
+                            callable_name: format!("{}.{}", struct_info.name, method_name),
+                            callable_definition_span: Some(method_definition_span),
+                            arity: expected_args..=expected_args,
+                            num_args: arguments_checked.len(),
+                        }));
+                    }
+
+                    // Constrain self parameter
+                    if !parameter_types.is_empty() {
+                        self.add_equal_constraint(&receiver_type, &parameter_types[0])
+                            .ok();
+                    }
+
+                    // Constrain remaining parameters
+                    for (param_type, arg_type) in
+                        parameter_types.iter().skip(1).zip(argument_types.iter())
+                    {
+                        if self
+                            .add_equal_constraint(param_type, arg_type)
+                            .is_trivially_violated()
+                        {
+                            return Err(Box::new(TypeCheckError::IncompatibleTypesInFunctionCall(
+                                None,
+                                param_type.clone(),
+                                receiver.full_span(),
+                                arg_type.clone(),
+                            )));
+                        }
+                    }
+
+                    typed_ast::Expression::MethodCall(
+                        *method_span,
+                        *full_span,
+                        Box::new(receiver_checked),
+                        method_name,
+                        arguments_checked,
+                        TypeScheme::concrete(receiver_type),
+                        TypeScheme::concrete(return_type.as_ref().clone()),
+                    )
+                } else {
+                    // Defer method resolution via constraint
+                    let return_type = self.fresh_type_variable();
+                    self.constraints
+                        .add(Constraint::HasMethod(
+                            receiver_type.clone(),
+                            method_name.to_compact_string(),
+                            argument_types.clone(),
+                            return_type.clone(),
+                        ))
+                        .ok();
+
+                    typed_ast::Expression::MethodCall(
+                        *method_span,
+                        *full_span,
+                        Box::new(receiver_checked),
+                        method_name,
+                        arguments_checked,
+                        TypeScheme::concrete(receiver_type),
+                        TypeScheme::concrete(return_type),
+                    )
+                }
             }
         })
     }
@@ -1489,30 +1697,7 @@ impl TypeChecker {
                             type_parameter.to_string(),
                         )));
                     }
-
-                    self.type_namespace
-                        .add_identifier(
-                            type_parameter.to_compact_string(),
-                            *span,
-                            CompactString::const_new("type parameter"),
-                        )
-                        .ok();
-
-                    self.registry.introduced_type_parameters.push((
-                        *span,
-                        type_parameter.to_compact_string(),
-                        bound.clone(),
-                    ));
-
-                    match bound {
-                        Some(TypeParameterBound::Dim) => {
-                            self.add_dtype_constraint(&Type::TPar(
-                                type_parameter.to_compact_string(),
-                            ))
-                            .ok();
-                        }
-                        None => {}
-                    }
+                    self.register_type_parameter(*span, type_parameter, bound);
                 }
 
                 let mut typed_parameters = vec![];
@@ -1944,11 +2129,366 @@ impl TypeChecker {
                             ))
                         })
                         .collect::<Result<_>>()?,
+                    methods: IndexMap::new(),
                 };
                 self.structs
                     .insert(struct_name.to_compact_string(), struct_info.clone());
 
                 typed_ast::Statement::DefineStruct(struct_info)
+            }
+            ast::Statement::DefineImpl {
+                impl_span,
+                type_parameters,
+                struct_name_span,
+                struct_name,
+                struct_type_args,
+                methods,
+            } => {
+                // Look up the struct definition
+                let struct_info = self
+                    .structs
+                    .get(*struct_name)
+                    .ok_or_else(|| {
+                        TypeCheckError::ImplForUnknownStruct(
+                            *struct_name_span,
+                            struct_name.to_string(),
+                        )
+                    })?
+                    .clone();
+
+                let struct_type_params = match &struct_info.kind {
+                    StructKind::Definition(params) => params.clone(),
+                    StructKind::Instance(_) => {
+                        unreachable!("Struct definition should have Definition kind")
+                    }
+                };
+
+                if type_parameters.len() != struct_type_params.len() {
+                    return Err(Box::new(TypeCheckError::ImplTypeParameterMismatch {
+                        impl_span: *impl_span,
+                        struct_span: struct_info.definition_span,
+                        expected: struct_type_params.len(),
+                        actual: type_parameters.len(),
+                    }));
+                }
+
+                let mut impl_typechecker = self.clone();
+
+                for (span, type_parameter, bound) in type_parameters {
+                    impl_typechecker.register_type_parameter(*span, type_parameter, bound);
+                }
+
+                // Build self type (use Dimension for type params since fields use dimension types)
+                let self_type_args: Vec<Type> = if struct_type_args.is_empty() {
+                    type_parameters
+                        .iter()
+                        .map(|(_, name, _)| {
+                            Type::Dimension(DType::from_type_parameter(name.to_compact_string()))
+                        })
+                        .collect()
+                } else {
+                    struct_type_args
+                        .iter()
+                        .map(|a| impl_typechecker.type_from_annotation(a))
+                        .collect::<Result<Vec<_>>>()?
+                };
+
+                let mut self_struct_info = struct_info.clone();
+                self_struct_info.kind = StructKind::Instance(self_type_args.clone());
+                let substitution: Substitution = Substitution(
+                    struct_type_params
+                        .iter()
+                        .zip(self_type_args.iter())
+                        .map(|((_, name, _), arg)| (TypeVariable::new(name.clone()), arg.clone()))
+                        .collect(),
+                );
+                for (_, field_type) in self_struct_info.fields.values_mut() {
+                    field_type.apply(&substitution).ok();
+                }
+                let self_type = Type::Struct(Box::new(self_struct_info.clone()));
+
+                let mut seen_methods: HashMap<&str, Span> = HashMap::new();
+
+                // Pass 1: Collect signatures (allows methods to call each other)
+                struct MethodSignatureInfo {
+                    typed_parameters: Vec<(Span, Type)>,
+                    return_type: Type,
+                    mangled_name: CompactString,
+                }
+                let mut method_signatures: Vec<MethodSignatureInfo> = Vec::new();
+
+                for method in methods.iter() {
+                    if let Some(first_span) = seen_methods.get(method.function_name) {
+                        return Err(Box::new(TypeCheckError::DuplicateMethodInImpl(
+                            method.function_name_span,
+                            method.function_name.to_string(),
+                            *first_span,
+                        )));
+                    }
+                    seen_methods.insert(method.function_name, method.function_name_span);
+
+                    let mut sig_typechecker = impl_typechecker.clone();
+                    sig_typechecker.type_namespace.save();
+
+                    for (span, type_parameter, bound) in &method.type_parameters {
+                        sig_typechecker.register_type_parameter(*span, type_parameter, bound);
+                    }
+
+                    let mut typed_parameters = vec![(method.self_span, self_type.clone())];
+                    for (param_span, _param_name, type_annotation) in &method.parameters {
+                        let param_type = if let Some(annotation) = type_annotation {
+                            sig_typechecker.type_from_annotation(annotation)?
+                        } else {
+                            sig_typechecker.fresh_type_variable()
+                        };
+                        typed_parameters.push((*param_span, param_type));
+                    }
+
+                    let return_type = if let Some(annotation) = &method.return_type_annotation {
+                        sig_typechecker.type_from_annotation(annotation)?
+                    } else {
+                        sig_typechecker.fresh_type_variable()
+                    };
+
+                    let param_types: Vec<Type> =
+                        typed_parameters.iter().map(|(_, t)| t.clone()).collect();
+                    let mut fn_type = Type::Fn(param_types.clone(), Box::new(return_type.clone()));
+
+                    // Normalize impl type param names to struct's names (e.g., D -> X)
+                    let impl_to_struct_substitution = Substitution(
+                        type_parameters
+                            .iter()
+                            .zip(struct_type_params.iter())
+                            .map(|((_, impl_name, _), (_, struct_name, _))| {
+                                (
+                                    TypeVariable::new(impl_name.to_compact_string()),
+                                    Type::Dimension(DType::from_type_parameter(
+                                        struct_name.clone(),
+                                    )),
+                                )
+                            })
+                            .collect(),
+                    );
+                    fn_type.apply(&impl_to_struct_substitution).ok();
+
+                    let all_type_params: Vec<_> = type_parameters
+                        .iter()
+                        .chain(method.type_parameters.iter())
+                        .map(|(_, name, _)| (*name).to_compact_string())
+                        .collect();
+
+                    let fn_type_scheme = if all_type_params.is_empty() {
+                        TypeScheme::concrete(fn_type.clone())
+                    } else {
+                        TypeScheme::make_quantified(fn_type.clone())
+                    };
+
+                    let method_info = typed_ast::MethodInfo {
+                        definition_span: method.function_name_span,
+                        name: method.function_name.to_compact_string(),
+                        type_parameters: method
+                            .type_parameters
+                            .iter()
+                            .map(|(span, name, bound)| {
+                                (*span, (*name).to_compact_string(), bound.clone())
+                            })
+                            .collect(),
+                        parameters: method
+                            .parameters
+                            .iter()
+                            .map(|(span, name, _)| (*span, (*name).to_compact_string()))
+                            .collect(),
+                        fn_type: fn_type_scheme.clone(),
+                    };
+
+                    self_struct_info
+                        .methods
+                        .insert(method.function_name.to_compact_string(), method_info);
+
+                    let mangled_name = format_compact!("{}::{}", struct_name, method.function_name);
+                    let signature = FunctionSignature {
+                        name: mangled_name.clone(),
+                        definition_span: method.function_name_span,
+                        type_parameters: type_parameters
+                            .iter()
+                            .chain(method.type_parameters.iter())
+                            .map(|(span, name, bound)| {
+                                (*span, (*name).to_compact_string(), bound.clone())
+                            })
+                            .collect(),
+                        parameters: std::iter::once((
+                            method.self_span,
+                            CompactString::const_new("self"),
+                            None,
+                        ))
+                        .chain(method.parameters.iter().map(|(span, name, annotation)| {
+                            (*span, (*name).to_compact_string(), annotation.clone())
+                        }))
+                        .collect(),
+                        return_type_annotation: method.return_type_annotation.clone(),
+                        fn_type: fn_type_scheme.clone(),
+                    };
+
+                    self.env.add_function(
+                        mangled_name.clone(),
+                        signature,
+                        FunctionMetadata {
+                            name: crate::decorator::name(&method.decorators)
+                                .map(CompactString::from),
+                            url: crate::decorator::url(&method.decorators).map(CompactString::from),
+                            description: crate::decorator::description(&method.decorators),
+                            examples: crate::decorator::examples(&method.decorators),
+                        },
+                    );
+
+                    sig_typechecker.type_namespace.restore();
+
+                    method_signatures.push(MethodSignatureInfo {
+                        typed_parameters,
+                        return_type,
+                        mangled_name,
+                    });
+                }
+
+                // Update struct registry so method calls can resolve
+                let mut registry_struct_info = struct_info.clone();
+                registry_struct_info.methods = self_struct_info.methods.clone();
+                impl_typechecker.structs.insert(
+                    struct_name.to_compact_string(),
+                    registry_struct_info.clone(),
+                );
+
+                // Pass 2: Type check method bodies
+                let mut compiled_methods = Vec::new();
+
+                for (method, sig_info) in methods.iter().zip(method_signatures.iter()) {
+                    let mut method_typechecker = impl_typechecker.clone();
+                    method_typechecker.env.save();
+                    method_typechecker.type_namespace.save();
+                    method_typechecker.value_namespace.save();
+
+                    for (span, type_parameter, bound) in &method.type_parameters {
+                        method_typechecker.register_type_parameter(*span, type_parameter, bound);
+                    }
+
+                    method_typechecker.env.add_scheme(
+                        CompactString::const_new("self"),
+                        TypeScheme::make_quantified(self_type.clone()),
+                        method.self_span,
+                        false,
+                    );
+
+                    for ((param_span, param_name, _), (_, param_type)) in method
+                        .parameters
+                        .iter()
+                        .zip(sig_info.typed_parameters.iter().skip(1))
+                    {
+                        method_typechecker.env.add_scheme(
+                            param_name.to_compact_string(),
+                            TypeScheme::make_quantified(param_type.clone()),
+                            *param_span,
+                            false,
+                        );
+                    }
+
+                    let mut typed_local_variables = vec![];
+                    for local_var in &method.local_variables {
+                        typed_local_variables
+                            .push(method_typechecker.elaborate_define_variable(local_var)?);
+                    }
+
+                    let body_checked = if let Some(body) = &method.body {
+                        let body_checked = method_typechecker.elaborate_expression(body)?;
+                        let body_type = body_checked.get_type();
+
+                        if method_typechecker
+                            .add_equal_constraint(&body_type, &sig_info.return_type)
+                            .is_trivially_violated()
+                        {
+                            if let (Type::Dimension(dtype_body), Type::Dimension(dtype_ret)) =
+                                (&body_type, &sig_info.return_type)
+                            {
+                                return Err(Box::new(TypeCheckError::IncompatibleDimensions(
+                                    IncompatibleDimensionsError {
+                                        span_operation: method.function_name_span,
+                                        operation: "method return type".into(),
+                                        span_expected: method
+                                            .return_type_annotation
+                                            .as_ref()
+                                            .map(|a| a.full_span())
+                                            .unwrap_or(method.function_name_span),
+                                        expected_name: "specified return type",
+                                        expected_dimensions: method_typechecker
+                                            .registry
+                                            .get_derived_entry_names_for(
+                                                &dtype_ret.to_base_representation(),
+                                            ),
+                                        expected_type: dtype_ret.to_base_representation(),
+                                        span_actual: body.full_span(),
+                                        actual_name: "   actual return type",
+                                        actual_name_for_fix: "expression in the method body",
+                                        actual_dimensions: method_typechecker
+                                            .registry
+                                            .get_derived_entry_names_for(
+                                                &dtype_body.to_base_representation(),
+                                            ),
+                                        actual_type: dtype_body.to_base_representation(),
+                                    },
+                                )));
+                            } else {
+                                return Err(Box::new(
+                                    TypeCheckError::IncompatibleTypesInAnnotation(
+                                        "method return type".into(),
+                                        method
+                                            .return_type_annotation
+                                            .as_ref()
+                                            .map(|a| a.full_span())
+                                            .unwrap_or(method.function_name_span),
+                                        sig_info.return_type.clone(),
+                                        body.full_span(),
+                                        body_type,
+                                        method.function_name_span,
+                                    ),
+                                ));
+                            }
+                        }
+                        Some(body_checked)
+                    } else {
+                        None
+                    };
+
+                    let param_names: Vec<CompactString> =
+                        std::iter::once(CompactString::const_new("self"))
+                            .chain(
+                                method
+                                    .parameters
+                                    .iter()
+                                    .map(|(_, name, _)| (*name).to_compact_string()),
+                            )
+                            .collect();
+
+                    compiled_methods.push(typed_ast::CompiledMethod {
+                        mangled_name: sig_info.mangled_name.clone(),
+                        parameters: param_names,
+                        local_variables: typed_local_variables,
+                        body: body_checked,
+                    });
+
+                    method_typechecker.value_namespace.restore();
+                    method_typechecker.type_namespace.restore();
+                    method_typechecker.env.restore();
+                }
+
+                let mut updated_struct_info = struct_info.clone();
+                updated_struct_info.methods = self_struct_info.methods.clone();
+                self.structs
+                    .insert(struct_name.to_compact_string(), updated_struct_info.clone());
+
+                typed_ast::Statement::DefineImpl {
+                    struct_name: struct_name.to_compact_string(),
+                    struct_info: updated_struct_info,
+                    methods: compiled_methods,
+                }
             }
         })
     }

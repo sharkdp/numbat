@@ -173,6 +173,26 @@ pub enum TypeCheckError {
 
     #[error("Multiple typed holes in statement")]
     MultipleTypedHoles(Span),
+
+    #[error("Can not call method '{2}' on non-struct type '{3}'")]
+    MethodCallOnNonStructType(Span, Span, String, Type),
+
+    #[error("Method '{2}' does not exist on struct '{3}'")]
+    UnknownMethod(Span, Span, String, String),
+
+    #[error("impl block for unknown struct '{1}'")]
+    ImplForUnknownStruct(Span, String),
+
+    #[error("Type parameter mismatch in impl block")]
+    ImplTypeParameterMismatch {
+        impl_span: Span,
+        struct_span: Span,
+        expected: usize,
+        actual: usize,
+    },
+
+    #[error("Duplicate method '{1}' in impl block")]
+    DuplicateMethodInImpl(Span, String, Span),
 }
 
 pub type Result<T> = std::result::Result<T, Box<TypeCheckError>>;

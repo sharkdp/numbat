@@ -107,6 +107,13 @@ pub enum Expression<'a> {
         fields: Vec<(Span, &'a str, Expression<'a>)>,
     },
     AccessField(Span, Span, Box<Expression<'a>>, &'a str),
+    MethodCall {
+        full_span: Span,
+        method_span: Span,
+        receiver: Box<Expression<'a>>,
+        method_name: &'a str,
+        args: Vec<Expression<'a>>,
+    },
     List(Span, Vec<Expression<'a>>),
 }
 
@@ -141,6 +148,7 @@ impl Expression<'_> {
             Expression::String(span, _) => *span,
             Expression::InstantiateStruct { full_span, .. } => *full_span,
             Expression::AccessField(full_span, _ident_span, _, _) => *full_span,
+            Expression::MethodCall { full_span, .. } => *full_span,
             Expression::List(span, _) => *span,
             Expression::TypedHole(span) => *span,
         }
@@ -436,6 +444,23 @@ pub struct DefineVariable<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct MethodDefinition<'a> {
+    pub function_name_span: Span,
+    pub function_name: &'a str,
+    pub type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
+    pub self_span: Span,
+    /// Parameters excluding self
+    pub parameters: Vec<(Span, &'a str, Option<TypeAnnotation>)>,
+    /// Method body. If it is absent, the method is implemented via FFI
+    pub body: Option<Expression<'a>>,
+    /// Local variables
+    pub local_variables: Vec<DefineVariable<'a>>,
+    /// Optional annotated return type
+    pub return_type_annotation: Option<TypeAnnotation>,
+    pub decorators: Vec<Decorator<'a>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement<'a> {
     Expression(Expression<'a>),
     DefineVariable(DefineVariable<'a>),
@@ -470,6 +495,17 @@ pub enum Statement<'a> {
         struct_name: &'a str,
         type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
         fields: Vec<(Span, &'a str, TypeAnnotation)>,
+    },
+    DefineImpl {
+        impl_span: Span,
+        /// Type parameters for the impl block (e.g., <T: Dim> in `impl<T: Dim> Container<T>`)
+        type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
+        struct_name_span: Span,
+        struct_name: &'a str,
+        /// Type arguments applied to the struct (e.g., T in `Container<T>`)
+        struct_type_args: Vec<TypeAnnotation>,
+        /// Methods defined in this impl block
+        methods: Vec<MethodDefinition<'a>>,
     },
 }
 
@@ -605,6 +641,18 @@ impl ReplaceSpans for Expression<'_> {
                 Box::new(expr.replace_spans()),
                 attr,
             ),
+            Expression::MethodCall {
+                receiver,
+                method_name,
+                args,
+                ..
+            } => Expression::MethodCall {
+                full_span: Span::dummy(),
+                method_span: Span::dummy(),
+                receiver: Box::new(receiver.replace_spans()),
+                method_name,
+                args: args.iter().map(|a| a.replace_spans()).collect(),
+            },
             Expression::List(_, elements) => Expression::List(
                 Span::dummy(),
                 elements.iter().map(|e| e.replace_spans()).collect(),
@@ -622,6 +670,44 @@ impl ReplaceSpans for DefineVariable<'_> {
             identifier: self.identifier,
             expr: self.expr.replace_spans(),
             type_annotation: self.type_annotation.as_ref().map(|t| t.replace_spans()),
+            decorators: self.decorators.clone(),
+        }
+    }
+}
+
+#[cfg(test)]
+impl ReplaceSpans for MethodDefinition<'_> {
+    fn replace_spans(&self) -> Self {
+        Self {
+            function_name_span: Span::dummy(),
+            function_name: self.function_name,
+            type_parameters: self
+                .type_parameters
+                .iter()
+                .map(|(_, name, bound)| (Span::dummy(), *name, bound.clone()))
+                .collect(),
+            self_span: Span::dummy(),
+            parameters: self
+                .parameters
+                .iter()
+                .map(|(_, name, type_)| {
+                    (
+                        Span::dummy(),
+                        *name,
+                        type_.as_ref().map(|t| t.replace_spans()),
+                    )
+                })
+                .collect(),
+            body: self.body.clone().map(|b| b.replace_spans()),
+            local_variables: self
+                .local_variables
+                .iter()
+                .map(DefineVariable::replace_spans)
+                .collect(),
+            return_type_annotation: self
+                .return_type_annotation
+                .as_ref()
+                .map(|t| t.replace_spans()),
             decorators: self.decorators.clone(),
         }
     }
@@ -719,6 +805,23 @@ impl ReplaceSpans for Statement<'_> {
                     .iter()
                     .map(|(_span, name, type_)| (Span::dummy(), *name, type_.replace_spans()))
                     .collect(),
+            },
+            Statement::DefineImpl {
+                type_parameters,
+                struct_name,
+                struct_type_args,
+                methods,
+                ..
+            } => Statement::DefineImpl {
+                impl_span: Span::dummy(),
+                type_parameters: type_parameters
+                    .iter()
+                    .map(|(_, name, bound)| (Span::dummy(), *name, bound.clone()))
+                    .collect(),
+                struct_name_span: Span::dummy(),
+                struct_name,
+                struct_type_args: struct_type_args.iter().map(|t| t.replace_spans()).collect(),
+                methods: methods.iter().map(|m| m.replace_spans()).collect(),
             },
         }
     }

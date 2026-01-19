@@ -2,7 +2,7 @@
 
 # Paper sizes
 
-[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Compute+ISO+216+paper+sizes+for+the+A+series%0A%23%0A%23+https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FISO_216%0A%0Astruct+PaperSize+%7B%0A++++width%3A+Length%2C%0A++++height%3A+Length%2C%0A%7D%0A%0Afn+paper_size_A%28n%3A+Scalar%29+-%3E+PaperSize+%3D%0A++if+n+%3D%3D+0%0A++++then%0A++++++PaperSize+%7B%0A++++++++width%3A+841+mm%2C%0A++++++++height%3A+1189+mm%0A++++++%7D%0A++++else%0A++++++PaperSize+%7B%0A++++++++width%3A+floor_in%28mm%2C+paper_size_A%28n+-+1%29.height+%2F+2%29%2C%0A++++++++height%3A+paper_size_A%28n+-+1%29.width%2C%0A++++++%7D%0A%0A%0Afn+paper_area%28size%3A+PaperSize%29+-%3E+Area+%3D%0A++++size.width+%2A+size.height%0A%0A%0Afn+size_as_string%28size%3A+PaperSize%29+%3D+%22%7Bsize.width%3A%3E4%7D+%C3%97+%7Bsize.height%3A%3E5%7D+++%7Bpaper_area%28size%29+-%3E+cm%C2%B2%3A%3E6.1f%7D%22%0Afn+row%28n%29+%3D+%22A%7Bn%3A%3C3%7D+++%7Bsize_as_string%28paper_size_A%28n%29%29%7D%22%0A%0Aprint%28%22Name++++Width+++++Height++++++++Area++%22%29%0Aprint%28%22----+++-------+++--------+++----------%22%29%0Aprint%28join%28map%28row%2C+range%280%2C+10%29%29%2C+%22%5Cn%22%29%29%0A){ .md-button .md-button--primary }
+[:material-play-circle: Run this example](https://numbat.dev/?q=%23+Compute+ISO+216+paper+sizes+for+the+A+series%0A%23%0A%23+https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FISO_216%0A%0Astruct+PaperSize+%7B%0A++++width%3A+Length%2C%0A++++height%3A+Length%2C%0A%7D%0A%0Aimpl+PaperSize+%7B%0A++++fn+area%28self%29+-%3E+Area+%3D+self.width+%C3%97+self.height%0A%0A++++fn+to_string%28self%29+-%3E+String+%3D%0A++++++++%22%7Bself.width%3A%3E4%7D+%C3%97+%7Bself.height%3A%3E5%7D+++%7Bself.area%28%29+-%3E+cm%C2%B2%3A%3E6.1f%7D%22%0A%7D%0A%0Afn+paper_size_A%28n%3A+Scalar%29+-%3E+PaperSize+%3D%0A++++if+n+%3D%3D+0%0A++++++++then+PaperSize+%7B+width%3A+841+mm%2C+height%3A+1189+mm+%7D%0A++++++++else+PaperSize+%7B%0A++++++++++++width%3A+floor_in%28mm%2C+paper_size_A%28n+-+1%29.height+%2F+2%29%2C%0A++++++++++++height%3A+paper_size_A%28n+-+1%29.width%2C%0A++++++++%7D%0A%0A%0Afn+row%28n%29+%3D+%22A%7Bn%3A%3C3%7D+++%7Bpaper_size_A%28n%29.to_string%28%29%7D%22%0A%0Aprint%28%22Name++++Width+++++Height++++++++Area++%22%29%0Aprint%28%22----+++-------+++--------+++----------%22%29%0Aprint%28join%28map%28row%2C+range%280%2C+10%29%29%2C+%22%5Cn%22%29%29%0A){ .md-button .md-button--primary }
 
 ```numbat
 # Compute ISO 216 paper sizes for the A series
@@ -14,26 +14,23 @@ struct PaperSize {
     height: Length,
 }
 
+impl PaperSize {
+    fn area(self) -> Area = self.width × self.height
+
+    fn to_string(self) -> String =
+        "{self.width:>4} × {self.height:>5}   {self.area() -> cm²:>6.1f}"
+}
+
 fn paper_size_A(n: Scalar) -> PaperSize =
-  if n == 0
-    then
-      PaperSize {
-        width: 841 mm,
-        height: 1189 mm
-      }
-    else
-      PaperSize {
-        width: floor_in(mm, paper_size_A(n - 1).height / 2),
-        height: paper_size_A(n - 1).width,
-      }
+    if n == 0
+        then PaperSize { width: 841 mm, height: 1189 mm }
+        else PaperSize {
+            width: floor_in(mm, paper_size_A(n - 1).height / 2),
+            height: paper_size_A(n - 1).width,
+        }
 
 
-fn paper_area(size: PaperSize) -> Area =
-    size.width * size.height
-
-
-fn size_as_string(size: PaperSize) = "{size.width:>4} × {size.height:>5}   {paper_area(size) -> cm²:>6.1f}"
-fn row(n) = "A{n:<3}   {size_as_string(paper_size_A(n))}"
+fn row(n) = "A{n:<3}   {paper_size_A(n).to_string()}"
 
 print("Name    Width     Height        Area  ")
 print("----   -------   --------   ----------")

@@ -5,14 +5,24 @@ let r = vec(3 m, 4 m, 0 m)
 let v = vec(-10 m / s, 0, 0)
 
 let mass = 5 kg
-let p = multiply(mass, v)
+let p = v.multiply(mass)
 
-let l_z = cross(r, p).z
+let l_z = r.cross(p).z
 
-# Check values
-assert_eq(norm(r), 25 m²)
-assert_eq(length(r), 5 m)
+# Check values using methods
+assert_eq(r.norm(), 25 m²)
+assert_eq(r.len(), 5 m)
 assert_eq(l_z, 200 kg m² / s)
+
+# Test method chaining
+let v1 = vec(1 m, 2 m, 3 m)
+let v2 = vec(4 m, 5 m, 6 m)
+assert_eq(v1.add(v2).x, 5 m)
+assert_eq(v1.sub(v2).x, -3 m)
+assert_eq(v1.neg().x, -1 m)
+
+# Test dot product
+assert_eq(v1.dot(v2), 32 m²)
 
 # Check types
 let _r: Vec<Length> = r

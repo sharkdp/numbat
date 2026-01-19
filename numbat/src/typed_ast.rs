@@ -294,13 +294,53 @@ pub enum StructKind {
     Instance(Vec<Type>),
 }
 
+/// Information about a method defined in an impl block
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MethodInfo {
+    pub definition_span: Span,
+    pub name: CompactString,
+    /// Type parameters for the method itself (not the struct's type parameters)
+    pub type_parameters: Vec<(Span, CompactString, Option<TypeParameterBound>)>,
+    /// Parameter names (excluding self)
+    pub parameters: Vec<(Span, CompactString)>,
+    /// The function type including self as first parameter: Fn[(Self, P1, P2, ...) -> R]
+    pub fn_type: TypeScheme,
+}
+
+/// A compiled method ready for bytecode generation
+#[derive(Debug, Clone, PartialEq)]
+pub struct CompiledMethod<'a> {
+    /// Mangled function name (e.g., "Point::magnitude")
+    pub mangled_name: CompactString,
+    /// Parameter names including self
+    pub parameters: Vec<CompactString>,
+    /// Local variables defined with "where"
+    pub local_variables: Vec<DefineVariable<'a>>,
+    /// Method body expression (None for FFI methods)
+    pub body: Option<Expression<'a>>,
+}
+
+#[derive(Debug, Clone)]
 pub struct StructInfo {
     pub definition_span: Span,
     pub name: CompactString,
     pub kind: StructKind,
     pub fields: IndexMap<CompactString, (Span, Type)>,
+    /// Methods defined on this struct via impl blocks
+    pub methods: IndexMap<CompactString, MethodInfo>,
 }
+
+// Custom PartialEq that excludes methods from comparison
+// Two struct types are equal if they have the same name, kind, and fields
+// regardless of methods, since methods are attached to the type definition
+// not individual type instances
+impl PartialEq for StructInfo {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.kind == other.kind && self.fields == other.fields
+    }
+}
+
+impl Eq for StructInfo {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
@@ -532,6 +572,7 @@ impl Type {
                     name: info.name.clone(),
                     kind: instantiated_kind,
                     fields: instantiated_fields,
+                    methods: info.methods.clone(),
                 }))
             }
             Type::List(element_type) => {
@@ -633,6 +674,15 @@ pub enum Expression<'a> {
     ),
     List(Span, Vec<Expression<'a>>, TypeScheme),
     TypedHole(Span, TypeScheme),
+    MethodCall(
+        Span,                // method span
+        Span,                // full span
+        Box<Expression<'a>>, // receiver (typed)
+        &'a str,             // method name
+        Vec<Expression<'a>>, // args (typed, excludes receiver)
+        TypeScheme,          // receiver struct type
+        TypeScheme,          // return type
+    ),
 }
 
 impl Expression<'_> {
@@ -667,6 +717,7 @@ impl Expression<'_> {
             Expression::AccessField(_span, full_span, _, _, _, _) => *full_span,
             Expression::List(full_span, _, _) => *full_span,
             Expression::TypedHole(span, _) => *span,
+            Expression::MethodCall(_, full_span, _, _, _, _, _) => *full_span,
         }
     }
 }
@@ -721,6 +772,13 @@ pub enum Statement<'a> {
     ),
     ProcedureCall(crate::ast::ProcedureKind, Span, Vec<Expression<'a>>),
     DefineStruct(StructInfo),
+    DefineImpl {
+        struct_name: CompactString,
+        /// Updated struct info with methods added
+        struct_info: StructInfo,
+        /// Compiled method bodies for bytecode generation
+        methods: Vec<CompiledMethod<'a>>,
+    },
 }
 
 impl Statement<'_> {
@@ -813,6 +871,7 @@ impl Statement<'_> {
             }
             Statement::ProcedureCall(_, _, _) => {}
             Statement::DefineStruct(_) => {}
+            Statement::DefineImpl { .. } => {}
         }
     }
 
@@ -911,6 +970,9 @@ impl Expression<'_> {
                 Type::List(Box::new(element_type.unsafe_as_concrete()))
             }
             Expression::TypedHole(_, type_) => type_.unsafe_as_concrete(),
+            Expression::MethodCall(_, _, _, _, _, _, return_type) => {
+                return_type.unsafe_as_concrete()
+            }
         }
     }
 
@@ -942,6 +1004,7 @@ impl Expression<'_> {
                 ),
             },
             Expression::TypedHole(_, type_) => type_.clone(),
+            Expression::MethodCall(_, _, _, _, _, _, return_type) => return_type.clone(),
         }
     }
 }
@@ -1257,6 +1320,17 @@ impl PrettyPrint for Statement<'_> {
                     }
                     + m::operator("}")
             }
+            Statement::DefineImpl { struct_name, .. } => {
+                m::keyword("impl")
+                    + m::space()
+                    + m::type_identifier(struct_name.to_compact_string())
+                    + m::space()
+                    + m::operator("{")
+                    + m::space()
+                    + m::operator("...")
+                    + m::space()
+                    + m::operator("}")
+            }
         }
     }
 }
@@ -1277,7 +1351,8 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::InstantiateStruct(..)
         | Expression::AccessField(..)
         | Expression::List(..)
-        | Expression::TypedHole(_, _) => expr.pretty_print(),
+        | Expression::TypedHole(_, _)
+        | Expression::MethodCall(..) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::BinaryOperatorForDate { .. }
@@ -1491,6 +1566,18 @@ impl PrettyPrint for Expression<'_> {
                     + m::operator("]")
             }
             TypedHole(_, _) => m::operator("?"),
+            MethodCall(_, _, receiver, method_name, args, _, _) => {
+                receiver.pretty_print()
+                    + m::operator(".")
+                    + m::identifier(method_name.to_compact_string())
+                    + m::operator("(")
+                    + itertools::Itertools::intersperse(
+                        args.iter().map(|e| e.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
+            }
         }
     }
 }
