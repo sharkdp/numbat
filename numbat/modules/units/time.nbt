@@ -1,9 +1,9 @@
-use units::si
+use units::si::*
 
 @name("Week")
 @url("https://en.wikipedia.org/wiki/Week")
 @aliases(weeks)
-unit week: Time = 7 days
+pub unit week: Time = 7 days
 
 # The mean tropical year changes over time (half a second per century). It's current
 # value can be approximated using
@@ -29,35 +29,35 @@ unit week: Time = 7 days
 @url("https://en.wikipedia.org/wiki/Tropical_year")
 @metric_prefixes
 @aliases(years, yr: short, tropical_year, tropical_years)
-unit year: Time = 365.242_188_1 days
+pub unit year: Time = 365.242_188_1 days
 
 @name("Month")
 @url("https://en.wikipedia.org/wiki/Month")
 @aliases(months)
-unit month: Time = year / 12
+pub unit month: Time = year / 12
 
 @name("Gregorian year")
 @url("https://en.wikipedia.org/wiki/Gregorian_year")
 @metric_prefixes
 @aliases(gregorian_years)
-unit gregorian_year: Time = 365.2425 days
+pub unit gregorian_year: Time = 365.2425 days
 
 @name("Julian year")
 @url("https://en.wikipedia.org/wiki/Julian_year_(astronomy)")
 @aliases(julian_years)
-unit julian_year: Time = 365.25 days
+pub unit julian_year: Time = 365.25 days
 
 @name("Decade")
 @url("https://en.wikipedia.org/wiki/Decade")
 @aliases(decades)
-unit decade: Time = 10 years
+pub unit decade: Time = 10 years
 
 @name("Century")
 @url("https://en.wikipedia.org/wiki/Century")
 @aliases(centuries)
-unit century: Time = 100 years
+pub unit century: Time = 100 years
 
 @name("Millennium")
 @url("https://en.wikipedia.org/wiki/Millennium")
 @aliases(millennia)
-unit millennium: Time = 1000 years
+pub unit millennium: Time = 1000 years

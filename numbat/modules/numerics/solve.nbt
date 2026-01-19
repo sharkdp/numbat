@@ -1,11 +1,11 @@
-use core::functions
-use core::error
+use core::functions::*
+use core::error::*
 
 @name("Bisection method")
 @url("https://en.wikipedia.org/wiki/Bisection_method")
 @description("Find the root of the function $f$ in the interval $[x_1, x_2]$ using the bisection method. The function $f$ must be continuous and $f(x_1) \cdot f(x_2) < 0$.")
 @example("fn f(x) = x² +x -2\nroot_bisect(f, 0, 100, 0.01, 0.01)", "Find the root of $f(x) = x² +x -2$ in the interval $[0, 100]$.")
-fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y) -> X =
+pub fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y) -> X =
   if abs(x1 - x2) < x_tol
     then x_mean
     else if abs(f_x_mean) < y_tol
@@ -16,7 +16,7 @@ fn root_bisect<X: Dim, Y: Dim>(f: Fn[(X) -> Y], x1: X, x2: X, x_tol: X, y_tol: Y
   where x_mean = (x1 + x2) / 2
     and f_x_mean = f(x_mean)
 
-fn _root_newton_helper<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y, max_iterations: Scalar) -> X =
+pub fn _root_newton_helper<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y, max_iterations: Scalar) -> X =
   if max_iterations <= 0
     then error("root_newton: Maximum number of iterations reached. Try another initial guess?")
     else if abs(f_x0) < y_tol
@@ -29,5 +29,5 @@ fn _root_newton_helper<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X
 @url("https://en.wikipedia.org/wiki/Newton%27s_method") 
 @description("Find the root of the function $f(x)$ and its derivative $f'(x)$ using Newton's method.")
 @example("fn f(x) = x² -3x +2\nfn f_prime(x) = 2x -3\nroot_newton(f, f_prime, 0 , 0.01)", "Find a root of $f(x) = x² -3x +2$ using Newton's method.")
-fn root_newton<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y) -> X =
+pub fn root_newton<X: Dim, Y: Dim>(f: Fn[(X) -> Y], f_prime: Fn[(X) -> Y / X], x0: X, y_tol: Y) -> X =
   _root_newton_helper(f, f_prime, x0, y_tol, 10_000)

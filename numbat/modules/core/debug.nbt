@@ -1,6 +1,6 @@
-use core::scalar
+use core::scalar::*
 
 @description("Print the value (and type) of the argument and return it. Useful for debugging.")
 @example("inspect(36 km / 1.5 hours) * 1 day")
 @example("range(1, 3) |> map(sqr) |> map(inspect) |> sum")
-fn inspect<T>(x: T) -> T
+pub fn inspect<T>(x: T) -> T

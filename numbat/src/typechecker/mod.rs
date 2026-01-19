@@ -179,6 +179,8 @@ fn proper_function_call<'a>(
     ))
 }
 
+use std::collections::HashSet;
+
 #[derive(Clone, Default)]
 pub struct TypeChecker {
     structs: HashMap<CompactString, StructInfo>,
@@ -190,6 +192,15 @@ pub struct TypeChecker {
 
     name_generator: NameGenerator,
     constraints: ConstraintSet,
+
+    /// The code_source_id of the statement currently being typechecked.
+    /// Used for visibility checking: private items are only accessible
+    /// from the same source.
+    current_source_id: Option<usize>,
+
+    /// Set of code_source_ids that correspond to module imports.
+    /// Used to determine if an item should have visibility enforced.
+    module_source_ids: HashSet<usize>,
 }
 
 struct ElaborationDefinitionArgs<'a, 'b> {
@@ -205,6 +216,19 @@ struct ElaborationDefinitionArgs<'a, 'b> {
 }
 
 impl TypeChecker {
+    /// Register the set of code_source_ids that correspond to module imports.
+    /// Items from these sources will have visibility enforced.
+    pub fn set_module_source_ids(&mut self, module_source_ids: HashSet<usize>) {
+        self.module_source_ids = module_source_ids;
+    }
+
+    /// Check if the current statement is from module code (where visibility is enforced).
+    fn is_from_module(&self) -> bool {
+        self.current_source_id
+            .map(|id| self.module_source_ids.contains(&id))
+            .unwrap_or(false)
+    }
+
     fn fresh_type_variable(&mut self) -> Type {
         Type::TVar(self.name_generator.fresh_type_variable())
     }
@@ -330,18 +354,51 @@ impl TypeChecker {
         }
     }
 
+    /// Check if an identifier is accessible based on visibility rules.
+    /// Private module symbols are only accessible from other module code, not from user code.
+    fn check_identifier_visibility(&self, span: Span, name: &str) -> Result<()> {
+        if let Some(visibility_info) = self.env.get_visibility_info(name) {
+            // If the identifier is private and from a module...
+            if visibility_info.from_module && visibility_info.visibility == ast::Visibility::Private
+            {
+                // Check if current code is also from a module
+                let current_is_module = self
+                    .current_source_id
+                    .map(|id| self.module_source_ids.contains(&id))
+                    .unwrap_or(false);
+
+                // Only allow access if current code is from a module.
+                // User code (REPL/files) cannot access private module symbols.
+                if !current_is_module {
+                    return Err(Box::new(TypeCheckError::PrivateIdentifier(
+                        span,
+                        name.into(),
+                    )));
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn identifier_type(&self, span: Span, name: &str) -> Result<TypeScheme> {
-        Ok(self.env.get_identifier_type(name).ok_or_else(|| {
+        // First check if the identifier exists
+        let type_scheme = self.env.get_identifier_type(name).ok_or_else(|| {
+            // Provide suggestions only from accessible identifiers
             let suggestion = suggestion::did_you_mean(
                 self.env
-                    .iter_identifiers()
+                    .iter_accessible_identifiers(self.current_source_id)
                     .map(|k| k.as_str())
                     .chain(["true", "false"]) // These are parsed as keywords, but can act like identifiers
                     .chain(ffi::procedures().keys().map(|p| p.name())),
                 name,
             );
             TypeCheckError::UnknownIdentifier(span, name.into(), suggestion)
-        })?)
+        })?;
+
+        // Check visibility
+        self.check_identifier_visibility(span, name)?;
+
+        Ok(type_scheme)
     }
 
     fn elaborate_expression<'a>(
@@ -829,6 +886,9 @@ impl TypeChecker {
                 if let Some((function_name, signature)) =
                     self.env.get_proper_function_reference(callable)
                 {
+                    // Check visibility for function access
+                    self.check_identifier_visibility(*span, function_name)?;
+
                     proper_function_call(ProperFunctionCallArgs {
                         registry: &mut self.registry,
                         constraints: &mut self.constraints,
@@ -1300,6 +1360,7 @@ impl TypeChecker {
             expr,
             type_annotation,
             decorators,
+            visibility,
         } = define_variable;
 
         let (expr_checked, type_deduced) = self._elaborate_inner(ElaborationDefinitionArgs {
@@ -1320,6 +1381,8 @@ impl TypeChecker {
                 type_deduced.clone(),
                 *identifier_span,
                 false,
+                *visibility,
+                self.is_from_module(),
             );
 
             self.value_namespace
@@ -1327,6 +1390,8 @@ impl TypeChecker {
                     name.to_compact_string(),
                     *identifier_span,
                     CompactString::const_new("constant"),
+                    *visibility,
+                    identifier_span.code_source_id,
                 )
                 .map_err(|err| Box::new(err.into()))?;
         }
@@ -1345,6 +1410,9 @@ impl TypeChecker {
         &mut self,
         ast: &ast::Statement<'a>,
     ) -> Result<typed_ast::Statement<'a>> {
+        // Set the current source_id for visibility checking
+        self.current_source_id = Some(ast.source_id());
+
         Ok(match ast {
             ast::Statement::Expression(expr) => {
                 let checked_expr = self.elaborate_expression(expr)?;
@@ -1361,7 +1429,14 @@ impl TypeChecker {
                     self.elaborate_define_variable(define_variable)?,
                 )
             }
-            ast::Statement::DefineBaseUnit(span, unit_name, type_annotation, decorators) => {
+            ast::Statement::DefineBaseUnit {
+                unit_name_span,
+                unit_name,
+                type_annotation,
+                decorators,
+                visibility,
+            } => {
+                let span = unit_name_span;
                 let type_specified = if let Some(dexpr) = type_annotation {
                     let dtype: DType = self
                         .registry
@@ -1396,6 +1471,8 @@ impl TypeChecker {
                         Type::Dimension(type_specified.clone()),
                         *span,
                         true,
+                        *visibility,
+                        self.is_from_module(),
                     );
                 }
 
@@ -1414,6 +1491,7 @@ impl TypeChecker {
                 type_annotation_span,
                 type_annotation,
                 decorators,
+                visibility,
             } => {
                 let (expr_checked, type_deduced) =
                     self._elaborate_inner(ElaborationDefinitionArgs {
@@ -1434,6 +1512,8 @@ impl TypeChecker {
                         type_deduced.clone(),
                         *identifier_span,
                         true,
+                        *visibility,
+                        self.is_from_module(),
                     );
                 }
                 typed_ast::Statement::DefineDerivedUnit(
@@ -1455,6 +1535,7 @@ impl TypeChecker {
                 local_variables,
                 return_type_annotation,
                 decorators,
+                visibility,
             } => {
                 if body.is_none() {
                     self.value_namespace
@@ -1462,6 +1543,8 @@ impl TypeChecker {
                             function_name.to_compact_string(),
                             *function_name_span,
                             CompactString::const_new("foreign function"),
+                            *visibility,
+                            function_name_span.code_source_id,
                         )
                         .map_err(|err| Box::new(err.into()))?;
                 } else {
@@ -1470,6 +1553,8 @@ impl TypeChecker {
                             function_name.to_compact_string(),
                             *function_name_span,
                             CompactString::const_new("function"),
+                            *visibility,
+                            function_name_span.code_source_id,
                         )
                         .map_err(|err| Box::new(err.into()))?;
                 }
@@ -1495,6 +1580,8 @@ impl TypeChecker {
                             type_parameter.to_compact_string(),
                             *span,
                             CompactString::const_new("type parameter"),
+                            ast::Visibility::Private, // type parameters are local
+                            span.code_source_id,
                         )
                         .ok();
 
@@ -1536,11 +1623,14 @@ impl TypeChecker {
                         ));
                     }
 
+                    // Function parameters are private (local to the function)
                     self.env.add_scheme(
                         parameter.to_compact_string(),
                         TypeScheme::make_quantified(parameter_type.clone()),
                         *parameter_span,
                         false,
+                        ast::Visibility::Private,
+                        self.is_from_module(),
                     );
                     typed_parameters.push((
                         *parameter_span,
@@ -1598,6 +1688,8 @@ impl TypeChecker {
                         description: crate::decorator::description(decorators),
                         examples: crate::decorator::examples(decorators),
                     },
+                    *visibility,
+                    self.is_from_module(),
                 );
 
                 let mut typed_local_variables = vec![];
@@ -1695,6 +1787,8 @@ impl TypeChecker {
                     function_name.to_compact_string(),
                     signature.clone(),
                     metadata.clone(),
+                    *visibility,
+                    self.is_from_module(),
                 );
 
                 typed_ast::Statement::DefineFunction(
@@ -1722,12 +1816,21 @@ impl TypeChecker {
                     crate::markup::empty(),
                 )
             }
-            ast::Statement::DefineDimension(name_span, name, dexprs) => {
+            ast::Statement::DefineDimension {
+                dimension_name_span,
+                dimension_name,
+                type_exprs: dexprs,
+                visibility,
+            } => {
+                let name_span = dimension_name_span;
+                let name = dimension_name;
                 self.type_namespace
                     .add_identifier(
                         name.to_compact_string(),
                         *name_span,
                         CompactString::const_new("dimension"),
+                        *visibility,
+                        name_span.code_source_id,
                     )
                     .map_err(|err| Box::new(err.into()))?;
 
@@ -1865,7 +1968,7 @@ impl TypeChecker {
                     checked_args,
                 )
             }
-            ast::Statement::ModuleImport(_, _) => {
+            ast::Statement::ModuleImport(_, _, _) => {
                 unreachable!("Modules should have been inlined by now")
             }
             ast::Statement::DefineStruct {
@@ -1873,12 +1976,15 @@ impl TypeChecker {
                 struct_name,
                 type_parameters,
                 fields,
+                visibility,
             } => {
                 self.type_namespace
                     .add_identifier(
                         struct_name.to_compact_string(),
                         *struct_name_span,
                         CompactString::const_new("struct"),
+                        *visibility,
+                        struct_name_span.code_source_id,
                     )
                     .map_err(|err| Box::new(err.into()))?;
 
@@ -1903,6 +2009,8 @@ impl TypeChecker {
                             type_parameter.to_compact_string(),
                             *span,
                             "type parameter".to_compact_string(),
+                            ast::Visibility::Private, // type parameters are local
+                            span.code_source_id,
                         )
                         .ok();
 

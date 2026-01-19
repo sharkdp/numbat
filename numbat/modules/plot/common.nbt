@@ -1,6 +1,6 @@
-use core::quantities
-use core::strings
+use core::quantities::*
+use core::strings::*
 
 # TODO: this function is overly generic, but we don't have bounded
 # polymorphism yet.
-fn show<Plot>(plot: Plot) -> String
+pub fn show<Plot>(plot: Plot) -> String

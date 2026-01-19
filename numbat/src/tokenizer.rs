@@ -107,6 +107,7 @@ pub enum TokenKind {
     To,
     Let,
     Fn, // 'fn'
+    Pub,
     Where,
     And,
     Dimension,
@@ -479,6 +480,7 @@ impl Tokenizer {
             m.insert("to", TokenKind::To);
             m.insert("let", TokenKind::Let);
             m.insert("fn", TokenKind::Fn);
+            m.insert("pub", TokenKind::Pub);
             m.insert("where", TokenKind::Where);
             m.insert("and", TokenKind::And);
             m.insert("dimension", TokenKind::Dimension);

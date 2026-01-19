@@ -1,33 +1,33 @@
-use core::functions
-use core::lists
-use core::strings
-use core::quantities
-use units::si
-use units::time
-use datetime::functions
-use units::mixed
+use core::functions::*
+use core::lists::*
+use core::strings::*
+use core::quantities::*
+use units::si::*
+use units::time::*
+use datetime::functions::*
+use units::mixed::*
 
-fn _human_join(a: String, b: String) -> String =
+pub fn _human_join(a: String, b: String) -> String =
   if a == "" then b else if b == "" then a else "{a} + {b}"
 
-fn _prettier(str: String) -> String =
+pub fn _prettier(str: String) -> String =
     if str_slice(0, 2, clean_str) == "0 " then ""
     else if str_slice(0, 2, clean_str) == "1 " then str_slice( 0, str_length(clean_str) - 1, clean_str)
     else clean_str
   where clean_str = str_replace(".0 ", " ", str)
 
-fn _human_years(time: Time)   -> String = "{(time -> years)   /  year   |> floor} years"   -> _prettier
-fn _human_months(time: Time)  -> String = "{(time -> months)  /  month  |> round} months"  -> _prettier
+pub fn _human_years(time: Time)   -> String = "{(time -> years)   /  year   |> floor} years"   -> _prettier
+pub fn _human_months(time: Time)  -> String = "{(time -> months)  /  month  |> round} months"  -> _prettier
 
-fn _human_days(time: Time)    -> String = "{(time -> days)    /  day    |> floor} days"    -> _prettier
-fn _human_hours(time: Time)   -> String = "{(time -> hours)   /  hour   |> floor} hours"   -> _prettier
-fn _human_minutes(time: Time) -> String = "{(time -> minutes) /  minute |> floor} minutes" -> _prettier
+pub fn _human_days(time: Time)    -> String = "{(time -> days)    /  day    |> floor} days"    -> _prettier
+pub fn _human_hours(time: Time)   -> String = "{(time -> hours)   /  hour   |> floor} hours"   -> _prettier
+pub fn _human_minutes(time: Time) -> String = "{(time -> minutes) /  minute |> floor} minutes" -> _prettier
 
-fn _precise_human_months(time: Time)  -> String = "{(time -> months)  /  month } months"  -> _prettier
-fn _precise_human_days(time: Time)    -> String = "{(time -> days)    /  day   } days"    -> _prettier
-fn _precise_human_seconds(time: Time) -> String = "{(time -> seconds) /  second} seconds" -> _prettier
+pub fn _precise_human_months(time: Time)  -> String = "{(time -> months)  /  month } months"  -> _prettier
+pub fn _precise_human_days(time: Time)    -> String = "{(time -> days)    /  day   } days"    -> _prettier
+pub fn _precise_human_seconds(time: Time) -> String = "{(time -> seconds) /  second} seconds" -> _prettier
 
-fn _human_unit(time: Time) -> String =
+pub fn _human_unit(time: Time) -> String =
   if      time_unit >= year    then _human_years(time)
   else if time_unit >= month   then _human_months(time)
   else if time_unit >= day     then _human_days(time)
@@ -37,17 +37,17 @@ fn _human_unit(time: Time) -> String =
   else                              ""
   where time_unit = if (time == 0) then 0 s else unit_of(time)
 
-fn _round_mixed_in<D: Dim>(base: D, value: List<D>) -> List<D> =
+pub fn _round_mixed_in<D: Dim>(base: D, value: List<D>) -> List<D> =
   value |> sum |> round_in(base) |> _unit_list(units)
     where units: List<D> = value |> filter(is_nonzero) |> map(unit_of)
 
-fn _human_time(base: Time, time_segments: List<Time>) -> String = 
+pub fn _human_time(base: Time, time_segments: List<Time>) -> String = 
   time_segments |> _round_mixed_in(base) |> map(_human_unit) |> foldl(_human_join, "")
 
-fn _human_for_long_duration(human_days: String, human_years: String) -> String =
+pub fn _human_for_long_duration(human_days: String, human_years: String) -> String =
   "{human_days} (approx. {human_years})"
 
-fn _abs_human(time: Time) -> String =
+pub fn _abs_human(time: Time) -> String =
   if      abs_time ==  0 seconds then "0 seconds"
   else if abs_time <  60 seconds then abs_time -> _precise_human_seconds
   else if abs_time <   2 months  then ((abs_time -> seconds) |> unit_list([day, hour, minute, second]) |> _human_time(0.1 ms))
@@ -62,7 +62,7 @@ fn _abs_human(time: Time) -> String =
 @url("https://numbat.dev/docs/basics/date-and-time/")
 @description("Converts a time duration to a human-readable string in days, hours, minutes and seconds.")
 @example("century/1e6 -> human", "How long is a microcentury?")
-fn human(time: Time) -> String = 
+pub fn human(time: Time) -> String = 
   if time < 0 s 
   then str_append(_abs_human(time),  " ago") 
   else _abs_human(time)

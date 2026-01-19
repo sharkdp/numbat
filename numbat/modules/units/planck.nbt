@@ -1,24 +1,24 @@
 # https://en.wikipedia.org/wiki/Planck_units
 
-use core::functions
-use physics::constants
+use core::functions::*
+use physics::constants::*
 
 @name("Planck length")
 @url("https://en.wikipedia.org/wiki/Planck_length")
-unit planck_length: Length = sqrt(ℏ G / c^3) -> m
+pub unit planck_length: Length = sqrt(ℏ G / c^3) -> m
 
 @name("Planck mass")
 @url("https://en.wikipedia.org/wiki/Planck_mass")
-unit planck_mass: Mass = sqrt(ℏ c / G) -> kg
+pub unit planck_mass: Mass = sqrt(ℏ c / G) -> kg
 
 @name("Planck time")
 @url("https://en.wikipedia.org/wiki/Planck_time")
-unit planck_time: Time = sqrt(ℏ G / c^5) -> s
+pub unit planck_time: Time = sqrt(ℏ G / c^5) -> s
 
 @name("Planck temperature")
 @url("https://en.wikipedia.org/wiki/Planck_temperature")
-unit planck_temperature: Temperature = sqrt(ℏ c^5 / (G k_B^2)) -> K
+pub unit planck_temperature: Temperature = sqrt(ℏ c^5 / (G k_B^2)) -> K
 
 @name("Planck energy")
 @url("https://en.wikipedia.org/wiki/Planck_energy")
-unit planck_energy: Energy = sqrt(ℏ c^5 / G) -> J
+pub unit planck_energy: Energy = sqrt(ℏ c^5 / G) -> J

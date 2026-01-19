@@ -11,6 +11,24 @@ use compact_str::{CompactString, ToCompactString, format_compact};
 use itertools::Itertools;
 use num_traits::Signed;
 
+/// Visibility of a declaration.
+/// Items are private by default.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Visibility {
+    #[default]
+    Private,
+    Public,
+}
+
+/// The kind of module import.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ImportKind<'a> {
+    /// `use module::*` - import all public items from the module
+    Glob,
+    /// `use module::item` - import a specific item from the module
+    Item(&'a str),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOperator {
     Factorial(NonZeroUsize),
@@ -433,6 +451,7 @@ pub struct DefineVariable<'a> {
     pub expr: Expression<'a>,
     pub type_annotation: Option<TypeAnnotation>,
     pub decorators: Vec<Decorator<'a>>,
+    pub visibility: Visibility,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -452,9 +471,21 @@ pub enum Statement<'a> {
         /// Optional annotated return type
         return_type_annotation: Option<TypeAnnotation>,
         decorators: Vec<Decorator<'a>>,
+        visibility: Visibility,
     },
-    DefineDimension(Span, &'a str, Vec<TypeExpression>),
-    DefineBaseUnit(Span, &'a str, Option<TypeExpression>, Vec<Decorator<'a>>),
+    DefineDimension {
+        dimension_name_span: Span,
+        dimension_name: &'a str,
+        type_exprs: Vec<TypeExpression>,
+        visibility: Visibility,
+    },
+    DefineBaseUnit {
+        unit_name_span: Span,
+        unit_name: &'a str,
+        type_annotation: Option<TypeExpression>,
+        decorators: Vec<Decorator<'a>>,
+        visibility: Visibility,
+    },
     DefineDerivedUnit {
         identifier_span: Span,
         identifier: &'a str,
@@ -462,15 +493,85 @@ pub enum Statement<'a> {
         type_annotation_span: Option<Span>,
         type_annotation: Option<TypeAnnotation>,
         decorators: Vec<Decorator<'a>>,
+        visibility: Visibility,
     },
     ProcedureCall(Span, ProcedureKind, Vec<Expression<'a>>),
-    ModuleImport(Span, ModulePathBorrowed<'a>),
+    ModuleImport(Span, ModulePathBorrowed<'a>, ImportKind<'a>),
     DefineStruct {
         struct_name_span: Span,
         struct_name: &'a str,
         type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
         fields: Vec<(Span, &'a str, TypeAnnotation)>,
+        visibility: Visibility,
     },
+}
+
+impl<'a> Statement<'a> {
+    /// Returns the name and visibility of a definition statement.
+    /// Returns None for expressions, procedure calls, and module imports.
+    pub fn definition_info(&self) -> Option<(&'a str, Visibility)> {
+        match self {
+            Statement::DefineVariable(DefineVariable {
+                identifier,
+                visibility,
+                ..
+            }) => Some((identifier, *visibility)),
+            Statement::DefineFunction {
+                function_name,
+                visibility,
+                ..
+            } => Some((function_name, *visibility)),
+            Statement::DefineDimension {
+                dimension_name,
+                visibility,
+                ..
+            } => Some((dimension_name, *visibility)),
+            Statement::DefineBaseUnit {
+                unit_name,
+                visibility,
+                ..
+            } => Some((unit_name, *visibility)),
+            Statement::DefineDerivedUnit {
+                identifier,
+                visibility,
+                ..
+            } => Some((identifier, *visibility)),
+            Statement::DefineStruct {
+                struct_name,
+                visibility,
+                ..
+            } => Some((struct_name, *visibility)),
+            Statement::Expression(_)
+            | Statement::ProcedureCall(_, _, _)
+            | Statement::ModuleImport(_, _, _) => None,
+        }
+    }
+
+    /// Returns the code_source_id for this statement based on its primary span.
+    pub fn source_id(&self) -> usize {
+        match self {
+            Statement::DefineVariable(DefineVariable {
+                identifier_span, ..
+            }) => identifier_span.code_source_id,
+            Statement::DefineFunction {
+                function_name_span, ..
+            } => function_name_span.code_source_id,
+            Statement::DefineDimension {
+                dimension_name_span,
+                ..
+            } => dimension_name_span.code_source_id,
+            Statement::DefineBaseUnit { unit_name_span, .. } => unit_name_span.code_source_id,
+            Statement::DefineDerivedUnit {
+                identifier_span, ..
+            } => identifier_span.code_source_id,
+            Statement::DefineStruct {
+                struct_name_span, ..
+            } => struct_name_span.code_source_id,
+            Statement::Expression(expr) => expr.full_span().code_source_id,
+            Statement::ProcedureCall(span, _, _) => span.code_source_id,
+            Statement::ModuleImport(span, _, _) => span.code_source_id,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -623,6 +724,7 @@ impl ReplaceSpans for DefineVariable<'_> {
             expr: self.expr.replace_spans(),
             type_annotation: self.type_annotation.as_ref().map(|t| t.replace_spans()),
             decorators: self.decorators.clone(),
+            visibility: self.visibility,
         }
     }
 }
@@ -644,6 +746,7 @@ impl ReplaceSpans for Statement<'_> {
                 local_variables,
                 return_type_annotation,
                 decorators,
+                visibility,
             } => Statement::DefineFunction {
                 function_name_span: Span::dummy(),
                 function_name,
@@ -668,18 +771,32 @@ impl ReplaceSpans for Statement<'_> {
                     .collect(),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
                 decorators: decorators.clone(),
+                visibility: *visibility,
             },
-            Statement::DefineDimension(_, name, dexprs) => Statement::DefineDimension(
-                Span::dummy(),
-                name,
-                dexprs.iter().map(|t| t.replace_spans()).collect(),
-            ),
-            Statement::DefineBaseUnit(_, name, type_, decorators) => Statement::DefineBaseUnit(
-                Span::dummy(),
-                name,
-                type_.as_ref().map(|t| t.replace_spans()),
-                decorators.clone(),
-            ),
+            Statement::DefineDimension {
+                dimension_name_span: _,
+                dimension_name,
+                type_exprs,
+                visibility,
+            } => Statement::DefineDimension {
+                dimension_name_span: Span::dummy(),
+                dimension_name,
+                type_exprs: type_exprs.iter().map(|t| t.replace_spans()).collect(),
+                visibility: *visibility,
+            },
+            Statement::DefineBaseUnit {
+                unit_name_span: _,
+                unit_name,
+                type_annotation,
+                decorators,
+                visibility,
+            } => Statement::DefineBaseUnit {
+                unit_name_span: Span::dummy(),
+                unit_name,
+                type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
+                decorators: decorators.clone(),
+                visibility: *visibility,
+            },
             Statement::DefineDerivedUnit {
                 identifier_span: _,
                 identifier,
@@ -687,6 +804,7 @@ impl ReplaceSpans for Statement<'_> {
                 type_annotation_span,
                 type_annotation,
                 decorators,
+                visibility,
             } => Statement::DefineDerivedUnit {
                 identifier_span: Span::dummy(),
                 identifier,
@@ -694,19 +812,21 @@ impl ReplaceSpans for Statement<'_> {
                 type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
                 decorators: decorators.clone(),
+                visibility: *visibility,
             },
             Statement::ProcedureCall(_, proc, args) => Statement::ProcedureCall(
                 Span::dummy(),
                 proc.clone(),
                 args.iter().map(|a| a.replace_spans()).collect(),
             ),
-            Statement::ModuleImport(_, module_path) => {
-                Statement::ModuleImport(Span::dummy(), module_path.clone())
+            Statement::ModuleImport(_, module_path, import_kind) => {
+                Statement::ModuleImport(Span::dummy(), module_path.clone(), import_kind.clone())
             }
             Statement::DefineStruct {
                 struct_name,
                 type_parameters,
                 fields,
+                visibility,
                 ..
             } => Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
@@ -719,6 +839,7 @@ impl ReplaceSpans for Statement<'_> {
                     .iter()
                     .map(|(_span, name, type_)| (Span::dummy(), *name, type_.replace_spans()))
                     .collect(),
+                visibility: *visibility,
             },
         }
     }

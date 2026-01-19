@@ -1,56 +1,56 @@
-use units::si
-use units::imperial
+use units::si::*
+use units::imperial::*
 
 @name("US liquid gallon")
 @url("https://en.wikipedia.org/wiki/Gallon")
 @aliases(gallons, gal: short)
-unit gallon: Volume = 231 in^3
+pub unit gallon: Volume = 231 in^3
 
 @name("US liquid pint")
 @url("https://en.wikipedia.org/wiki/Pint")
 @aliases(pints)
-unit pint: Volume = 1/8 × gallon
+pub unit pint: Volume = 1/8 × gallon
 
 @name("US cup")
 @url("https://en.wikipedia.org/wiki/Cup_(unit)")
 @aliases(cups)
-unit cup: Volume = 1/2 × pint
+pub unit cup: Volume = 1/2 × pint
 
 @name("US tablespoon")
 @url("https://en.wikipedia.org/wiki/Tablespoon")
 @aliases(tablespoons, tbsp: short)
-unit tablespoon: Volume = 1/16 × cup
+pub unit tablespoon: Volume = 1/16 × cup
 
 @name("US teaspoon")
 @url("https://en.wikipedia.org/wiki/Teaspoon")
 @aliases(teaspoons, tsp: short)
-unit teaspoon: Volume = 1/3 × tablespoon
+pub unit teaspoon: Volume = 1/3 × tablespoon
 
 @name("US fluid ounce")
 @url("https://en.wikipedia.org/wiki/Fluid_ounce")
 @aliases(fluidounces, floz: short)
-unit fluidounce: Volume = 2 tablespoon
+pub unit fluidounce: Volume = 2 tablespoon
 
 @name("US hogshead")
 @url("https://en.wikipedia.org/wiki/Hogshead")
 @aliases(hogsheads)
-unit hogshead: Volume = 63 gallon
+pub unit hogshead: Volume = 63 gallon
 
 @name("US rod")
 @url("https://en.wikipedia.org/wiki/Rod_(unit)")
 @aliases(rods, perch)
-unit rod: Length = 16.5 ft
+pub unit rod: Length = 16.5 ft
 
 @name("Acre")
 @url("https://en.wikipedia.org/wiki/Acre")
 @aliases(acres)
-unit acre: Area = 4840 yard^2
+pub unit acre: Area = 4840 yard^2
 
 @name("Miles per gallon")
 @url("https://en.wikipedia.org/wiki/Fuel_economy_in_automobiles")
-unit mpg: Length / Volume = miles per gallon
+pub unit mpg: Length / Volume = miles per gallon
 
 @name("Foot-candle")
 @url("https://en.wikipedia.org/wiki/Foot-candle")
 @aliases(footcandles, fc: short)
-unit footcandle: Illuminance = lumen / foot^2
+pub unit footcandle: Illuminance = lumen / foot^2

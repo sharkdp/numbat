@@ -1,39 +1,39 @@
-use units::si
+use units::si::*
 
 ### Centimetre–gram–second system of units
 
 @name("Dyne")
 @url("https://en.wikipedia.org/wiki/Dyne")
 @aliases(dyn)
-unit dyne: Force = 1e-5 N
+pub unit dyne: Force = 1e-5 N
 
 @name("Erg")
 @url("https://en.wikipedia.org/wiki/Erg")
 @aliases(ergs)
-unit erg: Energy = 1 dyn cm
+pub unit erg: Energy = 1 dyn cm
 
 @name("Gauss")
 @url("https://en.wikipedia.org/wiki/Gauss_(unit)")
-unit gauss: MagneticFluxDensity = 100 µT
+pub unit gauss: MagneticFluxDensity = 100 µT
 
 @name("Maxwell")
 @url("https://en.wikipedia.org/wiki/Maxwell_(unit)")
 @aliases(Mx)
-unit maxwell: MagneticFlux = 1 gauss × cm^2
+pub unit maxwell: MagneticFlux = 1 gauss × cm^2
 
 @name("Oersted")
 @url("https://en.wikipedia.org/wiki/Oersted")
 @metric_prefixes
 @aliases(Oe: short)
-unit oersted: MagneticFieldStrength = 1 / (4 pi) * dyne / maxwell
+pub unit oersted: MagneticFieldStrength = 1 / (4 pi) * dyne / maxwell
 
 @name("Poise")
 @url("https://en.wikipedia.org/wiki/Poise_(unit)")
 @metric_prefixes
-unit poise: DynamicViscosity = 1 dyn × s / cm^2
+pub unit poise: DynamicViscosity = 1 dyn × s / cm^2
 
 @name("Stokes")
 @url("https://en.wikipedia.org/wiki/Stokes_(unit)")
 @metric_prefixes
 @aliases(St: short)
-unit stokes: KinematicViscosity = cm^2 / s
+pub unit stokes: KinematicViscosity = cm^2 / s

@@ -17,10 +17,10 @@ icon: lucide/file-code
 
 # 1. Imports
 
-use prelude        # This is not necessary. The 'prelude'
+use prelude::*     # This is not necessary. The 'prelude'
                    # module will always be loaded upon startup
 
-use units::stoney  # Load a specific module
+use units::stoney::*  # Load a specific module
 
 # 2. Numbers
 

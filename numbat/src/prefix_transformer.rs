@@ -134,6 +134,7 @@ impl Transformer {
             expr,
             type_annotation: _,
             decorators,
+            visibility: _,
         } = define_variable;
 
         for (name, _) in decorator::name_and_aliases(identifier, decorators) {
@@ -148,13 +149,18 @@ impl Transformer {
 
     fn transform_statement(&mut self, statement: &mut Statement) -> Result<()> {
         match statement {
-            Statement::DefineStruct { .. } | Statement::ModuleImport(_, _) => {}
+            Statement::DefineStruct { .. } | Statement::ModuleImport(_, _, _) => {}
 
             Statement::Expression(expr) => {
                 self.transform_expression(expr);
             }
-            Statement::DefineBaseUnit(span, name, _, decorators) => {
-                self.register_name_and_aliases(name, *span, decorators)?;
+            Statement::DefineBaseUnit {
+                unit_name_span,
+                unit_name,
+                decorators,
+                ..
+            } => {
+                self.register_name_and_aliases(unit_name, *unit_name_span, decorators)?;
             }
             Statement::DefineDerivedUnit {
                 identifier_span,
@@ -204,8 +210,9 @@ impl Transformer {
                     fn_body_transformer.transform_define_variable(def)?;
                 }
             }
-            Statement::DefineDimension(_, name, _) => {
-                self.dimension_names.push(name.to_compact_string());
+            Statement::DefineDimension { dimension_name, .. } => {
+                self.dimension_names
+                    .push(dimension_name.to_compact_string());
             }
             Statement::ProcedureCall(_, _, args) => {
                 for arg in args {

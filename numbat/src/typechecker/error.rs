@@ -15,6 +15,9 @@ pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
     UnknownIdentifier(Span, String, Option<String>),
 
+    #[error("Cannot access private identifier '{1}'.")]
+    PrivateIdentifier(Span, String),
+
     #[error(transparent)]
     IncompatibleDimensions(IncompatibleDimensionsError),
 

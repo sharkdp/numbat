@@ -9,7 +9,7 @@ fn import_prelude(c: &mut Criterion) {
     c.bench_function("Import prelude", |b| {
         b.iter_with_setup(
             || context.clone(),
-            |mut ctx| ctx.interpret("use prelude", CodeSource::Text),
+            |mut ctx| ctx.interpret("use prelude::*", CodeSource::Text),
         )
     });
 }

@@ -8,16 +8,16 @@
 #   500g rice to cups
 #
 
-use units::si
+use units::si::*
 
-let water = 1 / (1000 g/L)
-let butter = 1 / (911 g/L)
-let olive_oil = 1 / (920 g/L)
-let milk = 1 / (1030 g/L)
-let sugar = 1 / (845 g/L) # Granulated sugar
-let honey = 1 / (1420 g/L)
-let flour = 1 / (550 g/L)
-let salt = 1 / (1217 g/L)
-let rice = 1 / (785 g/L)
-let egg_raw = 1 / (1029 g/L)
-let yogurt = 1 / (1045 g/L)
+pub let water = 1 / (1000 g/L)
+pub let butter = 1 / (911 g/L)
+pub let olive_oil = 1 / (920 g/L)
+pub let milk = 1 / (1030 g/L)
+pub let sugar = 1 / (845 g/L) # Granulated sugar
+pub let honey = 1 / (1420 g/L)
+pub let flour = 1 / (550 g/L)
+pub let salt = 1 / (1217 g/L)
+pub let rice = 1 / (785 g/L)
+pub let egg_raw = 1 / (1029 g/L)
+pub let yogurt = 1 / (1045 g/L)

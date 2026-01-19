@@ -1,25 +1,25 @@
-use core::scalar
+use core::scalar::*
 
 ### Mathematical
 
 @name("Pi")
 @url("https://en.wikipedia.org/wiki/Pi")
 @aliases(pi)
-let π = 3.14159265358979323846264338327950288
+pub let π = 3.14159265358979323846264338327950288
 
 @name("Tau")
 @url("https://en.wikipedia.org/wiki/Turn_(angle)#Tau_proposals")
 @aliases(tau)
-let τ = 2 π
+pub let τ = 2 π
 
 @name("Euler's number")
 @url("https://en.wikipedia.org/wiki/E_(mathematical_constant)")
-let e = 2.71828182845904523536028747135266250
+pub let e = 2.71828182845904523536028747135266250
 
 @name("Golden ratio")
 @url("https://en.wikipedia.org/wiki/Golden_ratio")
 @aliases(golden_ratio)
-let φ = 1.61803398874989484820458683436563811
+pub let φ = 1.61803398874989484820458683436563811
 
 ### Named numbers
 
@@ -27,123 +27,123 @@ let φ = 1.61803398874989484820458683436563811
 
 @name("Hundred")
 @url("https://en.wikipedia.org/wiki/100_(number)")
-unit hundred = 100
+pub unit hundred = 100
 
 @name("Thousand")
 @url("https://en.wikipedia.org/wiki/1000_(number)")
-unit thousand = 1_000
+pub unit thousand = 1_000
 
 @name("Million")
 @url("https://en.wikipedia.org/wiki/Million")
-unit million = 1_000_000
+pub unit million = 1_000_000
 
 @name("Billion")
 @url("https://en.wikipedia.org/wiki/Billion")
-unit billion = 10^9
+pub unit billion = 10^9
 
 @name("Trillion")
 @url("https://en.wikipedia.org/wiki/Trillion")
-unit trillion = 10^12
+pub unit trillion = 10^12
 
 @name("Quadrillion")
 @url("https://en.wikipedia.org/wiki/Quadrillion")
-unit quadrillion = 10^15
+pub unit quadrillion = 10^15
 
 @name("Quintillion")
 @url("https://en.wikipedia.org/wiki/Quintillion")
-unit quintillion = 10^18
+pub unit quintillion = 10^18
 
 @name("Googol")
 @url("https://en.wikipedia.org/wiki/Googol")
-let googol =  10^100
+pub let googol =  10^100
 
 ### Unicode fractions
 
 @name("One half")
 @url("https://en.wikipedia.org/wiki/One_half")
 @aliases(half, semi)
-let ½ = 1 / 2
+pub let ½ = 1 / 2
 
-let ⅓ = 1 / 3
-let ⅔ = 2 / 3
+pub let ⅓ = 1 / 3
+pub let ⅔ = 2 / 3
 
 @aliases(quarter)
-let ¼ = 1 / 4
+pub let ¼ = 1 / 4
 
-let ¾ = 3 / 4
+pub let ¾ = 3 / 4
 
-let ⅕ = 1 / 5
-let ⅖ = 2 / 5
-let ⅗ = 3 / 5
-let ⅘ = 4 / 5
+pub let ⅕ = 1 / 5
+pub let ⅖ = 2 / 5
+pub let ⅗ = 3 / 5
+pub let ⅘ = 4 / 5
 
-let ⅙ = 1 / 6
-let ⅚ = 5 / 6
+pub let ⅙ = 1 / 6
+pub let ⅚ = 5 / 6
 
-let ⅐ = 1 / 7
+pub let ⅐ = 1 / 7
 
-let ⅛ = 1 / 8
-let ⅜ = 3 / 8
-let ⅝ = 5 / 8
-let ⅞ = 7 / 8
+pub let ⅛ = 1 / 8
+pub let ⅜ = 3 / 8
+pub let ⅝ = 5 / 8
+pub let ⅞ = 7 / 8
 
-let ⅑ = 1 / 9
+pub let ⅑ = 1 / 9
 
-let ⅒ = 1 / 10
+pub let ⅒ = 1 / 10
 
 #### Integers and colloquial names
 
 @name("One")
 @url("https://en.wikipedia.org/wiki/1")
-let one = 1
+pub let one = 1
 
 @name("Two")
 @url("https://en.wikipedia.org/wiki/2")
 @aliases(double)
-let two = 2
+pub let two = 2
 
 @name("Three")
 @url("https://en.wikipedia.org/wiki/3")
 @aliases(triple)
-let three = 3
+pub let three = 3
 
 @name("Four")
 @url("https://en.wikipedia.org/wiki/4")
 @aliases(quadruple)
-let four = 4
+pub let four = 4
 
 @name("Five")
 @url("https://en.wikipedia.org/wiki/5")
-let five = 5
+pub let five = 5
 
 @name("Six")
 @url("https://en.wikipedia.org/wiki/6")
-let six = 6
+pub let six = 6
 
 @name("Seven")
 @url("https://en.wikipedia.org/wiki/7")
-let seven = 7
+pub let seven = 7
 
 @name("Eight")
 @url("https://en.wikipedia.org/wiki/8")
-let eight = 8
+pub let eight = 8
 
 @name("Nine")
 @url("https://en.wikipedia.org/wiki/9")
-let nine = 9
+pub let nine = 9
 
 @name("Ten")
 @url("https://en.wikipedia.org/wiki/10")
-let ten = 10
+pub let ten = 10
 
 @name("Eleven")
 @url("https://en.wikipedia.org/wiki/11")
-let eleven = 11
+pub let eleven = 11
 
 @name("Twelve")
 @url("https://en.wikipedia.org/wiki/12")
-let twelve = 12
+pub let twelve = 12
 
 @name("Dozen")
 @url("https://en.wikipedia.org/wiki/Dozen")
-unit dozen = 12
+pub unit dozen = 12

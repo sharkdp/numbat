@@ -1,121 +1,121 @@
-use units::si
+use units::si::*
 
 @name("Speed of light in vacuum")
 @url("https://en.wikipedia.org/wiki/Speed_of_light")
 @aliases(c)
-let speed_of_light: Velocity = 299_792_458 m / s
+pub let speed_of_light: Velocity = 299_792_458 m / s
 
 @name("Newtonian constant of gravitation")
 @url("https://en.wikipedia.org/wiki/Gravitational_constant")
 @aliases(G)
-let gravitational_constant: Force × Length^2 / Mass^2 =  6.674_30e-11 m³ / (kg s²)
+pub let gravitational_constant: Force × Length^2 / Mass^2 =  6.674_30e-11 m³ / (kg s²)
 
 @name("Standard acceleration of gravity on earth")
 @url("https://en.wikipedia.org/wiki/Gravity_of_Earth")
 @aliases(g0)
-let gravity: Acceleration = 9.806_65 m / s²
+pub let gravity: Acceleration = 9.806_65 m / s²
 
 @name("Planck constant")
 @url("https://en.wikipedia.org/wiki/Planck_constant")
 @aliases(ℎ)
-let planck_constant: Action = 6.626_070_15e-34 J / Hz
+pub let planck_constant: Action = 6.626_070_15e-34 J / Hz
 
 @name("Reduced Planck constant")
 @url("https://en.wikipedia.org/wiki/Planck_constant#Reduced_Planck_constant_%E2%84%8F")
 @aliases(h_bar)
-let ℏ: AngularMomentum = planck_constant / 2π
+pub let ℏ: AngularMomentum = planck_constant / 2π
 
 @name("Electron mass")
 @url("https://en.wikipedia.org/wiki/Electron_mass")
-let electron_mass: Mass = 9.109_383_701_5e-31 kg
+pub let electron_mass: Mass = 9.109_383_701_5e-31 kg
 
 @name("Elementary charge")
 @url("https://en.wikipedia.org/wiki/Elementary_charge")
 @aliases(electron_charge)
-let elementary_charge: ElectricCharge =  1.602_176_634e-19 C
+pub let elementary_charge: ElectricCharge =  1.602_176_634e-19 C
 
 @name("Vacuum permeability / magnetic constant")
 @url("https://en.wikipedia.org/wiki/Vacuum_permeability")
 @aliases(µ0,μ0,mu0)
-let magnetic_constant: MagneticPermeability =  1.256_637_062_12e-6 N / A²
+pub let magnetic_constant: MagneticPermeability =  1.256_637_062_12e-6 N / A²
 
 @name("Vacuum electric permittivity / electric constant")
 @url("https://en.wikipedia.org/wiki/Vacuum_permittivity")
 @aliases(ε0,eps0)
-let electric_constant: ElectricPermittivity = 1 / (µ0 c²) -> F/m
+pub let electric_constant: ElectricPermittivity = 1 / (µ0 c²) -> F/m
 
 @name("Bohr magneton")
 @aliases(µ_B,μ_B)
 @url("https://en.wikipedia.org/wiki/Bohr_magneton")
-let bohr_magneton: Energy / MagneticFluxDensity = electron_charge ℏ / 2 electron_mass -> J/T
+pub let bohr_magneton: Energy / MagneticFluxDensity = electron_charge ℏ / 2 electron_mass -> J/T
 
 @name("Fine structure constant")
 @url("https://en.wikipedia.org/wiki/Fine-structure_constant")
 @aliases(α, alpha)
-let fine_structure_constant: Scalar = electron_charge^2 / (2 eps0 ℎ c)
+pub let fine_structure_constant: Scalar = electron_charge^2 / (2 eps0 ℎ c)
 
 @name("Proton mass")
 @url("https://en.wikipedia.org/wiki/Proton")
-let proton_mass: Mass =  1.672_621_923_69e-27 kg
+pub let proton_mass: Mass =  1.672_621_923_69e-27 kg
 
 @name("Neutron mass")
 @url("https://en.wikipedia.org/wiki/Neutron")
-let neutron_mass: Mass = 1.674_927_498_04e-27 kg
+pub let neutron_mass: Mass = 1.674_927_498_04e-27 kg
 
 @name("Avogadro constant")
 @url("https://en.wikipedia.org/wiki/Avogadro_constant")
 @aliases(N_A)
-let avogadro_constant: 1 / AmountOfSubstance = 6.022_140_76e23 / mol
+pub let avogadro_constant: 1 / AmountOfSubstance = 6.022_140_76e23 / mol
 
 @name("Boltzmann constant")
 @url("https://en.wikipedia.org/wiki/Boltzmann_constant")
 @aliases(k_B)
-let boltzmann_constant: Energy / Temperature = 1.380_649e-23 J / K
+pub let boltzmann_constant: Energy / Temperature = 1.380_649e-23 J / K
 
 @name("Stefan-Boltzmann constant")
 @url("https://en.wikipedia.org/wiki/Stefan%E2%80%93Boltzmann_law")
-let stefan_boltzmann_constant: Power / (Area × Temperature^4) = 2 π^5 k_B^4 / (15 planck_constant^3 c^2)
+pub let stefan_boltzmann_constant: Power / (Area × Temperature^4) = 2 π^5 k_B^4 / (15 planck_constant^3 c^2)
 
 @name("Molar gas constant")
 @url("https://en.wikipedia.org/wiki/Gas_constant")
 @aliases(R)
-let gas_constant: Energy / (AmountOfSubstance × Temperature) = k_B × N_A
+pub let gas_constant: Energy / (AmountOfSubstance × Temperature) = k_B × N_A
 
 @name("Bohr radius")
 @url("https://en.wikipedia.org/wiki/Bohr_radius")
 @aliases(a0)
-let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
+pub let bohr_radius: Length = 4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)
 
 @name("Rydberg constant")
 @url("https://en.wikipedia.org/wiki/Rydberg_constant")
-let rydberg_constant: Wavenumber = (electron_mass electron_charge^4) / (8 ε0^2 ℎ^3 c)
+pub let rydberg_constant: Wavenumber = (electron_mass electron_charge^4) / (8 ε0^2 ℎ^3 c)
 
 @name("Rydberg unit of energy")
 @url("https://en.wikipedia.org/wiki/Rydberg_constant")
-unit Ry: Energy = ℎ c × rydberg_constant
+pub unit Ry: Energy = ℎ c × rydberg_constant
 
 @name("Atomic Mass constant")
 @url("https://en.wikipedia.org/wiki/Atomic_mass_constant")
 @aliases(m_u)
-let atomic_mass_constant: Mass = 1 dalton -> kg
+pub let atomic_mass_constant: Mass = 1 dalton -> kg
 
 @name("Conductance quantum")
 @url("https://en.wikipedia.org/wiki/Conductance_quantum")
-let conductance_quantum: ElectricConductance = 2 * elementary_charge^2 / planck_constant -> S
+pub let conductance_quantum: ElectricConductance = 2 * elementary_charge^2 / planck_constant -> S
 
 @name("Faraday constant")
 @url("https://en.wikipedia.org/wiki/Faraday_constant")
-let faraday_constant: ElectricCharge / AmountOfSubstance = avogadro_constant * elementary_charge
+pub let faraday_constant: ElectricCharge / AmountOfSubstance = avogadro_constant * elementary_charge
 
 @name("Magnetic Flux Quantum")
 @url("https://en.wikipedia.org/wiki/Magnetic_flux_quantum")
-let magnetic_flux_quantum: MagneticFlux = planck_constant / (2 * elementary_charge) -> Wb
+pub let magnetic_flux_quantum: MagneticFlux = planck_constant / (2 * elementary_charge) -> Wb
 
 @name("Josephson Constant")
 @url("https://en.wikipedia.org/wiki/Josephson_constant")
-let josephson_constant: Frequency / Voltage = 1 / magnetic_flux_quantum -> Hz/V
+pub let josephson_constant: Frequency / Voltage = 1 / magnetic_flux_quantum -> Hz/V
 
 @name("Von Klitzing Constant")
 @url("https://en.wikipedia.org/wiki/Von_Klitzing_constant")
 @aliases(R_K)
-let von_klitzing_constant: ElectricResistance = planck_constant / (elementary_charge^2) -> Ω
+pub let von_klitzing_constant: ElectricResistance = planck_constant / (elementary_charge^2) -> Ω

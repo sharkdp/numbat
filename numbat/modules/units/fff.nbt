@@ -1,4 +1,4 @@
-use units::imperial
+use units::imperial::*
 
 # The furlong–firkin–fortnight system
 # https://en.wikipedia.org/wiki/FFF_system
@@ -7,16 +7,16 @@ use units::imperial
 @url("https://en.wikipedia.org/wiki/Furlong")
 @metric_prefixes
 @aliases(furlongs)
-unit furlong: Length = 220 yard
+pub unit furlong: Length = 220 yard
 
 @name("Firkin")
 @url("https://en.wikipedia.org/wiki/Firkin_(unit)")
 @metric_prefixes
 @aliases(firkins)
-unit firkin: Mass = 90 lb
+pub unit firkin: Mass = 90 lb
 
 @name("Fortnight")
 @url("https://en.wikipedia.org/wiki/Fortnight")
 @metric_prefixes
 @aliases(fortnights)
-unit fortnight: Time = 14 days
+pub unit fortnight: Time = 14 days
