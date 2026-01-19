@@ -13,8 +13,8 @@ use numbat::markup::Formatter;
 use numbat::module_importer::BuiltinModuleImporter;
 use numbat::pretty_print::PrettyPrint;
 use numbat::resolver::CodeSource;
-use numbat::{Context, InterpreterSettings};
 use numbat::unicode_input::UNICODE_INPUT;
+use numbat::{Context, InterpreterSettings};
 use numbat::{NameResolutionError, NumbatError, markup as m};
 
 use jquery_terminal_formatter::{JqueryTerminalFormatter, JqueryTerminalWriter};
@@ -206,7 +206,7 @@ impl Numbat {
                 is_command: true,
                 should_clear: false,
                 should_reset: false,
-                output: self.format_command_error(&*err),
+                output: self.format_command_error(&err),
             },
         }
     }
