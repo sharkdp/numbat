@@ -13,6 +13,9 @@ use crate::{
     span::{ByteIndex, Span},
 };
 
+type PrintMarkupFn<'a> = Option<Box<dyn FnMut(&Markup) + 'a>>;
+type ClearFn<'a, Editor> = Option<Box<dyn FnMut(&mut Editor) -> CommandControlFlow + 'a>>;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ListItems {
     Functions,
@@ -76,7 +79,7 @@ pub enum CommandControlFlow {
 #[derive(Debug)]
 pub enum CommandError {
     Parse(ParseError),
-    Runtime(RuntimeError),
+    Runtime(Box<RuntimeError>),
 }
 
 impl From<ParseError> for CommandError {
@@ -87,7 +90,7 @@ impl From<ParseError> for CommandError {
 
 impl From<RuntimeError> for CommandError {
     fn from(err: RuntimeError) -> Self {
-        Self::Runtime(err)
+        Self::Runtime(Box::new(err))
     }
 }
 
@@ -97,7 +100,7 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, CommandError> {
             CommandError::Parse(parse_error) => parse_error.diagnostics(),
             CommandError::Runtime(runtime_error) => ResolverDiagnostic {
                 resolver: self.resolver,
-                error: runtime_error,
+                error: runtime_error.as_ref(),
             }
             .diagnostics(),
         }
@@ -124,8 +127,8 @@ enum ParsedCommand<'session, 'input> {
 }
 
 pub struct CommandRunner<'a, Editor = ()> {
-    print_markup: Option<Box<dyn FnMut(&Markup) + 'a>>,
-    clear: Option<Box<dyn FnMut(&mut Editor) -> CommandControlFlow + 'a>>,
+    print_markup: PrintMarkupFn<'a>,
+    clear: ClearFn<'a, Editor>,
     session_history: Option<SessionHistory>,
     reset: Option<()>,
     quit: Option<()>,
@@ -562,7 +565,9 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                             trim_lines: true,
                         },
                     )
-                    .map_err(|err| CommandError::Runtime(ctx.interpreter.runtime_error(*err)))?;
+                    .map_err(|err| {
+                        CommandError::Runtime(Box::new(ctx.interpreter.runtime_error(*err)))
+                    })?;
 
                 if let Some(print_fn) = self.print_markup.as_mut() {
                     let markup = m::text("successfully saved session history to")

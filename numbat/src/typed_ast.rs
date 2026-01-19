@@ -336,14 +336,14 @@ impl std::fmt::Display for Type {
             }
             Type::Struct(info) => {
                 write!(f, "{}", info.name)?;
-                if let StructKind::Instance(type_args) = &info.kind {
-                    if !type_args.is_empty() {
-                        write!(
-                            f,
-                            "<{}>",
-                            type_args.iter().map(|t| t.to_string()).join(", ")
-                        )?;
-                    }
+                if let StructKind::Instance(type_args) = &info.kind
+                    && !type_args.is_empty()
+                {
+                    write!(
+                        f,
+                        "<{}>",
+                        type_args.iter().map(|t| t.to_string()).join(", ")
+                    )?;
                 }
                 write!(
                     f,
@@ -388,17 +388,16 @@ impl PrettyPrint for Type {
             }
             Type::Struct(info) => {
                 let mut markup = m::type_identifier(info.name.clone());
-                if let StructKind::Instance(type_args) = &info.kind {
-                    if !type_args.is_empty() {
-                        markup = markup + m::operator("<");
-                        markup = markup
-                            + Itertools::intersperse(
-                                type_args.iter().map(|t| t.pretty_print()),
-                                m::operator(",") + m::space(),
-                            )
-                            .sum();
-                        markup = markup + m::operator(">");
-                    }
+                if let StructKind::Instance(type_args) = &info.kind
+                    && !type_args.is_empty()
+                {
+                    markup += m::operator("<");
+                    markup += Itertools::intersperse(
+                        type_args.iter().map(|t| t.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum();
+                    markup += m::operator(">");
                 }
                 markup
             }
@@ -418,17 +417,16 @@ impl Type {
             Type::Dimension(d) => d.to_readable_type(registry),
             Type::Struct(info) => {
                 let mut markup = m::type_identifier(info.name.clone());
-                if let StructKind::Instance(type_args) = &info.kind {
-                    if !type_args.is_empty() {
-                        markup = markup + m::operator("<");
-                        markup = markup
-                            + Itertools::intersperse(
-                                type_args.iter().map(|t| t.to_readable_type(registry)),
-                                m::operator(",") + m::space(),
-                            )
-                            .sum();
-                        markup = markup + m::operator(">");
-                    }
+                if let StructKind::Instance(type_args) = &info.kind
+                    && !type_args.is_empty()
+                {
+                    markup += m::operator("<");
+                    markup += Itertools::intersperse(
+                        type_args.iter().map(|t| t.to_readable_type(registry)),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum();
+                    markup += m::operator(">");
                 }
                 markup
             }
