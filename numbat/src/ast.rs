@@ -372,14 +372,14 @@ impl PrettyPrint for TypeExpression {
             TypeExpression::TypeIdentifier(_, ident, type_args) => {
                 let mut markup = m::type_identifier(ident.to_compact_string());
                 if !type_args.is_empty() {
-                    markup = markup + m::operator("<");
+                    markup += m::operator("<");
                     for (i, arg) in type_args.iter().enumerate() {
                         if i > 0 {
-                            markup = markup + m::operator(",") + m::space();
+                            markup += m::operator(",") + m::space();
                         }
-                        markup = markup + arg.pretty_print();
+                        markup += arg.pretty_print();
                     }
-                    markup = markup + m::operator(">");
+                    markup += m::operator(">");
                 }
                 markup
             }

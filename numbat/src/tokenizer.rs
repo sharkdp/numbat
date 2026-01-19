@@ -449,8 +449,7 @@ impl Tokenizer {
     fn scope_start(&self, scope_type: ScopeType) -> Option<ByteIndex> {
         self.scopes
             .iter()
-            .filter(|scope| scope.scope_type == scope_type)
-            .next_back()
+            .rfind(|scope| scope.scope_type == scope_type)
             .map(|scope| scope.scope_start)
     }
 

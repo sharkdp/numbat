@@ -78,7 +78,7 @@ pub enum IdentifierKind {
     /// The boolean flag signifies whether the identifier is a unit or not
     Normal(TypeScheme, #[allow(dead_code)] Span, bool),
     /// A function
-    Function(FunctionSignature, FunctionMetadata),
+    Function(Box<FunctionSignature>, FunctionMetadata),
     /// Identifiers that are defined by the language: `_` and `ans` (see LAST_RESULT_IDENTIFIERS)
     Predefined(TypeScheme),
 }
@@ -126,7 +126,7 @@ impl Environment {
         metadata: FunctionMetadata,
     ) {
         self.identifiers
-            .insert(v, IdentifierKind::Function(signature, metadata));
+            .insert(v, IdentifierKind::Function(Box::new(signature), metadata));
     }
 
     pub fn add_predefined(&mut self, v: Identifier, type_: TypeScheme) {
