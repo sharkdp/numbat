@@ -38,12 +38,12 @@ assert_eq("{-5.5 lb -> pounds_and_ounces}", "{[-5 lb, -8 oz]}")
 # Unit list
 
 let test1 = 12 m + 34 cm + 5 mm + 678 µm
-assert_eq(test1 |> unit_list([m]) |> head, test1)
-assert_eq(test1 |> unit_list([m, cm]) |> sum, test1)
-assert_eq(test1 |> unit_list([m, cm, mm]) |> sum, test1)
-assert_eq(test1 |> unit_list([m, cm, mm, µm]) |> sum, test1)
+assert_eq(test1 |> unit_list([m]) |> head, test1, 1 pm)
+assert_eq(test1 |> unit_list([m, cm]) |> sum, test1, 1 pm)
+assert_eq(test1 |> unit_list([m, cm, mm]) |> sum, test1, 1 pm)
+assert_eq(test1 |> unit_list([m, cm, mm, µm]) |> sum, test1, 1 pm)
 
 let test2 = 12 degree + 34 arcminute + 5 arcsec
-assert_eq(test2 |> unit_list([degree]) |> head, test2)
-assert_eq(test2 |> unit_list([degree, arcmin]) |> sum, test2)
-assert_eq(test2 |> unit_list([degree, arcmin, arcsec]) |> sum, test2)
+assert_eq(test2 |> unit_list([degree]) |> head, test2, 1e-9 degree)
+assert_eq(test2 |> unit_list([degree, arcmin]) |> sum, test2, 1e-9 degree)
+assert_eq(test2 |> unit_list([degree, arcmin, arcsec]) |> sum, test2, 1e-9 degree)

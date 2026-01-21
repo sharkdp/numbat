@@ -544,7 +544,7 @@ fn mean<D: Dim>(xs: List<D>) -> D
     ```nbt
     mean([1 m, 2 m, 300 cm])
 
-        = 2 m    [Length]
+        = 200 cm    [Length]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=mean%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29){ .md-button }
 
@@ -560,7 +560,7 @@ fn variance<D: Dim>(xs: List<D>) -> D^2
     ```nbt
     variance([1 m, 2 m, 300 cm])
 
-        = 0.666667 m²    [Area]
+        = 6666.67 cm²    [Area]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=variance%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29){ .md-button }
 
@@ -576,7 +576,7 @@ fn stdev<D: Dim>(xs: List<D>) -> D
     ```nbt
     stdev([1 m, 2 m, 300 cm])
 
-        = 0.816497 m    [Length]
+        = 81.6497 cm    [Length]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=stdev%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29){ .md-button }
 

@@ -509,13 +509,43 @@ fn test_last_result_identifier() {
 }
 
 #[test]
+fn test_addition_subtraction_commutativity() {
+    // Addition uses the smaller of the two operand units to ensure commutativity
+    expect_output("2 min + 30 s", "150 s");
+    expect_output("30 s + 2 min", "150 s");
+    expect_output("1 m + 50 cm", "150 cm");
+    expect_output("50 cm + 1 m", "150 cm");
+
+    // Similar for subtraction to ensure anticommutativity
+    expect_output("2 min - 30 s", "90 s");
+    expect_output("30 s - 2 min", "-90 s");
+    expect_output("1 m - 50 cm", "50 cm");
+    expect_output("50 cm - 1 m", "-50 cm");
+
+    // Test with three operands
+    expect_output("1 hour + 30 min + 45 s", "5445 s");
+    expect_output("1 hour + 45 s + 30 min", "5445 s");
+    expect_output("30 min + 1 hour + 45 s", "5445 s");
+    expect_output("30 min + 45 s + 1 hour", "5445 s");
+    expect_output("45 s + 1 hour + 30 min", "5445 s");
+    expect_output("45 s + 30 min + 1 hour", "5445 s");
+}
+
+// Regression test for https://github.com/sharkdp/numbat/issues/589
+#[test]
+fn test_issue_589_floor_in_precision() {
+    expect_output("1.5 weeks - floor_in(days, 1.5 weeks)", "0.5 day");
+    expect_output("1.5 weeks - floor_in(days, 1.5 weeks) -> hours", "12 h");
+}
+
+#[test]
 fn test_misc_examples() {
     expect_output("1920/16*9", "1080");
     expect_output("2^32", "4_294_967_296");
     expect_output("sqrt(1.4^2 + 1.5^2) * cos(pi/3)^2", "0.512957");
 
-    expect_output("2min + 30s", "2.5 min");
-    expect_output("2min + 30s -> sec", "150 s");
+    expect_output("2min + 30s", "150 s");
+    expect_output("30s + 2min", "150 s");
     expect_output("4/3 * pi * (6000km)³", "9.04779e+11 km³");
     expect_output("40kg * 9.8m/s^2 * 150cm", "588 kg·m²/s²");
     expect_output("sin(30°)", "0.5");
@@ -1115,7 +1145,7 @@ mod tests {
         fn issue505_angles() {
             insta::assert_snapshot!(fail("assert_eq(-77° + 0′ + 32″, -77.0089°, 1e-4°)"), @r###"
             Assertion failed because the following two quantities differ by 0.0178°, which is more than 0.0001°:
-              -76.9911°
+              -76.9911° (-277_168″)
               -77.0089°
             "###);
         }
