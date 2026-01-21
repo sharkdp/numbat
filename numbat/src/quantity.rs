@@ -277,10 +277,14 @@ impl std::ops::Add for &Quantity {
             Ok(rhs.clone())
         } else if rhs.is_zero() {
             Ok(self.clone())
+        } else if self.unit == rhs.unit {
+            Ok(Quantity::new(self.value + rhs.value, self.unit.clone()))
         } else {
+            // Use the smaller unit to ensure commutativity: a + b == b + a
+            let result_unit = self.unit.smaller_unit(&rhs.unit);
             Ok(Quantity::new(
-                self.value + rhs.convert_to(&self.unit)?.value,
-                self.unit.clone(),
+                self.convert_to(result_unit)?.value + rhs.convert_to(result_unit)?.value,
+                result_unit.clone(),
             ))
         }
     }
@@ -294,10 +298,14 @@ impl std::ops::Sub for &Quantity {
             Ok(-rhs.clone())
         } else if rhs.is_zero() {
             Ok(self.clone())
+        } else if self.unit == rhs.unit {
+            Ok(Quantity::new(self.value - rhs.value, self.unit.clone()))
         } else {
+            // Use the smaller unit to ensure anticommutativity: a - b == -(b - a)
+            let result_unit = self.unit.smaller_unit(&rhs.unit);
             Ok(Quantity::new(
-                self.value - rhs.convert_to(&self.unit)?.value,
-                self.unit.clone(),
+                self.convert_to(result_unit)?.value - rhs.convert_to(result_unit)?.value,
+                result_unit.clone(),
             ))
         }
     }

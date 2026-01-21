@@ -293,6 +293,20 @@ impl Unit {
         (base_unit_representation, factor)
     }
 
+    /// Returns the smaller of the two units, i.e. the one with the smaller
+    /// conversion factor to the base unit representation. This is useful
+    /// to ensure commutativity of addition/subtraction.
+    pub fn smaller_unit<'a>(&'a self, other: &'a Self) -> &'a Self {
+        let (_, self_factor) = self.to_base_unit_representation();
+        let (_, other_factor) = other.to_base_unit_representation();
+
+        if self_factor.to_f64() <= other_factor.to_f64() {
+            self
+        } else {
+            other
+        }
+    }
+
     #[cfg(test)]
     pub fn meter() -> Self {
         Self::new_base(

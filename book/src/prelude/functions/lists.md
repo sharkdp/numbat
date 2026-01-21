@@ -349,7 +349,7 @@ fn sum<D: Dim>(xs: List<D>) -> D
     ```nbt
     sum([3 m, 200 cm, 1000 mm])
 
-        = 6 m    [Length]
+        = 6000 mm    [Length]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=sum%28%5B3%20m%2C%20200%20cm%2C%201000%20mm%5D%29){ .md-button }
 
