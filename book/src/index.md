@@ -17,7 +17,7 @@ You can use it for simple mathematical computations:
 
 >>> 2^32
 
-    = 4294967296
+    = 4_294_967_296s
 
 >>> sqrt(1.4^2 + 1.5^2) * cos(pi / 3)^2
 
@@ -27,9 +27,9 @@ You can use it for simple mathematical computations:
 The real strength of Numbat, however, is to perform calculations with physical units:
 
 ``` numbat
->>> 8 km / (1 h + 25 min)
+>>> 110 km / (1 day + 3 hours)
 
-    = 5.64706 km/h    [Velocity]
+    = 4.07407 km/h    [Velocity]
 
 >>> 140 € -> GBP
 
