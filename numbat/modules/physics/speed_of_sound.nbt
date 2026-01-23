@@ -1,0 +1,12 @@
+use core::functions
+use physics::constants
+use physics::temperature_conversion
+
+@name("Speed of sound in dry air")
+@description("Calculate the speed of sound in dry air as a function of air temperature.")
+@example("speed_of_sound(from_celsius(20))")
+@url("https://en.wikipedia.org/wiki/Speed_of_sound#Speed_of_sound_in_ideal_gases_and_air")
+fn speed_of_sound(T_air: Temperature) -> Velocity =
+    sqrt(γ_air R T_air / M_air) -> m / s
+  where γ_air = 7/5
+    and M_air = 28.96 g / mol

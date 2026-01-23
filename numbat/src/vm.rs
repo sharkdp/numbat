@@ -737,8 +737,12 @@ impl Vm {
                             .map_err(|e| self.runtime_error(RuntimeErrorKind::QuantityError(e)))?
                             .ok_or_else(|| self.runtime_error(RuntimeErrorKind::DivisionByZero))?),
                         // If the user specifically converted the type of a unit, we should NOT simplify this value
-                        // before any operations are applied to it
-                        Op::ConvertTo => lhs.convert_to(rhs.unit()).map(Quantity::no_simplify),
+                        // before any operations are applied to it.
+                        // Also, preserve the RHS for display purposes (e.g., `6 hours -> 45 min` should
+                        // display as `8 × 45 min` instead of `360 min`).
+                        Op::ConvertTo => lhs
+                            .convert_to(rhs.unit())
+                            .map(|q| q.no_simplify().with_conversion_target(rhs)),
                         _ => unreachable!(),
                     };
                     self.push_quantity(

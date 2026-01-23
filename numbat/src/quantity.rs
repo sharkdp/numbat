@@ -26,6 +26,10 @@ pub struct Quantity {
     value: Number,
     unit: Unit,
     can_simplify: bool,
+    /// If set, the quantity is displayed as `(value/target) × target`
+    /// instead of `value unit`. This is used for conversions like `6 hours -> 45 min`
+    /// which should display as `8 × 45 min` instead of `360 min`.
+    conversion_target: Option<Box<Quantity>>,
 }
 
 impl Quantity {
@@ -34,6 +38,7 @@ impl Quantity {
             value,
             unit,
             can_simplify: true,
+            conversion_target: None,
         }
     }
 
@@ -42,11 +47,20 @@ impl Quantity {
             value: Number::from_f64(value),
             unit,
             can_simplify: true,
+            conversion_target: None,
         }
     }
 
     pub fn no_simplify(mut self) -> Self {
         self.can_simplify = false;
+        self
+    }
+
+    pub fn with_conversion_target(mut self, target: Quantity) -> Self {
+        // Only set the target if its value is not 1
+        if target.value.to_f64() != 1.0 {
+            self.conversion_target = Some(Box::new(target));
+        }
         self
     }
 
@@ -389,9 +403,23 @@ impl Quantity {
     fn pretty_print_with_options(&self, options: Option<FmtFloatConfig>) -> crate::markup::Markup {
         use crate::markup;
 
-        let formatted_number = self.unsafe_value().pretty_print_with_options(options);
-
         let unit_str = format_compact!("{}", self.unit());
+
+        // If there's a conversion target, display as `coefficient × target`
+        // e.g., `6 hours -> 45 min` displays as `8 × 45 min`
+        if let Some(ref target) = self.conversion_target {
+            let coefficient = self.value / target.value;
+            let formatted_coefficient = coefficient.pretty_print_with_options(options);
+            let formatted_target = target.pretty_print_with_options(options);
+
+            return markup::value(formatted_coefficient)
+                + markup::space()
+                + markup::operator("×")
+                + markup::space()
+                + formatted_target;
+        }
+
+        let formatted_number = self.unsafe_value().pretty_print_with_options(options);
 
         markup::value(formatted_number)
             + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {
