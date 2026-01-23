@@ -276,6 +276,7 @@ def generate_all_function_lists():
                     "title": "Temperature conversion",
                     "modules": ["physics::temperature_conversion"],
                 },
+                {"title": "Speed of sound", "modules": ["physics::speed_of_sound"]},
                 {"title": "Color format conversion", "modules": ["extra::color"]},
             ],
         },

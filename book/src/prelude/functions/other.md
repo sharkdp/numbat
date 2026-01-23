@@ -4,7 +4,7 @@ icon: lucide/ellipsis
 
 # Other functions
 
-[Error handling](#error-handling) · [Debugging](#debugging) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Color format conversion](#color-format-conversion)
+[Error handling](#error-handling) · [Debugging](#debugging) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Speed of sound](#speed-of-sound) · [Color format conversion](#color-format-conversion)
 
 ## Error handling
 
@@ -491,6 +491,26 @@ fn fahrenheit(t_kelvin: Temperature) -> Scalar
         = 80.33
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=300K%20%2D%3E%20fahrenheit){ .md-button }
+
+## Speed of sound
+
+Defined in: `physics::speed_of_sound`
+
+### `speed_of_sound` (Speed of sound in dry air)
+Calculate the speed of sound in dry air as a function of air temperature.
+More information [here](https://en.wikipedia.org/wiki/Speed_of_sound#Speed_of_sound_in_ideal_gases_and_air).
+
+```nbt
+fn speed_of_sound(T_air: Temperature) -> Velocity
+```
+
+!!! example "Example"
+    ```nbt
+    speed_of_sound(from_celsius(20))
+
+        = 343.263 m/s    [Velocity]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=speed%5Fof%5Fsound%28from%5Fcelsius%2820%29%29){ .md-button }
 
 ## Color format conversion
 

@@ -1,0 +1,5 @@
+# Reference values from https://en.wikipedia.org/wiki/Speed_of_sound#Tables
+
+assert_eq(speed_of_sound(from_celsius(-20)), 318.9 m / s, 0.1 m / s)
+assert_eq(speed_of_sound(from_celsius(0)), 331.3 m / s, 0.1 m / s)
+assert_eq(speed_of_sound(from_celsius(20)), 343.2 m / s, 0.1 m / s)

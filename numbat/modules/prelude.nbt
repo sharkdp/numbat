@@ -41,6 +41,7 @@ use units::placeholder
 
 use physics::constants
 use physics::temperature_conversion
+use physics::speed_of_sound
 
 use chemistry::elements
 

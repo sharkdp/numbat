@@ -267,6 +267,29 @@ fn test_conversions() {
 }
 
 #[test]
+fn test_conversions_with_nontrivial_magnitude() {
+    expect_output("6 hours -> 45 min", "8 × 45 min");
+    expect_output("1 KiB -> 16 B", "64 × 16 B");
+    expect_output("10 m -> 2 m", "5 × 2 m");
+    expect_output("2 m -> 10 m", "0.2 × 10 m");
+    expect_output("10 m -> 0.5 m", "20 × 0.5 m");
+    expect_output("10 m -> (m/3)", "30 × 0.333333 m");
+    expect_output("1/(30 mpg) -> L/(100 km)", "7.84049 × 0.01 l/km");
+
+    // When RHS value is 1 (explicitly or implicitly), behave as usual
+    expect_output("10 m -> m", "10 m");
+    expect_output("10 m -> 1 m", "10 m");
+
+    // After arithmetic operations, the multiplier should be cleared
+    expect_output("(6 hours -> 45 min) + 1 min", "361 min");
+    expect_output("(1 KiB -> 16 B) + 1 B", "1025 B");
+
+    // Inverse units also use the multiplication format
+    expect_output("3 / m -> 0.2 / m", "15 × 0.2 m⁻¹");
+    expect_output("10 / s -> 0.5 / s", "20 × 0.5 s⁻¹");
+}
+
+#[test]
 fn test_implicit_conversion() {
     let mut ctx = get_test_context();
 

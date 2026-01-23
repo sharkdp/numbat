@@ -6,50 +6,106 @@ icon: lucide/arrow-right-left
 
 ## Unit conversions
 
-The conversion operator `->` attempts to convert the physical quantity on its left hand side to
-the *unit of the expression* on its right hand side. This means that you can write an arbitrary
-expression on the right hand side — but only the unit part will be extracted. For example:
+### Basic conversions
+
+The conversion operator `->` can be used to convert the physical quantity on its left hand side
+to a different unit. For example:
 
 ``` numbat
-# simple unit conversion:
 > 120 km/h -> mph
 
-  = 74.5645 mi/h
+  = 74.5645 mph    [Velocity]
 
-# expression on the right hand side:
+> 1600 kcal / day -> W
+
+    = 77.4815 W    [Power]
+
+> 4 million ฿ -> €
+
+    = 109066 €    [Money]
+```
+
+The right hand side can also be a more complex expression:
+
+``` numbat
 > 120 m^3 -> km * m^2
 
-  = 0.12 m²·km
-
-# convert x1 to the same unit as x2:
-> let x1 = 50 km / h
-> let x2 = 3 m/s -> x1
-
-  x2 = 10.8 km/h
+  = 0.12 km·m²    [Volume]
 ```
 
 
-!!! quote
 
-    *"The metric system is the tool of the devil! My car gets 40 rods to the hogshead and that's the way I likes it."* — Grandpa Simpson, A Star Is Burns (S06E18)
+!!! example "Grandpa Simpson"
 
-!!! example
+    !!! quote
+
+        *"The metric system is the tool of the devil! My car gets 40 rods to the hogshead and that's the way I likes it."* — Grandpa Simpson, A Star Is Burns (S06E18)
+
 
     To convert the mileage of Grandpa's car to miles per gallon, you can write:
 
     ```nbt
     >>> 40 rods / hogshead -> mpg
 
-        = 0.00198413 mi/gal    [Length⁻²]
+        = 0.00198413 mpg    [Length⁻²]
     ```
 
-    And for supporters of [Marge's side](https://www.youtube.com/watch?v=Y9XcWqBl8Xs) could use something like:
+    Seeing this, we might actually want to conver to feet per gallon instead:
 
     ```nbt
-    100 km / (40 rods / hogshead) -> l
+    >>> 40 rods / hogshead -> ft / gallon
 
-        = 118548 l    [Volume]
+        = 10.4762 ft/gal    [Length⁻²]
     ```
+
+    Supporters of [Marge's side](https://www.youtube.com/watch?v=Y9XcWqBl8Xs) may instead want to convert to liters per 100 km:
+
+    ```nbt
+    >>> 1 / (40 rods / hogshead) -> L / (100 km)
+
+        = 118548 × 0.01 l/km    [Area]
+    ```
+
+    By the way, if you are curious why fuel economy is inferred as having a physical dimension of an (inverse) area,
+    you might enjoy reading (the latter half of) this ["what if?" article](https://what-if.xkcd.com/11/). The first
+    half of that article is also available as a
+    [Numbat program](https://github.com/sharkdp/numbat/blob/main/examples/what_if_11.nbt).
+
+### Advanced conversions
+
+When the right hand side expression has a magnitude other than 1, the result shows how many times
+the right hand side fits into the left hand side. For example, to find out how many 45-minute slots
+fit into 6 hours, you can write:
+
+``` numbat
+> 6 hours -> 45 min
+
+  = 8 × 45 min
+```
+
+!!! example "Concorde's Mach number"
+
+    Concorde flew at a speed of 2180 km/h and had a cruising altitude of 17,000 m where the air temperature is around -60 °C.
+    We can convert Concorde's velocity to the speed of sound at that temperature to find out that it cruised at
+    Mach 2:
+
+    ``` numbat
+    > let concorde_speed = 2180 km/h
+    > concorde_speed -> speed_of_sound(from_celsius(-60))
+      
+      = 2.06885 × 292.701 m/s    [Velocity]
+    ```
+
+If you want to convert a quantity to the *same unit as another quantity*, you can use the `unit_of(…)` function:
+
+``` numbat
+> let v1 = 50 km / h
+> let v2 = 3 m/s -> unit_of(v1)
+> v2
+
+  10.8 km/h    [Velocity]
+```
+
 
 ## Conversion functions
 
@@ -74,6 +130,12 @@ now() -> tz("Asia/Kathmandu")
 # Convert an angle to degrees, decimal minutes (48° 46.536′)
 48.7756° -> DM
 
+# Convert a length to feet and inches
+1.75 m -> feet_and_inches
+
+# Convert a mass to pounds and ounces
+70 kg -> pounds_and_ounces
+
 # Convert a number to its binary representation
 42 -> bin
 
@@ -96,3 +158,8 @@ now() -> tz("Asia/Kathmandu")
 
 Note that the `tz(…)` call above *returns a function*, i.e. the right hand side of
 the conversion operator is still a function.
+
+## Alternative syntax
+
+You can also use the `to` keyword instead of the `->` operator for conversions. Instead of the
+ASCII arrow, you can also use Unicode arrows (`x → y` or `x ➞ y`).
