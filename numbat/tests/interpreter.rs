@@ -1064,6 +1064,34 @@ fn test_statement_pretty_printing() {
         "fn f<A>(x: A) -> A = y\n  where y: A = x",
     );
 }
+
+#[test]
+fn test_parse() {
+    // Parsing valid numbers as Scalar
+    expect_output("let x: Scalar = parse(\"3.14\"); x", "3.14");
+    expect_output("let x: Scalar = parse(\"  42  \"); x", "42");
+    expect_output("let x: Scalar = parse(\"-1.5\"); x", "-1.5");
+    expect_output("let x: Scalar = parse(\"1e10\"); x", "10_000_000_000");
+
+    // Error: invalid number format
+    expect_failure(
+        "let x: Scalar = parse(\"not a number\")",
+        "Could not parse 'not a number' as a number",
+    );
+
+    // Error: non-Scalar return type not yet supported
+    expect_failure(
+        "let x: Length = parse(\"1 km\")",
+        "parse() currently only supports Scalar return type",
+    );
+
+    // Error: polymorphic return type (no type annotation)
+    expect_failure(
+        "parse(\"1.5\")",
+        "parse() requires a type annotation for the return type",
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

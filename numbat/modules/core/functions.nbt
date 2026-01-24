@@ -96,8 +96,9 @@ fn fract(x: Scalar) -> Scalar
 @example("mod(27, 5)")
 fn mod<T: Dim>(a: T, b: T) -> T
 
-@name("Parse string")
-@description("Parses a string as a quantity. The expected return dimension must be inferable from the surrounding context (see examples).")
-@example("let length: Length = parse(\"1 km\")")
-@example("fn get_length_from_meters(value_meters: String) -> Length = parse(\"{{value_meters}} m\")")
+@name("Parse a string as a quantity")
+@description("Parses a string as a quantity. The expected return type (dimension) must be inferable from the surrounding context (see examples).")
+@example("let x: Scalar = parse(\"3.5\")")
+#@example("let length: Length = parse(\"1 km\")")
+#@example("fn get_length_from_meters(value_meters: String) -> Length = parse(\"{{value_meters}} m\")")
 fn parse<T: Dim>(input: String) -> T

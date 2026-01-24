@@ -215,11 +215,25 @@ fn parse(
     mut args: Args,
     return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
-    let _input = string_arg!(args);
+    let input = string_arg!(args);
 
-    eprintln!("Parse return_type: {}", return_type.pretty_print());
+    if return_type.is_polymorphic() {
+        return Err(Box::new(RuntimeErrorKind::UserError(
+            "parse() requires a type annotation for the return type, e.g. `let x: Length = parse(\"1.5 km\")`".into(),
+        )));
+    }
 
-    Err(Box::new(RuntimeErrorKind::UserError(
-        "Not implemented yet".into(),
-    )))
+    if !return_type.is_scalar() {
+        return Err(Box::new(RuntimeErrorKind::UserError(
+            "parse() currently only supports Scalar return type".into(),
+        )));
+    }
+
+    match input.trim().parse::<f64>() {
+        Ok(value) => return_scalar!(value),
+        Err(_) => Err(Box::new(RuntimeErrorKind::UserError(format!(
+            "Could not parse '{}' as a number",
+            input
+        )))),
+    }
 }

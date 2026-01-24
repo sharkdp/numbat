@@ -106,6 +106,10 @@ impl TypeScheme {
         }
     }
 
+    pub(crate) fn is_polymorphic(&self) -> bool {
+        matches!(self, TypeScheme::Quantified(n, _) if *n > 0)
+    }
+
     pub(crate) fn to_readable_type(
         &self,
         registry: &crate::dimension::DimensionRegistry,
