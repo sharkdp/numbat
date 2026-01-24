@@ -47,6 +47,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
         insert_function!(unit_name, 1..=1);
         insert_function!(quantity_cast, 2..=2);
         insert_function!("parse", parse, 1..=1);
+        insert_function!("args", args_, 0..=0);
 
         // Math
         insert_function!("mod", mod_, 2..=2);
@@ -234,4 +235,16 @@ fn parse(
             input
         )))),
     }
+}
+
+fn args_(
+    _ctx: &mut ExecutionContext,
+    _args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
+    let args: std::collections::VecDeque<Value> = std::env::args()
+        .skip(1)
+        .map(|s| Value::String(s.into()))
+        .collect();
+    Ok(args.into())
 }

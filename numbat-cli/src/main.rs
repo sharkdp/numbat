@@ -44,11 +44,21 @@ pub enum ExitStatus {
 type ControlFlow = std::ops::ControlFlow<ExitStatus>;
 
 #[derive(Parser, Debug)]
-#[command(version, about, name("numbat"), max_term_width = 90)]
+#[command(
+    version,
+    about,
+    name("numbat"),
+    max_term_width = 90,
+    trailing_var_arg = true
+)]
 struct Args {
     /// Path to source file with Numbat code. If none is given, an interactive
     /// session is started.
     file: Option<PathBuf>,
+
+    /// Command-line arguments passed to the Numbat program
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    script_args: Vec<String>,
 
     /// Evaluate a single expression. Can be specified multiple times to evaluate several expressions in sequence.
     #[arg(
