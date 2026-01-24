@@ -102,3 +102,8 @@ fn mod<T: Dim>(a: T, b: T) -> T
 #@example("let length: Length = parse(\"1 km\")")
 #@example("fn get_length_from_meters(value_meters: String) -> Length = parse(\"{{value_meters}} m\")")
 fn parse<T: Dim>(input: String) -> T
+
+@name("Command-line arguments")
+@description("Returns the command-line arguments passed to the script. The first argument is the name of the script itself.")
+@example("let xs = tail(args())", "Get a list of all arguments except the script name.")
+fn args() -> List<String>

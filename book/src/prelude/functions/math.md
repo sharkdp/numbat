@@ -325,6 +325,20 @@ fn parse<T: Dim>(input: String) -> T
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=let%20x%3A%20Scalar%20%3D%20parse%28%223%2E5%22%29){ .md-button }
 
+### `args` (Command-line arguments)
+Returns the command-line arguments passed to the script. The first argument is the name of the script itself.
+
+```nbt
+fn args() -> List<String>
+```
+
+!!! example "Get a list of all arguments except the script name."
+    ```nbt
+    let xs = tail(args())
+
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=let%20xs%20%3D%20tail%28args%28%29%29){ .md-button }
+
 ## Transcendental functions
 
 Defined in: `math::transcendental`
