@@ -139,18 +139,16 @@ fn inspect(
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
     use crate::markup as m;
-    use crate::typechecker::type_scheme::TypeScheme;
 
     let arg = args.pop_front().unwrap();
 
     // Only show the type if it's concrete (not a quantified/generic type)
-    let type_markup = match &arg.type_ {
-        TypeScheme::Quantified(n_gen, _) if *n_gen > 0 => m::empty(),
-        _ => {
-            m::dimmed("    [")
-                + arg.type_.to_readable_type(ctx.dimension_registry, false)
-                + m::dimmed("]")
-        }
+    let type_markup = if arg.type_.is_polymorphic() {
+        m::empty()
+    } else {
+        m::dimmed("    [")
+            + arg.type_.to_readable_type(ctx.dimension_registry, false)
+            + m::dimmed("]")
     };
 
     let output = m::text("inspect: ") + arg.value.pretty_print() + type_markup;
