@@ -311,6 +311,20 @@ fn mod<T: Dim>(a: T, b: T) -> T
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=mod%2827%2C%205%29){ .md-button }
 
+### `parse` (Parse a string as a quantity)
+Parses a string as a quantity. The expected return type (dimension) must be inferable from the surrounding context (see examples).
+
+```nbt
+fn parse<T: Dim>(input: String) -> T
+```
+
+!!! example "Example"
+    ```nbt
+    let x: Scalar = parse("3.5")
+
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=let%20x%3A%20Scalar%20%3D%20parse%28%223%2E5%22%29){ .md-button }
+
 ## Transcendental functions
 
 Defined in: `math::transcendental`

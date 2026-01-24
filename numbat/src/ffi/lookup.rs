@@ -5,8 +5,8 @@ use super::Result;
 use super::macros::*;
 use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
-use crate::typed_ast::DType;
 use crate::typechecker::type_scheme::TypeScheme;
+use crate::typed_ast::DType;
 use crate::value::Value;
 use crate::vm::ExecutionContext;
 
