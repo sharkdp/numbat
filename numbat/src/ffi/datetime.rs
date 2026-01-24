@@ -80,26 +80,26 @@ pub fn tz(
     )))
 }
 
-pub fn unixtime(
+pub fn unixtime_us(
     _ctx: &mut ExecutionContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
     let input = datetime_arg!(args);
 
-    let output = input.timestamp().as_second();
+    let us = input.timestamp().as_microsecond();
 
-    return_scalar!(output as f64)
+    return_scalar!(us as f64)
 }
 
-pub fn from_unixtime(
+pub fn from_unixtime_us(
     _ctx: &mut ExecutionContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
-    let timestamp = quantity_arg!(args).unsafe_value().to_f64() as i64;
+    let us = quantity_arg!(args).unsafe_value().to_f64() as i64;
 
-    let dt = Timestamp::from_second(timestamp)
+    let dt = Timestamp::from_microsecond(us)
         .map_err(|_| RuntimeErrorKind::DateTimeOutOfRange)?
         .to_zoned(datetime::get_local_timezone_or_utc());
 

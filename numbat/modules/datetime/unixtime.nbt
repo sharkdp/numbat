@@ -1,0 +1,51 @@
+use core::functions
+use core::quantities
+
+dimension UnixTime
+
+@description("Unit for counting seconds since the UNIX epoch (1970-01-01T00:00:00Z).")
+unit unix_s: UnixTime
+
+@description("Unit for counting milliseconds since the UNIX epoch (1970-01-01T00:00:00Z).")
+unit unix_ms: UnixTime = unix_s / 1000
+
+@description("Unit for counting microseconds since the UNIX epoch (1970-01-01T00:00:00Z).")
+unit unix_µs: UnixTime = unix_s / 1_000_000
+
+# FFI functions (internal, return/take raw microseconds as Scalar)
+fn _unixtime_µs(input: DateTime) -> Scalar
+fn _from_unixtime_µs(input: Scalar) -> DateTime
+
+@description("Converts a `DateTime` to a UNIX timestamp. Can be used on the right hand side of a conversion operator: `now() -> unixtime`.")
+@example("datetime(\"2022-07-20 21:52 +0200\") -> unixtime")
+fn unixtime(input: DateTime) -> UnixTime = _unixtime_µs(input) * unix_µs -> unix_s
+
+@description("Converts a `DateTime` to a UNIX timestamp in seconds.")
+@example("datetime(\"2022-07-20 21:52 +0200\") -> unixtime_s")
+fn unixtime_s(input: DateTime) -> Scalar = unixtime(input) |> floor_in(unix_s) |> value_of
+
+@description("Converts a `DateTime` to a UNIX timestamp in milliseconds.")
+@example("datetime(\"2022-07-20 21:52:05.123 +0200\") -> unixtime_ms")
+fn unixtime_ms(input: DateTime) -> Scalar = unixtime(input) |> floor_in(unix_ms) |> value_of
+
+@description("Converts a `DateTime` to a UNIX timestamp in microseconds.")
+@example("datetime(\"2022-07-20 21:52:05.123456 +0200\") -> unixtime_µs")
+fn unixtime_µs(input: DateTime) -> Scalar = unixtime(input) |> floor_in(unix_µs) |> value_of
+
+@description("Converts a UNIX timestamp to a `DateTime` object.")
+@example("from_unixtime(1658346725 unix_s)")
+@example("from_unixtime(1658346725000 unix_ms)")
+@example("from_unixtime(1658346725000000 unix_µs)")
+fn from_unixtime(input: UnixTime) -> DateTime = _from_unixtime_µs(value_of(input -> unix_µs))
+
+@description("Converts a UNIX timestamp in seconds to a `DateTime` object.")
+@example("from_unixtime_s(1658346725)")
+fn from_unixtime_s(input: Scalar) -> DateTime = from_unixtime(input unix_s)
+
+@description("Converts a UNIX timestamp in milliseconds to a `DateTime` object.")
+@example("from_unixtime_ms(1658346725123)")
+fn from_unixtime_ms(input: Scalar) -> DateTime = from_unixtime(input unix_ms)
+
+@description("Converts a UNIX timestamp in microseconds to a `DateTime` object.")
+@example("from_unixtime_µs(1658346725123456)")
+fn from_unixtime_µs(input: Scalar) -> DateTime = from_unixtime(input unix_µs)

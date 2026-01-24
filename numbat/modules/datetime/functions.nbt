@@ -31,14 +31,6 @@ let local: Fn[(DateTime) -> DateTime] = tz(get_local_timezone())
 @description("Timezone conversion function to UTC.")
 let UTC: Fn[(DateTime) -> DateTime] = tz("UTC")
 
-@description("Converts a `DateTime` to a UNIX timestamp. Can be used on the right hand side of a conversion operator: `now() -> unixtime`.")
-@example("datetime(\"2022-07-20 21:52 +0200\") -> unixtime")
-fn unixtime(input: DateTime) -> Scalar
-
-@description("Converts a UNIX timestamp to a `DateTime` object.")
-@example("from_unixtime(2^31)")
-fn from_unixtime(input: Scalar) -> DateTime
-
 fn _today_str() = format_datetime("%Y-%m-%d", now())
 
 @description("Returns the current date at midnight (in the local time).")

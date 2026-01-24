@@ -29,10 +29,10 @@ calendar_add(now(), 40 days)
 date("2000-01-01") -> weekday
 
 # What is the current UNIX timestamp?
-now() -> unixtime
+now() -> unixtime_s
 
 # What is the date corresponding to a given UNIX timestamp?
-from_unixtime(1707568901)
+from_unixtime_s(1707568901)
 
 # How long are one million seconds in years, months, days, hours, minutes, seconds?
 1 million seconds -> human
@@ -76,8 +76,8 @@ The following functions are available for date and time handling:
 - `tz(tz: String) -> Fn[(DateTime) -> DateTime]`: Returns a timezone conversion function, typically used with the conversion operator (`datetime -> tz("Europe/Berlin")`)
 - `local(dt: DateTime) -> DateTime`: Timezone conversion function targeting the users local timezone (`datetime -> local`)
 - `get_local_timezone() -> String`: Returns the users local timezone
-- `unixtime(dt: DateTime) -> Scalar`: Converts a `DateTime` to a UNIX timestamp.
-- `from_unixtime(ut: Scalar) -> DateTime`: Converts a UNIX timestamp to a `DateTime` object.
+- `unixtime_s(dt: DateTime) -> Scalar`, `unixtime_ms(…)`, `unixtime_µs(…)`: Converts a `DateTime` to a UNIX timestamp in seconds, milliseconds, or microseconds.
+- `from_unixtime_s(ut: Scalar) -> DateTime`, `from_unixtime_ms(…)`, `from_unixtime_µs(…)`: Converts a UNIX timestamp in seconds, milliseconds, or microseconds to a `DateTime` object.
 - `calendar_add(dt: DateTime, span: Time)`: Add a span of time to a `DateTime` object, taking proper calendar arithmetic into account.
 - `calendar_sub(dt: DateTime, span: Time)`: Subtract a span of time from a `DateTime` object, taking proper calendar arithmetic into account.
 - `weekday(dt: DateTime) -> String`: Returns the weekday of a `DateTime` object as a string.
