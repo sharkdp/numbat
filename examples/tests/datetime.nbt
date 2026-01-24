@@ -82,15 +82,40 @@ assert_eq(format_datetime("%Y-%m-%dT%H:%M:%S%:z", dt_issue_376), "2024-02-23T14:
 # Unix time
 
 let epoch = datetime("1970-01-01T00:00:00Z")
-assert_eq(epoch -> unixtime, 0)
+assert_eq(epoch -> unixtime, 0 unix_s)
+assert_eq(epoch -> unixtime_s, 0)
+assert_eq(epoch -> unixtime_ms, 0)
+assert_eq(epoch -> unixtime_µs, 0)
 
-assert_eq(epoch + 1000 milliseconds + 2 seconds -> unixtime, 3)
+assert_eq(epoch + 1234567 microseconds -> unixtime, 1.234567 unix_s)
 
 let dt_unixtime_1 = datetime("Wed, 20 Jul 2022 21:52:05 +0200")
-assert_eq(dt_unixtime_1 -> unixtime, 1658346725)
+assert_eq(dt_unixtime_1 -> unixtime, 1658346725 unix_s)
+assert_eq(dt_unixtime_1 -> unixtime_s, 1658346725)
+assert_eq(dt_unixtime_1 -> unixtime_ms, 1658346725000)
+assert_eq(dt_unixtime_1 -> unixtime_µs, 1658346725000000)
 
-assert_eq(from_unixtime(1658346725), dt_unixtime_1)
+# from_unixtime with UnixTime units
+assert_eq(from_unixtime(1658346725 unix_s), dt_unixtime_1)
+assert_eq(from_unixtime(1658346725000 unix_ms), dt_unixtime_1)
+assert_eq(from_unixtime(1658346725000000 unix_µs), dt_unixtime_1)
 
+# from_unixtime_* with scalars
+assert_eq(from_unixtime_s(1658346725), dt_unixtime_1)
+assert_eq(from_unixtime_ms(1658346725000), dt_unixtime_1)
+assert_eq(from_unixtime_µs(1658346725000000), dt_unixtime_1)
+
+# Sub-second precision round-trip
+let dt_unixtime_2 = datetime("2022-07-20 21:52:05.123456 +0200")
+assert_eq(dt_unixtime_2 -> unixtime, 1658346725.123456 unix_s)
+assert_eq(dt_unixtime_2 -> unixtime_s, 1658346725)
+assert_eq(dt_unixtime_2 -> unixtime_ms, 1658346725123)
+assert_eq(dt_unixtime_2 -> unixtime_µs, 1658346725123456)
+
+assert_eq(dt_unixtime_2 -> unixtime -> from_unixtime -> unixtime, 1658346725.123456 unix_s)
+assert_eq(dt_unixtime_2 -> unixtime_s -> from_unixtime_s -> unixtime_s, 1658346725)
+assert_eq(dt_unixtime_2 -> unixtime_ms -> from_unixtime_ms -> unixtime_ms, 1658346725123)
+assert_eq(dt_unixtime_2 -> unixtime_µs -> from_unixtime_µs -> unixtime_µs, 1658346725123456)
 
 
 # Calendar arithmetic

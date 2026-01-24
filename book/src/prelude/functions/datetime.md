@@ -6,7 +6,7 @@ icon: lucide/clock
 
 See [this page](./date-and-time.md) for a general introduction to date and time handling in Numbat.
 
-Defined in: `datetime::functions`, `datetime::human`
+Defined in: `datetime::functions`, `datetime::unixtime`, `datetime::human`
 
 ### `now`
 Returns the current date and time.
@@ -99,36 +99,6 @@ fn tz(tz: String) -> Fn[(DateTime) -> DateTime]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20tz%28%22Asia%2FTaipei%22%29){ .md-button }
 
-### `unixtime`
-Converts a `DateTime` to a UNIX timestamp. Can be used on the right hand side of a conversion operator: `now() -> unixtime`.
-
-```nbt
-fn unixtime(input: DateTime) -> Scalar
-```
-
-!!! example "Example"
-    ```nbt
-    datetime("2022-07-20 21:52 +0200") -> unixtime
-
-        = 1_658_346_720
-    ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20unixtime){ .md-button }
-
-### `from_unixtime`
-Converts a UNIX timestamp to a `DateTime` object.
-
-```nbt
-fn from_unixtime(input: Scalar) -> DateTime
-```
-
-!!! example "Example"
-    ```nbt
-    from_unixtime(2^31)
-
-        = 2038-01-19 03:14:08 UTC    [DateTime]
-    ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Funixtime%282%5E31%29){ .md-button }
-
 ### `today`
 Returns the current date at midnight (in the local time).
 
@@ -218,6 +188,142 @@ fn julian_date(dt: DateTime) -> Time
         = 2.45978e+6 day    [Time]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=julian%5Fdate%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29){ .md-button }
+
+### `unixtime`
+Converts a `DateTime` to a UNIX timestamp. Can be used on the right hand side of a conversion operator: `now() -> unixtime`.
+
+```nbt
+fn unixtime(input: DateTime) -> UnixTime
+```
+
+!!! example "Example"
+    ```nbt
+    datetime("2022-07-20 21:52 +0200") -> unixtime
+
+        = 1_658_346_720 unix_s    [UnixTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20unixtime){ .md-button }
+
+### `unixtime_s`
+Converts a `DateTime` to a UNIX timestamp in seconds.
+
+```nbt
+fn unixtime_s(input: DateTime) -> Scalar
+```
+
+!!! example "Example"
+    ```nbt
+    datetime("2022-07-20 21:52 +0200") -> unixtime_s
+
+        = 1_658_346_720
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%20%2D%3E%20unixtime%5Fs){ .md-button }
+
+### `unixtime_ms`
+Converts a `DateTime` to a UNIX timestamp in milliseconds.
+
+```nbt
+fn unixtime_ms(input: DateTime) -> Scalar
+```
+
+!!! example "Example"
+    ```nbt
+    datetime("2022-07-20 21:52:05.123 +0200") -> unixtime_ms
+
+        = 1_658_346_725_123
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%3A05%2E123%20%2B0200%22%29%20%2D%3E%20unixtime%5Fms){ .md-button }
+
+### `unixtime_µs`
+Converts a `DateTime` to a UNIX timestamp in microseconds.
+
+```nbt
+fn unixtime_µs(input: DateTime) -> Scalar
+```
+
+!!! example "Example"
+    ```nbt
+    datetime("2022-07-20 21:52:05.123456 +0200") -> unixtime_µs
+
+        = 1.65835e+15
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%3A05%2E123456%20%2B0200%22%29%20%2D%3E%20unixtime%5F%C2%B5s){ .md-button }
+
+### `from_unixtime`
+Converts a UNIX timestamp to a `DateTime` object.
+
+```nbt
+fn from_unixtime(input: UnixTime) -> DateTime
+```
+
+!!! example "Example"
+    ```nbt
+    from_unixtime(1658346725 unix_s)
+
+        = 2022-07-20 19:52:05 UTC    [DateTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Funixtime%281658346725%20unix%5Fs%29){ .md-button }
+
+!!! example "Example"
+    ```nbt
+    from_unixtime(1658346725000 unix_ms)
+
+        = 2022-07-20 19:52:05 UTC    [DateTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Funixtime%281658346725000%20unix%5Fms%29){ .md-button }
+
+!!! example "Example"
+    ```nbt
+    from_unixtime(1658346725000000 unix_µs)
+
+        = 2022-07-20 19:52:05 UTC    [DateTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Funixtime%281658346725000000%20unix%5F%C2%B5s%29){ .md-button }
+
+### `from_unixtime_s`
+Converts a UNIX timestamp in seconds to a `DateTime` object.
+
+```nbt
+fn from_unixtime_s(input: Scalar) -> DateTime
+```
+
+!!! example "Example"
+    ```nbt
+    from_unixtime_s(1658346725)
+
+        = 2022-07-20 19:52:05 UTC    [DateTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Funixtime%5Fs%281658346725%29){ .md-button }
+
+### `from_unixtime_ms`
+Converts a UNIX timestamp in milliseconds to a `DateTime` object.
+
+```nbt
+fn from_unixtime_ms(input: Scalar) -> DateTime
+```
+
+!!! example "Example"
+    ```nbt
+    from_unixtime_ms(1658346725123)
+
+        = 2022-07-20 19:52:05 UTC    [DateTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Funixtime%5Fms%281658346725123%29){ .md-button }
+
+### `from_unixtime_µs`
+Converts a UNIX timestamp in microseconds to a `DateTime` object.
+
+```nbt
+fn from_unixtime_µs(input: Scalar) -> DateTime
+```
+
+!!! example "Example"
+    ```nbt
+    from_unixtime_µs(1658346725123456)
+
+        = 2022-07-20 19:52:05 UTC    [DateTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Funixtime%5F%C2%B5s%281658346725123456%29){ .md-button }
 
 ### `human` (Human-readable time duration)
 Converts a time duration to a human-readable string in days, hours, minutes and seconds.

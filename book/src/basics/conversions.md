@@ -116,7 +116,7 @@ The following functions are available for this purpose:
 
 ```nbt
 # Convert a date and time to a Unix timestamp
-now() -> unixtime
+now() -> unixtime_s
 
 # Convert a date and time to a different timezone
 now() -> tz("Asia/Kathmandu")
