@@ -31,7 +31,7 @@ impl Transformer {
         }
     }
 
-    fn transform_expression(&self, expression: &mut Expression) {
+    pub fn transform_expression(&self, expression: &mut Expression) {
         match expression {
             Expression::Scalar(..) | Expression::Boolean(_, _) | Expression::TypedHole(_) => {}
             Expression::Identifier(span, identifier) => {
