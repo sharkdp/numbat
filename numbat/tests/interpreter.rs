@@ -1075,12 +1075,17 @@ fn test_parse() {
     expect_output("let x: Scalar = parse(\"-2.5e-3\"); x", "-0.0025");
     expect_output("let x: Scalar = parse(\"0xFF\"); x", "255");
     expect_output("let x: Scalar = parse(\"0b1010\"); x", "10");
+    expect_output("let x: Scalar = parse(\"NaN\"); x", "NaN");
+    expect_output("let x: Scalar = parse(\"inf\"); x", "inf");
+    expect_output("let x: Scalar = parse(\"-inf\"); x", "-inf");
 
     // Parsing quantities with units
     expect_output("let x: Length = parse(\"1.5 km\"); x", "1.5 km");
     expect_output("let x: Length = parse(\"100 m\"); x", "100 m");
     expect_output("let x: Length = parse(\"-50 cm\"); x", "-50 cm");
     expect_output("let x: Mass = parse(\"2.5 kg\"); x", "2.5 kg");
+    expect_output("let x: Length = parse(\"inf m\"); x", "inf m");
+    expect_output("let x: Length = parse(\"NaN m\"); x", "NaN m");
 
     // Error: invalid format
     expect_failure("let x: Scalar = parse(\"not a number\")", "Invalid pattern");
