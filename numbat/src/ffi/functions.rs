@@ -232,17 +232,18 @@ fn parse(
         ctx.ctx.typechecker,
         unit_lookup,
     ) {
-        Ok((quantity, parsed_type)) => {
-            if !quantity.is_zero()
-                && parsed_type.to_concrete_type() != return_type.to_concrete_type()
+        Ok((quantity, input_type)) => {
+            // Runtime type check: ensure that the parsed quantity's type matches the expected return type
+            if quantity.is_zero() || input_type.to_concrete_type() == return_type.to_concrete_type()
             {
-                return Err(Box::new(RuntimeErrorKind::UserError(format!(
-                    "Type mismatch: expected {}, got {}",
+                Ok(Value::Quantity(quantity))
+            } else {
+                Err(Box::new(RuntimeErrorKind::UserError(format!(
+                    "Type mismatch: expected `{}`, got `{}`",
                     return_type.to_concrete_type(),
-                    parsed_type.to_concrete_type()
-                ))));
+                    input_type.to_concrete_type()
+                ))))
             }
-            Ok(Value::Quantity(quantity))
         }
         Err(e) => Err(Box::new(RuntimeErrorKind::UserError(format!(
             "Could not parse '{}': {}",
