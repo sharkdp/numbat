@@ -508,7 +508,9 @@ impl BytecodeInterpreter {
                             readable_type: type_annotation
                                 .as_ref()
                                 .map(|a: &TypeAnnotation| a.pretty_print())
-                                .unwrap_or(type_scheme.to_readable_type(typechecker.registry(), false)),
+                                .unwrap_or(
+                                    type_scheme.to_readable_type(typechecker.registry(), false),
+                                ),
                             aliases,
                             name: decorator::name(decorators).map(CompactString::from),
                             canonical_name: decorator::get_canonical_unit_name(

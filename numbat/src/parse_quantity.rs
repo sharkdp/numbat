@@ -3,6 +3,7 @@
 //! This module provides a restricted parser that only accepts simple quantity literals
 //! of the form `<number>` or `<number> <unit>`, not arbitrary expressions.
 
+use crate::Type;
 use crate::ast::{BinaryOperator, Expression, Statement, UnaryOperator};
 use crate::number::Number;
 use crate::parser::{ParseError, parse};
@@ -11,7 +12,6 @@ use crate::quantity::Quantity;
 use crate::typechecker::TypeChecker;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::unit::Unit;
-use crate::Type;
 
 /// Error type for parsing quantity literals
 #[derive(Debug, Clone, PartialEq)]
@@ -36,9 +36,7 @@ impl std::fmt::Display for QuantityLiteralError {
     }
 }
 
-/// Parse and evaluate a quantity literal, returning a Quantity and its TypeScheme.
-///
-/// This runs the full pipeline: parsing → transforming → type inference → evaluation.
+/// Parse and evaluate a quantity literal, returning a Quantity and its corresponding type.
 ///
 /// Valid examples:
 /// - `1.5`
@@ -52,16 +50,9 @@ pub fn parse_quantity_literal(
     typechecker: &TypeChecker,
     unit_lookup: impl Fn(&str) -> Option<Unit>,
 ) -> Result<(Quantity, TypeScheme), QuantityLiteralError> {
-    // Step 1: Parse and validate the AST
     let mut expr = parse_quantity_ast(input)?;
-
-    // Step 2: Transform (resolve unit names)
     transformer.transform_expression(&mut expr);
-
-    // Step 3: Infer the type of the expression
     let type_scheme = get_expression_type(&expr, typechecker)?;
-
-    // Step 4: Evaluate
     let quantity = evaluate_quantity_expression(&expr, &unit_lookup)?;
 
     Ok((quantity, type_scheme))
@@ -76,10 +67,8 @@ fn get_expression_type(
     typechecker: &TypeChecker,
 ) -> Result<TypeScheme, QuantityLiteralError> {
     match expr {
-        // Plain scalar - dimensionless
         Expression::Scalar(_, _) => Ok(TypeScheme::concrete(Type::scalar())),
 
-        // Scalar × Unit - get type from unit
         Expression::BinaryOperator {
             op: BinaryOperator::Mul,
             rhs,
@@ -96,7 +85,6 @@ fn get_expression_type(
             }
         }
 
-        // Negation - recurse
         Expression::UnaryOperator {
             op: UnaryOperator::Negate,
             expr: inner,

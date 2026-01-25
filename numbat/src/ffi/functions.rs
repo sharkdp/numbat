@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use super::{Args, macros::*};
+use crate::parse_quantity::parse_quantity_literal;
 use crate::pretty_print::PrettyPrint;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::vm::{Constant, ExecutionContext};
@@ -150,7 +151,9 @@ fn inspect(
         m::empty()
     } else {
         m::dimmed("    [")
-            + arg.type_.to_readable_type(ctx.typechecker.registry(), false)
+            + arg
+                .type_
+                .to_readable_type(ctx.typechecker.registry(), false)
             + m::dimmed("]")
     };
 
@@ -230,16 +233,13 @@ fn parse(
         )));
     }
 
-    // Create unit lookup closure using the constants slice
     let unit_lookup = |name: &str| ctx.lookup_unit(name, constants);
 
-    // Parse and evaluate the quantity literal
-    match crate::parse_quantity::parse_quantity_literal(&input, ctx.prefix_transformer, ctx.typechecker, unit_lookup) {
+    match parse_quantity_literal(&input, ctx.prefix_transformer, ctx.typechecker, unit_lookup) {
         Ok((quantity, parsed_type)) => {
-            // Type compatibility check:
-            // - If the quantity is zero, it matches any expected type (Numbat's polymorphic zero)
-            // - Otherwise, verify the parsed type matches the expected return type
-            if !quantity.is_zero() && parsed_type.to_concrete_type() != return_type.to_concrete_type() {
+            if !quantity.is_zero()
+                && parsed_type.to_concrete_type() != return_type.to_concrete_type()
+            {
                 return Err(Box::new(RuntimeErrorKind::UserError(format!(
                     "Type mismatch: expected {}, got {}",
                     return_type.to_concrete_type(),
