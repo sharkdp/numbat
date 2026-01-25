@@ -102,6 +102,7 @@ fn mod<T: Dim>(a: T, b: T) -> T
 @example("let length: Length = parse(\"1 km\")")
 @example("let mass: Mass = parse(\"9.10938e-31 kg\")")
 @example("let n: Scalar = parse(\"-100_000\")")
+@example("parse(\"0xFF\") -> bin")
 fn parse<T: Dim>(input: String) -> T
 
 @name("Command-line arguments")

@@ -214,7 +214,7 @@ pub fn parse_quantity_ast(input: &str) -> Result<Expression<'_>, QuantityLiteral
 
     if !is_valid_quantity_literal(&expr) {
         return Err(QuantityLiteralError::InvalidPattern(
-            "Expected '<number>' or '<number> <unit>', got a more complex expression".to_string(),
+            "Expected '<number>' or '<number> <unit>'".to_string(),
         ));
     }
 

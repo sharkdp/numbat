@@ -1072,6 +1072,9 @@ fn test_parse() {
     expect_output("let x: Scalar = parse(\"  42  \"); x", "42");
     expect_output("let x: Scalar = parse(\"-1.5\"); x", "-1.5");
     expect_output("let x: Scalar = parse(\"1e10\"); x", "10_000_000_000");
+    expect_output("let x: Scalar = parse(\"-2.5e-3\"); x", "-0.0025");
+    expect_output("let x: Scalar = parse(\"0xFF\"); x", "255");
+    expect_output("let x: Scalar = parse(\"0b1010\"); x", "10");
 
     // Parsing quantities with units
     expect_output("let x: Length = parse(\"1.5 km\"); x", "1.5 km");
@@ -1081,11 +1084,11 @@ fn test_parse() {
 
     // Error: invalid format
     expect_failure("let x: Scalar = parse(\"not a number\")", "Invalid pattern");
+    expect_failure("let x: Scalar = parse(\"1 1\")", "Invalid pattern");
 
-    // Error: unknown unit (reported as "Expected unit identifier" because
-    // the transformer doesn't recognize "foobar" as a unit)
+    // Error: unknown unit
     expect_failure(
-        "let x: Length = parse(\"1 foobar\")",
+        "let x: Length = parse(\"1 unknown_unit\")",
         "Expected unit identifier",
     );
 
@@ -1096,11 +1099,23 @@ fn test_parse() {
     );
 
     // Error: type mismatch (parsed Mass but expected Length)
-    expect_failure("let x: Length = parse(\"1 kg\")", "Type mismatch");
+    expect_failure(
+        "let x: Length = parse(\"1 kg\")",
+        "Type mismatch: expected `Length`, got `Mass`",
+    );
+    expect_failure(
+        "let x: Scalar = parse(\"1 kg\")",
+        "Type mismatch: expected `Scalar`, got `Mass`",
+    );
+    expect_failure(
+        "let x: Length = parse(\"1\")",
+        "Type mismatch: expected `Length`, got `Scalar`",
+    );
 
     // Zero is compatible with any type
     expect_output("let x: Length = parse(\"0\"); x", "0");
     expect_output("let x: Mass = parse(\"0\"); x", "0");
+    expect_output("let x: Length = parse(\"0 kg\"); x", "0");
 
     // User-defined base unit should be available immediately
     expect_output(
