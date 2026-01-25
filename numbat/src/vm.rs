@@ -932,10 +932,7 @@ impl Vm {
                                 .return_type
                                 .as_ref()
                                 .expect("FFI functions must have a return type");
-                            let mut ffi_ctx = ffi::FfiContext {
-                                ctx,
-                                constants: &self.constants,
-                            };
+                            let mut ffi_ctx = ffi::FfiContext::new(ctx, &self.constants);
                             let result = (function)(&mut ffi_ctx, args, return_type)
                                 .map_err(|e| self.runtime_error(*e))?;
                             self.push(result);
@@ -991,10 +988,7 @@ impl Vm {
                                         .return_type
                                         .as_ref()
                                         .expect("FFI functions must have a return type");
-                                    let mut ffi_ctx = ffi::FfiContext {
-                                        ctx,
-                                        constants: &self.constants,
-                                    };
+                                    let mut ffi_ctx = ffi::FfiContext::new(ctx, &self.constants);
                                     let result = (function)(&mut ffi_ctx, args, return_type)
                                         .map_err(|e| self.runtime_error(*e))?;
                                     self.push(result);

@@ -35,10 +35,14 @@ pub(crate) type Args = VecDeque<Arg>;
 /// Context passed to FFI functions, providing access to runtime state.
 pub struct FfiContext<'a, 'b> {
     pub ctx: &'a mut ExecutionContext<'b>,
-    pub constants: &'a [Constant],
+    constants: &'a [Constant],
 }
 
-impl FfiContext<'_, '_> {
+impl<'a, 'b> FfiContext<'a, 'b> {
+    pub fn new(ctx: &'a mut ExecutionContext<'b>, constants: &'a [Constant]) -> Self {
+        Self { ctx, constants }
+    }
+
     /// Look up a unit by name from the constants table.
     pub fn lookup_unit(&self, name: &str) -> Option<Unit> {
         self.ctx
@@ -53,8 +57,7 @@ impl FfiContext<'_, '_> {
 }
 
 /// FFI function signature: (ffi_context, args, return_type) -> Result
-type FfiFunctionFn =
-    fn(&mut FfiContext, Args, &TypeScheme) -> Result<Value, Box<RuntimeErrorKind>>;
+type FfiFunctionFn = fn(&mut FfiContext, Args, &TypeScheme) -> Result<Value, Box<RuntimeErrorKind>>;
 
 pub(crate) enum Callable {
     Function(FfiFunctionFn),
