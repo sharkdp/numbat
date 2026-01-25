@@ -1,16 +1,18 @@
 # Demonstrate how to access command line arguments passed to a Numbat script.
 #
-# Run this with `numbat examples/interactive/command_line_arguments.nbt 1 2 3`
+# Run this with something like
+#
+#     numbat examples/interactive/command_line_arguments.nbt "50 cm" "2 m" "6.5 m"
 
 
-# Get the first command line argument (after the script name) and parse it as a Scalar:
+# Get the first command line argument (after the script name) and parse it as a `Length`:
 
-let first: Scalar = parse(head(tail(args())))
-print("First parameter passed to the script: {first}")
+let first: Length = parse(head(tail(args())))
+print("First length passed to the script: {first}")
 
-# Get all command line arguments (after the script name) and parse them into a list of Scalars:
+# Get all command line arguments (after the script name) and parse them into a list of lengths:
 
-fn parse_number(input) -> Scalar = parse(input)
-let parameters = map(parse_number, tail(args()))
+fn parse_length(input) -> Length = parse(input)
+let parameters = map(parse_length, tail(args()))
 
-print("All parameters passed to the script: {parameters}")
+print("Mean of all lengths passed to the script: {mean(parameters)}")
