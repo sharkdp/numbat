@@ -8,10 +8,11 @@ use crate::quantity::Quantity;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::typed_ast::DType;
 use crate::value::Value;
-use crate::vm::ExecutionContext;
+use crate::vm::{Constant, ExecutionContext};
 
 pub fn _get_chemical_element_data_raw(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {

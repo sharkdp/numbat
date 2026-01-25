@@ -6,7 +6,6 @@ use compact_str::{CompactString, ToCompactString};
 use indexmap::IndexMap;
 use num_traits::ToPrimitive;
 
-use crate::dimension::DimensionRegistry;
 use crate::interpreter::RuntimeErrorKind;
 use crate::list::NumbatList;
 use crate::span::Span;
@@ -271,7 +270,22 @@ impl CallFrame {
 
 pub struct ExecutionContext<'a> {
     pub print_fn: &'a mut PrintFunction,
-    pub dimension_registry: &'a DimensionRegistry,
+    pub unit_name_to_constant_idx: &'a HashMap<CompactString, u16>,
+    pub prefix_transformer: &'a crate::prefix_transformer::Transformer,
+    pub typechecker: &'a crate::typechecker::TypeChecker,
+}
+
+impl ExecutionContext<'_> {
+    /// Look up a unit by name using the provided constants slice.
+    pub fn lookup_unit(&self, name: &str, constants: &[Constant]) -> Option<Unit> {
+        self.unit_name_to_constant_idx
+            .get(name)
+            .and_then(|&idx| constants.get(idx as usize))
+            .and_then(|c| match c {
+                Constant::Unit(u) => Some(u.clone()),
+                _ => None,
+            })
+    }
 }
 
 /// Metadata for a single FFI call argument
@@ -929,7 +943,7 @@ impl Vm {
                                 .return_type
                                 .as_ref()
                                 .expect("FFI functions must have a return type");
-                            let result = (function)(ctx, args, return_type)
+                            let result = (function)(ctx, &self.constants, args, return_type)
                                 .map_err(|e| self.runtime_error(*e))?;
                             self.push(result);
                         }
@@ -984,8 +998,9 @@ impl Vm {
                                         .return_type
                                         .as_ref()
                                         .expect("FFI functions must have a return type");
-                                    let result = (function)(ctx, args, return_type)
-                                        .map_err(|e| self.runtime_error(*e))?;
+                                    let result =
+                                        (function)(ctx, &self.constants, args, return_type)
+                                            .map_err(|e| self.runtime_error(*e))?;
                                     self.push(result);
                                 }
                                 Callable::Procedure(..) => unreachable!(
@@ -1193,10 +1208,14 @@ fn vm_basic() {
     vm.add_op(Op::Return, Span::dummy());
 
     let mut print_fn = |_: &Markup| {};
-    let dimension_registry = DimensionRegistry::default();
+    let unit_name_to_constant_idx = HashMap::new();
+    let prefix_transformer = crate::prefix_transformer::Transformer::new();
+    let typechecker = crate::typechecker::TypeChecker::default();
     let mut ctx = ExecutionContext {
         print_fn: &mut print_fn,
-        dimension_registry: &dimension_registry,
+        unit_name_to_constant_idx: &unit_name_to_constant_idx,
+        prefix_transformer: &prefix_transformer,
+        typechecker: &typechecker,
     };
 
     assert_eq!(

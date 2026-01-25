@@ -6,10 +6,11 @@ use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::value::Value;
-use crate::vm::ExecutionContext;
+use crate::vm::{Constant, ExecutionContext};
 
 pub fn mod_(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -27,6 +28,7 @@ macro_rules! simple_scalar_math_function {
     ($name:ident, $op:ident) => {
         pub fn $name(
             _ctx: &mut ExecutionContext,
+            _constants: &[Constant],
             mut args: Args,
             _return_type: &TypeScheme,
         ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -38,6 +40,7 @@ macro_rules! simple_scalar_math_function {
 
 pub fn abs(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -60,6 +63,7 @@ simple_scalar_math_function!(atan, atan);
 
 pub fn atan2(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -85,6 +89,7 @@ simple_scalar_math_function!(log2, log2);
 
 pub fn gamma(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -95,6 +100,7 @@ pub fn gamma(
 
 pub fn is_nan(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -105,6 +111,7 @@ pub fn is_nan(
 
 pub fn is_infinite(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -115,6 +122,7 @@ pub fn is_infinite(
 
 pub fn random(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     _args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {

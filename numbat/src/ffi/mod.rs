@@ -15,7 +15,7 @@ use crate::interpreter::{RuntimeError, RuntimeErrorKind};
 use crate::span::Span;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::value::Value;
-use crate::vm::ExecutionContext;
+use crate::vm::{Constant, ExecutionContext};
 
 type ControlFlow = std::ops::ControlFlow<RuntimeErrorKind>;
 
@@ -31,8 +31,16 @@ pub(crate) struct Arg {
 
 pub(crate) type Args = VecDeque<Arg>;
 
+/// FFI function signature: (context, constants, args, return_type) -> Result
+type FfiFunctionFn = fn(
+    &mut ExecutionContext,
+    &[Constant],
+    Args,
+    &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>>;
+
 pub(crate) enum Callable {
-    Function(fn(&mut ExecutionContext, Args, &TypeScheme) -> Result<Value, Box<RuntimeErrorKind>>),
+    Function(FfiFunctionFn),
     Procedure(fn(&mut ExecutionContext, Args) -> ControlFlow),
 }
 

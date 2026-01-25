@@ -5,7 +5,6 @@ use itertools::Itertools;
 
 use crate::ast::{ProcedureKind, TypeAnnotation};
 use crate::decorator::Decorator;
-use crate::dimension::DimensionRegistry;
 use crate::interpreter::{
     Interpreter, InterpreterResult, InterpreterSettings, Result, RuntimeError, RuntimeErrorKind,
 };
@@ -429,7 +428,7 @@ impl BytecodeInterpreter {
     fn compile_statement(
         &mut self,
         stmt: &Statement,
-        dimension_registry: &DimensionRegistry,
+        typechecker: &crate::typechecker::TypeChecker,
     ) -> Result<()> {
         match stmt {
             Statement::Expression(expr) => {
@@ -509,7 +508,7 @@ impl BytecodeInterpreter {
                             readable_type: type_annotation
                                 .as_ref()
                                 .map(|a: &TypeAnnotation| a.pretty_print())
-                                .unwrap_or(type_scheme.to_readable_type(dimension_registry, false)),
+                                .unwrap_or(type_scheme.to_readable_type(typechecker.registry(), false)),
                             aliases,
                             name: decorator::name(decorators).map(CompactString::from),
                             canonical_name: decorator::get_canonical_unit_name(
@@ -563,7 +562,7 @@ impl BytecodeInterpreter {
                         readable_type: type_annotation
                             .as_ref()
                             .map(|a: &TypeAnnotation| a.pretty_print())
-                            .unwrap_or(type_scheme.to_readable_type(dimension_registry, false)),
+                            .unwrap_or(type_scheme.to_readable_type(typechecker.registry(), false)),
                         aliases,
                         name: decorator::name(decorators).map(CompactString::from),
                         canonical_name: decorator::get_canonical_unit_name(unit_name, decorators),
@@ -649,11 +648,14 @@ impl BytecodeInterpreter {
     fn run(
         &mut self,
         settings: &mut InterpreterSettings,
-        dimension_registry: &DimensionRegistry,
+        prefix_transformer: &crate::prefix_transformer::Transformer,
+        typechecker: &crate::typechecker::TypeChecker,
     ) -> Result<InterpreterResult> {
         let mut ctx = ExecutionContext {
             print_fn: &mut settings.print_fn,
-            dimension_registry,
+            unit_name_to_constant_idx: &self.unit_name_to_constant_index,
+            prefix_transformer,
+            typechecker,
         };
 
         self.vm.disassemble();
@@ -711,13 +713,14 @@ impl Interpreter for BytecodeInterpreter {
         &mut self,
         settings: &mut InterpreterSettings,
         statements: &[Statement],
-        dimension_registry: &DimensionRegistry,
+        prefix_transformer: &crate::prefix_transformer::Transformer,
+        typechecker: &crate::typechecker::TypeChecker,
     ) -> Result<InterpreterResult> {
         for statement in statements {
-            self.compile_statement(statement, dimension_registry)?;
+            self.compile_statement(statement, typechecker)?;
         }
 
-        self.run(settings, dimension_registry)
+        self.run(settings, prefix_transformer, typechecker)
     }
 
     fn get_unit_registry(&self) -> &UnitRegistry {
