@@ -160,6 +160,16 @@ impl Expression<'_> {
             Expression::TypedHole(span) => *span,
         }
     }
+
+    /// Check if this expression is a plain scalar (no negation or other operations).
+    pub fn is_scalar(&self) -> bool {
+        matches!(self, Expression::Scalar(_, _))
+    }
+
+    /// Check if this expression is an identifier.
+    pub fn is_identifier(&self) -> bool {
+        matches!(self, Expression::Identifier(_, _))
+    }
 }
 
 #[cfg(test)]
