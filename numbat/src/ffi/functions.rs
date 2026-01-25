@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use super::{Args, macros::*};
+use super::{Args, FfiContext, macros::*};
 use crate::parse_quantity::parse_quantity_literal;
 use crate::pretty_print::PrettyPrint;
 use crate::typechecker::type_scheme::TypeScheme;
-use crate::vm::{Constant, ExecutionContext};
 use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value};
 
 use super::{Callable, ForeignFunction, Result};
@@ -126,8 +125,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
 }
 
 fn error(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -137,8 +135,7 @@ fn error(
 }
 
 fn inspect(
-    ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -153,18 +150,17 @@ fn inspect(
         m::dimmed("    [")
             + arg
                 .type_
-                .to_readable_type(ctx.typechecker.registry(), false)
+                .to_readable_type(ctx.ctx.typechecker.registry(), false)
             + m::dimmed("]")
     };
 
     let output = m::text("inspect: ") + arg.value.pretty_print() + type_markup;
-    (ctx.print_fn)(&output);
+    (ctx.ctx.print_fn)(&output);
     Ok(arg.value)
 }
 
 fn value_of(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -174,8 +170,7 @@ fn value_of(
 }
 
 fn has_unit(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -186,8 +181,7 @@ fn has_unit(
 }
 
 fn is_dimensionless(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -197,8 +191,7 @@ fn is_dimensionless(
 }
 
 fn unit_name(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -208,8 +201,7 @@ fn unit_name(
 }
 
 fn quantity_cast(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -220,8 +212,7 @@ fn quantity_cast(
 }
 
 fn parse(
-    ctx: &mut ExecutionContext,
-    constants: &[Constant],
+    ctx: &mut FfiContext,
     mut args: Args,
     return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -233,9 +224,14 @@ fn parse(
         )));
     }
 
-    let unit_lookup = |name: &str| ctx.lookup_unit(name, constants);
+    let unit_lookup = |name: &str| ctx.lookup_unit(name);
 
-    match parse_quantity_literal(&input, ctx.prefix_transformer, ctx.typechecker, unit_lookup) {
+    match parse_quantity_literal(
+        &input,
+        ctx.ctx.prefix_transformer,
+        ctx.ctx.typechecker,
+        unit_lookup,
+    ) {
         Ok((quantity, parsed_type)) => {
             if !quantity.is_zero()
                 && parsed_type.to_concrete_type() != return_type.to_concrete_type()
@@ -256,8 +252,7 @@ fn parse(
 }
 
 fn args_(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     _args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
