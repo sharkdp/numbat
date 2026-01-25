@@ -23,6 +23,7 @@ mod math;
 pub mod module_importer;
 mod name_resolution;
 mod number;
+mod parse_quantity;
 mod parser;
 #[cfg(feature = "plotting")]
 mod plot;
