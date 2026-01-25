@@ -14,6 +14,7 @@ use std::collections::VecDeque;
 use crate::interpreter::{RuntimeError, RuntimeErrorKind};
 use crate::span::Span;
 use crate::typechecker::type_scheme::TypeScheme;
+use crate::unit::Unit;
 use crate::value::Value;
 use crate::vm::{Constant, ExecutionContext};
 
@@ -31,13 +32,29 @@ pub(crate) struct Arg {
 
 pub(crate) type Args = VecDeque<Arg>;
 
-/// FFI function signature: (context, constants, args, return_type) -> Result
-type FfiFunctionFn = fn(
-    &mut ExecutionContext,
-    &[Constant],
-    Args,
-    &TypeScheme,
-) -> Result<Value, Box<RuntimeErrorKind>>;
+/// Context passed to FFI functions, providing access to runtime state.
+pub struct FfiContext<'a, 'b> {
+    pub ctx: &'a mut ExecutionContext<'b>,
+    pub constants: &'a [Constant],
+}
+
+impl FfiContext<'_, '_> {
+    /// Look up a unit by name from the constants table.
+    pub fn lookup_unit(&self, name: &str) -> Option<Unit> {
+        self.ctx
+            .unit_name_to_constant_idx
+            .get(name)
+            .and_then(|&idx| self.constants.get(idx as usize))
+            .and_then(|c| match c {
+                Constant::Unit(u) => Some(u.clone()),
+                _ => None,
+            })
+    }
+}
+
+/// FFI function signature: (ffi_context, args, return_type) -> Result
+type FfiFunctionFn =
+    fn(&mut FfiContext, Args, &TypeScheme) -> Result<Value, Box<RuntimeErrorKind>>;
 
 pub(crate) enum Callable {
     Function(FfiFunctionFn),

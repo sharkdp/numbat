@@ -4,7 +4,7 @@ use plotly::Plot;
 use crate::interpreter::RuntimeErrorKind;
 use crate::typechecker::type_scheme::TypeScheme;
 #[allow(unused_imports)]
-use crate::vm::{Constant, ExecutionContext};
+use crate::vm::ExecutionContext;
 
 #[cfg(feature = "plotting")]
 use super::macros::*;
@@ -13,6 +13,7 @@ use super::macros::*;
 use compact_str::CompactString;
 
 use super::Args;
+use super::FfiContext;
 use super::Result;
 use crate::value::Value;
 
@@ -115,8 +116,7 @@ fn show_plot(plot: Plot) -> CompactString {
 
 #[cfg(feature = "plotting")]
 pub fn show(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -146,8 +146,7 @@ pub fn show(
 
 #[cfg(not(feature = "plotting"))]
 pub fn show(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     _args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {

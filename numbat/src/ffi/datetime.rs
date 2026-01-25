@@ -7,6 +7,7 @@ use jiff::fmt::strtime::BrokenDownTime;
 use num_traits::ToPrimitive;
 
 use super::Args;
+use super::FfiContext;
 use super::Result;
 use super::macros::*;
 use crate::datetime;
@@ -15,11 +16,9 @@ use crate::quantity::Quantity;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::value::FunctionReference;
 use crate::value::Value;
-use crate::vm::{Constant, ExecutionContext};
 
 pub fn now(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     _args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -27,8 +26,7 @@ pub fn now(
 }
 
 pub fn datetime(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -41,8 +39,7 @@ pub fn datetime(
 }
 
 pub fn format_datetime(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -61,8 +58,7 @@ pub fn format_datetime(
 }
 
 pub fn get_local_timezone(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     _args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -73,8 +69,7 @@ pub fn get_local_timezone(
 }
 
 pub fn tz(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -86,8 +81,7 @@ pub fn tz(
 }
 
 pub fn unixtime_us(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -99,8 +93,7 @@ pub fn unixtime_us(
 }
 
 pub fn from_unixtime_us(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -139,8 +132,7 @@ fn calendar_add(
 }
 
 pub fn _add_days(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -148,8 +140,7 @@ pub fn _add_days(
 }
 
 pub fn _add_months(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -157,8 +148,7 @@ pub fn _add_months(
 }
 
 pub fn _add_years(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {

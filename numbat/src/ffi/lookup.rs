@@ -1,6 +1,7 @@
 use compact_str::CompactString;
 
 use super::Args;
+use super::FfiContext;
 use super::Result;
 use super::macros::*;
 use crate::interpreter::RuntimeErrorKind;
@@ -8,11 +9,9 @@ use crate::quantity::Quantity;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::typed_ast::DType;
 use crate::value::Value;
-use crate::vm::{Constant, ExecutionContext};
 
 pub fn _get_chemical_element_data_raw(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {

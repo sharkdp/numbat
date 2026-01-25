@@ -12,6 +12,7 @@ use crate::name_resolution::LAST_RESULT_IDENTIFIERS;
 use crate::prefix::Prefix;
 use crate::prefix_parser::AcceptsPrefix;
 use crate::pretty_print::PrettyPrint;
+use crate::typechecker::TypeChecker;
 use crate::typed_ast;
 use crate::typed_ast::{
     BinaryOperator, DefineVariable, Expression, Statement, StringPart, UnaryOperator,
@@ -425,11 +426,7 @@ impl BytecodeInterpreter {
         });
     }
 
-    fn compile_statement(
-        &mut self,
-        stmt: &Statement,
-        typechecker: &crate::typechecker::TypeChecker,
-    ) -> Result<()> {
+    fn compile_statement(&mut self, stmt: &Statement, typechecker: &TypeChecker) -> Result<()> {
         match stmt {
             Statement::Expression(expr) => {
                 self.compile_expression(expr);
@@ -651,7 +648,7 @@ impl BytecodeInterpreter {
         &mut self,
         settings: &mut InterpreterSettings,
         prefix_transformer: &crate::prefix_transformer::Transformer,
-        typechecker: &crate::typechecker::TypeChecker,
+        typechecker: &TypeChecker,
     ) -> Result<InterpreterResult> {
         let mut ctx = ExecutionContext {
             print_fn: &mut settings.print_fn,
@@ -716,7 +713,7 @@ impl Interpreter for BytecodeInterpreter {
         settings: &mut InterpreterSettings,
         statements: &[Statement],
         prefix_transformer: &crate::prefix_transformer::Transformer,
-        typechecker: &crate::typechecker::TypeChecker,
+        typechecker: &TypeChecker,
     ) -> Result<InterpreterResult> {
         for statement in statements {
             self.compile_statement(statement, typechecker)?;

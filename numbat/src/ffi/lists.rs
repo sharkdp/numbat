@@ -1,14 +1,12 @@
 use super::macros::*;
-use super::{Args, Result};
+use super::{Args, FfiContext, Result};
 use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::value::Value;
-use crate::vm::{Constant, ExecutionContext};
 
 pub fn len(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -18,8 +16,7 @@ pub fn len(
 }
 
 pub fn head(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -33,8 +30,7 @@ pub fn head(
 }
 
 pub fn tail(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -45,8 +41,7 @@ pub fn tail(
 }
 
 pub fn cons(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -58,8 +53,7 @@ pub fn cons(
 }
 
 pub fn cons_end(
-    _ctx: &mut ExecutionContext,
-    _constants: &[Constant],
+    _ctx: &mut FfiContext,
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {

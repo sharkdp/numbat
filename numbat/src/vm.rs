@@ -8,7 +8,9 @@ use num_traits::ToPrimitive;
 
 use crate::interpreter::RuntimeErrorKind;
 use crate::list::NumbatList;
+use crate::prefix_transformer::Transformer;
 use crate::span::Span;
+use crate::typechecker::TypeChecker;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::typed_ast::StructInfo;
 use crate::{
@@ -271,21 +273,8 @@ impl CallFrame {
 pub struct ExecutionContext<'a> {
     pub print_fn: &'a mut PrintFunction,
     pub unit_name_to_constant_idx: &'a HashMap<CompactString, u16>,
-    pub prefix_transformer: &'a crate::prefix_transformer::Transformer,
-    pub typechecker: &'a crate::typechecker::TypeChecker,
-}
-
-impl ExecutionContext<'_> {
-    /// Look up a unit by name using the provided constants slice.
-    pub fn lookup_unit(&self, name: &str, constants: &[Constant]) -> Option<Unit> {
-        self.unit_name_to_constant_idx
-            .get(name)
-            .and_then(|&idx| constants.get(idx as usize))
-            .and_then(|c| match c {
-                Constant::Unit(u) => Some(u.clone()),
-                _ => None,
-            })
-    }
+    pub prefix_transformer: &'a Transformer,
+    pub typechecker: &'a TypeChecker,
 }
 
 /// Metadata for a single FFI call argument
@@ -943,7 +932,11 @@ impl Vm {
                                 .return_type
                                 .as_ref()
                                 .expect("FFI functions must have a return type");
-                            let result = (function)(ctx, &self.constants, args, return_type)
+                            let mut ffi_ctx = ffi::FfiContext {
+                                ctx,
+                                constants: &self.constants,
+                            };
+                            let result = (function)(&mut ffi_ctx, args, return_type)
                                 .map_err(|e| self.runtime_error(*e))?;
                             self.push(result);
                         }
@@ -998,9 +991,12 @@ impl Vm {
                                         .return_type
                                         .as_ref()
                                         .expect("FFI functions must have a return type");
-                                    let result =
-                                        (function)(ctx, &self.constants, args, return_type)
-                                            .map_err(|e| self.runtime_error(*e))?;
+                                    let mut ffi_ctx = ffi::FfiContext {
+                                        ctx,
+                                        constants: &self.constants,
+                                    };
+                                    let result = (function)(&mut ffi_ctx, args, return_type)
+                                        .map_err(|e| self.runtime_error(*e))?;
                                     self.push(result);
                                 }
                                 Callable::Procedure(..) => unreachable!(
@@ -1209,8 +1205,8 @@ fn vm_basic() {
 
     let mut print_fn = |_: &Markup| {};
     let unit_name_to_constant_idx = HashMap::new();
-    let prefix_transformer = crate::prefix_transformer::Transformer::new();
-    let typechecker = crate::typechecker::TypeChecker::default();
+    let prefix_transformer = Transformer::new();
+    let typechecker = TypeChecker::default();
     let mut ctx = ExecutionContext {
         print_fn: &mut print_fn,
         unit_name_to_constant_idx: &unit_name_to_constant_idx,

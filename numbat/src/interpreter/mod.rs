@@ -5,9 +5,11 @@ use core::fmt;
 use crate::{
     dimension::DimensionRegistry,
     markup::Markup,
+    prefix_transformer::Transformer,
     pretty_print::PrettyPrint,
     quantity::QuantityError,
     span::Span,
+    typechecker::TypeChecker,
     typed_ast::Statement,
     unit_registry::{UnitRegistry, UnitRegistryError},
 };
@@ -183,8 +185,8 @@ pub trait Interpreter {
         &mut self,
         settings: &mut InterpreterSettings,
         statements: &[Statement],
-        prefix_transformer: &crate::prefix_transformer::Transformer,
-        typechecker: &crate::typechecker::TypeChecker,
+        prefix_transformer: &Transformer,
+        typechecker: &TypeChecker,
     ) -> Result<InterpreterResult>;
     fn get_unit_registry(&self) -> &UnitRegistry;
 }
@@ -235,7 +237,7 @@ mod tests {
         let statements_transformed = transformer
             .transform(statements)
             .expect("No name resolution errors for inputs in this test suite");
-        let mut typechecker = crate::typechecker::TypeChecker::default();
+        let mut typechecker = TypeChecker::default();
         let statements_typechecked = typechecker
             .check(&statements_transformed)
             .expect("No type check errors for inputs in this test suite");
