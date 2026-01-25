@@ -320,10 +320,31 @@ fn parse<T: Dim>(input: String) -> T
 
 !!! example "Example"
     ```nbt
-    let x: Scalar = parse("3.5")
+    let t: Time = parse("120 s")
 
     ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=let%20x%3A%20Scalar%20%3D%20parse%28%223%2E5%22%29){ .md-button }
+    [:material-play-circle: Run this example](https://numbat.dev/?q=let%20t%3A%20Time%20%3D%20parse%28%22120%20s%22%29){ .md-button }
+
+!!! example "Example"
+    ```nbt
+    let length: Length = parse("1 km")
+
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=let%20length%3A%20Length%20%3D%20parse%28%221%20km%22%29){ .md-button }
+
+!!! example "Example"
+    ```nbt
+    let mass: Mass = parse("9.10938e-31 kg")
+
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=let%20mass%3A%20Mass%20%3D%20parse%28%229%2E10938e%2D31%20kg%22%29){ .md-button }
+
+!!! example "Example"
+    ```nbt
+    let n: Scalar = parse("3.5")
+
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=let%20n%3A%20Scalar%20%3D%20parse%28%223%2E5%22%29){ .md-button }
 
 ### `args` (Command-line arguments)
 Returns the command-line arguments passed to the script. The first argument is the name of the script itself.
