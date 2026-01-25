@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 use super::{Args, macros::*};
 use crate::pretty_print::PrettyPrint;
 use crate::typechecker::type_scheme::TypeScheme;
-use crate::vm::ExecutionContext;
+use crate::vm::{Constant, ExecutionContext};
 use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value};
 
 use super::{Callable, ForeignFunction, Result};
@@ -126,6 +126,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
 
 fn error(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -136,6 +137,7 @@ fn error(
 
 fn inspect(
     ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -148,7 +150,7 @@ fn inspect(
         m::empty()
     } else {
         m::dimmed("    [")
-            + arg.type_.to_readable_type(ctx.dimension_registry, false)
+            + arg.type_.to_readable_type(ctx.typechecker.registry(), false)
             + m::dimmed("]")
     };
 
@@ -159,6 +161,7 @@ fn inspect(
 
 fn value_of(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -169,6 +172,7 @@ fn value_of(
 
 fn has_unit(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -180,6 +184,7 @@ fn has_unit(
 
 fn is_dimensionless(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -190,6 +195,7 @@ fn is_dimensionless(
 
 fn unit_name(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -200,6 +206,7 @@ fn unit_name(
 
 fn quantity_cast(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -210,7 +217,8 @@ fn quantity_cast(
 }
 
 fn parse(
-    _ctx: &mut ExecutionContext,
+    ctx: &mut ExecutionContext,
+    constants: &[Constant],
     mut args: Args,
     return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -222,23 +230,34 @@ fn parse(
         )));
     }
 
-    if !return_type.is_scalar() {
-        return Err(Box::new(RuntimeErrorKind::UserError(
-            "parse() currently only supports Scalar return type".into(),
-        )));
-    }
+    // Create unit lookup closure using the constants slice
+    let unit_lookup = |name: &str| ctx.lookup_unit(name, constants);
 
-    match input.trim().parse::<f64>() {
-        Ok(value) => return_scalar!(value),
-        Err(_) => Err(Box::new(RuntimeErrorKind::UserError(format!(
-            "Could not parse '{}' as a number",
-            input
+    // Parse and evaluate the quantity literal
+    match crate::parse_quantity::parse_quantity_literal(&input, ctx.prefix_transformer, ctx.typechecker, unit_lookup) {
+        Ok((quantity, parsed_type)) => {
+            // Type compatibility check:
+            // - If the quantity is zero, it matches any expected type (Numbat's polymorphic zero)
+            // - Otherwise, verify the parsed type matches the expected return type
+            if !quantity.is_zero() && parsed_type.to_concrete_type() != return_type.to_concrete_type() {
+                return Err(Box::new(RuntimeErrorKind::UserError(format!(
+                    "Type mismatch: expected {}, got {}",
+                    return_type.to_concrete_type(),
+                    parsed_type.to_concrete_type()
+                ))));
+            }
+            Ok(Value::Quantity(quantity))
+        }
+        Err(e) => Err(Box::new(RuntimeErrorKind::UserError(format!(
+            "Could not parse '{}': {}",
+            input, e
         )))),
     }
 }
 
 fn args_(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     _args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {

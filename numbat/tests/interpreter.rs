@@ -1073,22 +1073,45 @@ fn test_parse() {
     expect_output("let x: Scalar = parse(\"-1.5\"); x", "-1.5");
     expect_output("let x: Scalar = parse(\"1e10\"); x", "10_000_000_000");
 
-    // Error: invalid number format
-    expect_failure(
-        "let x: Scalar = parse(\"not a number\")",
-        "Could not parse 'not a number' as a number",
-    );
+    // Parsing quantities with units
+    expect_output("let x: Length = parse(\"1.5 km\"); x", "1.5 km");
+    expect_output("let x: Length = parse(\"100 m\"); x", "100 m");
+    expect_output("let x: Length = parse(\"-50 cm\"); x", "-50 cm");
+    expect_output("let x: Mass = parse(\"2.5 kg\"); x", "2.5 kg");
 
-    // Error: non-Scalar return type not yet supported
+    // Error: invalid format
+    expect_failure("let x: Scalar = parse(\"not a number\")", "Invalid pattern");
+
+    // Error: unknown unit (reported as "Expected unit identifier" because
+    // the transformer doesn't recognize "foobar" as a unit)
     expect_failure(
-        "let x: Length = parse(\"1 km\")",
-        "parse() currently only supports Scalar return type",
+        "let x: Length = parse(\"1 foobar\")",
+        "Expected unit identifier",
     );
 
     // Error: polymorphic return type (no type annotation)
     expect_failure(
         "parse(\"1.5\")",
         "parse() requires a type annotation for the return type",
+    );
+
+    // Error: type mismatch (parsed Mass but expected Length)
+    expect_failure("let x: Length = parse(\"1 kg\")", "Type mismatch");
+
+    // Zero is compatible with any type
+    expect_output("let x: Length = parse(\"0\"); x", "0");
+    expect_output("let x: Mass = parse(\"0\"); x", "0");
+
+    // User-defined base unit should be available immediately
+    expect_output(
+        "unit jump: Length\nlet x: Length = parse(\"4 jump\"); x",
+        "4 jump",
+    );
+
+    // User-defined derived unit should be available immediately
+    expect_output(
+        "unit leap = 2 meter\nlet x: Length = parse(\"3 leap\"); x",
+        "3 leap",
     );
 }
 

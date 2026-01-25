@@ -183,7 +183,8 @@ pub trait Interpreter {
         &mut self,
         settings: &mut InterpreterSettings,
         statements: &[Statement],
-        dimension_registry: &DimensionRegistry,
+        prefix_transformer: &crate::prefix_transformer::Transformer,
+        typechecker: &crate::typechecker::TypeChecker,
     ) -> Result<InterpreterResult>;
     fn get_unit_registry(&self) -> &UnitRegistry;
 }
@@ -230,7 +231,8 @@ mod tests {
         let full_code = format!("{TEST_PRELUDE}\n{input}");
         let statements = crate::parser::parse(&full_code, 0)
             .expect("No parse errors for inputs in this test suite");
-        let statements_transformed = Transformer::new()
+        let mut transformer = Transformer::new();
+        let statements_transformed = transformer
             .transform(statements)
             .expect("No name resolution errors for inputs in this test suite");
         let mut typechecker = crate::typechecker::TypeChecker::default();
@@ -240,7 +242,8 @@ mod tests {
         BytecodeInterpreter::new().interpret_statements(
             &mut InterpreterSettings::default(),
             &statements_typechecked,
-            typechecker.registry(),
+            &transformer,
+            &typechecker,
         )
     }
 

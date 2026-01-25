@@ -5,10 +5,11 @@ use crate::interpreter::RuntimeErrorKind;
 use crate::quantity::Quantity;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::value::Value;
-use crate::vm::ExecutionContext;
+use crate::vm::{Constant, ExecutionContext};
 
 pub fn str_length(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -18,6 +19,7 @@ pub fn str_length(
 
 pub fn lowercase(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -26,6 +28,7 @@ pub fn lowercase(
 
 pub fn uppercase(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -34,6 +37,7 @@ pub fn uppercase(
 
 pub fn str_slice(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -48,6 +52,7 @@ pub fn str_slice(
 
 pub fn chr(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
@@ -60,6 +65,7 @@ pub fn chr(
 
 pub fn ord(
     _ctx: &mut ExecutionContext,
+    _constants: &[Constant],
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {

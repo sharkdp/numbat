@@ -790,7 +790,8 @@ impl Context {
         let result = self.interpreter.interpret_statements(
             settings,
             &typed_statements,
-            self.typechecker.registry(),
+            &self.prefix_transformer,
+            &self.typechecker,
         );
 
         if result.is_err() {

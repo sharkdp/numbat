@@ -2124,4 +2124,8 @@ impl TypeChecker {
     pub fn lookup_function(&self, name: &str) -> Option<(&FunctionSignature, &FunctionMetadata)> {
         self.env.get_function_info(name)
     }
+
+    pub fn lookup_identifier_type(&self, name: &str) -> Option<TypeScheme> {
+        self.env.get_identifier_type(name)
+    }
 }
