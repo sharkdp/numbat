@@ -88,6 +88,7 @@ pub const UNICODE_INPUT: &[(&[&str], &str)] = &[
     (&["baht"], "฿"),
     (&["shekel"], "₪"),
     // Units
+    (&["micro"], "µ"),
     (&["degree"], "°"),
     (&["arcmin"], "′"),
     (&["arcsec"], "″"),

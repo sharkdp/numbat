@@ -61,6 +61,7 @@ This feature is available in both the [command-line version](cli/usage.md) and t
 | `\le` | ≤ | Less than or equal |
 | `\dots`, `\ldots` | … | Ellipsis |
 | `\1/2` | ½ | One half |
+| `\micro` | µ | Micro sign |
 | `\degree` | ° | Degree |
 | `\arcmin` | ′ | Arc minute |
 | `\arcsec` | ″ | Arc second |
