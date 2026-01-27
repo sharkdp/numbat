@@ -53,6 +53,16 @@ unit pound: Mass = 7000 grain
 @aliases(ounces, oz: short)
 unit ounce: Mass = (1 / 16) × pound
 
+@name("Troy ounce")
+@url("https://en.wikipedia.org/wiki/Troy_weight#Troy_ounce")
+@aliases(troy_ounces, ozt: short)
+unit troy_ounce: Mass = 480 grain
+
+@name("Pennyweight")
+@url("https://en.wikipedia.org/wiki/Pennyweight")
+@aliases(pennyweights, dwt: short)
+unit pennyweight: Mass = 24 grain
+
 @name("Stone")
 @url("https://en.wikipedia.org/wiki/Stone_(unit)")
 unit stone: Mass = 14 pound

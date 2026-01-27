@@ -120,12 +120,14 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Mass` | [Lunar mass](https://en.wikipedia.org/wiki/Moon#Size_and_mass) | `lunar_mass` <br/> (`use extra::astronomy`) |
 | `Mass` | [Mars mass](https://en.wikipedia.org/wiki/Mars) | `mars_mass` <br/> (`use extra::astronomy`) |
 | `Mass` | [Ounce](https://en.wikipedia.org/wiki/Ounce) | `ounce`, `ounces`, `oz` |
+| `Mass` | [Pennyweight](https://en.wikipedia.org/wiki/Pennyweight) | `dwt`, `pennyweight`, `pennyweights` |
 | `Mass` | [Planck mass](https://en.wikipedia.org/wiki/Planck_mass) | `planck_mass` |
 | `Mass` | [Pound](https://en.wikipedia.org/wiki/Pound_(mass)) | `lb`, `lbs`, `pound`, `pounds` |
 | `Mass` | [Solar mass](https://en.wikipedia.org/wiki/Sun) | `solar_mass` <br/> (`use extra::astronomy`) |
 | `Mass` | [Stone](https://en.wikipedia.org/wiki/Stone_(unit)) | `stone` |
 | `Mass` | [Stoney mass](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_mass` <br/> (`use units::stoney`) |
 | `Mass` | [Tonne](https://en.wikipedia.org/wiki/Tonne) | `metricton`, `ton`, `tonne`, `tonnes`, `tons` |
+| `Mass` | [Troy ounce](https://en.wikipedia.org/wiki/Troy_weight#Troy_ounce) | `ozt`, `troy_ounce`, `troy_ounces` |
 | `Molality` | [Molal](https://en.wikipedia.org/wiki/Molality) | `molal` |
 | `Molarity` | [Molar](https://en.wikipedia.org/wiki/Molar_concentration) | `molar` |
 | `Money` | [Australian dollar](https://en.wikipedia.org/wiki/Australian_dollar) | `A$`, `AUD`, `aud`, `australian_dollar`, `australian_dollars` |
