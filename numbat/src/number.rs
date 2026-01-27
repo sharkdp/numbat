@@ -42,13 +42,13 @@ impl Number {
     pub fn pretty_print_with_options(self, options: Option<FmtFloatConfig>) -> CompactString {
         let number = self.0;
 
-        // 64-bit floats can accurately represent integers up to 2^52 [1],
-        // which is approximately 4.5 × 10^15.
+        // 64-bit floats can accurately represent integers up to 2^53 [1],
+        // which is approximately 9.0 × 10^15.
         //
         // [1] https://stackoverflow.com/a/43656339
         //
         // Skip special format handling for integers if options is not None.
-        if options.is_none() && self.is_integer() && self.0.abs() < 1e15 {
+        if options.is_none() && self.is_integer() && self.0.abs() < (2.0_f64).powi(53) {
             use num_format::{CustomFormat, Grouping, ToFormattedString};
 
             let format = CustomFormat::builder()
@@ -178,7 +178,30 @@ fn test_pretty_print() {
     );
     assert_eq!(
         Number::from_f64(1234567890000000.).pretty_print(),
-        "1.23457e+15"
+        "1_234_567_890_000_000"
+    );
+    assert_eq!(
+        Number::from_f64(12345678900000000.).pretty_print(),
+        "1.23457e+16"
+    );
+    // 2^53 - 1 is the largest integer that can be unambiguously
+    // represented as f64. At 2^53 and beyond, adjacent integers
+    // round to the same f64 value, so we switch to scientific
+    // notation to avoid displaying a falsely precise result.
+    assert_eq!(
+        Number::from_f64(9_007_199_254_740_991.).pretty_print(),
+        "9_007_199_254_740_991"
+    );
+    assert_eq!(
+        Number::from_f64(9_007_199_254_740_992.).pretty_print(),
+        "9.0072e+15"
+    );
+
+    // UNIX timestamps in µs (e.g. 2026-01-27) are well within the
+    // exact integer range and should display without scientific notation.
+    assert_eq!(
+        Number::from_f64(1_769_519_170_818_991.).pretty_print(),
+        "1_769_519_170_818_991"
     );
 
     assert_eq!(Number::from_f64(1.23456789).pretty_print(), "1.23457");
