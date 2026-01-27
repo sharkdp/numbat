@@ -245,9 +245,16 @@ fn unixtime_µs(input: DateTime) -> Scalar
     ```nbt
     datetime("2022-07-20 21:52:05.123456 +0200") -> unixtime_µs
 
-        = 1.65835e+15
+        = 1_658_346_725_123_456
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222022%2D07%2D20%2021%3A52%3A05%2E123456%20%2B0200%22%29%20%2D%3E%20unixtime%5F%C2%B5s){ .md-button }
+
+### `unixtime_us`
+Alias for `unixtime_µs`.
+
+```nbt
+fn unixtime_us(input: DateTime) -> Scalar
+```
 
 ### `from_unixtime`
 Converts a UNIX timestamp to a `DateTime` object.
@@ -324,6 +331,13 @@ fn from_unixtime_µs(input: Scalar) -> DateTime
         = 2022-07-20 19:52:05 UTC    [DateTime]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Funixtime%5F%C2%B5s%281658346725123456%29){ .md-button }
+
+### `from_unixtime_us`
+Alias for `from_unixtime_µs`.
+
+```nbt
+fn from_unixtime_us(input: Scalar) -> DateTime
+```
 
 ### `human` (Human-readable time duration)
 Converts a time duration to a human-readable string in days, hours, minutes and seconds.

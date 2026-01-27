@@ -213,7 +213,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Time` | [Tropical year](https://en.wikipedia.org/wiki/Tropical_year) | `tropical_year`, `tropical_years`, `year`, `years`, `yr` |
 | `UnixTime` | unix_ms | `unix_ms` |
 | `UnixTime` | unix_s | `unix_s` |
-| `UnixTime` | unix_µs | `unix_µs` |
+| `UnixTime` | unix_µs | `unix_us`, `unix_µs` |
 | `Velocity` | [Knot](https://en.wikipedia.org/wiki/Knot_(unit)) | `kn`, `knot`, `knots`, `kt` |
 | `Velocity` | [Kilometres per hour](https://en.wikipedia.org/wiki/Kilometres_per_hour) | `kph` |
 | `Velocity` | [Miles per hour](https://en.wikipedia.org/wiki/Miles_per_hour) | `mph` |
