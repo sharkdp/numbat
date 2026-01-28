@@ -1,0 +1,14 @@
+# See https://en.wikipedia.org/wiki/Epoch_(astronomy)#J2000
+assert_eq(J2000, 2_451_545 days)
+
+# Reference value from https://en.wikipedia.org/wiki/Julian_day
+assert_eq(datetime("2013-01-01 00:30:00 UTC") -> julian_date, 2_456_293.520_833 days, 0.1 s)
+
+let dt = datetime("2026-01-28 13:53:14 UTC")
+let jd = 2_461_069.078_634_3 days
+
+let dt_roundtrip = from_julian_date(dt -> julian_date)
+assert_eq(dt_roundtrip, dt)
+
+let jd_roundtrip = from_julian_date(jd) -> julian_date
+assert_eq(jd_roundtrip, jd, 0.1 s)

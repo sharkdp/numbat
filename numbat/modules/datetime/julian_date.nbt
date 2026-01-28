@@ -1,0 +1,22 @@
+use datetime::functions
+
+# The origin of the Julian date system: noon on November 24, 4714 BC
+# in the proleptic Gregorian calendar.
+let _julian_epoch = datetime("-4713-11-24 12:00:00 UTC")
+
+@name("Convert DateTime to Julian date")
+@url("https://en.wikipedia.org/wiki/Julian_day")
+@description("Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the proleptic Gregorian calendar).")
+@example("datetime(\"2013-01-01 00:30:00 UTC\") -> julian_date")
+fn julian_date(dt: DateTime) -> Time = dt - _julian_epoch
+
+@name("J2000 epoch")
+@url("https://en.wikipedia.org/wiki/Epoch_(astronomy)#J2000")
+@description("The Julian date of the J2000 epoch, a standard astronomical reference point corresponding to January 1, 2000, 12:00 TT (Terrestrial Time).")
+let J2000: Time = datetime("2000-01-01 12:00:00 UTC") -> julian_date
+
+@name("Convert Julian date to DateTime")
+@url("https://en.wikipedia.org/wiki/Julian_day")
+@description("Convert a Julian date to a `DateTime`.")
+@example("from_julian_date(2_456_293.520_833 days)")
+fn from_julian_date(jd: Time) -> DateTime = _julian_epoch + jd
