@@ -75,10 +75,3 @@ fn calendar_sub(dt: DateTime, span: Time) -> DateTime =
 @description("Get the day of the week from a given `DateTime`.")
 @example("weekday(datetime(\"2022-07-20 21:52 +0200\"))")
 fn weekday(dt: DateTime) -> String = format_datetime("%A", dt)
-
-@name("Julian date")
-@description("Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the proleptic Gregorian calendar).")
-@url("https://en.wikipedia.org/wiki/Julian_day")
-@example("julian_date(datetime(\"2022-07-20 21:52 +0200\"))")
-fn julian_date(dt: DateTime) -> Time =
-  (dt - datetime("-4713-11-24 12:00:00 +0000")) -> days

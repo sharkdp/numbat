@@ -143,11 +143,3 @@ assert_eq(calendar_add(dt_start, 1 hour), datetime("2024-03-30 13:00:00 Europe/B
 # Weekday
 
 assert_eq(date("2024-08-01") -> weekday, "Thursday")
-
-
-# Julian date
-
-let dt_jd = datetime("2013-01-01 00:30:00 UTC")
-assert_eq(dt_jd -> julian_date, 2_456_293.520_833 days, 1e-6 days)
-
-assert_eq(epoch -> julian_date, 2_440_587.5 days, 1e-6 days)

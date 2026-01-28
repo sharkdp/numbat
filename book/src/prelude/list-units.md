@@ -69,6 +69,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Illuminance` | [Foot-candle](https://en.wikipedia.org/wiki/Foot-candle) | `fc`, `footcandle`, `footcandles` |
 | `Illuminance` | [Lux](https://en.wikipedia.org/wiki/Lux) | `lux`, `lx` |
 | `Inductance` | [Henry](https://en.wikipedia.org/wiki/Henry_(unit)) | `H`, `henries`, `henry`, `henrys` |
+| `JulianTime` | [Julian day](https://en.wikipedia.org/wiki/Julian_day) | `julian_day`, `julian_days` |
 | `KinematicViscosity` | [Stokes](https://en.wikipedia.org/wiki/Stokes_(unit)) | `St`, `stokes` |
 | `Length` | [Ångström](https://en.wikipedia.org/wiki/Angstrom) | `angstrom`, `angstroms`, `Å`, `Å` |
 | `Length` | [Astronomical unit](https://en.wikipedia.org/wiki/Astronomical_unit) | `astronomicalunit`, `astronomicalunits`, `au`, `AU` |

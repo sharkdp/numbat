@@ -48,6 +48,7 @@ use chemistry::elements
 use datetime::functions
 use datetime::unixtime
 use datetime::human
+use datetime::julian_date
 
 use plot::line_plot
 use plot::bar_chart

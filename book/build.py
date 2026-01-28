@@ -262,6 +262,7 @@ def generate_all_function_lists():
                         "datetime::functions",
                         "datetime::unixtime",
                         "datetime::human",
+                        "datetime::julian_date",
                     ]
                 }
             ],

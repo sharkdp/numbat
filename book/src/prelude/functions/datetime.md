@@ -6,7 +6,7 @@ icon: lucide/clock
 
 See [this page](./date-and-time.md) for a general introduction to date and time handling in Numbat.
 
-Defined in: `datetime::functions`, `datetime::unixtime`, `datetime::human`
+Defined in: `datetime::functions`, `datetime::unixtime`, `datetime::human`, `datetime::julian_date`
 
 ### `now`
 Returns the current date and time.
@@ -173,22 +173,6 @@ fn weekday(dt: DateTime) -> String
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=weekday%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29){ .md-button }
 
-### `julian_date` (Julian date)
-Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the proleptic Gregorian calendar).
-More information [here](https://en.wikipedia.org/wiki/Julian_day).
-
-```nbt
-fn julian_date(dt: DateTime) -> Time
-```
-
-!!! example "Example"
-    ```nbt
-    julian_date(datetime("2022-07-20 21:52 +0200"))
-
-        = 2.45978e+6 day    [Time]
-    ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=julian%5Fdate%28datetime%28%222022%2D07%2D20%2021%3A52%20%2B0200%22%29%29){ .md-button }
-
 ### `unixtime`
 Converts a `DateTime` to a UNIX timestamp. Can be used on the right hand side of a conversion operator: `now() -> unixtime`.
 
@@ -354,4 +338,36 @@ fn human(time: Time) -> String
         = "52 minutes + 35.693 seconds"    [String]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=century%2F1e6%20%2D%3E%20human){ .md-button }
+
+### `julian_date` (Convert DateTime to Julian date)
+Convert a `DateTime` to a Julian date, the number of days since the origin of the Julian date system (noon on November 24, 4714 BC in the proleptic Gregorian calendar).
+More information [here](https://en.wikipedia.org/wiki/Julian_day).
+
+```nbt
+fn julian_date(dt: DateTime) -> JulianTime
+```
+
+!!! example "Example"
+    ```nbt
+    datetime("2013-01-01 00:30:00 UTC") -> julian_date
+
+        = 2.45629e+6 julian_day    [JulianTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222013%2D01%2D01%2000%3A30%3A00%20UTC%22%29%20%2D%3E%20julian%5Fdate){ .md-button }
+
+### `from_julian_date` (Convert Julian date to DateTime)
+Convert a Julian date to a `DateTime`.
+More information [here](https://en.wikipedia.org/wiki/Julian_day).
+
+```nbt
+fn from_julian_date(jd: JulianTime) -> DateTime
+```
+
+!!! example "Example"
+    ```nbt
+    from_julian_date(2_456_293.520_833 julian_days)
+
+        = 2013-01-01 00:29:59 UTC    [DateTime]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Fjulian%5Fdate%282%5F456%5F293%2E520%5F833%20julian%5Fdays%29){ .md-button }
 
