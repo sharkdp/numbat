@@ -344,14 +344,14 @@ Convert a `DateTime` to a Julian date, the number of days since the origin of th
 More information [here](https://en.wikipedia.org/wiki/Julian_day).
 
 ```nbt
-fn julian_date(dt: DateTime) -> JulianTime
+fn julian_date(dt: DateTime) -> Time
 ```
 
 !!! example "Example"
     ```nbt
     datetime("2013-01-01 00:30:00 UTC") -> julian_date
 
-        = 2.45629e+6 julian_day    [JulianTime]
+        = 212_223_760_200 s    [Time]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=datetime%28%222013%2D01%2D01%2000%3A30%3A00%20UTC%22%29%20%2D%3E%20julian%5Fdate){ .md-button }
 
@@ -360,14 +360,14 @@ Convert a Julian date to a `DateTime`.
 More information [here](https://en.wikipedia.org/wiki/Julian_day).
 
 ```nbt
-fn from_julian_date(jd: JulianTime) -> DateTime
+fn from_julian_date(jd: Time) -> DateTime
 ```
 
 !!! example "Example"
     ```nbt
-    from_julian_date(2_456_293.520_833 julian_days)
+    from_julian_date(2_456_293.520_833 days)
 
         = 2013-01-01 00:29:59 UTC    [DateTime]
     ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Fjulian%5Fdate%282%5F456%5F293%2E520%5F833%20julian%5Fdays%29){ .md-button }
+    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Fjulian%5Fdate%282%5F456%5F293%2E520%5F833%20days%29){ .md-button }
 

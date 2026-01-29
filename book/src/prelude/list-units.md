@@ -69,7 +69,6 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Illuminance` | [Foot-candle](https://en.wikipedia.org/wiki/Foot-candle) | `fc`, `footcandle`, `footcandles` |
 | `Illuminance` | [Lux](https://en.wikipedia.org/wiki/Lux) | `lux`, `lx` |
 | `Inductance` | [Henry](https://en.wikipedia.org/wiki/Henry_(unit)) | `H`, `henries`, `henry`, `henrys` |
-| `JulianTime` | [Julian day](https://en.wikipedia.org/wiki/Julian_day) | `julian_day`, `julian_days` |
 | `KinematicViscosity` | [Stokes](https://en.wikipedia.org/wiki/Stokes_(unit)) | `St`, `stokes` |
 | `Length` | [Ångström](https://en.wikipedia.org/wiki/Angstrom) | `angstrom`, `angstroms`, `Å`, `Å` |
 | `Length` | [Astronomical unit](https://en.wikipedia.org/wiki/Astronomical_unit) | `astronomicalunit`, `astronomicalunits`, `au`, `AU` |
@@ -196,6 +195,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `SpectralFluxDensity` | [Solar flux unit](https://en.wikipedia.org/wiki/Solar_flux_unit) | `sfu`, `solarfluxunit`, `solarfluxunits` <br/> (`use extra::astronomy`) |
 | `Temperature` | [Kelvin](https://en.wikipedia.org/wiki/Kelvin) | `K`, `kelvin`, `kelvins` |
 | `Temperature` | [Planck temperature](https://en.wikipedia.org/wiki/Planck_temperature) | `planck_temperature` |
+| `Time` | [Anomalistic year](https://en.wikipedia.org/wiki/Year#Sidereal,_tropical,_and_anomalistic_years) | `anomalistic_year`, `anomalistic_years` <br/> (`use extra::astronomy`) |
 | `Time` | [Century](https://en.wikipedia.org/wiki/Century) | `centuries`, `century` |
 | `Time` | [Day](https://en.wikipedia.org/wiki/Day) | `d`, `day`, `days` |
 | `Time` | [Decade](https://en.wikipedia.org/wiki/Decade) | `decade`, `decades` |

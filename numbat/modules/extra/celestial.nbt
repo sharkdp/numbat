@@ -1,0 +1,58 @@
+# Sunrise and sunset calculation
+#
+# Useful resources:
+# - https://gml.noaa.gov/grad/solcalc/
+# - https://en.wikipedia.org/wiki/Sunrise_equation
+# - https://en.wikipedia.org/wiki/Equation_of_the_center
+# - https://en.wikipedia.org/wiki/Equation_of_time
+
+use math::trigonometry
+use datetime::julian_date
+use extra::astronomy
+
+struct Position {
+  lat: Angle,
+  lon: Angle,
+}
+
+struct SunTimes {
+  sunrise: DateTime,
+  transit: DateTime,
+  sunset: DateTime,
+}
+
+@name("Sunrise and sunset")
+@description("Compute sunrise, solar noon (transit), and sunset times for a given location and date.")
+@example("sunrise_sunset(Position {{ lat: 40.713°, lon: -74.006° }}, datetime(\"2023-03-21 12:00:00 America/New_York\"))")
+fn sunrise_sunset(position: Position, dt: DateTime) -> SunTimes =
+    SunTimes {
+      sunrise: from_julian_date(J_rise),
+      transit: from_julian_date(J_transit),
+      sunset: from_julian_date(J_set),
+    }
+  where ω_earth: Angle / Time = 360° / day
+    and J_date = dt -> julian_date
+    and n: Time = (J_date - J2000) |> round_in(days)
+    and J_star: Time = n - position.lon / ω_earth
+    # Solar mean anomaly
+    and M: Angle = mod(earth_mean_anomaly_j2000 + (360° / anomalistic_year) × J_star, 360°)
+    # Equation of the center
+    and ee = earth_orbital_eccentricity
+    and eoc: Angle = (2 ee - ee³/4) × sin(M) + (5/4 × ee²) × sin(2 M) + (13/12 × ee³) × sin(3 M)
+    # Longitude of perihelion (precesses over time)
+    and ω_perihelion = earth_longitude_of_perihelion_j2000 + earth_perihelion_precession_rate × J_star
+    # Ecliptic longitude of the Sun
+    and λ: Angle = mod(M + eoc + 180° + ω_perihelion, 360°)
+    # Solar transit (noon)
+    and J_transit = J2000 + J_star + 7.659 min × sin(M) - 9.863 min × sin(2 λ)
+    # Declination of the Sun
+    and sin_δ = sin(λ) × sin(earth_axial_tilt)
+    and δ = asin(sin_δ)
+    # Sunrise correction: atmospheric refraction (34') + sun's angular radius
+    and sunrise_correction: Angle = -(34 arcmin + atan(solar_radius / AU))
+    # Hour angle at sunrise/sunset
+    and cos_ω0 = (sin(sunrise_correction) - sin(position.lat) × sin_δ) / (cos(position.lat) × cos(δ))
+    and ω0: Angle = acos(cos_ω0)
+    # Sunrise and sunset times as Julian dates
+    and J_rise = J_transit - ω0 / ω_earth
+    and J_set = J_transit + ω0 / ω_earth
