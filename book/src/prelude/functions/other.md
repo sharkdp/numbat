@@ -4,7 +4,7 @@ icon: lucide/ellipsis
 
 # Other functions
 
-[Error handling](#error-handling) · [Debugging](#debugging) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Speed of sound](#speed-of-sound) · [Color format conversion](#color-format-conversion)
+[Error handling](#error-handling) · [Debugging](#debugging) · [Floating point](#floating-point) · [Quantities](#quantities) · [Chemical elements](#chemical-elements) · [Mixed unit conversion](#mixed-unit-conversion) · [Temperature conversion](#temperature-conversion) · [Speed of sound](#speed-of-sound) · [Color format conversion](#color-format-conversion) · [Celestial calculations](#celestial-calculations)
 
 ## Error handling
 
@@ -595,4 +595,24 @@ fn color_hex(color: Color) -> String
         = "#e1248f"    [String]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=use%20extra%3A%3Acolor%0Argb%28225%2C%2036%2C%20143%29%20%2D%3E%20color%5Fhex){ .md-button }
+
+## Celestial calculations
+
+Defined in: `extra::celestial`
+
+### `sunrise_sunset` (Sunrise and sunset)
+Compute sunrise, solar noon (transit), and sunset times for a given location and date.
+
+```nbt
+fn sunrise_sunset(position: Position, dt: DateTime) -> SunTimes
+```
+
+!!! example "Example"
+    ```nbt
+    use extra::celestial
+    sunrise_sunset(Position { lat: 40.713°, lon: -74.006° }, datetime("2023-03-21 12:00:00 America/New_York"))
+
+        = SunTimes { sunrise: 2023-03-21 10:57:38 UTC, transit: 2023-03-21 17:03:09 UTC, sunset: 2023-03-21 23:08:40 UTC }    [SunTimes]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=use%20extra%3A%3Acelestial%0Asunrise%5Fsunset%28Position%20%7B%20lat%3A%2040%2E713%C2%B0%2C%20lon%3A%20%2D74%2E006%C2%B0%20%7D%2C%20datetime%28%222023%2D03%2D21%2012%3A00%3A00%20America%2FNew%5FYork%22%29%29){ .md-button }
 

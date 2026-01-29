@@ -1,5 +1,6 @@
 use physics::constants
 use units::si
+use units::time
 use units::astronomical
 
 @name("Light-second")
@@ -27,6 +28,37 @@ unit earth_mass: Mass = 5.9722e24 kg
 @description("The radius of planet Earth.")
 @url("https://en.wikipedia.org/wiki/Earth")
 unit earth_radius: Length = 6371.0088 km
+
+@name("Earth's axial tilt")
+@description("The angle between Earth's rotational axis and its orbital axis, also known as obliquity. This is the mean value for the J2000 epoch.")
+@url("https://en.wikipedia.org/wiki/Earth")
+let earth_axial_tilt: Angle = 23.439_281_1°
+
+@name("Earth's orbital eccentricity")
+@description("The eccentricity of Earth's orbit around the Sun at the J2000 epoch. The orbit is nearly circular.")
+@url("https://en.wikipedia.org/wiki/Earth%27s_orbit")
+let earth_orbital_eccentricity: Scalar = 0.016_708_634
+
+@name("Earth's longitude of perihelion at J2000")
+@description("The longitude of perihelion for Earth's orbit at the J2000 epoch, measured from the vernal equinox.")
+@url("https://ssd.jpl.nasa.gov/planets/approx_pos.html")
+let earth_longitude_of_perihelion_j2000: Angle = 102.937_348_1°
+
+@name("Earth's perihelion longitude precession rate")
+@description("The rate at which Earth's longitude of perihelion changes relative to the mean equinox. This combines apsidal precession (360°/112_000 years, caused by Jupiter and Saturn) and axial precession (360°/25_772 years, the precession of the equinoxes).")
+@url("https://en.wikipedia.org/wiki/Apsidal_precession")
+let earth_perihelion_precession_rate: Angle / Time = 360° / (112_000 years) + 360° / (25_772 years)
+
+@name("Earth's mean anomaly at J2000")
+@description("The mean anomaly of Earth's orbit at the J2000 epoch (2000-01-01 12:00 TT).")
+@url("https://en.wikipedia.org/wiki/Mean_anomaly")
+let earth_mean_anomaly_j2000: Angle = 357.529_11°
+
+@name("Anomalistic year")
+@description("The time between successive perihelion passages of Earth, approximately 365.259636 days. This is slightly longer than the tropical year due to the precession of Earth's perihelion.")
+@url("https://en.wikipedia.org/wiki/Year#Sidereal,_tropical,_and_anomalistic_years")
+@aliases(anomalistic_years)
+unit anomalistic_year: Time = 365.259_636 days
 
 @name("Mars mass")
 @description("The mass of planet Mars.")

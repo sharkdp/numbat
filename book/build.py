@@ -287,6 +287,7 @@ def generate_all_function_lists():
                 },
                 {"title": "Speed of sound", "modules": ["physics::speed_of_sound"]},
                 {"title": "Color format conversion", "modules": ["extra::color"]},
+                {"title": "Celestial calculations", "modules": ["extra::celestial"]},
             ],
         },
     )
