@@ -616,3 +616,35 @@ fn sunrise_sunset(position: Position, dt: DateTime) -> SunTimes
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=use%20extra%3A%3Acelestial%0Asunrise%5Fsunset%28Position%20%7B%20lat%3A%2040%2E713%C2%B0%2C%20lon%3A%20%2D74%2E006%C2%B0%20%7D%2C%20datetime%28%222023%2D03%2D21%2012%3A00%3A00%20America%2FNew%5FYork%22%29%29){ .md-button }
 
+### `moon_phase` (Moon phase)
+Compute the moon phase for a given date and time. Returns the phase from 0 to 1 lunar_cycle, where 0 is a new moon and 0.5 lunar_cycle is a full moon.
+
+```nbt
+fn moon_phase(dt: DateTime) -> LunarCycle
+```
+
+!!! example "Example"
+    ```nbt
+    use extra::celestial
+    datetime("2026-01-30 12:00:00 UTC") -> moon_phase
+
+        = 0.402656 lunar_cycle    [LunarCycle]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=use%20extra%3A%3Acelestial%0Adatetime%28%222026%2D01%2D30%2012%3A00%3A00%20UTC%22%29%20%2D%3E%20moon%5Fphase){ .md-button }
+
+### `moon_phase_name` (Moon phase name)
+Convert a moon phase to its name and Unicode symbol (e.g., "🌘 Waning Crescent").
+
+```nbt
+fn moon_phase_name(phase: LunarCycle) -> String
+```
+
+!!! example "Example"
+    ```nbt
+    use extra::celestial
+    datetime("2026-01-30 12:00:00 UTC") -> moon_phase -> moon_phase_name
+
+        = "🌔 Waxing Gibbous"    [String]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=use%20extra%3A%3Acelestial%0Adatetime%28%222026%2D01%2D30%2012%3A00%3A00%20UTC%22%29%20%2D%3E%20moon%5Fphase%20%2D%3E%20moon%5Fphase%5Fname){ .md-button }
+

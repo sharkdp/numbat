@@ -97,3 +97,13 @@ let buenos_aires_2100_07_15 = sunrise_sunset(buenos_aires, datetime("2100-07-15 
 assert(abs(datetime("2100-07-15T07:58:07-03:00") - buenos_aires_2100_07_15.sunrise) < tolerance)
 assert(abs(datetime("2100-07-15T12:59:41-03:00") - buenos_aires_2100_07_15.transit) < tolerance)
 assert(abs(datetime("2100-07-15T18:01:33-03:00") - buenos_aires_2100_07_15.sunset) < tolerance)
+
+# Moon phase tests
+let new_moon_1986 = datetime("1986-07-07 04:54:00 UTC")
+let full_moon_2026 = datetime("2026-02-01 22:09:00 UTC")
+
+assert(abs(moon_phase(new_moon_1986) - 0 lunar_cycle) < 0.02 lunar_cycle)
+assert((moon_phase(new_moon_1986) -> moon_phase_name) == "🌑 New Moon")
+
+assert(abs(moon_phase(full_moon_2026) - 0.5 lunar_cycle) < 0.02 lunar_cycle)
+assert((moon_phase(full_moon_2026) -> moon_phase_name) == "🌕 Full Moon")

@@ -1,10 +1,11 @@
-# Sunrise and sunset calculation
+# Sunrise, sunset, and moon phase calculations
 #
 # Useful resources:
 # - https://gml.noaa.gov/grad/solcalc/
 # - https://en.wikipedia.org/wiki/Sunrise_equation
 # - https://en.wikipedia.org/wiki/Equation_of_the_center
 # - https://en.wikipedia.org/wiki/Equation_of_time
+# - https://en.wikipedia.org/wiki/Lunar_phase
 
 use math::trigonometry
 use datetime::julian_date
@@ -61,3 +62,32 @@ fn sunrise_sunset(position: Position, dt: DateTime) -> SunTimes =
     # Sunrise and sunset times as Julian dates
     and J_rise = J_transit - ω0 / ω_earth
     and J_set = J_transit + ω0 / ω_earth
+
+dimension LunarCycle
+
+@name("Lunar cycle")
+@description("Unit for moon phase measurement. 0 = new moon, 0.5 lunar_cycle = full moon, 1 lunar_cycle = next new moon.")
+@aliases(lunar_cycles)
+unit lunar_cycle: LunarCycle
+
+@name("Moon phase")
+@description("Compute the moon phase for a given date and time. Returns the phase from 0 to 1 lunar_cycle, where 0 is a new moon and 0.5 lunar_cycle is a full moon.")
+@example("datetime(\"2026-01-30 12:00:00 UTC\") -> moon_phase")
+fn moon_phase(dt: DateTime) -> LunarCycle = mod(cycles, 1) × lunar_cycle
+  where reference_new_moon = datetime("2000-01-06 18:14:00 UTC")
+    and time_since_new_moon = dt - reference_new_moon
+    and cycles = time_since_new_moon / synodic_month
+
+@name("Moon phase name")
+@description("Convert a moon phase to its name and Unicode symbol (e.g., \"🌘 Waning Crescent\").")
+@example("datetime(\"2026-01-30 12:00:00 UTC\") -> moon_phase -> moon_phase_name")
+fn moon_phase_name(phase: LunarCycle) -> String =
+    if phase < 1/16 × lunar_cycle then "🌑 New Moon"
+    else if phase < 3/16 × lunar_cycle then "🌒 Waxing Crescent"
+    else if phase < 5/16 × lunar_cycle then "🌓 First Quarter"
+    else if phase < 7/16 × lunar_cycle then "🌔 Waxing Gibbous"
+    else if phase < 9/16 × lunar_cycle then "🌕 Full Moon"
+    else if phase < 11/16 × lunar_cycle then "🌖 Waning Gibbous"
+    else if phase < 13/16 × lunar_cycle then "🌗 Last Quarter"
+    else if phase < 15/16 × lunar_cycle then "🌘 Waning Crescent"
+    else "🌑 New Moon"
