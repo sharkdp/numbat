@@ -60,6 +60,12 @@ let earth_mean_anomaly_j2000: Angle = 357.529_11°
 @aliases(anomalistic_years)
 unit anomalistic_year: Time = 365.259_636 days
 
+@name("Synodic month")
+@description("The average time between successive new moons, also known as a lunation. This is the Moon's orbital period as seen from Earth.")
+@url("https://en.wikipedia.org/wiki/Lunar_month#Synodic_month")
+@aliases(synodic_months, lunation, lunations)
+unit synodic_month: Time = 29.530_588_853 days
+
 @name("Mars mass")
 @description("The mass of planet Mars.")
 @url("https://en.wikipedia.org/wiki/Mars")

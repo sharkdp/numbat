@@ -104,6 +104,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Luminance` | [Nit](https://en.wikipedia.org/wiki/Candela_per_square_metre) | `nit`, `nt` |
 | `LuminousFlux` | [Lumen](https://en.wikipedia.org/wiki/Lumen_(unit)) | `lm`, `lumen`, `lumens` |
 | `LuminousIntensity` | [Candela](https://en.wikipedia.org/wiki/Candela) | `candela`, `candelas`, `cd` |
+| `LunarCycle` | Lunar cycle | `lunar_cycle`, `lunar_cycles` <br/> (`use extra::celestial`) |
 | `MagneticFieldStrength` | [Oersted](https://en.wikipedia.org/wiki/Oersted) | `Oe`, `oersted` |
 | `MagneticFlux` | [Maxwell](https://en.wikipedia.org/wiki/Maxwell_(unit)) | `maxwell`, `Mx` |
 | `MagneticFlux` | [Weber](https://en.wikipedia.org/wiki/Weber_(unit)) | `Wb`, `weber`, `webers` |
@@ -210,6 +211,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Time` | [Second](https://en.wikipedia.org/wiki/Second) | `s`, `sec`, `second`, `seconds` |
 | `Time` | [Sidereal day](https://en.wikipedia.org/wiki/Sidereal_time#Sidereal_day) | `sidereal_day`, `sidereal_days` |
 | `Time` | [Stoney time](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_time` <br/> (`use units::stoney`) |
+| `Time` | [Synodic month](https://en.wikipedia.org/wiki/Lunar_month#Synodic_month) | `lunation`, `lunations`, `synodic_month`, `synodic_months` <br/> (`use extra::astronomy`) |
 | `Time` | [Week](https://en.wikipedia.org/wiki/Week) | `week`, `weeks` |
 | `Time` | [Tropical year](https://en.wikipedia.org/wiki/Tropical_year) | `tropical_year`, `tropical_years`, `year`, `years`, `yr` |
 | `UnixTime` | unix_ms | `unix_ms` |
