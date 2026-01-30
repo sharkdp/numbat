@@ -59,3 +59,42 @@ let buenos_aires_2050_09_15 = sunrise_sunset(buenos_aires, datetime("2050-09-15 
 assert(abs(datetime("2050-09-15 06:52:36 America/Argentina/Buenos_Aires") - buenos_aires_2050_09_15.sunrise) < 1 min)
 assert(abs(datetime("2050-09-15 12:48:50 America/Argentina/Buenos_Aires") - buenos_aires_2050_09_15.transit) < 1 min)
 assert(abs(datetime("2050-09-15 18:45:13 America/Argentina/Buenos_Aires") - buenos_aires_2050_09_15.sunset) < 1 min)
+
+# For 1900 and 2100, NOAA reference values are given with simplified UTC offsets
+# (e.g. UTC+7 for Bangkok instead of historical BMT).
+
+# Bangkok 2100-07-15
+let bangkok_2100_07_15 = sunrise_sunset(bangkok, datetime("2100-07-15 12:00:00 Asia/Bangkok"))
+assert(abs(datetime("2100-07-15T05:58:15+07:00") - bangkok_2100_07_15.sunrise) < 1 min)
+assert(abs(datetime("2100-07-15T12:24:06+07:00") - bangkok_2100_07_15.transit) < 1 min)
+assert(abs(datetime("2100-07-15T18:49:57+07:00") - bangkok_2100_07_15.sunset) < 1 min)
+
+# Stuttgart 2100-07-15
+let stuttgart_2100_07_15 = sunrise_sunset(stuttgart, datetime("2100-07-15 12:00:00 Europe/Berlin"))
+assert(abs(datetime("2100-07-15T05:36:26+02:00") - stuttgart_2100_07_15.sunrise) < 1 min)
+assert(abs(datetime("2100-07-15T13:29:25+02:00") - stuttgart_2100_07_15.transit) < 1 min)
+assert(abs(datetime("2100-07-15T21:21:52+02:00") - stuttgart_2100_07_15.sunset) < 1 min)
+
+# Buenos Aires 2100-07-15
+let buenos_aires_2100_07_15 = sunrise_sunset(buenos_aires, datetime("2100-07-15 12:00:00 America/Argentina/Buenos_Aires"))
+assert(abs(datetime("2100-07-15T07:58:07-03:00") - buenos_aires_2100_07_15.sunrise) < 1 min)
+assert(abs(datetime("2100-07-15T12:59:41-03:00") - buenos_aires_2100_07_15.transit) < 1 min)
+assert(abs(datetime("2100-07-15T18:01:33-03:00") - buenos_aires_2100_07_15.sunset) < 1 min)
+
+# Stuttgart 1900-03-15
+let stuttgart_1900_03_15 = sunrise_sunset(stuttgart, datetime("1900-03-15 12:00:00 Europe/Berlin"))
+assert(abs(datetime("1900-03-15T06:37:56+01:00") - stuttgart_1900_03_15.sunrise) < 1 min)
+assert(abs(datetime("1900-03-15T12:32:33+01:00") - stuttgart_1900_03_15.transit) < 1 min)
+assert(abs(datetime("1900-03-15T18:27:45+01:00") - stuttgart_1900_03_15.sunset) < 1 min)
+
+# Bangkok 1900-03-15
+let bangkok_1900_03_15 = sunrise_sunset(bangkok, datetime("1900-03-15 12:00:00 Asia/Bangkok"))
+assert(abs(datetime("1900-03-15T06:26:11+07:00") - bangkok_1900_03_15.sunrise) < 1 min)
+assert(abs(datetime("1900-03-15T12:27:20+07:00") - bangkok_1900_03_15.transit) < 1 min)
+assert(abs(datetime("1900-03-15T18:28:23+07:00") - bangkok_1900_03_15.sunset) < 1 min)
+
+# Buenos Aires 1900-03-15
+let buenos_aires_1900_03_15 = sunrise_sunset(buenos_aires, datetime("1900-03-15 12:00:00 America/Argentina/Buenos_Aires"))
+assert(abs(datetime("1900-03-15T05:52:27-04:00") - buenos_aires_1900_03_15.sunrise) < 1 min)
+assert(abs(datetime("1900-03-15T12:02:44-04:00") - buenos_aires_1900_03_15.transit) < 1 min)
+assert(abs(datetime("1900-03-15T18:12:11-04:00") - buenos_aires_1900_03_15.sunset) < 1 min)
