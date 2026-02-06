@@ -148,6 +148,7 @@ impl Numbat {
                     &self.ctx.dimension_registry().clone(),
                     true,
                     true,
+                    &numbat::FormatOptions::default(),
                 );
                 output.push_str(&self.format(&result_markup, enable_indentation));
 

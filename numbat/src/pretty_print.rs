@@ -2,6 +2,33 @@ use compact_str::CompactString;
 
 use crate::markup::Markup;
 
+/// Options for formatting output values.
+#[derive(Debug, Clone)]
+pub struct FormatOptions {
+    /// Digit separator for large integers (e.g., "_" or ","). Empty to disable.
+    pub digit_separator: String,
+
+    /// Minimum number of digits before adding separators.
+    pub digit_grouping_threshold: usize,
+
+    /// Maximum significant digits for floating-point display.
+    pub significant_digits: usize,
+
+    /// The strftime format string for DateTime values.
+    pub datetime_format: String,
+}
+
+impl Default for FormatOptions {
+    fn default() -> Self {
+        Self {
+            digit_separator: "_".to_string(),
+            digit_grouping_threshold: 6,
+            significant_digits: 6,
+            datetime_format: crate::datetime::DEFAULT_DATETIME_FORMAT.to_string(),
+        }
+    }
+}
+
 pub trait PrettyPrint {
     /// Pretty prints with default options.
     fn pretty_print(&self) -> Markup;

@@ -10,7 +10,6 @@ use crate::{
         RuntimeErrorKind,
         assert_eq::{AssertEq2Error, AssertEq3Error},
     },
-    pretty_print::PrettyPrint,
     value::Value,
     vm::ExecutionContext,
 };

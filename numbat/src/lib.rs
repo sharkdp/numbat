@@ -6,7 +6,7 @@ mod bytecode_interpreter;
 mod column_formatter;
 pub mod command;
 mod currency;
-mod datetime;
+pub mod datetime;
 mod decorator;
 pub mod diagnostic;
 mod dimension;
@@ -80,6 +80,7 @@ pub use interpreter::InterpreterSettings;
 pub use interpreter::{RuntimeError, RuntimeErrorKind};
 pub use name_resolution::NameResolutionError;
 pub use parser::ParseError;
+pub use pretty_print::FormatOptions;
 pub use registry::BaseRepresentation;
 pub use registry::BaseRepresentationFactor;
 pub use typed_ast::Statement;
@@ -577,7 +578,14 @@ impl Context {
             }
 
             if let Ok((_, results)) = self.interpret(keyword, CodeSource::Internal) {
-                help += m::nl() + results.to_markup(None, self.dimension_registry(), true, true);
+                help += m::nl()
+                    + results.to_markup(
+                        None,
+                        self.dimension_registry(),
+                        true,
+                        true,
+                        &FormatOptions::default(),
+                    );
             }
 
             return help;

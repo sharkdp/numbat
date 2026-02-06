@@ -20,6 +20,7 @@ use crate::{
     math,
     number::Number,
     prefix::Prefix,
+    pretty_print::FormatOptions,
     quantity::{Quantity, QuantityError},
     unit::Unit,
     unit_registry::{UnitMetadata, UnitRegistry},
@@ -1027,7 +1028,9 @@ impl Vm {
                         Value::Quantity(q) => q.full_simplify().to_compact_string(),
                         Value::Boolean(b) => b.to_compact_string(),
                         Value::String(s) => s.to_compact_string(),
-                        Value::DateTime(dt) => crate::datetime::to_string(&dt),
+                        Value::DateTime(dt) => {
+                            crate::datetime::to_string(&dt, &FormatOptions::default())
+                        }
                         Value::FunctionReference(r) => r.to_compact_string(),
                         s @ Value::StructInstance(..) => s.to_compact_string(),
                         l @ Value::List(_) => l.to_compact_string(),

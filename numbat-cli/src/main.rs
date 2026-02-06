@@ -536,11 +536,13 @@ impl Cli {
 
                 let ctx = self.context.lock().unwrap();
                 let registry = ctx.dimension_registry();
+                let format_options = self.config.formatting.to_format_options();
                 let result_markup = interpreter_result.to_markup(
                     statements.last(),
                     registry,
                     interactive || pretty_print,
                     interactive || pretty_print,
+                    &format_options,
                 );
                 print!("{}", ansi_format(&result_markup, false));
 

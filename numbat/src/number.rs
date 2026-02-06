@@ -4,6 +4,8 @@ use compact_str::{CompactString, ToCompactString, format_compact};
 use num_traits::{Pow, ToPrimitive};
 use pretty_dtoa::FmtFloatConfig;
 
+use crate::pretty_print::FormatOptions;
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)] // TODO: we probably want to remove 'Copy' once we move to a more sophisticated numerical type
 pub struct Number(pub f64);
 
@@ -31,15 +33,23 @@ impl Number {
         self.0.trunc() == self.0
     }
 
-    /// Pretty prints with default options
+    /// Pretty prints with default format options.
     pub fn pretty_print(self) -> CompactString {
-        self.pretty_print_with_options(None)
+        self.pretty_print_with(&FormatOptions::default())
     }
 
-    /// Pretty prints with the given options if options is not None.
-    /// If options is None, default options will be used.
-    /// If options is not None, float-based format handling is used and integer-based format handling is skipped.
-    pub fn pretty_print_with_options(self, options: Option<FmtFloatConfig>) -> CompactString {
+    /// Pretty prints with the given format options.
+    pub fn pretty_print_with(self, options: &FormatOptions) -> CompactString {
+        self.pretty_print_with_dtoa_config(options, None)
+    }
+
+    /// Pretty prints with the given format options and optional dtoa config override.
+    /// If dtoa_config is Some, it overrides the default float formatting and skips integer handling.
+    pub fn pretty_print_with_dtoa_config(
+        self,
+        options: &FormatOptions,
+        dtoa_config: Option<FmtFloatConfig>,
+    ) -> CompactString {
         let number = self.0;
 
         // 64-bit floats can accurately represent integers up to 2^53 [1],
@@ -47,18 +57,22 @@ impl Number {
         //
         // [1] https://stackoverflow.com/a/43656339
         //
-        // Skip special format handling for integers if options is not None.
-        if options.is_none() && self.is_integer() && self.0.abs() < (2.0_f64).powi(53) {
+        // Skip special format handling for integers if dtoa_config is provided.
+        if dtoa_config.is_none() && self.is_integer() && self.0.abs() < (2.0_f64).powi(53) {
             use num_format::{CustomFormat, Grouping, ToFormattedString};
 
+            let threshold = options.digit_grouping_threshold as f64;
+            let use_grouping = !options.digit_separator.is_empty()
+                && self.0.abs() >= 10.0_f64.powf(threshold - 1.0);
+
             let format = CustomFormat::builder()
-                .grouping(if self.0.abs() >= 100_000.0 {
+                .grouping(if use_grouping {
                     Grouping::Standard
                 } else {
                     Grouping::Posix
                 })
                 .minus_sign("-")
-                .separator("_")
+                .separator(&options.digit_separator)
                 .build()
                 .unwrap();
 
@@ -72,11 +86,11 @@ impl Number {
         } else {
             use pretty_dtoa::dtoa;
 
-            let config = if let Some(options) = options {
-                options
+            let config = if let Some(config) = dtoa_config {
+                config
             } else {
                 FmtFloatConfig::default()
-                    .max_significant_digits(6)
+                    .max_significant_digits(options.significant_digits as u8)
                     .add_point_zero(false)
                     .lower_e_break(-6)
                     .upper_e_break(6)
@@ -215,6 +229,26 @@ fn test_pretty_print() {
     assert_eq!(Number::from_f64(0.00001).pretty_print(), "0.00001");
     assert_eq!(Number::from_f64(0.000001).pretty_print(), "0.000001");
     assert_eq!(Number::from_f64(0.0000001).pretty_print(), "1.0e-7");
+
+    // Test with no digit separator
+    let no_sep = FormatOptions {
+        digit_separator: "".to_string(),
+        ..FormatOptions::default()
+    };
+    assert_eq!(
+        Number::from_f64(1234567890.).pretty_print_with(&no_sep),
+        "1234567890"
+    );
+
+    // Test with comma separator
+    let comma_sep = FormatOptions {
+        digit_separator: ",".to_string(),
+        ..FormatOptions::default()
+    };
+    assert_eq!(
+        Number::from_f64(1234567890.).pretty_print_with(&comma_sep),
+        "1,234,567,890"
+    );
 }
 
 #[test]
