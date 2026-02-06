@@ -651,6 +651,31 @@ fn test_name_clash_errors() {
 }
 
 #[test]
+fn test_parameter_shadowing() {
+    // Function parameters can shadow unit names.
+    // 'h' shadows the unit alias for 'hour'
+    expect_output(
+        "fn area(h: Length, w: Length) -> Area = h × w
+         area(3 m, 4 m)",
+        "12 m²",
+    );
+
+    // Local variables can also shadow unit names.
+    expect_output(
+        "fn test(x: Scalar) -> Scalar = h where h = x + 1
+         test(2)",
+        "3",
+    );
+
+    // This also works for constants (`e` for Euler's number in this case).
+    expect_output(
+        "fn f(e: Scalar) -> Scalar = e + 1
+         f(2)",
+        "3",
+    );
+}
+
+#[test]
 fn test_type_check_errors() {
     expect_failure("foo", "Unknown identifier 'foo'");
 

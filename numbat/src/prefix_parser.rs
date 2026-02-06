@@ -245,7 +245,31 @@ impl PrefixParser {
         Ok(())
     }
 
+    /// Add an identifier that shadows any existing definitions (units, variables, etc.).
+    /// This is used for function parameters and local variables which are allowed to
+    /// shadow definitions from outer scopes.
+    pub fn add_shadowing_identifier(
+        &mut self,
+        identifier: &str,
+        definition_span: Span,
+    ) -> Result<()> {
+        // Only check reserved identifiers - allow shadowing of everything else
+        if self.reserved_identifiers.contains(&identifier) {
+            return Err(NameResolutionError::ReservedIdentifier(definition_span));
+        }
+
+        self.other_identifiers
+            .insert(identifier.into(), definition_span);
+        Ok(())
+    }
+
     pub fn parse<'a>(&self, input: &'a str) -> PrefixParserResult<'a> {
+        // Check if this is a shadowing identifier first (e.g., a function parameter
+        // or local variable). This allows parameters like `h` to shadow unit names.
+        if self.other_identifiers.contains_key(input) {
+            return PrefixParserResult::Identifier(input);
+        }
+
         if let Some(info) = self.units.get(input) {
             return PrefixParserResult::UnitIdentifier(
                 info.definition_span,

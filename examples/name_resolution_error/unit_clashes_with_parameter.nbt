@@ -1,1 +1,0 @@
-fn foo(L: Length) -> Scalar = L / 1 m
