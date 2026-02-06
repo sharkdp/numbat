@@ -222,6 +222,29 @@ fn unit_of<T: Dim>(x: T) -> T
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=unit%5Fof%2820%20km%2Fh%29){ .md-button }
 
+### `base_unit_of`
+Extract the base unit of a quantity without prefixes (e.g., `base_unit_of(5 km)` returns `m` instead of `km`). This can be useful for normalizing values. Returns an error if the quantity is zero.
+
+```nbt
+fn base_unit_of<T: Dim>(x: T) -> T
+```
+
+!!! example "Example"
+    ```nbt
+    base_unit_of(5 km)
+
+        = 1 m    [Length]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=base%5Funit%5Fof%285%20km%29){ .md-button }
+
+!!! example "Example"
+    ```nbt
+    5 km / base_unit_of(5 km)
+
+        = 5000
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=5%20km%20%2F%20base%5Funit%5Fof%285%20km%29){ .md-button }
+
 ### `has_unit`
 Returns true if `quantity` has the same unit as `unit_query`, or if `quantity` evaluates to zero.
 

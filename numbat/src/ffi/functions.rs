@@ -42,6 +42,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
         insert_function!(error, 1..=1);
         insert_function!(inspect, 1..=1);
         insert_function!(value_of, 1..=1);
+        insert_function!(base_unit_of, 1..=1);
         insert_function!(has_unit, 2..=2);
         insert_function!(is_dimensionless, 1..=1);
         insert_function!(unit_name, 1..=1);
@@ -167,6 +168,22 @@ fn value_of(
     let quantity = quantity_arg!(args);
 
     return_scalar!(quantity.unsafe_value().to_f64())
+}
+
+fn base_unit_of(
+    _ctx: &mut FfiContext,
+    mut args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
+    let quantity = quantity_arg!(args);
+
+    if quantity.is_zero() {
+        return Err(Box::new(RuntimeErrorKind::UserError(
+            "Invalid argument: cannot call `base_unit_of` on a value that evaluates to 0".into(),
+        )));
+    }
+
+    return_quantity!(1.0, quantity.unit().without_prefixes())
 }
 
 fn has_unit(

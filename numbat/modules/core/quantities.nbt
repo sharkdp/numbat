@@ -10,6 +10,11 @@ fn value_of<T: Dim>(x: T) -> Scalar
 fn unit_of<T: Dim>(x: T) -> T = if x_value == 0 then error("Invalid argument: cannot call `unit_of` on a value that evaluates to 0") else x / value_of(x)
     where x_value = value_of(x)
 
+@description("Extract the base unit of a quantity without prefixes (e.g., `base_unit_of(5 km)` returns `m` instead of `km`). This can be useful for normalizing values. Returns an error if the quantity is zero.")
+@example("base_unit_of(5 km)")
+@example("5 km / base_unit_of(5 km)")
+fn base_unit_of<T: Dim>(x: T) -> T
+
 @description("Returns true if `quantity` has the same unit as `unit_query`, or if `quantity` evaluates to zero.")
 @example("has_unit(20 km/h, km/h)")
 @example("has_unit(20 km/h, m/s)")
