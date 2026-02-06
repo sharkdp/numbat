@@ -269,6 +269,15 @@ impl Unit {
         Self::from_factors(factors)
     }
 
+    /// Returns a new unit with all prefixes stripped from the unit factors.
+    pub fn without_prefixes(&self) -> Self {
+        Self::from_factors(self.iter().map(|factor| UnitFactor {
+            prefix: Prefix::none(),
+            unit_id: factor.unit_id.clone(),
+            exponent: factor.exponent,
+        }))
+    }
+
     pub fn to_base_unit_representation(&self) -> (Self, ConversionFactor) {
         // TODO: reduce wrapping/unwrapping
         let mut base_unit_representation = Product::unity();
