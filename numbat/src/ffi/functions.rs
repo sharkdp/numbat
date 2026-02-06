@@ -3,7 +3,6 @@ use std::sync::OnceLock;
 
 use super::{Args, FfiContext, macros::*};
 use crate::parse_quantity::parse_quantity_literal;
-use crate::pretty_print::PrettyPrint;
 use crate::typechecker::type_scheme::TypeScheme;
 use crate::{interpreter::RuntimeErrorKind, quantity::Quantity, value::Value};
 

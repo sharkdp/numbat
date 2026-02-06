@@ -1,6 +1,11 @@
-use compact_str::{CompactString, ToCompactString};
+use compact_str::CompactString;
 use jiff::{Timestamp, Zoned, civil::DateTime, fmt::rfc2822, tz::TimeZone};
 use std::str::FromStr;
+
+use crate::pretty_print::FormatOptions;
+
+/// The default format for displaying DateTime values.
+pub const DEFAULT_DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
 pub fn get_local_timezone_or_utc() -> TimeZone {
     TimeZone::system()
@@ -68,15 +73,18 @@ pub fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
     Timestamp::from_str(input).map(|ts| ts.to_zoned(get_local_timezone_or_utc()))
 }
 
-pub fn to_string(dt: &Zoned) -> CompactString {
+pub fn to_string(dt: &Zoned, options: &FormatOptions) -> CompactString {
     let tz = dt.time_zone();
 
     if dt.time_zone() == &TimeZone::UTC {
-        dt.strftime("%Y-%m-%d %H:%M:%S UTC").to_compact_string()
+        use std::fmt::Write;
+        let mut out = CompactString::new("");
+        write!(out, "{} UTC", dt.strftime(&options.datetime_format)).unwrap();
+        out
     } else {
         use std::fmt::Write;
         let mut out = CompactString::with_capacity("2000-01-01 00:00:00 (UTC +00:00)".len());
-        write!(out, "{}", dt.strftime("%Y-%m-%d %H:%M:%S")).unwrap();
+        write!(out, "{}", dt.strftime(&options.datetime_format)).unwrap();
 
         let offset = dt.offset();
         let offset_info = tz.to_offset_info(dt.timestamp());

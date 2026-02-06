@@ -5,7 +5,10 @@ use itertools::Itertools;
 use jiff::Zoned;
 
 use crate::{
-    list::NumbatList, pretty_print::PrettyPrint, quantity::Quantity, typed_ast::StructInfo,
+    list::NumbatList,
+    pretty_print::{FormatOptions, PrettyPrint},
+    quantity::Quantity,
+    typed_ast::StructInfo,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -149,13 +152,17 @@ impl std::fmt::Display for Value {
     }
 }
 
-impl PrettyPrint for Value {
-    fn pretty_print(&self) -> crate::markup::Markup {
+impl Value {
+    pub fn pretty_print(&self) -> crate::markup::Markup {
+        self.pretty_print_with(&FormatOptions::default())
+    }
+
+    pub fn pretty_print_with(&self, options: &FormatOptions) -> crate::markup::Markup {
         match self {
-            Value::Quantity(q) => q.pretty_print(),
+            Value::Quantity(q) => q.pretty_print_with(options),
             Value::Boolean(b) => b.pretty_print(),
             Value::String(s) => s.pretty_print(),
-            Value::DateTime(dt) => crate::markup::string(crate::datetime::to_string(dt)),
+            Value::DateTime(dt) => crate::markup::string(crate::datetime::to_string(dt, options)),
             Value::FunctionReference(r) => crate::markup::string(r.to_compact_string()),
             Value::FormatSpecifiers(Some(s)) => crate::markup::string(s.clone()),
             Value::FormatSpecifiers(None) => crate::markup::empty(),
@@ -172,7 +179,7 @@ impl PrettyPrint for Value {
                                     crate::markup::identifier(name.clone())
                                         + crate::markup::operator(":")
                                         + crate::markup::space()
-                                        + val.pretty_print()
+                                        + val.pretty_print_with(options)
                                 }),
                                 crate::markup::operator(",") + crate::markup::space(),
                             )
@@ -184,7 +191,9 @@ impl PrettyPrint for Value {
             Value::List(elements) => {
                 crate::markup::operator("[")
                     + itertools::Itertools::intersperse(
-                        elements.iter().map(|element| element.pretty_print()),
+                        elements
+                            .iter()
+                            .map(|element| element.pretty_print_with(options)),
                         crate::markup::operator(",") + crate::markup::space(),
                     )
                     .sum()

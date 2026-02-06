@@ -66,6 +66,26 @@ pretty-print = "auto"
 # Controls the edit mode. Can be "emacs", or "vi".
 edit-mode = "emacs"
 
+# Whether or not to use colors in the output.
+# Can be "always", "never" or "auto".
+color = "auto"
+
+[formatting]
+# Digit separator for large integers.
+# Common options: "_", ",", " ", "'", or "" to disable.
+digit-separator = "_"
+
+# Minimum number of digits before adding separators.
+# e.g., 6 means 12345 has no separator, but 123456 becomes 123_456.
+digit-grouping-threshold = 6
+
+# Maximum significant digits for floating-point display.
+significant-digits = 6
+
+# Controls the format used to display DateTime values. Uses strftime-style
+# format specifiers. Use "%.f" to include fractional seconds.
+datetime = "%Y-%m-%d %H:%M:%S"
+
 [exchange-rates]
 # When and if to load exchange rates from the European Central Bank for
 # currency conversions. Can be "on-startup" to always fetch exchange rates

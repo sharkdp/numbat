@@ -1,6 +1,6 @@
 use crate::arithmetic::{Exponent, Power, Rational};
 use crate::number::Number;
-use crate::pretty_print::PrettyPrint;
+use crate::pretty_print::FormatOptions;
 use crate::unit::{Unit, UnitFactor, is_multiple_of};
 
 use compact_str::{CompactString, ToCompactString, format_compact};
@@ -366,9 +366,13 @@ impl PartialOrd for Quantity {
     }
 }
 
-impl PrettyPrint for Quantity {
-    fn pretty_print(&self) -> crate::markup::Markup {
-        self.pretty_print_with_options(None)
+impl Quantity {
+    pub fn pretty_print(&self) -> crate::markup::Markup {
+        self.pretty_print_with(&FormatOptions::default())
+    }
+
+    pub fn pretty_print_with(&self, format_options: &FormatOptions) -> crate::markup::Markup {
+        self.pretty_print_internal(format_options, None)
     }
 }
 
@@ -398,9 +402,12 @@ impl Quantity {
         QuantityOrdering::Ok(cmp)
     }
 
-    /// Pretty prints with the given options.
-    /// If options is None, default options will be used.
-    fn pretty_print_with_options(&self, options: Option<FmtFloatConfig>) -> crate::markup::Markup {
+    /// Pretty prints with the given format options and optional dtoa config override.
+    fn pretty_print_internal(
+        &self,
+        format_options: &FormatOptions,
+        dtoa_config: Option<FmtFloatConfig>,
+    ) -> crate::markup::Markup {
         use crate::markup;
 
         let unit_str = format_compact!("{}", self.unit());
@@ -409,8 +416,9 @@ impl Quantity {
         // e.g., `6 hours -> 45 min` displays as `8 × 45 min`
         if let Some(ref target) = self.conversion_target {
             let coefficient = self.value / target.value;
-            let formatted_coefficient = coefficient.pretty_print_with_options(options);
-            let formatted_target = target.pretty_print_with_options(options);
+            let formatted_coefficient =
+                coefficient.pretty_print_with_dtoa_config(format_options, dtoa_config);
+            let formatted_target = target.pretty_print_internal(format_options, dtoa_config);
 
             return markup::value(formatted_coefficient)
                 + markup::space()
@@ -419,7 +427,9 @@ impl Quantity {
                 + formatted_target;
         }
 
-        let formatted_number = self.unsafe_value().pretty_print_with_options(options);
+        let formatted_number = self
+            .unsafe_value()
+            .pretty_print_with_dtoa_config(format_options, dtoa_config);
 
         markup::value(formatted_number)
             + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {
@@ -433,13 +443,13 @@ impl Quantity {
     /// Pretty prints with the given precision. Disables e (scientific) notation.
     /// Prints without fractional part if precision is 0.
     pub fn pretty_print_with_precision(&self, precision: i8) -> crate::markup::Markup {
-        let options = FmtFloatConfig::default()
+        let dtoa_config = FmtFloatConfig::default()
             .min_decimal_digits(precision)
             .max_decimal_digits(precision)
             .add_point_zero(false)
             .force_no_e_notation()
             .round();
-        self.pretty_print_with_options(Some(options))
+        self.pretty_print_internal(&FormatOptions::default(), Some(dtoa_config))
     }
 
     pub fn unsafe_value_as_string(&self) -> CompactString {

@@ -4,7 +4,7 @@ use numbat::InterpreterSettings;
 use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
 use numbat::resolver::CodeSource;
-use numbat::{Context, FunctionInfo};
+use numbat::{Context, FormatOptions, FunctionInfo};
 use std::path::Path;
 use std::process::exit;
 
@@ -151,6 +151,7 @@ fn inspect_functions_in_module(ctx: &Context, prelude_ctx: &Context, module: Str
                     example_ctx.dimension_registry(),
                     true,
                     true,
+                    &FormatOptions::default(),
                 );
                 let example_output = &plain_text_format(&result_markup, false);
 

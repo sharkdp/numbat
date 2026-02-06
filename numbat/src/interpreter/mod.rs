@@ -6,7 +6,7 @@ use crate::{
     dimension::DimensionRegistry,
     markup::Markup,
     prefix_transformer::Transformer,
-    pretty_print::PrettyPrint,
+    pretty_print::FormatOptions,
     quantity::QuantityError,
     span::Span,
     typechecker::TypeChecker,
@@ -104,6 +104,7 @@ impl InterpreterResult {
         registry: &DimensionRegistry,
         with_type_info: bool,
         with_equal_sign: bool,
+        format_options: &FormatOptions,
     ) -> Markup {
         match self {
             Self::Value(value) => {
@@ -130,7 +131,7 @@ impl InterpreterResult {
                     m::empty()
                 };
 
-                leader + value.pretty_print() + type_markup + m::nl()
+                leader + value.pretty_print_with(format_options) + type_markup + m::nl()
             }
             Self::Continue => m::empty(),
         }

@@ -4,6 +4,7 @@ use crate::InterpreterSettings;
 /// in an isolated context.
 use crate::markup as m;
 use crate::module_importer::BuiltinModuleImporter;
+use crate::pretty_print::FormatOptions;
 use crate::resolver::CodeSource;
 
 use std::sync::{Arc, Mutex};
@@ -28,7 +29,13 @@ fn evaluate_example(context: &mut Context, input: &str) -> m::Markup {
         .fold(m::empty(), |accumulated_mk, single_line| {
             accumulated_mk + m::nl() + m::whitespace("  ") + single_line.clone() + m::nl()
         })
-        + interpreter_result.to_markup(statements.last(), context.dimension_registry(), true, true)
+        + interpreter_result.to_markup(
+            statements.last(),
+            context.dimension_registry(),
+            true,
+            true,
+            &FormatOptions::default(),
+        )
 }
 
 pub fn basic_help_markup() -> m::Markup {

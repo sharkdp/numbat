@@ -40,6 +40,44 @@ pub struct ExchangeRateConfig {
     pub fetching_policy: ExchangeRateFetchingPolicy,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
+pub struct FormattingConfig {
+    /// Digit separator for large integers (e.g., "_" or ","). Empty to disable.
+    pub digit_separator: CompactString,
+
+    /// Minimum number of digits before adding separators.
+    pub digit_grouping_threshold: usize,
+
+    /// Maximum significant digits for floating-point display.
+    pub significant_digits: usize,
+
+    /// The strftime format string for DateTime values.
+    pub datetime: CompactString,
+}
+
+impl Default for FormattingConfig {
+    fn default() -> Self {
+        Self {
+            digit_separator: CompactString::const_new("_"),
+            digit_grouping_threshold: 6,
+            significant_digits: 6,
+            datetime: CompactString::const_new(numbat::datetime::DEFAULT_DATETIME_FORMAT),
+        }
+    }
+}
+
+impl FormattingConfig {
+    pub fn to_format_options(&self) -> numbat::FormatOptions {
+        numbat::FormatOptions {
+            digit_separator: self.digit_separator.to_string(),
+            digit_grouping_threshold: self.digit_grouping_threshold,
+            significant_digits: self.significant_digits,
+            datetime_format: self.datetime.to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Eq, Default, Debug, Clone, ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 pub enum ColorMode {
@@ -74,6 +112,8 @@ pub struct Config {
 
     #[serde(skip_serializing)]
     pub load_user_init: bool,
+
+    pub formatting: FormattingConfig,
     pub exchange_rates: ExchangeRateConfig,
 }
 
@@ -87,6 +127,7 @@ impl Default for Config {
             edit_mode: EditMode::default(),
             load_prelude: true,
             load_user_init: true,
+            formatting: FormattingConfig::default(),
             exchange_rates: Default::default(),
             enter_repl: true,
         }
