@@ -474,11 +474,18 @@ impl ErrorDiagnostic for TypeCheckError {
             TypeCheckError::NameResolutionError(inner) => {
                 return inner.diagnostics();
             }
-            TypeCheckError::ConstraintSolverError(..) | TypeCheckError::SubstitutionError(..) => {
-                d.with_message(inner_error).with_notes(vec![
-                    "Consider adding type annotations to get more precise error messages.".into(),
+            TypeCheckError::ConstraintSolverError(span, ..) => d
+                .with_labels(vec![
+                    span.diagnostic_label(LabelStyle::Primary)
+                        .with_message("type error in this statement"),
                 ])
-            }
+                .with_message(inner_error)
+                .with_notes(vec![
+                    "Consider adding type annotations to get more precise error messages.".into(),
+                ]),
+            TypeCheckError::SubstitutionError(..) => d.with_message(inner_error).with_notes(vec![
+                "Consider adding type annotations to get more precise error messages.".into(),
+            ]),
             TypeCheckError::MissingDimBound(span) => d
                 .with_labels(vec![
                     span.diagnostic_label(LabelStyle::Primary)

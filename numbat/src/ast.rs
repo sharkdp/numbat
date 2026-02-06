@@ -465,6 +465,7 @@ pub enum Statement<'a> {
     Expression(Expression<'a>),
     DefineVariable(DefineVariable<'a>),
     DefineFunction {
+        fn_keyword_span: Span,
         function_name_span: Span,
         function_name: &'a str,
         type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
@@ -496,6 +497,79 @@ pub enum Statement<'a> {
         type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
         fields: Vec<(Span, &'a str, TypeAnnotation)>,
     },
+}
+
+impl Statement<'_> {
+    pub fn full_span(&self) -> Span {
+        match self {
+            Statement::Expression(expr) => expr.full_span(),
+            Statement::DefineVariable(DefineVariable {
+                identifier_span,
+                expr,
+                ..
+            }) => identifier_span.extend(&expr.full_span()),
+            Statement::DefineFunction {
+                fn_keyword_span,
+                body,
+                return_type_annotation,
+                ..
+            } => {
+                let mut span = *fn_keyword_span;
+                if let Some(body) = body {
+                    span = span.extend(&body.full_span());
+                }
+                if let Some(annotation) = return_type_annotation {
+                    span = span.extend(&annotation.full_span());
+                }
+                span
+            }
+            Statement::DefineDimension(span, _, type_exprs) => {
+                let mut full = *span;
+                if let Some(last) = type_exprs.last() {
+                    full = full.extend(&last.full_span());
+                }
+                full
+            }
+            Statement::DefineBaseUnit(span, _, type_expr, _) => {
+                let mut full = *span;
+                if let Some(te) = type_expr {
+                    full = full.extend(&te.full_span());
+                }
+                full
+            }
+            Statement::DefineDerivedUnit {
+                identifier_span,
+                expr,
+                type_annotation_span,
+                ..
+            } => {
+                let mut span = identifier_span.extend(&expr.full_span());
+                if let Some(ta_span) = type_annotation_span {
+                    span = span.extend(ta_span);
+                }
+                span
+            }
+            Statement::ProcedureCall(span, _, args) => {
+                let mut full = *span;
+                if let Some(last) = args.last() {
+                    full = full.extend(&last.full_span());
+                }
+                full
+            }
+            Statement::ModuleImport(span, _) => *span,
+            Statement::DefineStruct {
+                struct_name_span,
+                fields,
+                ..
+            } => {
+                let mut span = *struct_name_span;
+                if let Some((last_span, _, annotation)) = fields.last() {
+                    span = span.extend(last_span).extend(&annotation.full_span());
+                }
+                span
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -679,7 +753,6 @@ impl ReplaceSpans for Statement<'_> {
                 Statement::DefineVariable(variable.replace_spans())
             }
             Statement::DefineFunction {
-                function_name_span: _,
                 function_name,
                 type_parameters,
                 parameters,
@@ -687,7 +760,9 @@ impl ReplaceSpans for Statement<'_> {
                 local_variables,
                 return_type_annotation,
                 decorators,
+                ..
             } => Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name,
                 type_parameters: type_parameters

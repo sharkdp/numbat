@@ -10,6 +10,21 @@ use thiserror::Error;
 use super::IncompatibleDimensionsError;
 use super::substitutions::SubstitutionError;
 
+fn format_constraint_error(constraints: &[String]) -> String {
+    if constraints.len() == 1 {
+        format!(
+            "Could not solve the following constraint: {}",
+            constraints[0]
+        )
+    } else {
+        let indented: Vec<_> = constraints.iter().map(|c| format!("  {c}")).collect();
+        format!(
+            "Could not solve the following constraints:\n{}\n",
+            indented.join("\n")
+        )
+    }
+}
+
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 pub enum TypeCheckError {
     #[error("Unknown identifier '{1}'.")]
@@ -147,10 +162,8 @@ pub enum TypeCheckError {
     #[error(transparent)]
     NameResolutionError(#[from] NameResolutionError),
 
-    #[error(
-        "Could not solve the following constraints:\n{0}\n.. while trying to infer types in the (elaborated) statement:\n  {1}\n"
-    )]
-    ConstraintSolverError(String, String),
+    #[error("{}", format_constraint_error(_1))]
+    ConstraintSolverError(Span, Vec<String>),
 
     #[error(
         "{1}\nThis error occured while trying to infer types in the (elaborated) statement:\n  {0}\n"

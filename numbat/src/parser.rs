@@ -494,8 +494,8 @@ impl<'a> Parser<'a> {
         if self.match_exact(tokens, TokenKind::Let).is_some() {
             self.parse_variable(tokens, true)
                 .map(Statement::DefineVariable)
-        } else if self.match_exact(tokens, TokenKind::Fn).is_some() {
-            self.parse_function_declaration(tokens)
+        } else if let Some(fn_token) = self.match_exact(tokens, TokenKind::Fn) {
+            self.parse_function_declaration(tokens, fn_token.span)
         } else if self.match_exact(tokens, TokenKind::Dimension).is_some() {
             self.parse_dimension_declaration(tokens)
         } else if self.match_exact(tokens, TokenKind::At).is_some() {
@@ -571,7 +571,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_function_declaration(&mut self, tokens: &[Token<'a>]) -> Result<Statement<'a>> {
+    fn parse_function_declaration(
+        &mut self,
+        tokens: &[Token<'a>],
+        fn_keyword_span: Span,
+    ) -> Result<Statement<'a>> {
         if let Some(fn_name) = self.match_exact(tokens, TokenKind::Identifier) {
             let function_name_span = self.last(tokens).unwrap().span;
             let type_parameters = self.type_parameters(tokens)?;
@@ -681,6 +685,7 @@ impl<'a> Parser<'a> {
             std::mem::swap(&mut decorators, &mut self.decorator_stack);
 
             Ok(Statement::DefineFunction {
+                fn_keyword_span,
                 function_name_span,
                 function_name: fn_name.lexeme,
                 type_parameters,
@@ -2843,6 +2848,7 @@ mod tests {
         parse_as(
             &["fn foo() = 1", "fn foo() =\n  1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![],
@@ -2857,6 +2863,7 @@ mod tests {
         parse_as(
             &["fn foo() -> Scalar = 1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![],
@@ -2873,6 +2880,7 @@ mod tests {
         parse_as(
             &["fn foo(x) = 1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![],
@@ -2887,6 +2895,7 @@ mod tests {
         parse_as(
             &["fn foo(x,) = 1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![],
@@ -2904,6 +2913,7 @@ mod tests {
                 y,
             ) = 1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![],
@@ -2918,6 +2928,7 @@ mod tests {
         parse_as(
             &["fn foo(x, y, z) = 1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![],
@@ -2936,6 +2947,7 @@ mod tests {
         parse_as(
             &["fn foo(x: Length, y: Time, z: Length^3 · Time^2) -> Scalar = 1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![],
@@ -2994,6 +3006,7 @@ mod tests {
         parse_as(
             &["fn foo<X>(x: X) = 1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![(Span::dummy(), "X", None)],
@@ -3014,6 +3027,7 @@ mod tests {
         parse_as(
             &["fn foo<X: Dim>(x: X) = 1"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "foo",
                 type_parameters: vec![(Span::dummy(), "X", Some(TypeParameterBound::Dim))],
@@ -3036,6 +3050,7 @@ mod tests {
                 "@name(\"Some function\") @description(\"This is a description of some_function.\") fn some_function(x) = 1",
             ],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "some_function",
                 type_parameters: vec![],
@@ -3057,6 +3072,7 @@ mod tests {
                 "@name(\"Some function\") @example(\"some_function(2)\", \"Use this function:\") @example(\"let some_var = some_function(0)\") fn some_function(x) = 1",
             ],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "some_function",
                 type_parameters: vec![],
@@ -3078,6 +3094,7 @@ mod tests {
         parse_as(
             &["fn double_kef(x) = y where y = x * 2"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "double_kef",
                 type_parameters: vec![],
@@ -3100,6 +3117,7 @@ mod tests {
                  where y = x + x
                    and z = y + x"],
             Statement::DefineFunction {
+                fn_keyword_span: Span::dummy(),
                 function_name_span: Span::dummy(),
                 function_name: "kefirausaure",
                 type_parameters: vec![],
