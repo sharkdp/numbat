@@ -137,7 +137,11 @@ impl Transformer {
         Ok(())
     }
 
-    fn transform_define_variable(&mut self, define_variable: &mut DefineVariable) -> Result<()> {
+    fn transform_define_variable(
+        &mut self,
+        define_variable: &mut DefineVariable,
+        allow_shadowing: bool,
+    ) -> Result<()> {
         let DefineVariable {
             identifier_span,
             identifier,
@@ -149,8 +153,13 @@ impl Transformer {
         for (name, _) in decorator::name_and_aliases(identifier, decorators) {
             self.variable_names.push(name.to_compact_string());
         }
-        self.prefix_parser
-            .add_other_identifier(identifier, *identifier_span)?;
+        if allow_shadowing {
+            self.prefix_parser
+                .add_shadowing_identifier(identifier, *identifier_span)?;
+        } else {
+            self.prefix_parser
+                .add_other_identifier(identifier, *identifier_span)?;
+        }
         self.transform_expression(expr);
 
         Ok(())
@@ -177,7 +186,8 @@ impl Transformer {
                 self.transform_expression(expr);
             }
             Statement::DefineVariable(define_variable) => {
-                self.transform_define_variable(define_variable)?
+                // Global variables should not shadow unit names
+                self.transform_define_variable(define_variable, false)?
             }
             Statement::DefineFunction {
                 function_name_span,
@@ -194,24 +204,37 @@ impl Transformer {
                 // We create a clone of the full transformer for the purpose
                 // of checking/transforming the function body. The reason for this
                 // is that we don't want the parameter names to pollute the global
-                // namespace. But we need to register parameter names as identifiers
-                // because they could otherwise shadow global identifiers:
+                // namespace. Function parameters and local variables (from where
+                // clauses) are allowed to shadow global definitions (including
+                // unit names), e.g.:
                 //
-                //   fn foo(t: Time) -> Time = t    # not okay: shadows 't' for ton
+                //   fn foo(h: Length) -> Length = 2 h    # okay: 'h' shadows the hour unit
                 //
                 let mut fn_body_transformer = self.clone();
                 for (param_span, param, _) in &*parameters {
                     fn_body_transformer
                         .prefix_parser
-                        .add_other_identifier(param, *param_span)?;
+                        .add_shadowing_identifier(param, *param_span)?;
+                }
+
+                // Register local variable identifiers before transforming the body,
+                // since the body expression may reference them (where clauses).
+                for def in &mut *local_variables {
+                    fn_body_transformer
+                        .variable_names
+                        .push(def.identifier.to_compact_string());
+                    fn_body_transformer
+                        .prefix_parser
+                        .add_shadowing_identifier(def.identifier, def.identifier_span)?;
                 }
 
                 if let Some(expr) = body {
                     fn_body_transformer.transform_expression(expr);
                 }
 
+                // Now transform the local variable expressions
                 for def in local_variables {
-                    fn_body_transformer.transform_define_variable(def)?;
+                    fn_body_transformer.transform_expression(&mut def.expr);
                 }
             }
             Statement::DefineDimension(_, name, _) => {
