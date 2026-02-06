@@ -384,7 +384,7 @@ fn test_math() {
     expect_output("atan2(100 cm, 1 m) / (pi / 4)", "1");
     expect_failure(
         "atan2(100 cm, 1 m²)",
-        "Could not solve the following constraints",
+        "Could not solve the following constraint",
     );
 
     expect_output("mod(5, 3)", "2");
@@ -392,7 +392,7 @@ fn test_math() {
     expect_output("mod(8 cm, 5 cm)", "3 cm");
     expect_output("mod(235 cm, 1 m)", "35 cm");
     expect_output("mod(2 m, 7 cm)", "0.04 m");
-    expect_failure("mod(8 m, 5 s)", "Could not solve the following constraints")
+    expect_failure("mod(8 m, 5 s)", "Could not solve the following constraint")
 }
 
 #[test]

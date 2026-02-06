@@ -8,7 +8,7 @@ use crate::typed_ast::{DType, DTypeFactor, StructKind, Type};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintSolverError {
-    CouldNotSolve(String),
+    CouldNotSolve(Vec<String>),
     SubstitutionError(SubstitutionError),
 }
 
@@ -134,9 +134,8 @@ impl ConstraintSet {
             return Err(ConstraintSolverError::CouldNotSolve(
                 remaining_constraints
                     .iter()
-                    .map(|c| c.pretty_print())
-                    .collect::<Vec<CompactString>>()
-                    .join("\n"),
+                    .map(|c| c.pretty_print().to_string())
+                    .collect(),
             ));
         }
 
@@ -357,10 +356,10 @@ impl Constraint {
     fn pretty_print(&self) -> CompactString {
         match self {
             Constraint::Equal(t1, t2) => {
-                format_compact!("  {t1} ~ {t2}")
+                format_compact!("{t1} ~ {t2}")
             }
-            Constraint::IsDType(t) => format_compact!("  {t}: DType"),
-            Constraint::EqualScalar(d) => format_compact!("  {d} = Scalar"),
+            Constraint::IsDType(t) => format_compact!("{t}: DType"),
+            Constraint::EqualScalar(d) => format_compact!("{d} = Scalar"),
             Constraint::HasField(struct_type, field_name, field_type) => {
                 format_compact!("HasField({struct_type}, \"{field_name}\", {field_type})")
             }

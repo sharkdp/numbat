@@ -1481,6 +1481,7 @@ impl TypeChecker {
                 local_variables,
                 return_type_annotation,
                 decorators,
+                ..
             } => {
                 if body.is_none() {
                     self.value_namespace
@@ -1996,10 +1997,7 @@ impl TypeChecker {
         let (substitution, dtype_variables) =
             self.constraints.solve().map_err(|inner| match inner {
                 ConstraintSolverError::CouldNotSolve(constraints) => {
-                    TypeCheckError::ConstraintSolverError(
-                        constraints,
-                        elaborated_statement.pretty_print().to_string(),
-                    )
+                    TypeCheckError::ConstraintSolverError(statement.full_span(), constraints)
                 }
                 ConstraintSolverError::SubstitutionError(inner) => {
                     TypeCheckError::SubstitutionError(
