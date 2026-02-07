@@ -22,12 +22,14 @@ The following snippet shows various styles of entering units:
 sin(30°)
 50 mph
 6 MiB
+25 °C
 
 2 minutes + 1 second
 150 centimeters
 sin(30 degrees)
 50 miles per hour
 6 mebibyte
+25 degree_celsius
 ```
 
 Note that Numbat also allows you to [define new units](../advanced/unit-definitions.md).
@@ -50,7 +52,7 @@ Note that Numbat also allows you to [define new units](../advanced/unit-definiti
 
     let c_water = 1 cal / g K
 
-    let ΔT = from_fahrenheit(212) - from_fahrenheit(70)
+    let ΔT = 212 °F - 70 °F
 
     let heat = mass_water × c_water × ΔT
 
@@ -60,4 +62,4 @@ Note that Numbat also allows you to [define new units](../advanced/unit-definiti
     print("  {heat -> kWh}")
     ```
 
-    [:material-play-circle: Run this example](https://numbat.dev/?q=let+density_water+%3D+1+kg+%2F+L++%23+at+sea+level%0Alet+mass_water+%3D+1+gallon+%C3%97+density_water%0A%0Alet+c_water+%3D+1+cal+%2F+g+K%0A%0Alet+%CE%94T+%3D+from_fahrenheit%28212%29+-+from_fahrenheit%2870%29%0A%0Alet+heat+%3D+mass_water+%C3%97+c_water+%C3%97+%CE%94T%0A%0Aprint%28%22Energy+to+boil+1+gallon+of+room-temperature+water%3A%22%29%0Aprint%28%22++%7Bheat+-%3E+kJ%7D%22%29%0Aprint%28%22++%7Bheat+-%3E+BTU%7D%22%29%0Aprint%28%22++%7Bheat+-%3E+kWh%7D%22%29%E2%8F%8E){ .md-button .md-button--primary }
+    [:material-play-circle: Run this example](https://numbat.dev/?q=let+density_water+%3D+1+kg+%2F+L++%23+at+sea+level%0Alet+mass_water+%3D+1+gallon+%C3%97+density_water%0A%0Alet+c_water+%3D+1+cal+%2F+g+K%0A%0Alet+%CE%94T+%3D+212+%C2%B0F+-+70+%C2%B0F%0A%0Alet+heat+%3D+mass_water+%C3%97+c_water+%C3%97+%CE%94T%0A%0Aprint%28%22Energy+to+boil+1+gallon+of+room-temperature+water%3A%22%29%0Aprint%28%22++%7Bheat+-%3E+kJ%7D%22%29%0Aprint%28%22++%7Bheat+-%3E+BTU%7D%22%29%0Aprint%28%22++%7Bheat+-%3E+kWh%7D%22%29%E2%8F%8E){ .md-button .md-button--primary }

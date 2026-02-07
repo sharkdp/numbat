@@ -486,16 +486,16 @@ fn test_incompatible_dimension_errors() {
 
 #[test]
 fn test_temperature_conversions() {
-    expect_output("from_celsius(11.5)", "284.65 K");
-    expect_output("from_fahrenheit(89.3)", "304.983 K");
-    expect_output("0 K -> celsius", "-273.15");
+    expect_output("11.5 °C", "284.65 K");
+    expect_output("89.3 °F", "304.983 K");
+    expect_output("0 K -> °C", "-273.15");
     expect_output("fahrenheit(30 K)", "-405.67");
-    expect_output("from_celsius(100) -> celsius", "100");
-    expect_output("from_fahrenheit(100) -> fahrenheit", "100.0");
-    expect_output("from_celsius(123 K -> celsius)", "123 K");
-    expect_output("from_fahrenheit(123 K -> fahrenheit)", "123 K");
+    expect_output("100 °C -> °C", "100");
+    expect_output("100 °F -> °F", "100.0");
+    expect_output("(123 K -> °C) °C", "123 K");
+    expect_output("(123 K -> °F) °F", "123 K");
 
-    expect_output("-40 -> from_fahrenheit -> celsius", "-40");
+    expect_output("-40 °F -> °C", "-40");
 }
 
 #[test]
@@ -1158,6 +1158,46 @@ fn test_parse() {
         "unit leap = 2 meter\nlet x: Length = parse(\"3 leap\"); x",
         "3 leap",
     );
+}
+
+#[test]
+fn test_temperature_syntactic_sugar() {
+    // Entering temperatures in °C/°F
+    expect_output("0 °C", "273.15 K");
+    expect_output("100 °C", "373.15 K");
+    expect_output("-5 °C", "268.15 K");
+    expect_output("32 °F", "273.15 K");
+    expect_output("212 °F", "373.15 K");
+
+    // Conversions to °C/°F
+    expect_output("273.15 K -> °C", "0");
+    expect_output("373.15 K -> °F", "212");
+
+    // Conversions between °C and °F
+    expect_output("100 °C -> °F", "212");
+    expect_output("212 °F -> °C", "100.0");
+    expect_output("-40 °C -> °F", "-40.0");
+    expect_output("-40 °F -> °C", "-40");
+
+    // Expressions
+    expect_output("(50 + 50) °C", "373.15 K");
+    expect_output("0 °C + 10 K -> °C", "10");
+
+    // Aliases work too
+    expect_output("20 celsius", "293.15 K");
+    expect_output("20 degree_celsius", "293.15 K");
+    expect_output("68 fahrenheit", "293.15 K");
+    expect_output("68 degree_fahrenheit", "293.15 K");
+
+    // Pretty-printing renders using °C/°F syntax
+    expect_pretty_print("let t = 20 °C", "let t: Temperature = 20 °C");
+    expect_pretty_print("let t = -5 °F", "let t: Temperature = (-5) °F");
+    expect_pretty_print("let v = 300 K -> °C", "let v: Scalar = 300 kelvin -> °C");
+    expect_pretty_print("let v = 300 K -> °F", "let v: Scalar = 300 kelvin -> °F");
+
+    // Aliases pretty-print as °C/°F
+    expect_pretty_print("let t = 20 celsius", "let t: Temperature = 20 °C");
+    expect_pretty_print("let t = 68 fahrenheit", "let t: Temperature = 68 °F");
 }
 
 #[cfg(test)]

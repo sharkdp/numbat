@@ -10,6 +10,16 @@ use crate::{
 
 type Result<T> = std::result::Result<T, NameResolutionError>;
 
+/// Check if the identifier is a temperature pseudo-unit (°C, celsius, etc.)
+/// and return the corresponding conversion function name.
+fn temperature_conversion_function(ident: &str) -> Option<&'static str> {
+    match ident {
+        "°C" | "celsius" | "degree_celsius" => Some("from_celsius"),
+        "°F" | "fahrenheit" | "degree_fahrenheit" => Some("from_fahrenheit"),
+        _ => None,
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct Transformer {
     pub prefix_parser: PrefixParser,
@@ -55,11 +65,65 @@ impl Transformer {
             Expression::UnitIdentifier { .. } => {
                 unreachable!("Prefixed identifiers should not exist prior to this stage")
             }
-            Expression::UnaryOperator { expr, .. } => self.transform_expression(expr),
+            Expression::UnaryOperator { op, expr, span_op } => {
+                // Syntactic sugar for entering temperatures in °C or °F. Transform
+                // `-5 °C`, which is parsed as -(5 °C), into from_celsius(-5).
+                if *op == crate::ast::UnaryOperator::Negate
+                    && let Expression::BinaryOperator {
+                        op: bin_op,
+                        lhs: inner_lhs,
+                        rhs: inner_rhs,
+                        span_op: _,
+                    } = expr.as_mut()
+                    && *bin_op == crate::ast::BinaryOperator::Mul
+                    && let Expression::Identifier(rhs_span, ident) = inner_rhs.as_ref()
+                    && let Some(fn_name) = temperature_conversion_function(ident)
+                {
+                    // Transform the inner lhs first
+                    self.transform_expression(inner_lhs);
 
-            Expression::BinaryOperator { lhs, rhs, .. } => {
+                    // Create negated argument: -<inner_lhs>
+                    let negated_arg = Expression::UnaryOperator {
+                        op: crate::ast::UnaryOperator::Negate,
+                        expr: Box::new((**inner_lhs).clone()),
+                        span_op: *span_op,
+                    };
+
+                    let full_span = span_op.extend(rhs_span);
+                    *expression = Expression::FunctionCall {
+                        ident_span: *rhs_span,
+                        full_span,
+                        callable: Box::new(Expression::Identifier(*rhs_span, fn_name)),
+                        args: vec![negated_arg],
+                    };
+                    return;
+                }
+                self.transform_expression(expr);
+            }
+
+            Expression::BinaryOperator {
+                op,
+                lhs,
+                rhs,
+                span_op: _,
+            } => {
                 self.transform_expression(lhs);
                 self.transform_expression(rhs);
+
+                // Syntactic sugar for entering temperatures in °C or °F. Transform `5 °C`,
+                // which is parsed as 5 * °C, into from_celsius(5).
+                if *op == crate::ast::BinaryOperator::Mul
+                    && let Expression::Identifier(rhs_span, ident) = rhs.as_ref()
+                    && let Some(fn_name) = temperature_conversion_function(ident)
+                {
+                    let full_span = lhs.full_span().extend(rhs_span);
+                    *expression = Expression::FunctionCall {
+                        ident_span: *rhs_span,
+                        full_span,
+                        callable: Box::new(Expression::Identifier(*rhs_span, fn_name)),
+                        args: vec![(**lhs).clone()],
+                    };
+                }
             }
             Expression::FunctionCall { args, .. } => {
                 for arg in args {

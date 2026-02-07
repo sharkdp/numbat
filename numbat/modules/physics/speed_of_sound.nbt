@@ -4,7 +4,7 @@ use physics::temperature_conversion
 
 @name("Speed of sound in dry air")
 @description("Calculate the speed of sound in dry air as a function of air temperature.")
-@example("speed_of_sound(from_celsius(20))")
+@example("speed_of_sound(20 °C)")
 @url("https://en.wikipedia.org/wiki/Speed_of_sound#Speed_of_sound_in_ideal_gases_and_air")
 fn speed_of_sound(T_air: Temperature) -> Velocity =
     sqrt(γ_air R T_air / M_air) -> m / s
