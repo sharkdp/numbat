@@ -9,4 +9,4 @@ fn heat_transfer(λ: ThermalConductivity,
 
 let λ_concrete: ThermalConductivity = 0.92 W / (m · K)
 
-print(heat_transfer(λ_concrete, 3 m × 2 m, 20 cm, from_celsius(20), from_celsius(0)))
+print(heat_transfer(λ_concrete, 3 m × 2 m, 20 cm, 20 °C, 0 °C))

@@ -299,9 +299,20 @@ impl Context {
             add_if_valid(variable.into());
         }
 
+        // Temperature conversion functions that are used as pseudo-units (e.g., "20 celsius")
+        // should not have parentheses added during completion
+        const TEMPERATURE_PSEUDO_UNITS: &[&str] = &[
+            "celsius",
+            "degree_celsius",
+            "fahrenheit",
+            "degree_fahrenheit",
+            "°C",
+            "°F",
+        ];
+
         for function_name in self.function_names() {
             let mut function = function_name.clone();
-            if add_paren {
+            if add_paren && !TEMPERATURE_PSEUDO_UNITS.contains(&function_name.as_str()) {
                 if let Some((signature, _)) = self.typechecker.lookup_function(&function_name) {
                     if signature.parameters.is_empty() {
                         function.push_str("()");

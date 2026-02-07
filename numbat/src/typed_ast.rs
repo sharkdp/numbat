@@ -1519,6 +1519,32 @@ impl PrettyPrint for Expression<'_> {
             BinaryOperator { op, lhs, rhs, .. } => pretty_print_binop(op, lhs, rhs),
             BinaryOperatorForDate { op, lhs, rhs, .. } => pretty_print_binop(op, lhs, rhs),
             FunctionCall { name, args, .. } => {
+                // Special case: render special temperature conversion functions in their sugar form:
+                if args.len() == 1 {
+                    // from_celsius(x) / from_fahrenheit(x) -> "… °C" / "… °F"
+                    if *name == "from_celsius" {
+                        return with_parens_liberal(&args[0]) + m::space() + m::unit("°C");
+                    } else if *name == "from_fahrenheit" {
+                        return with_parens_liberal(&args[0]) + m::space() + m::unit("°F");
+                    }
+                    // °C(x) / celsius(x) / degree_celsius(x) -> "x -> °C"
+                    // °F(x) / fahrenheit(x) / degree_fahrenheit(x) -> "x -> °F"
+                    if *name == "°C" || *name == "celsius" || *name == "degree_celsius" {
+                        return with_parens_liberal(&args[0])
+                            + m::space()
+                            + m::operator("->")
+                            + m::space()
+                            + m::unit("°C");
+                    } else if *name == "°F" || *name == "fahrenheit" || *name == "degree_fahrenheit"
+                    {
+                        return with_parens_liberal(&args[0])
+                            + m::space()
+                            + m::operator("->")
+                            + m::space()
+                            + m::unit("°F");
+                    }
+                }
+
                 m::identifier(name.to_compact_string())
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
@@ -1533,6 +1559,26 @@ impl PrettyPrint for Expression<'_> {
                 args,
                 ..
             } => {
+                // See above
+                if args.len() == 1
+                    && let Expression::Identifier { name, .. } = expr.as_ref()
+                {
+                    if *name == "°C" || *name == "celsius" || *name == "degree_celsius" {
+                        return with_parens_liberal(&args[0])
+                            + m::space()
+                            + m::operator("->")
+                            + m::space()
+                            + m::unit("°C");
+                    } else if *name == "°F" || *name == "fahrenheit" || *name == "degree_fahrenheit"
+                    {
+                        return with_parens_liberal(&args[0])
+                            + m::space()
+                            + m::operator("->")
+                            + m::space()
+                            + m::unit("°F");
+                    }
+                }
+
                 expr.pretty_print()
                     + m::operator("(")
                     + itertools::Itertools::intersperse(

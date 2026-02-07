@@ -452,68 +452,92 @@ fn pounds_and_ounces(mass: Mass) -> List<Mass>
 Defined in: `physics::temperature_conversion`
 
 ### `from_celsius`
-Converts from degree Celsius (°C) to Kelvin.
-More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
 
 ```nbt
 fn from_celsius(t_celsius: Scalar) -> Temperature
 ```
 
-!!! example "300 °C in Kelvin."
-    ```nbt
-    from_celsius(300)
+### `°C`
+Converts from Kelvin to degree Celsius (°C). Can be used on the right hand side of a conversion operator.
+More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
 
-        = 573.15 K    [Temperature]
+```nbt
+fn °C(t_kelvin: Temperature) -> Scalar
+```
+
+!!! example "Convert 300 K to degree Celsius."
+    ```nbt
+    300 K -> °C
+
+        = 26.85
     ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Fcelsius%28300%29){ .md-button }
+    [:material-play-circle: Run this example](https://numbat.dev/?q=300%20K%20%2D%3E%20%C2%B0C){ .md-button }
+
+!!! example "Convert 55 °F to degree Celsius."
+    ```nbt
+    55 °F -> °C
+
+        = 12.7778
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=55%20%C2%B0F%20%2D%3E%20%C2%B0C){ .md-button }
 
 ### `celsius`
-Converts from Kelvin to degree Celcius (°C). This can be used on the right hand side of a conversion operator: `200 K -> celsius`.
-More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
+An alias for `°C`.
 
 ```nbt
 fn celsius(t_kelvin: Temperature) -> Scalar
 ```
 
-!!! example "300 K in degree Celsius."
-    ```nbt
-    300K -> celsius
+### `degree_celsius`
+An alias for `°C`.
 
-        = 26.85
-    ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=300K%20%2D%3E%20celsius){ .md-button }
+```nbt
+fn degree_celsius(t_kelvin: Temperature) -> Scalar
+```
 
 ### `from_fahrenheit`
-Converts from degree Fahrenheit (°F) to Kelvin.
-More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
 
 ```nbt
 fn from_fahrenheit(t_fahrenheit: Scalar) -> Temperature
 ```
 
-!!! example "300 °F in Kelvin."
-    ```nbt
-    from_fahrenheit(300)
+### `°F`
+Converts from Kelvin to degree Fahrenheit (°F). Can be used on the right hand side of a conversion operator.
+More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
 
-        = 422.039 K    [Temperature]
+```nbt
+fn °F(t_kelvin: Temperature) -> Scalar
+```
+
+!!! example "Convert 300 K to degree Fahrenheit."
+    ```nbt
+    300 K -> °F
+
+        = 80.33
     ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=from%5Ffahrenheit%28300%29){ .md-button }
+    [:material-play-circle: Run this example](https://numbat.dev/?q=300%20K%20%2D%3E%20%C2%B0F){ .md-button }
+
+!!! example "Convert 25 °C to degree Fahrenheit."
+    ```nbt
+    25 °C -> °F
+
+        = 77
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=25%20%C2%B0C%20%2D%3E%20%C2%B0F){ .md-button }
 
 ### `fahrenheit`
-Converts from Kelvin to degree Fahrenheit (°F). This can be used on the right hand side of a conversion operator: `200 K -> fahrenheit`.
-More information [here](https://en.wikipedia.org/wiki/Conversion_of_scales_of_temperature).
+An alias for `°F`.
 
 ```nbt
 fn fahrenheit(t_kelvin: Temperature) -> Scalar
 ```
 
-!!! example "300 K in degree Fahrenheit."
-    ```nbt
-    300K -> fahrenheit
+### `degree_fahrenheit`
+An alias for `°F`.
 
-        = 80.33
-    ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=300K%20%2D%3E%20fahrenheit){ .md-button }
+```nbt
+fn degree_fahrenheit(t_kelvin: Temperature) -> Scalar
+```
 
 ## Speed of sound
 
@@ -529,11 +553,11 @@ fn speed_of_sound(T_air: Temperature) -> Velocity
 
 !!! example "Example"
     ```nbt
-    speed_of_sound(from_celsius(20))
+    speed_of_sound(20 °C)
 
         = 343.263 m/s    [Velocity]
     ```
-    [:material-play-circle: Run this example](https://numbat.dev/?q=speed%5Fof%5Fsound%28from%5Fcelsius%2820%29%29){ .md-button }
+    [:material-play-circle: Run this example](https://numbat.dev/?q=speed%5Fof%5Fsound%2820%20%C2%B0C%29){ .md-button }
 
 ## Color format conversion
 

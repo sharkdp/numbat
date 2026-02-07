@@ -91,8 +91,8 @@ fit into 6 hours, you can write:
 
     ``` numbat
     > let concorde_speed = 2180 km/h
-    > concorde_speed -> speed_of_sound(from_celsius(-60))
-      
+    > concorde_speed -> speed_of_sound(-60 °C)
+
       = 2.06885 × 292.701 m/s    [Velocity]
     ```
 
@@ -106,6 +106,38 @@ If you want to convert a quantity to the *same unit as another quantity*, you ca
   10.8 km/h    [Velocity]
 ```
 
+### Temperature conversions
+
+Temperature units like °C (degree Celsius) and °F (degree Fahrenheit) are special because they are not just scaled versions of the base unit (Kelvin), but also have an offset.
+In Numbat, only the base unit Kelvin (`K`, `kelvin`) is an actual unit of type `Temperature`. The other temperature units can only be used to *enter* temperature values, and as
+the target of a *conversion*. When you enter an expression like `25 °C`, it is immediately converted to `298.15 K`, and when `°C` and `°F` are used on the right hand side of a
+unit conversion, you will only get the plain number as a result (without the unit). You can still do useful computations and conversions with these units. For example:
+
+``` numbat
+> 25 °C
+
+    = 298.15 K    [Temperature]
+
+> 25 °C -> °F
+
+    = 77
+
+>>> element("Fe").melting_point -> °C
+
+    = 1538
+```
+
+If your keyboard layout does contain the `°` symbol, you can also use `celsius`/`fahrenheit` or `degree_celsius`/`degree_fahrenheit` instead of `°C`/`°F`.
+Alternatively, you can also use Numbat's Unicode input feature and type `\degree<tab>` to get the `°` symbol.
+
+!!! warning "Computations with °C and °F"
+
+    You need to be extra careful when doing computations with °C and °F. Numbat does currently not prevent you from
+    doing something like `10 °C + 1 °C`, even if the result is probably *not* what you expect. Since each of these
+    values will be converted to Kelvin before the addition, the result will be `557.3 K` (or `284.15 °C`), and not
+    `11 °C`. If you really want to add two temperatures, one of them should be a *temperature difference* expressed
+    in `K` (e.g. `10 °C + 1 K`). *Subtracting* two temperatures is always fine, since any offsets will cancel out.
+    For example, `20 °C - 10 °C` will correctly give a result of `10 K`.
 
 ## Conversion functions
 

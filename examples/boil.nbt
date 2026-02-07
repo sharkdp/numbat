@@ -13,7 +13,7 @@ let mass_water = 1 gallon × density_water
 
 let c_water = 1 cal / g K
 
-let ΔT = from_fahrenheit(212) - from_fahrenheit(70)
+let ΔT = 212 °F - 70 °F
 
 let heat = mass_water × c_water × ΔT
 
