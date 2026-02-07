@@ -1,0 +1,245 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;700&family=Lustria&family=Lato:wght@700&display=swap');
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+
+    font-size: large;
+
+    /* Light theme */
+    --editor-bg-color-light: #FFFFFF;
+    --results-bg-color-light: #f6f8f6;
+    --editor-accent-color-light: #eee;
+    --editor-text-color-light: black;
+    --editor-text-highlight-color-light: rgb(181, 213, 255);
+
+    /* Dark theme */
+    --editor-bg-color-dark: #262826;
+    --results-bg-color-dark: #2F322F;
+    --editor-accent-color-dark: #464846;
+    --editor-text-color-dark: #eee;
+    --editor-text-highlight-color-dark: rgb(83, 157, 255);
+
+    /* Default theme */
+    --editor-bg-color: var(--editor-bg-color-light);
+    --results-bg-color: var(--results-bg-color-light);
+    --editor-accent-color: var(--editor-accent-color-light);
+    --editor-text-color: var(--editor-text-color-light);
+    --editor-text-highlight-color: var(--editor-text-highlight-color-light);
+
+    background-color: var(--editor-bg-color);
+    caret-color: var(--editor-text-color);
+}
+
+.alt-theme body,
+html.alt-theme {
+    --editor-bg-color: var(--editor-bg-color-dark);
+    --results-bg-color: var(--results-bg-color-dark);
+    --editor-accent-color: var(--editor-accent-color-dark);
+    --editor-text-color: var(--editor-text-color-dark);
+    --editor-text-highlight-color: var(--editor-text-highlight-color-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+
+    body,
+    html {
+        --editor-bg-color: var(--editor-bg-color-dark);
+        --results-bg-color: var(--results-bg-color-dark);
+        --editor-accent-color: var(--editor-accent-color-dark);
+        --editor-text-color: var(--editor-text-color-dark);
+        --editor-text-highlight-color: var(--editor-text-highlight-color-dark);
+    }
+
+    .alt-theme body,
+    html.alt-theme {
+        --editor-bg-color: var(--editor-bg-color-light);
+        --results-bg-color: var(--results-bg-color-light);
+        --editor-accent-color: var(--editor-accent-color-light);
+        --editor-text-color: var(--editor-text-color-light);
+        --editor-text-highlight-color: var(--editor-text-highlight-color-light);
+    }
+}
+
+
+.split {
+    width: auto;
+    min-height: 100%;
+    display: flex;
+    flex-direction: row;
+    overflow-y: auto;
+    margin: 0px;
+}
+
+
+.gutter {
+    background-color: var(--editor-accent-color);
+    background-repeat: no-repeat;
+    background-position: 50%;
+}
+
+
+.gutter.gutter-horizontal {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+    cursor: col-resize;
+    height: 100dvh;
+    position: sticky;
+    top: 0px;
+}
+
+
+#editor {
+    font-family: 'Fira Mono', monospace;
+    font-size: 1em;
+    overflow-y: clip;
+}
+
+
+.terminal,
+.cmd,
+.ace_editor {
+    background-color: var(--editor-bg-color);
+    color: var(--editor-text-color);
+}
+
+.ace-tm .ace_cursor {
+    color: var(--editor-text-color)
+}
+
+.ace-tm .ace_marker-layer .ace_selection {
+    background: var(--editor-text-highlight-color)
+}
+
+#editor .ace_gutter {
+    background-color: var(--editor-accent-color);
+    color: var(--editor-text-color);
+}
+
+#theme-toggle {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    background-color: #00000000;
+}
+
+.type-expr {
+    font-family: 'Fira Mono', monospace;
+    font-size: 1em;
+    margin-top: 0em;
+    margin-bottom: 0;
+    padding: 1em;
+    overflow: auto;
+    display: block;
+}
+
+
+#results {
+    font-family: 'Fira Mono', monospace;
+    font-size: 1em;
+    padding: 0.1em;
+    padding-bottom: 1em;
+    background-color: var(--results-bg-color);
+    color: var(--editor-text-color);
+    overflow-y: clip;
+}
+
+
+#results div {
+    white-space-collapse: preserve;
+}
+
+
+.numbat-type-identifier {
+    color: #ca3b63;
+}
+
+.ace_type {
+    color: #ca3b63 !important;
+}
+
+.numbat-value {
+    color: #0040ff;
+}
+
+.ace_numeric {
+    color: #0040ff !important;
+}
+
+.numbat-keyword {
+    color: #c802ff !important;
+}
+
+.ace_keyword {
+    color: #c802ff !important;
+}
+
+.ace_comment {
+    color: #8c8c8c !important;
+}
+
+.ace_string {
+    color: #27a85f !important;
+}
+
+.ace_decorator {
+    color: #27a85f !important;
+}
+
+.numbat-string {
+    color: #27a85f;
+}
+
+.ace_operator {
+    color: #db2828 !important;
+}
+
+.numbat-unit {
+    color: #8812a6;
+}
+
+.numbat-dimmed {
+    color: #888;
+}
+
+.numbat-diagnostic-red {
+    color: #cc3b0a;
+}
+
+.numbat-diagnostic-blue {
+    color: #0040ff;
+}
+
+.numbat-diagnostic-bold {
+    font-weight: bold;
+}
+
+
+
+@media all and (width <=900px) {
+
+    body,
+    html {
+        font-size: medium;
+    }
+
+    .split {
+        margin: 0px;
+    }
+}
+
+
+
+@media all and (width >=1900px) {
+
+    body,
+    html {
+        font-size: x-large;
+    }
+
+    .split {
+        margin: 0px 100px;
+    }
+}
