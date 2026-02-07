@@ -47,3 +47,140 @@ fn dsolve_runge_kutta<X: Dim, Y: Dim>(
 ) -> RungeKuttaResult<X, Y> =
   _dsolve_runge_kutta(f, Δx, steps - 1, RungeKuttaResult { xs: [x_0], ys: [y_0] })
   where Δx = (x_e - x_0) / (steps - 1)
+
+# Dormand-Prince 5(4) Butcher tableau coefficients
+# Node coefficients (c)
+let _rk45_c2 = 1/5
+let _rk45_c3 = 3/10
+let _rk45_c4 = 4/5
+let _rk45_c5 = 8/9
+
+# Stage coefficients (a)
+let _rk45_a21 = 1/5
+let _rk45_a31 = 3/40
+let _rk45_a32 = 9/40
+let _rk45_a41 = 44/45
+let _rk45_a42 = -56/15
+let _rk45_a43 = 32/9
+let _rk45_a51 = 19372/6561
+let _rk45_a52 = -25360/2187
+let _rk45_a53 = 64448/6561
+let _rk45_a54 = -212/729
+let _rk45_a61 = 9017/3168
+let _rk45_a62 = -355/33
+let _rk45_a63 = 46732/5247
+let _rk45_a64 = 49/176
+let _rk45_a65 = -5103/18656
+
+# 5th order weights (b)
+let _rk45_b1 = 35/384
+let _rk45_b3 = 500/1113
+let _rk45_b4 = 125/192
+let _rk45_b5 = -2187/6784
+let _rk45_b6 = 11/84
+
+# Error coefficients (b - b*)
+let _rk45_e1 = 71/57600
+let _rk45_e3 = -71/16695
+let _rk45_e4 = 71/1920
+let _rk45_e5 = -17253/339200
+let _rk45_e6 = 22/525
+let _rk45_e7 = -1/40
+
+# Adaptive stepping parameters
+let _rk45_safety = 0.9
+let _rk45_min_scale = 0.2
+let _rk45_max_scale = 10
+let _rk45_order = 5
+
+# Initial step size estimator for RK45
+# Based on Hairer & Wanner's algorithm: estimates step size from derivative magnitudes
+fn _rk45_hinit<X: Dim, Y: Dim>(
+  f: Fn[(X, Y) -> Y / X],
+  x_0: X,
+  x_e: X,
+  y_0: Y,
+  atol: Y,
+  rtol: Scalar,
+) -> X =
+  Δx_final
+  where
+    # Compute initial derivative
+    f0 = f(x_0, y_0)
+    # Scale factor for error weighting
+    and sc = atol + rtol × abs(y_0)
+    # Weighted norms (dimensionless)
+    and d0 = abs(y_0) / sc
+    and d1 = abs(f0) × abs(x_e - x_0) / sc
+    # Initial step guess: h = 0.01 * |y0| / |f0| or 1e-6 * interval if too small
+    and Δx_0 = if d0 < 1e-5 || d1 < 1e-5 then 1e-6 × abs(x_e - x_0) else 0.01 × (d0 / d1) × abs(x_e - x_0)
+    # Take an explicit Euler step to estimate second derivative
+    and y_1 = y_0 + Δx_0 × f0
+    and f1 = f(x_0 + Δx_0, y_1)
+    # Second derivative estimate (dimensionless, scaled by interval)
+    and d2 = abs(f1 - f0) × (x_e - x_0)² / sc / Δx_0
+    # Use larger of d1 and d2 for step sizing
+    and der12 = if d1 > d2 then d1 else d2
+    # Compute h such that h^order * der12 = 0.01 (order=5, so exponent=0.2)
+    and Δx_1 = if der12 <= 1e-15 then Δx_0 × 1e-3 else (0.01 / der12)^0.2 × abs(x_e - x_0)
+    # Final step: min(100 * h0, h1, interval)
+    and Δx_cand = if 100 × Δx_0 < Δx_1 then 100 × Δx_0 else Δx_1
+    and Δx_final = if Δx_cand < abs(x_e - x_0) then Δx_cand else abs(x_e - x_0)
+
+# Internal recursive loop for RK45 adaptive integration
+fn _dsolve_rk45_step<X: Dim, Y: Dim>(
+  f: Fn[(X, Y) -> Y / X],
+  x: X,
+  y: Y,
+  Δx: X,
+  x_e: X,
+  x_list: List<X>,
+  y_list: List<Y>,
+  atol: Y,
+  rtol: Scalar,
+) -> RungeKuttaResult<X, Y> =
+  if x >= x_e
+    then RungeKuttaResult { xs: x_list, ys: y_list }
+    else if err_ratio <= 1
+      # Step accepted - continue with new step size
+      then _dsolve_rk45_step(f, x + Δx_cur, y_new, Δx_next, x_e, cons_end(x + Δx_cur, x_list), cons_end(y_new, y_list), atol, rtol)
+      # Step rejected - retry with smaller step
+      else _dsolve_rk45_step(f, x, y, Δx_retry, x_e, x_list, y_list, atol, rtol)
+  where
+    # Limit step to not overshoot x_e
+    Δx_cur = if x + Δx > x_e then x_e - x else Δx
+    # Dormand-Prince RK45 stages (7 function evaluations)
+    and k1 = f(x, y)
+    and k2 = f(x + _rk45_c2 × Δx_cur, y + Δx_cur × _rk45_a21 × k1)
+    and k3 = f(x + _rk45_c3 × Δx_cur, y + Δx_cur × (_rk45_a31 × k1 + _rk45_a32 × k2))
+    and k4 = f(x + _rk45_c4 × Δx_cur, y + Δx_cur × (_rk45_a41 × k1 + _rk45_a42 × k2 + _rk45_a43 × k3))
+    and k5 = f(x + _rk45_c5 × Δx_cur, y + Δx_cur × (_rk45_a51 × k1 + _rk45_a52 × k2 + _rk45_a53 × k3 + _rk45_a54 × k4))
+    and k6 = f(x + Δx_cur, y + Δx_cur × (_rk45_a61 × k1 + _rk45_a62 × k2 + _rk45_a63 × k3 + _rk45_a64 × k4 + _rk45_a65 × k5))
+    and k7 = f(x + Δx_cur, y + Δx_cur × (_rk45_b1 × k1 + _rk45_b3 × k3 + _rk45_b4 × k4 + _rk45_b5 × k5 + _rk45_b6 × k6))
+    # 5th order solution
+    and y_new = y + Δx_cur × (_rk45_b1 × k1 + _rk45_b3 × k3 + _rk45_b4 × k4 + _rk45_b5 × k5 + _rk45_b6 × k6)
+    # Error estimate (difference between 5th and 4th order)
+    and err = abs(Δx_cur × (_rk45_e1 × k1 + _rk45_e3 × k3 + _rk45_e4 × k4 + _rk45_e5 × k5 + _rk45_e6 × k6 + _rk45_e7 × k7))
+    # Error ratio for step acceptance
+    and y_scale = if abs(y) > abs(y_new) then abs(y) else abs(y_new)
+    and err_ratio = err / (atol + rtol × y_scale)
+    # Step size adjustment
+    and scale = if err_ratio < 1e-10 then _rk45_max_scale else _rk45_safety / err_ratio^(1/5)
+    and scale_clamped = if scale < _rk45_min_scale then _rk45_min_scale else if scale > _rk45_max_scale then _rk45_max_scale else scale
+    and Δx_next = Δx_cur × scale_clamped
+    and Δx_retry = Δx_cur × (if scale < _rk45_min_scale then _rk45_min_scale else scale)
+
+@name("Adaptive Runge-Kutta method")
+@url("https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method")
+@description("Solve the ordinary differential equation $y' = f(x, y)$ on the interval $x \\in [x_0, x_e]$ with initial conditions $y(x_0) = y_0$ using the fifth-order Dormand-Prince method with adaptive step size control.")
+@example("fn decay(x, y) = -0.5 × y\ndsolve_adaptive_runge_kutta(decay, 0, 10, 1, 1e-6, 1e-3)", "Solve $y' = -0.5y$ with $y(0) = 1$.")
+fn dsolve_adaptive_runge_kutta<X: Dim, Y: Dim>(
+  f: Fn[(X, Y) -> Y / X],
+  x_0: X,
+  x_e: X,
+  y_0: Y,
+  atol: Y,
+  rtol: Scalar,
+) -> RungeKuttaResult<X, Y> =
+  _dsolve_rk45_step(f, x_0, y_0, Δx_init, x_e, [x_0], [y_0], atol, rtol)
+  where Δx_init = _rk45_hinit(f, x_0, x_e, y_0, atol, rtol)
