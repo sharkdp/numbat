@@ -1,0 +1,37 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/submarine_cable.nbt
+---
+Cable length: 1055 km
+Avg. optical fiber refractive index: 1.46849
+Speed of light in optical fiber: 2.04151e+8 m/s
+Base Propagation Delay (light in fiber): ~5.16776 ms
+
+-----------------------------
+Equipment & Processing Delays
+-----------------------------
+Router delay: 2 router * 0.4 ms = 0.8 ms
+Transponder delay: 2 transponder * 0.05 ms = 0.1 ms
+Amplifier delay: 15 amplifier * 0.005 ms = 0.075 ms
+
+------------------------
+Final Latency Estimation
+------------------------
+Estimated One-Way Latency: 6.14276 ms
+Estimated Round-Trip Time (RTT): 12.2855 ms
+
+===============================================================================
+Summary
+===============================================================================
+For a 1055 km submarine cable, the estimated one-way latency is ~6.14 ms,
+resulting in a round-trip time (RTT) of ~12.29 ms.
+
+This is based on the speed of light in an optical fiber with an average
+refractive index of 1.47, which is 2.04151e+8 m/s. This speed is approximately 
+-31.90 % of the speed of light in a vacuum.
+
+Assuming symmetrical latency, the round-trip time (RTT) is a sum of the
+propagation delay (~5.16776 ms) and the cumulative processing delays from
+network appliances (~0.975 ms), multiply by 2.
+===============================================================================

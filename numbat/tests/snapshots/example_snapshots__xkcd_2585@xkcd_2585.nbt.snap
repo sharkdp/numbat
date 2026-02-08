@@ -1,0 +1,7 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/xkcd_2585.nbt
+---
+I can ride my bike at 45 mph.
+If you round.

@@ -1,0 +1,7 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/medication_dosage.nbt
+---
+Total daily dose: 4500 mg/day
+Single dose:      1500 mg/taking

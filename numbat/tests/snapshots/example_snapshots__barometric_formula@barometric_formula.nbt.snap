@@ -1,0 +1,6 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/barometric_formula.nbt
+---
+Air pressure 1500 m above sea level: 845.586 hPa

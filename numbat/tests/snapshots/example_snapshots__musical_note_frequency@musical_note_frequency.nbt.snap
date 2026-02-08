@@ -1,0 +1,8 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/musical_note_frequency.nbt
+---
+A5: 880 Hz
+E4: 659.255 Hz
+C4: 369.994 Hz

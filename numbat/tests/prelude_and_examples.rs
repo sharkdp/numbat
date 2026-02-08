@@ -86,11 +86,6 @@ fn modules_are_self_consistent() {
 }
 
 #[test]
-fn examples_can_be_parsed_and_interpreted() {
-    run_for_each_file("../examples/*.nbt", assert_runs);
-}
-
-#[test]
 fn numbat_tests_are_executed_successfully() {
     run_for_each_file("../examples/tests/*.nbt", assert_runs);
 }

@@ -1,0 +1,6 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/acidity.nbt
+---
+5.30103

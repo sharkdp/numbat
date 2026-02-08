@@ -1,0 +1,11 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/xkcd_681.nbt
+---
+Gravity well depths:
+Sun     19452798 km
+Earth       6380 km
+Moon         288 km
+Mars        1289 km
+Jupiter   180698 km

@@ -1,0 +1,10 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/xkcd_2812.nbt
+---
+Option A: On the roof, south facing
+58 $/yr
+
+Option B: On the sun, downward facing
+22_039_757 $/yr

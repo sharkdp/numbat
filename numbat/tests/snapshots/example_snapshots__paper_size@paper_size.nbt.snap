@@ -1,0 +1,18 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/paper_size.nbt
+---
+Name    Width     Height        Area  
+----   -------   --------   ----------
+A0      841 mm ×  1189 mm   9999.5 cm²
+A1      594 mm ×   841 mm   4995.5 cm²
+A2      420 mm ×   594 mm   2494.8 cm²
+A3      297 mm ×   420 mm   1247.4 cm²
+A4      210 mm ×   297 mm    623.7 cm²
+A5      148 mm ×   210 mm    310.8 cm²
+A6      105 mm ×   148 mm    155.4 cm²
+A7       74 mm ×   105 mm     77.7 cm²
+A8       52 mm ×    74 mm     38.5 cm²
+A9       37 mm ×    52 mm     19.2 cm²
+A10      26 mm ×    37 mm      9.6 cm²
