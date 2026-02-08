@@ -665,9 +665,9 @@ impl BytecodeInterpreter {
 
         let result = match result {
             Ok(InterpreterResult::Value(Value::Quantity(q))) => {
-                let simplified = q.full_simplify_with_registry(&self.vm.unit_registry, |name| {
-                    self.get_defining_unit(name).cloned()
-                });
+                let simplified = self
+                    .vm
+                    .simplify_quantity(&q, &self.unit_name_to_constant_index);
                 Ok(InterpreterResult::Value(Value::Quantity(simplified)))
             }
             r => r,
