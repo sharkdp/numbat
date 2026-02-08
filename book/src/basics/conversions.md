@@ -50,7 +50,7 @@ The right hand side can also be a more complex expression:
         = 0.00198413 mpg    [Length⁻²]
     ```
 
-    Seeing this, we might actually want to conver to feet per gallon instead:
+    Seeing this, we might actually want to convert to feet per gallon instead:
 
     ```nbt
     >>> 40 rods / hogshead -> ft / gallon

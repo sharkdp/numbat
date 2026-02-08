@@ -38,9 +38,8 @@ There is a set of special commands available in the web version:
 
 ## Key bindings
 
-In interactive command-line mode, you can use the following key bindings. Most importantly,
-`Tab` for auto-completion, arrow keys and `Ctrl-R` for browsing the command history, and
-`Ctrl-D` for exiting the interactive session.
+In the web terminal, you can use the following key bindings. Most importantly,
+`Tab` for auto-completion, and arrow keys or `Ctrl-R` for browsing the command history.
 
 | Key sequence | Action |
 |--------------|--------|

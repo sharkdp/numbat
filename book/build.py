@@ -255,7 +255,7 @@ def generate_all_function_lists():
         {
             "title": "Date and time",
             "icon": "lucide/clock",
-            "introduction": "See [this page](./date-and-time.md) for a general introduction to date and time handling in Numbat.",
+            "introduction": "See [this page](../../basics/date-and-time.md) for a general introduction to date and time handling in Numbat.",
             "sections": [
                 {
                     "modules": [

@@ -548,7 +548,7 @@ More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 fn acosh(x: Scalar) -> Scalar
 ```
 
-### `atanh` (Area hyperbolic tangent )
+### `atanh` (Area hyperbolic tangent)
 More information [here](https://en.wikipedia.org/wiki/Hyperbolic_functions).
 
 ```nbt
@@ -559,7 +559,7 @@ fn atanh(x: Scalar) -> Scalar
 
 Defined in: `math::statistics`
 
-### `maximum` (Maxmimum)
+### `maximum` (Maximum)
 Get the largest element of a list.
 
 ```nbt

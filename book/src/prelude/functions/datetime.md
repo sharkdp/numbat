@@ -4,7 +4,7 @@ icon: lucide/clock
 
 # Date and time
 
-See [this page](./date-and-time.md) for a general introduction to date and time handling in Numbat.
+See [this page](../../basics/date-and-time.md) for a general introduction to date and time handling in Numbat.
 
 Defined in: `datetime::functions`, `datetime::unixtime`, `datetime::human`, `datetime::julian_date`
 

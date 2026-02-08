@@ -47,7 +47,7 @@ fn asinh(x: Scalar) -> Scalar
 @url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
 fn acosh(x: Scalar) -> Scalar
 
-@name("Area hyperbolic tangent ")
+@name("Area hyperbolic tangent")
 @url("https://en.wikipedia.org/wiki/Hyperbolic_functions")
 fn atanh(x: Scalar) -> Scalar
 
