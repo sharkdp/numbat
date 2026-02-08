@@ -1,5 +1,11 @@
 use compact_str::CompactString;
 
+/// Represents a type variable, used both during inference and in generalized type schemes.
+///
+/// - `Named`: Fresh unification variables generated during type inference (`T0`, `T1`, ...).
+///   These are created for unannotated parameters and intermediate expressions.
+/// - `Quantified`: De Bruijn-style index into the bound variables of a `TypeScheme`.
+///   Example: in `forall A. forall B. A -> B`, `A` is `Quantified(0)` and `B` is `Quantified(1)`.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TypeVariable {
     Named(CompactString),

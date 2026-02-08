@@ -302,6 +302,14 @@ pub struct StructInfo {
     pub fields: IndexMap<CompactString, (Span, Type)>,
 }
 
+/// A monomorphic type (no quantifiers).
+///
+/// - `TVar`: Unification variable, to be solved during type inference. Example: when
+///   type-checking `fn f(x) = x + 1`, the parameter `x` gets a fresh `TVar(Named("T0"))`.
+/// - `TPar`: User-written type parameter in a polymorphic definition. Example: in
+///   `fn square<D: Dim>(x: D) -> D²`, the `D` in type annotations becomes `TPar("D")`.
+///
+/// During generalization, both `TVar` and `TPar` become `TVar(Quantified(i))` in a `TypeScheme`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     TVar(TypeVariable),

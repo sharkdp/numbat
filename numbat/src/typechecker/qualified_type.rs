@@ -11,6 +11,7 @@ pub enum Bound {
     IsDim(Type),
 }
 
+/// A set of bounds constraining type variables (e.g., `D: Dim`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Bounds(Vec<Bound>);
 
@@ -51,12 +52,13 @@ impl FromIterator<Bound> for Bounds {
     }
 }
 
-/// A qualified type is a type with a (potentially empty) set of bounds
-/// on the type variables.
+/// A type paired with bounds on its type variables (similar to Haskell's qualified types).
 ///
-/// For example, the type of the square-function (D -> D^2), needs an
-/// additional `D: Dim` bound, as arbitrary types (like Bool) can not
-/// be squared.
+/// Example: the square function `fn square<D: Dim>(x: D) -> D²` has qualified type
+/// `D -> D²` with bound `D: Dim`, since only dimension types can be squared.
+///
+/// This is the inner part of `TypeScheme::Quantified`. Calling `.quantify()` converts
+/// free type variables to bound (`Quantified`) indices.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QualifiedType {
     pub inner: Type,

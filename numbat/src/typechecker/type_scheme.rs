@@ -8,15 +8,18 @@ use crate::pretty_print::PrettyPrint;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::Type;
 
-/// A type *scheme* (the `Quantified` part below) is a type with a
-/// set of universally quantified type variables.
+/// A (possibly polymorphic) type with universally quantified type variables.
 ///
-/// The way this is represented is by using type variables of kind
-/// `Quantified(i)` in the type tree, where `i` is a unique index
-/// for each universally quantified type variable.
+/// - `Concrete`: A monomorphic type, no quantifiers. Used during type inference
+///   before generalization.
+/// - `Quantified(n, qt)`: A polymorphic type with `n` bound variables. The inner
+///   `QualifiedType` uses `TVar(Quantified(i))` to reference bound variables.
 ///
-/// Type schemes can be created by calling .quantify() on a qualified
-/// type.
+/// Example: `fn square<D: Dim>(x: D) -> D²` has type scheme
+/// `Quantified(1, QualifiedType { inner: Fn([Q0], Q0²), bounds: [IsDim(Q0)] })`
+/// where `Q0` means `TVar(Quantified(0))`.
+///
+/// Created by calling `.quantify()` on a `QualifiedType`, or `.generalize()` on a `Concrete`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TypeScheme {
     Concrete(Type),

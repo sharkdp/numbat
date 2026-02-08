@@ -6,6 +6,7 @@ use crate::typed_ast::{
     DType, DTypeFactor, DefineVariable, Expression, StructInfo, StructKind, Type,
 };
 
+/// A mapping from type variables to types, computed during unification.
 #[derive(Debug, Clone)]
 pub struct Substitution(pub Vec<(TypeVariable, Type)>);
 
