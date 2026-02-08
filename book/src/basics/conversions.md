@@ -127,7 +127,7 @@ unit conversion, you will only get the plain number as a result (without the uni
     = 1538
 ```
 
-If your keyboard layout does contain the `°` symbol, you can also use `celsius`/`fahrenheit` or `degree_celsius`/`degree_fahrenheit` instead of `°C`/`°F`.
+If your keyboard layout doesn't contain the `°` symbol, you can also use `celsius`/`fahrenheit` or `degree_celsius`/`degree_fahrenheit` instead of `°C`/`°F`.
 Alternatively, you can also use Numbat's Unicode input feature and type `\degree<tab>` to get the `°` symbol.
 
 !!! warning "Computations with °C and °F"
