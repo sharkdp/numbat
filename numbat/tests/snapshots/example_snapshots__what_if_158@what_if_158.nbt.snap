@@ -1,0 +1,9 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/what_if_158.nbt
+---
+Radioactivity of potassium: 30.9526 Bq/g
+Radioactivity of a banana: 13.9596 Bq/banana
+Power per banana: 2.95676 pW/banana
+Bananas per household: 1.15748e+14 banana/household

@@ -1,0 +1,7 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/population_growth.nbt
+---
+Population in  20 years: 74591 person
+Population in 100 years: 369_453 person

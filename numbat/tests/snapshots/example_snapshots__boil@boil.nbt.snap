@@ -1,0 +1,9 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/boil.nbt
+---
+Energy to boil 1 gallon of room-temperature water:
+  1249.46 kJ
+  1184.25 BTU
+  0.347071 kWh

@@ -1,0 +1,6 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/nested_function_calls.nbt
+---
+

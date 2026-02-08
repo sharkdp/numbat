@@ -1,0 +1,7 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/readme-demo.nbt
+---
+Energy of red photon: 1.87855 eV
+    = 16.6992°

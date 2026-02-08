@@ -1,0 +1,11 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/voyager.nbt
+---
+Voyager sends data at a rate of 160 bps with 23 W.
+At a frequency of 8.3 GHz, this amounts to 4e24 photons/s.
+A 70 m dish on Earth will receive 1.3 aW of power.
+
+This corresponds to 240188 photons/s.
+Which means 1501 photons/bit.

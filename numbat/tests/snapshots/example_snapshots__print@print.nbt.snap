@@ -1,0 +1,10 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/print.nbt
+---
+1
+2 m
+hello world
+pi = 3.14159
+1 + 2 = 3

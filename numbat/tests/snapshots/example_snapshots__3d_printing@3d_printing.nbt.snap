@@ -1,0 +1,8 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/3d_printing.nbt
+---
+Mass of model:   80 g
+Filament length: 26.19 m
+Cost of model:   1.36 €

@@ -1,0 +1,12 @@
+---
+source: numbat/tests/example_snapshots.rs
+expression: output
+input_file: examples/numbat_syntax.nbt
+---
+2 kwh
+hello world
+value of pi = 3.14159
+sqrt(10) = 3.16228
+value of π ≈ 3.142
+= Length / Time
+    = 0.08988 g/l
