@@ -5,20 +5,20 @@ use physics::constants
 
 @name("Planck length")
 @url("https://en.wikipedia.org/wiki/Planck_length")
-unit planck_length: Length = sqrt(ℏ G / c^3) -> m
+unit planck_length: Length = sqrt(ℏ G / c^3)
 
 @name("Planck mass")
 @url("https://en.wikipedia.org/wiki/Planck_mass")
-unit planck_mass: Mass = sqrt(ℏ c / G) -> kg
+unit planck_mass: Mass = sqrt(ℏ c / G)
 
 @name("Planck time")
 @url("https://en.wikipedia.org/wiki/Planck_time")
-unit planck_time: Time = sqrt(ℏ G / c^5) -> s
+unit planck_time: Time = sqrt(ℏ G / c^5)
 
 @name("Planck temperature")
 @url("https://en.wikipedia.org/wiki/Planck_temperature")
-unit planck_temperature: Temperature = sqrt(ℏ c^5 / (G k_B^2)) -> K
+unit planck_temperature: Temperature = sqrt(ℏ c^5 / (G k_B^2))
 
 @name("Planck energy")
 @url("https://en.wikipedia.org/wiki/Planck_energy")
-unit planck_energy: Energy = sqrt(ℏ c^5 / G) -> J
+unit planck_energy: Energy = sqrt(ℏ c^5 / G)
