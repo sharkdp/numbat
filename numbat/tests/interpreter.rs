@@ -613,6 +613,28 @@ fn test_full_simplify() {
     expect_output("1 Wh/W", "1 Wh/W"); // This output is not great (and should be improved). But we keep this as a regression test for a bug in previous versions.
 
     expect_output("1 × (m/s)^2/(m/s)", "1 m/s");
+
+    expect_output("mph * s/m", "0.44704");
+    expect_output("3% * 1kg", "0.03 kg");
+    expect_output("m * g / cm", "100 g");
+    expect_output("gal/in", "231 in²");
+    expect_output(
+        "4 pi ε0 ℏ^2 / (electron_charge^2 electron_mass)",
+        "5.29177e-11 m",
+    );
+
+    expect_output("J/s", "1 J/s"); // TODO: should be "1 W"
+    expect_output("Pa m²", "1 Pa·m²"); // TODO: should be "1 N"
+    expect_output("50 Ω * 2 A", "100 A·Ω"); // TODO: should be "100 V"
+    expect_output("10 N / 5 Pa", "2 N/Pa"); // TODO: should be "2 m²"
+    expect_output(
+        "sqrt(ℏ gravitational_constant / speed_of_light^3)",
+        "1.61626e-35 J^(1/2)·s/kg^(1/2)", // TODO: should be "1.61626e-35 m"
+    );
+
+    expect_output("1 dpi * 1 in", "1 dpi·in"); // TODO: should be "1 dot"
+    expect_output("1 mph * 1 hour", "1 mph·h"); // TODO: should be "1 mi"
+    expect_output("1 dot / 96 dpi", "0.0104167 dot/dpi"); // TODO: should be "0.0104167 in"
 }
 
 #[test]
