@@ -184,4 +184,8 @@ impl<Metadata: Clone> Registry<Metadata> {
             .iter()
             .any(|(name, _)| name == dimension_name)
     }
+
+    pub fn is_base_unit(&self, unit_name: &str) -> bool {
+        self.base_entries.iter().any(|(name, _)| name == unit_name)
+    }
 }

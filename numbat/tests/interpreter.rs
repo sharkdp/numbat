@@ -570,7 +570,7 @@ fn test_misc_examples() {
     expect_output("2min + 30s", "150 s");
     expect_output("30s + 2min", "150 s");
     expect_output("4/3 * pi * (6000km)³", "9.04779e+11 km³");
-    expect_output("40kg * 9.8m/s^2 * 150cm", "588 kg·m²/s²");
+    expect_output("40kg * 9.8m/s^2 * 150cm", "588 J");
     expect_output("sin(30°)", "0.5");
 
     expect_output("60mph -> m/s", "26.8224 m/s");
@@ -610,7 +610,7 @@ fn test_full_simplify() {
         "500 cm/m",
     );
 
-    expect_output("1 Wh/W", "1 Wh/W"); // This output is not great (and should be improved). But we keep this as a regression test for a bug in previous versions.
+    expect_output("1 Wh/W", "1 h");
 
     expect_output("1 × (m/s)^2/(m/s)", "1 m/s");
 
@@ -623,18 +623,18 @@ fn test_full_simplify() {
         "5.29177e-11 m",
     );
 
-    expect_output("J/s", "1 J/s"); // TODO: should be "1 W"
-    expect_output("Pa m²", "1 Pa·m²"); // TODO: should be "1 N"
-    expect_output("50 Ω * 2 A", "100 A·Ω"); // TODO: should be "100 V"
-    expect_output("10 N / 5 Pa", "2 N/Pa"); // TODO: should be "2 m²"
+    expect_output("J/s", "1 W");
+    expect_output("Pa m²", "1 N");
+    expect_output("50 Ω * 2 A", "100 V");
+    expect_output("10 N / 5 Pa", "2 m²");
     expect_output(
         "sqrt(ℏ gravitational_constant / speed_of_light^3)",
-        "1.61626e-35 J^(1/2)·s/kg^(1/2)", // TODO: should be "1.61626e-35 m"
+        "1.61626e-35 m",
     );
 
-    expect_output("1 dpi * 1 in", "1 dpi·in"); // TODO: should be "1 dot"
-    expect_output("1 mph * 1 hour", "1 mph·h"); // TODO: should be "1 mi"
-    expect_output("1 dot / 96 dpi", "0.0104167 dot/dpi"); // TODO: should be "0.0104167 in"
+    expect_output("1 dpi * 1 in", "1 dot");
+    expect_output("1 mph * 1 hour", "1 mi");
+    expect_output("1 dot / 96 dpi", "0.0104167 in");
 }
 
 #[test]
