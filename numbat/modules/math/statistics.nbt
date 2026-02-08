@@ -4,7 +4,7 @@ use core::lists
 fn _max<D: Dim>(x: D, y: D) -> D = if x > y then x else y
 fn _min<D: Dim>(x: D, y: D) -> D = if x < y then x else y
 
-@name("Maxmimum")
+@name("Maximum")
 @description("Get the largest element of a list.")
 @example("maximum([30 cm, 2 m])")
 fn maximum<D: Dim>(xs: List<D>) -> D =
