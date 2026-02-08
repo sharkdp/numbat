@@ -2,6 +2,7 @@ use crate::arithmetic::{Exponent, Power, Rational};
 use crate::number::Number;
 use crate::pretty_print::FormatOptions;
 use crate::unit::{Unit, UnitFactor, is_multiple_of};
+use crate::unit_registry::UnitRegistry;
 
 use compact_str::{CompactString, ToCompactString, format_compact};
 use itertools::Itertools;
@@ -74,6 +75,10 @@ impl Quantity {
 
     pub fn unit(&self) -> &Unit {
         &self.unit
+    }
+
+    pub fn can_simplify(&self) -> bool {
+        self.can_simplify
     }
 
     pub fn is_zero(&self) -> bool {
@@ -243,6 +248,88 @@ impl Quantity {
         simplified_unit.canonicalize();
 
         Quantity::new(self.value * factor, simplified_unit)
+    }
+
+    /// Like `full_simplify`, but also tries to simplify to registered derived units.
+    /// For example, J/s -> W, Pa·m² -> N, etc.
+    ///
+    /// The `get_unit` closure should return the Unit for a given unit name,
+    /// typically by looking it up in the VM's constants.
+    pub fn full_simplify_with_registry<F>(&self, registry: &UnitRegistry, get_unit: F) -> Self
+    where
+        F: Fn(&str) -> Option<Unit>,
+    {
+        // First apply the standard simplification
+        let simplified = self.full_simplify();
+
+        if !simplified.can_simplify {
+            return simplified;
+        }
+
+        let current_complexity = simplified.unit.iter().count();
+
+        // Only try registry lookup if we have more than one factor
+        if current_complexity <= 1 {
+            return simplified;
+        }
+
+        let (base_unit_repr, source_factor) = simplified.unit.to_base_unit_representation();
+
+        // Check if the base representation is a single base unit with an integer exponent,
+        // and the conversion factor is 1 (i.e., the unit is definitionally equivalent).
+        // For example, N/Pa has base repr m² with factor 1, so we simplify to m².
+        // But Wh/W has base repr s with factor 3600, so we don't simplify to s.
+        if base_unit_repr.iter().count() == 1
+            && let Some(factor) = base_unit_repr.iter().next()
+            && factor.exponent.is_integer()
+            && (source_factor.to_f64() - 1.0).abs() < 1e-9
+            && let Ok(converted) = simplified.convert_to(&base_unit_repr)
+        {
+            return converted;
+        }
+
+        // Look up matching unit names from the registry
+        let matching_names = registry.get_matching_unit_names(&simplified.unit);
+
+        // Try each matching unit and pick the simplest one we can convert to
+        let mut best: Option<Quantity> = None;
+
+        for name in matching_names {
+            if let Some(target_unit) = get_unit(&name) {
+                let target_complexity = target_unit.iter().count();
+
+                // Only consider if it's simpler
+                if target_complexity < current_complexity {
+                    // Check if the source unit and target unit have the same
+                    // conversion factor to base units. This ensures we only
+                    // simplify when the units are definitionally equivalent
+                    // (e.g., J/s = W) and not just dimensionally equivalent
+                    // (e.g., Wh/W ≠ century, even though both are time).
+                    let (_, target_factor) = target_unit.to_base_unit_representation();
+
+                    // Only simplify if conversion factors are equal (within tolerance)
+                    let factors_match = (source_factor.to_f64() - target_factor.to_f64()).abs()
+                        < 1e-9 * source_factor.to_f64().abs().max(1.0);
+
+                    if factors_match && let Ok(converted) = simplified.convert_to(&target_unit) {
+                        // Can't get simpler than 1 factor, return immediately
+                        if target_complexity == 1 {
+                            return converted;
+                        }
+
+                        let dominated = match &best {
+                            None => true,
+                            Some(best_q) => target_complexity < best_q.unit.iter().count(),
+                        };
+                        if dominated {
+                            best = Some(converted);
+                        }
+                    }
+                }
+            }
+        }
+
+        best.unwrap_or(simplified)
     }
 
     pub fn as_scalar(&self) -> Result<Number> {

@@ -63,4 +63,34 @@ impl UnitRegistry {
 
         Ok(())
     }
+
+    /// Given a unit, find all registered unit names with the same physical dimension.
+    /// This is used for simplification - finding simpler units to convert to.
+    /// Base units are returned first (preferred), then derived units.
+    pub fn get_matching_unit_names(&self, unit: &Unit) -> impl Iterator<Item = CompactString> + '_ {
+        // Get base representation of the input unit
+        let (base_unit, _) = unit.to_base_unit_representation();
+
+        // Convert to registry's BaseRepresentation format
+        let base_repr = BaseRepresentation::from_factors(
+            base_unit
+                .iter()
+                .map(|f| BaseRepresentationFactor(f.unit_id.name.clone(), f.exponent)),
+        );
+
+        // Check if the base representation matches a single base unit
+        // (e.g., dpi·in has base repr "dot", which matches base unit "dot")
+        // Base units are preferred, so yield them first.
+        let base_unit_match = (base_repr.iter().count() == 1)
+            .then(|| base_repr.iter().next())
+            .flatten()
+            .filter(|factor| factor.1 == num_rational::Ratio::from_integer(1))
+            .filter(|factor| self.inner.is_base_unit(&factor.0))
+            .map(|factor| factor.0.clone());
+
+        // Then yield all derived units with the same base representation
+        let derived_units = self.inner.get_derived_entry_names_for(&base_repr);
+
+        base_unit_match.into_iter().chain(derived_units)
+    }
 }
