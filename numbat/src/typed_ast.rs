@@ -1049,6 +1049,7 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
             + match decorator {
                 Decorator::MetricPrefixes => m::decorator("@metric_prefixes"),
                 Decorator::BinaryPrefixes => m::decorator("@binary_prefixes"),
+                Decorator::Abbreviation => m::decorator("@abbreviation"),
                 Decorator::Aliases(names) => {
                     m::decorator("@aliases")
                         + m::operator("(")

@@ -39,7 +39,7 @@ class NumbatLexer(RegexLexer):
             (r'"[^"]*"', String.Double),
             # Decorators/Attributes
             (
-                r"@(aliases|metric_prefixes|binary_prefixes|name|url|description)\b",
+                r"@(aliases|metric_prefixes|binary_prefixes|abbreviation|name|url|description|example)\b",
                 Name.Decorator,
             ),
             # Keywords

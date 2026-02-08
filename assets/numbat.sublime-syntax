@@ -17,7 +17,7 @@ contexts:
       scope: storage.type.nbt
     - match: \b([a-z][a-zA-Z_0-9]*)\b
       scope: variable.other.nbt
-    - match: '(@aliases|@metric_prefixes|@binary_prefixes|@name|@url)'
+    - match: '(@aliases|@metric_prefixes|@binary_prefixes|@abbreviation|@name|@url|@description|@example)'
       scope: meta.annotation.attribute.nbt
     - match: '[+\-/*=\^:<>·⋅×÷²³]'
       scope: keyword.operator.nbt

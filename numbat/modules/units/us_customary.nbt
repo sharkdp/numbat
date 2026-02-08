@@ -48,6 +48,7 @@ unit acre: Area = 4840 yard^2
 
 @name("Miles per gallon")
 @url("https://en.wikipedia.org/wiki/Fuel_economy_in_automobiles")
+@abbreviation
 unit mpg: Length / Volume = miles per gallon
 
 @name("Foot-candle")

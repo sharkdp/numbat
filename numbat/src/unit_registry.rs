@@ -26,6 +26,7 @@ pub struct UnitMetadata {
     pub description: Option<CompactString>,
     pub binary_prefixes: bool,
     pub metric_prefixes: bool,
+    pub is_abbreviation: bool,
     pub code_source_id: usize,
 }
 
@@ -67,6 +68,7 @@ impl UnitRegistry {
     /// Given a unit, find all registered unit names with the same physical dimension.
     /// This is used for simplification - finding simpler units to convert to.
     /// Base units are returned first (preferred), then derived units.
+    /// Abbreviation units (marked with @abbreviation) are excluded.
     pub fn get_matching_unit_names(&self, unit: &Unit) -> impl Iterator<Item = CompactString> + '_ {
         // Get base representation of the input unit
         let (base_unit, _) = unit.to_base_unit_representation();
@@ -88,8 +90,11 @@ impl UnitRegistry {
             .filter(|factor| self.inner.is_base_unit(&factor.0))
             .map(|factor| factor.0.clone());
 
-        // Then yield all derived units with the same base representation
-        let derived_units = self.inner.get_derived_entry_names_for(&base_repr);
+        // Then yield all derived units with the same base representation,
+        // excluding abbreviation units which should not be used as simplification targets
+        let derived_units = self
+            .inner
+            .get_derived_entry_names_for_filtered(&base_repr, |metadata| !metadata.is_abbreviation);
 
         base_unit_match.into_iter().chain(derived_units)
     }

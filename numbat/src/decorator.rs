@@ -6,6 +6,7 @@ use crate::{prefix_parser::AcceptsPrefix, span::Span, unit::CanonicalName};
 pub enum Decorator<'a> {
     MetricPrefixes,
     BinaryPrefixes,
+    Abbreviation,
     Aliases(Vec<(&'a str, Option<AcceptsPrefix>, Span)>),
     Url(CompactString),
     Name(CompactString),
@@ -155,6 +156,16 @@ pub fn contains_aliases(decorators: &[Decorator]) -> bool {
 pub fn contains_examples(decorators: &[Decorator]) -> bool {
     for decorator in decorators {
         if let Decorator::Example(_, _) = decorator {
+            return true;
+        }
+    }
+
+    false
+}
+
+pub fn contains_abbreviation(decorators: &[Decorator]) -> bool {
+    for decorator in decorators {
+        if let Decorator::Abbreviation = decorator {
             return true;
         }
     }
