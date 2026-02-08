@@ -746,6 +746,7 @@ impl<'a> Parser<'a> {
             let decorator = match decorator.lexeme {
                 "metric_prefixes" => Decorator::MetricPrefixes,
                 "binary_prefixes" => Decorator::BinaryPrefixes,
+                "abbreviation" => Decorator::Abbreviation,
                 "aliases" => {
                     if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
                         let aliases = self.list_of_aliases(tokens)?;

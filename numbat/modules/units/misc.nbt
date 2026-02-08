@@ -149,29 +149,35 @@ unit gradian: Angle = 90° / 100
 @url("https://en.wikipedia.org/wiki/Watt_hour")
 @metric_prefixes
 @aliases(Wh: short)
+@abbreviation
 unit watthour: Energy = W h
 
 @name("Ampere-hour")
 @url("https://en.wikipedia.org/wiki/Ampere_hour")
 @metric_prefixes
 @aliases(Ah: short)
+@abbreviation
 unit amperehour: ElectricCharge = A h
 
 @name("Kilometres per hour")
 @url("https://en.wikipedia.org/wiki/Kilometres_per_hour")
+@abbreviation
 unit kph: Velocity = kilometer per hour
 
 @name("Micron")
 @url("https://en.wikipedia.org/wiki/Micrometre")
+@abbreviation
 unit micron: Length = µm
 
 @name("Cubic centimetre")
 @url("https://en.wikipedia.org/wiki/Cubic_centimetre")
 @aliases(ccm)
+@abbreviation
 unit cc: Volume = cm^3
 
 @name("Fermi")
 @url("https://en.wikipedia.org/wiki/Femtometre")
+@abbreviation
 unit fermi: Length = 1 fm
 
 @name("Metric tablespoon")

@@ -117,6 +117,22 @@ impl<Metadata: Clone> Registry<Metadata> {
             .collect()
     }
 
+    pub fn get_derived_entry_names_for_filtered<F>(
+        &self,
+        base_representation: &BaseRepresentation,
+        filter: F,
+    ) -> Vec<CompactString>
+    where
+        F: Fn(&Metadata) -> bool,
+    {
+        self.derived_entries
+            .iter()
+            .filter(|(_, (br, metadata))| br == base_representation && filter(metadata))
+            .map(|(name, _)| name.clone())
+            .sorted_unstable()
+            .collect()
+    }
+
     pub fn add_derived_entry(
         &mut self,
         name: &str,

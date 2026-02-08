@@ -79,10 +79,12 @@ unit long_ton: Mass = 2240 lb
 
 @name("Miles per hour")
 @url("https://en.wikipedia.org/wiki/Miles_per_hour")
+@abbreviation
 unit mph: Velocity = miles per hour
 
 @name("Inch of mercury")
 @url("https://en.wikipedia.org/wiki/Inch_of_mercury")
+@abbreviation
 unit inHg: Pressure = in Hg
 
 @name("Imperial Fluid Ounce")

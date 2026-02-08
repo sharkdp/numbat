@@ -517,6 +517,7 @@ impl BytecodeInterpreter {
                             description: decorator::description(decorators),
                             binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                             metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
+                            is_abbreviation: decorator::contains_abbreviation(decorators),
                             code_source_id: span.code_source_id,
                         },
                     )
@@ -569,6 +570,7 @@ impl BytecodeInterpreter {
                         description: decorator::description(decorators),
                         binary_prefixes: decorators.contains(&Decorator::BinaryPrefixes),
                         metric_prefixes: decorators.contains(&Decorator::MetricPrefixes),
+                        is_abbreviation: decorator::contains_abbreviation(decorators),
                         code_source_id: full_span.code_source_id,
                     },
                 ); // TODO: there is some asymmetry here because we do not introduce identifiers for base units
