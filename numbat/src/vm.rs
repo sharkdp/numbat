@@ -523,6 +523,23 @@ impl Vm {
         Some(position as u16)
     }
 
+    /// Simplify a quantity using the unit registry and constants.
+    pub fn simplify_quantity(
+        &self,
+        q: &Quantity,
+        unit_name_to_constant_idx: &HashMap<CompactString, u16>,
+    ) -> Quantity {
+        q.full_simplify_with_registry(&self.unit_registry, |name| {
+            unit_name_to_constant_idx
+                .get(name)
+                .and_then(|idx| self.constants.get(*idx as usize))
+                .and_then(|constant| match constant {
+                    Constant::Unit(u) => Some(u.clone()),
+                    _ => None,
+                })
+        })
+    }
+
     pub(crate) fn add_ffi_call_args(&mut self, call_args: FfiCallArgs) -> u16 {
         let idx = self.ffi_call_args.len();
         self.ffi_call_args.push(call_args);
@@ -927,6 +944,18 @@ impl Vm {
                         });
                     }
 
+                    // For the print procedure, simplify quantity arguments before printing
+                    let (proc_name, _) = self.ffi_callables.get_index(function_idx).unwrap();
+                    if *proc_name == "print" {
+                        for arg in args.iter_mut() {
+                            if let Value::Quantity(q) = &arg.value {
+                                let simplified =
+                                    self.simplify_quantity(q, ctx.unit_name_to_constant_idx);
+                                arg.value = Value::Quantity(simplified);
+                            }
+                        }
+                    }
+
                     match &self.ffi_callables[function_idx].callable {
                         Callable::Function(function) => {
                             let return_type = ffi_call_args
@@ -1024,8 +1053,10 @@ impl Vm {
                 Op::JoinString => {
                     let num_parts = self.read_u16() as usize;
                     let mut joined = CompactString::with_capacity(num_parts);
-                    let to_str = |value| match value {
-                        Value::Quantity(q) => q.full_simplify().to_compact_string(),
+                    let to_str = |value, vm: &Self, ctx: &ExecutionContext| match value {
+                        Value::Quantity(q) => vm
+                            .simplify_quantity(&q, ctx.unit_name_to_constant_idx)
+                            .to_compact_string(),
                         Value::Boolean(b) => b.to_compact_string(),
                         Value::String(s) => s.to_compact_string(),
                         Value::DateTime(dt) => {
@@ -1051,7 +1082,8 @@ impl Vm {
                         let part = match self.pop() {
                             Value::FormatSpecifiers(Some(specifiers)) => match self.pop() {
                                 Value::Quantity(q) => {
-                                    let q = q.full_simplify();
+                                    let q =
+                                        self.simplify_quantity(&q, ctx.unit_name_to_constant_idx);
 
                                     let mut vars = HashMap::new();
                                     vars.insert(
@@ -1077,15 +1109,18 @@ impl Vm {
                                 }
                                 value => {
                                     let mut vars = HashMap::new();
-                                    vars.insert("value".to_owned(), to_str(value).to_string());
+                                    vars.insert(
+                                        "value".to_owned(),
+                                        to_str(value, self, ctx).to_string(),
+                                    );
 
                                     strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
                                         .map(CompactString::from)
                                         .map_err(|e| map_strfmt_error_to_runtime_error(self, e))?
                                 }
                             },
-                            Value::FormatSpecifiers(None) => to_str(self.pop()),
-                            v => to_str(v),
+                            Value::FormatSpecifiers(None) => to_str(self.pop(), self, ctx),
+                            v => to_str(v, self, ctx),
                         };
                         joined = part + &joined; // reverse order
                     }

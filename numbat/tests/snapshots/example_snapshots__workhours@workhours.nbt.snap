@@ -3,6 +3,6 @@ source: numbat/tests/example_snapshots.rs
 expression: output
 input_file: examples/workhours.nbt
 ---
-0.0005 million·€·workday/€
+500 workday
 300 workday
 5.0 FTE

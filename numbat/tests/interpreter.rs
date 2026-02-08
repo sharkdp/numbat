@@ -906,6 +906,13 @@ fn test_string_interpolation() {
         ",
         "Incorrect type for format specifiers: Unknown format code Some('f') for object of type 'str'",
     );
+
+    // Units should be simplified in string interpolation
+    expect_output(
+        "let power = 1 J/s
+        \"{power}\"",
+        "\"1 W\"",
+    );
 }
 
 #[test]
