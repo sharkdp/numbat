@@ -460,6 +460,36 @@ impl Type {
         matches!(self, Type::Fn(..))
     }
 
+    /// Check if two types have incompatible type constructors (i.e., they can never be unified).
+    /// For example, a Dimension type can never equal a Fn type, even if one contains type variables.
+    /// This is used for early detection of type mismatches in the constraint solver.
+    pub(crate) fn has_incompatible_constructor(&self, other: &Type) -> bool {
+        use Type::*;
+
+        // A Dimension type containing only a type variable can be unified with any type
+        let is_dimension_with_only_tvar = |t: &Type| matches!(t, Dimension(d) if d.deconstruct_as_single_type_variable().is_some());
+
+        match (self, other) {
+            // Type variables and type parameters can potentially match anything
+            (TVar(_), _) | (_, TVar(_)) | (TPar(_), _) | (_, TPar(_)) => false,
+
+            // A Dimension containing only a type variable can match anything
+            (t1, t2) if is_dimension_with_only_tvar(t1) || is_dimension_with_only_tvar(t2) => false,
+
+            // Same constructors might be compatible (need further unification)
+            (Dimension(_), Dimension(_))
+            | (Boolean, Boolean)
+            | (String, String)
+            | (DateTime, DateTime)
+            | (Fn(_, _), Fn(_, _))
+            | (Struct(_), Struct(_))
+            | (List(_), List(_)) => false,
+
+            // Different concrete constructors are incompatible
+            _ => true,
+        }
+    }
+
     pub(crate) fn type_variables(&self, including_type_parameters: bool) -> Vec<TypeVariable> {
         match self {
             Type::TVar(v) => vec![v.clone()],

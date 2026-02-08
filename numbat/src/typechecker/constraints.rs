@@ -208,6 +208,11 @@ impl Constraint {
             {
                 TrivialResolution::Violated
             }
+            // Detect incompatible type constructors early. For example, a Dimension type
+            // can never be equal to a Fn type, even if the Fn type contains type variables.
+            Constraint::Equal(t1, t2) if t1.has_incompatible_constructor(t2) => {
+                TrivialResolution::Violated
+            }
             Constraint::Equal(_, _) => TrivialResolution::Unknown,
             Constraint::IsDType(t) if t.is_closed() => match t {
                 Type::Dimension(_) => TrivialResolution::Satisfied,

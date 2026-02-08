@@ -358,7 +358,6 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::ExpectedDimensionType(span, _)
             | TypeCheckError::ExpectedBool(span)
             | TypeCheckError::NoFunctionReferenceToGenericFunction(span)
-            | TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span)
             | TypeCheckError::DerivedUnitDefinitionMustNotBeGeneric(span)
             | TypeCheckError::MultipleTypedHoles(span) => d.with_labels(vec![
                 span.diagnostic_label(LabelStyle::Primary)
@@ -372,6 +371,17 @@ impl ErrorDiagnostic for TypeCheckError {
                 .with_notes(vec![format!(
                     "This operation requires the '{dim}' dimension to be defined"
                 )]),
+            TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(span, callable_type) => d
+                .with_labels(vec![span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(format!(
+                        "This expression has type '{callable_type}' and can not be called as a function"
+                    ))])
+                .with_notes(vec![
+                    "Implicit multiplication with parentheses (like 'a (b + c)') is not supported. \
+                     Use an explicit multiplication operator instead: 'a × (b + c)'."
+                        .to_string(),
+                ]),
             TypeCheckError::IncompatibleTypesInOperator(
                 span,
                 op,
