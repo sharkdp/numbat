@@ -19,6 +19,7 @@ use crate::{
     decorator::Decorator, markup::Markup, number::Number, prefix::Prefix,
     prefix_parser::AcceptsPrefix, pretty_print::PrettyPrint, span::Span,
 };
+use num_traits::{CheckedAdd, CheckedMul};
 
 /// Dimension type
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -139,6 +140,12 @@ impl DType {
     }
 
     fn canonicalize(&mut self) {
+        self.try_canonicalize()
+            .expect("overflow in dimension type exponent computation");
+    }
+
+    /// Canonicalize with overflow checking. Returns `None` if an overflow occurs.
+    fn try_canonicalize(&mut self) -> Option<()> {
         // Move all type-variable and tgen factors to the front, sort by name
         Arc::make_mut(&mut self.factors).sort_by(|(f1, _), (f2, _)| match (f1, f2) {
             (DTypeFactor::TVar(v1), DTypeFactor::TVar(v2)) => v1.cmp(v2),
@@ -153,12 +160,12 @@ impl DType {
         });
 
         // Merge powers of equal factors:
-        let mut new_factors = Vec::new();
+        let mut new_factors: Vec<DtypeFactorPower> = Vec::new();
         for (f, n) in self.factors.iter() {
             if let Some((last_f, last_n)) = new_factors.last_mut()
                 && f == last_f
             {
-                *last_n += n;
+                *last_n = last_n.checked_add(n)?;
                 continue;
             }
             new_factors.push((f.clone(), *n));
@@ -168,12 +175,27 @@ impl DType {
         new_factors.retain(|(_, n)| *n != Exponent::from_integer(0));
 
         self.factors = Arc::new(new_factors);
+        Some(())
+    }
+
+    /// Like `from_factors`, but returns `None` if an overflow occurs during canonicalization.
+    pub fn try_from_factors(factors: Arc<Vec<DtypeFactorPower>>) -> Option<DType> {
+        let mut dtype = DType { factors };
+        dtype.try_canonicalize()?;
+        Some(dtype)
     }
 
     pub fn multiply(&self, other: &DType) -> DType {
         let mut factors = self.factors.clone();
         Arc::make_mut(&mut factors).extend(other.factors.iter().cloned());
         DType::from_factors(factors)
+    }
+
+    /// Like `multiply`, but returns `None` if an overflow occurs.
+    pub fn try_multiply(&self, other: &DType) -> Option<DType> {
+        let mut factors = self.factors.clone();
+        Arc::make_mut(&mut factors).extend(other.factors.iter().cloned());
+        DType::try_from_factors(factors)
     }
 
     pub fn power(&self, n: Exponent) -> DType {
@@ -185,12 +207,27 @@ impl DType {
         DType::from_factors(Arc::new(factors))
     }
 
+    /// Like `power`, but returns `None` if the exponent computation overflows.
+    pub fn try_power(&self, n: Exponent) -> Option<DType> {
+        let factors: Option<Vec<_>> = self
+            .factors
+            .iter()
+            .map(|(f, m)| n.checked_mul(m).map(|exp| (f.clone(), exp)))
+            .collect();
+        factors.and_then(|f| DType::try_from_factors(Arc::new(f)))
+    }
+
     pub fn inverse(&self) -> DType {
         self.power(-Exponent::from_integer(1))
     }
 
     pub fn divide(&self, other: &DType) -> DType {
         self.multiply(&other.inverse())
+    }
+
+    /// Like `divide`, but returns `None` if an overflow occurs.
+    pub fn try_divide(&self, other: &DType) -> Option<DType> {
+        self.try_multiply(&other.inverse())
     }
 
     pub fn type_variables(&self, including_type_parameters: bool) -> Vec<TypeVariable> {

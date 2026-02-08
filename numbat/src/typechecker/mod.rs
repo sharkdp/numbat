@@ -614,15 +614,21 @@ impl TypeChecker {
                                 let lhs_dtype = dtype(&lhs_checked)?;
                                 let rhs_dtype = dtype(&rhs_checked)?;
 
-                                match op {
+                                let result_dtype = match op {
                                     typed_ast::BinaryOperator::Mul => {
-                                        Type::Dimension(lhs_dtype.multiply(&rhs_dtype))
+                                        lhs_dtype.try_multiply(&rhs_dtype)
                                     }
                                     typed_ast::BinaryOperator::Div => {
-                                        Type::Dimension(lhs_dtype.divide(&rhs_dtype))
+                                        lhs_dtype.try_divide(&rhs_dtype)
                                     }
                                     _ => unreachable!(),
-                                }
+                                };
+                                let result_dtype = result_dtype.ok_or_else(|| {
+                                    Box::new(TypeCheckError::OverflowInConstExpr(
+                                        lhs_checked.full_span().extend(&rhs_checked.full_span()),
+                                    ))
+                                })?;
+                                Type::Dimension(result_dtype)
                             } else {
                                 self.enforce_dtype(&type_lhs, lhs_checked.full_span())?;
                                 self.enforce_dtype(&type_rhs, rhs_checked.full_span())?;
@@ -720,7 +726,13 @@ impl TypeChecker {
                                 }
                                 Type::Dimension(base_dtype) => {
                                     let exponent = evaluate_const_expr(&rhs_checked)?;
-                                    Type::Dimension(base_dtype.power(exponent))
+                                    let powered =
+                                        base_dtype.try_power(exponent).ok_or_else(|| {
+                                            Box::new(TypeCheckError::OverflowInConstExpr(
+                                                rhs_checked.full_span(),
+                                            ))
+                                        })?;
+                                    Type::Dimension(powered)
                                 }
                                 _ => {
                                     if let Ok(exponent) = evaluate_const_expr(&rhs_checked) {
@@ -740,9 +752,15 @@ impl TypeChecker {
                                         self.add_equal_constraint(&type_base, &type_base_inferred)
                                             .ok();
 
+                                        let neg_power =
+                                            dtype_base.try_power(-exponent).ok_or_else(|| {
+                                                Box::new(TypeCheckError::OverflowInConstExpr(
+                                                    rhs_checked.full_span(),
+                                                ))
+                                            })?;
                                         self.constraints
                                             .add(Constraint::EqualScalar(
-                                                dtype_result.multiply(&dtype_base.power(-exponent)),
+                                                dtype_result.multiply(&neg_power),
                                             ))
                                             .ok();
 
