@@ -570,6 +570,33 @@ fn callables() {
 }
 
 #[test]
+fn calling_non_function() {
+    // Trying to call a dimension/scalar value as a function should give a clear error.
+    // This commonly happens when users try implicit multiplication with parentheses,
+    // e.g., "2 a (3 + 4)" which is parsed as "2 × a(3 + 4)" (function call).
+    assert!(matches!(
+        get_typecheck_error("a(1)"),
+        TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(_, t) if t == Type::Dimension(type_a())
+    ));
+    assert!(matches!(
+        get_typecheck_error("2 a (3 + 4)"),
+        TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(_, t) if t == Type::Dimension(type_a())
+    ));
+
+    // Calling a boolean as a function
+    assert!(matches!(
+        get_typecheck_error("true(1)"),
+        TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(_, Type::Boolean)
+    ));
+
+    // Calling a string as a function
+    assert!(matches!(
+        get_typecheck_error("\"hello\"(1)"),
+        TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(_, Type::String)
+    ));
+}
+
+#[test]
 fn structs() {
     assert_successful_typecheck(
         "

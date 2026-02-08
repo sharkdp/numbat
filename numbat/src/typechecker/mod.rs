@@ -906,6 +906,7 @@ impl TypeChecker {
                                 return Err(Box::new(
                                     TypeCheckError::OnlyFunctionsAndReferencesCanBeCalled(
                                         callable.full_span(),
+                                        callable_type.clone(),
                                     ),
                                 ));
                             }

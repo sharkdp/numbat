@@ -121,8 +121,8 @@ pub enum TypeCheckError {
     #[error("Function references can not point to generic functions")]
     NoFunctionReferenceToGenericFunction(Span),
 
-    #[error("Only functions and function references can be called")]
-    OnlyFunctionsAndReferencesCanBeCalled(Span),
+    #[error("Incompatible types in function call: expected function type, got '{1}'")]
+    OnlyFunctionsAndReferencesCanBeCalled(Span, Type),
 
     #[error("Base units can not be dimensionless.")]
     NoDimensionlessBaseUnit(Span, String),
