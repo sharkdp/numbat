@@ -6,7 +6,7 @@ categories = ["command-line-utilities", "science", "mathematics", "compilers"]
 keywords = ["language", "compiler", "physics", "units", "calculation"]
 homepage = "https://numbat.dev/"
 repository = "https://github.com/sharkdp/numbat"
-version = "1.22.0"
+version = "1.23.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "../README.md"
@@ -16,7 +16,7 @@ rust-version = "1.88"
 anyhow = "1"
 rustyline = { version = "16.0.0", features = ["derive"] }
 dirs = "6"
-numbat = { version = "1.22.0", path = "../numbat" }
+numbat = { version = "1.23.0", path = "../numbat" }
 colored = "3"
 itertools = "0.14"
 toml = { version = "0.8.8", features = ["parse"] }
