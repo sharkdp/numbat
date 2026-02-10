@@ -3,4 +3,4 @@ source: numbat/tests/example_snapshots.rs
 expression: output
 input_file: examples/money.nbt
 ---
-
+Total: 94.5 $
