@@ -10,8 +10,8 @@ which is the (usual) Gregorian calendar extended to dates before its introductio
 A few examples of useful operations that can be performed on dates and times:
 
 ```nbt
-# How many days are left until September 1st?
-date("2024-11-01") - today() -> days
+# How many days have passed since the beginning of the millennium?
+today() - date("2000-01-01") -> days
 
 # What time is it in Nepal right now?
 now() -> tz("Asia/Kathmandu")  # use tab completion to find time zone names

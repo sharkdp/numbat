@@ -17,7 +17,7 @@ You can use it for simple mathematical computations:
 
 >>> 2^32
 
-    = 4_294_967_296s
+    = 4_294_967_296
 
 >>> sqrt(1.4^2 + 1.5^2) * cos(pi / 3)^2
 

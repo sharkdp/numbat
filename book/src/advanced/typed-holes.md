@@ -21,9 +21,9 @@ is expected at that position (Newton's second law):
 
 ```txt
 error: Found typed hole
-  ┌─ <input:2>:3:23
+  ┌─ <input:2>:2:23
   │
-3 │ let f: Force = mass * ?
+2 │ let f: Force = mass * ?
   │                       ^ Acceleration
   │
   = Found a hole of type 'Acceleration' in the statement:
@@ -58,7 +58,7 @@ available constant `ε0` (and its aliases) as a possible match:
 
 ```txt
 error: Found typed hole
-  ┌─ <input:8>:5:8
+  ┌─ <input:2>:5:8
   │
 5 │ q Q / (? r) -> eV
   │        ^ ElectricPermittivity
