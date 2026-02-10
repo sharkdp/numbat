@@ -94,7 +94,7 @@ versions of the unit names (`Book`, `Page`, `Word`). A definition like `unit boo
 for `dimension Book; unit book: Book`.
 Those units now allow us to count books, pages
 and words independently without any risk of mixing them. The `words_per_book` constant in this
-examples has a type of `Word / Book`.
+example has a type of `Word / Book`.
 
 Another example shows how we introduce a `dot` unit to do calculations with
 screen resolutions:

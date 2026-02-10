@@ -4,7 +4,7 @@ icon: lucide/diff
 
 # Operations
 
-Numbat operators and other language constructs, ordered by precedence form *high* to *low*:
+Numbat operators and other language constructs, ordered by precedence from *high* to *low*:
 
 | Operation / operator      | Syntax                               |
 | ------------------------- | ------------------------------------ |

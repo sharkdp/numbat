@@ -27,4 +27,4 @@ let Q: FlowRate = π × pipe_radius^4 × Δp / (8 μ_water × pipe_length)
     let numbers = "1 2 3"
     let numbers = split(numbers, " ")
     ```
-    Here, the first `numbers` symbols has a type of `String`, while the second `numbers` has a type of `List<String>`.
+    Here, the first `numbers` symbol has a type of `String`, while the second `numbers` has a type of `List<String>`.
