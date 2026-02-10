@@ -3,4 +3,4 @@ source: numbat/tests/example_snapshots.rs
 expression: output
 input_file: examples/air_resistance.nbt
 ---
-
+Air resistance at 40 m/s: 4334.4 N
