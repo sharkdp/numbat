@@ -57,13 +57,27 @@ fn line_plot(mut args: Args) -> Result<Plot, Box<RuntimeErrorKind>> {
     let xs = xs
         .iter()
         .cloned()
-        .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
-        .collect::<Vec<_>>();
+        .map(|e| {
+            e.unsafe_as_quantity()
+                .unsafe_value()
+                .try_as_real()
+                .ok_or_else(|| {
+                    Box::new(RuntimeErrorKind::ExpectedRealNumberInFunction("plot".into()))
+                })
+        })
+        .collect::<std::result::Result<Vec<_>, _>>()?;
     let ys = ys
         .iter()
         .cloned()
-        .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
-        .collect::<Vec<_>>();
+        .map(|e| {
+            e.unsafe_as_quantity()
+                .unsafe_value()
+                .try_as_real()
+                .ok_or_else(|| {
+                    Box::new(RuntimeErrorKind::ExpectedRealNumberInFunction("plot".into()))
+                })
+        })
+        .collect::<std::result::Result<Vec<_>, _>>()?;
 
     Ok(crate::plot::line_plot(xs, ys, &x_label, &y_label))
 }
@@ -92,8 +106,15 @@ fn bar_chart(mut args: Args) -> Result<Plot, Box<RuntimeErrorKind>> {
     let values = values
         .iter()
         .cloned()
-        .map(|e| e.unsafe_as_quantity().unsafe_value().to_f64())
-        .collect::<Vec<_>>();
+        .map(|e| {
+            e.unsafe_as_quantity()
+                .unsafe_value()
+                .try_as_real()
+                .ok_or_else(|| {
+                    Box::new(RuntimeErrorKind::ExpectedRealNumberInFunction("plot".into()))
+                })
+        })
+        .collect::<std::result::Result<Vec<_>, _>>()?;
 
     let value_label = format!(
         "{value_label}{value_unit}",

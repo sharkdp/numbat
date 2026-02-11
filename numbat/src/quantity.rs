@@ -59,7 +59,7 @@ impl Quantity {
 
     pub fn with_conversion_target(mut self, target: Quantity) -> Self {
         // Only set the target if its value is not 1
-        if target.value.to_f64() != 1.0 {
+        if target.value != Number::from_f64(1.0) {
             self.conversion_target = Some(Box::new(target));
         }
         self
@@ -82,7 +82,7 @@ impl Quantity {
     }
 
     pub fn is_zero(&self) -> bool {
-        self.value.to_f64() == 0.0
+        self.value == Number::from_f64(0.0)
     }
 
     pub fn abs(self) -> Self {
@@ -95,7 +95,7 @@ impl Quantity {
     }
 
     pub fn convert_to(&self, target_unit: &Unit) -> Result<Quantity> {
-        if &self.unit == target_unit || self.unsafe_value().to_f64().is_zero() {
+        if &self.unit == target_unit || self.is_zero() {
             Ok(Quantity::new(self.value, target_unit.clone()))
         } else {
             // Remove common unit factors to reduce unnecessary conversion procedures
@@ -341,14 +341,17 @@ impl Quantity {
     }
 
     pub fn checked_power(self, exp: Quantity) -> Result<Option<Self>> {
-        let exponent_as_scalar = exp.as_scalar()?.to_f64();
-        if exponent_as_scalar < 0.0 && self.is_zero() {
+        let exponent = exp.as_scalar()?;
+        // Unit dimension calculation requires a real exponent
+        let exponent_for_unit = exponent.try_as_real()
+            .ok_or(QuantityError::NonRationalExponent)?;
+        if exponent_for_unit < 0.0 && self.is_zero() {
             Ok(None)
         } else {
-            Ok(Some(Quantity::new_f64(
-                self.value.to_f64().powf(exponent_as_scalar),
+            Ok(Some(Quantity::new(
+                self.value.pow(&exponent),
                 self.unit.power(
-                    Rational::from_f64(exponent_as_scalar)
+                    Rational::from_f64(exponent_for_unit)
                         .ok_or(QuantityError::NonRationalExponent)?,
                 ),
             )))
@@ -366,7 +369,7 @@ impl Quantity {
 
 impl From<&Number> for Quantity {
     fn from(n: &Number) -> Self {
-        Quantity::from_scalar(n.to_f64())
+        Quantity::new(*n, Unit::scalar())
     }
 }
 
@@ -449,7 +452,11 @@ impl PartialEq for Quantity {
 impl PartialOrd for Quantity {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         let other_converted = other.convert_to(self.unit()).ok()?;
-        self.value.partial_cmp(&other_converted.value)
+        // Complex numbers are not ordered
+        if !self.value.is_real() || !other_converted.value.is_real() {
+            return None;
+        }
+        self.value.re.partial_cmp(&other_converted.value.re)
     }
 }
 
@@ -466,14 +473,19 @@ impl Quantity {
 pub(crate) enum QuantityOrdering {
     IncompatibleUnits,
     NanOperand,
+    ComplexOperand,
     Ok(std::cmp::Ordering),
 }
 
 impl Quantity {
     /// partial_cmp that encodes whether comparison fails because its arguments have
-    /// incompatible units, or because one of them is NaN
+    /// incompatible units, because one of them is NaN, or because they are complex
     pub(crate) fn partial_cmp_preserve_nan(&self, other: &Self) -> QuantityOrdering {
-        if self.value.to_f64().is_nan() || other.value.to_f64().is_nan() {
+        if !self.value.is_real() || !other.value.is_real() {
+            return QuantityOrdering::ComplexOperand;
+        }
+
+        if self.value.re.is_nan() || other.value.re.is_nan() {
             return QuantityOrdering::NanOperand;
         }
 
@@ -483,7 +495,8 @@ impl Quantity {
 
         let cmp = self
             .value
-            .partial_cmp(&other_converted.value)
+            .re
+            .partial_cmp(&other_converted.value.re)
             .expect("unexpectedly got a None partial_cmp from non-NaN arguments");
 
         QuantityOrdering::Ok(cmp)
@@ -518,13 +531,25 @@ impl Quantity {
             .unsafe_value()
             .pretty_print_with_dtoa_config(format_options, dtoa_config);
 
-        markup::value(formatted_number)
-            + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {
-                markup::empty()
-            } else {
-                markup::space()
-            }
-            + markup::unit(unit_str)
+        // Wrap complex numbers in parens when there's a unit
+        let is_complex = !self.value.is_real();
+        let has_unit = !unit_str.is_empty() && unit_str != "°" && unit_str != "′" && unit_str != "″";
+
+        if is_complex && has_unit {
+            markup::operator("(")
+                + markup::value(formatted_number)
+                + markup::operator(")")
+                + markup::space()
+                + markup::unit(unit_str)
+        } else {
+            markup::value(formatted_number)
+                + if unit_str == "°" || unit_str == "′" || unit_str == "″" || unit_str.is_empty() {
+                    markup::empty()
+                } else {
+                    markup::space()
+                }
+                + markup::unit(unit_str)
+        }
     }
 
     /// Pretty prints with the given precision. Disables e (scientific) notation.

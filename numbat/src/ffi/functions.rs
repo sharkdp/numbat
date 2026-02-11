@@ -83,6 +83,12 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
 
         insert_function!(random, 0..=0);
 
+        insert_function!("re", re_fn, 1..=1);
+        insert_function!("im", im_fn, 1..=1);
+        insert_function!("conj", conj, 1..=1);
+        insert_function!("arg", arg_fn, 1..=1);
+        insert_function!(is_real, 1..=1);
+
         // Lists
         insert_function!(len, 1..=1);
         insert_function!(head, 1..=1);
@@ -166,7 +172,12 @@ fn value_of(
 ) -> Result<Value, Box<RuntimeErrorKind>> {
     let quantity = quantity_arg!(args);
 
-    return_scalar!(quantity.unsafe_value().to_f64())
+    let n = quantity.unsafe_value().try_as_real().ok_or_else(|| {
+        Box::new(RuntimeErrorKind::ExpectedRealNumberInFunction(
+            "value_of".into(),
+        ))
+    })?;
+    return_scalar!(n)
 }
 
 fn base_unit_of(
