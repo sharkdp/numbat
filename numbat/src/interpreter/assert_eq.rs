@@ -9,22 +9,73 @@ pub struct AssertEq2Error {
     pub lhs: Value,
     pub span_rhs: Span,
     pub rhs: Value,
+    /// When both values are quantities, stores lhs converted to rhs's unit.
+    pub lhs_converted: Option<Quantity>,
+    /// When both values are quantities, stores the absolute difference (in rhs's unit).
+    pub diff: Option<Quantity>,
+}
+
+impl AssertEq2Error {
+    /// Returns formatted display strings for lhs and rhs values.
+    /// When both values are quantities with different units, lhs is shown
+    /// converted to rhs's unit with the original in parentheses.
+    pub fn fmt_values(&self) -> (String, String) {
+        let rhs_str = format!("{}", self.rhs);
+        let lhs_str = if let Some(ref lhs_converted) = self.lhs_converted {
+            let lhs_converted_str = format!("{lhs_converted}");
+            if let Value::Quantity(ref lhs_q) = self.lhs
+                && lhs_converted.unit() != lhs_q.unit()
+            {
+                return (format!("{lhs_converted_str} ({})", self.lhs), rhs_str);
+            }
+            lhs_converted_str
+        } else {
+            format!("{}", self.lhs)
+        };
+        (lhs_str, rhs_str)
+    }
+
+    fn is_floating_point_inaccuracy(&self) -> bool {
+        if let Some(ref diff) = self.diff {
+            if let Some(ref lhs_converted) = self.lhs_converted {
+                let diff_val = diff.unsafe_value().to_f64().abs();
+                let lhs_val = lhs_converted.unsafe_value().to_f64().abs();
+
+                if let Value::Quantity(ref rhs_q) = self.rhs {
+                    let rhs_val = rhs_q.unsafe_value().to_f64().abs();
+                    let max_val = lhs_val.max(rhs_val);
+                    return max_val > 0.0 && diff_val / max_val < 1e-9;
+                }
+            }
+        }
+        false
+    }
 }
 
 impl Display for AssertEq2Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let optional_message = if format!("{}", self.lhs) == format!("{}", self.rhs) {
-            "\nNote: The two printed values appear to be the same, this may be due to floating point precision errors.\n      \
-            For dimension types you may want to test approximate equality instead: assert_eq(q1, q2, ε)."
+        let (lhs_str, rhs_str) = self.fmt_values();
+
+        let fp_note = if self.is_floating_point_inaccuracy() {
+            "\nNote: this is likely due to floating point inaccuracy. \
+            Consider testing approximate equality instead: assert_eq(q1, q2, ε)."
         } else {
             ""
         };
 
-        write!(
-            f,
-            "Assertion failed because the following two values are not the same:\n  {}\n  {}{}",
-            self.lhs, self.rhs, optional_message
-        )
+        if let Some(ref diff) = self.diff {
+            write!(
+                f,
+                "Assertion failed because the following two quantities differ by {diff}:\
+                \n  {lhs_str}\n  {rhs_str}{fp_note}",
+            )
+        } else {
+            write!(
+                f,
+                "Assertion failed because the following two values are not the same:\
+                \n  {lhs_str}\n  {rhs_str}",
+            )
+        }
     }
 }
 

@@ -115,7 +115,7 @@ print("value of π ≈ {π:.3}")     # Format specifiers
 
 assert(1 yard < 1 meter)         # Assertion
 
-assert_eq(1 ft, 12 in)           # Assert that two quantities are equal
+assert_eq(12 in, 1 ft)           # Assert that two quantities are equal
 assert_eq(1 yd, 1 m, 10 cm)      # Assert that two quantities are equal, up to
                                  # the given precision
 type(2 m/s)                      # Print the type of an expression

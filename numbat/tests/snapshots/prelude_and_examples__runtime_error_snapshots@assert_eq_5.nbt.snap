@@ -1,0 +1,21 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/assert_eq_5.nbt
+---
+error: Assertion failed
+  ┌─ <internal:3>:1:22
+  │
+1 │ assert_eq(2 + 2e-12, 2 + 1e-12)
+  │           ---------  ^^^^^^^^^ 2.0
+  │           │           
+  │           2.0
+  │
+  = Assertion failed because the following two quantities differ by 1.00009e-12:
+      2.0
+      2.0
+    Note: this is likely due to floating point inaccuracy. Consider testing approximate equality instead: assert_eq(q1, q2, ε).
+
+help: Backtrace:
+ = 0: assert_eq(2 + 2e-12, 2 + 1e-12)
+   	at <main> - <internal:3>:1:0

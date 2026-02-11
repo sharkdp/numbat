@@ -85,30 +85,38 @@ fn assert_eq(_: &mut ExecutionContext, mut args: Args) -> ControlFlow {
         let lhs = lhs_arg.value;
         let rhs = rhs_arg.value;
 
-        let error = ControlFlow::Break(RuntimeErrorKind::AssertEq2Failed(AssertEq2Error {
-            span_lhs: lhs_arg.span,
-            lhs: lhs.clone(),
-            span_rhs: rhs_arg.span,
-            rhs: rhs.clone(),
-        }));
+        let mut lhs_converted = None;
+        let mut diff = None;
 
-        if lhs.is_quantity() {
-            let lhs = lhs.unsafe_as_quantity();
-            let rhs = rhs.unsafe_as_quantity();
+        let values_equal = if lhs.is_quantity() {
+            let lhs_q = lhs.clone().unsafe_as_quantity();
+            let rhs_q = rhs.clone().unsafe_as_quantity();
 
-            if let Ok(args1_converted) = rhs.convert_to(lhs.unit()) {
-                if lhs == args1_converted {
-                    ControlFlow::Continue(())
-                } else {
-                    error
+            if let Ok(converted) = lhs_q.convert_to(rhs_q.unit()) {
+                let equal = converted == rhs_q;
+                if !equal {
+                    diff = (&converted - &rhs_q).ok().map(|d| d.abs());
                 }
+                lhs_converted = Some(converted);
+                equal
             } else {
-                error
+                false
             }
-        } else if lhs == rhs {
+        } else {
+            lhs == rhs
+        };
+
+        if values_equal {
             ControlFlow::Continue(())
         } else {
-            error
+            ControlFlow::Break(RuntimeErrorKind::AssertEq2Failed(AssertEq2Error {
+                span_lhs: lhs_arg.span,
+                lhs,
+                span_rhs: rhs_arg.span,
+                rhs,
+                lhs_converted,
+                diff,
+            }))
         }
     } else {
         let lhs_original = lhs_arg.value.unsafe_as_quantity();

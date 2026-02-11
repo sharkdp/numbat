@@ -11,7 +11,7 @@ error: Assertion failed
   │           │         
   │           2 m
   │
-  = Assertion failed because the following two values are not the same:
+  = Assertion failed because the following two quantities differ by 0.1 m:
       2 m
       2.1 m
 

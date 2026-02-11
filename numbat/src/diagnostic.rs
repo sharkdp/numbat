@@ -552,21 +552,25 @@ impl ErrorDiagnostic for ResolverDiagnostic<'_, RuntimeError> {
                             .with_message("assertion failed"),
                     ]),
             ),
-            RuntimeErrorKind::AssertEq2Failed(assert_eq2_error) => diag.push(
-                Diagnostic::error()
-                    .with_message("Assertion failed")
-                    .with_labels(vec![
-                        assert_eq2_error
-                            .span_lhs
-                            .diagnostic_label(LabelStyle::Secondary)
-                            .with_message(format!("{}", assert_eq2_error.lhs)),
-                        assert_eq2_error
-                            .span_rhs
-                            .diagnostic_label(LabelStyle::Primary)
-                            .with_message(format!("{}", assert_eq2_error.rhs)),
-                    ])
-                    .with_notes(vec![inner]),
-            ),
+            RuntimeErrorKind::AssertEq2Failed(assert_eq2_error) => {
+                let (lhs, rhs) = assert_eq2_error.fmt_values();
+
+                diag.push(
+                    Diagnostic::error()
+                        .with_message("Assertion failed")
+                        .with_labels(vec![
+                            assert_eq2_error
+                                .span_lhs
+                                .diagnostic_label(LabelStyle::Secondary)
+                                .with_message(lhs),
+                            assert_eq2_error
+                                .span_rhs
+                                .diagnostic_label(LabelStyle::Primary)
+                                .with_message(rhs),
+                        ])
+                        .with_notes(vec![inner]),
+                )
+            }
             RuntimeErrorKind::AssertEq3Failed(assert_eq3_error) => {
                 let (lhs, rhs) = assert_eq3_error.fmt_comparands();
 
