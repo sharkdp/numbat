@@ -1023,11 +1023,9 @@ impl<'a> Parser<'a> {
         };
 
         if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
-            Ok(Statement::ProcedureCall(
-                span,
-                procedure_kind,
-                self.arguments(tokens)?,
-            ))
+            let args = self.arguments(tokens)?;
+            let full_span = span.extend(&self.last(tokens).unwrap().span);
+            Ok(Statement::ProcedureCall(full_span, procedure_kind, args))
         } else {
             Err(ParseError {
                 kind: ParseErrorKind::ExpectedLeftParenAfterProcedureName,
@@ -3316,22 +3314,16 @@ mod tests {
             "print(
               2 m,
               5 m
-            )"), @r###"
-        ProcedureCall(Span { start: ByteIndex(0), end: ByteIndex(5), code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(21), end: ByteIndex(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(23), end: ByteIndex(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(40), end: ByteIndex(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: ByteIndex(42), end: ByteIndex(43), code_source_id: 0 }, "m"), span_op: None }])
-        "###);
+            )"), @r#"ProcedureCall(Span { start: ByteIndex(0), end: ByteIndex(57), code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(21), end: ByteIndex(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(23), end: ByteIndex(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(40), end: ByteIndex(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: ByteIndex(42), end: ByteIndex(43), code_source_id: 0 }, "m"), span_op: None }])"#);
 
         assert_snapshot!(snap_parse(
             "print(
               2 m,
               5 m,
-            )"), @r###"
-        ProcedureCall(Span { start: ByteIndex(0), end: ByteIndex(5), code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(21), end: ByteIndex(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(23), end: ByteIndex(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(40), end: ByteIndex(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: ByteIndex(42), end: ByteIndex(43), code_source_id: 0 }, "m"), span_op: None }])
-        "###);
+            )"), @r#"ProcedureCall(Span { start: ByteIndex(0), end: ByteIndex(58), code_source_id: 0 }, Print, [BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(21), end: ByteIndex(22), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(23), end: ByteIndex(24), code_source_id: 0 }, "m"), span_op: None }, BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(40), end: ByteIndex(41), code_source_id: 0 }, Number(5.0)), rhs: Identifier(Span { start: ByteIndex(42), end: ByteIndex(43), code_source_id: 0 }, "m"), span_op: None }])"#);
         assert_snapshot!(snap_parse(
             "print(
-            )"), @r###"
-        ProcedureCall(Span { start: ByteIndex(0), end: ByteIndex(5), code_source_id: 0 }, Print, [])
-        "###);
+            )"), @"ProcedureCall(Span { start: ByteIndex(0), end: ByteIndex(20), code_source_id: 0 }, Print, [])");
         println!("HEEEERE");
         assert_snapshot!(snap_parse(
             "print(
@@ -3776,14 +3768,14 @@ mod tests {
             let cool = 50
             let tamo = * 30\x20
             assert_eq(tamo + cool == 80)
-            30m"), @r###"
+            30m"), @r#"
         Successfully parsed:
         DefineVariable(DefineVariable { identifier_span: Span { start: ByteIndex(17), end: ByteIndex(21), code_source_id: 0 }, identifier: "cool", expr: Scalar(Span { start: ByteIndex(24), end: ByteIndex(26), code_source_id: 0 }, Number(50.0)), type_annotation: None, decorators: [] })
-        ProcedureCall(Span { start: ByteIndex(68), end: ByteIndex(77), code_source_id: 0 }, AssertEq, [BinaryOperator { op: Equal, lhs: BinaryOperator { op: Add, lhs: Identifier(Span { start: ByteIndex(78), end: ByteIndex(82), code_source_id: 0 }, "tamo"), rhs: Identifier(Span { start: ByteIndex(85), end: ByteIndex(89), code_source_id: 0 }, "cool"), span_op: Some(Span { start: ByteIndex(83), end: ByteIndex(84), code_source_id: 0 }) }, rhs: Scalar(Span { start: ByteIndex(93), end: ByteIndex(95), code_source_id: 0 }, Number(80.0)), span_op: Some(Span { start: ByteIndex(90), end: ByteIndex(92), code_source_id: 0 }) }])
+        ProcedureCall(Span { start: ByteIndex(68), end: ByteIndex(96), code_source_id: 0 }, AssertEq, [BinaryOperator { op: Equal, lhs: BinaryOperator { op: Add, lhs: Identifier(Span { start: ByteIndex(78), end: ByteIndex(82), code_source_id: 0 }, "tamo"), rhs: Identifier(Span { start: ByteIndex(85), end: ByteIndex(89), code_source_id: 0 }, "cool"), span_op: Some(Span { start: ByteIndex(83), end: ByteIndex(84), code_source_id: 0 }) }, rhs: Scalar(Span { start: ByteIndex(93), end: ByteIndex(95), code_source_id: 0 }, Number(80.0)), span_op: Some(Span { start: ByteIndex(90), end: ByteIndex(92), code_source_id: 0 }) }])
         Expression(BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(109), end: ByteIndex(111), code_source_id: 0 }, Number(30.0)), rhs: Identifier(Span { start: ByteIndex(111), end: ByteIndex(112), code_source_id: 0 }, "m"), span_op: None })
         Errors encountered:
         Expected one of: number, identifier, parenthesized expression, struct instantiation, list - ParseError { kind: ExpectedPrimary, span: Span { start: ByteIndex(50), end: ByteIndex(51), code_source_id: 0 } }
-        "###);
+        "#);
         // error on a multiline let
         assert_snapshot!(snap_parse(
             "

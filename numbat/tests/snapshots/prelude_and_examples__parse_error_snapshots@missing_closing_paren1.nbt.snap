@@ -1,0 +1,12 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/missing_closing_paren1.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:13
+  │  
+1 │   @aliases(foo
+  │ ╭────────────^
+2 │ │ unit bar
+  │ ╰^ Missing closing parenthesis ')'

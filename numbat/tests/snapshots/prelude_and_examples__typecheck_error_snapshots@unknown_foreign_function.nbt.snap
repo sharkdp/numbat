@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/unknown_foreign_function.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:1:4
+  │
+1 │ fn my_sqrt(x: Length^2) -> Length
+  │    ^^^^^^^ Unknown foreign function (without body) 'my_sqrt'

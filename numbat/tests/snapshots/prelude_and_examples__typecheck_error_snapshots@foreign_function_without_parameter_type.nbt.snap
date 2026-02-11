@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/foreign_function_without_parameter_type.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:1:17
+  │
+1 │ fn f(x: Scalar, y) -> Scalar
+  │                 ^ Foreign function definition (without body) 'y' needs parameter and return type annotations.

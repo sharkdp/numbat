@@ -549,13 +549,7 @@ impl Statement<'_> {
                 }
                 span
             }
-            Statement::ProcedureCall(span, _, args) => {
-                let mut full = *span;
-                if let Some(last) = args.last() {
-                    full = full.extend(&last.full_span());
-                }
-                full
-            }
+            Statement::ProcedureCall(span, _, _) => *span,
             Statement::ModuleImport(span, _) => *span,
             Statement::DefineStruct {
                 struct_name_span,

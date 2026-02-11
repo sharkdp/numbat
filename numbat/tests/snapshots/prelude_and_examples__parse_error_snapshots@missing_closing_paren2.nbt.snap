@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/missing_closing_paren2.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:2:1
+  │
+2 │ 
+  │ ^ Missing closing parenthesis ')'

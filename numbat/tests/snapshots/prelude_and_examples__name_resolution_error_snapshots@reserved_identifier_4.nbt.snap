@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/name_resolution_error/reserved_identifier_4.nbt
+---
+error: reserved identifier may not be used
+  ┌─ <internal:3>:1:5
+  │
+1 │ let ans = 1
+  │     ^^^ reserved identifier

@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/expected_identifier_after_fn.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:4
+  │
+1 │ fn 123(x) = 3
+  │    ^^^ Expected identifier after 'fn' keyword. Note that some reserved words can not be used as function names.

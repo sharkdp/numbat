@@ -1833,7 +1833,7 @@ impl TypeChecker {
 
                 typed_ast::Statement::ProcedureCall {
                     kind: kind.clone(),
-                    span: span.extend(&args[0].full_span()),
+                    span: *span,
                     args: checked_args,
                 }
             }
@@ -1906,9 +1906,7 @@ impl TypeChecker {
 
                 typed_ast::Statement::ProcedureCall {
                     kind: kind.clone(),
-                    span: args
-                        .last()
-                        .map_or(*span, |last| span.extend(&last.full_span())),
+                    span: *span,
                     args: checked_args,
                 }
             }

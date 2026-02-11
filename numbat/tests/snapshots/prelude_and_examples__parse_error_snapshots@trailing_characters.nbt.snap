@@ -1,0 +1,18 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/trailing_characters.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:6
+  │
+1 │ (3+4))
+  │      ^ Trailing characters: ')'
+
+error: while parsing
+  ┌─ <internal:3>:1:7
+  │  
+1 │   (3+4))
+  │ ╭──────^
+2 │ │ 
+  │ ╰^ Expected one of: number, identifier, parenthesized expression, struct instantiation, list

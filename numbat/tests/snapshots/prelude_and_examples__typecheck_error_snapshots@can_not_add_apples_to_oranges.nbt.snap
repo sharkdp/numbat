@@ -1,0 +1,16 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/can_not_add_apples_to_oranges.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:4:1
+  │
+4 │ apple + orange
+  │ ^^^^^ - ^^^^^^ Orange
+  │ │     │  
+  │ │     incompatible dimensions in addition
+  │ Apple
+  │
+  =  left hand side: Apple
+    right hand side: Orange

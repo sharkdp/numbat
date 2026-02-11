@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/unsupported_const_eval_expr_variable.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:3:7
+  │
+3 │ meter^x
+  │       ^ Unsupported expression in const-evaluation of exponent: variable.

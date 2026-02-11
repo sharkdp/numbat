@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/expected_equal_or_colon_after_let.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:9
+  │
+1 │ let foo 123
+  │         ^^^ Expected '=' or ':' after identifier (and type annotation) in 'let' assignment

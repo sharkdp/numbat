@@ -1,0 +1,13 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/name_resolution_error/variable_clashes_with_unit.nbt
+---
+error: identifier clash in definition
+  ┌─ <internal:3>:3:6
+  │
+1 │ let foo = 2
+  │     --- Previously defined here
+2 │ 
+3 │ unit foo = meter^2
+  │      ^^^ identifier is already in use

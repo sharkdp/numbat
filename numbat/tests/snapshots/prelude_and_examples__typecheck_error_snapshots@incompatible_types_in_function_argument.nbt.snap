@@ -1,0 +1,18 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/incompatible_types_in_function_argument.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:1:28
+  │
+1 │ fn speed(distance: Length, duration: Time) -> Velocity = distance / duration
+  │                            ^^^^^^^^ Time
+2 │ 
+3 │ speed(3 meter, 2 meter)
+  │ -----          ^^^^^^^ Length
+  │ │               
+  │ incompatible dimensions in argument 2 of function call to 'speed'
+  │
+  = parameter type: Time
+     argument type: Length

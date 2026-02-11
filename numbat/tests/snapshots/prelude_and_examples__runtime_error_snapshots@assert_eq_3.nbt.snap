@@ -1,0 +1,20 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/assert_eq_3.nbt
+---
+error: Assertion failed
+  ┌─ <internal:3>:2:15
+  │
+2 │ assert_eq(2m, 201cm, 0.1cm to mm)
+  │           --  ^^^^^ 2010 mm (201 cm)
+  │           │    
+  │           2000 mm (2 m)
+  │
+  = Assertion failed because the following two quantities differ by 10 mm, which is more than 1 mm:
+      2000 mm (2 m)
+      2010 mm (201 cm)
+
+help: Backtrace:
+ = 0: assert_eq(2m, 201cm, 0.1cm to mm)
+   	at <main> - <internal:3>:2:1

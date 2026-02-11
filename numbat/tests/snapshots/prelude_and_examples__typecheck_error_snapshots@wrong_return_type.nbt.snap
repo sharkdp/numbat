@@ -1,0 +1,15 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/wrong_return_type.nbt
+---
+error: identifier clash in definition
+   ┌─ Module 'datetime::functions', File [PRELUDE_FILE]:47:4
+   │
+47 │ fn time(input: String) -> DateTime =
+   │    ---- Previously defined function here
+   │
+   ┌─ <internal:3>:1:5
+   │
+ 1 │ let time: Time = 5 second
+   │     ^^^^ identifier is already in use

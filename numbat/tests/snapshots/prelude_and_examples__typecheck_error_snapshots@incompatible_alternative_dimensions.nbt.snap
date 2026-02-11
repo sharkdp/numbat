@@ -1,0 +1,14 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/incompatible_alternative_dimensions.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:1:22
+  │
+1 │ dimension MyEnergy = Momentum^2 / Mass = Mass × Velocity^2 = Force × Length^2
+  │                      ^^^^^^^^^^^^^^^^^                       ^^^^^^^^^^^^^^^^ Length³ × Mass / Time²
+  │                      │                                        
+  │                      Length² × Mass / Time²
+  │
+  = Incompatible alternative expressions have been provided for dimension 'MyEnergy'

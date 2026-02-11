@@ -1,0 +1,13 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/name_resolution_error/prefix_2.nbt
+---
+error: identifier clash in definition
+  ┌─ <internal:3>:4:5
+  │
+2 │ unit foo: Length
+  │      --- Previously defined here
+3 │ 
+4 │ let kilofoo = 1
+  │     ^^^^^^^ identifier is already in use

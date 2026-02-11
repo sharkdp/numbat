@@ -1,0 +1,21 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/user_error.nbt
+---
+error: runtime error
+  ┌─ <internal:3>:4:10
+  │
+4 │     else error("Argument of foo(n) can not be negative")
+  │          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 │ 
+6 │ foo(-3)
+  │ ^^^^^^^
+  │
+  = User error: Argument of foo(n) can not be negative
+
+help: Backtrace:
+ = 0: error("Argument of foo(n) can not be negative")
+   	at foo - <internal:3>:4:10
+ = 1: foo(-3)
+   	at <main> - <internal:3>:6:1

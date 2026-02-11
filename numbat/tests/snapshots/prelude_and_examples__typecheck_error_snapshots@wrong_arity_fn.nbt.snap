@@ -1,0 +1,15 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/wrong_arity_fn.nbt
+---
+error: while type checking
+  ┌─ Module 'math::trigonometry', File [PRELUDE_FILE]:5:4
+  │
+5 │ fn sin(x: Scalar) -> Scalar
+  │    --- The function defined here
+  │
+  ┌─ <internal:3>:1:1
+  │
+1 │ sin(2, 3)
+  │ ^^^ was called with 2 arguments, but takes 1
