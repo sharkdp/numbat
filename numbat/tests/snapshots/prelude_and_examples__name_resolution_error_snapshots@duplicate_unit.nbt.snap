@@ -1,0 +1,15 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/name_resolution_error/duplicate_unit.nbt
+---
+error: identifier clash in definition
+   ┌─ Module 'units::si', File [PRELUDE_FILE]:10:6
+   │
+10 │ unit metre: Length
+   │      ----- Previously defined here
+   │
+   ┌─ <internal:3>:3:6
+   │
+ 3 │ unit meter: Length
+   │      ^^^^^ identifier is already in use

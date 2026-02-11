@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/division_by_zero_in_dimension_expr.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:19
+  │
+1 │ fn f(x: Length^(2/0)) = 1
+  │                   ^ Division by zero in dimension exponent

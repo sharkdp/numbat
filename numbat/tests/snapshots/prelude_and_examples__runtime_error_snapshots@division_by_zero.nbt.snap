@@ -1,0 +1,16 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/division_by_zero.nbt
+---
+error: runtime error
+  ┌─ <internal:3>:1:2
+  │
+1 │ 1/(6 - 2 * 3)
+  │  ^
+  │
+  = Division by zero
+
+help: Backtrace:
+ = 0: /
+   	at <main> - <internal:3>:1:1

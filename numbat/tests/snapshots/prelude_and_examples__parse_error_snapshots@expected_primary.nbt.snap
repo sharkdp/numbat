@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/expected_primary.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:10
+  │
+1 │ sqrt(123+)
+  │          ^ Expected one of: number, identifier, parenthesized expression, struct instantiation, list

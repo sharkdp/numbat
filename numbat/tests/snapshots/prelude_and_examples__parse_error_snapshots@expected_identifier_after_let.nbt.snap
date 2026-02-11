@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/expected_identifier_after_let.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:5
+  │
+1 │ let 123 = 100
+  │     ^^^ Expected identifier after 'let' keyword

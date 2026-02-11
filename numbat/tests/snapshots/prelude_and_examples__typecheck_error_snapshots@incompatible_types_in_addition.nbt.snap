@@ -1,0 +1,16 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/incompatible_types_in_addition.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:6:1
+  │
+6 │ 0.5 * mass * v + E_pot
+  │ ^^^^^^^^^^^^^^ - ^^^^^ Energy or Torque
+  │ │              │  
+  │ │              incompatible dimensions in addition
+  │ Momentum
+  │
+  =  left hand side: Length  × Mass × Time⁻¹    [= Momentum]
+    right hand side: Length² × Mass × Time⁻²    [= Energy, Torque]

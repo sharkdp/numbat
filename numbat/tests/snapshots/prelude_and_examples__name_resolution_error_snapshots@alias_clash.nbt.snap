@@ -1,0 +1,13 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/name_resolution_error/alias_clash.nbt
+---
+error: identifier clash in definition
+  ┌─ <internal:3>:6:10
+  │
+4 │ unit foo: Length
+  │      --- Previously defined here
+5 │ 
+6 │ @aliases(kilofoo)
+  │          ^^^^^^^ identifier is already in use

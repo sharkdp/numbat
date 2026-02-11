@@ -1,0 +1,20 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/assert_eq_ft_in.nbt
+---
+error: Assertion failed
+  ┌─ <internal:3>:1:17
+  │
+1 │ assert_eq(3 ft, 36 in)
+  │           ----  ^^^^^ 36 in
+  │           │      
+  │           3 ft
+  │
+  = Assertion failed because the following two values are not the same:
+      3 ft
+      36 in
+
+help: Backtrace:
+ = 0: assert_eq(3 ft, 36 in)
+   	at <main> - <internal:3>:1:0

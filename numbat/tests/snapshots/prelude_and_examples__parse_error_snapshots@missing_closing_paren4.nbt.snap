@@ -1,0 +1,12 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/missing_closing_paren4.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:33
+  │  
+1 │   dimension Foo = Bar / (Baz * Qux
+  │ ╭────────────────────────────────^
+2 │ │ 
+  │ ╰^ Missing closing parenthesis ')'

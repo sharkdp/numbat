@@ -1,0 +1,14 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/assert_eq_2.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:2:1
+  │
+2 │ assert_eq(2 meter, 2.1 meter, 0.2)
+  │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │ │         │                   │
+  │ │         │                   Scalar
+  │ │         Length
+  │ Incompatible types in 'assert_eq' call

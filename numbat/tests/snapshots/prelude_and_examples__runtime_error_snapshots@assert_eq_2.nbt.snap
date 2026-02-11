@@ -1,0 +1,20 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/assert_eq_2.nbt
+---
+error: Assertion failed
+  ┌─ <internal:3>:1:20
+  │
+1 │ assert_eq(2 meter, 2.1 meter, 0.05 meter)
+  │           -------  ^^^^^^^^^ 2.10 m
+  │           │         
+  │           2.00 m
+  │
+  = Assertion failed because the following two quantities differ by 0.10 m, which is more than 0.05 m:
+      2.00 m
+      2.10 m
+
+help: Backtrace:
+ = 0: assert_eq(2 meter, 2.1 meter, 0.05 meter)
+   	at <main> - <internal:3>:1:0

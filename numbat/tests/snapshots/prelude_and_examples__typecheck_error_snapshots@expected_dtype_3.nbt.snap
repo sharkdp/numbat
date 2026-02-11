@@ -1,0 +1,13 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/expected_dtype_3.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:1:5
+  │
+1 │ let x: Scalar = true
+  │     ^  ------   ---- Bool
+  │     │  │         
+  │     │  Scalar
+  │     Incompatible types in definition

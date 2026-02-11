@@ -1,0 +1,12 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/non_scalar_exponent.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:4:4
+  │
+4 │ e^(-x^2/sigma)
+  │    ^^^^^^^^^^ Length
+  │
+  = Exponents need to be dimensionless (got Length).

@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/expected_identifier_in_postfix_apply.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:1
+  │
+1 │ 100 |> 20
+  │ ^^^ Expected identifier or function call after postfix apply (`|>`)

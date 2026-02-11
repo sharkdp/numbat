@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/parse_error/only_single_variadic_parameter.nbt
+---
+error: while parsing
+  ┌─ <internal:3>:1:17
+  │
+1 │ fn foo(l: Length…, t: Time…) -> Scalar
+  │                 ^ Expected ',' or ')' in function parameter list

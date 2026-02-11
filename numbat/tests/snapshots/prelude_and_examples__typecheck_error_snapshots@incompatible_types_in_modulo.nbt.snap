@@ -1,0 +1,12 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/incompatible_types_in_modulo.nbt
+---
+error: Could not solve the following constraint: Length = Scalar
+  ┌─ <internal:3>:1:1
+  │
+1 │ mod(130 cm, 1)
+  │ ^^^^^^^^^^^^^^ type error in this statement
+  │
+  = Consider adding type annotations to get more precise error messages.

@@ -1,0 +1,16 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/unit_definition.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:1:15
+  │
+1 │ unit my_unit: Length = 2 fortnight
+  │      -------  ^^^^^^   ^^^^^^^^^^^ Time
+  │      │        │         
+  │      │        Length
+  │      incompatible dimensions in unit definition
+  │
+  = specified dimension: Length
+       actual dimension: Time

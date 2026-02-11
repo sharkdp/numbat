@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/type_parameter_name_clash.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:1:8
+  │
+1 │ fn foo<Length>(x: Length) -> Scalar = 1
+  │        ^^^^^^ 'Length' can not be used as a type parameter because it is also an existing dimension identifier.

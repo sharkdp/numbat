@@ -1,0 +1,10 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/typecheck_error/wrong_arity_procedure.nbt
+---
+error: while type checking
+  ┌─ <internal:3>:1:1
+  │
+1 │ print(2 meter, 3 second)
+  │ ^^^^^^^^^^^^^^^^^^^^^^^^ procedure or function object was called with 2 arguments, but takes 0 to 1
