@@ -4,17 +4,18 @@ expression: output
 input_file: examples/runtime_error/assert_eq_ft_in.nbt
 ---
 error: Assertion failed
-  ┌─ <internal:3>:1:17
+  ┌─ <internal:3>:2:18
   │
-1 │ assert_eq(3 ft, 36 in)
-  │           ----  ^^^^^ 36 in
-  │           │      
-  │           3 ft
+2 │ assert_eq(36 in, 3 ft)
+  │           -----  ^^^^ 3 ft
+  │           │       
+  │           3.0 ft (36 in)
   │
-  = Assertion failed because the following two values are not the same:
+  = Assertion failed because the following two quantities differ by 4.44089e-16 ft:
+      3.0 ft (36 in)
       3 ft
-      36 in
+    Note: this is likely due to floating point inaccuracy. Consider testing approximate equality instead: assert_eq(q1, q2, ε).
 
 help: Backtrace:
- = 0: assert_eq(3 ft, 36 in)
-   	at <main> - <internal:3>:1:0
+ = 0: assert_eq(36 in, 3 ft)
+   	at <main> - <internal:3>:2:1

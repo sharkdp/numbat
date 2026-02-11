@@ -1,0 +1,20 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/assert_eq_4.nbt
+---
+error: Assertion failed
+  ┌─ <internal:3>:1:18
+  │
+1 │ assert_eq(2 + 2, 2 + 1)
+  │           -----  ^^^^^ 3
+  │           │       
+  │           4
+  │
+  = Assertion failed because the following two quantities differ by 1:
+      4
+      3
+
+help: Backtrace:
+ = 0: assert_eq(2 + 2, 2 + 1)
+   	at <main> - <internal:3>:1:0
