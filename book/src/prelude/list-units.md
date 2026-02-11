@@ -194,6 +194,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `SolidAngle` | [Steradian](https://en.wikipedia.org/wiki/Steradian) | `sr`, `steradian`, `steradians` |
 | `SpectralFluxDensity` | [Jansky](https://en.wikipedia.org/wiki/Jansky) | `jansky`, `janskys`, `Jy` <br/> (`use extra::astronomy`) |
 | `SpectralFluxDensity` | [Solar flux unit](https://en.wikipedia.org/wiki/Solar_flux_unit) | `sfu`, `solarfluxunit`, `solarfluxunits` <br/> (`use extra::astronomy`) |
+| `Temperature` | [Degree Celsius](https://en.wikipedia.org/wiki/Celsius) | `°C`, `celsius`, `degree_celsius` <br/> (see [temperature conversions](../basics/conversions.md#temperature-conversions)) |
+| `Temperature` | [Degree Fahrenheit](https://en.wikipedia.org/wiki/Fahrenheit) | `°F`, `fahrenheit`, `degree_fahrenheit` <br/> (see [temperature conversions](../basics/conversions.md#temperature-conversions)) |
 | `Temperature` | [Kelvin](https://en.wikipedia.org/wiki/Kelvin) | `K`, `kelvin`, `kelvins` |
 | `Temperature` | [Planck temperature](https://en.wikipedia.org/wiki/Planck_temperature) | `planck_temperature` |
 | `Time` | [Anomalistic year](https://en.wikipedia.org/wiki/Year#Sidereal,_tropical,_and_anomalistic_years) | `anomalistic_year`, `anomalistic_years` <br/> (`use extra::astronomy`) |

@@ -23,6 +23,9 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 
     println!("| Dimension | Unit name | Identifier(s) |");
     println!("| --- | --- | --- |");
+
+    let mut printed_temperature_pseudo_units = false;
+
     for (ref unit_name, (_base_representation, unit_metadata)) in ctx
         .unit_representations()
         .sorted_by_key(|(u, (_, m))| (m.readable_type.to_string(), u.to_lowercase()))
@@ -61,6 +64,16 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
         };
 
         let readable_type = unit_metadata.readable_type.clone();
+
+        // Add special temperature pseudo-units (°C and °F) before the first real temperature unit.
+        // These are not real units in Numbat but can be used to enter temperature values and as
+        // conversion targets.
+        if readable_type.to_string() == "Temperature" && !printed_temperature_pseudo_units {
+            printed_temperature_pseudo_units = true;
+            let temp_note = " <br/> (see [temperature conversions](../basics/conversions.md#temperature-conversions))";
+            println!("| `Temperature` | [Degree Celsius](https://en.wikipedia.org/wiki/Celsius) | `°C`, `celsius`, `degree_celsius`{temp_note} |");
+            println!("| `Temperature` | [Degree Fahrenheit](https://en.wikipedia.org/wiki/Fahrenheit) | `°F`, `fahrenheit`, `degree_fahrenheit`{temp_note} |");
+        }
 
         println!("| `{readable_type}` | {name_with_url} | `{names}`{import_note} |");
     }
