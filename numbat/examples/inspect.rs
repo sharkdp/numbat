@@ -71,8 +71,12 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
         if readable_type.to_string() == "Temperature" && !printed_temperature_pseudo_units {
             printed_temperature_pseudo_units = true;
             let temp_note = " <br/> (see [temperature conversions](../basics/conversions.md#temperature-conversions))";
-            println!("| `Temperature` | [Degree Celsius](https://en.wikipedia.org/wiki/Celsius) | `°C`, `celsius`, `degree_celsius`{temp_note} |");
-            println!("| `Temperature` | [Degree Fahrenheit](https://en.wikipedia.org/wiki/Fahrenheit) | `°F`, `fahrenheit`, `degree_fahrenheit`{temp_note} |");
+            println!(
+                "| `Temperature` | [Degree Celsius](https://en.wikipedia.org/wiki/Celsius) | `°C`, `celsius`, `degree_celsius`{temp_note} |"
+            );
+            println!(
+                "| `Temperature` | [Degree Fahrenheit](https://en.wikipedia.org/wiki/Fahrenheit) | `°F`, `fahrenheit`, `degree_fahrenheit`{temp_note} |"
+            );
         }
 
         println!("| `{readable_type}` | {name_with_url} | `{names}`{import_note} |");
