@@ -785,7 +785,11 @@ impl Vm {
 
                     // for time, the base unit is in seconds
                     let base = rhs.to_base_unit_representation();
-                    let seconds_f64 = base.unsafe_value().to_f64();
+                    let seconds_f64 = base.unsafe_value().try_as_real().ok_or_else(|| {
+                        self.runtime_error(RuntimeErrorKind::ExpectedRealNumberInFunction(
+                            "datetime arithmetic".into(),
+                        ))
+                    })?;
 
                     let seconds_i64 = seconds_f64
                         .to_i64()
@@ -841,6 +845,11 @@ impl Vm {
                                 )),
                             )));
                         }
+                        QuantityOrdering::ComplexOperand => {
+                            return Err(Box::new(
+                                self.runtime_error(RuntimeErrorKind::OrderingOfComplexNumbers),
+                            ));
+                        }
                         QuantityOrdering::NanOperand => false,
                         QuantityOrdering::Ok(Ordering::Less) => {
                             matches!(op, Op::LessThan | Op::LessOrEqual)
@@ -886,13 +895,16 @@ impl Vm {
                     self.push_quantity(-rhs);
                 }
                 Op::Factorial => {
-                    let lhs = self
+                    let num = self
                         .pop_quantity()
                         .as_scalar()
-                        .expect("Expected factorial operand to be scalar")
-                        .to_f64();
+                        .expect("Expected factorial operand to be scalar");
 
                     let order = self.read_u16();
+
+                    let lhs = num.try_as_real().ok_or_else(|| {
+                        Box::new(self.runtime_error(RuntimeErrorKind::FactorialOfComplexNumber))
+                    })?;
 
                     if lhs < 0. {
                         return Err(Box::new(
@@ -1085,27 +1097,32 @@ impl Vm {
                                     let q =
                                         self.simplify_quantity(&q, ctx.unit_name_to_constant_idx);
 
-                                    let mut vars = HashMap::new();
-                                    vars.insert(
-                                        CompactString::const_new("value"),
-                                        q.unsafe_value().to_f64(),
-                                    );
+                                    // For complex quantities, fall back to string formatting
+                                    if let Some(real_val) = q.unsafe_value().try_as_real() {
+                                        let mut vars = HashMap::new();
+                                        vars.insert(
+                                            CompactString::const_new("value"),
+                                            real_val,
+                                        );
 
-                                    let mut str =
-                                        strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
-                                            .map(CompactString::from)
-                                            .map_err(|e| {
-                                                map_strfmt_error_to_runtime_error(self, e)
-                                            })?;
+                                        let mut str =
+                                            strfmt::strfmt(&format!("{{value{specifiers}}}"), &vars)
+                                                .map(CompactString::from)
+                                                .map_err(|e| {
+                                                    map_strfmt_error_to_runtime_error(self, e)
+                                                })?;
 
-                                    let unit_str = q.unit().to_compact_string();
+                                        let unit_str = q.unit().to_compact_string();
 
-                                    if !unit_str.is_empty() {
-                                        str += " ";
-                                        str += &unit_str;
+                                        if !unit_str.is_empty() {
+                                            str += " ";
+                                            str += &unit_str;
+                                        }
+
+                                        str
+                                    } else {
+                                        to_str(Value::Quantity(q), self, ctx)
                                     }
-
-                                    str
                                 }
                                 value => {
                                     let mut vars = HashMap::new();
