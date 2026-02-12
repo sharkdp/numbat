@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;700&family=Lustria&family=Lato:wght@700&display=swap');
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+
+    font-size: large;
+
+    /* Light theme only */
+    --editor-bg-color: #FFFFFF;
+    --results-bg-color: #fafafa;
+    --editor-accent-color: #eee;
+    --editor-text-color: black;
+
+    background-color: var(--editor-bg-color);
+    caret-color: var(--editor-text-color);
+}
+
+
+
+#editor {
+    font-family: 'Fira Mono', monospace;
+    font-size: 1em;
+    width: 100vw;
+    height: 100vh;
+}
+
+
+
+/* Subtle line numbers */
+.monaco-editor .line-numbers {
+    color: #ddd !important;
+}
+
+/* Override Monaco's default parentheses color only */
+.monaco-editor .bracket-highlighting-0,
+.monaco-editor .bracket-highlighting-1,
+.monaco-editor .bracket-highlighting-2 {
+    color: #db2828 !important;
+}
+
+/* More specific override for parentheses tokens */
+.monaco-editor .view-line span[title="("],
+.monaco-editor .view-line span[title=")"] {
+    color: #db2828 !important;
+}
+
+
+.type-expr {
+    font-family: 'Fira Mono', monospace;
+    font-size: 1em;
+    margin-top: 0em;
+    margin-bottom: 0;
+    padding: 1em;
+    overflow: auto;
+    display: block;
+}
+
+
+
+
+.numbat-type-identifier {
+    color: #ca3b63;
+}
+
+
+.numbat-value {
+    color: #0040ff;
+}
+
+
+.numbat-string {
+    color: #27a85f;
+}
+
+
+.numbat-unit {
+    color: #8812a6;
+}
+
+.numbat-dimmed {
+    color: #888;
+}
+
+.numbat-diagnostic-red {
+    color: #cc3b0a;
+}
+
+.numbat-diagnostic-blue {
+    color: #0040ff;
+}
+
+.numbat-diagnostic-bold {
+    font-weight: bold;
+}
+
+
+
