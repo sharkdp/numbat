@@ -3,7 +3,7 @@ source: numbat/tests/example_snapshots.rs
 expression: output
 input_file: examples/recipe.nbt
 ---
-Milk:          750 ml
+Milk:          750 mL
 Flour:         375 g
 Sugar:         3 cup
 Baking powder: 6 tbsp

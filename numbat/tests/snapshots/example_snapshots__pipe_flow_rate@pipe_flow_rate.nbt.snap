@@ -3,4 +3,4 @@ source: numbat/tests/example_snapshots.rs
 expression: output
 input_file: examples/pipe_flow_rate.nbt
 ---
-Flow rate: 3.92699 l/s
+Flow rate: 3.92699 L/s

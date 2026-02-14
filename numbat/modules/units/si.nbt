@@ -229,7 +229,7 @@ unit hectare: Area = 100 are
 @name("Litre")
 @url("https://en.wikipedia.org/wiki/Litre")
 @metric_prefixes
-@aliases(litres, liter, liters, l: short, L: short)
+@aliases(litres, liter, liters, L: short, l: short)
 unit litre: Volume = decimeter^3
 
 @name("Tonne")
