@@ -1,0 +1,23 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/invalid_base.nbt
+---
+error: runtime error
+    ┌─ Module 'core::strings', File [PRELUDE_FILE]:103:10
+    │
+103 │     then error("base must be between 2 and 16")
+    │          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    │
+    ┌─ <internal:3>:1:1
+    │
+  1 │ base(-4, 10)
+    │ ^^^^^^^^^^^^
+    │
+    = User error: base must be between 2 and 16
+
+help: Backtrace:
+ = 0: error("base must be between 2 and 16")
+   	at base - Module 'core::strings', File [PRELUDE_FILE]:103:10
+ = 1: base(-4, 10)
+   	at <main> - <internal:3>:1:0

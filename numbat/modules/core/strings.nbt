@@ -99,11 +99,13 @@ fn _digit_in_base(base: Scalar, x: Scalar) -> String =
 @description("Convert a number to the given base.")
 @example("42 |> base(16)")
 fn base(b: Scalar, x: Scalar) -> String =
-  if x < 0
-    then "-{base(b, -x)}"
-    else if x < b
-      then _digit_in_base(b, x)
-      else str_append(base(b, floor(x / b)), _digit_in_base(b, mod(x, b)))
+  if b < 2 || b > 16
+    then error("base must be between 2 and 16")
+    else if x < 0
+      then "-{base(b, -x)}"
+      else if x < b
+        then _digit_in_base(b, x)
+        else str_append(base(b, floor(x / b)), _digit_in_base(b, mod(x, b)))
 
 @description("Get a binary representation of a number.")
 @example("42 -> bin")
