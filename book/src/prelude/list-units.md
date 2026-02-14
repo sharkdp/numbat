@@ -237,7 +237,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Volume` | [Imperial Quart](https://en.wikipedia.org/wiki/Quart#Imperial_quart) | `imperial_quart`, `imperial_quarts`, `UK_qt`, `UK_quart`, `UK_quarts` |
 | `Volume` | [UK tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `imperial_tablespoon`, `UK_tablespoon`, `UK_tablespoons`, `UK_tbsp` |
 | `Volume` | [UK teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `imperial_teaspoon`, `imperial_teaspoons`, `UK_teaspoon`, `UK_teaspoons`, `UK_tsp` |
-| `Volume` | [Litre](https://en.wikipedia.org/wiki/Litre) | `l`, `L`, `liter`, `liters`, `litre`, `litres` |
+| `Volume` | [Litre](https://en.wikipedia.org/wiki/Litre) | `L`, `l`, `liter`, `liters`, `litre`, `litres` |
 | `Volume` | [Metric tablespoon](https://en.wikipedia.org/wiki/Tablespoon) | `metric_tablespoon`, `metric_tablespoons`, `metric_tbsp` |
 | `Volume` | [Metric teaspoon](https://en.wikipedia.org/wiki/Teaspoon) | `metric_teaspoon`, `metric_teaspoons`, `metric_tsp` |
 | `Volume` | [US liquid pint](https://en.wikipedia.org/wiki/Pint) | `pint`, `pints` |

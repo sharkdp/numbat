@@ -274,7 +274,7 @@ fn test_conversions_with_nontrivial_magnitude() {
     expect_output("2 m -> 10 m", "0.2 × 10 m");
     expect_output("10 m -> 0.5 m", "20 × 0.5 m");
     expect_output("10 m -> (m/3)", "30 × 0.333333 m");
-    expect_output("1/(30 mpg) -> L/(100 km)", "7.84049 × 0.01 l/km");
+    expect_output("1/(30 mpg) -> L/(100 km)", "7.84049 × 0.01 L/km");
 
     // When RHS value is 1 (explicitly or implicitly), behave as usual
     expect_output("10 m -> m", "10 m");
