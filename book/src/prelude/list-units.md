@@ -48,6 +48,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Energy` | [Calorie](https://en.wikipedia.org/wiki/Calorie) | `cal`, `calorie`, `calories` |
 | `Energy` | [Electron volt](https://en.wikipedia.org/wiki/Electronvolt) | `electronvolt`, `electronvolts`, `eV` |
 | `Energy` | [Erg](https://en.wikipedia.org/wiki/Erg) | `erg`, `ergs` |
+| `Energy` | [Foe](https://en.wikipedia.org/wiki/Foe_(unit)) | `foe` <br/> (`use extra::astronomy`) |
 | `Energy` | [Hartree](https://en.wikipedia.org/wiki/Hartree) | `hartree`, `hartrees` <br/> (`use units::hartree`) |
 | `Energy` | [Joule](https://en.wikipedia.org/wiki/Joule) | `J`, `joule`, `joules` |
 | `Energy` | [Planck energy](https://en.wikipedia.org/wiki/Planck_energy) | `planck_energy` |

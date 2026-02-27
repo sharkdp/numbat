@@ -2,6 +2,7 @@ use physics::constants
 use units::si
 use units::time
 use units::astronomical
+use units::cgs
 
 @name("Light-second")
 @description("The distance that light travels in one second.")
@@ -114,3 +115,8 @@ unit jansky: SpectralFluxDensity = 1e-26 W / m^2 / Hz
 @url("https://en.wikipedia.org/wiki/Solar_flux_unit")
 @aliases(solarfluxunits, sfu: short)
 unit solarfluxunit: SpectralFluxDensity = 1e4 Jy
+
+@name("Foe")
+@description("A unit of energy equal to 10⁵¹ ergs. Used to express the energy released by supernovae. The word is an acronym derived from '(ten to the power of) fifty-one ergs'.")
+@url("https://en.wikipedia.org/wiki/Foe_(unit)")
+unit foe: Energy = 1e51 erg
