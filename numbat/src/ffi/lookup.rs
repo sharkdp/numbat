@@ -50,6 +50,10 @@ pub fn _get_chemical_element_data_raw(
             (unknown_span, type_scalar.clone()),
         );
         fields.insert(
+            CompactString::const_new("atomic_weight"),
+            (unknown_span, type_scalar.clone()),
+        );
+        fields.insert(
             CompactString::const_new("group"),
             (unknown_span, type_scalar.clone()),
         );
@@ -98,6 +102,7 @@ pub fn _get_chemical_element_data_raw(
                 Value::String(element.symbol().into()),
                 Value::String(element.name().into()),
                 Value::Quantity(Quantity::from_scalar(element.atomic_number() as f64)),
+                Value::Quantity(Quantity::from_scalar(f64::from(element.atomic_weight()))),
                 Value::Quantity(Quantity::from_scalar(
                     element
                         .group()
