@@ -352,7 +352,7 @@ fn element(pattern: String) -> ChemicalElement
     ```nbt
     element("H")
 
-        = ChemicalElement { symbol: "H", name: "Hydrogen", atomic_number: 1, group: 1, group_name: "Alkali metals", period: 1, melting_point: 13.99 K, boiling_point: 20.271 K, density: 0.00008988 g/cm³, electron_affinity: 0.754 eV, ionization_energy: 13.598 eV, vaporization_heat: 0.904 kJ/mol }    [ChemicalElement]
+        = ChemicalElement { symbol: "H", name: "Hydrogen", atomic_number: 1, atomic_weight: 1.008 Da, group: 1, group_name: "Alkali metals", period: 1, melting_point: 13.99 K, boiling_point: 20.271 K, density: 0.00008988 g/cm³, electron_affinity: 0.754 eV, ionization_energy: 13.598 eV, vaporization_heat: 0.904 kJ/mol }    [ChemicalElement]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=element%28%22H%22%29){ .md-button }
 
