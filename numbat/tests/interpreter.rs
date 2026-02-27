@@ -758,6 +758,20 @@ error: while type checking
   = Did you mean 'Velocity'?
 "###
     );
+
+    // Partial dimension name that is a substring of the correct one
+    assert_snapshot!(
+        get_diagnostic_output("let density: Density = 1.24 g/cm³"),
+        @r###"
+error: while type checking
+  ┌─ <internal:3>:1:14
+  │
+1 │ let density: Density = 1.24 g/cm³
+  │              ^^^^^^^ Unknown dimension 'Density'
+  │
+  = Did you mean 'MassDensity'?
+"###
+    );
 }
 
 #[test]
