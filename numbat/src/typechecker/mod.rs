@@ -190,6 +190,17 @@ pub struct TypeChecker {
 
     name_generator: NameGenerator,
     constraints: ConstraintSet,
+
+    methods: HashMap<CompactString, HashMap<CompactString, MethodInfo>>,
+    checking_struct_method: bool,
+}
+
+/// Stores information about a method defined in a struct method section
+#[derive(Clone)]
+struct MethodInfo {
+    signature: FunctionSignature,
+    has_self: bool,
+    runtime_name: CompactString,
 }
 
 struct ElaborationDefinitionArgs<'a, 'b> {
@@ -205,6 +216,141 @@ struct ElaborationDefinitionArgs<'a, 'b> {
 }
 
 impl TypeChecker {
+    fn rewrite_self_in_type_expression(
+        type_expression: &mut TypeExpression,
+        struct_name: &str,
+        inside_struct_method: bool,
+        self_type_args: &[TypeAnnotation],
+    ) -> Result<()> {
+        match type_expression {
+            TypeExpression::Unity(_) => Ok(()),
+            TypeExpression::TypeIdentifier(span, name, type_args) => {
+                if name == "Self" {
+                    if !inside_struct_method {
+                        return Err(Box::new(TypeCheckError::SelfTypeOutsideStructMethod(*span)));
+                    }
+                    *name = struct_name.to_compact_string();
+                    *type_args = self_type_args.to_vec();
+                }
+
+                for type_arg in type_args {
+                    Self::rewrite_self_in_type_annotation(
+                        type_arg,
+                        struct_name,
+                        inside_struct_method,
+                        self_type_args,
+                    )?;
+                }
+                Ok(())
+            }
+            TypeExpression::Multiply(_, lhs, rhs) | TypeExpression::Divide(_, lhs, rhs) => {
+                Self::rewrite_self_in_type_expression(
+                    lhs,
+                    struct_name,
+                    inside_struct_method,
+                    self_type_args,
+                )?;
+                Self::rewrite_self_in_type_expression(
+                    rhs,
+                    struct_name,
+                    inside_struct_method,
+                    self_type_args,
+                )
+            }
+            TypeExpression::Power(_, lhs, _, _) => Self::rewrite_self_in_type_expression(
+                lhs,
+                struct_name,
+                inside_struct_method,
+                self_type_args,
+            ),
+        }
+    }
+
+    fn rewrite_self_in_type_annotation(
+        annotation: &mut TypeAnnotation,
+        struct_name: &str,
+        inside_struct_method: bool,
+        self_type_args: &[TypeAnnotation],
+    ) -> Result<()> {
+        match annotation {
+            TypeAnnotation::TypeExpression(type_expression) => {
+                Self::rewrite_self_in_type_expression(
+                    type_expression,
+                    struct_name,
+                    inside_struct_method,
+                    self_type_args,
+                )
+            }
+            TypeAnnotation::Bool(_) | TypeAnnotation::String(_) | TypeAnnotation::DateTime(_) => {
+                Ok(())
+            }
+            TypeAnnotation::Fn(_, parameters, return_type) => {
+                for parameter in parameters {
+                    Self::rewrite_self_in_type_annotation(
+                        parameter,
+                        struct_name,
+                        inside_struct_method,
+                        self_type_args,
+                    )?;
+                }
+                Self::rewrite_self_in_type_annotation(
+                    return_type,
+                    struct_name,
+                    inside_struct_method,
+                    self_type_args,
+                )
+            }
+            TypeAnnotation::List(_, element_type) => Self::rewrite_self_in_type_annotation(
+                element_type,
+                struct_name,
+                inside_struct_method,
+                self_type_args,
+            ),
+        }
+    }
+
+    fn rewrite_self_in_method_signature(
+        method: &mut ast::Statement<'_>,
+        struct_name: &str,
+        self_type_args: &[TypeAnnotation],
+    ) -> Result<()> {
+        let ast::Statement::DefineFunction {
+            parameters,
+            return_type_annotation,
+            local_variables,
+            ..
+        } = method
+        else {
+            return Ok(());
+        };
+
+        for (_, _, parameter_annotation) in parameters {
+            if let Some(annotation) = parameter_annotation {
+                Self::rewrite_self_in_type_annotation(
+                    annotation,
+                    struct_name,
+                    true,
+                    self_type_args,
+                )?;
+            }
+        }
+        if let Some(annotation) = return_type_annotation {
+            Self::rewrite_self_in_type_annotation(annotation, struct_name, true, self_type_args)?;
+        }
+        for local_variable in local_variables {
+            if let Some(annotation) = &mut local_variable.type_annotation {
+                Self::rewrite_self_in_type_annotation(
+                    annotation,
+                    struct_name,
+                    true,
+                    self_type_args,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
     fn fresh_type_variable(&mut self) -> Type {
         Type::TVar(self.name_generator.fresh_type_variable())
     }
@@ -215,6 +361,100 @@ impl TypeChecker {
 
     fn add_dtype_constraint(&mut self, type_: &Type) -> TrivialResolution {
         self.constraints.add_dtype_constraint(type_)
+    }
+
+    /// Register a method for a struct
+    fn register_method(
+        &mut self,
+        struct_name: CompactString,
+        method_name: CompactString,
+        signature: FunctionSignature,
+        has_self: bool,
+        runtime_name: CompactString,
+    ) {
+        self.methods.entry(struct_name).or_default().insert(
+            method_name,
+            MethodInfo {
+                signature,
+                has_self,
+                runtime_name,
+            },
+        );
+    }
+
+    /// Look up a method for a struct
+    fn lookup_method(&self, struct_name: &str, method_name: &str) -> Option<&MethodInfo> {
+        self.methods.get(struct_name)?.get(method_name)
+    }
+
+    fn runtime_method_name(struct_name: &str, method_name: &str) -> CompactString {
+        format_compact!("{struct_name}::{method_name}")
+    }
+
+    fn provisional_method_signature(
+        &mut self,
+        method: &ast::Statement<'_>,
+    ) -> Result<FunctionSignature> {
+        let ast::Statement::DefineFunction {
+            function_name_span,
+            function_name,
+            type_parameters,
+            parameters,
+            return_type_annotation,
+            ..
+        } = method
+        else {
+            unreachable!("method members are checked to be functions");
+        };
+
+        let initial_type_parameter_count = self.registry.introduced_type_parameters.len();
+        for (span, type_parameter, bound) in type_parameters {
+            self.registry.introduced_type_parameters.push((
+                *span,
+                (*type_parameter).to_compact_string(),
+                bound.clone(),
+            ));
+        }
+
+        let parameter_types = parameters
+            .iter()
+            .map(|(_, _, annotation)| {
+                annotation
+                    .as_ref()
+                    .map(|a| self.type_from_annotation(a))
+                    .transpose()
+                    .map(|a| a.unwrap_or_else(|| self.fresh_type_variable()))
+            })
+            .collect::<Result<Vec<_>>>();
+
+        let return_type = return_type_annotation
+            .as_ref()
+            .map(|annotation| self.type_from_annotation(annotation))
+            .transpose();
+
+        self.registry
+            .introduced_type_parameters
+            .truncate(initial_type_parameter_count);
+
+        let parameter_types = parameter_types?;
+        let return_type = return_type?.unwrap_or_else(|| self.fresh_type_variable());
+
+        Ok(FunctionSignature {
+            name: (*function_name).to_compact_string(),
+            definition_span: *function_name_span,
+            type_parameters: type_parameters
+                .iter()
+                .map(|(span, name, bound)| (*span, (*name).to_compact_string(), bound.clone()))
+                .collect(),
+            parameters: parameters
+                .iter()
+                .map(|(span, name, annotation)| {
+                    (*span, (*name).to_compact_string(), annotation.clone())
+                })
+                .collect(),
+            return_type_annotation: return_type_annotation.clone(),
+            fn_type: TypeScheme::Concrete(Type::Fn(parameter_types, Box::new(return_type))),
+        })
     }
 
     fn enforce_dtype(&mut self, type_: &Type, span: Span) -> Result<()> {
@@ -233,6 +473,9 @@ impl TypeChecker {
     }
 
     fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
+        let mut checked_annotation = annotation.clone();
+        Self::rewrite_self_in_type_annotation(&mut checked_annotation, "", false, &[])?;
+
         match annotation {
             TypeAnnotation::TypeExpression(dexpr) => {
                 if let TypeExpression::TypeIdentifier(span, name, type_args) = dexpr
@@ -1260,6 +1503,156 @@ impl TypeChecker {
                 let type_ = self.fresh_type_variable();
                 typed_ast::Expression::TypedHole(*span, TypeScheme::concrete(type_))
             }
+            ast::Expression::MethodCall {
+                receiver,
+                method_name_span,
+                method_name,
+                args,
+                full_span,
+            } => {
+                if let ast::Expression::Identifier(receiver_span, receiver_name) = receiver.as_ref()
+                    && self.structs.contains_key(*receiver_name)
+                {
+                    let method = self
+                        .lookup_method(receiver_name, method_name)
+                        .ok_or_else(|| {
+                            Box::new(TypeCheckError::MethodNotFound(
+                                *method_name_span,
+                                method_name.to_string(),
+                                (*receiver_name).to_string(),
+                            ))
+                        })?
+                        .clone();
+
+                    if method.has_self {
+                        return Err(Box::new(TypeCheckError::InstanceMethodCalledAsConstructor(
+                            *method_name_span,
+                            method_name.to_string(),
+                            (*receiver_name).to_string(),
+                        )));
+                    }
+
+                    let method_arguments = args
+                        .iter()
+                        .map(|e| self.elaborate_expression(e))
+                        .collect::<Result<Vec<_>>>()?;
+
+                    let method_argument_types = method_arguments
+                        .iter()
+                        .map(typed_ast::Expression::get_type)
+                        .collect::<Vec<_>>();
+
+                    let checked_call = proper_function_call(ProperFunctionCallArgs {
+                        registry: &self.registry,
+                        constraints: &mut self.constraints,
+                        name_generator: &mut self.name_generator,
+                        span: method_name_span,
+                        full_span,
+                        function_name: method_name,
+                        signature: &method.signature,
+                        arguments: method_arguments.clone(),
+                        argument_types: method_argument_types,
+                    })?;
+
+                    let typed_ast::Expression::FunctionCall { type_scheme, .. } = checked_call
+                    else {
+                        unreachable!("proper function call returns typed function call");
+                    };
+
+                    let struct_info = self
+                        .structs
+                        .get(*receiver_name)
+                        .expect("receiver name was already checked as known struct");
+
+                    return Ok(typed_ast::Expression::MethodCall {
+                        full_span: *full_span,
+                        receiver: Box::new(typed_ast::Expression::Identifier {
+                            span: *receiver_span,
+                            name: receiver_name,
+                            type_scheme: TypeScheme::concrete(Type::Struct(Box::new(
+                                struct_info.clone(),
+                            ))),
+                        }),
+                        runtime_name: method.runtime_name.clone(),
+                        method_name_span: *method_name_span,
+                        method_name,
+                        is_constructor: true,
+                        args: method_arguments,
+                        type_scheme,
+                    });
+                }
+
+                let receiver_checked = self.elaborate_expression(receiver)?;
+                let receiver_type = receiver_checked.get_type();
+
+                let Type::Struct(struct_info) = &receiver_type else {
+                    return Err(Box::new(TypeCheckError::MethodCallOnNonStructType(
+                        *method_name_span,
+                        method_name.to_string(),
+                        receiver_type,
+                    )));
+                };
+
+                let method = self
+                    .lookup_method(&struct_info.name, method_name)
+                    .ok_or_else(|| {
+                        Box::new(TypeCheckError::MethodNotFound(
+                            *method_name_span,
+                            method_name.to_string(),
+                            struct_info.name.to_string(),
+                        ))
+                    })?
+                    .clone();
+
+                if !method.has_self {
+                    return Err(Box::new(TypeCheckError::ConstructorCalledAsMethod(
+                        *method_name_span,
+                        method_name.to_string(),
+                        struct_info.name.to_string(),
+                    )));
+                }
+
+                let arguments_checked = args
+                    .iter()
+                    .map(|e| self.elaborate_expression(e))
+                    .collect::<Result<Vec<_>>>()?;
+
+                let mut method_arguments = Vec::with_capacity(arguments_checked.len() + 1);
+                method_arguments.push(receiver_checked.clone());
+                method_arguments.extend(arguments_checked.clone());
+
+                let method_argument_types = method_arguments
+                    .iter()
+                    .map(typed_ast::Expression::get_type)
+                    .collect::<Vec<_>>();
+
+                let checked_call = proper_function_call(ProperFunctionCallArgs {
+                    registry: &self.registry,
+                    constraints: &mut self.constraints,
+                    name_generator: &mut self.name_generator,
+                    span: method_name_span,
+                    full_span,
+                    function_name: method_name,
+                    signature: &method.signature,
+                    arguments: method_arguments,
+                    argument_types: method_argument_types,
+                })?;
+
+                let typed_ast::Expression::FunctionCall { type_scheme, .. } = checked_call else {
+                    unreachable!("proper function call returns typed function call");
+                };
+
+                typed_ast::Expression::MethodCall {
+                    full_span: *full_span,
+                    receiver: Box::new(receiver_checked),
+                    runtime_name: method.runtime_name.clone(),
+                    method_name_span: *method_name_span,
+                    method_name,
+                    is_constructor: false,
+                    args: arguments_checked,
+                    type_scheme,
+                }
+            }
         })
     }
 
@@ -1502,22 +1895,24 @@ impl TypeChecker {
                 decorators,
                 ..
             } => {
-                if body.is_none() {
-                    self.value_namespace
-                        .add_identifier(
-                            function_name.to_compact_string(),
-                            *function_name_span,
-                            CompactString::const_new("foreign function"),
-                        )
-                        .map_err(|err| Box::new(err.into()))?;
-                } else {
-                    self.value_namespace
-                        .add_identifier_allow_override(
-                            function_name.to_compact_string(),
-                            *function_name_span,
-                            CompactString::const_new("function"),
-                        )
-                        .map_err(|err| Box::new(err.into()))?;
+                if !self.checking_struct_method {
+                    if body.is_none() {
+                        self.value_namespace
+                            .add_identifier(
+                                function_name.to_compact_string(),
+                                *function_name_span,
+                                CompactString::const_new("foreign function"),
+                            )
+                            .map_err(|err| Box::new(err.into()))?;
+                    } else {
+                        self.value_namespace
+                            .add_identifier_allow_override(
+                                function_name.to_compact_string(),
+                                *function_name_span,
+                                CompactString::const_new("function"),
+                            )
+                            .map_err(|err| Box::new(err.into()))?;
+                    }
                 }
 
                 // Save the environment and namespaces to avoid polluting
@@ -1737,14 +2132,18 @@ impl TypeChecker {
                 self.value_namespace.restore();
                 self.type_namespace.restore();
                 self.env.restore();
-                self.env.add_function(
-                    function_name.to_compact_string(),
-                    signature.clone(),
-                    metadata.clone(),
-                );
+                if !self.checking_struct_method {
+                    self.env.add_function(
+                        function_name.to_compact_string(),
+                        signature.clone(),
+                        metadata.clone(),
+                    );
+                }
 
                 typed_ast::Statement::DefineFunction {
                     function_name,
+                    runtime_name: function_name.to_compact_string(),
+                    method_owner: None,
                     decorators: decorators.clone(),
                     type_parameters: type_parameters
                         .iter()
@@ -1918,6 +2317,7 @@ impl TypeChecker {
                 struct_name,
                 type_parameters,
                 fields,
+                methods,
             } => {
                 self.type_namespace
                     .add_identifier(
@@ -1967,6 +2367,33 @@ impl TypeChecker {
                     }
 
                     seen_fields.insert(field, *span);
+                }
+
+                let mut seen_member_spans: HashMap<&str, Span> = fields
+                    .iter()
+                    .map(|(span, name, _)| (*name, *span))
+                    .collect();
+                for method in methods {
+                    if let ast::Statement::DefineFunction {
+                        function_name_span,
+                        function_name,
+                        ..
+                    } = method
+                        && let Some(previous_span) = seen_member_spans.get(function_name)
+                    {
+                        return Err(Box::new(TypeCheckError::DuplicateMemberInStructDefinition(
+                            *function_name_span,
+                            *previous_span,
+                            (*function_name).to_string(),
+                        )));
+                    } else if let ast::Statement::DefineFunction {
+                        function_name_span,
+                        function_name,
+                        ..
+                    } = method
+                    {
+                        seen_member_spans.insert(function_name, *function_name_span);
+                    }
                 }
 
                 let struct_info = StructInfo {
@@ -2031,6 +2458,20 @@ impl TypeChecker {
         self.env.apply(&substitution).map_err(|e| {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
+        for method_infos in self.methods.values_mut() {
+            for method_info in method_infos.values_mut() {
+                method_info
+                    .signature
+                    .fn_type
+                    .apply(&substitution)
+                    .map_err(|e| {
+                        TypeCheckError::SubstitutionError(
+                            elaborated_statement.pretty_print().to_string(),
+                            e,
+                        )
+                    })?;
+            }
+        }
 
         if let typed_ast::Statement::DefineDerivedUnit {
             expr, type_scheme, ..
@@ -2088,6 +2529,11 @@ impl TypeChecker {
         elaborated_statement.update_readable_types(&self.registry);
 
         self.env.generalize_types(&dtype_variables);
+        for method_infos in self.methods.values_mut() {
+            for method_info in method_infos.values_mut() {
+                method_info.signature.fn_type.generalize(&dtype_variables);
+            }
+        }
 
         // Check if there is a typed hole in the statement
         if let Some((span, type_of_hole)) = elaborated_statement.find_typed_hole()? {
@@ -2126,6 +2572,236 @@ impl TypeChecker {
         let mut checked_statements = vec![];
 
         for statement in statements {
+            if let ast::Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                type_parameters,
+                fields,
+                methods,
+                ..
+            } = statement
+            {
+                let mut seen_member_spans: HashMap<&str, Span> = fields
+                    .iter()
+                    .map(|(span, name, _)| (*name, *span))
+                    .collect();
+                for method in methods {
+                    match method {
+                        ast::Statement::DefineFunction {
+                            function_name_span,
+                            function_name,
+                            ..
+                        } => {
+                            if let Some(previous_span) = seen_member_spans.get(function_name) {
+                                return Err(Box::new(
+                                    TypeCheckError::DuplicateMemberInStructDefinition(
+                                        *function_name_span,
+                                        *previous_span,
+                                        (*function_name).to_string(),
+                                    ),
+                                ));
+                            }
+                            seen_member_spans.insert(function_name, *function_name_span);
+                        }
+                        _ => {
+                            return Err(Box::new(TypeCheckError::InvalidStructMember(
+                                method.full_span(),
+                            )));
+                        }
+                    }
+                }
+
+                let struct_without_methods = ast::Statement::DefineStruct {
+                    struct_name_span: *struct_name_span,
+                    struct_name,
+                    type_parameters: type_parameters.clone(),
+                    fields: fields.clone(),
+                    methods: vec![],
+                };
+                checked_statements.push(self.check_statement(&struct_without_methods)?);
+
+                let mut prepared_methods = vec![];
+
+                for method in methods {
+                    let ast::Statement::DefineFunction { parameters, .. } = method else {
+                        unreachable!("non-function members are rejected above");
+                    };
+
+                    let has_self = !parameters.is_empty() && parameters[0].1 == "self";
+
+                    let mut method_to_check = method.clone();
+                    if let ast::Statement::DefineFunction {
+                        type_parameters: method_type_parameters,
+                        ..
+                    } = &mut method_to_check
+                    {
+                        let mut merged_type_parameters = type_parameters.clone();
+                        merged_type_parameters.extend(method_type_parameters.clone());
+                        *method_type_parameters = merged_type_parameters;
+                    }
+
+                    if has_self
+                        && let ast::Statement::DefineFunction { parameters, .. } =
+                            &mut method_to_check
+                        && parameters[0].2.is_none()
+                    {
+                        let self_type_args = type_parameters
+                            .iter()
+                            .map(|(span, name, _)| {
+                                TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                                    *span,
+                                    (*name).to_compact_string(),
+                                    vec![],
+                                ))
+                            })
+                            .collect();
+                        parameters[0].2 = Some(TypeAnnotation::TypeExpression(
+                            TypeExpression::TypeIdentifier(
+                                *struct_name_span,
+                                (*struct_name).to_compact_string(),
+                                self_type_args,
+                            ),
+                        ));
+                    }
+                    let self_type_args: Vec<_> = type_parameters
+                        .iter()
+                        .map(|(span, name, _)| {
+                            TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                                *span,
+                                (*name).to_compact_string(),
+                                vec![],
+                            ))
+                        })
+                        .collect();
+                    Self::rewrite_self_in_method_signature(
+                        &mut method_to_check,
+                        struct_name,
+                        &self_type_args,
+                    )?;
+
+                    let ast::Statement::DefineFunction { function_name, .. } = &method_to_check
+                    else {
+                        unreachable!("method_to_check is DefineFunction");
+                    };
+                    let runtime_name = Self::runtime_method_name(struct_name, function_name);
+
+                    prepared_methods.push((method_to_check, has_self, runtime_name));
+                }
+
+                for (method_to_check, has_self, runtime_name) in &prepared_methods {
+                    let ast::Statement::DefineFunction { function_name, .. } = method_to_check
+                    else {
+                        unreachable!("method_to_check is DefineFunction");
+                    };
+
+                    let signature = self.provisional_method_signature(method_to_check)?;
+                    self.register_method(
+                        struct_name.to_compact_string(),
+                        function_name.to_compact_string(),
+                        signature,
+                        *has_self,
+                        runtime_name.clone(),
+                    );
+                }
+
+                for (method_to_check, has_self, runtime_name) in prepared_methods {
+                    self.checking_struct_method = true;
+                    let checked_method = self.check_statement(&method_to_check);
+                    self.checking_struct_method = false;
+                    let mut checked_method = checked_method?;
+
+                    let ast::Statement::DefineFunction {
+                        function_name_span,
+                        function_name,
+                        type_parameters,
+                        parameters,
+                        return_type_annotation,
+                        ..
+                    } = &method_to_check
+                    else {
+                        unreachable!("method_to_check is DefineFunction");
+                    };
+
+                    let checked_fn_type = match &checked_method {
+                        typed_ast::Statement::DefineFunction { fn_type, .. } => fn_type.clone(),
+                        _ => unreachable!("checked method is DefineFunction"),
+                    };
+
+                    if let typed_ast::Statement::DefineFunction {
+                        runtime_name: checked_runtime_name,
+                        method_owner,
+                        ..
+                    } = &mut checked_method
+                    {
+                        *checked_runtime_name = runtime_name.clone();
+                        *method_owner = Some(struct_name.to_compact_string());
+                    }
+
+                    checked_statements.push(checked_method);
+
+                    let signature = FunctionSignature {
+                        name: (*function_name).to_compact_string(),
+                        definition_span: *function_name_span,
+                        type_parameters: type_parameters
+                            .iter()
+                            .map(|(span, name, bound)| {
+                                (*span, (*name).to_compact_string(), bound.clone())
+                            })
+                            .collect(),
+                        parameters: parameters
+                            .iter()
+                            .map(|(span, name, annotation)| {
+                                (*span, (*name).to_compact_string(), annotation.clone())
+                            })
+                            .collect(),
+                        return_type_annotation: return_type_annotation.clone(),
+                        fn_type: checked_fn_type,
+                    };
+
+                    if has_self {
+                        let fn_type = match &signature.fn_type {
+                            TypeScheme::Concrete(t) => t.clone(),
+                            TypeScheme::Quantified(_, _) => {
+                                signature
+                                    .fn_type
+                                    .instantiate(&mut self.name_generator)
+                                    .inner
+                            }
+                        };
+
+                        let Type::Fn(parameter_types, _) = &fn_type else {
+                            unreachable!("method type is expected to be function type");
+                        };
+
+                        let Some(Type::Struct(self_type)) = parameter_types.first() else {
+                            return Err(Box::new(TypeCheckError::InvalidSelfParameterType(
+                                *struct_name_span,
+                                function_name.to_string(),
+                                struct_name.to_string(),
+                            )));
+                        };
+
+                        if self_type.name.as_str() != *struct_name {
+                            return Err(Box::new(TypeCheckError::InvalidSelfParameterType(
+                                *struct_name_span,
+                                function_name.to_string(),
+                                struct_name.to_string(),
+                            )));
+                        }
+                    }
+
+                    self.register_method(
+                        struct_name.to_compact_string(),
+                        function_name.to_compact_string(),
+                        signature,
+                        has_self,
+                        runtime_name,
+                    );
+                }
+
+                continue;
+            }
+
             checked_statements.push(self.check_statement(statement)?);
         }
 

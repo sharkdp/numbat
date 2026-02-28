@@ -6,12 +6,11 @@ This script:
 4. Runs zensical build
 """
 
-import subprocess
-from pathlib import Path
-import urllib.parse
 import os
+import subprocess
 import sys
-
+import urllib.parse
+from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 

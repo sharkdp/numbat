@@ -42,7 +42,7 @@ pub enum TokenizerErrorKind {
     #[error("Unexpected '{{' inside string interpolation")]
     UnexpectedCurlyInInterpolation,
 
-    #[error("Unexpected closing of {closing_scope_type:?} scope {}", 
+    #[error("Unexpected closing of {closing_scope_type:?} scope {}",
         if let Some(curr_scope_type) = current_scope {
             format!("while inside a {:#?} scope", curr_scope_type.scope_type)
         } else {

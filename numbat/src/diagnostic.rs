@@ -432,6 +432,16 @@ impl ErrorDiagnostic for TypeCheckError {
                         .diagnostic_label(LabelStyle::Secondary)
                         .with_message(type_.to_string()),
                 ]),
+            TypeCheckError::MethodCallOnNonStructType(span, _, _)
+            | TypeCheckError::MethodNotFound(span, _, _)
+            | TypeCheckError::ConstructorCalledAsMethod(span, _, _)
+            | TypeCheckError::InstanceMethodCalledAsConstructor(span, _, _)
+            | TypeCheckError::InvalidSelfParameterType(span, _, _)
+            | TypeCheckError::SelfTypeOutsideStructMethod(span)
+            | TypeCheckError::InvalidStructMember(span) => d.with_labels(vec![
+                span.diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+            ]),
             TypeCheckError::IncompatibleTypesForStructField(
                 expected_field_span,
                 _expected_type,
@@ -455,6 +465,18 @@ impl ErrorDiagnostic for TypeCheckError {
                         .with_message("Struct defined here"),
                 ]),
             TypeCheckError::DuplicateFieldInStructDefinition(
+                this_field_span,
+                that_field_span,
+                _attr_name,
+            ) => d.with_labels(vec![
+                this_field_span
+                    .diagnostic_label(LabelStyle::Primary)
+                    .with_message(inner_error),
+                that_field_span
+                    .diagnostic_label(LabelStyle::Secondary)
+                    .with_message("Already defined here"),
+            ]),
+            TypeCheckError::DuplicateMemberInStructDefinition(
                 this_field_span,
                 that_field_span,
                 _attr_name,

@@ -105,6 +105,18 @@ impl ForAllTypeSchemes for Expression<'_> {
                 }
                 f(type_scheme);
             }
+            Expression::MethodCall {
+                receiver,
+                args,
+                type_scheme,
+                ..
+            } => {
+                receiver.for_all_type_schemes(f);
+                for arg in args {
+                    arg.for_all_type_schemes(f);
+                }
+                f(type_scheme);
+            }
             Expression::TypedHole(_, type_) => {
                 f(type_);
             }
@@ -241,6 +253,12 @@ impl ForAllExpressions for Expression<'_> {
             Expression::List { elements, .. } => {
                 for element in elements {
                     element.for_all_expressions(f);
+                }
+            }
+            Expression::MethodCall { receiver, args, .. } => {
+                receiver.for_all_expressions(f);
+                for arg in args {
+                    arg.for_all_expressions(f);
                 }
             }
             Expression::TypedHole(_, _) => {}

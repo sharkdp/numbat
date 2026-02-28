@@ -144,6 +144,9 @@ pub enum TypeCheckError {
     #[error("Duplicate field '{2}' in struct definition")]
     DuplicateFieldInStructDefinition(Span, Span, String),
 
+    #[error("Duplicate member '{2}' in struct definition")]
+    DuplicateMemberInStructDefinition(Span, Span, String),
+
     #[error("Duplicate field '{2}' in struct instantiation")]
     DuplicateFieldInStructInstantiation(Span, Span, String),
 
@@ -152,6 +155,27 @@ pub enum TypeCheckError {
 
     #[error("Field '{2}' does not exist in struct '{3}'")]
     UnknownFieldAccess(Span, Span, String, Type),
+
+    #[error("Can not call method '{1}' on non struct type '{2}'")]
+    MethodCallOnNonStructType(Span, String, Type),
+
+    #[error("Method '{1}' does not exist on struct '{2}'")]
+    MethodNotFound(Span, String, String),
+
+    #[error("Constructor '{1}' of struct '{2}' can not be called as an instance method")]
+    ConstructorCalledAsMethod(Span, String, String),
+
+    #[error("Instance method '{1}' of struct '{2}' can not be called as a constructor")]
+    InstanceMethodCalledAsConstructor(Span, String, String),
+
+    #[error("Type of 'self' parameter in method '{1}' must be '{2}'")]
+    InvalidSelfParameterType(Span, String, String),
+
+    #[error("`Self` can only be used inside struct method definitions")]
+    SelfTypeOutsideStructMethod(Span),
+
+    #[error("Only function definitions are allowed in struct method section")]
+    InvalidStructMember(Span),
 
     #[error("Missing fields in struct instantiation")]
     MissingFieldsInStructInstantiation(Span, Span, Vec<(CompactString, Type)>),

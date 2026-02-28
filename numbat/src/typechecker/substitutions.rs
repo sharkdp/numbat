@@ -263,6 +263,18 @@ impl ApplySubstitution for Expression<'_> {
                 }
                 type_scheme.apply(s)
             }
+            Expression::MethodCall {
+                receiver,
+                args,
+                type_scheme,
+                ..
+            } => {
+                receiver.apply(s)?;
+                for arg in args {
+                    arg.apply(s)?;
+                }
+                type_scheme.apply(s)
+            }
             Expression::TypedHole(_, type_) => type_.apply(s),
         }
     }

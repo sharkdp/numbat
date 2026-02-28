@@ -772,6 +772,162 @@ fn generic_structs() {
 }
 
 #[test]
+fn struct_methods() {
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+            fn new(x: A, y: A) = Point { x: x, y: y }
+            fn get_x(self) -> A = self.x
+            fn translate(self, dx: A, dy: A) = Point { x: self.x + dx, y: self.y + dy }
+        }
+
+        let p = Point::new(1 a, 2 a)
+        let px: A = p.get_x()
+        let px2: A = p.translate(1 a, 2 a).get_x()
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn new(x: A, y: A) = Point { x: x, y: y }
+            }
+            Point { x: 1 a, y: 1 a }.new()
+            "
+        ),
+        TypeCheckError::ConstructorCalledAsMethod(_, name, struct_name) if name == "new" && struct_name == "Point"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn get_x(self) -> A = self.x
+            }
+            Point::get_x()
+            "
+        ),
+        TypeCheckError::InstanceMethodCalledAsConstructor(_, name, struct_name) if name == "get_x" && struct_name == "Point"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn new(x: A, y: A) = Point { x: x, y: y }
+            }
+            Point::new(1 a)
+            "
+        ),
+        TypeCheckError::WrongArity { .. }
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn get_x(self) -> A = self.x
+            }
+            (1 a).get_x()
+            "
+        ),
+        TypeCheckError::MethodCallOnNonStructType(_, name, Type::Dimension(_)) if name == "get_x"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn new(x: A, y: A) = Point { x: x, y: y }
+            }
+            Point::missing(1 a, 2 a)
+            "
+        ),
+        TypeCheckError::MethodNotFound(_, name, struct_name) if name == "missing" && struct_name == "Point"
+    ));
+
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+            fn new(x: A, y: A) -> Self = Point { x: x, y: y }
+            fn with_x(self, x: A) -> Self = Point { x: x, y: self.y }
+        }
+        let p = Point::new(1 a, 2 a)
+        let p2 = p.with_x(5 a)
+        let x: A = p2.x
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn not_self(self: A) -> A = self
+            }
+            "
+        ),
+        TypeCheckError::InvalidSelfParameterType(_, name, struct_name) if name == "not_self" && struct_name == "Point"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn x(self) = self.x
+                fn x() = 1 a
+            }
+            ",
+        ),
+        TypeCheckError::DuplicateMemberInStructDefinition(_, _, name) if name == "x"
+    ));
+
+    assert_successful_typecheck(
+        "
+        struct Box<T> {
+            inner: T,
+            fn new(value: T) -> Self = Box { inner: value }
+            fn get(self) -> T = self.inner
+            fn replace<U>(self, value: U) -> Box<U> = Box { inner: value }
+        }
+
+        let box_a: A = Box::new(1 a).get()
+        let box_scalar: Scalar = Box::new(1 a).replace(3).get()
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Box<T> {
+                inner: T,
+                fn bad<T>(self) -> T = self.inner
+            }
+            "
+        ),
+        TypeCheckError::TypeParameterNameClash(_, name) if name == "T"
+    ));
+}
+
+#[test]
 fn lists() {
     assert_successful_typecheck("[]");
     assert_successful_typecheck("[1]");

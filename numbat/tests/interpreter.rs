@@ -1243,6 +1243,202 @@ fn test_temperature_syntactic_sugar() {
     expect_pretty_print("let t = 68 fahrenheit", "let t: Temperature = 68 °F");
 }
 
+#[test]
+fn test_struct_methods() {
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+            fn origin() = Point { x: 0, y: 0 }
+            fn shift_x(self, dx: Scalar) = Point { x: self.x + dx, y: self.y }
+            fn get_x(self) = self.x
+        }
+
+        Point::origin().shift_x(3).get_x()
+        ",
+        "3",
+    );
+
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+            fn origin() = Point { x: 1, y: 1 }
+            fn get_x(self) = self.x
+        }
+        Point::origin().get_x()
+        ",
+        "1",
+    );
+
+    expect_output(
+        "
+        struct Point {
+            x: Length,
+            y: Length,
+            fn new(x: Length, y: Length) -> Self = Point { x: x, y: y }
+            fn translate(self, dx: Length, dy: Length) -> Self = Point { x: self.x + dx, y: self.y + dy }
+            fn get_x(self) -> Length = self.x
+        }
+        Point::new(3 m, 4 m).translate(2 m, 0 m).get_x()
+        ",
+        "5 m",
+    );
+
+    expect_output(
+        "
+        struct Box<T> {
+            inner: T,
+            fn wrap(value: T) -> Box<T> = Box { inner: value }
+            fn replace<U>(self, value: U) -> Box<U> = Box { inner: value }
+        }
+        Box::wrap(2 m).replace(5).inner
+        ",
+        "5",
+    );
+
+    expect_output(
+        "
+        struct Counter {
+            value: Scalar,
+            fn new(n: Scalar, acc: Scalar) -> Self =
+                if n == 0 then Counter { value: acc } else Counter::new(n - 1, acc + 1)
+        }
+
+        Counter::new(4, 0).value
+        ",
+        "4",
+    );
+
+    expect_output(
+        "
+        struct A {
+            n: Scalar,
+            fn val(self) -> Scalar = self.n
+        }
+
+        struct B {
+            n: Scalar,
+            fn val(self) -> Scalar = self.n + 10
+        }
+
+        let a = A { n: 1 }
+        let b = B { n: 1 }
+        a.val() + b.val()
+        ",
+        "12",
+    );
+
+    expect_output(
+        "
+        fn combine(x: Scalar, y: Scalar) -> Scalar = x + y
+
+        struct Vec2 {
+            x: Length,
+            y: Length,
+            fn dot(self, other: Vec2) -> Area = self.x * other.x + self.y * other.y
+        }
+
+        let v1 = Vec2 { x: 1 m, y: 2 m }
+        let v2 = Vec2 { x: 3 m, y: 4 m }
+        v1.dot(v2) + combine(1, 2) m^2
+        ",
+        "14 m²",
+    );
+}
+
+#[test]
+fn test_struct_method_namespace_stress() {
+    // Method names should be struct-scoped even when they match prelude function names.
+    expect_output(
+        "
+        struct Sample {
+            x: Scalar,
+            fn sqrt(self) -> Scalar = self.x + 1
+            fn sin(self) -> Scalar = self.x + 2
+        }
+
+        let sample_value = Sample { x: 9 }
+        sample_value.sqrt() + sample_value.sin() + sqrt(9) + sin(0)
+        ",
+        "24",
+    );
+
+    // Constructor-style methods should also be isolated from prelude/global names.
+    expect_output(
+        "
+        struct AngleBox {
+            value: Scalar,
+            fn atan2(x: Scalar, y: Scalar) -> Self = AngleBox { value: x + y }
+        }
+
+        AngleBox::atan2(2, 3).value + atan2(10, 0) / (pi / 2)
+        ",
+        "6",
+    );
+
+    // Imported module functions should not conflict with methods of the same name.
+    let mut ctx = get_test_context();
+    let _ = ctx
+        .interpret("use extra::algebra", CodeSource::Internal)
+        .unwrap();
+    expect_output_with_context(
+        &mut ctx,
+        "
+        struct Eqn {
+            x: Scalar,
+            fn quadratic_equation(self) -> Scalar = self.x
+        }
+
+        Eqn { x: 5 }.quadratic_equation() + len(quadratic_equation(1, 0, -1))
+        ",
+        "7",
+    );
+
+    // Cross-struct same-name methods must dispatch to the correct implementation.
+    expect_output(
+        "
+        struct A {
+            x: Scalar,
+            fn value(self) -> Scalar = self.x + 100
+        }
+
+        struct B {
+            x: Scalar,
+            fn value(self) -> Scalar = self.x + 1000
+        }
+
+        A { x: 1 }.value() + B { x: 1 }.value()
+        ",
+        "1102",
+    );
+}
+
+#[test]
+fn test_where_locals_are_evaluated_once() {
+    expect_output(
+        "
+        fn once() -> Scalar = x - x where x = random()
+        once()
+        ",
+        "0",
+    );
+
+    expect_output(
+        "
+        struct Sample {
+            value: Scalar,
+            fn once(self) -> Scalar = x - x where x = random() + self.value
+        }
+
+        Sample { value: 5 }.once()
+        ",
+        "0",
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

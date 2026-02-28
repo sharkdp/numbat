@@ -393,6 +393,30 @@ impl BytecodeInterpreter {
 
                 self.vm.add_op1(Op::BuildList, elements.len() as u16, *span);
             }
+            Expression::MethodCall {
+                full_span,
+                receiver,
+                runtime_name,
+                is_constructor,
+                args,
+                ..
+            } => {
+                let arg_count: u16 = if *is_constructor {
+                    for arg in args {
+                        self.compile_expression(arg);
+                    }
+                    args.len() as u16
+                } else {
+                    self.compile_expression(receiver);
+                    for arg in args {
+                        self.compile_expression(arg);
+                    }
+                    (args.len() + 1) as u16
+                };
+
+                let idx = self.vm.get_function_idx(runtime_name);
+                self.vm.add_op2(Op::Call, idx, arg_count, *full_span);
+            }
             Expression::TypedHole(_, _) => {
                 unreachable!("Typed holes cause type inference errors")
             }
@@ -436,13 +460,15 @@ impl BytecodeInterpreter {
                 self.compile_define_variable(define_variable);
             }
             Statement::DefineFunction {
-                function_name: name,
+                function_name: _name,
+                runtime_name,
+                method_owner,
                 parameters,
                 body: Some(expr),
                 local_variables,
                 ..
             } => {
-                self.vm.begin_function(name);
+                self.vm.begin_function(runtime_name);
 
                 self.locals.push(vec![]);
 
@@ -453,8 +479,9 @@ impl BytecodeInterpreter {
                         metadata: LocalMetadata::default(),
                     });
                 }
-                for local_variables in local_variables {
-                    self.compile_define_variable(local_variables);
+
+                for local_variable in local_variables {
+                    self.compile_define_variable(local_variable);
                 }
 
                 self.compile_expression(expr);
@@ -465,10 +492,14 @@ impl BytecodeInterpreter {
 
                 self.vm.end_function();
 
-                self.functions.insert(name.to_compact_string(), false);
+                if method_owner.is_none() {
+                    self.functions.insert(runtime_name.clone(), false);
+                }
             }
             Statement::DefineFunction {
                 function_name: name,
+                runtime_name,
+                method_owner,
                 parameters,
                 body: None,
                 ..
@@ -477,9 +508,11 @@ impl BytecodeInterpreter {
                 // its name and arity here to be able to distinguish it from normal functions.
 
                 self.vm
-                    .add_foreign_function(name, parameters.len()..=parameters.len());
+                    .add_foreign_function(runtime_name, parameters.len()..=parameters.len());
 
-                self.functions.insert(name.to_compact_string(), true);
+                if method_owner.is_none() {
+                    self.functions.insert(name.to_compact_string(), true);
+                }
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information

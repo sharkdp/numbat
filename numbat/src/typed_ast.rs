@@ -740,6 +740,16 @@ pub enum Expression<'a> {
         struct_type: TypeScheme,
         field_type: TypeScheme,
     },
+    MethodCall {
+        full_span: Span,
+        receiver: Box<Expression<'a>>,
+        runtime_name: CompactString,
+        method_name_span: Span,
+        method_name: &'a str,
+        is_constructor: bool,
+        args: Vec<Expression<'a>>,
+        type_scheme: TypeScheme,
+    },
     List {
         span: Span,
         elements: Vec<Expression<'a>>,
@@ -782,6 +792,7 @@ impl Expression<'_> {
             Expression::String(span, _) => *span,
             Expression::InstantiateStruct { span, .. } => *span,
             Expression::AccessField { full_span, .. } => *full_span,
+            Expression::MethodCall { full_span, .. } => *full_span,
             Expression::List { span, .. } => *span,
             Expression::TypedHole(span, _) => *span,
         }
@@ -804,6 +815,8 @@ pub enum Statement<'a> {
     DefineVariable(DefineVariable<'a>),
     DefineFunction {
         function_name: &'a str,
+        runtime_name: CompactString,
+        method_owner: Option<CompactString>,
         decorators: Vec<Decorator<'a>>,
         type_parameters: Vec<(&'a str, Option<TypeParameterBound>)>,
         parameters: Vec<(
@@ -1046,6 +1059,7 @@ impl Expression<'_> {
             Expression::List { type_scheme, .. } => {
                 Type::List(Box::new(type_scheme.unsafe_as_concrete()))
             }
+            Expression::MethodCall { type_scheme, .. } => type_scheme.unsafe_as_concrete(),
             Expression::TypedHole(_, type_) => type_.unsafe_as_concrete(),
         }
     }
@@ -1077,6 +1091,7 @@ impl Expression<'_> {
                     },
                 ),
             },
+            Expression::MethodCall { type_scheme, .. } => type_scheme.clone(),
             Expression::TypedHole(_, type_) => type_.clone(),
         }
     }
@@ -1412,6 +1427,7 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::String(..)
         | Expression::InstantiateStruct { .. }
         | Expression::AccessField { .. }
+        | Expression::MethodCall { .. }
         | Expression::List { .. }
         | Expression::TypedHole(_, _) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
@@ -1725,6 +1741,24 @@ impl PrettyPrint for Expression<'_> {
                     )
                     .sum()
                     + m::operator("]")
+            }
+            MethodCall {
+                receiver,
+                method_name,
+                is_constructor,
+                args,
+                ..
+            } => {
+                receiver.pretty_print()
+                    + m::operator(if *is_constructor { "::" } else { "." })
+                    + m::identifier(method_name.to_compact_string())
+                    + m::operator("(")
+                    + itertools::Itertools::intersperse(
+                        args.iter().map(|e: &Expression| e.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
             }
             TypedHole(_, _) => m::operator("?"),
         }

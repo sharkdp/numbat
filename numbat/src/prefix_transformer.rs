@@ -156,6 +156,12 @@ impl Transformer {
             Expression::AccessField { expr, .. } => {
                 self.transform_expression(expr);
             }
+            Expression::MethodCall { receiver, args, .. } => {
+                self.transform_expression(receiver);
+                for arg in args {
+                    self.transform_expression(arg);
+                }
+            }
             Expression::List(_, elements) => {
                 for e in elements {
                     self.transform_expression(e);
@@ -231,7 +237,46 @@ impl Transformer {
 
     fn transform_statement(&mut self, statement: &mut Statement) -> Result<()> {
         match statement {
-            Statement::DefineStruct { .. } | Statement::ModuleImport(_, _) => {}
+            Statement::DefineStruct { methods, .. } => {
+                for method in methods {
+                    let Statement::DefineFunction {
+                        parameters,
+                        body,
+                        local_variables,
+                        ..
+                    } = method
+                    else {
+                        continue;
+                    };
+
+                    // Struct methods live in the struct namespace, not the global namespace.
+                    // Do not register their names as global identifiers.
+                    let mut method_body_transformer = self.clone();
+                    for (param_span, param, _) in &*parameters {
+                        method_body_transformer
+                            .prefix_parser
+                            .add_shadowing_identifier(param, *param_span)?;
+                    }
+
+                    for def in &mut *local_variables {
+                        method_body_transformer
+                            .variable_names
+                            .push(def.identifier.to_compact_string());
+                        method_body_transformer
+                            .prefix_parser
+                            .add_shadowing_identifier(def.identifier, def.identifier_span)?;
+                    }
+
+                    if let Some(expr) = body {
+                        method_body_transformer.transform_expression(expr);
+                    }
+
+                    for def in local_variables {
+                        method_body_transformer.transform_expression(&mut def.expr);
+                    }
+                }
+            }
+            Statement::ModuleImport(_, _) => {}
 
             Statement::Expression(expr) => {
                 self.transform_expression(expr);

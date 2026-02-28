@@ -127,6 +127,9 @@ struct Element {                 # Define a struct
     name: String,
     atomic_number: Scalar,
     density: MassDensity,
+
+    fn neptunium() -> Self =
+        Element { name: "Neptunium", atomic_number: 93, density: 20.45 g/cm³ }
 }
 
 let hydrogen = Element {         # Instantiate it
@@ -137,7 +140,20 @@ let hydrogen = Element {         # Instantiate it
 
 hydrogen.density                 # Access the field of a struct
 
+let neptunium =                  # Instantiate using a constructor method
+    Element::neptunium()
+print(neptunium)
+
 struct Vec2<D: Dim> {            # A generic struct with type parameter
     x: D,
     y: D,
+
+    # Methods can have their own type generics and inherit the struct's generics
+    fn new(x: D, y: D) -> Self = Vec2 { x: x, y: y }
+    fn dot<E: Dim>(self, other: Vec2<E>) -> D * E = self.x * other.x + self.y * other.y
 }
+
+let v = Vec2::new(3 m, 4 m)      # Constructor call
+let w = Vec2::new(300 cm, 400 cm)
+
+assert_eq(v.dot(w) -> m², 25 m²) # Method generic + unit conversion
