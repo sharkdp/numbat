@@ -24,6 +24,23 @@ let tungsten = Element {
 }
 ```
 
+Struct fields can also define default values:
+
+```nbt
+struct PaperSize {
+    width: Length = 210 mm,
+    height: Length = 297 mm,
+}
+```
+
+When instantiating, fields with defaults may be omitted:
+
+```nbt
+let a4 = PaperSize {}
+let custom = PaperSize { width: 100 mm }   # height defaults to 297 mm
+let swapped = PaperSize { height: 400 mm } # order does not matter
+```
+
 Fields can be accessed using dot notation:
 
 ```nbt
@@ -93,15 +110,18 @@ struct Vec<X: Dim> {
     fn scale(self, factor: Scalar) -> Self =
         Vec { x: self.x * factor, y: self.y * factor }
 
-    fn dot_product<Y: Dim>(self, other: Vec<Y>) -> X * Y =
+    fn dot<Y: Dim>(self, other: Vec<Y>) -> X * Y =
         self.x * other.x + self.y * other.y
+
+    fn new(x: X, y: X) -> Self =
+        Vec { x: x, y: y }
 }
 
-let v1 = Vec { x: 1 m, y: 2 m }
+let v1 = Vec::new(1 m, 2 m)
 let v2 = Vec { x: 3 m, y: 4 m }
 let v2_cm = Vec { x: 300 cm, y: 400 cm }
 
 let v3 = v1.scale(2)  # Vec { x: 2 m, y: 4 m }
-let dp_m = v1.dot_product(v2)     # 11 m²
-let dp_cm = v1.dot_product(v2_cm) # 110_000 cm²
+let dp_m = v1.dot(v2)     # 11 m²
+let dp_cm = v1.dot(v2_cm) # 110_000 cm²
 ```

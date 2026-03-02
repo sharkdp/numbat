@@ -12,7 +12,7 @@ pub mod qualified_type;
 mod substitutions;
 pub mod type_scheme;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -217,6 +217,294 @@ struct ElaborationDefinitionArgs<'a, 'b> {
 }
 
 impl TypeChecker {
+    fn collect_struct_field_defaults<'a>(
+        statements: &[ast::Statement<'a>],
+    ) -> HashMap<&'a str, Vec<(&'a str, ast::Expression<'a>)>> {
+        let mut defaults = HashMap::new();
+
+        for statement in statements {
+            if let ast::Statement::DefineStruct {
+                struct_name,
+                fields,
+                ..
+            } = statement
+            {
+                let field_defaults = fields
+                    .iter()
+                    .filter_map(|(_, field_name, _, default_expr)| {
+                        default_expr.clone().map(|expr| (*field_name, expr))
+                    })
+                    .collect::<Vec<_>>();
+
+                if !field_defaults.is_empty() {
+                    defaults.insert(*struct_name, field_defaults);
+                }
+            }
+        }
+
+        defaults
+    }
+
+    fn apply_struct_defaults_expression<'a>(
+        expr: &ast::Expression<'a>,
+        defaults: &HashMap<&'a str, Vec<(&'a str, ast::Expression<'a>)>>,
+    ) -> ast::Expression<'a> {
+        match expr {
+            ast::Expression::Scalar(..)
+            | ast::Expression::Identifier(..)
+            | ast::Expression::UnitIdentifier { .. }
+            | ast::Expression::TypedHole(..)
+            | ast::Expression::Boolean(..) => expr.clone(),
+            ast::Expression::UnaryOperator { op, expr, span_op } => {
+                ast::Expression::UnaryOperator {
+                    op: *op,
+                    expr: Box::new(Self::apply_struct_defaults_expression(expr, defaults)),
+                    span_op: *span_op,
+                }
+            }
+            ast::Expression::BinaryOperator {
+                op,
+                lhs,
+                rhs,
+                span_op,
+            } => ast::Expression::BinaryOperator {
+                op: *op,
+                lhs: Box::new(Self::apply_struct_defaults_expression(lhs, defaults)),
+                rhs: Box::new(Self::apply_struct_defaults_expression(rhs, defaults)),
+                span_op: *span_op,
+            },
+            ast::Expression::FunctionCall {
+                ident_span,
+                full_span,
+                callable,
+                args,
+            } => ast::Expression::FunctionCall {
+                ident_span: *ident_span,
+                full_span: *full_span,
+                callable: Box::new(Self::apply_struct_defaults_expression(callable, defaults)),
+                args: args
+                    .iter()
+                    .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
+                    .collect(),
+            },
+            ast::Expression::String(span, parts) => ast::Expression::String(
+                *span,
+                parts
+                    .iter()
+                    .map(|part| match part {
+                        ast::StringPart::Fixed(s) => ast::StringPart::Fixed(s.clone()),
+                        ast::StringPart::Interpolation {
+                            span,
+                            expr,
+                            format_specifiers,
+                        } => ast::StringPart::Interpolation {
+                            span: *span,
+                            expr: Box::new(Self::apply_struct_defaults_expression(expr, defaults)),
+                            format_specifiers: *format_specifiers,
+                        },
+                    })
+                    .collect(),
+            ),
+            ast::Expression::Condition {
+                span,
+                condition,
+                then_expr,
+                else_expr,
+            } => ast::Expression::Condition {
+                span: *span,
+                condition: Box::new(Self::apply_struct_defaults_expression(condition, defaults)),
+                then_expr: Box::new(Self::apply_struct_defaults_expression(then_expr, defaults)),
+                else_expr: Box::new(Self::apply_struct_defaults_expression(else_expr, defaults)),
+            },
+            ast::Expression::InstantiateStruct {
+                full_span,
+                ident_span,
+                name,
+                fields,
+            } => {
+                let mut transformed_fields = fields
+                    .iter()
+                    .map(|(span, field_name, value)| {
+                        (
+                            *span,
+                            *field_name,
+                            Self::apply_struct_defaults_expression(value, defaults),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                if let Some(defaults_for_struct) = defaults.get(name) {
+                    let provided_fields = transformed_fields
+                        .iter()
+                        .map(|(_, field_name, _)| *field_name)
+                        .collect::<HashSet<_>>();
+
+                    for (field_name, default_expr) in defaults_for_struct {
+                        if !provided_fields.contains(field_name) {
+                            transformed_fields.push((
+                                default_expr.full_span(),
+                                *field_name,
+                                Self::apply_struct_defaults_expression(default_expr, defaults),
+                            ));
+                        }
+                    }
+                }
+
+                ast::Expression::InstantiateStruct {
+                    full_span: *full_span,
+                    ident_span: *ident_span,
+                    name,
+                    fields: transformed_fields,
+                }
+            }
+            ast::Expression::AccessField {
+                full_span,
+                ident_span,
+                expr,
+                field_name,
+            } => ast::Expression::AccessField {
+                full_span: *full_span,
+                ident_span: *ident_span,
+                expr: Box::new(Self::apply_struct_defaults_expression(expr, defaults)),
+                field_name,
+            },
+            ast::Expression::MethodCall {
+                receiver,
+                method_name_span,
+                method_name,
+                args,
+                full_span,
+            } => ast::Expression::MethodCall {
+                receiver: Box::new(Self::apply_struct_defaults_expression(receiver, defaults)),
+                method_name_span: *method_name_span,
+                method_name,
+                args: args
+                    .iter()
+                    .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
+                    .collect(),
+                full_span: *full_span,
+            },
+            ast::Expression::List(span, elements) => ast::Expression::List(
+                *span,
+                elements
+                    .iter()
+                    .map(|e| Self::apply_struct_defaults_expression(e, defaults))
+                    .collect(),
+            ),
+        }
+    }
+
+    fn apply_struct_defaults_statement<'a>(
+        statement: &ast::Statement<'a>,
+        defaults: &HashMap<&'a str, Vec<(&'a str, ast::Expression<'a>)>>,
+    ) -> ast::Statement<'a> {
+        match statement {
+            ast::Statement::Expression(expr) => {
+                ast::Statement::Expression(Self::apply_struct_defaults_expression(expr, defaults))
+            }
+            ast::Statement::DefineVariable(variable) => {
+                ast::Statement::DefineVariable(ast::DefineVariable {
+                    identifier_span: variable.identifier_span,
+                    identifier: variable.identifier,
+                    expr: Self::apply_struct_defaults_expression(&variable.expr, defaults),
+                    type_annotation: variable.type_annotation.clone(),
+                    decorators: variable.decorators.clone(),
+                })
+            }
+            ast::Statement::DefineFunction {
+                fn_keyword_span,
+                function_name_span,
+                function_name,
+                type_parameters,
+                parameters,
+                body,
+                local_variables,
+                return_type_annotation,
+                decorators,
+            } => ast::Statement::DefineFunction {
+                fn_keyword_span: *fn_keyword_span,
+                function_name_span: *function_name_span,
+                function_name,
+                type_parameters: type_parameters.clone(),
+                parameters: parameters.clone(),
+                body: body
+                    .as_ref()
+                    .map(|expr| Self::apply_struct_defaults_expression(expr, defaults)),
+                local_variables: local_variables
+                    .iter()
+                    .map(|v| ast::DefineVariable {
+                        identifier_span: v.identifier_span,
+                        identifier: v.identifier,
+                        expr: Self::apply_struct_defaults_expression(&v.expr, defaults),
+                        type_annotation: v.type_annotation.clone(),
+                        decorators: v.decorators.clone(),
+                    })
+                    .collect(),
+                return_type_annotation: return_type_annotation.clone(),
+                decorators: decorators.clone(),
+            },
+            ast::Statement::DefineDimension(span, name, dexprs) => {
+                ast::Statement::DefineDimension(*span, name, dexprs.clone())
+            }
+            ast::Statement::DefineBaseUnit(span, name, type_expr, decorators) => {
+                ast::Statement::DefineBaseUnit(*span, name, type_expr.clone(), decorators.clone())
+            }
+            ast::Statement::DefineDerivedUnit {
+                identifier_span,
+                identifier,
+                expr,
+                type_annotation_span,
+                type_annotation,
+                decorators,
+            } => ast::Statement::DefineDerivedUnit {
+                identifier_span: *identifier_span,
+                identifier,
+                expr: Self::apply_struct_defaults_expression(expr, defaults),
+                type_annotation_span: *type_annotation_span,
+                type_annotation: type_annotation.clone(),
+                decorators: decorators.clone(),
+            },
+            ast::Statement::ProcedureCall(span, kind, args) => ast::Statement::ProcedureCall(
+                *span,
+                kind.clone(),
+                args.iter()
+                    .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
+                    .collect(),
+            ),
+            ast::Statement::ModuleImport(span, module_path) => {
+                ast::Statement::ModuleImport(*span, module_path.clone())
+            }
+            ast::Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                type_parameters,
+                fields,
+                methods,
+            } => ast::Statement::DefineStruct {
+                struct_name_span: *struct_name_span,
+                struct_name,
+                type_parameters: type_parameters.clone(),
+                fields: fields
+                    .iter()
+                    .map(|(span, field_name, field_type, default_expr)| {
+                        (
+                            *span,
+                            *field_name,
+                            field_type.clone(),
+                            default_expr
+                                .as_ref()
+                                .map(|expr| Self::apply_struct_defaults_expression(expr, defaults)),
+                        )
+                    })
+                    .collect(),
+                methods: methods
+                    .iter()
+                    .map(|method| Self::apply_struct_defaults_statement(method, defaults))
+                    .collect(),
+            },
+        }
+    }
+
     fn rewrite_self_in_type_expression(
         type_expression: &mut TypeExpression,
         struct_name: &str,
@@ -2384,7 +2672,7 @@ impl TypeChecker {
                         .push((*span, type_parameter.to_compact_string(), bound.clone()));
                 }
 
-                for (span, field, _) in fields {
+                for (span, field, _, _) in fields {
                     if let Some(other_span) = seen_fields.get(field) {
                         return Err(Box::new(TypeCheckError::DuplicateFieldInStructDefinition(
                             *span,
@@ -2398,7 +2686,7 @@ impl TypeChecker {
 
                 let mut seen_member_spans: HashMap<&str, Span> = fields
                     .iter()
-                    .map(|(span, name, _)| (*name, *span))
+                    .map(|(span, name, _, _)| (*name, *span))
                     .collect();
                 for method in methods {
                     if let ast::Statement::DefineFunction {
@@ -2436,7 +2724,7 @@ impl TypeChecker {
                     ),
                     fields: fields
                         .iter()
-                        .map(|(span, name, type_)| {
+                        .map(|(span, name, type_, _)| {
                             Ok((
                                 name.to_compact_string(),
                                 (*span, typechecker_struct.type_from_annotation(type_)?),
@@ -2627,8 +2915,12 @@ impl TypeChecker {
         statements: &[ast::Statement<'a>],
     ) -> Result<Vec<typed_ast::Statement<'a>>> {
         let mut checked_statements = vec![];
+        let struct_field_defaults = Self::collect_struct_field_defaults(statements);
 
         for statement in statements {
+            let statement =
+                Self::apply_struct_defaults_statement(statement, &struct_field_defaults);
+
             if let ast::Statement::DefineStruct {
                 struct_name_span,
                 struct_name,
@@ -2636,11 +2928,11 @@ impl TypeChecker {
                 fields,
                 methods,
                 ..
-            } = statement
+            } = &statement
             {
                 let mut seen_member_spans: HashMap<&str, Span> = fields
                     .iter()
-                    .map(|(span, name, _)| (*name, *span))
+                    .map(|(span, name, _, _)| (*name, *span))
                     .collect();
                 for method in methods {
                     match method {
@@ -2668,7 +2960,7 @@ impl TypeChecker {
                     }
                 }
 
-                checked_statements.push(self.check_statement(statement)?);
+                checked_statements.push(self.check_statement(&statement)?);
 
                 let mut prepared_methods = vec![];
 
@@ -2864,7 +3156,7 @@ impl TypeChecker {
                 continue;
             }
 
-            checked_statements.push(self.check_statement(statement)?);
+            checked_statements.push(self.check_statement(&statement)?);
         }
 
         Ok(checked_statements)

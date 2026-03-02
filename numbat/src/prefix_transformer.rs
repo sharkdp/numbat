@@ -237,7 +237,15 @@ impl Transformer {
 
     fn transform_statement(&mut self, statement: &mut Statement) -> Result<()> {
         match statement {
-            Statement::DefineStruct { methods, .. } => {
+            Statement::DefineStruct {
+                fields, methods, ..
+            } => {
+                for (_, _, _, default_expr) in fields {
+                    if let Some(default_expr) = default_expr {
+                        self.transform_expression(default_expr);
+                    }
+                }
+
                 for method in methods {
                     let Statement::DefineFunction {
                         parameters,

@@ -503,7 +503,7 @@ pub enum Statement<'a> {
         struct_name_span: Span,
         struct_name: &'a str,
         type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
-        fields: Vec<(Span, &'a str, TypeAnnotation)>,
+        fields: Vec<(Span, &'a str, TypeAnnotation, Option<Expression<'a>>)>,
         methods: Vec<Statement<'a>>,
     },
 }
@@ -567,8 +567,11 @@ impl Statement<'_> {
                 ..
             } => {
                 let mut span = *struct_name_span;
-                if let Some((last_span, _, annotation)) = fields.last() {
+                if let Some((last_span, _, annotation, default_expr)) = fields.last() {
                     span = span.extend(last_span).extend(&annotation.full_span());
+                    if let Some(default_expr) = default_expr {
+                        span = span.extend(&default_expr.full_span());
+                    }
                 }
                 if let Some(method) = methods.last() {
                     span = span.extend(&method.full_span());
@@ -855,7 +858,14 @@ impl ReplaceSpans for Statement<'_> {
                     .collect(),
                 fields: fields
                     .iter()
-                    .map(|(_span, name, type_)| (Span::dummy(), *name, type_.replace_spans()))
+                    .map(|(_span, name, type_, default_expr)| {
+                        (
+                            Span::dummy(),
+                            *name,
+                            type_.replace_spans(),
+                            default_expr.as_ref().map(Expression::replace_spans),
+                        )
+                    })
                     .collect(),
                 methods: methods.iter().map(|m| m.replace_spans()).collect(),
             },

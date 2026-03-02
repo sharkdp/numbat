@@ -155,7 +155,7 @@ print(neptunium)
 
 struct Vec2<D: Dim> {            # A generic struct with type parameter
     x: D,
-    y: D,
+    y: D = 0 m,                  # Struct defaults can be provided per field
 
     # Methods can have their own type generics and inherit the struct's generics
     fn new(x: D, y: D) -> Self = Self { x: x, y: y }
@@ -168,4 +168,9 @@ let w = Vec2::new(300 cm, 400 cm)
 let scaled_v = v.scale(2)        # Returning `Self` creates a new value (no in-place mutation)
 
 assert_eq(v.dot(w) -> m², 25 m²) # Method generic + unit conversion
+
+let only_x = Vec2 { x: 5 m }     # Omitted fields with defaults are auto-filled
+
+assert_eq(only_x.x, 5 m)
+assert_eq(only_x.y, 0 m)
 ```

@@ -1437,6 +1437,73 @@ fn test_struct_field_projection_stability() {
 }
 
 #[test]
+fn test_struct_field_defaults() {
+    expect_output(
+        "
+        struct Point {
+            x: Length = 2 m,
+            y: Length,
+        }
+
+        let p = Point { y: 3 m }
+        p.x + p.y
+        ",
+        "5 m",
+    );
+
+    expect_output(
+        "
+        struct Counter {
+            n: Scalar = 10,
+            fn new() -> Self = Counter {}
+        }
+
+        Counter::new().n
+        ",
+        "10",
+    );
+
+    expect_failure(
+        "
+        struct Point {
+            x: Length = 2 m,
+            y: Length,
+        }
+
+        Point {}
+        ",
+        "Missing field",
+    );
+}
+
+#[test]
+fn test_struct_features_comprehensive() {
+    expect_output(
+        "
+        use prelude
+
+        struct Vec2<D: Dim> {
+            x: D = 0 m,
+            y: D = 0 m,
+
+            fn new(x: D, y: D) -> Self = Vec2 { x: x, y: y }
+            fn with_y(y: D) -> Self = Vec2 { y: y }
+            fn translate(self, dx: D, dy: D) -> Self = Vec2 { x: self.x + dx, y: self.y + dy }
+            fn dot<E: Dim>(self, other: Vec2<E>) -> D * E = self.x * other.x + self.y * other.y
+        }
+
+        let v1 = Vec2::new(1 m, 2 m)
+        let v2 = Vec2::with_y(4 m).translate(3 m, 0 m)
+        let v3 = Vec2 { y: 5 m }
+        let v4 = Vec2 { x: 300 cm, y: 400 cm }
+
+        v1.dot(v2) + v3.dot(v4) + sqrt(4) m^2
+        ",
+        "330_000 cm²",
+    );
+}
+
+#[test]
 fn test_self_struct_instantiation_contexts() {
     expect_output(
         "

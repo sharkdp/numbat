@@ -1015,6 +1015,15 @@ impl<'a> Parser<'a> {
 
             self.skip_empty_lines(tokens);
 
+            let default_expr = if self.match_exact(tokens, TokenKind::Equal).is_some() {
+                self.skip_empty_lines(tokens);
+                Some(self.expression(tokens)?)
+            } else {
+                None
+            };
+
+            self.skip_empty_lines(tokens);
+
             let has_comma = self.match_exact(tokens, TokenKind::Comma).is_some();
 
             self.skip_empty_lines(tokens);
@@ -1029,7 +1038,7 @@ impl<'a> Parser<'a> {
                 });
             }
 
-            fields.push((field_name.span, field_name.lexeme, attr_type));
+            fields.push((field_name.span, field_name.lexeme, attr_type, default_expr));
         }
         self.match_exact(tokens, TokenKind::RightCurly);
 
@@ -3332,6 +3341,7 @@ mod tests {
                         "Length".into(),
                         vec![],
                     )),
+                    None,
                 )],
                 methods: vec![Statement::DefineFunction {
                     fn_keyword_span: Span::dummy(),
@@ -3368,6 +3378,7 @@ mod tests {
                         "T".into(),
                         vec![],
                     )),
+                    None,
                 )],
                 methods: vec![Statement::DefineFunction {
                     fn_keyword_span: Span::dummy(),
@@ -3847,6 +3858,7 @@ mod tests {
                             CompactString::const_new("Scalar"),
                             vec![],
                         )),
+                        None,
                     ),
                     (
                         Span::dummy(),
@@ -3856,6 +3868,7 @@ mod tests {
                             CompactString::const_new("Scalar"),
                             vec![],
                         )),
+                        None,
                     ),
                 ],
                 methods: vec![],
@@ -3880,6 +3893,7 @@ mod tests {
                             CompactString::const_new("T"),
                             vec![],
                         )),
+                        None,
                     ),
                     (
                         Span::dummy(),
@@ -3889,8 +3903,46 @@ mod tests {
                             CompactString::const_new("D"),
                             vec![],
                         )),
+                        None,
                     ),
-                    (Span::dummy(), "name", TypeAnnotation::String(Span::dummy())),
+                    (
+                        Span::dummy(),
+                        "name",
+                        TypeAnnotation::String(Span::dummy()),
+                        None,
+                    ),
+                ],
+                methods: vec![],
+            },
+        );
+
+        parse_as(
+            &["struct Foo { x: Scalar = 2, y: Scalar }"],
+            Statement::DefineStruct {
+                struct_name_span: Span::dummy(),
+                struct_name: "Foo",
+                type_parameters: vec![],
+                fields: vec![
+                    (
+                        Span::dummy(),
+                        "x",
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            CompactString::const_new("Scalar"),
+                            vec![],
+                        )),
+                        Some(Expression::Scalar(Span::dummy(), Number::from_f64(2.0))),
+                    ),
+                    (
+                        Span::dummy(),
+                        "y",
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            CompactString::const_new("Scalar"),
+                            vec![],
+                        )),
+                        None,
+                    ),
                 ],
                 methods: vec![],
             },
