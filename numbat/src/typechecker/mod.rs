@@ -2153,7 +2153,6 @@ impl TypeChecker {
 
                 typed_ast::Statement::DefineFunction {
                     function_name,
-                    method_owner: None,
                     decorators: decorators.clone(),
                     type_parameters: type_parameters
                         .iter()
@@ -2754,11 +2753,31 @@ impl TypeChecker {
                         _ => unreachable!("checked method is DefineFunction"),
                     };
 
-                    if let typed_ast::Statement::DefineFunction { method_owner, .. } =
-                        &mut checked_method
-                    {
-                        *method_owner = Some(struct_name.to_compact_string());
-                    }
+                    checked_method = match checked_method {
+                        typed_ast::Statement::DefineFunction {
+                            function_name: method_name,
+                            decorators,
+                            type_parameters,
+                            parameters,
+                            body,
+                            local_variables,
+                            fn_type,
+                            return_type_annotation,
+                            readable_return_type,
+                        } => typed_ast::Statement::DefineMethod {
+                            struct_name: struct_name.to_compact_string(),
+                            method_name,
+                            decorators,
+                            type_parameters,
+                            parameters,
+                            body,
+                            local_variables,
+                            fn_type,
+                            return_type_annotation,
+                            readable_return_type,
+                        },
+                        _ => unreachable!("checked method is DefineFunction"),
+                    };
 
                     checked_statements.push(checked_method);
 

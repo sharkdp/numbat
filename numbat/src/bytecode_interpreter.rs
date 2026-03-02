@@ -494,19 +494,12 @@ impl BytecodeInterpreter {
             }
             Statement::DefineFunction {
                 function_name: name,
-                method_owner,
                 parameters,
                 body: Some(expr),
                 local_variables,
                 ..
             } => {
-                if let Some(owner) = method_owner {
-                    let runtime_name = format!("<method {owner}::{name}>");
-                    let idx = self.vm.begin_function(&runtime_name);
-                    self.vm.register_method_function(owner, name, idx);
-                } else {
-                    self.vm.begin_function(name);
-                }
+                self.vm.begin_function(name);
 
                 self.locals.push(vec![]);
 
@@ -530,13 +523,10 @@ impl BytecodeInterpreter {
 
                 self.vm.end_function();
 
-                if method_owner.is_none() {
-                    self.functions.insert(name.to_compact_string(), false);
-                }
+                self.functions.insert(name.to_compact_string(), false);
             }
             Statement::DefineFunction {
                 function_name: name,
-                method_owner,
                 parameters,
                 body: None,
                 ..
@@ -546,15 +536,61 @@ impl BytecodeInterpreter {
                 self.vm
                     .add_foreign_function(name, parameters.len()..=parameters.len());
 
-                if let Some(owner) = method_owner {
-                    let ffi_idx = self
-                        .vm
-                        .get_ffi_callable_idx(name)
-                        .expect("just registered foreign method");
-                    self.vm.register_foreign_method(owner, name, ffi_idx);
-                } else {
-                    self.functions.insert(name.to_compact_string(), true);
+                self.functions.insert(name.to_compact_string(), true);
+            }
+            Statement::DefineMethod {
+                struct_name,
+                method_name,
+                parameters,
+                body: Some(expr),
+                local_variables,
+                ..
+            } => {
+                let runtime_name = format!("<method {struct_name}::{method_name}>");
+                let idx = self.vm.begin_function(&runtime_name);
+                self.vm
+                    .register_method_function(struct_name, method_name, idx);
+
+                self.locals.push(vec![]);
+
+                let current_depth = self.current_depth();
+                for parameter in parameters {
+                    self.locals[current_depth].push(Local {
+                        identifiers: [parameter.1.to_compact_string()].into(),
+                        metadata: LocalMetadata::default(),
+                    });
                 }
+
+                for local_variable in local_variables {
+                    self.compile_define_variable(local_variable);
+                }
+
+                self.compile_expression(expr);
+
+                self.vm.add_op(Op::Return, expr.full_span());
+
+                self.locals.pop();
+
+                self.vm.end_function();
+            }
+            Statement::DefineMethod {
+                struct_name,
+                method_name,
+                parameters,
+                body: None,
+                ..
+            } => {
+                // Declaring a foreign function does not generate any bytecode. But we register
+                // its name and arity here to be able to distinguish it from normal functions.
+                self.vm
+                    .add_foreign_function(method_name, parameters.len()..=parameters.len());
+
+                let ffi_idx = self
+                    .vm
+                    .get_ffi_callable_idx(method_name)
+                    .expect("just registered foreign method");
+                self.vm
+                    .register_foreign_method(struct_name, method_name, ffi_idx);
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information

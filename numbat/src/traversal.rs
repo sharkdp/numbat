@@ -139,6 +139,12 @@ impl ForAllTypeSchemes for Statement<'_> {
                 local_variables,
                 fn_type,
                 ..
+            }
+            | Statement::DefineMethod {
+                body,
+                local_variables,
+                fn_type,
+                ..
             } => {
                 for local_variable in local_variables {
                     local_variable.expr.for_all_type_schemes(f);
@@ -179,6 +185,11 @@ impl ForAllExpressions for Statement<'_> {
             Statement::Expression(expr) => expr.for_all_expressions(f),
             Statement::DefineVariable(DefineVariable { expr, .. }) => expr.for_all_expressions(f),
             Statement::DefineFunction {
+                body,
+                local_variables,
+                ..
+            }
+            | Statement::DefineMethod {
                 body,
                 local_variables,
                 ..

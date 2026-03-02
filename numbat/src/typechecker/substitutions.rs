@@ -295,6 +295,12 @@ impl ApplySubstitution for Statement<'_> {
                 local_variables,
                 fn_type,
                 ..
+            }
+            | Statement::DefineMethod {
+                body,
+                local_variables,
+                fn_type,
+                ..
             } => {
                 for local_variable in local_variables {
                     local_variable.expr.apply(s)?;

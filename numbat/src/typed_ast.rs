@@ -834,7 +834,23 @@ pub enum Statement<'a> {
     DefineVariable(DefineVariable<'a>),
     DefineFunction {
         function_name: &'a str,
-        method_owner: Option<CompactString>,
+        decorators: Vec<Decorator<'a>>,
+        type_parameters: Vec<(&'a str, Option<TypeParameterBound>)>,
+        parameters: Vec<(
+            Span,                   // span of the parameter
+            &'a str,                // parameter name
+            Option<TypeAnnotation>, // parameter type annotation
+            Markup,                 // readable parameter type
+        )>,
+        body: Option<Expression<'a>>,
+        local_variables: Vec<DefineVariable<'a>>,
+        fn_type: TypeScheme,
+        return_type_annotation: Option<TypeAnnotation>,
+        readable_return_type: Markup,
+    },
+    DefineMethod {
+        struct_name: CompactString,
+        method_name: &'a str,
         decorators: Vec<Decorator<'a>>,
         type_parameters: Vec<(&'a str, Option<TypeParameterBound>)>,
         parameters: Vec<(
@@ -913,6 +929,15 @@ impl Statement<'_> {
                     Self::create_readable_type(registry, type_scheme, type_annotation, true);
             }
             Statement::DefineFunction {
+                type_parameters,
+                parameters,
+                local_variables,
+                fn_type,
+                return_type_annotation,
+                readable_return_type,
+                ..
+            }
+            | Statement::DefineMethod {
                 type_parameters,
                 parameters,
                 local_variables,
@@ -1016,6 +1041,12 @@ impl Statement<'_> {
     pub(crate) fn local_bindings(&self) -> Vec<(&str, TypeScheme)> {
         match self {
             Statement::DefineFunction {
+                parameters,
+                local_variables,
+                fn_type,
+                ..
+            }
+            | Statement::DefineMethod {
                 parameters,
                 local_variables,
                 fn_type,
@@ -1272,6 +1303,16 @@ impl PrettyPrint for Statement<'_> {
             }
             Statement::DefineFunction {
                 function_name,
+                type_parameters,
+                parameters,
+                body,
+                local_variables,
+                fn_type,
+                readable_return_type,
+                ..
+            }
+            | Statement::DefineMethod {
+                method_name: function_name,
                 type_parameters,
                 parameters,
                 body,
