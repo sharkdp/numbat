@@ -778,9 +778,9 @@ fn struct_methods() {
         struct Point {
             x: A,
             y: A,
-            fn new(x: A, y: A) = Point { x: x, y: y }
+            fn new(x: A, y: A) -> Self = Point { x: x, y: y }
             fn get_x(self) -> A = self.x
-            fn translate(self, dx: A, dy: A) = Point { x: self.x + dx, y: self.y + dy }
+            fn translate(self, dx: A, dy: A) -> Self = Point { x: self.x + dx, y: self.y + dy }
         }
 
         let p = Point::new(1 a, 2 a)
@@ -851,7 +851,7 @@ fn struct_methods() {
             struct Point {
                 x: A,
                 y: A,
-                fn new(x: A, y: A) = Point { x: x, y: y }
+                fn get_x(self) -> A = self.x
             }
             Point::missing(1 a, 2 a)
             "

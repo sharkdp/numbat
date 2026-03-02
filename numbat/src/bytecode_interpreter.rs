@@ -20,7 +20,7 @@ use crate::typed_ast::{
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::{FunctionReference, Value};
-use crate::vm::{Constant, ExecutionContext, FfiCallArg, FfiCallArgs, Op, Vm};
+use crate::vm::{Constant, ExecutionContext, FfiCallArg, FfiCallArgs, MethodCallable, Op, Vm};
 use crate::{Type, decorator};
 
 #[derive(Debug, Clone, Default)]
@@ -396,12 +396,13 @@ impl BytecodeInterpreter {
             Expression::MethodCall {
                 full_span,
                 receiver,
-                runtime_name,
-                is_constructor,
+                method_ref,
                 args,
+                type_scheme,
                 ..
             } => {
-                let arg_count: u16 = if *is_constructor {
+                let arg_count: u16 = if method_ref.kind == typed_ast::StructMethodKind::Constructor
+                {
                     for arg in args {
                         self.compile_expression(arg);
                     }
@@ -414,8 +415,40 @@ impl BytecodeInterpreter {
                     (args.len() + 1) as u16
                 };
 
-                let idx = self.vm.get_function_idx(runtime_name);
-                self.vm.add_op2(Op::Call, idx, arg_count, *full_span);
+                let method_callable = self
+                    .vm
+                    .get_method_callable(&method_ref.owner, method_ref.name)
+                    .expect("method must be registered before call sites are compiled");
+
+                match method_callable {
+                    MethodCallable::Normal(idx) => {
+                        self.vm.add_op2(Op::Call, idx, arg_count, *full_span);
+                    }
+                    MethodCallable::Foreign(idx) => {
+                        let mut ffi_args = Vec::with_capacity(args.len() + 1);
+                        if method_ref.kind == typed_ast::StructMethodKind::Instance {
+                            ffi_args.push(FfiCallArg {
+                                span: receiver.full_span(),
+                                type_: receiver.get_type_scheme(),
+                            });
+                        }
+                        ffi_args.extend(args.iter().map(|a| FfiCallArg {
+                            span: a.full_span(),
+                            type_: a.get_type_scheme(),
+                        }));
+                        let call_args_idx = self.vm.add_ffi_call_args(FfiCallArgs {
+                            args: ffi_args,
+                            return_type: Some(type_scheme.clone()),
+                        });
+                        self.vm.add_op3(
+                            Op::FFICallFunction,
+                            idx,
+                            arg_count,
+                            call_args_idx,
+                            *full_span,
+                        );
+                    }
+                }
             }
             Expression::TypedHole(_, _) => {
                 unreachable!("Typed holes cause type inference errors")
@@ -460,15 +493,20 @@ impl BytecodeInterpreter {
                 self.compile_define_variable(define_variable);
             }
             Statement::DefineFunction {
-                function_name: _name,
-                runtime_name,
+                function_name: name,
                 method_owner,
                 parameters,
                 body: Some(expr),
                 local_variables,
                 ..
             } => {
-                self.vm.begin_function(runtime_name);
+                if let Some(owner) = method_owner {
+                    let runtime_name = format!("<method {owner}::{name}>");
+                    let idx = self.vm.begin_function(&runtime_name);
+                    self.vm.register_method_function(owner, name, idx);
+                } else {
+                    self.vm.begin_function(name);
+                }
 
                 self.locals.push(vec![]);
 
@@ -493,12 +531,11 @@ impl BytecodeInterpreter {
                 self.vm.end_function();
 
                 if method_owner.is_none() {
-                    self.functions.insert(runtime_name.clone(), false);
+                    self.functions.insert(name.to_compact_string(), false);
                 }
             }
             Statement::DefineFunction {
                 function_name: name,
-                runtime_name,
                 method_owner,
                 parameters,
                 body: None,
@@ -506,11 +543,16 @@ impl BytecodeInterpreter {
             } => {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
-
                 self.vm
-                    .add_foreign_function(runtime_name, parameters.len()..=parameters.len());
+                    .add_foreign_function(name, parameters.len()..=parameters.len());
 
-                if method_owner.is_none() {
+                if let Some(owner) = method_owner {
+                    let ffi_idx = self
+                        .vm
+                        .get_ffi_callable_idx(name)
+                        .expect("just registered foreign method");
+                    self.vm.register_foreign_method(owner, name, ffi_idx);
+                } else {
                     self.functions.insert(name.to_compact_string(), true);
                 }
             }

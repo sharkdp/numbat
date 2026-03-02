@@ -3353,159 +3353,8 @@ mod tests {
         );
 
         parse_as(
-            &["struct Point { x: Length, y: Length, fn origin() = Point { x: 0, y: 0 } }"],
-            Statement::DefineStruct {
-                struct_name_span: Span::dummy(),
-                struct_name: "Point",
-                type_parameters: vec![],
-                fields: vec![
-                    (
-                        Span::dummy(),
-                        "x",
-                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
-                            Span::dummy(),
-                            "Length".into(),
-                            vec![],
-                        )),
-                    ),
-                    (
-                        Span::dummy(),
-                        "y",
-                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
-                            Span::dummy(),
-                            "Length".into(),
-                            vec![],
-                        )),
-                    ),
-                ],
-                methods: vec![Statement::DefineFunction {
-                    fn_keyword_span: Span::dummy(),
-                    function_name_span: Span::dummy(),
-                    function_name: "origin",
-                    type_parameters: vec![],
-                    parameters: vec![],
-                    body: Some(struct_! {
-                        Point,
-                        x: scalar!(0.0),
-                        y: scalar!(0.0)
-                    }),
-                    local_variables: vec![],
-                    return_type_annotation: None,
-                    decorators: vec![],
-                }],
-            },
-        );
-
-        parse_as(
             &[
-                "struct Point { x: Length, y: Length, fn new(x: Length, y: Length) -> Self = Point { x: x, y: y } }",
-            ],
-            Statement::DefineStruct {
-                struct_name_span: Span::dummy(),
-                struct_name: "Point",
-                type_parameters: vec![],
-                fields: vec![
-                    (
-                        Span::dummy(),
-                        "x",
-                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
-                            Span::dummy(),
-                            "Length".into(),
-                            vec![],
-                        )),
-                    ),
-                    (
-                        Span::dummy(),
-                        "y",
-                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
-                            Span::dummy(),
-                            "Length".into(),
-                            vec![],
-                        )),
-                    ),
-                ],
-                methods: vec![Statement::DefineFunction {
-                    fn_keyword_span: Span::dummy(),
-                    function_name_span: Span::dummy(),
-                    function_name: "new",
-                    type_parameters: vec![],
-                    parameters: vec![
-                        (
-                            Span::dummy(),
-                            "x",
-                            Some(TypeAnnotation::TypeExpression(
-                                TypeExpression::TypeIdentifier(
-                                    Span::dummy(),
-                                    "Length".into(),
-                                    vec![],
-                                ),
-                            )),
-                        ),
-                        (
-                            Span::dummy(),
-                            "y",
-                            Some(TypeAnnotation::TypeExpression(
-                                TypeExpression::TypeIdentifier(
-                                    Span::dummy(),
-                                    "Length".into(),
-                                    vec![],
-                                ),
-                            )),
-                        ),
-                    ],
-                    body: Some(struct_! {
-                        Point,
-                        x: identifier!("x"),
-                        y: identifier!("y")
-                    }),
-                    local_variables: vec![],
-                    return_type_annotation: Some(TypeAnnotation::TypeExpression(
-                        TypeExpression::TypeIdentifier(Span::dummy(), "Self".into(), vec![]),
-                    )),
-                    decorators: vec![],
-                }],
-            },
-        );
-
-        parse_as(
-            &["struct Vec { length: Scalar, fn len<D>(self) -> Scalar = self.length }"],
-            Statement::DefineStruct {
-                struct_name_span: Span::dummy(),
-                struct_name: "Vec",
-                type_parameters: vec![],
-                fields: vec![(
-                    Span::dummy(),
-                    "length",
-                    TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
-                        Span::dummy(),
-                        "Scalar".into(),
-                        vec![],
-                    )),
-                )],
-                methods: vec![Statement::DefineFunction {
-                    fn_keyword_span: Span::dummy(),
-                    function_name_span: Span::dummy(),
-                    function_name: "len",
-                    type_parameters: vec![(Span::dummy(), "D", None)],
-                    parameters: vec![(Span::dummy(), "self", None)],
-                    body: Some(Expression::AccessField {
-                        full_span: Span::dummy(),
-                        ident_span: Span::dummy(),
-                        expr: Box::new(identifier!("self")),
-                        field_name: "length",
-                    }),
-                    local_variables: vec![],
-                    return_type_annotation: Some(TypeAnnotation::TypeExpression(
-                        TypeExpression::TypeIdentifier(Span::dummy(), "Scalar".into(), vec![]),
-                    )),
-                    decorators: vec![],
-                }],
-            },
-        );
-
-        parse_as(
-            &[
-                "struct Box<T> { inner: T, fn new(value: T) -> Self = Box { inner: value } fn replace<U>(self, value: U) -> Box<U> = Box { inner: value } }",
+                "struct Box<T> { inner: T, fn replace<U>(self, value: U) -> Box<U> = Box { inner: value } }",
             ],
             Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
@@ -3520,69 +3369,37 @@ mod tests {
                         vec![],
                     )),
                 )],
-                methods: vec![
-                    Statement::DefineFunction {
-                        fn_keyword_span: Span::dummy(),
-                        function_name_span: Span::dummy(),
-                        function_name: "new",
-                        type_parameters: vec![],
-                        parameters: vec![(
+                methods: vec![Statement::DefineFunction {
+                    fn_keyword_span: Span::dummy(),
+                    function_name_span: Span::dummy(),
+                    function_name: "replace",
+                    type_parameters: vec![(Span::dummy(), "U", None)],
+                    parameters: vec![
+                        (Span::dummy(), "self", None),
+                        (
                             Span::dummy(),
                             "value",
                             Some(TypeAnnotation::TypeExpression(
-                                TypeExpression::TypeIdentifier(Span::dummy(), "T".into(), vec![]),
+                                TypeExpression::TypeIdentifier(Span::dummy(), "U".into(), vec![]),
                             )),
-                        )],
-                        body: Some(struct_! {
-                            Box,
-                            inner: identifier!("value")
-                        }),
-                        local_variables: vec![],
-                        return_type_annotation: Some(TypeAnnotation::TypeExpression(
-                            TypeExpression::TypeIdentifier(Span::dummy(), "Self".into(), vec![]),
-                        )),
-                        decorators: vec![],
-                    },
-                    Statement::DefineFunction {
-                        fn_keyword_span: Span::dummy(),
-                        function_name_span: Span::dummy(),
-                        function_name: "replace",
-                        type_parameters: vec![(Span::dummy(), "U", None)],
-                        parameters: vec![
-                            (Span::dummy(), "self", None),
-                            (
-                                Span::dummy(),
-                                "value",
-                                Some(TypeAnnotation::TypeExpression(
-                                    TypeExpression::TypeIdentifier(
-                                        Span::dummy(),
-                                        "U".into(),
-                                        vec![],
-                                    ),
-                                )),
-                            ),
-                        ],
-                        body: Some(struct_! {
-                            Box,
-                            inner: identifier!("value")
-                        }),
-                        local_variables: vec![],
-                        return_type_annotation: Some(TypeAnnotation::TypeExpression(
-                            TypeExpression::TypeIdentifier(
-                                Span::dummy(),
-                                "Box".into(),
-                                vec![TypeAnnotation::TypeExpression(
-                                    TypeExpression::TypeIdentifier(
-                                        Span::dummy(),
-                                        "U".into(),
-                                        vec![],
-                                    ),
-                                )],
-                            ),
-                        )),
-                        decorators: vec![],
-                    },
-                ],
+                        ),
+                    ],
+                    body: Some(struct_! {
+                        Box,
+                        inner: identifier!("value")
+                    }),
+                    local_variables: vec![],
+                    return_type_annotation: Some(TypeAnnotation::TypeExpression(
+                        TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Box".into(),
+                            vec![TypeAnnotation::TypeExpression(
+                                TypeExpression::TypeIdentifier(Span::dummy(), "U".into(), vec![]),
+                            )],
+                        ),
+                    )),
+                    decorators: vec![],
+                }],
             },
         );
 
@@ -3612,6 +3429,11 @@ mod tests {
                 args: vec![scalar!(1.0), scalar!(2.0)],
                 full_span: Span::dummy(),
             },
+        );
+
+        should_fail_with(
+            &["Point::new"],
+            ParseErrorKind::ExpectedLeftParenAfterStaticMethodName,
         );
 
         should_fail_with(

@@ -337,6 +337,19 @@ pub struct StructInfo {
     pub name: CompactString,
     pub kind: StructKind,
     pub fields: IndexMap<CompactString, (Span, Type)>,
+    pub methods: IndexMap<CompactString, StructMethodInfo>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StructMethodKind {
+    Constructor,
+    Instance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructMethodInfo {
+    pub definition_span: Span,
+    pub kind: StructMethodKind,
 }
 
 /// A monomorphic type (no quantifiers).
@@ -607,6 +620,7 @@ impl Type {
                     name: info.name.clone(),
                     kind: instantiated_kind,
                     fields: instantiated_fields,
+                    methods: info.methods.clone(),
                 }))
             }
             Type::List(element_type) => {
@@ -743,10 +757,8 @@ pub enum Expression<'a> {
     MethodCall {
         full_span: Span,
         receiver: Box<Expression<'a>>,
-        runtime_name: CompactString,
+        method_ref: MethodRef<'a>,
         method_name_span: Span,
-        method_name: &'a str,
-        is_constructor: bool,
         args: Vec<Expression<'a>>,
         type_scheme: TypeScheme,
     },
@@ -756,6 +768,13 @@ pub enum Expression<'a> {
         type_scheme: TypeScheme,
     },
     TypedHole(Span, TypeScheme),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MethodRef<'a> {
+    pub owner: CompactString,
+    pub name: &'a str,
+    pub kind: StructMethodKind,
 }
 
 impl Expression<'_> {
@@ -815,7 +834,6 @@ pub enum Statement<'a> {
     DefineVariable(DefineVariable<'a>),
     DefineFunction {
         function_name: &'a str,
-        runtime_name: CompactString,
         method_owner: Option<CompactString>,
         decorators: Vec<Decorator<'a>>,
         type_parameters: Vec<(&'a str, Option<TypeParameterBound>)>,
@@ -1744,14 +1762,16 @@ impl PrettyPrint for Expression<'_> {
             }
             MethodCall {
                 receiver,
-                method_name,
-                is_constructor,
+                method_ref,
                 args,
                 ..
             } => {
                 receiver.pretty_print()
-                    + m::operator(if *is_constructor { "::" } else { "." })
-                    + m::identifier(method_name.to_compact_string())
+                    + m::operator(match method_ref.kind {
+                        StructMethodKind::Constructor => "::",
+                        StructMethodKind::Instance => ".",
+                    })
+                    + m::identifier(method_ref.name.to_compact_string())
                     + m::operator("(")
                     + itertools::Itertools::intersperse(
                         args.iter().map(|e: &Expression| e.pretty_print()),

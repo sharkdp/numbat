@@ -278,6 +278,12 @@ pub struct ExecutionContext<'a> {
     pub typechecker: &'a TypeChecker,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MethodCallable {
+    Normal(u16),
+    Foreign(u16),
+}
+
 /// Metadata for a single FFI call argument
 #[derive(Clone)]
 pub struct FfiCallArg {
@@ -308,6 +314,8 @@ pub struct Vm {
 
     /// struct metadata, used so we can display struct fields at runtime
     struct_infos: IndexMap<CompactString, Arc<StructInfo>>,
+    /// Mapping from (struct name, method name) to callable target
+    method_callables: HashMap<(CompactString, CompactString), MethodCallable>,
 
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
@@ -348,6 +356,7 @@ impl Vm {
             current_chunk_index: 0,
             constants: vec![],
             struct_infos: IndexMap::new(),
+            method_callables: HashMap::new(),
             prefixes: vec![],
             strings: vec![],
             unit_information: vec![],
@@ -486,9 +495,10 @@ impl Vm {
         (self.unit_information.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
-    pub(crate) fn begin_function(&mut self, name: &str) {
+    pub(crate) fn begin_function(&mut self, name: &str) -> u16 {
         self.bytecode.push((name.into(), vec![], vec![]));
-        self.current_chunk_index = self.bytecode.len() - 1
+        self.current_chunk_index = self.bytecode.len() - 1;
+        self.current_chunk_index as u16
     }
 
     pub(crate) fn end_function(&mut self) {
@@ -508,6 +518,26 @@ impl Vm {
         let position = self.bytecode.len() - 1 - rev_position;
         assert!(position <= u16::MAX as usize);
         position as u16
+    }
+
+    pub(crate) fn register_method_function(&mut self, owner: &str, method: &str, idx: u16) {
+        self.method_callables.insert(
+            (owner.to_compact_string(), method.to_compact_string()),
+            MethodCallable::Normal(idx),
+        );
+    }
+
+    pub(crate) fn register_foreign_method(&mut self, owner: &str, method: &str, ffi_idx: u16) {
+        self.method_callables.insert(
+            (owner.to_compact_string(), method.to_compact_string()),
+            MethodCallable::Foreign(ffi_idx),
+        );
+    }
+
+    pub(crate) fn get_method_callable(&self, owner: &str, method: &str) -> Option<MethodCallable> {
+        self.method_callables
+            .get(&(owner.to_compact_string(), method.to_compact_string()))
+            .copied()
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: ArityRange) {

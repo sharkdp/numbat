@@ -28,6 +28,7 @@ use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, StructKind, Type};
+use crate::typed_ast::{StructMethodInfo, StructMethodKind};
 use crate::{decorator, ffi, suggestion};
 
 use compact_str::{CompactString, ToCompactString, format_compact};
@@ -199,8 +200,6 @@ pub struct TypeChecker {
 #[derive(Clone)]
 struct MethodInfo {
     signature: FunctionSignature,
-    has_self: bool,
-    runtime_name: CompactString,
 }
 
 struct ElaborationDefinitionArgs<'a, 'b> {
@@ -369,26 +368,16 @@ impl TypeChecker {
         struct_name: CompactString,
         method_name: CompactString,
         signature: FunctionSignature,
-        has_self: bool,
-        runtime_name: CompactString,
     ) {
-        self.methods.entry(struct_name).or_default().insert(
-            method_name,
-            MethodInfo {
-                signature,
-                has_self,
-                runtime_name,
-            },
-        );
+        self.methods
+            .entry(struct_name)
+            .or_default()
+            .insert(method_name, MethodInfo { signature });
     }
 
     /// Look up a method for a struct
     fn lookup_method(&self, struct_name: &str, method_name: &str) -> Option<&MethodInfo> {
         self.methods.get(struct_name)?.get(method_name)
-    }
-
-    fn runtime_method_name(struct_name: &str, method_name: &str) -> CompactString {
-        format_compact!("{struct_name}::{method_name}")
     }
 
     fn provisional_method_signature(
@@ -506,6 +495,7 @@ impl TypeChecker {
                             name: struct_info.name.clone(),
                             kind: StructKind::Instance(vec![]),
                             fields: struct_info.fields.clone(),
+                            methods: struct_info.methods.clone(),
                         })));
                     }
 
@@ -529,6 +519,7 @@ impl TypeChecker {
                         name: struct_info.name.clone(),
                         kind: StructKind::Instance(concrete_type_args),
                         fields: instantiated_fields,
+                        methods: struct_info.methods.clone(),
                     })));
                 }
 
@@ -1290,6 +1281,7 @@ impl TypeChecker {
                             name: struct_info.name.clone(),
                             kind: StructKind::Instance(vec![]),
                             fields: struct_info.fields.clone(),
+                            methods: struct_info.methods.clone(),
                         }
                     }
                     StructKind::Definition(type_parameters) => {
@@ -1331,6 +1323,7 @@ impl TypeChecker {
                                 variables.iter().map(|v| Type::TVar(v.clone())).collect(),
                             ),
                             fields: instantiated_fields,
+                            methods: struct_info.methods.clone(),
                         }
                     }
                     StructKind::Instance(_) => {
@@ -1513,6 +1506,26 @@ impl TypeChecker {
                 if let ast::Expression::Identifier(receiver_span, receiver_name) = receiver.as_ref()
                     && self.structs.contains_key(*receiver_name)
                 {
+                    let struct_info = self
+                        .structs
+                        .get(*receiver_name)
+                        .cloned()
+                        .expect("receiver name was already checked as known struct");
+                    let method_meta = struct_info.methods.get(*method_name).ok_or_else(|| {
+                        Box::new(TypeCheckError::MethodNotFound(
+                            *method_name_span,
+                            method_name.to_string(),
+                            (*receiver_name).to_string(),
+                        ))
+                    })?;
+                    if method_meta.kind == StructMethodKind::Instance {
+                        return Err(Box::new(TypeCheckError::InstanceMethodCalledAsConstructor(
+                            *method_name_span,
+                            method_name.to_string(),
+                            (*receiver_name).to_string(),
+                        )));
+                    }
+
                     let method = self
                         .lookup_method(receiver_name, method_name)
                         .ok_or_else(|| {
@@ -1523,14 +1536,6 @@ impl TypeChecker {
                             ))
                         })?
                         .clone();
-
-                    if method.has_self {
-                        return Err(Box::new(TypeCheckError::InstanceMethodCalledAsConstructor(
-                            *method_name_span,
-                            method_name.to_string(),
-                            (*receiver_name).to_string(),
-                        )));
-                    }
 
                     let method_arguments = args
                         .iter()
@@ -1559,11 +1564,6 @@ impl TypeChecker {
                         unreachable!("proper function call returns typed function call");
                     };
 
-                    let struct_info = self
-                        .structs
-                        .get(*receiver_name)
-                        .expect("receiver name was already checked as known struct");
-
                     return Ok(typed_ast::Expression::MethodCall {
                         full_span: *full_span,
                         receiver: Box::new(typed_ast::Expression::Identifier {
@@ -1573,10 +1573,12 @@ impl TypeChecker {
                                 struct_info.clone(),
                             ))),
                         }),
-                        runtime_name: method.runtime_name.clone(),
+                        method_ref: typed_ast::MethodRef {
+                            owner: struct_info.name.clone(),
+                            name: method_name,
+                            kind: StructMethodKind::Constructor,
+                        },
                         method_name_span: *method_name_span,
-                        method_name,
-                        is_constructor: true,
                         args: method_arguments,
                         type_scheme,
                     });
@@ -1593,6 +1595,21 @@ impl TypeChecker {
                     )));
                 };
 
+                let method_meta = struct_info.methods.get(*method_name).ok_or_else(|| {
+                    Box::new(TypeCheckError::MethodNotFound(
+                        *method_name_span,
+                        method_name.to_string(),
+                        struct_info.name.to_string(),
+                    ))
+                })?;
+                if method_meta.kind == StructMethodKind::Constructor {
+                    return Err(Box::new(TypeCheckError::ConstructorCalledAsMethod(
+                        *method_name_span,
+                        method_name.to_string(),
+                        struct_info.name.to_string(),
+                    )));
+                }
+
                 let method = self
                     .lookup_method(&struct_info.name, method_name)
                     .ok_or_else(|| {
@@ -1603,14 +1620,6 @@ impl TypeChecker {
                         ))
                     })?
                     .clone();
-
-                if !method.has_self {
-                    return Err(Box::new(TypeCheckError::ConstructorCalledAsMethod(
-                        *method_name_span,
-                        method_name.to_string(),
-                        struct_info.name.to_string(),
-                    )));
-                }
 
                 let arguments_checked = args
                     .iter()
@@ -1645,10 +1654,12 @@ impl TypeChecker {
                 typed_ast::Expression::MethodCall {
                     full_span: *full_span,
                     receiver: Box::new(receiver_checked),
-                    runtime_name: method.runtime_name.clone(),
+                    method_ref: typed_ast::MethodRef {
+                        owner: struct_info.name.clone(),
+                        name: method_name,
+                        kind: StructMethodKind::Instance,
+                    },
                     method_name_span: *method_name_span,
-                    method_name,
-                    is_constructor: false,
                     args: arguments_checked,
                     type_scheme,
                 }
@@ -2142,7 +2153,6 @@ impl TypeChecker {
 
                 typed_ast::Statement::DefineFunction {
                     function_name,
-                    runtime_name: function_name.to_compact_string(),
                     method_owner: None,
                     decorators: decorators.clone(),
                     type_parameters: type_parameters
@@ -2416,6 +2426,34 @@ impl TypeChecker {
                             ))
                         })
                         .collect::<Result<_>>()?,
+                    methods: methods
+                        .iter()
+                        .map(|method| {
+                            let ast::Statement::DefineFunction {
+                                function_name_span,
+                                function_name,
+                                parameters,
+                                ..
+                            } = method
+                            else {
+                                unreachable!("non-function members are rejected earlier");
+                            };
+
+                            let kind = if !parameters.is_empty() && parameters[0].1 == "self" {
+                                StructMethodKind::Instance
+                            } else {
+                                StructMethodKind::Constructor
+                            };
+
+                            (
+                                (*function_name).to_compact_string(),
+                                StructMethodInfo {
+                                    definition_span: *function_name_span,
+                                    kind,
+                                },
+                            )
+                        })
+                        .collect(),
                 };
                 self.structs
                     .insert(struct_name.to_compact_string(), struct_info.clone());
@@ -2611,14 +2649,7 @@ impl TypeChecker {
                     }
                 }
 
-                let struct_without_methods = ast::Statement::DefineStruct {
-                    struct_name_span: *struct_name_span,
-                    struct_name,
-                    type_parameters: type_parameters.clone(),
-                    fields: fields.clone(),
-                    methods: vec![],
-                };
-                checked_statements.push(self.check_statement(&struct_without_methods)?);
+                checked_statements.push(self.check_statement(statement)?);
 
                 let mut prepared_methods = vec![];
 
@@ -2627,7 +2658,11 @@ impl TypeChecker {
                         unreachable!("non-function members are rejected above");
                     };
 
-                    let has_self = !parameters.is_empty() && parameters[0].1 == "self";
+                    let method_kind = if !parameters.is_empty() && parameters[0].1 == "self" {
+                        StructMethodKind::Instance
+                    } else {
+                        StructMethodKind::Constructor
+                    };
 
                     let mut method_to_check = method.clone();
                     if let ast::Statement::DefineFunction {
@@ -2640,7 +2675,7 @@ impl TypeChecker {
                         *method_type_parameters = merged_type_parameters;
                     }
 
-                    if has_self
+                    if method_kind == StructMethodKind::Instance
                         && let ast::Statement::DefineFunction { parameters, .. } =
                             &mut method_to_check
                         && parameters[0].2.is_none()
@@ -2679,16 +2714,10 @@ impl TypeChecker {
                         &self_type_args,
                     )?;
 
-                    let ast::Statement::DefineFunction { function_name, .. } = &method_to_check
-                    else {
-                        unreachable!("method_to_check is DefineFunction");
-                    };
-                    let runtime_name = Self::runtime_method_name(struct_name, function_name);
-
-                    prepared_methods.push((method_to_check, has_self, runtime_name));
+                    prepared_methods.push((method_to_check, method_kind));
                 }
 
-                for (method_to_check, has_self, runtime_name) in &prepared_methods {
+                for (method_to_check, _method_kind) in &prepared_methods {
                     let ast::Statement::DefineFunction { function_name, .. } = method_to_check
                     else {
                         unreachable!("method_to_check is DefineFunction");
@@ -2699,12 +2728,10 @@ impl TypeChecker {
                         struct_name.to_compact_string(),
                         function_name.to_compact_string(),
                         signature,
-                        *has_self,
-                        runtime_name.clone(),
                     );
                 }
 
-                for (method_to_check, has_self, runtime_name) in prepared_methods {
+                for (method_to_check, method_kind) in prepared_methods {
                     self.checking_struct_method = true;
                     let checked_method = self.check_statement(&method_to_check);
                     self.checking_struct_method = false;
@@ -2727,13 +2754,9 @@ impl TypeChecker {
                         _ => unreachable!("checked method is DefineFunction"),
                     };
 
-                    if let typed_ast::Statement::DefineFunction {
-                        runtime_name: checked_runtime_name,
-                        method_owner,
-                        ..
-                    } = &mut checked_method
+                    if let typed_ast::Statement::DefineFunction { method_owner, .. } =
+                        &mut checked_method
                     {
-                        *checked_runtime_name = runtime_name.clone();
                         *method_owner = Some(struct_name.to_compact_string());
                     }
 
@@ -2758,7 +2781,7 @@ impl TypeChecker {
                         fn_type: checked_fn_type,
                     };
 
-                    if has_self {
+                    if method_kind == StructMethodKind::Instance {
                         let fn_type = match &signature.fn_type {
                             TypeScheme::Concrete(t) => t.clone(),
                             TypeScheme::Quantified(_, _) => {
@@ -2794,8 +2817,6 @@ impl TypeChecker {
                         struct_name.to_compact_string(),
                         function_name.to_compact_string(),
                         signature,
-                        has_self,
-                        runtime_name,
                     );
                 }
 
