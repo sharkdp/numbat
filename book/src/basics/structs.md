@@ -41,7 +41,7 @@ struct Element {
     atomic_number: Scalar,
     density: MassDensity,
 
-    fn tungsten() -> Self = Element {
+    fn tungsten() -> Self = Self {
         name: "Tungsten",
         atomic_number: 74,
         density: 19.25 g/cm³,
@@ -55,6 +55,8 @@ let tungsten = Element::tungsten()
 let side_length = tungsten.cube_side_length(1 kg) -> cm
 print("A 1 kg tungsten cube has side length {side_length:.2}.")
 ```
+
+Note that constructor methods can return `Self` or `Element` in this case, but the former is more concise and is preferred by convention.
 
 ## Generic structs
 

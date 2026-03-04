@@ -859,32 +859,6 @@ fn struct_methods() {
         TypeCheckError::MethodNotFound(_, name, struct_name) if name == "missing" && struct_name == "Point"
     ));
 
-    assert_successful_typecheck(
-        "
-        struct Point {
-            x: A,
-            y: A,
-            fn new(x: A, y: A) -> Self = Point { x: x, y: y }
-            fn with_x(self, x: A) -> Self = Point { x: x, y: self.y }
-        }
-        let p = Point::new(1 a, 2 a)
-        let p2 = p.with_x(5 a)
-        let x: A = p2.x
-        ",
-    );
-
-    assert_successful_typecheck(
-        "
-        struct Point {
-            x: A,
-            y: A,
-            fn move_x(self, dx: A) -> Self = Self { x: self.x + dx, y: self.y }
-        }
-
-        let x: A = Point { x: 1 a, y: 2 a }.move_x(3 a).x
-        ",
-    );
-
     assert!(matches!(
         get_typecheck_error(
             "
@@ -970,6 +944,37 @@ fn struct_methods() {
 
         let x: Bool = Flag { n: 4 }.even()
         let y: Bool = Flag { n: 5 }.odd()
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Inner {
+            x: A,
+        }
+
+        struct Outer<T> {
+            inner: T,
+            fn wrap(value: T) -> Self = Self { inner: value }
+            fn replace<U>(self, value: U) -> Outer<U> = Outer { inner: value }
+        }
+
+        struct OuterPoint {
+            inner: Inner,
+            fn shift(self, dx: A) -> Self = Self { inner: Inner { x: self.inner.x + dx } }
+        }
+
+        struct Counter {
+            value: Scalar,
+            fn new(n: Scalar) -> Self = result
+                where result =
+                    if n == 0 then Self { value: 0 } else Counter::new(n - 1).inc()
+            fn inc(self) -> Self = Self { value: self.value + 1 }
+        }
+
+        let p: A = OuterPoint { inner: Inner { x: 1 a } }.shift(2 a).inner.x
+        let q: Scalar = Outer::wrap(1 a).replace(5).inner
+        let count: Scalar = Counter::new(4).value
         ",
     );
 

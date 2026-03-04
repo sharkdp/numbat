@@ -1263,19 +1263,6 @@ fn test_struct_methods() {
     expect_output(
         "
         struct Point {
-            x: Scalar,
-            y: Scalar,
-            fn origin() = Point { x: 1, y: 1 }
-            fn get_x(self) = self.x
-        }
-        Point::origin().get_x()
-        ",
-        "1",
-    );
-
-    expect_output(
-        "
-        struct Point {
             x: Length,
             y: Length,
             fn new(x: Length, y: Length) -> Self = Point { x: x, y: y }
@@ -1301,34 +1288,17 @@ fn test_struct_methods() {
 
     expect_output(
         "
-        struct Counter {
-            value: Scalar,
-            fn new(n: Scalar, acc: Scalar) -> Self =
-                if n == 0 then Counter { value: acc } else Counter::new(n - 1, acc + 1)
-        }
-
-        Counter::new(4, 0).value
-        ",
-        "4",
-    );
-
-    expect_output(
-        "
-        struct A {
+        struct Flag {
             n: Scalar,
-            fn val(self) -> Scalar = self.n
+            fn even(self) -> Bool =
+                if self.n == 0 then true else Flag { n: self.n - 1 }.odd()
+            fn odd(self) -> Bool =
+                if self.n == 0 then false else Flag { n: self.n - 1 }.even()
         }
 
-        struct B {
-            n: Scalar,
-            fn val(self) -> Scalar = self.n + 10
-        }
-
-        let a = A { n: 1 }
-        let b = B { n: 1 }
-        a.val() + b.val()
+        if Flag { n: 7 }.odd() then 1 else 0
         ",
-        "12",
+        "1",
     );
 
     expect_output(
@@ -1346,21 +1316,6 @@ fn test_struct_methods() {
         v1.dot(v2) + combine(1, 2) m^2
         ",
         "14 m²",
-    );
-
-    expect_output(
-        "
-        struct Flag {
-            n: Scalar,
-            fn even(self) -> Bool =
-                if self.n == 0 then true else Flag { n: self.n - 1 }.odd()
-            fn odd(self) -> Bool =
-                if self.n == 0 then false else Flag { n: self.n - 1 }.even()
-        }
-
-        if Flag { n: 7 }.odd() then 1 else 0
-        ",
-        "1",
     );
 
     expect_failure(
@@ -1445,6 +1400,117 @@ fn test_struct_method_namespace_stress() {
         A { x: 1 }.value() + B { x: 1 }.value()
         ",
         "1102",
+    );
+}
+
+#[test]
+fn test_struct_field_projection_stability() {
+    expect_output(
+        "
+        struct Pair {
+            x: Scalar,
+            y: Scalar,
+            fn score(self) -> Scalar = self.x + self.y + self.x + self.y
+        }
+
+        Pair { x: 2, y: 3 }.score()
+        ",
+        "10",
+    );
+
+    expect_output(
+        "
+        struct Pair {
+            x: Scalar,
+            y: Scalar,
+        }
+
+        struct Wrap {
+            pair: Pair,
+            fn twice_x(self) -> Scalar = self.pair.x + self.pair.x
+        }
+
+        Wrap { pair: Pair { x: 4, y: 1 } }.twice_x()
+        ",
+        "8",
+    );
+}
+
+#[test]
+fn test_self_struct_instantiation_contexts() {
+    expect_output(
+        "
+        struct Outer<T> {
+            inner: T,
+            fn wrap(value: T) -> Self = Self { inner: value }
+            fn replace<U>(self, value: U) -> Outer<U> = Outer { inner: value }
+        }
+
+        Outer::wrap(2 m).replace(5).inner
+        ",
+        "5",
+    );
+
+    expect_output(
+        "
+        struct Inner {
+            x: Length,
+        }
+
+        struct Outer {
+            inner: Inner,
+            fn shift(self, dx: Length) -> Self = Self {
+                inner: Inner { x: self.inner.x + dx }
+            }
+        }
+
+        Outer { inner: Inner { x: 1 m } }.shift(2 m).inner.x
+        ",
+        "3 m",
+    );
+
+    expect_output(
+        "
+        struct Counter {
+            value: Scalar,
+
+            fn new(n: Scalar) -> Self = result
+                where result =
+                    if n == 0 then Self { value: 0 } else Counter::new(n - 1).inc()
+
+            fn inc(self) -> Self = Self { value: self.value + 1 }
+        }
+
+        Counter::new(4).value
+        ",
+        "4",
+    );
+}
+
+#[test]
+fn test_ffi_struct_shape_for_chemical_elements() {
+    expect_output(
+        "
+        use chemistry::elements
+        element(\"H\").symbol
+        ",
+        "\"H\"",
+    );
+
+    expect_output(
+        "
+        use chemistry::elements
+        element(\"hydrogen\").atomic_number
+        ",
+        "1",
+    );
+
+    expect_failure(
+        "
+        use chemistry::elements
+        element(\"definitely-not-an-element\")
+        ",
+        "Chemical element not found",
     );
 }
 
