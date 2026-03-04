@@ -195,6 +195,7 @@ pub struct TypeChecker {
     methods: HashMap<CompactString, HashMap<CompactString, MethodInfo>>,
     checking_struct_method: bool,
     current_struct_name: Option<CompactString>,
+    non_generic_struct_instances: HashMap<CompactString, StructInfo>,
 }
 
 /// Stores information about a method defined in a struct method section
@@ -1283,13 +1284,22 @@ impl TypeChecker {
                 // For generic structs, instantiate type parameters with fresh type variables
                 let instantiated_struct_info = match &struct_info.kind {
                     StructKind::Definition(type_parameters) if type_parameters.is_empty() => {
-                        // Non-generic struct: create instance with empty type arguments
-                        StructInfo {
-                            definition_span: struct_info.definition_span,
-                            name: struct_info.name.clone(),
-                            kind: StructKind::Instance(vec![]),
-                            fields: struct_info.fields.clone(),
-                            methods: struct_info.methods.clone(),
+                        // Non-generic struct: cache a single instantiated view and clone cheaply.
+                        if let Some(cached) =
+                            self.non_generic_struct_instances.get(&struct_info.name)
+                        {
+                            cached.clone()
+                        } else {
+                            let instantiated = StructInfo {
+                                definition_span: struct_info.definition_span,
+                                name: struct_info.name.clone(),
+                                kind: StructKind::Instance(vec![]),
+                                fields: struct_info.fields.clone(),
+                                methods: struct_info.methods.clone(),
+                            };
+                            self.non_generic_struct_instances
+                                .insert(struct_info.name.clone(), instantiated.clone());
+                            instantiated
                         }
                     }
                     StructKind::Definition(type_parameters) => {
@@ -2464,6 +2474,8 @@ impl TypeChecker {
                 };
                 self.structs
                     .insert(struct_name.to_compact_string(), struct_info.clone());
+                self.non_generic_struct_instances
+                    .remove(&struct_name.to_compact_string());
 
                 typed_ast::Statement::DefineStruct(struct_info)
             }

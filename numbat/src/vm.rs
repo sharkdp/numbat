@@ -1213,14 +1213,19 @@ impl Vm {
                         content.push(self.pop());
                     }
 
-                    self.stack.push(Value::StructInstance(struct_info, content));
+                    self.stack.push(Value::StructInstance(
+                        struct_info,
+                        Arc::<[Value]>::from(content),
+                    ));
                 }
                 Op::AccessStructField => {
                     let field_idx = self.read_u16();
-
-                    let mut fields = self.pop().unsafe_as_struct_fields();
-
-                    let value = fields.swap_remove(field_idx as usize);
+                    let struct_value = self.pop();
+                    let fields = struct_value.unsafe_as_struct_fields();
+                    let value = fields
+                        .get(field_idx as usize)
+                        .expect("field index should be valid")
+                        .clone();
                     self.stack.push(value);
                 }
                 Op::BuildList => {
