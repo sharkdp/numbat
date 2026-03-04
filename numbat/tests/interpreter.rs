@@ -1279,7 +1279,7 @@ fn test_struct_methods() {
             x: Length,
             y: Length,
             fn new(x: Length, y: Length) -> Self = Point { x: x, y: y }
-            fn translate(self, dx: Length, dy: Length) -> Self = Point { x: self.x + dx, y: self.y + dy }
+            fn translate(self, dx: Length, dy: Length) -> Self = Self { x: self.x + dx, y: self.y + dy }
             fn get_x(self) -> Length = self.x
         }
         Point::new(3 m, 4 m).translate(2 m, 0 m).get_x()

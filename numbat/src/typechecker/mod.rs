@@ -194,6 +194,7 @@ pub struct TypeChecker {
 
     methods: HashMap<CompactString, HashMap<CompactString, MethodInfo>>,
     checking_struct_method: bool,
+    current_struct_name: Option<CompactString>,
 }
 
 /// Stores information about a method defined in a struct method section
@@ -1260,15 +1261,22 @@ impl TypeChecker {
                 fields,
             } => {
                 let name = *name;
+                let resolved_name: CompactString = if name == "Self" {
+                    self.current_struct_name.clone().ok_or_else(|| {
+                        Box::new(TypeCheckError::SelfTypeOutsideStructMethod(*ident_span))
+                    })?
+                } else {
+                    name.to_compact_string()
+                };
                 let fields_checked = fields
                     .iter()
                     .map(|(_, n, v)| Ok((*n, self.elaborate_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
-                let Some(struct_info) = self.structs.get(name).cloned() else {
+                let Some(struct_info) = self.structs.get(&resolved_name).cloned() else {
                     return Err(Box::new(TypeCheckError::UnknownStruct(
                         *ident_span,
-                        name.to_owned(),
+                        resolved_name.to_string(),
                     )));
                 };
 
@@ -2732,7 +2740,9 @@ impl TypeChecker {
 
                 for (method_to_check, method_kind) in prepared_methods {
                     self.checking_struct_method = true;
+                    self.current_struct_name = Some(struct_name.to_compact_string());
                     let checked_method = self.check_statement(&method_to_check);
+                    self.current_struct_name = None;
                     self.checking_struct_method = false;
                     let mut checked_method = checked_method?;
 

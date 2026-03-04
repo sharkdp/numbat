@@ -873,6 +873,18 @@ fn struct_methods() {
         ",
     );
 
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+            fn move_x(self, dx: A) -> Self = Self { x: self.x + dx, y: self.y }
+        }
+
+        let x: A = Point { x: 1 a, y: 2 a }.move_x(3 a).x
+        ",
+    );
+
     assert!(matches!(
         get_typecheck_error(
             "

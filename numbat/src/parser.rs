@@ -3431,6 +3431,16 @@ mod tests {
             },
         );
 
+        parse_as_expression(
+            &["Self { x: 1 }"],
+            Expression::InstantiateStruct {
+                full_span: Span::dummy(),
+                ident_span: Span::dummy(),
+                name: "Self",
+                fields: vec![(Span::dummy(), "x", scalar!(1.0))],
+            },
+        );
+
         should_fail_with(
             &["Point::new"],
             ParseErrorKind::ExpectedLeftParenAfterStaticMethodName,
