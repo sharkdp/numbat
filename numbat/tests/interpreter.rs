@@ -1347,6 +1347,38 @@ fn test_struct_methods() {
         ",
         "14 m²",
     );
+
+    expect_output(
+        "
+        struct Flag {
+            n: Scalar,
+            fn even(self) -> Bool =
+                if self.n == 0 then true else Flag { n: self.n - 1 }.odd()
+            fn odd(self) -> Bool =
+                if self.n == 0 then false else Flag { n: self.n - 1 }.even()
+        }
+
+        if Flag { n: 7 }.odd() then 1 else 0
+        ",
+        "1",
+    );
+
+    expect_failure(
+        "
+        struct Point {
+            fn magnitude(self) = self.x
+            x: Scalar
+        }
+        ",
+        "Fields must be declared before methods in struct body",
+    );
+
+    expect_failure(
+        "
+        fn id(x: Self) -> Self = x
+        ",
+        "`Self` can only be used inside struct method definitions",
+    );
 }
 
 #[test]

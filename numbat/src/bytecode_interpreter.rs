@@ -546,10 +546,17 @@ impl BytecodeInterpreter {
                 local_variables,
                 ..
             } => {
-                let runtime_name = format!("<method {struct_name}::{method_name}>");
-                let idx = self.vm.begin_function(&runtime_name);
-                self.vm
-                    .register_method_function(struct_name, method_name, idx);
+                if let Some(idx) = self
+                    .vm
+                    .get_empty_method_function_idx(struct_name, method_name)
+                {
+                    self.vm.begin_reserved_function(idx);
+                } else {
+                    let runtime_name = format!("<method {struct_name}::{method_name}>");
+                    let idx = self.vm.begin_function(&runtime_name);
+                    self.vm
+                        .register_method_function(struct_name, method_name, idx);
+                }
 
                 self.locals.push(vec![]);
 
@@ -757,6 +764,26 @@ impl BytecodeInterpreter {
         Ok(())
     }
 
+    fn preregister_struct_methods<'a>(&mut self, methods: &[Statement<'a>]) {
+        for statement in methods {
+            let Statement::DefineMethod {
+                struct_name,
+                method_name,
+                body: Some(_),
+                ..
+            } = statement
+            else {
+                continue;
+            };
+
+            let runtime_name = format!("<method {struct_name}::{method_name}>");
+            let idx = self.vm.begin_function(&runtime_name);
+            self.vm
+                .register_method_function(struct_name, method_name, idx);
+            self.vm.end_function();
+        }
+    }
+
     fn run(
         &mut self,
         settings: &mut InterpreterSettings,
@@ -831,8 +858,34 @@ impl Interpreter for BytecodeInterpreter {
         prefix_transformer: &crate::prefix_transformer::Transformer,
         typechecker: &TypeChecker,
     ) -> Result<InterpreterResult> {
-        for statement in statements {
-            self.compile_statement(statement, typechecker)?;
+        let mut idx = 0;
+        while idx < statements.len() {
+            if let Statement::DefineStruct(struct_info) = &statements[idx] {
+                self.compile_statement(&statements[idx], typechecker)?;
+
+                let mut end = idx + 1;
+                while end < statements.len() {
+                    match &statements[end] {
+                        Statement::DefineMethod {
+                            struct_name,
+                            method_name: _,
+                            ..
+                        } if struct_name == &struct_info.name => {
+                            end += 1;
+                        }
+                        _ => break,
+                    }
+                }
+
+                self.preregister_struct_methods(&statements[idx + 1..end]);
+                for statement in &statements[idx + 1..end] {
+                    self.compile_statement(statement, typechecker)?;
+                }
+                idx = end;
+            } else {
+                self.compile_statement(&statements[idx], typechecker)?;
+                idx += 1;
+            }
         }
 
         self.run(settings, prefix_transformer, typechecker)

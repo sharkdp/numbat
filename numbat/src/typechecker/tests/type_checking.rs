@@ -925,6 +925,81 @@ fn struct_methods() {
         ),
         TypeCheckError::TypeParameterNameClash(_, name) if name == "T"
     ));
+
+    assert_successful_typecheck(
+        "
+        struct Box<T> {
+            inner: T,
+            fn into_list(self) -> List<Self> = [self]
+            fn map_self(self, f: Fn[(Self) -> Self]) -> Self = f(self)
+        }
+
+        fn id_box(b) = b
+
+        let xs: List<Box<A>> = Box { inner: 1 a }.into_list()
+        let y: Box<A> = Box { inner: 1 a }.map_self(id_box)
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error("fn id(x: Self) -> Self = x"),
+        TypeCheckError::SelfTypeOutsideStructMethod(_)
+    ));
+
+    assert_successful_typecheck(
+        "
+        struct Flag {
+            n: Scalar,
+            fn even(self) -> Bool =
+                if self.n == 0 then true else Flag { n: self.n - 1 }.odd()
+            fn odd(self) -> Bool =
+                if self.n == 0 then false else Flag { n: self.n - 1 }.even()
+        }
+
+        let x: Bool = Flag { n: 4 }.even()
+        let y: Bool = Flag { n: 5 }.odd()
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn translate(self, dx: A, dy: A) -> Self = Point { x: self.x + dx, y: self.y + dy }
+            }
+            Point { x: 1 a, y: 2 a }.translate(1 a)
+            "
+        ),
+        TypeCheckError::WrongArity { .. }
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn translate(self, dx: A, dy: A) -> Self = Point { x: self.x + dx, y: self.y + dy }
+            }
+            Point { x: 1 a, y: 2 a }.translate(1 a, 1 b)
+            "
+        ),
+        TypeCheckError::IncompatibleDimensions(..)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                fn missing(self: Self) -> Self
+            }
+            "
+        ),
+        TypeCheckError::UnknownForeignFunction(_, name) if name == "missing"
+    ));
 }
 
 #[test]

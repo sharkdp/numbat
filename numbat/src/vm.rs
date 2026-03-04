@@ -501,6 +501,10 @@ impl Vm {
         self.current_chunk_index as u16
     }
 
+    pub(crate) fn begin_reserved_function(&mut self, idx: u16) {
+        self.current_chunk_index = idx as usize;
+    }
+
     pub(crate) fn end_function(&mut self) {
         // Continue compilation of "main"/global code
         self.current_chunk_index = 0;
@@ -538,6 +542,22 @@ impl Vm {
         self.method_callables
             .get(&(owner.to_compact_string(), method.to_compact_string()))
             .copied()
+    }
+
+    pub(crate) fn get_empty_method_function_idx(&self, owner: &str, method: &str) -> Option<u16> {
+        let MethodCallable::Normal(idx) = self.get_method_callable(owner, method)? else {
+            return None;
+        };
+        let idx_usize = idx as usize;
+        if self
+            .bytecode
+            .get(idx_usize)
+            .is_some_and(|(_, code, spans)| code.is_empty() && spans.is_empty())
+        {
+            Some(idx)
+        } else {
+            None
+        }
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: ArityRange) {

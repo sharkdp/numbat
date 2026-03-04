@@ -3440,6 +3440,11 @@ mod tests {
             &["struct Point { fn magnitude(self) = self.x, x: Length }"],
             ParseErrorKind::ExpectedFieldOrMethodInStruct,
         );
+
+        should_fail_with(
+            &["struct Point { fn magnitude(self) = self.x x: Length }"],
+            ParseErrorKind::ExpectedFieldOrMethodInStruct,
+        );
     }
 
     #[test]
