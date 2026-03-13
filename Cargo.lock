@@ -1223,6 +1223,7 @@ name = "numbat"
 version = "1.23.0"
 dependencies = [
  "approx",
+ "clap",
  "codespan-reporting",
  "compact_str",
  "criterion",

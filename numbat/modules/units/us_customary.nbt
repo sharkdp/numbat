@@ -36,6 +36,11 @@ unit fluidounce: Volume = 2 tablespoon
 @aliases(hogsheads)
 unit hogshead: Volume = 63 gallon
 
+@name("Oil barrel")
+@url("https://en.wikipedia.org/wiki/Barrel_(unit)#Oil_barrel")
+@aliases(barrels)
+unit barrel: Volume = 42 gallon
+
 @name("US rod")
 @url("https://en.wikipedia.org/wiki/Rod_(unit)")
 @aliases(rods, perch)

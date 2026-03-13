@@ -1,18 +1,80 @@
 """
 This script:
 1. Generates example files from examples/*.nbt
-2. Generates function reference files via cargo run --example=inspect
-3. Generates the units list
-4. Runs zensical build
+2. Builds the `inspect` program once
+3. Generates function reference files via `inspect`
+4. Generates the units list via `inspect`
+5. Runs zensical build
 """
 
-import os
+from concurrent.futures import ThreadPoolExecutor
+import json
 import subprocess
-import sys
-import urllib.parse
 from pathlib import Path
+import urllib.parse
+import os
+import sys
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
+WORKSPACE_DIR = SCRIPT_DIR.parent
+NUMBAT_CRATE_DIR = WORKSPACE_DIR / "numbat"
+MODULES_DIR = NUMBAT_CRATE_DIR / "modules"
+
+
+def inspect_env():
+    env = os.environ.copy()
+    env["TZ"] = "UTC"
+    return env
+
+
+def inspect_binary_path():
+    metadata = subprocess.run(
+        ["cargo", "metadata", "--format-version=1", "--no-deps"],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=WORKSPACE_DIR,
+    )
+    target_directory = Path(json.loads(metadata.stdout)["target_directory"])
+    binary_name = "inspect.exe" if os.name == "nt" else "inspect"
+    return target_directory / "debug" / "examples" / binary_name
+
+
+def build_inspect_binary():
+    print("Building inspect example (debug)...")
+    command = [
+        "cargo",
+        "build",
+        "--quiet",
+        "--example",
+        "inspect",
+        "-p",
+        "numbat",
+    ]
+
+    subprocess.run(
+        command,
+        check=True,
+        cwd=WORKSPACE_DIR,
+    )
+
+    binary = inspect_binary_path()
+    if not binary.exists():
+        print(f"Could not find inspect binary at {binary}", file=sys.stderr)
+        sys.exit(1)
+    return binary
+
+
+def run_inspect(inspect_binary, *args):
+    result = subprocess.run(
+        [str(inspect_binary), str(MODULES_DIR), *args],
+        capture_output=True,
+        text=True,
+        env=inspect_env(),
+        check=True,
+        cwd=WORKSPACE_DIR,
+    )
+    return result.stdout
 
 
 def generate_example(
@@ -103,7 +165,7 @@ def generate_all_examples():
     )
 
 
-def generate_units_list():
+def generate_units_list(inspect_binary):
     """Generate the list of units documentation."""
     path_units = SCRIPT_DIR / "src" / "prelude" / "list-units.md"
     print("Generating list of units...")
@@ -113,18 +175,28 @@ def generate_units_list():
         f.write("icon: lucide/ruler\n")
         f.write("---\n")
         f.write("\n")
-        f.flush()
-        subprocess.run(
-            ["cargo", "run", "--release", "--quiet", "--example=inspect", "units"],
-            stdout=f,
-            text=True,
-            cwd=SCRIPT_DIR.parent,
-        )
+        f.write(run_inspect(inspect_binary, "units"))
 
 
-def list_of_functions(file_name, document):
+def render_module(inspect_binary, module):
+    print(f"Generating list of functions for module '{module}'...", flush=True)
+    return run_inspect(inspect_binary, "functions", module)
+
+
+def list_of_functions(inspect_binary, file_name, document):
     """Generate function reference documentation for a set of modules."""
     path = SCRIPT_DIR / "src" / "prelude" / "functions" / f"{file_name}.md"
+    all_modules = [module for section in document["sections"] for module in section["modules"]]
+    max_workers = min(len(all_modules), os.cpu_count() or 4)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        module_outputs = {
+            module: output
+            for module, output in zip(
+                all_modules,
+                executor.map(lambda module: render_module(inspect_binary, module), all_modules),
+            )
+        }
 
     with open(path, "w", encoding="utf-8") as f:
         if icon := document.get("icon"):
@@ -156,35 +228,10 @@ def list_of_functions(file_name, document):
             print(f"Defined in: `{'`, `'.join(modules)}`\n", file=f, flush=True)
 
             for module in modules:
-                print(
-                    f"Generating list of functions for module '{module}'...", flush=True
-                )
-                env = os.environ.copy()
-                env["TZ"] = "UTC"
-
-                try:
-                    subprocess.run(
-                        [
-                            "cargo",
-                            "run",
-                            "--release",
-                            "--quiet",
-                            "--example=inspect",
-                            "--",
-                            "functions",
-                            module,
-                        ],
-                        stdout=f,
-                        text=True,
-                        env=env,
-                        check=True,
-                        cwd=SCRIPT_DIR.parent,
-                    )
-                except subprocess.CalledProcessError as e:
-                    sys.exit(e.returncode)
+                f.write(module_outputs[module])
 
 
-def generate_all_function_lists():
+def generate_all_function_lists(inspect_binary):
     """Generate all function reference documentation."""
     print("Generating function reference files...")
 
@@ -192,6 +239,7 @@ def generate_all_function_lists():
     (SCRIPT_DIR / "src" / "prelude" / "functions").mkdir(parents=True, exist_ok=True)
 
     list_of_functions(
+        inspect_binary,
         "math",
         {
             "title": "Mathematical functions",
@@ -233,6 +281,7 @@ def generate_all_function_lists():
     )
 
     list_of_functions(
+        inspect_binary,
         "lists",
         {
             "title": "List-related functions",
@@ -242,6 +291,7 @@ def generate_all_function_lists():
     )
 
     list_of_functions(
+        inspect_binary,
         "strings",
         {
             "title": "String-related functions",
@@ -251,6 +301,7 @@ def generate_all_function_lists():
     )
 
     list_of_functions(
+        inspect_binary,
         "datetime",
         {
             "title": "Date and time",
@@ -270,6 +321,7 @@ def generate_all_function_lists():
     )
 
     list_of_functions(
+        inspect_binary,
         "other",
         {
             "title": "Other functions",
@@ -310,8 +362,9 @@ def main():
 
     # Generate all content
     generate_all_examples()
-    generate_units_list()
-    generate_all_function_lists()
+    inspect_binary = build_inspect_binary()
+    generate_units_list(inspect_binary)
+    generate_all_function_lists(inspect_binary)
 
     # Build the site
     return build_site()
