@@ -202,7 +202,13 @@ pub struct TypeChecker {
 #[derive(Clone)]
 struct MethodInfo {
     signature: FunctionSignature,
-    operator_impl: Option<BinaryOperator>,
+    operator_impl: Option<MethodOperatorInfo>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct MethodOperatorInfo {
+    operator: BinaryOperator,
+    reverse: bool,
 }
 
 struct ElaborationDefinitionArgs<'a, 'b> {
@@ -689,8 +695,9 @@ impl TypeChecker {
         Ok(())
     }
 
-    fn method_operator_impl(decorators: &[decorator::Decorator<'_>]) -> Option<BinaryOperator> {
+    fn method_operator_impl(decorators: &[decorator::Decorator<'_>]) -> Option<MethodOperatorInfo> {
         decorator::binary_operator(decorators)
+            .map(|(operator, reverse)| MethodOperatorInfo { operator, reverse })
     }
 
     fn fresh_type_variable(&mut self) -> Type {
@@ -711,7 +718,7 @@ impl TypeChecker {
         struct_name: CompactString,
         method_name: CompactString,
         signature: FunctionSignature,
-        operator_impl: Option<BinaryOperator>,
+        operator_impl: Option<MethodOperatorInfo>,
     ) {
         self.methods.entry(struct_name).or_default().insert(
             method_name,
@@ -736,7 +743,7 @@ impl TypeChecker {
         fn_type: &TypeScheme,
         type_parameters: &[(Span, &str, Option<TypeParameterBound>)],
     ) -> Result<Option<typed_ast::StructMethodOperatorInfo>> {
-        let Some(operator) = decorator::binary_operator(decorators) else {
+        let Some((operator, reverse)) = decorator::binary_operator(decorators) else {
             return Ok(None);
         };
 
@@ -765,9 +772,99 @@ impl TypeChecker {
 
         Ok(Some(typed_ast::StructMethodOperatorInfo {
             operator,
+            reverse,
             rhs_type,
             output_type,
         }))
+    }
+
+    fn resolve_operator_candidates(
+        &mut self,
+        operator: BinaryOperator,
+        lhs: &Type,
+        rhs: &Type,
+        output: &Type,
+        reverse: bool,
+    ) -> Vec<constraints::Satisfied> {
+        let struct_type = if reverse { rhs } else { lhs };
+        let Some(struct_info) = (match struct_type {
+            Type::Struct(struct_info) => Some(struct_info),
+            _ => None,
+        }) else {
+            return vec![];
+        };
+        let Some(methods) = self.methods.get(&struct_info.name) else {
+            return vec![];
+        };
+
+        let mut candidates = Vec::new();
+        for method_info in methods.values() {
+            let Some(operator_impl) = method_info.operator_impl.as_ref() else {
+                continue;
+            };
+            if operator_impl.operator != operator || operator_impl.reverse != reverse {
+                continue;
+            }
+
+            let qualified_type = match &method_info.signature.fn_type {
+                TypeScheme::Concrete(type_) => {
+                    crate::typechecker::qualified_type::QualifiedType::new(
+                        type_.clone(),
+                        qualified_type::Bounds::none(),
+                    )
+                }
+                TypeScheme::Quantified(_, _) => method_info
+                    .signature
+                    .fn_type
+                    .instantiate(&mut self.name_generator),
+            };
+
+            let Type::Fn(parameter_types, return_type) = qualified_type.inner else {
+                continue;
+            };
+            if parameter_types.len() != 2 {
+                continue;
+            }
+
+            let receiver_type = if reverse { rhs } else { lhs };
+            let other_type = if reverse { lhs } else { rhs };
+
+            let mut constraint_set = ConstraintSet::default();
+            constraint_set
+                .add(Constraint::Equal(
+                    parameter_types[0].clone(),
+                    receiver_type.clone(),
+                ))
+                .ok();
+            constraint_set
+                .add(Constraint::Equal(
+                    parameter_types[1].clone(),
+                    other_type.clone(),
+                ))
+                .ok();
+            constraint_set
+                .add(Constraint::Equal(
+                    return_type.as_ref().clone(),
+                    output.clone(),
+                ))
+                .ok();
+            for bound in qualified_type.bounds.iter() {
+                match bound {
+                    Bound::IsDim(type_) => {
+                        constraint_set.add(Constraint::IsDType(type_.clone())).ok();
+                    }
+                }
+            }
+
+            if let Ok((substitution, dtype_vars)) =
+                constraint_set.solve(|_, _, _, _| None::<constraints::Satisfied>)
+                && dtype_vars.is_empty()
+            {
+                candidates.push(constraints::Satisfied::with_substitution(substitution));
+            }
+        }
+
+        candidates
     }
 
     fn try_resolve_binary_operator_constraint(
@@ -827,68 +924,17 @@ impl TypeChecker {
             _ => {}
         }
 
-        if let Type::Struct(struct_info) = lhs {
-            let Some(methods) = self.methods.get(&struct_info.name) else {
-                return if candidates.len() == 1 {
-                    candidates.pop()
-                } else {
-                    None
-                };
-            };
+        let lhs_candidates = self.resolve_operator_candidates(operator, lhs, rhs, output, false);
+        if lhs_candidates.len() == 1 {
+            return lhs_candidates.into_iter().next();
+        }
+        if lhs_candidates.len() > 1 {
+            return None;
+        }
 
-            for method_info in methods.values() {
-                if method_info.operator_impl != Some(operator) {
-                    continue;
-                }
-
-                let qualified_type = match &method_info.signature.fn_type {
-                    TypeScheme::Concrete(type_) => {
-                        crate::typechecker::qualified_type::QualifiedType::new(
-                            type_.clone(),
-                            qualified_type::Bounds::none(),
-                        )
-                    }
-                    TypeScheme::Quantified(_, _) => method_info
-                        .signature
-                        .fn_type
-                        .instantiate(&mut self.name_generator),
-                };
-
-                let Type::Fn(parameter_types, return_type) = qualified_type.inner else {
-                    continue;
-                };
-                if parameter_types.len() != 2 {
-                    continue;
-                }
-
-                let mut constraint_set = ConstraintSet::default();
-                constraint_set
-                    .add(Constraint::Equal(parameter_types[0].clone(), lhs.clone()))
-                    .ok();
-                constraint_set
-                    .add(Constraint::Equal(parameter_types[1].clone(), rhs.clone()))
-                    .ok();
-                constraint_set
-                    .add(Constraint::Equal(
-                        return_type.as_ref().clone(),
-                        output.clone(),
-                    ))
-                    .ok();
-                for bound in qualified_type.bounds.iter() {
-                    match bound {
-                        Bound::IsDim(type_) => {
-                            constraint_set.add(Constraint::IsDType(type_.clone())).ok();
-                        }
-                    }
-                }
-
-                if let Ok((substitution, dtype_vars)) =
-                    constraint_set.solve(|_, _, _, _| None::<constraints::Satisfied>)
-                    && dtype_vars.is_empty()
-                {
-                    candidates.push(constraints::Satisfied::with_substitution(substitution));
-                }
-            }
+        let rhs_candidates = self.resolve_operator_candidates(operator, lhs, rhs, output, true);
+        if rhs_candidates.len() == 1 {
+            return rhs_candidates.into_iter().next();
         }
 
         if candidates.len() == 1 {
@@ -898,47 +944,61 @@ impl TypeChecker {
         }
     }
 
-    fn find_operator_method_name(
+    fn find_operator_method_call(
         &self,
         operator: BinaryOperator,
         lhs: &Type,
         rhs: &Type,
         output: &Type,
-    ) -> Option<CompactString> {
-        let Type::Struct(struct_info) = lhs else {
-            return None;
-        };
-        let methods = self.methods.get(&struct_info.name)?;
-
-        let mut matches = methods.iter().filter_map(|(method_name, method_info)| {
-            if method_info.operator_impl != Some(operator) {
-                return None;
-            }
-
-            let fn_type = method_info.signature.fn_type.to_concrete_type();
-            let Type::Fn(parameter_types, return_type) = fn_type else {
+    ) -> Option<(bool, CompactString, CompactString)> {
+        let find_match = |struct_type: &Type,
+                          reverse: bool|
+         -> Option<(CompactString, CompactString)> {
+            let Type::Struct(struct_info) = struct_type else {
                 return None;
             };
-            if parameter_types.len() != 2 {
-                return None;
-            }
+            let methods = self.methods.get(&struct_info.name)?;
 
-            if Self::types_equal_ignoring_struct_methods(&parameter_types[0], lhs)
-                && Self::types_equal_ignoring_struct_methods(&parameter_types[1], rhs)
-                && Self::types_equal_ignoring_struct_methods(return_type.as_ref(), output)
-            {
-                Some(method_name.clone())
-            } else {
+            let mut matches = methods.iter().filter_map(|(method_name, method_info)| {
+                let operator_impl = method_info.operator_impl.as_ref()?;
+                if operator_impl.operator != operator || operator_impl.reverse != reverse {
+                    return None;
+                }
+
+                let fn_type = method_info.signature.fn_type.to_concrete_type();
+                let Type::Fn(parameter_types, return_type) = fn_type else {
+                    return None;
+                };
+                if parameter_types.len() != 2 {
+                    return None;
+                }
+
+                let receiver_type = if reverse { rhs } else { lhs };
+                let other_type = if reverse { lhs } else { rhs };
+
+                if Self::types_equal_ignoring_struct_methods(&parameter_types[0], receiver_type)
+                    && Self::types_equal_ignoring_struct_methods(&parameter_types[1], other_type)
+                    && Self::types_equal_ignoring_struct_methods(return_type.as_ref(), output)
+                {
+                    Some((struct_info.name.clone(), method_name.clone()))
+                } else {
+                    None
+                }
+            });
+
+            let first = matches.next()?;
+            if matches.next().is_some() {
                 None
+            } else {
+                Some(first)
             }
-        });
+        };
 
-        let first = matches.next()?;
-        if matches.next().is_some() {
-            None
-        } else {
-            Some(first)
+        if let Some((owner, method_name)) = find_match(lhs, false) {
+            return Some((false, owner, method_name));
         }
+
+        find_match(rhs, true).map(|(owner, method_name)| (true, owner, method_name))
     }
 
     fn resolve_deferred_binary_operator_expression<'a>(
@@ -982,23 +1042,27 @@ impl TypeChecker {
                         rhs: rhs.clone(),
                         type_scheme: type_scheme.clone(),
                     }
-                } else if let Some(method_name) =
-                    self.find_operator_method_name(*op, &lhs_type, &rhs_type, &output_type)
+                } else if let Some((reverse, owner, method_name)) =
+                    self.find_operator_method_call(*op, &lhs_type, &rhs_type, &output_type)
                 {
-                    let Type::Struct(struct_info) = lhs_type else {
-                        unreachable!();
+                    let receiver = if reverse { rhs.clone() } else { lhs.clone() };
+                    let arg = if reverse {
+                        (**lhs).clone()
+                    } else {
+                        (**rhs).clone()
                     };
+                    let method_name_span = op_span.unwrap_or(full_span);
 
                     typed_ast::Expression::MethodCall {
                         full_span,
-                        receiver: lhs.clone(),
+                        receiver,
                         method_ref: typed_ast::MethodRef {
-                            owner: struct_info.name,
+                            owner,
                             name: Box::leak(method_name.to_string().into_boxed_str()),
                             kind: StructMethodKind::Instance,
                         },
-                        method_name_span: op_span.unwrap_or(full_span),
-                        args: vec![(**rhs).clone()],
+                        method_name_span,
+                        args: vec![arg],
                         type_scheme: type_scheme.clone(),
                     }
                 } else {
@@ -1024,6 +1088,13 @@ impl TypeChecker {
                     self.resolve_deferred_binary_operator_expression(arg)?;
                 }
             }
+            typed_ast::Expression::String(_, parts) => {
+                for part in parts {
+                    if let typed_ast::StringPart::Interpolation { expr, .. } = part {
+                        self.resolve_deferred_binary_operator_expression(expr)?;
+                    }
+                }
+            }
             typed_ast::Expression::Condition {
                 condition,
                 then_expr,
@@ -1034,16 +1105,9 @@ impl TypeChecker {
                 self.resolve_deferred_binary_operator_expression(then_expr)?;
                 self.resolve_deferred_binary_operator_expression(else_expr)?;
             }
-            typed_ast::Expression::String(_, parts) => {
-                for part in parts {
-                    if let typed_ast::StringPart::Interpolation { expr, .. } = part {
-                        self.resolve_deferred_binary_operator_expression(expr)?;
-                    }
-                }
-            }
             typed_ast::Expression::InstantiateStruct { fields, .. } => {
-                for (_, expr) in fields {
-                    self.resolve_deferred_binary_operator_expression(expr)?;
+                for (_, value) in fields {
+                    self.resolve_deferred_binary_operator_expression(value)?;
                 }
             }
             typed_ast::Expression::AccessField { expr, .. } => {
@@ -1069,7 +1133,6 @@ impl TypeChecker {
 
         Ok(())
     }
-
     fn resolve_deferred_binary_operators<'a>(
         &self,
         statement: &mut typed_ast::Statement<'a>,

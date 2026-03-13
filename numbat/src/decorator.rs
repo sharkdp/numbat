@@ -12,7 +12,10 @@ pub enum Decorator<'a> {
     Name(CompactString),
     Description(CompactString),
     Example(CompactString, Option<CompactString>),
-    BinaryOperator(BinaryOperator),
+    BinaryOperator {
+        operator: BinaryOperator,
+        reverse: bool,
+    },
 }
 
 /// Get an iterator of data computed from a name and/or its alias's `AcceptsPrefix` and
@@ -177,12 +180,12 @@ pub fn contains_abbreviation(decorators: &[Decorator]) -> bool {
 pub fn contains_binary_operator_decorators(decorators: &[Decorator]) -> bool {
     decorators
         .iter()
-        .any(|decorator| matches!(decorator, Decorator::BinaryOperator(..)))
+        .any(|decorator| matches!(decorator, Decorator::BinaryOperator { .. }))
 }
 
-pub fn binary_operator<'a>(decorators: &'a [Decorator<'a>]) -> Option<BinaryOperator> {
+pub fn binary_operator<'a>(decorators: &'a [Decorator<'a>]) -> Option<(BinaryOperator, bool)> {
     decorators.iter().find_map(|decorator| match decorator {
-        Decorator::BinaryOperator(operator) => Some(*operator),
+        Decorator::BinaryOperator { operator, reverse } => Some((*operator, *reverse)),
         _ => None,
     })
 }

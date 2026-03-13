@@ -965,6 +965,26 @@ fn struct_methods() {
         ",
     );
 
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+        }
+
+        struct Shift {
+            amount: A,
+
+            @radd
+            fn add_to_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x + self.amount, y: lhs.y + self.amount }
+        }
+
+        let shifted: Point = Point { x: 1 a, y: 2 a } + Shift { amount: 3 a }
+        let x: A = shifted.x
+        ",
+    );
+
     assert!(matches!(
         get_typecheck_error(
             "
@@ -972,6 +992,20 @@ fn struct_methods() {
                 x: A,
                 @add
                 fn make() -> Self = Point { x: 1 a }
+            }
+            "
+        ),
+        TypeCheckError::InvalidOperatorMethodSignature(_, name) if name == "make"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point { x: A }
+            struct Shift {
+                amount: A,
+                @radd
+                fn make() -> Shift = Shift { amount: 1 a }
             }
             "
         ),

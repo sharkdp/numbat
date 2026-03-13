@@ -866,14 +866,20 @@ impl<'a> Parser<'a> {
                         });
                     }
                 }
-                "add" | "sub" | "mul" | "div" => {
-                    Decorator::BinaryOperator(match decorator.lexeme {
-                        "add" => BinaryOperator::Add,
-                        "sub" => BinaryOperator::Sub,
-                        "mul" => BinaryOperator::Mul,
-                        "div" => BinaryOperator::Div,
+                "add" | "sub" | "mul" | "div" | "radd" | "rsub" | "rmul" | "rdiv" => {
+                    let (operator, reverse) = match decorator.lexeme {
+                        "add" => (BinaryOperator::Add, false),
+                        "sub" => (BinaryOperator::Sub, false),
+                        "mul" => (BinaryOperator::Mul, false),
+                        "div" => (BinaryOperator::Div, false),
+                        "radd" => (BinaryOperator::Add, true),
+                        "rsub" => (BinaryOperator::Sub, true),
+                        "rmul" => (BinaryOperator::Mul, true),
+                        "rdiv" => (BinaryOperator::Div, true),
                         _ => unreachable!(),
-                    })
+                    };
+
+                    Decorator::BinaryOperator { operator, reverse }
                 }
                 _ => {
                     return Err(ParseError {
@@ -3544,7 +3550,92 @@ mod tests {
                     return_type_annotation: Some(TypeAnnotation::TypeExpression(
                         TypeExpression::TypeIdentifier(Span::dummy(), "Self".into(), vec![]),
                     )),
-                    decorators: vec![decorator::Decorator::BinaryOperator(BinaryOperator::Add)],
+                    decorators: vec![decorator::Decorator::BinaryOperator {
+                        operator: BinaryOperator::Add,
+                        reverse: false,
+                    }],
+                }],
+            },
+        );
+
+        parse_as(
+            &[
+                "struct Shift { amount: Length, @radd fn add_to_vec(self, lhs: Vec2) -> Vec2 = Vec2 { x: lhs.x + self.amount, y: lhs.y + self.amount } }",
+            ],
+            Statement::DefineStruct {
+                struct_name_span: Span::dummy(),
+                struct_name: "Shift",
+                type_parameters: vec![],
+                fields: vec![(
+                    Span::dummy(),
+                    "amount",
+                    TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                        Span::dummy(),
+                        "Length".into(),
+                        vec![],
+                    )),
+                    None,
+                )],
+                methods: vec![Statement::DefineFunction {
+                    fn_keyword_span: Span::dummy(),
+                    function_name_span: Span::dummy(),
+                    function_name: "add_to_vec",
+                    type_parameters: vec![],
+                    parameters: vec![
+                        (Span::dummy(), "self", None),
+                        (
+                            Span::dummy(),
+                            "lhs",
+                            Some(TypeAnnotation::TypeExpression(
+                                TypeExpression::TypeIdentifier(
+                                    Span::dummy(),
+                                    "Vec2".into(),
+                                    vec![],
+                                ),
+                            )),
+                        ),
+                    ],
+                    body: Some(struct_! {
+                        Vec2,
+                        x: binop!(
+                            Expression::AccessField {
+                                full_span: Span::dummy(),
+                                ident_span: Span::dummy(),
+                                expr: Box::new(identifier!("lhs")),
+                                field_name: "x",
+                            },
+                            Add,
+                            Expression::AccessField {
+                                full_span: Span::dummy(),
+                                ident_span: Span::dummy(),
+                                expr: Box::new(identifier!("self")),
+                                field_name: "amount",
+                            }
+                        ),
+                        y: binop!(
+                            Expression::AccessField {
+                                full_span: Span::dummy(),
+                                ident_span: Span::dummy(),
+                                expr: Box::new(identifier!("lhs")),
+                                field_name: "y",
+                            },
+                            Add,
+                            Expression::AccessField {
+                                full_span: Span::dummy(),
+                                ident_span: Span::dummy(),
+                                expr: Box::new(identifier!("self")),
+                                field_name: "amount",
+                            }
+                        )
+                    }),
+                    local_variables: vec![],
+                    return_type_annotation: Some(TypeAnnotation::TypeExpression(
+                        TypeExpression::TypeIdentifier(Span::dummy(), "Vec2".into(), vec![]),
+                    )),
+                    decorators: vec![decorator::Decorator::BinaryOperator {
+                        operator: BinaryOperator::Add,
+                        reverse: true,
+                    }],
                 }],
             },
         );
@@ -3594,6 +3685,11 @@ mod tests {
 
         should_fail_with(
             &["@add fn add(x: Scalar, y: Scalar) = x + y"],
+            ParseErrorKind::OperatorDecoratorUsedOutsideStructMethod,
+        );
+
+        should_fail_with(
+            &["@radd fn add(x: Scalar, y: Scalar) = x + y"],
             ParseErrorKind::OperatorDecoratorUsedOutsideStructMethod,
         );
 

@@ -175,6 +175,26 @@ fn struct_operator_methods() {
         "10",
     );
 
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+        }
+
+        struct Shift {
+            amount: Scalar,
+
+            @radd
+            fn add_to_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x + self.amount, y: lhs.y + self.amount }
+        }
+
+        (Point { x: 1, y: 2 } + Shift { amount: 3 }).y
+        ",
+        "5",
+    );
+
     let _ = succeed(
         "
         fn id(x) = x

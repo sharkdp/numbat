@@ -264,46 +264,90 @@ impl BytecodeInterpreter {
                         );
                     }
                     (Type::Struct(struct_info), _) => {
-                        let canonical_method_name = match operator {
-                            BinaryOperator::Add => Some("add"),
-                            BinaryOperator::Sub => Some("sub"),
-                            BinaryOperator::Mul => Some("mul"),
-                            BinaryOperator::Div => Some("div"),
+                        let canonical_method_name = match (operator, false) {
+                            (BinaryOperator::Add, false) => Some("add"),
+                            (BinaryOperator::Sub, false) => Some("sub"),
+                            (BinaryOperator::Mul, false) => Some("mul"),
+                            (BinaryOperator::Div, false) => Some("div"),
                             _ => None,
                         };
-                        let mut matching_methods =
+                        let reverse_canonical_method_name = match (operator, true) {
+                            (BinaryOperator::Add, true) => Some("radd"),
+                            (BinaryOperator::Sub, true) => Some("rsub"),
+                            (BinaryOperator::Mul, true) => Some("rmul"),
+                            (BinaryOperator::Div, true) => Some("rdiv"),
+                            _ => None,
+                        };
+
+                        let lhs_match =
                             struct_info
                                 .methods
                                 .iter()
-                                .filter_map(|(method_name, method_info)| {
+                                .find_map(|(method_name, method_info)| {
                                     if let Some(operator_impl) = method_info.operator_impl.as_ref()
                                         && operator_impl.operator == *operator
+                                        && !operator_impl.reverse
                                         && operator_impl.rhs_type == rhs_type
                                         && operator_impl.output_type == output_type
                                     {
-                                        return Some(method_name);
+                                        return Some((false, &struct_info.name, method_name));
                                     }
 
                                     canonical_method_name
                                         .filter(|canonical| method_name.as_str() == *canonical)
-                                        .map(|_| method_name)
+                                        .map(|_| (false, &struct_info.name, method_name))
                                 });
 
-                        let method_name = matching_methods
-                            .next()
-                            .expect("deferred operator must resolve to a struct method");
-                        assert!(
-                            matching_methods.next().is_none(),
-                            "ambiguous struct operator overload reached bytecode compilation"
-                        );
+                        let rhs_match = match rhs_type {
+                            Type::Struct(rhs_struct_info) => rhs_struct_info
+                                .methods
+                                .iter()
+                                .find_map(|(method_name, method_info)| {
+                                    if let Some(operator_impl) = method_info.operator_impl.as_ref()
+                                        && operator_impl.operator == *operator
+                                        && operator_impl.reverse
+                                        && operator_impl.rhs_type == lhs_type
+                                        && operator_impl.output_type == output_type
+                                    {
+                                        return Some((
+                                            true,
+                                            rhs_struct_info.name.clone(),
+                                            method_name.clone(),
+                                        ));
+                                    }
 
-                        self.compile_expression(lhs);
-                        self.compile_expression(rhs);
+                                    reverse_canonical_method_name
+                                        .filter(|canonical| method_name.as_str() == *canonical)
+                                        .map(|_| {
+                                            (
+                                                true,
+                                                rhs_struct_info.name.clone(),
+                                                method_name.clone(),
+                                            )
+                                        })
+                                }),
+                            _ => None,
+                        };
+
+                        let (reverse, owner, method_name) = lhs_match
+                            .map(|(reverse, owner, method_name)| {
+                                (reverse, owner.clone(), method_name.clone())
+                            })
+                            .or(rhs_match)
+                            .expect("deferred operator must resolve to a struct method");
+
+                        if reverse {
+                            self.compile_expression(rhs);
+                            self.compile_expression(lhs);
+                        } else {
+                            self.compile_expression(lhs);
+                            self.compile_expression(rhs);
+                        }
 
                         let arg_count = 2;
                         let method_callable = self
                             .vm
-                            .get_method_callable(&struct_info.name, method_name)
+                            .get_method_callable(&owner, &method_name)
                             .expect("operator method must be registered before call sites");
 
                         match method_callable {

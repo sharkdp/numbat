@@ -356,6 +356,7 @@ pub struct StructMethodInfo {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructMethodOperatorInfo {
     pub operator: BinaryOperator,
+    pub reverse: bool,
     pub rhs_type: Type,
     pub output_type: Type,
 }
@@ -1251,12 +1252,16 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         }
                         + m::operator(")")
                 }
-                Decorator::BinaryOperator(operator) => {
-                    let decorator_name = match operator {
-                        BinaryOperator::Add => "@add",
-                        BinaryOperator::Sub => "@sub",
-                        BinaryOperator::Mul => "@mul",
-                        BinaryOperator::Div => "@div",
+                Decorator::BinaryOperator { operator, reverse } => {
+                    let decorator_name = match (operator, reverse) {
+                        (BinaryOperator::Add, false) => "@add",
+                        (BinaryOperator::Sub, false) => "@sub",
+                        (BinaryOperator::Mul, false) => "@mul",
+                        (BinaryOperator::Div, false) => "@div",
+                        (BinaryOperator::Add, true) => "@radd",
+                        (BinaryOperator::Sub, true) => "@rsub",
+                        (BinaryOperator::Mul, true) => "@rmul",
+                        (BinaryOperator::Div, true) => "@rdiv",
                         _ => unreachable!("unsupported binary operator decorator"),
                     };
 

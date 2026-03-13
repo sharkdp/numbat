@@ -606,7 +606,10 @@ impl ReplaceSpans for Decorator<'_> {
             Decorator::Example(code, description) => {
                 Decorator::Example(code.clone(), description.clone())
             }
-            Decorator::BinaryOperator(operator) => Decorator::BinaryOperator(*operator),
+            Decorator::BinaryOperator { operator, reverse } => Decorator::BinaryOperator {
+                operator: *operator,
+                reverse: *reverse,
+            },
         }
     }
 }
