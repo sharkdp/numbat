@@ -224,6 +224,7 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Velocity` | [Kilometres per hour](https://en.wikipedia.org/wiki/Kilometres_per_hour) | `kph` |
 | `Velocity` | [Miles per hour](https://en.wikipedia.org/wiki/Miles_per_hour) | `mph` |
 | `Voltage` | [Volt](https://en.wikipedia.org/wiki/Volt) | `V`, `volt`, `volts` |
+| `Volume` | [Oil barrel](https://en.wikipedia.org/wiki/Barrel_(unit)#Oil_barrel) | `barrel`, `barrels` |
 | `Volume` | [Cubic centimetre](https://en.wikipedia.org/wiki/Cubic_centimetre) | `cc`, `ccm` |
 | `Volume` | [US cup](https://en.wikipedia.org/wiki/Cup_(unit)) | `cup`, `cups` |
 | `Volume` | [US fluid ounce](https://en.wikipedia.org/wiki/Fluid_ounce) | `floz`, `fluidounce`, `fluidounces` |
