@@ -74,6 +74,7 @@ def generate_all_examples():
     generate_example("body_mass_index", "Body mass index")
     generate_example("factorial", "Factorial", strip_asserts=False)
     generate_example("medication_dosage", "Medication dosage")
+    generate_example("matrix", "Matrices")
     generate_example("molarity", "Molarity")
     generate_example("musical_note_frequency", "Musical note frequency")
     generate_example("paper_size", "Paper sizes")

@@ -26,6 +26,7 @@ nav = [
       "examples/example-factorial.md",
       "examples/example-pipe_flow_rate.md",
       "examples/example-medication_dosage.md",
+      "examples/example-matrix.md",
       "examples/example-molarity.md",
       "examples/example-musical_note_frequency.md",
       "examples/example-paper_size.md",

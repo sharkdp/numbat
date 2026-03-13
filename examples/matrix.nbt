@@ -1,0 +1,96 @@
+# A dynamically sized matrix backed by nested lists.
+#
+# This example uses:
+# - a struct with List<List<Scalar>> storage
+# - builtin list indexing (`xs[i]`)
+# - custom struct indexing via `matrix[row, col]`
+# - struct-owned matrix multiplication via `@mul`
+
+struct Matrix {
+    rows: Scalar,
+    cols: Scalar,
+    data: List<List<Scalar>>,
+
+    fn from_rows(data: List<List<Scalar>>) -> Self =
+        Self {
+            rows: len(data),
+            cols: if is_empty(data) then 0 else len(data[0]),
+            data: data,
+        }
+
+    @index
+    fn get(self, row: Scalar, col: Scalar) -> Scalar =
+        self.data[row][col]
+
+    fn dot_product(lhs: Self, rhs: Self, row: Scalar, col: Scalar, i: Scalar) -> Scalar =
+        if i == lhs.cols
+            then 0
+            else lhs[row, i] * rhs[i, col] + Matrix::dot_product(lhs, rhs, row, col, i + 1)
+
+    fn product_row(lhs: Self, rhs: Self, row: Scalar, col: Scalar) -> List<Scalar> =
+        if col == rhs.cols
+            then []
+            else cons(
+                Matrix::dot_product(lhs, rhs, row, col, 0),
+                Matrix::product_row(lhs, rhs, row, col + 1),
+            )
+
+    fn product_rows(lhs: Self, rhs: Self, row: Scalar) -> List<List<Scalar>> =
+        if row == lhs.rows
+            then []
+            else cons(
+                Matrix::product_row(lhs, rhs, row, 0),
+                Matrix::product_rows(lhs, rhs, row + 1),
+            )
+
+    @mul
+    fn mul(self, rhs: Self) -> Self =
+        Matrix::from_rows(Matrix::product_rows(self, rhs, 0))
+}
+
+let identity_2 = Matrix::from_rows([
+    [1, 0],
+    [0, 1],
+])
+
+let wide = Matrix::from_rows([
+    [1, 2, 3],
+    [4, 5, 6],
+])
+
+let tall = Matrix::from_rows([
+    [1, 2],
+    [3, 4],
+    [5, 6],
+])
+
+let product = wide * tall
+let unchanged = identity_2 * identity_2
+
+assert_eq(identity_2.rows, 2)
+assert_eq(identity_2.cols, 2)
+assert_eq(identity_2[1, 1], 1)
+
+assert_eq(wide.rows, 2)
+assert_eq(wide.cols, 3)
+assert_eq(wide[0, 2], 3)
+assert_eq(wide[1, 0], 4)
+
+assert_eq(tall.rows, 3)
+assert_eq(tall.cols, 2)
+assert_eq(tall[2, 1], 6)
+
+assert_eq(product.rows, 2)
+assert_eq(product.cols, 2)
+assert_eq(product[0, 0], 22)
+assert_eq(product[0, 1], 28)
+assert_eq(product[1, 0], 49)
+assert_eq(product[1, 1], 64)
+
+assert_eq(unchanged[0, 0], 1)
+assert_eq(unchanged[1, 1], 1)
+
+print("2x2 identity: {identity_2}")
+print("2x3 matrix:   {wide}")
+print("3x2 matrix:   {tall}")
+print("product:      {product}")
