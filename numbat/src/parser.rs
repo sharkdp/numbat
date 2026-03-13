@@ -296,6 +296,7 @@ struct Parser<'a> {
     current: usize,
     decorator_stack: Vec<Decorator<'a>>,
     parsing_struct_method: bool,
+    expression_group_depth: usize,
     /// When we split `>=` into `>` and `=`, we store the span of the `=` here.
     /// This is used for parsing something like `let v: Vec<Length>= ...`, where
     /// the `>=` is being tokenized as a TokenKind::GreaterOrEqual.
@@ -308,6 +309,7 @@ impl<'a> Parser<'a> {
             current: 0,
             decorator_stack: vec![],
             parsing_struct_method: false,
+            expression_group_depth: 0,
             pending_equals: None,
         }
     }
@@ -1135,8 +1137,18 @@ impl<'a> Parser<'a> {
         next_parser: impl Fn(&mut Self) -> Result<Expression<'a>>,
     ) -> Result<Expression<'a>> {
         let mut expr = next_parser(self)?;
-        while let Some(matched) = self.match_any(tokens, op_symbol) {
+        loop {
+            if self.expression_group_depth > 0 {
+                self.skip_empty_lines(tokens);
+            }
+
+            let Some(matched) = self.match_any(tokens, op_symbol) else {
+                break;
+            };
             let span_op = Some(self.last(tokens).unwrap().span);
+            if self.expression_group_depth > 0 {
+                self.skip_empty_lines(tokens);
+            }
             let rhs = next_parser(self)?;
 
             expr = Expression::BinaryOperator {
@@ -1783,7 +1795,11 @@ impl<'a> Parser<'a> {
 
             Ok(Expression::String(span_full_string, parts))
         } else if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+            self.expression_group_depth += 1;
+            self.skip_empty_lines(tokens);
             let inner = self.expression(tokens)?;
+            self.skip_empty_lines(tokens);
+            self.expression_group_depth -= 1;
 
             if self.match_exact(tokens, TokenKind::RightParen).is_none() {
                 return Err(ParseError::new(
@@ -3665,6 +3681,16 @@ mod tests {
                 method_name: "new",
                 args: vec![scalar!(1.0), scalar!(2.0)],
                 full_span: Span::dummy(),
+            },
+        );
+
+        parse_as_expression(
+            &["(\n  1\n  + 2\n)"],
+            Expression::BinaryOperator {
+                op: BinaryOperator::Add,
+                lhs: Box::new(scalar!(1.0)),
+                rhs: Box::new(scalar!(2.0)),
+                span_op: Some(Span::dummy()),
             },
         );
 
