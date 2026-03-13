@@ -159,15 +159,24 @@ struct Vec2<D: Dim> {            # A generic struct with type parameter
 
     # Methods can have their own type generics and inherit the struct's generics
     fn new(x: D, y: D) -> Self = Self { x: x, y: y }
+    @add
+    fn add(self, rhs: Self) -> Self = Self { x: self.x + rhs.x, y: self.y + rhs.y }
+    @mul
     fn scale(self, factor: Scalar) -> Self = Self { x: self.x * factor, y: self.y * factor }
+    @rmul
+    fn scale_from_left(self, lhs: Scalar) -> Self = Self { x: lhs * self.x, y: lhs * self.y }
     fn dot<E: Dim>(self, other: Vec2<E>) -> D * E = self.x * other.x + self.y * other.y
 }
 
 let v = Vec2::new(3 m, 4 m)      # Constructor call
 let w = Vec2::new(300 cm, 400 cm)
 let scaled_v = v.scale(2)        # Returning `Self` creates a new value (no in-place mutation)
+let combined = v + w             # Operator methods can provide struct-owned arithmetic
+let left_scaled = 2 * v          # Reverse operator methods handle lhs-owned scalar syntax
 
 assert_eq(v.dot(w) -> m², 25 m²) # Method generic + unit conversion
+assert_eq(combined.x -> m, 6 m)
+assert_eq(left_scaled.y -> m, 8 m)
 
 let only_x = Vec2 { x: 5 m }     # Omitted fields with defaults are auto-filled
 

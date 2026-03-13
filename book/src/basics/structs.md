@@ -107,8 +107,17 @@ struct Vec<X: Dim> {
     x: X,
     y: X,
 
+    @add
+    fn add(self, rhs: Self) -> Self =
+        Vec { x: self.x + rhs.x, y: self.y + rhs.y }
+
+    @mul
     fn scale(self, factor: Scalar) -> Self =
         Vec { x: self.x * factor, y: self.y * factor }
+
+    @rmul
+    fn scale_from_left(self, lhs: Scalar) -> Self =
+        Vec { x: lhs * self.x, y: lhs * self.y }
 
     fn dot<Y: Dim>(self, other: Vec<Y>) -> X * Y =
         self.x * other.x + self.y * other.y
@@ -122,6 +131,38 @@ let v2 = Vec { x: 3 m, y: 4 m }
 let v2_cm = Vec { x: 300 cm, y: 400 cm }
 
 let v3 = v1.scale(2)  # Vec { x: 2 m, y: 4 m }
+let combined = v1 + v2
+let v4 = 2 * v1
 let dp_m = v1.dot(v2)     # 11 m²
 let dp_cm = v1.dot(v2_cm) # 110_000 cm²
 ```
+
+Operator overloads are declared on struct instance methods with decorators such as `@add`, `@sub`, `@mul`, and `@div`. The decorator itself is bare; the compiler infers the left-hand side from `self`, the right-hand side from the second parameter, and the result type from the return type:
+
+```nbt
+struct Vec<X: Dim> {
+    x: X,
+    y: X,
+
+    @add
+    fn add(self, rhs: Self) -> Self =
+        Vec { x: self.x + rhs.x, y: self.y + rhs.y }
+
+    @mul
+    fn scale(self, factor: Scalar) -> Self =
+        Vec { x: self.x * factor, y: self.y * factor }
+
+    @rmul
+    fn scale_from_left(self, lhs: Scalar) -> Self =
+        Vec { x: lhs * self.x, y: lhs * self.y }
+}
+
+let v = Vec { x: 3 m, y: 4 m }
+let w = Vec { x: 300 cm, y: 400 cm }
+
+let combined = v + w
+let scaled = v * 2
+let scaled_from_left = 2 * v
+```
+
+Reverse decorators `@radd`, `@rsub`, `@rmul`, and `@rdiv` allow the struct to handle expressions where it appears on the right-hand side. In the example above, `@rmul fn scale_from_left(self, lhs: Scalar)` enables `2 * v`.
