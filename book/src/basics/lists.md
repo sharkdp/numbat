@@ -16,6 +16,17 @@ Lists can be created using the `[…]` syntax. For example:
 The type of a list is written as `List<T>`, where `T` is the type of the elements. The types of the lists
 above are `List<Length>`, `List<String>`, and `List<List<Scalar>>`, respectively.
 
+Lists can be indexed with square brackets:
+
+```nbt
+let xs = [30 cm, 110 cm, 2 m]
+
+xs[0]  # 30 cm
+xs[2]  # 2 m
+```
+
+List indices must be non-negative integers. An out-of-bounds index yields a runtime error.
+
 The standard library provides a [number of functions](../prelude/functions/lists.md) to work with lists. Some
 useful things to do with lists are:
 ```nbt

@@ -81,6 +81,12 @@ pub enum RuntimeErrorKind {
     #[error("Empty list")]
     EmptyList,
 
+    #[error("List index must be a non-negative integer")]
+    InvalidListIndex,
+
+    #[error("List index {0} is out of bounds for a list of length {1}")]
+    ListIndexOutOfBounds(usize, usize),
+
     #[error("Could not write to file: {0:?}")]
     FileWrite(std::path::PathBuf),
 

@@ -166,3 +166,28 @@ let scaled_from_left = 2 * v
 ```
 
 Reverse decorators `@radd`, `@rsub`, `@rmul`, and `@rdiv` allow the struct to handle expressions where it appears on the right-hand side. In the example above, `@rmul fn scale_from_left(self, lhs: Scalar)` enables `2 * v`.
+
+Structs can also define indexing behavior with the `@index` decorator on an instance method. The parameters after `self` determine how many index arguments the struct accepts:
+
+```nbt
+struct Grid2 {
+    a: Scalar,
+    b: Scalar,
+    c: Scalar,
+    d: Scalar,
+
+    @index
+    fn get(self, row: Scalar, col: Scalar) -> Scalar =
+        if row == 0 then
+            if col == 0 then self.a else self.b
+        else
+            if col == 0 then self.c else self.d
+}
+
+let g = Grid2 { a: 1, b: 2, c: 3, d: 4 }
+
+assert_eq(g[0, 1], 2)
+assert_eq(g[1, 0], 3)
+```
+
+This is directional and struct-owned, just like operator methods. Builtin lists also support indexing with `xs[i]`.

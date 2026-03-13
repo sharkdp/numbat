@@ -438,6 +438,12 @@ impl ErrorDiagnostic for TypeCheckError {
             | TypeCheckError::InstanceMethodCalledAsConstructor(span, _, _)
             | TypeCheckError::InvalidSelfParameterType(span, _, _)
             | TypeCheckError::InvalidOperatorMethodSignature(span, _)
+            | TypeCheckError::InvalidIndexMethodSignature(span, _)
+            | TypeCheckError::IndexCallOnNonStructType(span, _)
+            | TypeCheckError::InvalidListIndexArity(span, _)
+            | TypeCheckError::InvalidListIndexType(span, _)
+            | TypeCheckError::IndexMethodNotFound(span, _, _)
+            | TypeCheckError::AmbiguousIndexOverload(span, _, _)
             | TypeCheckError::AmbiguousOperatorOverload(span, _, _, _)
             | TypeCheckError::SelfTypeOutsideStructMethod(span)
             | TypeCheckError::InvalidStructMember(span) => d.with_labels(vec![

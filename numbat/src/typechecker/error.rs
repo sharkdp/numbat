@@ -176,6 +176,26 @@ pub enum TypeCheckError {
     )]
     InvalidOperatorMethodSignature(Span, String),
 
+    #[error(
+        "Index decorator on method '{1}' requires an instance method with at least one non-self parameter"
+    )]
+    InvalidIndexMethodSignature(Span, String),
+
+    #[error("Can not index value of type '{1}'")]
+    IndexCallOnNonStructType(Span, Type),
+
+    #[error("List indexing expects exactly one argument, got {1}")]
+    InvalidListIndexArity(Span, usize),
+
+    #[error("List indices must be scalars, got '{1}'")]
+    InvalidListIndexType(Span, Type),
+
+    #[error("No matching index overload with {2} argument(s) exists on struct '{1}'")]
+    IndexMethodNotFound(Span, String, usize),
+
+    #[error("Multiple index overloads matched on struct '{1}' with {2} argument(s)")]
+    AmbiguousIndexOverload(Span, String, usize),
+
     #[error("`Self` can only be used inside struct method definitions")]
     SelfTypeOutsideStructMethod(Span),
 

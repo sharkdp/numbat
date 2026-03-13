@@ -16,7 +16,7 @@
 //! module_import   ::=   "use" ident ( "::" ident) *
 //! procedure_call  ::=   ( "print" | "assert" | "assert_eq" | "type" ) "(" arguments? ")"
 //!
-//! decorator       ::=   "@" ( "metric_prefixes" | "binary_prefixes" | ( "aliases(" list_of_aliases ")" ) )
+//! decorator       ::=   "@" ( "metric_prefixes" | "binary_prefixes" | "add" | "sub" | "mul" | "div" | "radd" | "rsub" | "rmul" | "rdiv" | "index" | ( "aliases(" list_of_aliases ")" ) )
 //!
 //! type_annotation ::=   "Bool" | "String" | "List<" type ">" | dimension_expr
 //! dimension_expr  ::=   dim_factor
@@ -41,7 +41,7 @@
 //! power           ::=   factorial ( "^" "-" ? power ) ?
 //! factorial       ::=   unicode_power "!" *
 //! unicode_power   ::=   call ( "⁻" ? ( "¹" | "²" | "³" | "⁴" | "⁵" | "⁶" | "⁷" | "⁸" | "⁹" ) ) ?
-//! call            ::=   primary ( ( "(" arguments? ")" ) | "." identifier | "::" identifier "(" arguments? ")" ) *
+//! call            ::=   primary ( ( "(" arguments? ")" ) | "[" arguments? "]" | "." identifier | "::" identifier "(" arguments? ")" ) *
 //! arguments       ::=   expression ( "," expression ) *
 //! primary         ::=   boolean | string | hex_number | oct_number | bin_number | number | identifier ( struct_expr ? ) | typed_hole | list_expr | "(" expression ")"
 //! struct_expr     ::=   "{" ( identifier ":" type_annotation "," )* ( identifier ":" expression "," ? ) ? "}"
@@ -211,8 +211,8 @@ pub enum ParseErrorKind {
     #[error("Example decorators can only be used on functions.")]
     ExampleUsedOnUnsuitableKind,
 
-    #[error("Operator decorators can only be used on struct instance methods.")]
-    OperatorDecoratorUsedOutsideStructMethod,
+    #[error("Operator and index decorators can only be used on struct instance methods.")]
+    MethodDecoratorUsedOutsideStructMethod,
 
     #[error("Expected comma in decorator arguments")]
     ExpectedCommaInDecorator,
@@ -703,10 +703,10 @@ impl<'a> Parser<'a> {
 
             if !allow_operator_decorators
                 && !self.parsing_struct_method
-                && decorator::contains_binary_operator_decorators(&self.decorator_stack)
+                && decorator::contains_method_only_decorators(&self.decorator_stack)
             {
                 return Err(ParseError {
-                    kind: ParseErrorKind::OperatorDecoratorUsedOutsideStructMethod,
+                    kind: ParseErrorKind::MethodDecoratorUsedOutsideStructMethod,
                     span: self.peek(tokens).span,
                 });
             }
@@ -883,6 +883,7 @@ impl<'a> Parser<'a> {
 
                     Decorator::BinaryOperator { operator, reverse }
                 }
+                "index" => Decorator::Index,
                 _ => {
                     return Err(ParseError {
                         kind: ParseErrorKind::UnknownDecorator,
@@ -1567,6 +1568,15 @@ impl<'a> Parser<'a> {
                         field_name: ident,
                     };
                 }
+            } else if self.match_exact(tokens, TokenKind::LeftBracket).is_some() {
+                let args = self.index_arguments(tokens)?;
+                let full_span = expr.full_span().extend(&self.last(tokens).unwrap().span);
+
+                expr = Expression::IndexCall {
+                    receiver: Box::new(expr),
+                    args,
+                    full_span,
+                };
             } else {
                 return Ok(expr);
             }
@@ -1604,6 +1614,35 @@ impl<'a> Parser<'a> {
                     ParseErrorKind::MissingClosingParen,
                     self.peek(tokens).span,
                 ));
+            }
+        }
+
+        Ok(args)
+    }
+
+    fn index_arguments(&mut self, tokens: &[Token<'a>]) -> Result<Vec<Expression<'a>>> {
+        self.skip_empty_lines(tokens);
+        if self.match_exact(tokens, TokenKind::RightBracket).is_some() {
+            return Ok(vec![]);
+        }
+
+        let mut args = vec![self.expression(tokens)?];
+        loop {
+            self.skip_empty_lines(tokens);
+
+            if self.match_exact(tokens, TokenKind::Comma).is_some() {
+                self.skip_empty_lines(tokens);
+                if self.match_exact(tokens, TokenKind::RightBracket).is_some() {
+                    break;
+                }
+                args.push(self.expression(tokens)?);
+            } else if self.match_exact(tokens, TokenKind::RightBracket).is_some() {
+                break;
+            } else {
+                return Err(ParseError {
+                    kind: ParseErrorKind::ExpectedCommaOrRightBracketInList,
+                    span: self.peek(tokens).span,
+                });
             }
         }
 
@@ -3666,6 +3705,15 @@ mod tests {
         );
 
         parse_as_expression(
+            &["grid[1, 2]"],
+            Expression::IndexCall {
+                receiver: Box::new(identifier!("grid")),
+                args: vec![scalar!(1.0), scalar!(2.0)],
+                full_span: Span::dummy(),
+            },
+        );
+
+        parse_as_expression(
             &["(\n  1\n  + 2\n)"],
             Expression::BinaryOperator {
                 op: BinaryOperator::Add,
@@ -3692,12 +3740,17 @@ mod tests {
 
         should_fail_with(
             &["@add fn add(x: Scalar, y: Scalar) = x + y"],
-            ParseErrorKind::OperatorDecoratorUsedOutsideStructMethod,
+            ParseErrorKind::MethodDecoratorUsedOutsideStructMethod,
         );
 
         should_fail_with(
             &["@radd fn add(x: Scalar, y: Scalar) = x + y"],
-            ParseErrorKind::OperatorDecoratorUsedOutsideStructMethod,
+            ParseErrorKind::MethodDecoratorUsedOutsideStructMethod,
+        );
+
+        should_fail_with(
+            &["@index fn get(x: Scalar, y: Scalar) = x + y"],
+            ParseErrorKind::MethodDecoratorUsedOutsideStructMethod,
         );
 
         should_fail_with(

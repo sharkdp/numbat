@@ -162,6 +162,12 @@ impl Transformer {
                     self.transform_expression(arg);
                 }
             }
+            Expression::IndexCall { receiver, args, .. } => {
+                self.transform_expression(receiver);
+                for arg in args {
+                    self.transform_expression(arg);
+                }
+            }
             Expression::List(_, elements) => {
                 for e in elements {
                     self.transform_expression(e);

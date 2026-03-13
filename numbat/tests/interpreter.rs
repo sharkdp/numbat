@@ -268,6 +268,49 @@ fn struct_operator_methods() {
 
     expect_output(
         "
+        struct Pair {
+            left: Scalar,
+            right: Scalar,
+
+            @index
+            fn get(self, i: Scalar) -> Scalar =
+                if i == 0 then self.left else self.right
+        }
+
+        struct Grid2 {
+            a: Scalar,
+            b: Scalar,
+            c: Scalar,
+            d: Scalar,
+
+            @index
+            fn get(self, row: Scalar, col: Scalar) -> Scalar =
+                if row == 0 then
+                    if col == 0 then self.a else self.b
+                else
+                    if col == 0 then self.c else self.d
+        }
+
+        Pair { left: 10, right: 20 }[1] + Grid2 { a: 1, b: 2, c: 3, d: 4 }[1, 0]
+        ",
+        "23",
+    );
+
+    expect_output("[10, 20, 30][1]", "20");
+    expect_output("[1 m, 2 m, 3 m][2]", "3 m");
+
+    expect_failure(
+        "[10, 20, 30][-1]",
+        "List index must be a non-negative integer",
+    );
+    expect_failure(
+        "[10, 20, 30][1.5]",
+        "List index must be a non-negative integer",
+    );
+    expect_failure("[10, 20, 30][3]", "out of bounds");
+
+    expect_output(
+        "
         struct Point {
             x: Scalar,
             y: Scalar,

@@ -152,6 +152,8 @@ fn drop<A>(n: Scalar, xs: List<A>) -> List<A>
 ### `element_at`
 Get the element at index `i` in a list.
 
+This is equivalent to the indexing syntax `xs[i]`.
+
 ```nbt
 fn element_at<A>(i: Scalar, xs: List<A>) -> A
 ```
@@ -397,4 +399,3 @@ fn split(input: String, separator: String) -> List<String>
         = ["Numbat", "is", "a", "statically", "typed", "programming", "language."]    [List<String>]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=split%28%22Numbat%20is%20a%20statically%20typed%20programming%20language%2E%22%2C%20%22%20%22%29){ .md-button }
-

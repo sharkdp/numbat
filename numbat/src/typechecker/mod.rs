@@ -203,6 +203,7 @@ pub struct TypeChecker {
 struct MethodInfo {
     signature: FunctionSignature,
     operator_impl: Option<MethodOperatorInfo>,
+    index_impl: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -385,6 +386,18 @@ impl TypeChecker {
                 receiver: Box::new(Self::apply_struct_defaults_expression(receiver, defaults)),
                 method_name_span: *method_name_span,
                 method_name,
+                args: args
+                    .iter()
+                    .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
+                    .collect(),
+                full_span: *full_span,
+            },
+            ast::Expression::IndexCall {
+                receiver,
+                args,
+                full_span,
+            } => ast::Expression::IndexCall {
+                receiver: Box::new(Self::apply_struct_defaults_expression(receiver, defaults)),
                 args: args
                     .iter()
                     .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
@@ -666,6 +679,10 @@ impl TypeChecker {
             .map(|(operator, reverse)| MethodOperatorInfo { operator, reverse })
     }
 
+    fn method_index_impl(decorators: &[decorator::Decorator<'_>]) -> bool {
+        decorator::index_decorator(decorators)
+    }
+
     fn fresh_type_variable(&mut self) -> Type {
         Type::TVar(self.name_generator.fresh_type_variable())
     }
@@ -685,12 +702,14 @@ impl TypeChecker {
         method_name: CompactString,
         signature: FunctionSignature,
         operator_impl: Option<MethodOperatorInfo>,
+        index_impl: bool,
     ) {
         self.methods.entry(struct_name).or_default().insert(
             method_name,
             MethodInfo {
                 signature,
                 operator_impl,
+                index_impl,
             },
         );
     }
@@ -742,6 +761,42 @@ impl TypeChecker {
             rhs_type,
             output_type,
         }))
+    }
+
+    fn validate_index_method_decorator(
+        &self,
+        method_kind: StructMethodKind,
+        definition_span: Span,
+        method_name: &str,
+        decorators: &[decorator::Decorator<'_>],
+        fn_type: &TypeScheme,
+        type_parameters: &[(Span, &str, Option<TypeParameterBound>)],
+    ) -> Result<bool> {
+        if !decorator::index_decorator(decorators) {
+            return Ok(false);
+        }
+
+        if method_kind != StructMethodKind::Instance {
+            return Err(Box::new(TypeCheckError::InvalidIndexMethodSignature(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        let (instantiated_fn_type, _) = fn_type
+            .instantiate_for_printing(Some(type_parameters.iter().map(|(_, name, _)| *name)));
+        let Type::Fn(parameter_types, _) = instantiated_fn_type.inner else {
+            unreachable!("method type is expected to be a function type");
+        };
+
+        if parameter_types.len() < 2 {
+            return Err(Box::new(TypeCheckError::InvalidIndexMethodSignature(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        Ok(true)
     }
 
     fn resolve_operator_candidates(
@@ -1006,6 +1061,106 @@ impl TypeChecker {
         }
 
         find_match(self, rhs, true).map(|(owner, method_name)| (true, owner, method_name))
+    }
+
+    fn find_index_method_call(
+        &mut self,
+        span: Span,
+        receiver_type: &Type,
+        index_types: &[Type],
+    ) -> Result<(CompactString, CompactString)> {
+        let Type::Struct(struct_info) = receiver_type else {
+            return Err(Box::new(TypeCheckError::IndexCallOnNonStructType(
+                span,
+                receiver_type.clone(),
+            )));
+        };
+
+        let Some(methods) = self.methods.get(&struct_info.name) else {
+            return Err(Box::new(TypeCheckError::IndexMethodNotFound(
+                span,
+                struct_info.name.to_string(),
+                index_types.len(),
+            )));
+        };
+
+        let mut matches = vec![];
+        for (method_name, method_info) in methods {
+            if !method_info.index_impl {
+                continue;
+            }
+
+            let qualified_type = match &method_info.signature.fn_type {
+                TypeScheme::Concrete(type_) => {
+                    crate::typechecker::qualified_type::QualifiedType::new(
+                        type_.clone(),
+                        qualified_type::Bounds::none(),
+                    )
+                }
+                TypeScheme::Quantified(_, _) => method_info
+                    .signature
+                    .fn_type
+                    .instantiate(&mut self.name_generator),
+            };
+
+            let Type::Fn(parameter_types, _) = qualified_type.inner else {
+                continue;
+            };
+            if parameter_types.len() != index_types.len() + 1 {
+                continue;
+            }
+
+            let mut constraint_set = ConstraintSet::default();
+            if constraint_set
+                .add(Constraint::Equal(
+                    parameter_types[0].clone(),
+                    receiver_type.clone(),
+                ))
+                .is_trivially_violated()
+            {
+                continue;
+            }
+
+            let mut valid = true;
+            for (parameter_type, index_type) in
+                parameter_types.iter().skip(1).zip(index_types.iter())
+            {
+                if constraint_set
+                    .add(Constraint::Equal(
+                        parameter_type.clone(),
+                        index_type.clone(),
+                    ))
+                    .is_trivially_violated()
+                {
+                    valid = false;
+                    break;
+                }
+            }
+            if !valid {
+                continue;
+            }
+
+            if let Ok((_, dtype_vars)) =
+                constraint_set.solve(|_, _, _, _| None::<constraints::Satisfied>)
+                && dtype_vars.is_empty()
+            {
+                matches.push((struct_info.name.clone(), method_name.clone()));
+            }
+        }
+
+        match matches.len() {
+            0 => Err(Box::new(TypeCheckError::IndexMethodNotFound(
+                span,
+                struct_info.name.to_string(),
+                index_types.len(),
+            ))),
+            1 => Ok(matches.pop().unwrap()),
+            _ => Err(Box::new(TypeCheckError::AmbiguousIndexOverload(
+                span,
+                struct_info.name.to_string(),
+                index_types.len(),
+            ))),
+        }
     }
 
     fn resolve_deferred_binary_operator_expression<'a>(
@@ -2521,6 +2676,105 @@ impl TypeChecker {
                     type_scheme,
                 }
             }
+            ast::Expression::IndexCall {
+                receiver,
+                args,
+                full_span,
+            } => {
+                let receiver_checked = self.elaborate_expression(receiver)?;
+                let receiver_type = receiver_checked.get_type();
+
+                let arguments_checked = args
+                    .iter()
+                    .map(|e| self.elaborate_expression(e))
+                    .collect::<Result<Vec<_>>>()?;
+
+                if let Type::List(element_type) = &receiver_type {
+                    if arguments_checked.len() != 1 {
+                        return Err(Box::new(TypeCheckError::InvalidListIndexArity(
+                            *full_span,
+                            arguments_checked.len(),
+                        )));
+                    }
+
+                    let index_type = arguments_checked[0].get_type();
+                    if self
+                        .add_equal_constraint(&index_type, &Type::scalar())
+                        .is_trivially_violated()
+                    {
+                        return Err(Box::new(TypeCheckError::InvalidListIndexType(
+                            arguments_checked[0].full_span(),
+                            index_type,
+                        )));
+                    }
+
+                    return Ok(typed_ast::Expression::FunctionCall {
+                        full_span: *full_span,
+                        ident_span: *full_span,
+                        name: "_list_at",
+                        args: vec![
+                            receiver_checked,
+                            arguments_checked.into_iter().next().unwrap(),
+                        ],
+                        type_scheme: TypeScheme::concrete((**element_type).clone()),
+                    });
+                }
+
+                let mut method_arguments = Vec::with_capacity(arguments_checked.len() + 1);
+                method_arguments.push(receiver_checked.clone());
+                method_arguments.extend(arguments_checked.clone());
+
+                let method_argument_types = method_arguments
+                    .iter()
+                    .map(typed_ast::Expression::get_type)
+                    .collect::<Vec<_>>();
+
+                let (owner, method_name) = self.find_index_method_call(
+                    *full_span,
+                    &receiver_type,
+                    &method_argument_types[1..],
+                )?;
+
+                let method = self
+                    .lookup_method(&owner, &method_name)
+                    .ok_or_else(|| {
+                        Box::new(TypeCheckError::IndexMethodNotFound(
+                            *full_span,
+                            owner.to_string(),
+                            method_argument_types.len() - 1,
+                        ))
+                    })?
+                    .clone();
+
+                let checked_call = proper_function_call(ProperFunctionCallArgs {
+                    registry: &self.registry,
+                    constraints: &mut self.constraints,
+                    name_generator: &mut self.name_generator,
+                    span: full_span,
+                    full_span,
+                    function_name: &method_name,
+                    signature: &method.signature,
+                    arguments: method_arguments,
+                    argument_types: method_argument_types,
+                })?;
+
+                let typed_ast::Expression::FunctionCall { type_scheme, .. } = checked_call else {
+                    unreachable!("proper function call returns typed function call");
+                };
+
+                typed_ast::Expression::MethodCall {
+                    full_span: *full_span,
+                    receiver: Box::new(receiver_checked),
+                    method_ref: typed_ast::MethodRef {
+                        owner,
+                        name: Box::leak(method_name.to_string().into_boxed_str()),
+                        kind: StructMethodKind::Instance,
+                    },
+                    method_name_span: *full_span,
+                    args: arguments_checked,
+                    type_scheme,
+                }
+            }
         })
     }
 
@@ -3606,6 +3860,7 @@ impl TypeChecker {
                         function_name.to_compact_string(),
                         signature,
                         Self::method_operator_impl(decorators),
+                        Self::method_index_impl(decorators),
                     );
                 }
 
@@ -3694,6 +3949,17 @@ impl TypeChecker {
                             .map(|(span, name, bound)| (*span, *name, bound.clone()))
                             .collect::<Vec<_>>(),
                     )?;
+                    let index_impl = self.validate_index_method_decorator(
+                        method_kind.clone(),
+                        *function_name_span,
+                        function_name,
+                        &checked_method_decorators,
+                        &signature.fn_type,
+                        &type_parameters
+                            .iter()
+                            .map(|(span, name, bound)| (*span, *name, bound.clone()))
+                            .collect::<Vec<_>>(),
+                    )?;
 
                     if method_kind == StructMethodKind::Instance {
                         let fn_type = match &signature.fn_type {
@@ -3732,6 +3998,7 @@ impl TypeChecker {
                         function_name.to_compact_string(),
                         signature,
                         Self::method_operator_impl(&checked_method_decorators),
+                        index_impl,
                     );
 
                     if let Some(struct_info) = self.structs.get_mut(*struct_name)

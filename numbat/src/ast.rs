@@ -129,6 +129,11 @@ pub enum Expression<'a> {
         args: Vec<Expression<'a>>,
         full_span: Span,
     },
+    IndexCall {
+        receiver: Box<Expression<'a>>,
+        args: Vec<Expression<'a>>,
+        full_span: Span,
+    },
     List(Span, Vec<Expression<'a>>),
 }
 
@@ -164,6 +169,7 @@ impl Expression<'_> {
             Expression::InstantiateStruct { full_span, .. } => *full_span,
             Expression::AccessField { full_span, .. } => *full_span,
             Expression::MethodCall { full_span, .. } => *full_span,
+            Expression::IndexCall { full_span, .. } => *full_span,
             Expression::List(span, _) => *span,
             Expression::TypedHole(span) => *span,
         }
@@ -610,6 +616,7 @@ impl ReplaceSpans for Decorator<'_> {
                 operator: *operator,
                 reverse: *reverse,
             },
+            Decorator::Index => Decorator::Index,
         }
     }
 }
@@ -768,6 +775,11 @@ impl ReplaceSpans for Expression<'_> {
                 receiver: Box::new(receiver.replace_spans()),
                 method_name_span: Span::dummy(),
                 method_name,
+                args: args.iter().map(|a| a.replace_spans()).collect(),
+                full_span: Span::dummy(),
+            },
+            Expression::IndexCall { receiver, args, .. } => Expression::IndexCall {
+                receiver: Box::new(receiver.replace_spans()),
                 args: args.iter().map(|a| a.replace_spans()).collect(),
                 full_span: Span::dummy(),
             },

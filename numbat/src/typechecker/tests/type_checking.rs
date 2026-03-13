@@ -1015,6 +1015,44 @@ fn struct_methods() {
 
     assert_successful_typecheck(
         "
+        struct Pair {
+            left: Scalar,
+            right: Scalar,
+
+            @index
+            fn get(self, i: Scalar) -> Scalar =
+                if i == 0 then self.left else self.right
+        }
+
+        struct Grid2 {
+            a: Scalar,
+            b: Scalar,
+            c: Scalar,
+            d: Scalar,
+
+            @index
+            fn get(self, row: Scalar, col: Scalar) -> Scalar =
+                if row == 0 then
+                    if col == 0 then self.a else self.b
+                else
+                    if col == 0 then self.c else self.d
+        }
+
+        let first: Scalar = Pair { left: 10, right: 20 }[0]
+        let last: Scalar = Pair { left: 10, right: 20 }[1]
+        let bottom_right: Scalar = Grid2 { a: 1, b: 2, c: 3, d: 4 }[1, 1]
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        let x: Scalar = [10, 20, 30][1]
+        let y: A = [1 a, 2 a, 3 a][2]
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
         struct Point {
             x: A,
             y: A,
@@ -1069,6 +1107,19 @@ fn struct_methods() {
     assert!(matches!(
         get_typecheck_error(
             "
+            struct Point {
+                x: A,
+                @index
+                fn make(self) -> A = self.x
+            }
+            "
+        ),
+        TypeCheckError::InvalidIndexMethodSignature(_, name) if name == "make"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
             struct Point { x: A }
             struct Shift {
                 amount: A,
@@ -1100,6 +1151,31 @@ fn struct_methods() {
             "
         ),
         TypeCheckError::IncompatibleTypesInOperator(..)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                @index
+                fn get(self, i: Scalar) -> A = self.x
+            }
+
+            let y = Point { x: 1 a }[1 a]
+            "
+        ),
+        TypeCheckError::IndexMethodNotFound(..)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error("let x = [1, 2][0, 1]"),
+        TypeCheckError::InvalidListIndexArity(_, 2)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error("let x = [1, 2][1 a]"),
+        TypeCheckError::InvalidListIndexType(..)
     ));
 
     assert!(matches!(

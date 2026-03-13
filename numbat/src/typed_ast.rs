@@ -1301,6 +1301,7 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
 
                     m::decorator(decorator_name)
                 }
+                Decorator::Index => m::decorator("@index"),
             }
             + m::nl();
     }

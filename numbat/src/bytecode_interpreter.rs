@@ -427,6 +427,12 @@ impl BytecodeInterpreter {
                     self.compile_expression(arg);
                 }
 
+                if self.vm.get_ffi_callable_idx(name).is_none()
+                    && crate::ffi::functions().contains_key(name)
+                {
+                    self.vm.add_foreign_function(name, args.len()..=args.len());
+                }
+
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
                     // TODO: check overflow:
                     let call_args = FfiCallArgs {
