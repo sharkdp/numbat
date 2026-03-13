@@ -36,16 +36,16 @@ impl AssertEq2Error {
     }
 
     fn is_floating_point_inaccuracy(&self) -> bool {
-        if let Some(ref diff) = self.diff {
-            if let Some(ref lhs_converted) = self.lhs_converted {
-                let diff_val = diff.unsafe_value().to_f64().abs();
-                let lhs_val = lhs_converted.unsafe_value().to_f64().abs();
+        if let Some(ref diff) = self.diff
+            && let Some(ref lhs_converted) = self.lhs_converted
+        {
+            let diff_val = diff.unsafe_value().to_f64().abs();
+            let lhs_val = lhs_converted.unsafe_value().to_f64().abs();
 
-                if let Value::Quantity(ref rhs_q) = self.rhs {
-                    let rhs_val = rhs_q.unsafe_value().to_f64().abs();
-                    let max_val = lhs_val.max(rhs_val);
-                    return max_val > 0.0 && diff_val / max_val < 1e-9;
-                }
+            if let Value::Quantity(ref rhs_q) = self.rhs {
+                let rhs_val = rhs_q.unsafe_value().to_f64().abs();
+                let max_val = lhs_val.max(rhs_val);
+                return max_val > 0.0 && diff_val / max_val < 1e-9;
             }
         }
         false

@@ -793,7 +793,11 @@ impl ReplaceSpans for DefineVariable<'_> {
             identifier: self.identifier,
             expr: self.expr.replace_spans(),
             type_annotation: self.type_annotation.as_ref().map(|t| t.replace_spans()),
-            decorators: self.decorators.iter().map(Decorator::replace_spans).collect(),
+            decorators: self
+                .decorators
+                .iter()
+                .map(Decorator::replace_spans)
+                .collect(),
         }
     }
 }

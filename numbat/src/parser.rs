@@ -3565,11 +3565,13 @@ mod tests {
                         (
                             Span::dummy(),
                             "rhs",
-                            Some(TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
-                                Span::dummy(),
-                                "Self".into(),
-                                vec![],
-                            ))),
+                            Some(TypeAnnotation::TypeExpression(
+                                TypeExpression::TypeIdentifier(
+                                    Span::dummy(),
+                                    "Self".into(),
+                                    vec![],
+                                ),
+                            )),
                         ),
                     ],
                     body: Some(struct_! {

@@ -720,16 +720,13 @@ impl TypeChecker {
         signature: FunctionSignature,
         operator_impl: Option<BinaryOperator>,
     ) {
-        self.methods
-            .entry(struct_name)
-            .or_default()
-            .insert(
-                method_name,
-                MethodInfo {
-                    signature,
-                    operator_impl,
-                },
-            );
+        self.methods.entry(struct_name).or_default().insert(
+            method_name,
+            MethodInfo {
+                signature,
+                operator_impl,
+            },
+        );
     }
 
     /// Look up a method for a struct
@@ -759,8 +756,8 @@ impl TypeChecker {
             )));
         }
 
-        let (instantiated_fn_type, _) =
-            fn_type.instantiate_for_printing(Some(type_parameters.iter().map(|(_, name, _)| *name)));
+        let (instantiated_fn_type, _) = fn_type
+            .instantiate_for_printing(Some(type_parameters.iter().map(|(_, name, _)| *name)));
         let Type::Fn(parameter_types, return_type) = instantiated_fn_type.inner else {
             unreachable!("method type is expected to be a function type");
         };
@@ -857,7 +854,7 @@ impl TypeChecker {
                 };
             };
 
-            for (_method_name, method_info) in methods {
+            for method_info in methods.values() {
                 if method_info.operator_impl != Some(operator) {
                     continue;
                 }
@@ -869,9 +866,10 @@ impl TypeChecker {
                             qualified_type::Bounds::none(),
                         )
                     }
-                    TypeScheme::Quantified(_, _) => {
-                        method_info.signature.fn_type.instantiate(&mut self.name_generator)
-                    }
+                    TypeScheme::Quantified(_, _) => method_info
+                        .signature
+                        .fn_type
+                        .instantiate(&mut self.name_generator),
                 };
 
                 let Type::Fn(parameter_types, return_type) = qualified_type.inner else {
@@ -889,7 +887,10 @@ impl TypeChecker {
                     .add(Constraint::Equal(parameter_types[1].clone(), rhs.clone()))
                     .ok();
                 constraint_set
-                    .add(Constraint::Equal(return_type.as_ref().clone(), output.clone()))
+                    .add(Constraint::Equal(
+                        return_type.as_ref().clone(),
+                        output.clone(),
+                    ))
                     .ok();
                 for bound in qualified_type.bounds.iter() {
                     match bound {
@@ -991,8 +992,7 @@ impl TypeChecker {
                         || matches!(
                             rhs_type,
                             Type::Dimension(ref dtype) if dtype.is_time_dimension()
-                        ))
-                {
+                        )) {
                     typed_ast::Expression::BinaryOperatorForDate {
                         op_span: *op_span,
                         op: *op,
@@ -3283,16 +3283,14 @@ impl TypeChecker {
         self.constraints = constraints;
 
         let (substitution, dtype_variables) = solve_result.map_err(|inner| match inner {
-                ConstraintSolverError::CouldNotSolve(constraints) => {
-                    TypeCheckError::ConstraintSolverError(statement.full_span(), constraints)
-                }
-                ConstraintSolverError::SubstitutionError(inner) => {
-                    TypeCheckError::SubstitutionError(
-                        elaborated_statement.pretty_print().to_string(),
-                        inner,
-                    )
-                }
-            })?;
+            ConstraintSolverError::CouldNotSolve(constraints) => {
+                TypeCheckError::ConstraintSolverError(statement.full_span(), constraints)
+            }
+            ConstraintSolverError::SubstitutionError(inner) => TypeCheckError::SubstitutionError(
+                elaborated_statement.pretty_print().to_string(),
+                inner,
+            ),
+        })?;
 
         elaborated_statement.apply(&substitution).map_err(|e| {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
@@ -3678,8 +3676,7 @@ impl TypeChecker {
                     );
 
                     if let Some(struct_info) = self.structs.get_mut(*struct_name)
-                        && let Some(method_info) =
-                            struct_info.methods.get_mut(*function_name)
+                        && let Some(method_info) = struct_info.methods.get_mut(*function_name)
                     {
                         method_info.operator_impl = operator_impl;
                     }

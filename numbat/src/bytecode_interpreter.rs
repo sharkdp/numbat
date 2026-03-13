@@ -271,23 +271,23 @@ impl BytecodeInterpreter {
                             BinaryOperator::Div => Some("div"),
                             _ => None,
                         };
-                        let mut matching_methods = struct_info
-                            .methods
-                            .iter()
-                            .filter_map(|(method_name, method_info)| {
-                                if let Some(operator_impl) = method_info.operator_impl.as_ref() {
-                                    if operator_impl.operator == *operator
+                        let mut matching_methods =
+                            struct_info
+                                .methods
+                                .iter()
+                                .filter_map(|(method_name, method_info)| {
+                                    if let Some(operator_impl) = method_info.operator_impl.as_ref()
+                                        && operator_impl.operator == *operator
                                         && operator_impl.rhs_type == rhs_type
                                         && operator_impl.output_type == output_type
                                     {
                                         return Some(method_name);
                                     }
-                                }
 
-                                canonical_method_name
-                                    .filter(|canonical| method_name.as_str() == *canonical)
-                                    .map(|_| method_name)
-                            });
+                                    canonical_method_name
+                                        .filter(|canonical| method_name.as_str() == *canonical)
+                                        .map(|_| method_name)
+                                });
 
                         let method_name = matching_methods
                             .next()
@@ -308,8 +308,12 @@ impl BytecodeInterpreter {
 
                         match method_callable {
                             MethodCallable::Normal(idx) => {
-                                self.vm
-                                    .add_op2(Op::Call, idx, arg_count, lhs.full_span().extend(&rhs.full_span()));
+                                self.vm.add_op2(
+                                    Op::Call,
+                                    idx,
+                                    arg_count,
+                                    lhs.full_span().extend(&rhs.full_span()),
+                                );
                             }
                             MethodCallable::Foreign(idx) => {
                                 let call_args_idx = self.vm.add_ffi_call_args(FfiCallArgs {
@@ -1009,7 +1013,7 @@ impl Interpreter for BytecodeInterpreter {
                             struct_name,
                             method_name: _,
                             ..
-                        } if struct_name == &struct_info.name => {
+                        } if struct_name == struct_info.name => {
                             end += 1;
                         }
                         _ => break,

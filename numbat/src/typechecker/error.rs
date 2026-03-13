@@ -171,7 +171,9 @@ pub enum TypeCheckError {
     #[error("Type of 'self' parameter in method '{1}' must be '{2}'")]
     InvalidSelfParameterType(Span, String, String),
 
-    #[error("Operator decorator on method '{1}' requires an instance method with exactly one rhs parameter")]
+    #[error(
+        "Operator decorator on method '{1}' requires an instance method with exactly one rhs parameter"
+    )]
     InvalidOperatorMethodSignature(Span, String),
 
     #[error("Operator decorator on method '{1}' does not match the method signature")]
