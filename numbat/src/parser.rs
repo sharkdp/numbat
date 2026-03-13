@@ -2324,12 +2324,9 @@ mod tests {
     use std::fmt::Write;
 
     use super::*;
-    use crate::{
-        ast::{
-            ReplaceSpans, binop, boolean, conditional, factorial, identifier, list, logical_neg,
-            negate, scalar, struct_,
-        },
-        span::ByteIndex,
+    use crate::ast::{
+        ReplaceSpans, binop, boolean, conditional, factorial, identifier, list, logical_neg,
+        negate, scalar, struct_,
     };
 
     #[track_caller]
@@ -2802,24 +2799,8 @@ mod tests {
                 decorators: vec![
                     decorator::Decorator::Name("myvar".into()),
                     decorator::Decorator::Aliases(vec![
-                        (
-                            "foo",
-                            None,
-                            Span {
-                                start: ByteIndex(24),
-                                end: ByteIndex(27),
-                                code_source_id: 0,
-                            },
-                        ),
-                        (
-                            "bar",
-                            None,
-                            Span {
-                                start: ByteIndex(29),
-                                end: ByteIndex(32),
-                                code_source_id: 0,
-                            },
-                        ),
+                        ("foo", None, Span::dummy()),
+                        ("bar", None, Span::dummy()),
                     ]),
                 ],
             }),
