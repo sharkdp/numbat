@@ -202,6 +202,7 @@ pub struct TypeChecker {
 #[derive(Clone)]
 struct MethodInfo {
     signature: FunctionSignature,
+    operator_impl: Option<BinaryOperator>,
 }
 
 struct ElaborationDefinitionArgs<'a, 'b> {
@@ -217,6 +218,40 @@ struct ElaborationDefinitionArgs<'a, 'b> {
 }
 
 impl TypeChecker {
+    fn types_equal_ignoring_struct_methods(t1: &Type, t2: &Type) -> bool {
+        match (t1, t2) {
+            (Type::TVar(v1), Type::TVar(v2)) => v1 == v2,
+            (Type::TPar(v1), Type::TPar(v2)) => v1 == v2,
+            (Type::Dimension(d1), Type::Dimension(d2)) => d1 == d2,
+            (Type::Boolean, Type::Boolean)
+            | (Type::String, Type::String)
+            | (Type::DateTime, Type::DateTime) => true,
+            (Type::List(i1), Type::List(i2)) => Self::types_equal_ignoring_struct_methods(i1, i2),
+            (Type::Fn(p1, r1), Type::Fn(p2, r2)) => {
+                p1.len() == p2.len()
+                    && p1
+                        .iter()
+                        .zip(p2.iter())
+                        .all(|(a, b)| Self::types_equal_ignoring_struct_methods(a, b))
+                    && Self::types_equal_ignoring_struct_methods(r1, r2)
+            }
+            (Type::Struct(info1), Type::Struct(info2)) if info1.name == info2.name => {
+                match (&info1.kind, &info2.kind) {
+                    (StructKind::Definition(_), StructKind::Definition(_)) => true,
+                    (StructKind::Instance(args1), StructKind::Instance(args2)) => {
+                        args1.len() == args2.len()
+                            && args1
+                                .iter()
+                                .zip(args2.iter())
+                                .all(|(a, b)| Self::types_equal_ignoring_struct_methods(a, b))
+                    }
+                    _ => false,
+                }
+            }
+            _ => false,
+        }
+    }
+
     fn collect_struct_field_defaults<'a>(
         statements: &[ast::Statement<'a>],
     ) -> HashMap<&'a str, Vec<(&'a str, ast::Expression<'a>)>> {
@@ -640,6 +675,31 @@ impl TypeChecker {
         Ok(())
     }
 
+    fn rewrite_self_in_method_decorators(
+        method: &mut ast::Statement<'_>,
+        struct_name: &str,
+        self_type_args: &[TypeAnnotation],
+    ) -> Result<()> {
+        let ast::Statement::DefineFunction { decorators, .. } = method else {
+            return Ok(());
+        };
+
+        for decorator in decorators {
+            let decorator::Decorator::BinaryOperator { rhs, output, .. } = decorator else {
+                continue;
+            };
+
+            Self::rewrite_self_in_type_annotation(rhs, struct_name, true, self_type_args)?;
+            Self::rewrite_self_in_type_annotation(output, struct_name, true, self_type_args)?;
+        }
+
+        Ok(())
+    }
+
+    fn method_operator_impl(decorators: &[decorator::Decorator<'_>]) -> Option<BinaryOperator> {
+        decorator::binary_operator(decorators).map(|(operator, _, _)| operator)
+    }
+
     fn fresh_type_variable(&mut self) -> Type {
         Type::TVar(self.name_generator.fresh_type_variable())
     }
@@ -658,16 +718,418 @@ impl TypeChecker {
         struct_name: CompactString,
         method_name: CompactString,
         signature: FunctionSignature,
+        operator_impl: Option<BinaryOperator>,
     ) {
         self.methods
             .entry(struct_name)
             .or_default()
-            .insert(method_name, MethodInfo { signature });
+            .insert(
+                method_name,
+                MethodInfo {
+                    signature,
+                    operator_impl,
+                },
+            );
     }
 
     /// Look up a method for a struct
     fn lookup_method(&self, struct_name: &str, method_name: &str) -> Option<&MethodInfo> {
         self.methods.get(struct_name)?.get(method_name)
+    }
+
+    fn validate_operator_method_decorator(
+        &self,
+        method_kind: StructMethodKind,
+        definition_span: Span,
+        method_name: &str,
+        decorators: &[decorator::Decorator<'_>],
+        fn_type: &TypeScheme,
+        type_parameters: &[(Span, &str, Option<TypeParameterBound>)],
+    ) -> Result<Option<typed_ast::StructMethodOperatorInfo>> {
+        let Some((operator, rhs_annotation, output_annotation)) =
+            decorator::binary_operator(decorators)
+        else {
+            return Ok(None);
+        };
+
+        if method_kind != StructMethodKind::Instance {
+            return Err(Box::new(TypeCheckError::InvalidOperatorMethodSignature(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        let (instantiated_fn_type, _) =
+            fn_type.instantiate_for_printing(Some(type_parameters.iter().map(|(_, name, _)| *name)));
+        let Type::Fn(parameter_types, return_type) = instantiated_fn_type.inner else {
+            unreachable!("method type is expected to be a function type");
+        };
+
+        if parameter_types.len() != 2 {
+            return Err(Box::new(TypeCheckError::InvalidOperatorMethodSignature(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        let rhs_type = self.type_from_annotation(rhs_annotation)?;
+        let output_type = self.type_from_annotation(output_annotation)?;
+
+        if !Self::types_equal_ignoring_struct_methods(&parameter_types[1], &rhs_type)
+            || !Self::types_equal_ignoring_struct_methods(return_type.as_ref(), &output_type)
+        {
+            return Err(Box::new(TypeCheckError::OperatorDecoratorTypeMismatch(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        Ok(Some(typed_ast::StructMethodOperatorInfo {
+            operator,
+            rhs_type,
+            output_type,
+        }))
+    }
+
+    fn try_resolve_binary_operator_constraint(
+        &mut self,
+        operator: BinaryOperator,
+        lhs: &Type,
+        rhs: &Type,
+        output: &Type,
+    ) -> Option<constraints::Satisfied> {
+        let mut candidates = Vec::new();
+
+        match (operator, lhs, rhs) {
+            (
+                BinaryOperator::Add | BinaryOperator::Sub,
+                Type::Dimension(lhs_dtype),
+                Type::Dimension(rhs_dtype),
+            ) if lhs_dtype == rhs_dtype => {
+                let mut constraints = vec![
+                    Constraint::Equal(lhs.clone(), rhs.clone()),
+                    Constraint::Equal(lhs.clone(), output.clone()),
+                ];
+                constraints.push(Constraint::IsDType(lhs.clone()));
+                candidates.push(constraints::Satisfied::with_new_constraints(constraints));
+            }
+            (BinaryOperator::Mul, Type::Dimension(lhs_dtype), Type::Dimension(rhs_dtype)) => {
+                let result = Type::Dimension(lhs_dtype.multiply(rhs_dtype));
+                candidates.push(constraints::Satisfied::with_new_constraints(vec![
+                    Constraint::Equal(output.clone(), result),
+                ]));
+            }
+            (BinaryOperator::Div, Type::Dimension(lhs_dtype), Type::Dimension(rhs_dtype)) => {
+                let result = Type::Dimension(lhs_dtype.divide(rhs_dtype));
+                candidates.push(constraints::Satisfied::with_new_constraints(vec![
+                    Constraint::Equal(output.clone(), result),
+                ]));
+            }
+            _ => {}
+        }
+
+        match (operator, lhs, rhs) {
+            (BinaryOperator::Add, Type::DateTime, Type::Dimension(dtype))
+            | (BinaryOperator::Sub, Type::DateTime, Type::Dimension(dtype))
+                if dtype.is_time_dimension() =>
+            {
+                candidates.push(constraints::Satisfied::with_new_constraints(vec![
+                    Constraint::Equal(output.clone(), Type::DateTime),
+                ]));
+            }
+            (BinaryOperator::Sub, Type::DateTime, Type::DateTime) => {
+                candidates.push(constraints::Satisfied::with_new_constraints(vec![
+                    Constraint::Equal(
+                        output.clone(),
+                        Type::Dimension(DType::base_dimension("Time")),
+                    ),
+                ]));
+            }
+            _ => {}
+        }
+
+        if let Type::Struct(struct_info) = lhs {
+            let Some(methods) = self.methods.get(&struct_info.name) else {
+                return if candidates.len() == 1 {
+                    candidates.pop()
+                } else {
+                    None
+                };
+            };
+
+            for (_method_name, method_info) in methods {
+                if method_info.operator_impl != Some(operator) {
+                    continue;
+                }
+
+                let qualified_type = match &method_info.signature.fn_type {
+                    TypeScheme::Concrete(type_) => {
+                        crate::typechecker::qualified_type::QualifiedType::new(
+                            type_.clone(),
+                            qualified_type::Bounds::none(),
+                        )
+                    }
+                    TypeScheme::Quantified(_, _) => {
+                        method_info.signature.fn_type.instantiate(&mut self.name_generator)
+                    }
+                };
+
+                let Type::Fn(parameter_types, return_type) = qualified_type.inner else {
+                    continue;
+                };
+                if parameter_types.len() != 2 {
+                    continue;
+                }
+
+                let mut constraint_set = ConstraintSet::default();
+                constraint_set
+                    .add(Constraint::Equal(parameter_types[0].clone(), lhs.clone()))
+                    .ok();
+                constraint_set
+                    .add(Constraint::Equal(parameter_types[1].clone(), rhs.clone()))
+                    .ok();
+                constraint_set
+                    .add(Constraint::Equal(return_type.as_ref().clone(), output.clone()))
+                    .ok();
+                for bound in qualified_type.bounds.iter() {
+                    match bound {
+                        Bound::IsDim(type_) => {
+                            constraint_set.add(Constraint::IsDType(type_.clone())).ok();
+                        }
+                    }
+                }
+
+                if let Ok((substitution, dtype_vars)) =
+                    constraint_set.solve(|_, _, _, _| None::<constraints::Satisfied>)
+                    && dtype_vars.is_empty()
+                {
+                    candidates.push(constraints::Satisfied::with_substitution(substitution));
+                }
+            }
+        }
+
+        if candidates.len() == 1 {
+            candidates.pop()
+        } else {
+            None
+        }
+    }
+
+    fn find_operator_method_name(
+        &self,
+        operator: BinaryOperator,
+        lhs: &Type,
+        rhs: &Type,
+        output: &Type,
+    ) -> Option<CompactString> {
+        let Type::Struct(struct_info) = lhs else {
+            return None;
+        };
+        let methods = self.methods.get(&struct_info.name)?;
+
+        let mut matches = methods.iter().filter_map(|(method_name, method_info)| {
+            if method_info.operator_impl != Some(operator) {
+                return None;
+            }
+
+            let fn_type = method_info.signature.fn_type.to_concrete_type();
+            let Type::Fn(parameter_types, return_type) = fn_type else {
+                return None;
+            };
+            if parameter_types.len() != 2 {
+                return None;
+            }
+
+            if Self::types_equal_ignoring_struct_methods(&parameter_types[0], lhs)
+                && Self::types_equal_ignoring_struct_methods(&parameter_types[1], rhs)
+                && Self::types_equal_ignoring_struct_methods(return_type.as_ref(), output)
+            {
+                Some(method_name.clone())
+            } else {
+                None
+            }
+        });
+
+        let first = matches.next()?;
+        if matches.next().is_some() {
+            None
+        } else {
+            Some(first)
+        }
+    }
+
+    fn resolve_deferred_binary_operator_expression<'a>(
+        &self,
+        expr: &mut typed_ast::Expression<'a>,
+    ) -> Result<()> {
+        match expr {
+            typed_ast::Expression::UnaryOperator { expr, .. } => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Expression::BinaryOperator { lhs, rhs, .. }
+            | typed_ast::Expression::BinaryOperatorForDate { lhs, rhs, .. } => {
+                self.resolve_deferred_binary_operator_expression(lhs)?;
+                self.resolve_deferred_binary_operator_expression(rhs)?;
+            }
+            typed_ast::Expression::DeferredBinaryOperator {
+                op_span,
+                op,
+                lhs,
+                rhs,
+                type_scheme,
+            } => {
+                self.resolve_deferred_binary_operator_expression(lhs)?;
+                self.resolve_deferred_binary_operator_expression(rhs)?;
+
+                let lhs_type = lhs.get_type_scheme().to_concrete_type();
+                let rhs_type = rhs.get_type_scheme().to_concrete_type();
+                let output_type = type_scheme.to_concrete_type();
+                let full_span = lhs.full_span().extend(&rhs.full_span());
+
+                let replacement = if lhs_type == Type::DateTime
+                    && (rhs_type == Type::DateTime
+                        || matches!(
+                            rhs_type,
+                            Type::Dimension(ref dtype) if dtype.is_time_dimension()
+                        ))
+                {
+                    typed_ast::Expression::BinaryOperatorForDate {
+                        op_span: *op_span,
+                        op: *op,
+                        lhs: lhs.clone(),
+                        rhs: rhs.clone(),
+                        type_scheme: type_scheme.clone(),
+                    }
+                } else if let Some(method_name) =
+                    self.find_operator_method_name(*op, &lhs_type, &rhs_type, &output_type)
+                {
+                    let Type::Struct(struct_info) = lhs_type else {
+                        unreachable!();
+                    };
+
+                    typed_ast::Expression::MethodCall {
+                        full_span,
+                        receiver: lhs.clone(),
+                        method_ref: typed_ast::MethodRef {
+                            owner: struct_info.name,
+                            name: Box::leak(method_name.to_string().into_boxed_str()),
+                            kind: StructMethodKind::Instance,
+                        },
+                        method_name_span: op_span.unwrap_or(full_span),
+                        args: vec![(**rhs).clone()],
+                        type_scheme: type_scheme.clone(),
+                    }
+                } else {
+                    typed_ast::Expression::BinaryOperator {
+                        op_span: *op_span,
+                        op: *op,
+                        lhs: lhs.clone(),
+                        rhs: rhs.clone(),
+                        type_scheme: type_scheme.clone(),
+                    }
+                };
+
+                *expr = replacement;
+            }
+            typed_ast::Expression::FunctionCall { args, .. } => {
+                for arg in args {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+            }
+            typed_ast::Expression::CallableCall { callable, args, .. } => {
+                self.resolve_deferred_binary_operator_expression(callable)?;
+                for arg in args {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+            }
+            typed_ast::Expression::Condition {
+                condition,
+                then_expr,
+                else_expr,
+                ..
+            } => {
+                self.resolve_deferred_binary_operator_expression(condition)?;
+                self.resolve_deferred_binary_operator_expression(then_expr)?;
+                self.resolve_deferred_binary_operator_expression(else_expr)?;
+            }
+            typed_ast::Expression::String(_, parts) => {
+                for part in parts {
+                    if let typed_ast::StringPart::Interpolation { expr, .. } = part {
+                        self.resolve_deferred_binary_operator_expression(expr)?;
+                    }
+                }
+            }
+            typed_ast::Expression::InstantiateStruct { fields, .. } => {
+                for (_, expr) in fields {
+                    self.resolve_deferred_binary_operator_expression(expr)?;
+                }
+            }
+            typed_ast::Expression::AccessField { expr, .. } => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Expression::MethodCall { receiver, args, .. } => {
+                self.resolve_deferred_binary_operator_expression(receiver)?;
+                for arg in args {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+            }
+            typed_ast::Expression::List { elements, .. } => {
+                for element in elements {
+                    self.resolve_deferred_binary_operator_expression(element)?;
+                }
+            }
+            typed_ast::Expression::Scalar { .. }
+            | typed_ast::Expression::Identifier { .. }
+            | typed_ast::Expression::UnitIdentifier { .. }
+            | typed_ast::Expression::Boolean(..)
+            | typed_ast::Expression::TypedHole(..) => {}
+        }
+
+        Ok(())
+    }
+
+    fn resolve_deferred_binary_operators<'a>(
+        &self,
+        statement: &mut typed_ast::Statement<'a>,
+    ) -> Result<()> {
+        match statement {
+            typed_ast::Statement::Expression(expr) => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Statement::DefineVariable(typed_ast::DefineVariable { expr, .. }) => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Statement::DefineFunction {
+                body,
+                local_variables,
+                ..
+            }
+            | typed_ast::Statement::DefineMethod {
+                body,
+                local_variables,
+                ..
+            } => {
+                for local_variable in local_variables {
+                    self.resolve_deferred_binary_operator_expression(&mut local_variable.expr)?;
+                }
+                if let Some(body) = body {
+                    self.resolve_deferred_binary_operator_expression(body)?;
+                }
+            }
+            typed_ast::Statement::DefineDerivedUnit { expr, .. } => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Statement::ProcedureCall { args, .. } => {
+                for arg in args {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+            }
+            typed_ast::Statement::DefineStruct(_)
+            | typed_ast::Statement::DefineDimension(_, _)
+            | typed_ast::Statement::DefineBaseUnit { .. } => {}
+        }
+
+        Ok(())
     }
 
     fn provisional_method_signature(
@@ -803,13 +1265,20 @@ impl TypeChecker {
                     for (_, field_type) in instantiated_fields.values_mut() {
                         field_type.apply(&substitution).ok();
                     }
+                    let mut instantiated_methods = struct_info.methods.clone();
+                    for method_info in instantiated_methods.values_mut() {
+                        if let Some(operator_impl) = &mut method_info.operator_impl {
+                            operator_impl.rhs_type.apply(&substitution).ok();
+                            operator_impl.output_type.apply(&substitution).ok();
+                        }
+                    }
 
                     return Ok(Type::Struct(Box::new(StructInfo {
                         definition_span: struct_info.definition_span,
                         name: struct_info.name.clone(),
                         kind: StructKind::Instance(concrete_type_args),
                         fields: instantiated_fields,
-                        methods: struct_info.methods.clone(),
+                        methods: instantiated_methods,
                     })));
                 }
 
@@ -1014,38 +1483,44 @@ impl TypeChecker {
                         args: vec![lhs_checked],
                         type_scheme: TypeScheme::concrete(*return_type),
                     }
-                } else if lhs_type == Type::DateTime {
-                    // DateTime types need special handling here, since they're not scalars with dimensions,
-                    // yet some select binary operators can be applied to them
+                } else if matches!(
+                    op,
+                    BinaryOperator::Add
+                        | BinaryOperator::Sub
+                        | BinaryOperator::Mul
+                        | BinaryOperator::Div
+                ) && {
+                    let lhs_overload_candidate =
+                        matches!(lhs_type, Type::DateTime | Type::Struct(_));
+                    let rhs_overload_candidate =
+                        matches!(rhs_type, Type::DateTime | Type::Struct(_));
+                    let lhs_is_time = matches!(
+                        lhs_type,
+                        Type::Dimension(ref dtype) if dtype.is_time_dimension()
+                    );
+                    let rhs_is_time = matches!(
+                        rhs_type,
+                        Type::Dimension(ref dtype) if dtype.is_time_dimension()
+                    );
 
-                    let rhs_is_time = dtype(&rhs_checked)
-                        .ok()
-                        .map(|t| t.is_time_dimension())
-                        .unwrap_or(false);
-                    let rhs_is_datetime = rhs_type == Type::DateTime;
-
-                    if *op == BinaryOperator::Sub && rhs_is_datetime {
-                        let time = DType::base_dimension("Time"); // TODO: error handling
-                        // TODO make sure the "second" unit exists
-
-                        typed_ast::Expression::BinaryOperatorForDate {
-                            op_span: *span_op,
-                            op: *op,
-                            lhs: Box::new(lhs_checked),
-                            rhs: Box::new(rhs_checked),
-                            type_scheme: TypeScheme::concrete(Type::Dimension(time)),
-                        }
-                    } else if (*op == BinaryOperator::Add || *op == BinaryOperator::Sub)
-                        && rhs_is_time
+                    lhs_overload_candidate
+                        || rhs_overload_candidate
+                        || matches!(op, BinaryOperator::Add | BinaryOperator::Sub)
+                            && ((!lhs_type.is_closed() && rhs_is_time)
+                                || (!rhs_type.is_closed() && lhs_is_time))
+                } {
+                    let result_type = self.fresh_type_variable();
+                    if lhs_type.is_closed()
+                        && rhs_type.is_closed()
+                        && self
+                            .try_resolve_binary_operator_constraint(
+                                *op,
+                                &lhs_type,
+                                &rhs_type,
+                                &result_type,
+                            )
+                            .is_none()
                     {
-                        typed_ast::Expression::BinaryOperatorForDate {
-                            op_span: *span_op,
-                            op: *op,
-                            lhs: Box::new(lhs_checked),
-                            rhs: Box::new(rhs_checked),
-                            type_scheme: TypeScheme::concrete(Type::DateTime),
-                        }
-                    } else {
                         return Err(Box::new(TypeCheckError::IncompatibleTypesInOperator(
                             span_op.unwrap_or_else(|| {
                                 ast::Expression::BinaryOperator {
@@ -1062,6 +1537,23 @@ impl TypeChecker {
                             rhs_type,
                             rhs.full_span(),
                         )));
+                    }
+
+                    self.constraints
+                        .add(Constraint::HasBinaryOperator(
+                            *op,
+                            lhs_type.clone(),
+                            rhs_type.clone(),
+                            result_type.clone(),
+                        ))
+                        .ok();
+
+                    typed_ast::Expression::DeferredBinaryOperator {
+                        op_span: *span_op,
+                        op: *op,
+                        lhs: Box::new(lhs_checked),
+                        rhs: Box::new(rhs_checked),
+                        type_scheme: TypeScheme::concrete(result_type),
                     }
                 } else {
                     let mut get_type_and_assert_equal_dtypes = || -> Result<Type> {
@@ -2755,6 +3247,7 @@ impl TypeChecker {
                                 StructMethodInfo {
                                     definition_span: *function_name_span,
                                     kind,
+                                    operator_impl: None,
                                 },
                             )
                         })
@@ -2783,8 +3276,13 @@ impl TypeChecker {
         let mut elaborated_statement = self.elaborate_statement(statement)?;
 
         // Solve constraints
-        let (substitution, dtype_variables) =
-            self.constraints.solve().map_err(|inner| match inner {
+        let mut constraints = std::mem::take(&mut self.constraints);
+        let solve_result = constraints.solve(|op, lhs, rhs, output| {
+            self.try_resolve_binary_operator_constraint(op, lhs, rhs, output)
+        });
+        self.constraints = constraints;
+
+        let (substitution, dtype_variables) = solve_result.map_err(|inner| match inner {
                 ConstraintSolverError::CouldNotSolve(constraints) => {
                     TypeCheckError::ConstraintSolverError(statement.full_span(), constraints)
                 }
@@ -2799,6 +3297,7 @@ impl TypeChecker {
         elaborated_statement.apply(&substitution).map_err(|e| {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
+        self.resolve_deferred_binary_operators(&mut elaborated_statement)?;
 
         self.env.apply(&substitution).map_err(|e| {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
@@ -2960,6 +3459,7 @@ impl TypeChecker {
                     }
                 }
 
+                let struct_statement_idx = checked_statements.len();
                 checked_statements.push(self.check_statement(&statement)?);
 
                 let mut prepared_methods = vec![];
@@ -3024,12 +3524,21 @@ impl TypeChecker {
                         struct_name,
                         &self_type_args,
                     )?;
+                    Self::rewrite_self_in_method_decorators(
+                        &mut method_to_check,
+                        struct_name,
+                        &self_type_args,
+                    )?;
 
                     prepared_methods.push((method_to_check, method_kind));
                 }
 
                 for (method_to_check, _method_kind) in &prepared_methods {
-                    let ast::Statement::DefineFunction { function_name, .. } = method_to_check
+                    let ast::Statement::DefineFunction {
+                        function_name,
+                        decorators,
+                        ..
+                    } = method_to_check
                     else {
                         unreachable!("method_to_check is DefineFunction");
                     };
@@ -3039,6 +3548,7 @@ impl TypeChecker {
                         struct_name.to_compact_string(),
                         function_name.to_compact_string(),
                         signature,
+                        Self::method_operator_impl(decorators),
                     );
                 }
 
@@ -3092,8 +3602,10 @@ impl TypeChecker {
                         },
                         _ => unreachable!("checked method is DefineFunction"),
                     };
-
-                    checked_statements.push(checked_method);
+                    let checked_method_decorators = match &checked_method {
+                        typed_ast::Statement::DefineMethod { decorators, .. } => decorators.clone(),
+                        _ => unreachable!("checked method is DefineMethod"),
+                    };
 
                     let signature = FunctionSignature {
                         name: (*function_name).to_compact_string(),
@@ -3113,6 +3625,18 @@ impl TypeChecker {
                         return_type_annotation: return_type_annotation.clone(),
                         fn_type: checked_fn_type,
                     };
+
+                    let operator_impl = self.validate_operator_method_decorator(
+                        method_kind.clone(),
+                        *function_name_span,
+                        function_name,
+                        &checked_method_decorators,
+                        &signature.fn_type,
+                        &type_parameters
+                            .iter()
+                            .map(|(span, name, bound)| (*span, *name, bound.clone()))
+                            .collect::<Vec<_>>(),
+                    )?;
 
                     if method_kind == StructMethodKind::Instance {
                         let fn_type = match &signature.fn_type {
@@ -3150,8 +3674,27 @@ impl TypeChecker {
                         struct_name.to_compact_string(),
                         function_name.to_compact_string(),
                         signature,
+                        Self::method_operator_impl(&checked_method_decorators),
                     );
+
+                    if let Some(struct_info) = self.structs.get_mut(*struct_name)
+                        && let Some(method_info) =
+                            struct_info.methods.get_mut(*function_name)
+                    {
+                        method_info.operator_impl = operator_impl;
+                    }
+
+                    checked_statements.push(checked_method);
                 }
+
+                if let Some(typed_ast::Statement::DefineStruct(struct_info)) =
+                    checked_statements.get_mut(struct_statement_idx)
+                    && let Some(updated_struct_info) = self.structs.get(*struct_name)
+                {
+                    *struct_info = updated_struct_info.clone();
+                }
+                self.non_generic_struct_instances
+                    .remove(&struct_name.to_compact_string());
 
                 continue;
             }

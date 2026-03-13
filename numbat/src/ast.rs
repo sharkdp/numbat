@@ -588,6 +588,38 @@ pub trait ReplaceSpans {
 }
 
 #[cfg(test)]
+impl ReplaceSpans for Decorator<'_> {
+    fn replace_spans(&self) -> Self {
+        match self {
+            Decorator::MetricPrefixes => Decorator::MetricPrefixes,
+            Decorator::BinaryPrefixes => Decorator::BinaryPrefixes,
+            Decorator::Abbreviation => Decorator::Abbreviation,
+            Decorator::Aliases(aliases) => Decorator::Aliases(
+                aliases
+                    .iter()
+                    .map(|(name, accepts_prefix, _)| (*name, *accepts_prefix, Span::dummy()))
+                    .collect(),
+            ),
+            Decorator::Url(url) => Decorator::Url(url.clone()),
+            Decorator::Name(name) => Decorator::Name(name.clone()),
+            Decorator::Description(description) => Decorator::Description(description.clone()),
+            Decorator::Example(code, description) => {
+                Decorator::Example(code.clone(), description.clone())
+            }
+            Decorator::BinaryOperator {
+                operator,
+                rhs,
+                output,
+            } => Decorator::BinaryOperator {
+                operator: *operator,
+                rhs: rhs.replace_spans(),
+                output: output.replace_spans(),
+            },
+        }
+    }
+}
+
+#[cfg(test)]
 impl ReplaceSpans for TypeAnnotation {
     fn replace_spans(&self) -> Self {
         match self {
@@ -761,7 +793,7 @@ impl ReplaceSpans for DefineVariable<'_> {
             identifier: self.identifier,
             expr: self.expr.replace_spans(),
             type_annotation: self.type_annotation.as_ref().map(|t| t.replace_spans()),
-            decorators: self.decorators.clone(),
+            decorators: self.decorators.iter().map(Decorator::replace_spans).collect(),
         }
     }
 }
@@ -807,7 +839,7 @@ impl ReplaceSpans for Statement<'_> {
                     .map(DefineVariable::replace_spans)
                     .collect(),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
-                decorators: decorators.clone(),
+                decorators: decorators.iter().map(Decorator::replace_spans).collect(),
             },
             Statement::DefineDimension(_, name, dexprs) => Statement::DefineDimension(
                 Span::dummy(),
@@ -833,7 +865,7 @@ impl ReplaceSpans for Statement<'_> {
                 expr: expr.replace_spans(),
                 type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
-                decorators: decorators.clone(),
+                decorators: decorators.iter().map(Decorator::replace_spans).collect(),
             },
             Statement::ProcedureCall(_, proc, args) => Statement::ProcedureCall(
                 Span::dummy(),

@@ -43,6 +43,16 @@ impl ForAllTypeSchemes for Expression<'_> {
                 rhs.for_all_type_schemes(f);
                 f(type_scheme);
             }
+            Expression::DeferredBinaryOperator {
+                lhs,
+                rhs,
+                type_scheme,
+                ..
+            } => {
+                lhs.for_all_type_schemes(f);
+                rhs.for_all_type_schemes(f);
+                f(type_scheme);
+            }
             Expression::FunctionCall {
                 args, type_scheme, ..
             } => {
@@ -227,6 +237,10 @@ impl ForAllExpressions for Expression<'_> {
                 rhs.for_all_expressions(f);
             }
             Expression::BinaryOperatorForDate { lhs, rhs, .. } => {
+                lhs.for_all_expressions(f);
+                rhs.for_all_expressions(f);
+            }
+            Expression::DeferredBinaryOperator { lhs, rhs, .. } => {
                 lhs.for_all_expressions(f);
                 rhs.for_all_expressions(f);
             }

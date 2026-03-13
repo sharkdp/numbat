@@ -165,6 +165,12 @@ impl ApplySubstitution for StructInfo {
         for (_, field_type) in self.fields.values_mut() {
             field_type.apply(s)?;
         }
+        for method_info in self.methods.values_mut() {
+            if let Some(operator_impl) = &mut method_info.operator_impl {
+                operator_impl.rhs_type.apply(s)?;
+                operator_impl.output_type.apply(s)?;
+            }
+        }
         Ok(())
     }
 }
@@ -192,6 +198,16 @@ impl ApplySubstitution for Expression<'_> {
                 type_scheme.apply(s)
             }
             Expression::BinaryOperatorForDate {
+                lhs,
+                rhs,
+                type_scheme,
+                ..
+            } => {
+                lhs.apply(s)?;
+                rhs.apply(s)?;
+                type_scheme.apply(s)
+            }
+            Expression::DeferredBinaryOperator {
                 lhs,
                 rhs,
                 type_scheme,

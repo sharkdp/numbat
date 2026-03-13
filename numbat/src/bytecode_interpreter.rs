@@ -215,6 +215,145 @@ impl BytecodeInterpreter {
                     }),
                 );
             }
+            Expression::DeferredBinaryOperator {
+                op_span,
+                op: operator,
+                lhs,
+                rhs,
+                type_scheme,
+            } => {
+                let lhs_type = lhs.get_type_scheme().to_concrete_type();
+                let rhs_type = rhs.get_type_scheme().to_concrete_type();
+                let output_type = type_scheme.to_concrete_type();
+
+                match (&lhs_type, &rhs_type) {
+                    (Type::DateTime, Type::DateTime) => {
+                        self.compile_expression(lhs);
+                        self.compile_expression(rhs);
+
+                        let second_idx = self.unit_name_to_constant_index.get("second");
+                        self.vm.add_op1(
+                            Op::LoadConstant,
+                            *second_idx.unwrap(),
+                            op_span.unwrap_or_else(|| {
+                                crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
+                            }),
+                        );
+                        self.vm.add_op(
+                            Op::DiffDateTime,
+                            op_span.unwrap_or_else(|| {
+                                crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
+                            }),
+                        );
+                    }
+                    (Type::DateTime, Type::Dimension(dtype)) if dtype.is_time_dimension() => {
+                        self.compile_expression(lhs);
+                        self.compile_expression(rhs);
+
+                        let op = match operator {
+                            BinaryOperator::Add => Op::AddToDateTime,
+                            BinaryOperator::Sub => Op::SubFromDateTime,
+                            _ => unreachable!(),
+                        };
+
+                        self.vm.add_op(
+                            op,
+                            op_span.unwrap_or_else(|| {
+                                crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
+                            }),
+                        );
+                    }
+                    (Type::Struct(struct_info), _) => {
+                        let canonical_method_name = match operator {
+                            BinaryOperator::Add => Some("add"),
+                            BinaryOperator::Sub => Some("sub"),
+                            BinaryOperator::Mul => Some("mul"),
+                            BinaryOperator::Div => Some("div"),
+                            _ => None,
+                        };
+                        let mut matching_methods = struct_info
+                            .methods
+                            .iter()
+                            .filter_map(|(method_name, method_info)| {
+                                if let Some(operator_impl) = method_info.operator_impl.as_ref() {
+                                    if operator_impl.operator == *operator
+                                        && operator_impl.rhs_type == rhs_type
+                                        && operator_impl.output_type == output_type
+                                    {
+                                        return Some(method_name);
+                                    }
+                                }
+
+                                canonical_method_name
+                                    .filter(|canonical| method_name.as_str() == *canonical)
+                                    .map(|_| method_name)
+                            });
+
+                        let method_name = matching_methods
+                            .next()
+                            .expect("deferred operator must resolve to a struct method");
+                        assert!(
+                            matching_methods.next().is_none(),
+                            "ambiguous struct operator overload reached bytecode compilation"
+                        );
+
+                        self.compile_expression(lhs);
+                        self.compile_expression(rhs);
+
+                        let arg_count = 2;
+                        let method_callable = self
+                            .vm
+                            .get_method_callable(&struct_info.name, method_name)
+                            .expect("operator method must be registered before call sites");
+
+                        match method_callable {
+                            MethodCallable::Normal(idx) => {
+                                self.vm
+                                    .add_op2(Op::Call, idx, arg_count, lhs.full_span().extend(&rhs.full_span()));
+                            }
+                            MethodCallable::Foreign(idx) => {
+                                let call_args_idx = self.vm.add_ffi_call_args(FfiCallArgs {
+                                    args: vec![
+                                        FfiCallArg {
+                                            span: lhs.full_span(),
+                                            type_: lhs.get_type_scheme(),
+                                        },
+                                        FfiCallArg {
+                                            span: rhs.full_span(),
+                                            type_: rhs.get_type_scheme(),
+                                        },
+                                    ],
+                                    return_type: Some(type_scheme.clone()),
+                                });
+                                self.vm.add_op3(
+                                    Op::FFICallFunction,
+                                    idx,
+                                    arg_count,
+                                    call_args_idx,
+                                    lhs.full_span().extend(&rhs.full_span()),
+                                );
+                            }
+                        }
+                    }
+                    _ => {
+                        self.compile_expression(lhs);
+                        self.compile_expression(rhs);
+                        let op = match operator {
+                            BinaryOperator::Add => Op::Add,
+                            BinaryOperator::Sub => Op::Subtract,
+                            BinaryOperator::Mul => Op::Multiply,
+                            BinaryOperator::Div => Op::Divide,
+                            _ => unreachable!("unsupported deferred binary operator"),
+                        };
+                        self.vm.add_op(
+                            op,
+                            op_span.unwrap_or_else(|| {
+                                crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
+                            }),
+                        );
+                    }
+                }
+            }
             Expression::FunctionCall {
                 full_span,
                 name,

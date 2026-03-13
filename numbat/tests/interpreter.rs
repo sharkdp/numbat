@@ -138,6 +138,52 @@ fn get_diagnostic_output(code: &str) -> String {
 }
 
 #[test]
+fn struct_operator_methods() {
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+
+            @add(rhs: Self, output: Self)
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+        }
+
+        (Point { x: 1, y: 2 } + Point { x: 3, y: 4 }).x
+        ",
+        "4",
+    );
+
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+
+            @add(rhs: Self, output: Self)
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @add(rhs: Scalar, output: Self)
+            fn add_scalar(self, rhs: Scalar) -> Self =
+                Point { x: self.x + rhs, y: self.y + rhs }
+        }
+
+        (Point { x: 1, y: 2 } + 3).x + (Point { x: 1, y: 2 } + Point { x: 3, y: 4 }).y
+        ",
+        "10",
+    );
+
+    let _ = succeed(
+        "
+        fn id(x) = x
+        id(now()) + 4 days
+        ",
+    );
+}
+
+#[test]
 fn simple_value() {
     expect_output("0", "0");
     expect_output("0_0", "0");

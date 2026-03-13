@@ -211,6 +211,12 @@ pub enum ParseErrorKind {
     #[error("Example decorators can only be used on functions.")]
     ExampleUsedOnUnsuitableKind,
 
+    #[error("Operator decorators can only be used on struct instance methods.")]
+    OperatorDecoratorUsedOutsideStructMethod,
+
+    #[error("Expected comma in decorator arguments")]
+    ExpectedCommaInDecorator,
+
     #[error("Numerical overflow in dimension exponent")]
     OverflowInDimensionExponent,
 
@@ -289,6 +295,7 @@ static PROCEDURES: &[TokenKind] = &[
 struct Parser<'a> {
     current: usize,
     decorator_stack: Vec<Decorator<'a>>,
+    parsing_struct_method: bool,
     /// When we split `>=` into `>` and `=`, we store the span of the `=` here.
     /// This is used for parsing something like `let v: Vec<Length>= ...`, where
     /// the `>=` is being tokenized as a TokenKind::GreaterOrEqual.
@@ -300,6 +307,7 @@ impl<'a> Parser<'a> {
         Parser {
             current: 0,
             decorator_stack: vec![],
+            parsing_struct_method: false,
             pending_equals: None,
         }
     }
@@ -504,7 +512,7 @@ impl<'a> Parser<'a> {
             self.parse_variable(tokens, true)
                 .map(Statement::DefineVariable)
         } else if let Some(fn_token) = self.match_exact(tokens, TokenKind::Fn) {
-            self.parse_function_declaration(tokens, fn_token.span)
+            self.parse_function_declaration(tokens, fn_token.span, false)
         } else if self.match_exact(tokens, TokenKind::Dimension).is_some() {
             self.parse_dimension_declaration(tokens)
         } else if self.match_exact(tokens, TokenKind::At).is_some() {
@@ -584,6 +592,7 @@ impl<'a> Parser<'a> {
         &mut self,
         tokens: &[Token<'a>],
         fn_keyword_span: Span,
+        allow_operator_decorators: bool,
     ) -> Result<Statement<'a>> {
         if let Some(fn_name) = self.match_exact(tokens, TokenKind::Identifier) {
             let function_name_span = self.last(tokens).unwrap().span;
@@ -686,6 +695,16 @@ impl<'a> Parser<'a> {
             if decorator::contains_aliases(&self.decorator_stack) {
                 return Err(ParseError {
                     kind: ParseErrorKind::AliasUsedOnFunction,
+                    span: self.peek(tokens).span,
+                });
+            }
+
+            if !allow_operator_decorators
+                && !self.parsing_struct_method
+                && decorator::contains_binary_operator_decorators(&self.decorator_stack)
+            {
+                return Err(ParseError {
+                    kind: ParseErrorKind::OperatorDecoratorUsedOutsideStructMethod,
                     span: self.peek(tokens).span,
                 });
             }
@@ -847,6 +866,82 @@ impl<'a> Parser<'a> {
                         });
                     }
                 }
+                "add" | "sub" | "mul" | "div" => {
+                    let operator = match decorator.lexeme {
+                        "add" => BinaryOperator::Add,
+                        "sub" => BinaryOperator::Sub,
+                        "mul" => BinaryOperator::Mul,
+                        "div" => BinaryOperator::Div,
+                        _ => unreachable!(),
+                    };
+
+                    if self.match_exact(tokens, TokenKind::LeftParen).is_none() {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
+                            span: self.peek(tokens).span,
+                        });
+                    }
+
+                    let Some(rhs_name) = self.match_exact(tokens, TokenKind::Identifier) else {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedDecoratorName,
+                            span: self.peek(tokens).span,
+                        });
+                    };
+                    if rhs_name.lexeme != "rhs" {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::UnknownDecorator,
+                            span: rhs_name.span,
+                        });
+                    }
+                    if self.match_exact(tokens, TokenKind::Colon).is_none() {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedColonAfterFieldName,
+                            span: self.peek(tokens).span,
+                        });
+                    }
+                    let rhs = self.type_annotation(tokens)?;
+
+                    if self.match_exact(tokens, TokenKind::Comma).is_none() {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedCommaInDecorator,
+                            span: self.peek(tokens).span,
+                        });
+                    }
+
+                    let Some(output_name) = self.match_exact(tokens, TokenKind::Identifier) else {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedDecoratorName,
+                            span: self.peek(tokens).span,
+                        });
+                    };
+                    if output_name.lexeme != "output" {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::UnknownDecorator,
+                            span: output_name.span,
+                        });
+                    }
+                    if self.match_exact(tokens, TokenKind::Colon).is_none() {
+                        return Err(ParseError {
+                            kind: ParseErrorKind::ExpectedColonAfterFieldName,
+                            span: self.peek(tokens).span,
+                        });
+                    }
+                    let output = self.type_annotation(tokens)?;
+
+                    if self.match_exact(tokens, TokenKind::RightParen).is_none() {
+                        return Err(ParseError::new(
+                            ParseErrorKind::MissingClosingParen,
+                            self.peek(tokens).span,
+                        ));
+                    }
+
+                    Decorator::BinaryOperator {
+                        operator,
+                        rhs,
+                        output,
+                    }
+                }
                 _ => {
                     return Err(ParseError {
                         kind: ParseErrorKind::UnknownDecorator,
@@ -982,7 +1077,23 @@ impl<'a> Parser<'a> {
 
             if let Some(fn_token) = self.match_exact(tokens, TokenKind::Fn) {
                 parsing_methods = true;
-                methods.push(self.parse_function_declaration(tokens, fn_token.span)?);
+                methods.push(self.parse_function_declaration(tokens, fn_token.span, true)?);
+                self.skip_empty_lines(tokens);
+                continue;
+            }
+
+            if self.match_exact(tokens, TokenKind::At).is_some() {
+                parsing_methods = true;
+                self.parsing_struct_method = true;
+                let method = self.parse_decorators(tokens)?;
+                self.parsing_struct_method = false;
+                let Statement::DefineFunction { .. } = method else {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedFieldOrMethodInStruct,
+                        span: self.peek(tokens).span,
+                    });
+                };
+                methods.push(method);
                 self.skip_empty_lines(tokens);
                 continue;
             }
@@ -3414,6 +3525,107 @@ mod tests {
             },
         );
 
+        parse_as(
+            &[
+                "struct Vec2 { x: Length, y: Length, @add(rhs: Self, output: Self) fn add(self, rhs: Self) -> Self = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } }",
+            ],
+            Statement::DefineStruct {
+                struct_name_span: Span::dummy(),
+                struct_name: "Vec2",
+                type_parameters: vec![],
+                fields: vec![
+                    (
+                        Span::dummy(),
+                        "x",
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Length".into(),
+                            vec![],
+                        )),
+                        None,
+                    ),
+                    (
+                        Span::dummy(),
+                        "y",
+                        TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Length".into(),
+                            vec![],
+                        )),
+                        None,
+                    ),
+                ],
+                methods: vec![Statement::DefineFunction {
+                    fn_keyword_span: Span::dummy(),
+                    function_name_span: Span::dummy(),
+                    function_name: "add",
+                    type_parameters: vec![],
+                    parameters: vec![
+                        (Span::dummy(), "self", None),
+                        (
+                            Span::dummy(),
+                            "rhs",
+                            Some(TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                                Span::dummy(),
+                                "Self".into(),
+                                vec![],
+                            ))),
+                        ),
+                    ],
+                    body: Some(struct_! {
+                        Vec2,
+                        x: binop!(
+                            Expression::AccessField {
+                                full_span: Span::dummy(),
+                                ident_span: Span::dummy(),
+                                expr: Box::new(identifier!("self")),
+                                field_name: "x",
+                            },
+                            Add,
+                            Expression::AccessField {
+                                full_span: Span::dummy(),
+                                ident_span: Span::dummy(),
+                                expr: Box::new(identifier!("rhs")),
+                                field_name: "x",
+                            }
+                        ),
+                        y: binop!(
+                            Expression::AccessField {
+                                full_span: Span::dummy(),
+                                ident_span: Span::dummy(),
+                                expr: Box::new(identifier!("self")),
+                                field_name: "y",
+                            },
+                            Add,
+                            Expression::AccessField {
+                                full_span: Span::dummy(),
+                                ident_span: Span::dummy(),
+                                expr: Box::new(identifier!("rhs")),
+                                field_name: "y",
+                            }
+                        )
+                    }),
+                    local_variables: vec![],
+                    return_type_annotation: Some(TypeAnnotation::TypeExpression(
+                        TypeExpression::TypeIdentifier(Span::dummy(), "Self".into(), vec![]),
+                    )),
+                    decorators: vec![decorator::Decorator::BinaryOperator {
+                        operator: BinaryOperator::Add,
+                        rhs: TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Self".into(),
+                            vec![],
+                        )),
+                        output: TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                            Span::dummy(),
+                            "Self".into(),
+                            vec![],
+                        )),
+                    }],
+                }],
+            },
+        );
+
         parse_as_expression(
             &["p.translate(1, 2).magnitude()"],
             Expression::MethodCall {
@@ -3455,6 +3667,11 @@ mod tests {
         should_fail_with(
             &["Point::new"],
             ParseErrorKind::ExpectedLeftParenAfterStaticMethodName,
+        );
+
+        should_fail_with(
+            &["@add(rhs: Scalar, output: Scalar) fn add(x: Scalar, y: Scalar) = x + y"],
+            ParseErrorKind::OperatorDecoratorUsedOutsideStructMethod,
         );
 
         should_fail_with(

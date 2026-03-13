@@ -927,6 +927,70 @@ fn struct_methods() {
         ",
     );
 
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+
+            @add(rhs: Self, output: Self)
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+        }
+
+        let sum: Point = Point { x: 1 a, y: 2 a } + Point { x: 3 a, y: 4 a }
+        let x: A = sum.x
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+
+            @add(rhs: Self, output: Self)
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @add(rhs: Scalar, output: Self)
+            fn add_scalar(self, rhs: Scalar) -> Self =
+                Point { x: self.x + rhs * 1 a, y: self.y + rhs * 1 a }
+        }
+
+        let sum_points: Point = Point { x: 1 a, y: 2 a } + Point { x: 3 a, y: 4 a }
+        let shifted: Point = Point { x: 1 a, y: 2 a } + 3
+        let x1: A = sum_points.x
+        let x2: A = shifted.x
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                @add(rhs: Self, output: Self)
+                fn make() -> Self = Point { x: 1 a }
+            }
+            "
+        ),
+        TypeCheckError::InvalidOperatorMethodSignature(_, name) if name == "make"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                @add(rhs: Self, output: Self)
+                fn add(self, rhs: Self) -> A = self.x
+            }
+            "
+        ),
+        TypeCheckError::OperatorDecoratorTypeMismatch(_, name) if name == "add"
+    ));
+
     assert!(matches!(
         get_typecheck_error("fn id(x: Self) -> Self = x"),
         TypeCheckError::SelfTypeOutsideStructMethod(_)

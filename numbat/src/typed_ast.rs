@@ -350,6 +350,14 @@ pub enum StructMethodKind {
 pub struct StructMethodInfo {
     pub definition_span: Span,
     pub kind: StructMethodKind,
+    pub operator_impl: Option<StructMethodOperatorInfo>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructMethodOperatorInfo {
+    pub operator: BinaryOperator,
+    pub rhs_type: Type,
+    pub output_type: Type,
 }
 
 /// A monomorphic type (no quantifiers).
@@ -718,6 +726,13 @@ pub enum Expression<'a> {
         rhs: Box<Expression<'a>>,
         type_scheme: TypeScheme,
     },
+    DeferredBinaryOperator {
+        op_span: Option<Span>,
+        op: BinaryOperator,
+        lhs: Box<Expression<'a>>,
+        rhs: Box<Expression<'a>>,
+        type_scheme: TypeScheme,
+    },
     /// A 'proper' function call
     FunctionCall {
         full_span: Span,
@@ -794,6 +809,15 @@ impl Expression<'_> {
                 span
             }
             Expression::BinaryOperatorForDate {
+                op_span, lhs, rhs, ..
+            } => {
+                let mut span = lhs.full_span().extend(&rhs.full_span());
+                if let Some(op_span) = op_span {
+                    span = span.extend(op_span);
+                }
+                span
+            }
+            Expression::DeferredBinaryOperator {
                 op_span, lhs, rhs, ..
             } => {
                 let mut span = lhs.full_span().extend(&rhs.full_span());
@@ -1096,6 +1120,9 @@ impl Expression<'_> {
             Expression::BinaryOperatorForDate { type_scheme, .. } => {
                 type_scheme.unsafe_as_concrete()
             }
+            Expression::DeferredBinaryOperator { type_scheme, .. } => {
+                type_scheme.unsafe_as_concrete()
+            }
             Expression::FunctionCall { type_scheme, .. } => type_scheme.unsafe_as_concrete(),
             Expression::CallableCall { type_scheme, .. } => type_scheme.unsafe_as_concrete(),
             Expression::Boolean(_, _) => Type::Boolean,
@@ -1121,6 +1148,7 @@ impl Expression<'_> {
             Expression::UnaryOperator { type_scheme, .. } => type_scheme.clone(),
             Expression::BinaryOperator { type_scheme, .. } => type_scheme.clone(),
             Expression::BinaryOperatorForDate { type_scheme, .. } => type_scheme.clone(),
+            Expression::DeferredBinaryOperator { type_scheme, .. } => type_scheme.clone(),
             Expression::FunctionCall { type_scheme, .. } => type_scheme.clone(),
             Expression::CallableCall { type_scheme, .. } => type_scheme.clone(),
             Expression::Boolean(_, _) => TypeScheme::make_quantified(Type::Boolean),
@@ -1221,6 +1249,33 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         } else {
                             m::empty()
                         }
+                        + m::operator(")")
+                }
+                Decorator::BinaryOperator {
+                    operator,
+                    rhs,
+                    output,
+                } => {
+                    let decorator_name = match operator {
+                        BinaryOperator::Add => "@add",
+                        BinaryOperator::Sub => "@sub",
+                        BinaryOperator::Mul => "@mul",
+                        BinaryOperator::Div => "@div",
+                        _ => unreachable!("unsupported binary operator decorator"),
+                    };
+
+                    m::decorator(decorator_name)
+                        + m::operator("(")
+                        + m::identifier("rhs")
+                        + m::operator(":")
+                        + m::space()
+                        + rhs.pretty_print()
+                        + m::operator(",")
+                        + m::space()
+                        + m::identifier("output")
+                        + m::operator(":")
+                        + m::space()
+                        + output.pretty_print()
                         + m::operator(")")
                 }
             }
@@ -1492,6 +1547,7 @@ fn with_parens(expr: &Expression) -> Markup {
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::BinaryOperatorForDate { .. }
+        | Expression::DeferredBinaryOperator { .. }
         | Expression::Condition { .. } => m::operator("(") + expr.pretty_print() + m::operator(")"),
     }
 }
@@ -1669,6 +1725,7 @@ impl PrettyPrint for Expression<'_> {
             } => m::operator("!") + with_parens(expr),
             BinaryOperator { op, lhs, rhs, .. } => pretty_print_binop(op, lhs, rhs),
             BinaryOperatorForDate { op, lhs, rhs, .. } => pretty_print_binop(op, lhs, rhs),
+            DeferredBinaryOperator { op, lhs, rhs, .. } => pretty_print_binop(op, lhs, rhs),
             FunctionCall { name, args, .. } => {
                 // Special case: render special temperature conversion functions in their sugar form:
                 if args.len() == 1 {

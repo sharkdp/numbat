@@ -4,7 +4,7 @@ use compact_str::{CompactString, format_compact};
 
 use super::substitutions::{ApplySubstitution, Substitution, SubstitutionError};
 use crate::type_variable::TypeVariable;
-use crate::typed_ast::{DType, DTypeFactor, StructKind, Type};
+use crate::typed_ast::{BinaryOperator, DType, DTypeFactor, StructKind, Type};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintSolverError {
@@ -82,7 +82,13 @@ impl ConstraintSet {
         self.constraints.clear();
     }
 
-    pub fn solve(&mut self) -> Result<(Substitution, Vec<TypeVariable>), ConstraintSolverError> {
+    pub fn solve<F>(
+        &mut self,
+        mut resolve_binary_operator: F,
+    ) -> Result<(Substitution, Vec<TypeVariable>), ConstraintSolverError>
+    where
+        F: FnMut(BinaryOperator, &Type, &Type, &Type) -> Option<Satisfied>,
+    {
         let mut substitution = Substitution::empty();
 
         let mut made_progress = true;
@@ -94,7 +100,7 @@ impl ConstraintSet {
                 if let Some(Satisfied {
                     new_constraints,
                     new_substitution,
-                }) = c.try_satisfy()
+                }) = c.try_satisfy(&mut resolve_binary_operator)
                 {
                     new_constraint_set.remove(i);
                     new_constraint_set.constraints.extend(new_constraints);
@@ -191,13 +197,48 @@ pub enum Constraint {
     IsDType(Type),
     EqualScalar(DType),
     HasField(Type, CompactString, Type),
+    HasBinaryOperator(BinaryOperator, Type, Type, Type),
 }
 
 impl Constraint {
+    fn types_equal_ignoring_struct_methods(t1: &Type, t2: &Type) -> bool {
+        match (t1, t2) {
+            (Type::TVar(v1), Type::TVar(v2)) => v1 == v2,
+            (Type::TPar(v1), Type::TPar(v2)) => v1 == v2,
+            (Type::Dimension(d1), Type::Dimension(d2)) => d1 == d2,
+            (Type::Boolean, Type::Boolean)
+            | (Type::String, Type::String)
+            | (Type::DateTime, Type::DateTime) => true,
+            (Type::List(i1), Type::List(i2)) => Self::types_equal_ignoring_struct_methods(i1, i2),
+            (Type::Fn(p1, r1), Type::Fn(p2, r2)) => {
+                p1.len() == p2.len()
+                    && p1
+                        .iter()
+                        .zip(p2.iter())
+                        .all(|(a, b)| Self::types_equal_ignoring_struct_methods(a, b))
+                    && Self::types_equal_ignoring_struct_methods(r1, r2)
+            }
+            (Type::Struct(info1), Type::Struct(info2)) if info1.name == info2.name => {
+                match (&info1.kind, &info2.kind) {
+                    (StructKind::Definition(_), StructKind::Definition(_)) => true,
+                    (StructKind::Instance(args1), StructKind::Instance(args2)) => {
+                        args1.len() == args2.len()
+                            && args1
+                                .iter()
+                                .zip(args2.iter())
+                                .all(|(a, b)| Self::types_equal_ignoring_struct_methods(a, b))
+                    }
+                    _ => false,
+                }
+            }
+            _ => false,
+        }
+    }
+
     fn try_trivial_resolution(&self) -> TrivialResolution {
         match self {
             Constraint::Equal(t1, t2) if t1.is_closed() && t2.is_closed() => {
-                if t1 == t2 {
+                if Self::types_equal_ignoring_struct_methods(t1, t2) {
                     TrivialResolution::Satisfied
                 } else {
                     TrivialResolution::Violated
@@ -228,11 +269,15 @@ impl Constraint {
                 // Trivial resolution handling for structs is done directly in the type checker
                 TrivialResolution::Unknown
             }
+            Constraint::HasBinaryOperator(_, _, _, _) => TrivialResolution::Unknown,
         }
     }
 
     /// Try to solve a constraint. Returns `None` if the constaint can not (yet) be solved.
-    fn try_satisfy(&self) -> Option<Satisfied> {
+    fn try_satisfy<F>(&self, resolve_binary_operator: &mut F) -> Option<Satisfied>
+    where
+        F: FnMut(BinaryOperator, &Type, &Type, &Type) -> Option<Satisfied>,
+    {
         match self {
             Constraint::Equal(t1, t2) if t1 == t2 => Some(Satisfied::trivially()),
             Constraint::Equal(Type::TVar(x), t) | Constraint::Equal(t, Type::TVar(x))
@@ -355,6 +400,9 @@ impl Constraint {
                 }
             }
             Constraint::HasField(_, _, _) => None,
+            Constraint::HasBinaryOperator(op, lhs, rhs, output) => {
+                resolve_binary_operator(*op, lhs, rhs, output)
+            }
         }
     }
 
@@ -367,6 +415,25 @@ impl Constraint {
             Constraint::EqualScalar(d) => format_compact!("{d} = Scalar"),
             Constraint::HasField(struct_type, field_name, field_type) => {
                 format_compact!("HasField({struct_type}, \"{field_name}\", {field_type})")
+            }
+            Constraint::HasBinaryOperator(op, lhs, rhs, output) => {
+                let op = match op {
+                    BinaryOperator::Add => "+",
+                    BinaryOperator::Sub => "-",
+                    BinaryOperator::Mul => "*",
+                    BinaryOperator::Div => "/",
+                    BinaryOperator::Power => "^",
+                    BinaryOperator::ConvertTo => "->",
+                    BinaryOperator::LessThan => "<",
+                    BinaryOperator::GreaterThan => ">",
+                    BinaryOperator::LessOrEqual => "<=",
+                    BinaryOperator::GreaterOrEqual => ">=",
+                    BinaryOperator::Equal => "==",
+                    BinaryOperator::NotEqual => "!=",
+                    BinaryOperator::LogicalAnd => "&&",
+                    BinaryOperator::LogicalOr => "||",
+                };
+                format_compact!("HasBinaryOperator({lhs}, {op}, {rhs}, {output})")
             }
         }
     }
@@ -395,6 +462,11 @@ impl ApplySubstitution for Constraint {
             Constraint::HasField(struct_type, _, field_type) => {
                 struct_type.apply(substitution)?;
                 field_type.apply(substitution)?;
+            }
+            Constraint::HasBinaryOperator(_, lhs, rhs, output) => {
+                lhs.apply(substitution)?;
+                rhs.apply(substitution)?;
+                output.apply(substitution)?;
             }
         }
         Ok(())

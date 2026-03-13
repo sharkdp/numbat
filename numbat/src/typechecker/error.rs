@@ -171,6 +171,12 @@ pub enum TypeCheckError {
     #[error("Type of 'self' parameter in method '{1}' must be '{2}'")]
     InvalidSelfParameterType(Span, String, String),
 
+    #[error("Operator decorator on method '{1}' requires an instance method with exactly one rhs parameter")]
+    InvalidOperatorMethodSignature(Span, String),
+
+    #[error("Operator decorator on method '{1}' does not match the method signature")]
+    OperatorDecoratorTypeMismatch(Span, String),
+
     #[error("`Self` can only be used inside struct method definitions")]
     SelfTypeOutsideStructMethod(Span),
 
@@ -182,6 +188,9 @@ pub enum TypeCheckError {
 
     #[error("Incompatible types in list: expected '{1}', got '{3}' instead")]
     IncompatibleTypesInList(Span, Type, Span, Type),
+
+    #[error("Multiple operator overloads matched for '{1:?}' with operands '{2}' and '{3}'")]
+    AmbiguousOperatorOverload(Span, BinaryOperator, Type, Type),
 
     #[error(transparent)]
     NameResolutionError(#[from] NameResolutionError),
