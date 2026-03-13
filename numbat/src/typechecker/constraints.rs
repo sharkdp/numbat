@@ -201,44 +201,10 @@ pub enum Constraint {
 }
 
 impl Constraint {
-    fn types_equal_ignoring_struct_methods(t1: &Type, t2: &Type) -> bool {
-        match (t1, t2) {
-            (Type::TVar(v1), Type::TVar(v2)) => v1 == v2,
-            (Type::TPar(v1), Type::TPar(v2)) => v1 == v2,
-            (Type::Dimension(d1), Type::Dimension(d2)) => d1 == d2,
-            (Type::Boolean, Type::Boolean)
-            | (Type::String, Type::String)
-            | (Type::DateTime, Type::DateTime) => true,
-            (Type::List(i1), Type::List(i2)) => Self::types_equal_ignoring_struct_methods(i1, i2),
-            (Type::Fn(p1, r1), Type::Fn(p2, r2)) => {
-                p1.len() == p2.len()
-                    && p1
-                        .iter()
-                        .zip(p2.iter())
-                        .all(|(a, b)| Self::types_equal_ignoring_struct_methods(a, b))
-                    && Self::types_equal_ignoring_struct_methods(r1, r2)
-            }
-            (Type::Struct(info1), Type::Struct(info2)) if info1.name == info2.name => {
-                match (&info1.kind, &info2.kind) {
-                    (StructKind::Definition(_), StructKind::Definition(_)) => true,
-                    (StructKind::Instance(args1), StructKind::Instance(args2)) => {
-                        args1.len() == args2.len()
-                            && args1
-                                .iter()
-                                .zip(args2.iter())
-                                .all(|(a, b)| Self::types_equal_ignoring_struct_methods(a, b))
-                    }
-                    _ => false,
-                }
-            }
-            _ => false,
-        }
-    }
-
     fn try_trivial_resolution(&self) -> TrivialResolution {
         match self {
             Constraint::Equal(t1, t2) if t1.is_closed() && t2.is_closed() => {
-                if Self::types_equal_ignoring_struct_methods(t1, t2) {
+                if t1.equals_ignoring_struct_methods(t2) {
                     TrivialResolution::Satisfied
                 } else {
                     TrivialResolution::Violated

@@ -644,6 +644,40 @@ impl Type {
             _ => false,
         }
     }
+
+    pub(crate) fn equals_ignoring_struct_methods(&self, other: &Type) -> bool {
+        match (self, other) {
+            (Type::TVar(v1), Type::TVar(v2)) => v1 == v2,
+            (Type::TPar(v1), Type::TPar(v2)) => v1 == v2,
+            (Type::Dimension(d1), Type::Dimension(d2)) => d1 == d2,
+            (Type::Boolean, Type::Boolean)
+            | (Type::String, Type::String)
+            | (Type::DateTime, Type::DateTime) => true,
+            (Type::List(i1), Type::List(i2)) => i1.equals_ignoring_struct_methods(i2),
+            (Type::Fn(p1, r1), Type::Fn(p2, r2)) => {
+                p1.len() == p2.len()
+                    && p1
+                        .iter()
+                        .zip(p2.iter())
+                        .all(|(a, b)| a.equals_ignoring_struct_methods(b))
+                    && r1.equals_ignoring_struct_methods(r2)
+            }
+            (Type::Struct(info1), Type::Struct(info2)) if info1.name == info2.name => {
+                match (&info1.kind, &info2.kind) {
+                    (StructKind::Definition(_), StructKind::Definition(_)) => true,
+                    (StructKind::Instance(args1), StructKind::Instance(args2)) => {
+                        args1.len() == args2.len()
+                            && args1
+                                .iter()
+                                .zip(args2.iter())
+                                .all(|(a, b)| a.equals_ignoring_struct_methods(b))
+                    }
+                    _ => false,
+                }
+            }
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

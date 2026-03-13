@@ -987,6 +987,34 @@ fn struct_methods() {
 
     assert_successful_typecheck(
         "
+        struct Vec2<D: Dim> {
+            x: D,
+            y: D,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Self { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @mul
+            fn scale(self, factor: Scalar) -> Self =
+                Self { x: self.x * factor, y: self.y * factor }
+
+            @rmul
+            fn scale_from_left(self, lhs: Scalar) -> Self =
+                Self { x: lhs * self.x, y: lhs * self.y }
+        }
+
+        let sum: Vec2<A> = Vec2 { x: 1 a, y: 2 a } + Vec2 { x: 3 a, y: 4 a }
+        let scaled: Vec2<A> = Vec2 { x: 1 a, y: 2 a } * 3
+        let reverse_scaled: Vec2<A> = 3 * Vec2 { x: 1 a, y: 2 a }
+        let x1: A = sum.x
+        let x2: A = scaled.x
+        let x3: A = reverse_scaled.x
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
         struct Point {
             x: A,
             y: A,

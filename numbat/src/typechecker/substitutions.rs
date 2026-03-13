@@ -85,19 +85,7 @@ impl ApplySubstitution for Type {
                 }
                 return_type.apply(s)
             }
-            Type::Struct(info) => {
-                // Apply substitution to type arguments
-                if let StructKind::Instance(type_args) = &mut info.kind {
-                    for arg in type_args {
-                        arg.apply(s)?;
-                    }
-                }
-                // Apply substitution to field types
-                for (_, field_type) in info.fields.values_mut() {
-                    field_type.apply(s)?;
-                }
-                Ok(())
-            }
+            Type::Struct(info) => info.apply(s),
             Type::List(element_type) => element_type.apply(s),
         }
     }

@@ -263,7 +263,9 @@ impl BytecodeInterpreter {
                             }),
                         );
                     }
-                    (Type::Struct(struct_info), _) => {
+                    _ if matches!(lhs_type, Type::Struct(_))
+                        || matches!(rhs_type, Type::Struct(_)) =>
+                    {
                         let canonical_method_name = match (operator, false) {
                             (BinaryOperator::Add, false) => Some("add"),
                             (BinaryOperator::Sub, false) => Some("sub"),
@@ -280,25 +282,32 @@ impl BytecodeInterpreter {
                         };
 
                         let lhs_match =
-                            struct_info
-                                .methods
-                                .iter()
-                                .find_map(|(method_name, method_info)| {
-                                    if let Some(operator_impl) = method_info.operator_impl.as_ref()
-                                        && operator_impl.operator == *operator
-                                        && !operator_impl.reverse
-                                        && operator_impl.rhs_type == rhs_type
-                                        && operator_impl.output_type == output_type
-                                    {
-                                        return Some((false, &struct_info.name, method_name));
-                                    }
+                            match &lhs_type {
+                                Type::Struct(struct_info) => struct_info.methods.iter().find_map(
+                                    |(method_name, method_info)| {
+                                        if let Some(operator_impl) =
+                                            method_info.operator_impl.as_ref()
+                                            && operator_impl.operator == *operator
+                                            && !operator_impl.reverse
+                                            && operator_impl
+                                                .rhs_type
+                                                .equals_ignoring_struct_methods(&rhs_type)
+                                            && operator_impl
+                                                .output_type
+                                                .equals_ignoring_struct_methods(&output_type)
+                                        {
+                                            return Some((false, &struct_info.name, method_name));
+                                        }
 
-                                    canonical_method_name
-                                        .filter(|canonical| method_name.as_str() == *canonical)
-                                        .map(|_| (false, &struct_info.name, method_name))
-                                });
+                                        canonical_method_name
+                                            .filter(|canonical| method_name.as_str() == *canonical)
+                                            .map(|_| (false, &struct_info.name, method_name))
+                                    },
+                                ),
+                                _ => None,
+                            };
 
-                        let rhs_match = match rhs_type {
+                        let rhs_match = match &rhs_type {
                             Type::Struct(rhs_struct_info) => rhs_struct_info
                                 .methods
                                 .iter()
@@ -306,8 +315,12 @@ impl BytecodeInterpreter {
                                     if let Some(operator_impl) = method_info.operator_impl.as_ref()
                                         && operator_impl.operator == *operator
                                         && operator_impl.reverse
-                                        && operator_impl.rhs_type == lhs_type
-                                        && operator_impl.output_type == output_type
+                                        && operator_impl
+                                            .rhs_type
+                                            .equals_ignoring_struct_methods(&lhs_type)
+                                        && operator_impl
+                                            .output_type
+                                            .equals_ignoring_struct_methods(&output_type)
                                     {
                                         return Some((
                                             true,

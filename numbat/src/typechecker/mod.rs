@@ -224,40 +224,6 @@ struct ElaborationDefinitionArgs<'a, 'b> {
 }
 
 impl TypeChecker {
-    fn types_equal_ignoring_struct_methods(t1: &Type, t2: &Type) -> bool {
-        match (t1, t2) {
-            (Type::TVar(v1), Type::TVar(v2)) => v1 == v2,
-            (Type::TPar(v1), Type::TPar(v2)) => v1 == v2,
-            (Type::Dimension(d1), Type::Dimension(d2)) => d1 == d2,
-            (Type::Boolean, Type::Boolean)
-            | (Type::String, Type::String)
-            | (Type::DateTime, Type::DateTime) => true,
-            (Type::List(i1), Type::List(i2)) => Self::types_equal_ignoring_struct_methods(i1, i2),
-            (Type::Fn(p1, r1), Type::Fn(p2, r2)) => {
-                p1.len() == p2.len()
-                    && p1
-                        .iter()
-                        .zip(p2.iter())
-                        .all(|(a, b)| Self::types_equal_ignoring_struct_methods(a, b))
-                    && Self::types_equal_ignoring_struct_methods(r1, r2)
-            }
-            (Type::Struct(info1), Type::Struct(info2)) if info1.name == info2.name => {
-                match (&info1.kind, &info2.kind) {
-                    (StructKind::Definition(_), StructKind::Definition(_)) => true,
-                    (StructKind::Instance(args1), StructKind::Instance(args2)) => {
-                        args1.len() == args2.len()
-                            && args1
-                                .iter()
-                                .zip(args2.iter())
-                                .all(|(a, b)| Self::types_equal_ignoring_struct_methods(a, b))
-                    }
-                    _ => false,
-                }
-            }
-            _ => false,
-        }
-    }
-
     fn collect_struct_field_defaults<'a>(
         statements: &[ast::Statement<'a>],
     ) -> HashMap<&'a str, Vec<(&'a str, ast::Expression<'a>)>> {
@@ -945,19 +911,22 @@ impl TypeChecker {
     }
 
     fn find_operator_method_call(
-        &self,
+        &mut self,
         operator: BinaryOperator,
         lhs: &Type,
         rhs: &Type,
         output: &Type,
     ) -> Option<(bool, CompactString, CompactString)> {
-        let find_match = |struct_type: &Type,
+        let find_match = |this: &mut Self,
+                          struct_type: &Type,
                           reverse: bool|
          -> Option<(CompactString, CompactString)> {
             let Type::Struct(struct_info) = struct_type else {
                 return None;
             };
-            let methods = self.methods.get(&struct_info.name)?;
+            let methods = this.methods.get(&struct_info.name)?;
+            let receiver_type = if reverse { rhs } else { lhs };
+            let other_type = if reverse { lhs } else { rhs };
 
             let mut matches = methods.iter().filter_map(|(method_name, method_info)| {
                 let operator_impl = method_info.operator_impl.as_ref()?;
@@ -965,20 +934,58 @@ impl TypeChecker {
                     return None;
                 }
 
-                let fn_type = method_info.signature.fn_type.to_concrete_type();
-                let Type::Fn(parameter_types, return_type) = fn_type else {
+                let qualified_type = match &method_info.signature.fn_type {
+                    TypeScheme::Concrete(type_) => {
+                        crate::typechecker::qualified_type::QualifiedType::new(
+                            type_.clone(),
+                            qualified_type::Bounds::none(),
+                        )
+                    }
+                    TypeScheme::Quantified(_, _) => method_info
+                        .signature
+                        .fn_type
+                        .instantiate(&mut this.name_generator),
+                };
+
+                let Type::Fn(parameter_types, return_type) = qualified_type.inner else {
                     return None;
                 };
                 if parameter_types.len() != 2 {
                     return None;
                 }
 
-                let receiver_type = if reverse { rhs } else { lhs };
-                let other_type = if reverse { lhs } else { rhs };
+                let mut constraint_set = ConstraintSet::default();
+                if constraint_set
+                    .add(Constraint::Equal(
+                        parameter_types[0].clone(),
+                        receiver_type.clone(),
+                    ))
+                    .is_trivially_violated()
+                {
+                    return None;
+                }
+                if constraint_set
+                    .add(Constraint::Equal(
+                        parameter_types[1].clone(),
+                        other_type.clone(),
+                    ))
+                    .is_trivially_violated()
+                {
+                    return None;
+                }
+                if constraint_set
+                    .add(Constraint::Equal(
+                        return_type.as_ref().clone(),
+                        output.clone(),
+                    ))
+                    .is_trivially_violated()
+                {
+                    return None;
+                }
 
-                if Self::types_equal_ignoring_struct_methods(&parameter_types[0], receiver_type)
-                    && Self::types_equal_ignoring_struct_methods(&parameter_types[1], other_type)
-                    && Self::types_equal_ignoring_struct_methods(return_type.as_ref(), output)
+                if let Ok((_, dtype_vars)) =
+                    constraint_set.solve(|_, _, _, _| None::<constraints::Satisfied>)
+                    && dtype_vars.is_empty()
                 {
                     Some((struct_info.name.clone(), method_name.clone()))
                 } else {
@@ -994,15 +1001,15 @@ impl TypeChecker {
             }
         };
 
-        if let Some((owner, method_name)) = find_match(lhs, false) {
+        if let Some((owner, method_name)) = find_match(self, lhs, false) {
             return Some((false, owner, method_name));
         }
 
-        find_match(rhs, true).map(|(owner, method_name)| (true, owner, method_name))
+        find_match(self, rhs, true).map(|(owner, method_name)| (true, owner, method_name))
     }
 
     fn resolve_deferred_binary_operator_expression<'a>(
-        &self,
+        &mut self,
         expr: &mut typed_ast::Expression<'a>,
     ) -> Result<()> {
         match expr {
@@ -1066,7 +1073,7 @@ impl TypeChecker {
                         type_scheme: type_scheme.clone(),
                     }
                 } else {
-                    typed_ast::Expression::BinaryOperator {
+                    typed_ast::Expression::DeferredBinaryOperator {
                         op_span: *op_span,
                         op: *op,
                         lhs: lhs.clone(),
@@ -1134,7 +1141,7 @@ impl TypeChecker {
         Ok(())
     }
     fn resolve_deferred_binary_operators<'a>(
-        &self,
+        &mut self,
         statement: &mut typed_ast::Statement<'a>,
     ) -> Result<()> {
         match statement {
@@ -2158,6 +2165,13 @@ impl TypeChecker {
                         for (_, field_type) in instantiated_fields.values_mut() {
                             field_type.apply(&substitution).ok();
                         }
+                        let mut instantiated_methods = struct_info.methods.clone();
+                        for method_info in instantiated_methods.values_mut() {
+                            if let Some(operator_impl) = &mut method_info.operator_impl {
+                                operator_impl.rhs_type.apply(&substitution).ok();
+                                operator_impl.output_type.apply(&substitution).ok();
+                            }
+                        }
 
                         StructInfo {
                             definition_span: struct_info.definition_span,
@@ -2166,7 +2180,7 @@ impl TypeChecker {
                                 variables.iter().map(|v| Type::TVar(v.clone())).collect(),
                             ),
                             fields: instantiated_fields,
-                            methods: struct_info.methods.clone(),
+                            methods: instantiated_methods,
                         }
                     }
                     StructKind::Instance(_) => {

@@ -197,6 +197,33 @@ fn struct_operator_methods() {
 
     expect_output(
         "
+        struct Vec2<D: Dim> {
+            x: D,
+            y: D,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Self { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @mul
+            fn scale(self, factor: Scalar) -> Self =
+                Self { x: self.x * factor, y: self.y * factor }
+
+            @rmul
+            fn scale_from_left(self, lhs: Scalar) -> Self =
+                Self { x: lhs * self.x, y: lhs * self.y }
+        }
+
+        let v = Vec2 { x: 3 m, y: 4 m }
+        let w = Vec2 { x: 300 cm, y: 400 cm }
+
+        ((v + w).x -> m) + ((v * 2).y -> m) + ((2 * v).y -> m)
+        ",
+        "22 m",
+    );
+
+    expect_output(
+        "
         struct Point {
             x: Scalar,
             y: Scalar,
