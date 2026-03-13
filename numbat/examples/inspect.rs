@@ -1,3 +1,4 @@
+use clap::{Parser, Subcommand};
 use compact_str::{CompactString, format_compact};
 use itertools::Itertools;
 use numbat::InterpreterSettings;
@@ -5,10 +6,23 @@ use numbat::markup::plain_text_format;
 use numbat::module_importer::FileSystemImporter;
 use numbat::resolver::CodeSource;
 use numbat::{Context, FormatOptions, FunctionInfo};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 
 const AUTO_GENERATED_HINT: &str = "<!-- NOTE! This file is auto-generated -->";
+
+#[derive(Parser)]
+struct Cli {
+    modules_path: PathBuf,
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    Units,
+    Functions { module: String },
+}
 
 fn inspect_units(ctx: &Context, prelude_ctx: &Context) {
     println!("{AUTO_GENERATED_HINT}
@@ -217,32 +231,25 @@ fn replace_equation_delimiters(text_in: &str) -> CompactString {
     text_out
 }
 
-fn prepare_context() -> Context {
-    let module_path = Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("modules");
+fn prepare_context(module_path: &Path) -> Context {
     let mut importer = FileSystemImporter::default();
-    importer.add_path(module_path);
+    importer.add_path(module_path.to_path_buf());
     Context::new(importer)
 }
 
 fn main() {
-    let mut ctx = prepare_context();
+    let cli = Cli::parse();
+
+    let mut ctx = prepare_context(&cli.modules_path);
     let _result = ctx.interpret("use all", CodeSource::Internal).unwrap();
 
-    let mut example_ctx = prepare_context();
+    let mut example_ctx = prepare_context(&cli.modules_path);
     let _result = example_ctx
         .interpret("use prelude", CodeSource::Internal)
         .unwrap();
 
-    let mut args = std::env::args();
-    args.next();
-    if let Some(arg) = args.next() {
-        match arg.as_str() {
-            "units" => inspect_units(&ctx, &example_ctx),
-            "functions" => {
-                let module = args.next().unwrap();
-                inspect_functions_in_module(&ctx, &example_ctx, module)
-            }
-            _ => eprintln!("USAGE: inspect [units|functions <module>]"),
-        }
+    match cli.command {
+        Command::Units => inspect_units(&ctx, &example_ctx),
+        Command::Functions { module } => inspect_functions_in_module(&ctx, &example_ctx, module),
     }
 }
