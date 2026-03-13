@@ -985,6 +985,46 @@ fn struct_methods() {
         ",
     );
 
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+        }
+
+        struct Offset {
+            amount: A,
+
+            @rsub
+            fn sub_from_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x - self.amount, y: lhs.y - self.amount }
+        }
+
+        struct Scale {
+            factor: Scalar,
+
+            @rmul
+            fn scale_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x * self.factor, y: lhs.y * self.factor }
+        }
+
+        struct Ratio {
+            factor: Scalar,
+
+            @rdiv
+            fn div_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x / self.factor, y: lhs.y / self.factor }
+        }
+
+        let p_sub: Point = Point { x: 5 a, y: 7 a } - Offset { amount: 2 a }
+        let p_mul: Point = Point { x: 2 a, y: 3 a } * Scale { factor: 4 }
+        let p_div: Point = Point { x: 8 a, y: 6 a } / Ratio { factor: 2 }
+        let sub_x: A = p_sub.x
+        let mul_y: A = p_mul.y
+        let div_x: A = p_div.x
+        ",
+    );
+
     assert!(matches!(
         get_typecheck_error(
             "
@@ -1010,6 +1050,28 @@ fn struct_methods() {
             "
         ),
         TypeCheckError::InvalidOperatorMethodSignature(_, name) if name == "make"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+            }
+
+            struct Shift {
+                amount: A,
+
+                @radd
+                fn add_to_point(self, lhs: Point) -> Point =
+                    Point { x: lhs.x + self.amount, y: lhs.y + self.amount }
+            }
+
+            Shift { amount: 3 a } + Point { x: 1 a, y: 2 a }
+            "
+        ),
+        TypeCheckError::IncompatibleTypesInOperator(..)
     ));
 
     assert!(matches!(

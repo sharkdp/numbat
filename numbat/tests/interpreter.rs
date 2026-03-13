@@ -195,6 +195,50 @@ fn struct_operator_methods() {
         "5",
     );
 
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+        }
+
+        struct Shift {
+            amount: Scalar,
+
+            @radd
+            fn add_to_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x + self.amount, y: lhs.y + self.amount }
+        }
+
+        struct Offset {
+            amount: Scalar,
+
+            @rsub
+            fn sub_from_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x - self.amount, y: lhs.y - self.amount }
+        }
+
+        struct Scale {
+            factor: Scalar,
+
+            @rmul
+            fn scale_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x * self.factor, y: lhs.y * self.factor }
+        }
+
+        struct Ratio {
+            factor: Scalar,
+
+            @rdiv
+            fn div_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x / self.factor, y: lhs.y / self.factor }
+        }
+
+        ((Point { x: 1, y: 2 } + Shift { amount: 3 }).x + (Point { x: 5, y: 7 } - Offset { amount: 2 }).y + (Point { x: 2, y: 3 } * Scale { factor: 4 }).x + (Point { x: 8, y: 6 } / Ratio { factor: 2 }).y)
+        ",
+        "20",
+    );
+
     let _ = succeed(
         "
         fn id(x) = x
