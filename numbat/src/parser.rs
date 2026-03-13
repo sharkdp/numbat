@@ -867,80 +867,13 @@ impl<'a> Parser<'a> {
                     }
                 }
                 "add" | "sub" | "mul" | "div" => {
-                    let operator = match decorator.lexeme {
+                    Decorator::BinaryOperator(match decorator.lexeme {
                         "add" => BinaryOperator::Add,
                         "sub" => BinaryOperator::Sub,
                         "mul" => BinaryOperator::Mul,
                         "div" => BinaryOperator::Div,
                         _ => unreachable!(),
-                    };
-
-                    if self.match_exact(tokens, TokenKind::LeftParen).is_none() {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedLeftParenAfterDecorator,
-                            span: self.peek(tokens).span,
-                        });
-                    }
-
-                    let Some(rhs_name) = self.match_exact(tokens, TokenKind::Identifier) else {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedDecoratorName,
-                            span: self.peek(tokens).span,
-                        });
-                    };
-                    if rhs_name.lexeme != "rhs" {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::UnknownDecorator,
-                            span: rhs_name.span,
-                        });
-                    }
-                    if self.match_exact(tokens, TokenKind::Colon).is_none() {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedColonAfterFieldName,
-                            span: self.peek(tokens).span,
-                        });
-                    }
-                    let rhs = self.type_annotation(tokens)?;
-
-                    if self.match_exact(tokens, TokenKind::Comma).is_none() {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedCommaInDecorator,
-                            span: self.peek(tokens).span,
-                        });
-                    }
-
-                    let Some(output_name) = self.match_exact(tokens, TokenKind::Identifier) else {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedDecoratorName,
-                            span: self.peek(tokens).span,
-                        });
-                    };
-                    if output_name.lexeme != "output" {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::UnknownDecorator,
-                            span: output_name.span,
-                        });
-                    }
-                    if self.match_exact(tokens, TokenKind::Colon).is_none() {
-                        return Err(ParseError {
-                            kind: ParseErrorKind::ExpectedColonAfterFieldName,
-                            span: self.peek(tokens).span,
-                        });
-                    }
-                    let output = self.type_annotation(tokens)?;
-
-                    if self.match_exact(tokens, TokenKind::RightParen).is_none() {
-                        return Err(ParseError::new(
-                            ParseErrorKind::MissingClosingParen,
-                            self.peek(tokens).span,
-                        ));
-                    }
-
-                    Decorator::BinaryOperator {
-                        operator,
-                        rhs,
-                        output,
-                    }
+                    })
                 }
                 _ => {
                     return Err(ParseError {
@@ -3527,7 +3460,7 @@ mod tests {
 
         parse_as(
             &[
-                "struct Vec2 { x: Length, y: Length, @add(rhs: Self, output: Self) fn add(self, rhs: Self) -> Self = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } }",
+                "struct Vec2 { x: Length, y: Length, @add fn add(self, rhs: Self) -> Self = Vec2 { x: self.x + rhs.x, y: self.y + rhs.y } }",
             ],
             Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
@@ -3611,19 +3544,7 @@ mod tests {
                     return_type_annotation: Some(TypeAnnotation::TypeExpression(
                         TypeExpression::TypeIdentifier(Span::dummy(), "Self".into(), vec![]),
                     )),
-                    decorators: vec![decorator::Decorator::BinaryOperator {
-                        operator: BinaryOperator::Add,
-                        rhs: TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
-                            Span::dummy(),
-                            "Self".into(),
-                            vec![],
-                        )),
-                        output: TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
-                            Span::dummy(),
-                            "Self".into(),
-                            vec![],
-                        )),
-                    }],
+                    decorators: vec![decorator::Decorator::BinaryOperator(BinaryOperator::Add)],
                 }],
             },
         );
@@ -3672,7 +3593,7 @@ mod tests {
         );
 
         should_fail_with(
-            &["@add(rhs: Scalar, output: Scalar) fn add(x: Scalar, y: Scalar) = x + y"],
+            &["@add fn add(x: Scalar, y: Scalar) = x + y"],
             ParseErrorKind::OperatorDecoratorUsedOutsideStructMethod,
         );
 

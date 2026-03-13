@@ -145,7 +145,7 @@ fn struct_operator_methods() {
             x: Scalar,
             y: Scalar,
 
-            @add(rhs: Self, output: Self)
+            @add
             fn add(self, rhs: Self) -> Self =
                 Point { x: self.x + rhs.x, y: self.y + rhs.y }
         }
@@ -161,11 +161,11 @@ fn struct_operator_methods() {
             x: Scalar,
             y: Scalar,
 
-            @add(rhs: Self, output: Self)
+            @add
             fn add(self, rhs: Self) -> Self =
                 Point { x: self.x + rhs.x, y: self.y + rhs.y }
 
-            @add(rhs: Scalar, output: Self)
+            @add
             fn add_scalar(self, rhs: Scalar) -> Self =
                 Point { x: self.x + rhs, y: self.y + rhs }
         }

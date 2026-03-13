@@ -933,7 +933,7 @@ fn struct_methods() {
             x: A,
             y: A,
 
-            @add(rhs: Self, output: Self)
+            @add
             fn add(self, rhs: Self) -> Self =
                 Point { x: self.x + rhs.x, y: self.y + rhs.y }
         }
@@ -949,11 +949,11 @@ fn struct_methods() {
             x: A,
             y: A,
 
-            @add(rhs: Self, output: Self)
+            @add
             fn add(self, rhs: Self) -> Self =
                 Point { x: self.x + rhs.x, y: self.y + rhs.y }
 
-            @add(rhs: Scalar, output: Self)
+            @add
             fn add_scalar(self, rhs: Scalar) -> Self =
                 Point { x: self.x + rhs * 1 a, y: self.y + rhs * 1 a }
         }
@@ -970,25 +970,12 @@ fn struct_methods() {
             "
             struct Point {
                 x: A,
-                @add(rhs: Self, output: Self)
+                @add
                 fn make() -> Self = Point { x: 1 a }
             }
             "
         ),
         TypeCheckError::InvalidOperatorMethodSignature(_, name) if name == "make"
-    ));
-
-    assert!(matches!(
-        get_typecheck_error(
-            "
-            struct Point {
-                x: A,
-                @add(rhs: Self, output: Self)
-                fn add(self, rhs: Self) -> A = self.x
-            }
-            "
-        ),
-        TypeCheckError::OperatorDecoratorTypeMismatch(_, name) if name == "add"
     ));
 
     assert!(matches!(

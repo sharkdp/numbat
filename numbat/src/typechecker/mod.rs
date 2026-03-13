@@ -684,20 +684,13 @@ impl TypeChecker {
             return Ok(());
         };
 
-        for decorator in decorators {
-            let decorator::Decorator::BinaryOperator { rhs, output, .. } = decorator else {
-                continue;
-            };
-
-            Self::rewrite_self_in_type_annotation(rhs, struct_name, true, self_type_args)?;
-            Self::rewrite_self_in_type_annotation(output, struct_name, true, self_type_args)?;
-        }
+        let _ = (decorators, struct_name, self_type_args);
 
         Ok(())
     }
 
     fn method_operator_impl(decorators: &[decorator::Decorator<'_>]) -> Option<BinaryOperator> {
-        decorator::binary_operator(decorators).map(|(operator, _, _)| operator)
+        decorator::binary_operator(decorators)
     }
 
     fn fresh_type_variable(&mut self) -> Type {
@@ -743,9 +736,7 @@ impl TypeChecker {
         fn_type: &TypeScheme,
         type_parameters: &[(Span, &str, Option<TypeParameterBound>)],
     ) -> Result<Option<typed_ast::StructMethodOperatorInfo>> {
-        let Some((operator, rhs_annotation, output_annotation)) =
-            decorator::binary_operator(decorators)
-        else {
+        let Some(operator) = decorator::binary_operator(decorators) else {
             return Ok(None);
         };
 
@@ -769,17 +760,8 @@ impl TypeChecker {
             )));
         }
 
-        let rhs_type = self.type_from_annotation(rhs_annotation)?;
-        let output_type = self.type_from_annotation(output_annotation)?;
-
-        if !Self::types_equal_ignoring_struct_methods(&parameter_types[1], &rhs_type)
-            || !Self::types_equal_ignoring_struct_methods(return_type.as_ref(), &output_type)
-        {
-            return Err(Box::new(TypeCheckError::OperatorDecoratorTypeMismatch(
-                definition_span,
-                method_name.to_string(),
-            )));
-        }
+        let rhs_type = parameter_types[1].clone();
+        let output_type = return_type.as_ref().clone();
 
         Ok(Some(typed_ast::StructMethodOperatorInfo {
             operator,

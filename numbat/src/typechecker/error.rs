@@ -176,9 +176,6 @@ pub enum TypeCheckError {
     )]
     InvalidOperatorMethodSignature(Span, String),
 
-    #[error("Operator decorator on method '{1}' does not match the method signature")]
-    OperatorDecoratorTypeMismatch(Span, String),
-
     #[error("`Self` can only be used inside struct method definitions")]
     SelfTypeOutsideStructMethod(Span),
 

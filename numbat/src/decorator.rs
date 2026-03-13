@@ -1,11 +1,6 @@
 use compact_str::CompactString;
 
-use crate::{
-    ast::{BinaryOperator, TypeAnnotation},
-    prefix_parser::AcceptsPrefix,
-    span::Span,
-    unit::CanonicalName,
-};
+use crate::{ast::BinaryOperator, prefix_parser::AcceptsPrefix, span::Span, unit::CanonicalName};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Decorator<'a> {
@@ -17,11 +12,7 @@ pub enum Decorator<'a> {
     Name(CompactString),
     Description(CompactString),
     Example(CompactString, Option<CompactString>),
-    BinaryOperator {
-        operator: BinaryOperator,
-        rhs: TypeAnnotation,
-        output: TypeAnnotation,
-    },
+    BinaryOperator(BinaryOperator),
 }
 
 /// Get an iterator of data computed from a name and/or its alias's `AcceptsPrefix` and
@@ -186,18 +177,12 @@ pub fn contains_abbreviation(decorators: &[Decorator]) -> bool {
 pub fn contains_binary_operator_decorators(decorators: &[Decorator]) -> bool {
     decorators
         .iter()
-        .any(|decorator| matches!(decorator, Decorator::BinaryOperator { .. }))
+        .any(|decorator| matches!(decorator, Decorator::BinaryOperator(..)))
 }
 
-pub fn binary_operator<'a>(
-    decorators: &'a [Decorator<'a>],
-) -> Option<(BinaryOperator, &'a TypeAnnotation, &'a TypeAnnotation)> {
+pub fn binary_operator<'a>(decorators: &'a [Decorator<'a>]) -> Option<BinaryOperator> {
     decorators.iter().find_map(|decorator| match decorator {
-        Decorator::BinaryOperator {
-            operator,
-            rhs,
-            output,
-        } => Some((*operator, rhs, output)),
+        Decorator::BinaryOperator(operator) => Some(*operator),
         _ => None,
     })
 }

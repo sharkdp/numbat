@@ -1251,11 +1251,7 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         }
                         + m::operator(")")
                 }
-                Decorator::BinaryOperator {
-                    operator,
-                    rhs,
-                    output,
-                } => {
+                Decorator::BinaryOperator(operator) => {
                     let decorator_name = match operator {
                         BinaryOperator::Add => "@add",
                         BinaryOperator::Sub => "@sub",
@@ -1265,18 +1261,6 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                     };
 
                     m::decorator(decorator_name)
-                        + m::operator("(")
-                        + m::identifier("rhs")
-                        + m::operator(":")
-                        + m::space()
-                        + rhs.pretty_print()
-                        + m::operator(",")
-                        + m::space()
-                        + m::identifier("output")
-                        + m::operator(":")
-                        + m::space()
-                        + output.pretty_print()
-                        + m::operator(")")
                 }
             }
             + m::nl();
