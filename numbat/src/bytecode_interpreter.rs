@@ -656,6 +656,9 @@ impl BytecodeInterpreter {
                     }
                 }
             }
+            Expression::IndexCall { .. } => {
+                unreachable!("index expressions must be resolved before bytecode compilation")
+            }
             Expression::TypedHole(_, _) => {
                 unreachable!("Typed holes cause type inference errors")
             }

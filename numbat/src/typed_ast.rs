@@ -812,6 +812,12 @@ pub enum Expression<'a> {
         args: Vec<Expression<'a>>,
         type_scheme: TypeScheme,
     },
+    IndexCall {
+        full_span: Span,
+        receiver: Box<Expression<'a>>,
+        args: Vec<Expression<'a>>,
+        type_scheme: TypeScheme,
+    },
     List {
         span: Span,
         elements: Vec<Expression<'a>>,
@@ -871,6 +877,7 @@ impl Expression<'_> {
             Expression::InstantiateStruct { span, .. } => *span,
             Expression::AccessField { full_span, .. } => *full_span,
             Expression::MethodCall { full_span, .. } => *full_span,
+            Expression::IndexCall { full_span, .. } => *full_span,
             Expression::List { span, .. } => *span,
             Expression::TypedHole(span, _) => *span,
         }
@@ -1167,6 +1174,7 @@ impl Expression<'_> {
                 Type::Struct(Box::new(struct_info.clone()))
             }
             Expression::AccessField { field_type, .. } => field_type.unsafe_as_concrete(),
+            Expression::IndexCall { type_scheme, .. } => type_scheme.unsafe_as_concrete(),
             Expression::List { type_scheme, .. } => {
                 Type::List(Box::new(type_scheme.unsafe_as_concrete()))
             }
@@ -1193,6 +1201,7 @@ impl Expression<'_> {
                 TypeScheme::make_quantified(Type::Struct(Box::new(struct_info.clone())))
             }
             Expression::AccessField { field_type, .. } => field_type.clone(),
+            Expression::IndexCall { type_scheme, .. } => type_scheme.clone(),
             Expression::List { type_scheme, .. } => match type_scheme {
                 TypeScheme::Concrete(t) => TypeScheme::Concrete(Type::List(Box::new(t.clone()))),
                 TypeScheme::Quantified(ngen, qt) => TypeScheme::Quantified(
@@ -1566,6 +1575,7 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::InstantiateStruct { .. }
         | Expression::AccessField { .. }
         | Expression::MethodCall { .. }
+        | Expression::IndexCall { .. }
         | Expression::List { .. }
         | Expression::TypedHole(_, _) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
@@ -1901,6 +1911,16 @@ impl PrettyPrint for Expression<'_> {
                     )
                     .sum()
                     + m::operator(")")
+            }
+            IndexCall { receiver, args, .. } => {
+                receiver.pretty_print()
+                    + m::operator("[")
+                    + itertools::Itertools::intersperse(
+                        args.iter().map(|e: &Expression| e.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator("]")
             }
             TypedHole(_, _) => m::operator("?"),
         }

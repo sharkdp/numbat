@@ -299,6 +299,26 @@ fn struct_operator_methods() {
     expect_output("[10, 20, 30][1]", "20");
     expect_output("[1 m, 2 m, 3 m][2]", "3 m");
 
+    expect_output(
+        "
+        struct Vec2 {
+            x: Scalar,
+            y: Scalar,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Vec2 { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @index
+            fn get(self, i: Scalar) -> Scalar =
+                if i == 0 then self.x else self.y
+        }
+
+        (Vec2 { x: 1, y: 2 } + Vec2 { x: 3, y: 4 })[1]
+        ",
+        "6",
+    );
+
     expect_failure(
         "[10, 20, 30][-1]",
         "List index must be a non-negative integer",

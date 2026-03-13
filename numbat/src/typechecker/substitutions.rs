@@ -257,6 +257,18 @@ impl ApplySubstitution for Expression<'_> {
                 struct_type.apply(s)?;
                 field_type.apply(s)
             }
+            Expression::IndexCall {
+                receiver,
+                args,
+                type_scheme,
+                ..
+            } => {
+                receiver.apply(s)?;
+                for arg in args {
+                    arg.apply(s)?;
+                }
+                type_scheme.apply(s)
+            }
             Expression::List {
                 elements,
                 type_scheme,

@@ -105,6 +105,18 @@ impl ForAllTypeSchemes for Expression<'_> {
                 f(struct_type);
                 f(field_type);
             }
+            Expression::IndexCall {
+                receiver,
+                args,
+                type_scheme,
+                ..
+            } => {
+                receiver.for_all_type_schemes(f);
+                for arg in args {
+                    arg.for_all_type_schemes(f);
+                }
+                f(type_scheme);
+            }
             Expression::List {
                 elements,
                 type_scheme,
@@ -274,6 +286,12 @@ impl ForAllExpressions for Expression<'_> {
             }
             Expression::AccessField { expr, .. } => {
                 expr.for_all_expressions(f);
+            }
+            Expression::IndexCall { receiver, args, .. } => {
+                receiver.for_all_expressions(f);
+                for arg in args {
+                    arg.for_all_expressions(f);
+                }
             }
             Expression::List { elements, .. } => {
                 for element in elements {

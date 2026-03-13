@@ -1281,6 +1281,111 @@ impl TypeChecker {
                     self.resolve_deferred_binary_operator_expression(arg)?;
                 }
             }
+            typed_ast::Expression::IndexCall {
+                full_span,
+                receiver,
+                args,
+                type_scheme,
+            } => {
+                self.resolve_deferred_binary_operator_expression(receiver)?;
+                for arg in args.iter_mut() {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+
+                let receiver_type = receiver.get_type_scheme().to_concrete_type();
+
+                if let Type::List(element_type) = &receiver_type {
+                    if args.len() != 1 {
+                        return Err(Box::new(TypeCheckError::InvalidListIndexArity(
+                            *full_span,
+                            args.len(),
+                        )));
+                    }
+
+                    let index_type = args[0].get_type();
+                    if self
+                        .add_equal_constraint(&index_type, &Type::scalar())
+                        .is_trivially_violated()
+                    {
+                        return Err(Box::new(TypeCheckError::InvalidListIndexType(
+                            args[0].full_span(),
+                            index_type,
+                        )));
+                    }
+
+                    let result_type = (**element_type).clone();
+                    *type_scheme = TypeScheme::concrete(result_type);
+                    *expr = typed_ast::Expression::FunctionCall {
+                        full_span: *full_span,
+                        ident_span: *full_span,
+                        name: "_list_at",
+                        args: vec![(**receiver).clone(), args[0].clone()],
+                        type_scheme: type_scheme.clone(),
+                    };
+                } else if let Type::Struct(_) = &receiver_type {
+                    let index_types = args
+                        .iter()
+                        .map(typed_ast::Expression::get_type)
+                        .collect::<Vec<_>>();
+                    let (owner, method_name) =
+                        self.find_index_method_call(*full_span, &receiver_type, &index_types)?;
+
+                    let method = self
+                        .lookup_method(&owner, &method_name)
+                        .ok_or_else(|| {
+                            Box::new(TypeCheckError::IndexMethodNotFound(
+                                *full_span,
+                                owner.to_string(),
+                                index_types.len(),
+                            ))
+                        })?
+                        .clone();
+
+                    let mut method_arguments = Vec::with_capacity(args.len() + 1);
+                    method_arguments.push((**receiver).clone());
+                    method_arguments.extend(args.clone());
+
+                    let method_argument_types = method_arguments
+                        .iter()
+                        .map(typed_ast::Expression::get_type)
+                        .collect::<Vec<_>>();
+
+                    let checked_call = proper_function_call(ProperFunctionCallArgs {
+                        registry: &self.registry,
+                        constraints: &mut self.constraints,
+                        name_generator: &mut self.name_generator,
+                        span: full_span,
+                        full_span,
+                        function_name: &method_name,
+                        signature: &method.signature,
+                        arguments: method_arguments,
+                        argument_types: method_argument_types,
+                    })?;
+
+                    let typed_ast::Expression::FunctionCall { type_scheme, .. } = checked_call
+                    else {
+                        unreachable!("proper function call returns typed function call");
+                    };
+
+                    *expr = typed_ast::Expression::MethodCall {
+                        full_span: *full_span,
+                        receiver: receiver.clone(),
+                        method_ref: typed_ast::MethodRef {
+                            owner,
+                            name: Box::leak(method_name.to_string().into_boxed_str()),
+                            kind: StructMethodKind::Instance,
+                        },
+                        method_name_span: *full_span,
+                        args: args.clone(),
+                        type_scheme,
+                    };
+                } else if receiver_type.is_closed() {
+                    return Err(Box::new(TypeCheckError::IndexCallOnNonStructType(
+                        *full_span,
+                        receiver_type,
+                    )));
+                }
+            }
             typed_ast::Expression::List { elements, .. } => {
                 for element in elements {
                     self.resolve_deferred_binary_operator_expression(element)?;
@@ -2717,6 +2822,15 @@ impl TypeChecker {
                             arguments_checked.into_iter().next().unwrap(),
                         ],
                         type_scheme: TypeScheme::concrete((**element_type).clone()),
+                    });
+                }
+
+                if !receiver_type.is_closed() {
+                    return Ok(typed_ast::Expression::IndexCall {
+                        full_span: *full_span,
+                        receiver: Box::new(receiver_checked),
+                        args: arguments_checked,
+                        type_scheme: TypeScheme::concrete(self.fresh_type_variable()),
                     });
                 }
 

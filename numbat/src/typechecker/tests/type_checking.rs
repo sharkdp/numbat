@@ -1053,6 +1053,25 @@ fn struct_methods() {
 
     assert_successful_typecheck(
         "
+        struct Vec2 {
+            x: Scalar,
+            y: Scalar,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Vec2 { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @index
+            fn get(self, i: Scalar) -> Scalar =
+                if i == 0 then self.x else self.y
+        }
+
+        let value: Scalar = (Vec2 { x: 1, y: 2 } + Vec2 { x: 3, y: 4 })[1]
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
         struct Point {
             x: A,
             y: A,
