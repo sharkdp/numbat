@@ -37,3 +37,13 @@ unit poise: DynamicViscosity = 1 dyn × s / cm^2
 @metric_prefixes
 @aliases(St: short)
 unit stokes: KinematicViscosity = cm^2 / s
+
+@name("rad")
+@url("https://en.wikipedia.org/wiki/Rad_(radiation_unit)")
+@metric_prefixes
+unit Rad: AbsorbedDose = cGy
+
+@name("Roentgen equivalent man")
+@url("https://en.wikipedia.org/wiki/Roentgen_equivalent_man")
+@metric_prefixes
+unit rem: EquivalentDose = cSv

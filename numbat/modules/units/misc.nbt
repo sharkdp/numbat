@@ -189,3 +189,21 @@ unit metric_tablespoon: Volume = 15 mL
 @url("https://en.wikipedia.org/wiki/Teaspoon")
 @aliases(metric_teaspoons, metric_tsp: short)
 unit metric_teaspoon: Volume = 1/3 × metric_tablespoon
+
+@name("Curie")
+@url("https://en.wikipedia.org/wiki/Curie_(unit)")
+@metric_prefixes
+@aliases(Ci: short)
+unit curie: Activity = 37 GBq
+
+@name("Rutherford")
+@url("https://en.wikipedia.org/wiki/Rutherford_(unit)")
+@metric_prefixes
+@aliases(Rd: short)
+unit rutherford: Activity = MBq
+
+@name("Röntgen")
+@url("https://en.wikipedia.org/wiki/Roentgen_(unit)")
+@metric_prefixes
+@aliases(roentgen)
+unit röntgen: Exposure = 2.58e-4 C/kg
