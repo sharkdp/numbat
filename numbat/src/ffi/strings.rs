@@ -37,8 +37,14 @@ pub fn str_slice(
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
-    let start = quantity_arg!(args).unsafe_value().to_f64() as usize;
-    let end = quantity_arg!(args).unsafe_value().to_f64() as usize;
+    let start_q = quantity_arg!(args);
+    let start = start_q.unsafe_value().try_as_real().ok_or_else(|| {
+        Box::new(RuntimeErrorKind::ExpectedRealNumberInFunction("str_slice".into()))
+    })? as usize;
+    let end_q = quantity_arg!(args);
+    let end = end_q.unsafe_value().try_as_real().ok_or_else(|| {
+        Box::new(RuntimeErrorKind::ExpectedRealNumberInFunction("str_slice".into()))
+    })? as usize;
     let input = string_arg!(args);
 
     let output = input.get(start..end).unwrap_or_default();
@@ -51,7 +57,10 @@ pub fn chr(
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
-    let idx = quantity_arg!(args).unsafe_value().to_f64() as u32;
+    let q = quantity_arg!(args);
+    let idx = q.unsafe_value().try_as_real().ok_or_else(|| {
+        Box::new(RuntimeErrorKind::ExpectedRealNumberInFunction("chr".into()))
+    })? as u32;
 
     let output = char::from_u32(idx).unwrap_or('�');
 

@@ -78,6 +78,15 @@ pub enum RuntimeErrorKind {
     #[error("Chemical element not found: {0}")]
     ChemicalElementNotFound(String),
 
+    #[error("Expected a real number for {0}")]
+    ExpectedRealNumberInFunction(String),
+
+    #[error("Cannot compare complex numbers with ordering operators")]
+    OrderingOfComplexNumbers,
+
+    #[error("Expected factorial argument to be a real number")]
+    FactorialOfComplexNumber,
+
     #[error("Empty list")]
     EmptyList,
 
