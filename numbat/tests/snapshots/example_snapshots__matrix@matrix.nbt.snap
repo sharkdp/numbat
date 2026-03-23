@@ -1,0 +1,10 @@
+---
+source: numbat/tests/example_snapshots.rs
+assertion_line: 53
+expression: output
+input_file: examples/matrix.nbt
+---
+2x2 identity: Matrix { rows: 2, cols: 2, data: [[1, 0], [0, 1]] }
+2x3 matrix:   Matrix { rows: 2, cols: 3, data: [[1, 2, 3], [4, 5, 6]] }
+3x2 matrix:   Matrix { rows: 3, cols: 2, data: [[1, 2], [3, 4], [5, 6]] }
+product:      Matrix { rows: 2, cols: 2, data: [[22, 28], [49, 64]] }

@@ -278,6 +278,12 @@ pub struct ExecutionContext<'a> {
     pub typechecker: &'a TypeChecker,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MethodCallable {
+    Normal(u16),
+    Foreign(u16),
+}
+
 /// Metadata for a single FFI call argument
 #[derive(Clone)]
 pub struct FfiCallArg {
@@ -308,6 +314,8 @@ pub struct Vm {
 
     /// struct metadata, used so we can display struct fields at runtime
     struct_infos: IndexMap<CompactString, Arc<StructInfo>>,
+    /// Mapping from (struct name, method name) to callable target
+    method_callables: HashMap<(CompactString, CompactString), MethodCallable>,
 
     /// Unit prefixes in use
     prefixes: Vec<Prefix>,
@@ -348,6 +356,7 @@ impl Vm {
             current_chunk_index: 0,
             constants: vec![],
             struct_infos: IndexMap::new(),
+            method_callables: HashMap::new(),
             prefixes: vec![],
             strings: vec![],
             unit_information: vec![],
@@ -486,9 +495,14 @@ impl Vm {
         (self.unit_information.len() - 1) as u16 // TODO: this can overflow, see above
     }
 
-    pub(crate) fn begin_function(&mut self, name: &str) {
+    pub(crate) fn begin_function(&mut self, name: &str) -> u16 {
         self.bytecode.push((name.into(), vec![], vec![]));
-        self.current_chunk_index = self.bytecode.len() - 1
+        self.current_chunk_index = self.bytecode.len() - 1;
+        self.current_chunk_index as u16
+    }
+
+    pub(crate) fn begin_reserved_function(&mut self, idx: u16) {
+        self.current_chunk_index = idx as usize;
     }
 
     pub(crate) fn end_function(&mut self) {
@@ -508,6 +522,42 @@ impl Vm {
         let position = self.bytecode.len() - 1 - rev_position;
         assert!(position <= u16::MAX as usize);
         position as u16
+    }
+
+    pub(crate) fn register_method_function(&mut self, owner: &str, method: &str, idx: u16) {
+        self.method_callables.insert(
+            (owner.to_compact_string(), method.to_compact_string()),
+            MethodCallable::Normal(idx),
+        );
+    }
+
+    pub(crate) fn register_foreign_method(&mut self, owner: &str, method: &str, ffi_idx: u16) {
+        self.method_callables.insert(
+            (owner.to_compact_string(), method.to_compact_string()),
+            MethodCallable::Foreign(ffi_idx),
+        );
+    }
+
+    pub(crate) fn get_method_callable(&self, owner: &str, method: &str) -> Option<MethodCallable> {
+        self.method_callables
+            .get(&(owner.to_compact_string(), method.to_compact_string()))
+            .copied()
+    }
+
+    pub(crate) fn get_empty_method_function_idx(&self, owner: &str, method: &str) -> Option<u16> {
+        let MethodCallable::Normal(idx) = self.get_method_callable(owner, method)? else {
+            return None;
+        };
+        let idx_usize = idx as usize;
+        if self
+            .bytecode
+            .get(idx_usize)
+            .is_some_and(|(_, code, spans)| code.is_empty() && spans.is_empty())
+        {
+            Some(idx)
+        } else {
+            None
+        }
     }
 
     pub(crate) fn add_foreign_function(&mut self, name: &str, arity: ArityRange) {
@@ -1163,14 +1213,19 @@ impl Vm {
                         content.push(self.pop());
                     }
 
-                    self.stack.push(Value::StructInstance(struct_info, content));
+                    self.stack.push(Value::StructInstance(
+                        struct_info,
+                        Arc::<[Value]>::from(content),
+                    ));
                 }
                 Op::AccessStructField => {
                     let field_idx = self.read_u16();
-
-                    let mut fields = self.pop().unsafe_as_struct_fields();
-
-                    let value = fields.swap_remove(field_idx as usize);
+                    let struct_value = self.pop();
+                    let fields = struct_value.unsafe_as_struct_fields();
+                    let value = fields
+                        .get(field_idx as usize)
+                        .expect("field index should be valid")
+                        .clone();
                     self.stack.push(value);
                 }
                 Op::BuildList => {

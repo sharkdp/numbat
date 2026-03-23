@@ -4,9 +4,7 @@ expression: output
 input_file: examples/parse_error/missing_closing_paren3.nbt
 ---
 error: while parsing
-  ┌─ <internal:3>:1:5
-  │  
-1 │   (2+3
-  │ ╭────^
-2 │ │ 
-  │ ╰^ Missing closing parenthesis ')'
+  ┌─ <internal:3>:2:1
+  │
+2 │ 
+  │ ^ Missing closing parenthesis ')'

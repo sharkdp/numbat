@@ -99,3 +99,9 @@ impl UnitRegistry {
         base_unit_match.into_iter().chain(derived_units)
     }
 }
+
+impl Default for UnitRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}

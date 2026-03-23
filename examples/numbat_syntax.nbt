@@ -127,6 +127,9 @@ struct Element {                 # Define a struct
     name: String,
     atomic_number: Scalar,
     density: MassDensity,
+
+    fn neptunium() -> Self =
+        Self { name: "Neptunium", atomic_number: 93, density: 20.45 g/cm³ }
 }
 
 let hydrogen = Element {         # Instantiate it
@@ -137,7 +140,56 @@ let hydrogen = Element {         # Instantiate it
 
 hydrogen.density                 # Access the field of a struct
 
+let neptunium =                  # Instantiate using a constructor method
+    Element::neptunium()
+print(neptunium)
+
 struct Vec2<D: Dim> {            # A generic struct with type parameter
     x: D,
-    y: D,
+    y: D = 0 m,                  # Struct defaults can be provided per field
+
+    # Methods can have their own type generics and inherit the struct's generics
+    fn new(x: D, y: D) -> Self = Self { x: x, y: y }
+    @add
+    fn add(self, rhs: Self) -> Self = Self { x: self.x + rhs.x, y: self.y + rhs.y }
+    @mul
+    fn scale(self, factor: Scalar) -> Self = Self { x: self.x * factor, y: self.y * factor }
+    @rmul
+    fn scale_from_left(self, lhs: Scalar) -> Self = Self { x: lhs * self.x, y: lhs * self.y }
+    fn dot<E: Dim>(self, other: Vec2<E>) -> D * E = self.x * other.x + self.y * other.y
 }
+
+let v = Vec2::new(3 m, 4 m)      # Constructor call
+let w = Vec2::new(300 cm, 400 cm)
+let scaled_v = v.scale(2)        # Returning `Self` creates a new value (no in-place mutation)
+let combined = v + w             # Operator methods can provide struct-owned arithmetic
+let left_scaled = 2 * v          # Reverse operator methods handle lhs-owned scalar syntax
+
+assert_eq(v.dot(w) -> m², 25 m²) # Method generic + unit conversion
+assert_eq(combined.x -> m, 6 m)
+assert_eq(left_scaled.y -> m, 8 m)
+
+let only_x = Vec2 { x: 5 m }     # Omitted fields with defaults are auto-filled
+
+assert_eq(only_x.x, 5 m)
+assert_eq(only_x.y, 0 m)
+
+let distances = [3 m, 4 m, 5 m]  # Builtin lists support indexing
+assert_eq(distances[1], 4 m)
+
+struct Grid2 {                    # Struct methods can define custom indexing syntax
+    a: Scalar,
+    b: Scalar,
+    c: Scalar,
+    d: Scalar,
+
+    @index
+    fn get(self, row: Scalar, col: Scalar) -> Scalar =
+        if row == 0 then
+            if col == 0 then self.a else self.b
+        else
+            if col == 0 then self.c else self.d
+}
+
+let grid = Grid2 { a: 1, b: 2, c: 3, d: 4 }
+assert_eq(grid[1, 0], 3)

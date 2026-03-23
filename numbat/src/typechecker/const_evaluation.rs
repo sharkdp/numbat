@@ -105,9 +105,12 @@ pub fn evaluate_const_expr(expr: &typed_ast::Expression) -> Result<Exponent> {
             typed_ast::Expression::String(_, _) => "String",
             typed_ast::Expression::Condition { .. } => "Conditional",
             typed_ast::Expression::BinaryOperatorForDate { .. } => "binary operator for datetimes",
+            typed_ast::Expression::DeferredBinaryOperator { .. } => "deferred binary operator",
             typed_ast::Expression::InstantiateStruct { .. } => "instantiate struct",
             typed_ast::Expression::AccessField { .. } => "access field of struct",
+            typed_ast::Expression::IndexCall { .. } => "index expression",
             typed_ast::Expression::List { .. } => "lists",
+            typed_ast::Expression::MethodCall { .. } => "method call",
             typed_ast::Expression::TypedHole(_, _) => "typed hole",
         };
 

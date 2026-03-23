@@ -138,6 +138,225 @@ fn get_diagnostic_output(code: &str) -> String {
 }
 
 #[test]
+fn struct_operator_methods() {
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+        }
+
+        (Point { x: 1, y: 2 } + Point { x: 3, y: 4 }).x
+        ",
+        "4",
+    );
+
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @add
+            fn add_scalar(self, rhs: Scalar) -> Self =
+                Point { x: self.x + rhs, y: self.y + rhs }
+        }
+
+        (Point { x: 1, y: 2 } + 3).x + (Point { x: 1, y: 2 } + Point { x: 3, y: 4 }).y
+        ",
+        "10",
+    );
+
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+        }
+
+        struct Shift {
+            amount: Scalar,
+
+            @radd
+            fn add_to_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x + self.amount, y: lhs.y + self.amount }
+        }
+
+        (Point { x: 1, y: 2 } + Shift { amount: 3 }).y
+        ",
+        "5",
+    );
+
+    expect_output(
+        "
+        struct Vec2<D: Dim> {
+            x: D,
+            y: D,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Self { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @mul
+            fn scale(self, factor: Scalar) -> Self =
+                Self { x: self.x * factor, y: self.y * factor }
+
+            @rmul
+            fn scale_from_left(self, lhs: Scalar) -> Self =
+                Self { x: lhs * self.x, y: lhs * self.y }
+        }
+
+        let v = Vec2 { x: 3 m, y: 4 m }
+        let w = Vec2 { x: 300 cm, y: 400 cm }
+
+        ((v + w).x -> m) + ((v * 2).y -> m) + ((2 * v).y -> m)
+        ",
+        "22 m",
+    );
+
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+        }
+
+        struct Shift {
+            amount: Scalar,
+
+            @radd
+            fn add_to_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x + self.amount, y: lhs.y + self.amount }
+        }
+
+        struct Offset {
+            amount: Scalar,
+
+            @rsub
+            fn sub_from_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x - self.amount, y: lhs.y - self.amount }
+        }
+
+        struct Scale {
+            factor: Scalar,
+
+            @rmul
+            fn scale_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x * self.factor, y: lhs.y * self.factor }
+        }
+
+        struct Ratio {
+            factor: Scalar,
+
+            @rdiv
+            fn div_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x / self.factor, y: lhs.y / self.factor }
+        }
+
+        ((Point { x: 1, y: 2 } + Shift { amount: 3 }).x + (Point { x: 5, y: 7 } - Offset { amount: 2 }).y + (Point { x: 2, y: 3 } * Scale { factor: 4 }).x + (Point { x: 8, y: 6 } / Ratio { factor: 2 }).y)
+        ",
+        "20",
+    );
+
+    expect_output(
+        "
+        struct Pair {
+            left: Scalar,
+            right: Scalar,
+
+            @index
+            fn get(self, i: Scalar) -> Scalar =
+                if i == 0 then self.left else self.right
+        }
+
+        struct Grid2 {
+            a: Scalar,
+            b: Scalar,
+            c: Scalar,
+            d: Scalar,
+
+            @index
+            fn get(self, row: Scalar, col: Scalar) -> Scalar =
+                if row == 0 then
+                    if col == 0 then self.a else self.b
+                else
+                    if col == 0 then self.c else self.d
+        }
+
+        Pair { left: 10, right: 20 }[1] + Grid2 { a: 1, b: 2, c: 3, d: 4 }[1, 0]
+        ",
+        "23",
+    );
+
+    expect_output("[10, 20, 30][1]", "20");
+    expect_output("[1 m, 2 m, 3 m][2]", "3 m");
+
+    expect_output(
+        "
+        struct Vec2 {
+            x: Scalar,
+            y: Scalar,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Vec2 { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @index
+            fn get(self, i: Scalar) -> Scalar =
+                if i == 0 then self.x else self.y
+        }
+
+        (Vec2 { x: 1, y: 2 } + Vec2 { x: 3, y: 4 })[1]
+        ",
+        "6",
+    );
+
+    expect_failure(
+        "[10, 20, 30][-1]",
+        "List index must be a non-negative integer",
+    );
+    expect_failure(
+        "[10, 20, 30][1.5]",
+        "List index must be a non-negative integer",
+    );
+    expect_failure("[10, 20, 30][3]", "out of bounds");
+
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+        }
+
+        (
+            (Point { x: 1, y: 2 } + Point { x: 3, y: 4 }).x
+            + 1
+        )
+        ",
+        "5",
+    );
+
+    let _ = succeed(
+        "
+        fn id(x) = x
+        id(now()) + 4 days
+        ",
+    );
+}
+
+#[test]
 fn simple_value() {
     expect_output("0", "0");
     expect_output("0_0", "0");
@@ -1241,6 +1460,367 @@ fn test_temperature_syntactic_sugar() {
     // Aliases pretty-print as °C/°F
     expect_pretty_print("let t = 20 celsius", "let t: Temperature = 20 °C");
     expect_pretty_print("let t = 68 fahrenheit", "let t: Temperature = 68 °F");
+}
+
+#[test]
+fn test_struct_methods() {
+    expect_output(
+        "
+        struct Point {
+            x: Scalar,
+            y: Scalar,
+            fn origin() = Point { x: 0, y: 0 }
+            fn shift_x(self, dx: Scalar) = Point { x: self.x + dx, y: self.y }
+            fn get_x(self) = self.x
+        }
+
+        Point::origin().shift_x(3).get_x()
+        ",
+        "3",
+    );
+
+    expect_output(
+        "
+        struct Point {
+            x: Length,
+            y: Length,
+            fn new(x: Length, y: Length) -> Self = Point { x: x, y: y }
+            fn translate(self, dx: Length, dy: Length) -> Self = Self { x: self.x + dx, y: self.y + dy }
+            fn get_x(self) -> Length = self.x
+        }
+        Point::new(3 m, 4 m).translate(2 m, 0 m).get_x()
+        ",
+        "5 m",
+    );
+
+    expect_output(
+        "
+        struct Box<T> {
+            inner: T,
+            fn wrap(value: T) -> Box<T> = Box { inner: value }
+            fn replace<U>(self, value: U) -> Box<U> = Box { inner: value }
+        }
+        Box::wrap(2 m).replace(5).inner
+        ",
+        "5",
+    );
+
+    expect_output(
+        "
+        struct Flag {
+            n: Scalar,
+            fn even(self) -> Bool =
+                if self.n == 0 then true else Flag { n: self.n - 1 }.odd()
+            fn odd(self) -> Bool =
+                if self.n == 0 then false else Flag { n: self.n - 1 }.even()
+        }
+
+        if Flag { n: 7 }.odd() then 1 else 0
+        ",
+        "1",
+    );
+
+    expect_output(
+        "
+        fn combine(x: Scalar, y: Scalar) -> Scalar = x + y
+
+        struct Vec2 {
+            x: Length,
+            y: Length,
+            fn dot(self, other: Vec2) -> Area = self.x * other.x + self.y * other.y
+        }
+
+        let v1 = Vec2 { x: 1 m, y: 2 m }
+        let v2 = Vec2 { x: 3 m, y: 4 m }
+        v1.dot(v2) + combine(1, 2) m^2
+        ",
+        "14 m²",
+    );
+
+    expect_failure(
+        "
+        struct Point {
+            fn magnitude(self) = self.x
+            x: Scalar
+        }
+        ",
+        "Fields must be declared before methods in struct body",
+    );
+
+    expect_failure(
+        "
+        fn id(x: Self) -> Self = x
+        ",
+        "`Self` can only be used inside struct method definitions",
+    );
+}
+
+#[test]
+fn test_struct_method_namespace_stress() {
+    // Method names should be struct-scoped even when they match prelude function names.
+    expect_output(
+        "
+        struct Sample {
+            x: Scalar,
+            fn sqrt(self) -> Scalar = self.x + 1
+            fn sin(self) -> Scalar = self.x + 2
+        }
+
+        let sample_value = Sample { x: 9 }
+        sample_value.sqrt() + sample_value.sin() + sqrt(9) + sin(0)
+        ",
+        "24",
+    );
+
+    // Constructor-style methods should also be isolated from prelude/global names.
+    expect_output(
+        "
+        struct AngleBox {
+            value: Scalar,
+            fn atan2(x: Scalar, y: Scalar) -> Self = AngleBox { value: x + y }
+        }
+
+        AngleBox::atan2(2, 3).value + atan2(10, 0) / (pi / 2)
+        ",
+        "6",
+    );
+
+    // Imported module functions should not conflict with methods of the same name.
+    let mut ctx = get_test_context();
+    let _ = ctx
+        .interpret("use extra::algebra", CodeSource::Internal)
+        .unwrap();
+    expect_output_with_context(
+        &mut ctx,
+        "
+        struct Eqn {
+            x: Scalar,
+            fn quadratic_equation(self) -> Scalar = self.x
+        }
+
+        Eqn { x: 5 }.quadratic_equation() + len(quadratic_equation(1, 0, -1))
+        ",
+        "7",
+    );
+
+    // Cross-struct same-name methods must dispatch to the correct implementation.
+    expect_output(
+        "
+        struct A {
+            x: Scalar,
+            fn value(self) -> Scalar = self.x + 100
+        }
+
+        struct B {
+            x: Scalar,
+            fn value(self) -> Scalar = self.x + 1000
+        }
+
+        A { x: 1 }.value() + B { x: 1 }.value()
+        ",
+        "1102",
+    );
+}
+
+#[test]
+fn test_struct_field_projection_stability() {
+    expect_output(
+        "
+        struct Pair {
+            x: Scalar,
+            y: Scalar,
+            fn score(self) -> Scalar = self.x + self.y + self.x + self.y
+        }
+
+        Pair { x: 2, y: 3 }.score()
+        ",
+        "10",
+    );
+
+    expect_output(
+        "
+        struct Pair {
+            x: Scalar,
+            y: Scalar,
+        }
+
+        struct Wrap {
+            pair: Pair,
+            fn twice_x(self) -> Scalar = self.pair.x + self.pair.x
+        }
+
+        Wrap { pair: Pair { x: 4, y: 1 } }.twice_x()
+        ",
+        "8",
+    );
+}
+
+#[test]
+fn test_struct_field_defaults() {
+    expect_output(
+        "
+        struct Point {
+            x: Length = 2 m,
+            y: Length,
+        }
+
+        let p = Point { y: 3 m }
+        p.x + p.y
+        ",
+        "5 m",
+    );
+
+    expect_output(
+        "
+        struct Counter {
+            n: Scalar = 10,
+            fn new() -> Self = Counter {}
+        }
+
+        Counter::new().n
+        ",
+        "10",
+    );
+
+    expect_failure(
+        "
+        struct Point {
+            x: Length = 2 m,
+            y: Length,
+        }
+
+        Point {}
+        ",
+        "Missing field",
+    );
+}
+
+#[test]
+fn test_struct_features_comprehensive() {
+    expect_output(
+        "
+        use prelude
+
+        struct Vec2<D: Dim> {
+            x: D = 0 m,
+            y: D = 0 m,
+
+            fn new(x: D, y: D) -> Self = Vec2 { x: x, y: y }
+            fn with_y(y: D) -> Self = Vec2 { y: y }
+            fn translate(self, dx: D, dy: D) -> Self = Vec2 { x: self.x + dx, y: self.y + dy }
+            fn dot<E: Dim>(self, other: Vec2<E>) -> D * E = self.x * other.x + self.y * other.y
+        }
+
+        let v1 = Vec2::new(1 m, 2 m)
+        let v2 = Vec2::with_y(4 m).translate(3 m, 0 m)
+        let v3 = Vec2 { y: 5 m }
+        let v4 = Vec2 { x: 300 cm, y: 400 cm }
+
+        v1.dot(v2) + v3.dot(v4) + sqrt(4) m^2
+        ",
+        "330_000 cm²",
+    );
+}
+
+#[test]
+fn test_self_struct_instantiation_contexts() {
+    expect_output(
+        "
+        struct Outer<T> {
+            inner: T,
+            fn wrap(value: T) -> Self = Self { inner: value }
+            fn replace<U>(self, value: U) -> Outer<U> = Outer { inner: value }
+        }
+
+        Outer::wrap(2 m).replace(5).inner
+        ",
+        "5",
+    );
+
+    expect_output(
+        "
+        struct Inner {
+            x: Length,
+        }
+
+        struct Outer {
+            inner: Inner,
+            fn shift(self, dx: Length) -> Self = Self {
+                inner: Inner { x: self.inner.x + dx }
+            }
+        }
+
+        Outer { inner: Inner { x: 1 m } }.shift(2 m).inner.x
+        ",
+        "3 m",
+    );
+
+    expect_output(
+        "
+        struct Counter {
+            value: Scalar,
+
+            fn new(n: Scalar) -> Self = result
+                where result =
+                    if n == 0 then Self { value: 0 } else Counter::new(n - 1).inc()
+
+            fn inc(self) -> Self = Self { value: self.value + 1 }
+        }
+
+        Counter::new(4).value
+        ",
+        "4",
+    );
+}
+
+#[test]
+fn test_ffi_struct_shape_for_chemical_elements() {
+    expect_output(
+        "
+        use chemistry::elements
+        element(\"H\").symbol
+        ",
+        "\"H\"",
+    );
+
+    expect_output(
+        "
+        use chemistry::elements
+        element(\"hydrogen\").atomic_number
+        ",
+        "1",
+    );
+
+    expect_failure(
+        "
+        use chemistry::elements
+        element(\"definitely-not-an-element\")
+        ",
+        "Chemical element not found",
+    );
+}
+
+#[test]
+fn test_where_locals_are_evaluated_once() {
+    expect_output(
+        "
+        fn once() -> Scalar = x - x where x = random()
+        once()
+        ",
+        "0",
+    );
+
+    expect_output(
+        "
+        struct Sample {
+            value: Scalar,
+            fn once(self) -> Scalar = x - x where x = random() + self.value
+        }
+
+        Sample { value: 5 }.once()
+        ",
+        "0",
+    );
 }
 
 #[cfg(test)]

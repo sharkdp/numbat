@@ -337,6 +337,28 @@ pub struct StructInfo {
     pub name: CompactString,
     pub kind: StructKind,
     pub fields: IndexMap<CompactString, (Span, Type)>,
+    pub methods: IndexMap<CompactString, StructMethodInfo>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StructMethodKind {
+    Constructor,
+    Instance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructMethodInfo {
+    pub definition_span: Span,
+    pub kind: StructMethodKind,
+    pub operator_impl: Option<StructMethodOperatorInfo>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructMethodOperatorInfo {
+    pub operator: BinaryOperator,
+    pub reverse: bool,
+    pub rhs_type: Type,
+    pub output_type: Type,
 }
 
 /// A monomorphic type (no quantifiers).
@@ -607,6 +629,7 @@ impl Type {
                     name: info.name.clone(),
                     kind: instantiated_kind,
                     fields: instantiated_fields,
+                    methods: info.methods.clone(),
                 }))
             }
             Type::List(element_type) => {
@@ -618,6 +641,40 @@ impl Type {
     pub(crate) fn is_scalar(&self) -> bool {
         match self {
             Type::Dimension(d) => d.is_scalar(),
+            _ => false,
+        }
+    }
+
+    pub(crate) fn equals_ignoring_struct_methods(&self, other: &Type) -> bool {
+        match (self, other) {
+            (Type::TVar(v1), Type::TVar(v2)) => v1 == v2,
+            (Type::TPar(v1), Type::TPar(v2)) => v1 == v2,
+            (Type::Dimension(d1), Type::Dimension(d2)) => d1 == d2,
+            (Type::Boolean, Type::Boolean)
+            | (Type::String, Type::String)
+            | (Type::DateTime, Type::DateTime) => true,
+            (Type::List(i1), Type::List(i2)) => i1.equals_ignoring_struct_methods(i2),
+            (Type::Fn(p1, r1), Type::Fn(p2, r2)) => {
+                p1.len() == p2.len()
+                    && p1
+                        .iter()
+                        .zip(p2.iter())
+                        .all(|(a, b)| a.equals_ignoring_struct_methods(b))
+                    && r1.equals_ignoring_struct_methods(r2)
+            }
+            (Type::Struct(info1), Type::Struct(info2)) if info1.name == info2.name => {
+                match (&info1.kind, &info2.kind) {
+                    (StructKind::Definition(_), StructKind::Definition(_)) => true,
+                    (StructKind::Instance(args1), StructKind::Instance(args2)) => {
+                        args1.len() == args2.len()
+                            && args1
+                                .iter()
+                                .zip(args2.iter())
+                                .all(|(a, b)| a.equals_ignoring_struct_methods(b))
+                    }
+                    _ => false,
+                }
+            }
             _ => false,
         }
     }
@@ -704,6 +761,13 @@ pub enum Expression<'a> {
         rhs: Box<Expression<'a>>,
         type_scheme: TypeScheme,
     },
+    DeferredBinaryOperator {
+        op_span: Option<Span>,
+        op: BinaryOperator,
+        lhs: Box<Expression<'a>>,
+        rhs: Box<Expression<'a>>,
+        type_scheme: TypeScheme,
+    },
     /// A 'proper' function call
     FunctionCall {
         full_span: Span,
@@ -740,12 +804,33 @@ pub enum Expression<'a> {
         struct_type: TypeScheme,
         field_type: TypeScheme,
     },
+    MethodCall {
+        full_span: Span,
+        receiver: Box<Expression<'a>>,
+        method_ref: MethodRef<'a>,
+        method_name_span: Span,
+        args: Vec<Expression<'a>>,
+        type_scheme: TypeScheme,
+    },
+    IndexCall {
+        full_span: Span,
+        receiver: Box<Expression<'a>>,
+        args: Vec<Expression<'a>>,
+        type_scheme: TypeScheme,
+    },
     List {
         span: Span,
         elements: Vec<Expression<'a>>,
         type_scheme: TypeScheme,
     },
     TypedHole(Span, TypeScheme),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MethodRef<'a> {
+    pub owner: CompactString,
+    pub name: &'a str,
+    pub kind: StructMethodKind,
 }
 
 impl Expression<'_> {
@@ -773,6 +858,15 @@ impl Expression<'_> {
                 }
                 span
             }
+            Expression::DeferredBinaryOperator {
+                op_span, lhs, rhs, ..
+            } => {
+                let mut span = lhs.full_span().extend(&rhs.full_span());
+                if let Some(op_span) = op_span {
+                    span = span.extend(op_span);
+                }
+                span
+            }
             Expression::FunctionCall { full_span, .. } => *full_span,
             Expression::CallableCall { full_span, .. } => *full_span,
             Expression::Boolean(span, _) => *span,
@@ -782,6 +876,8 @@ impl Expression<'_> {
             Expression::String(span, _) => *span,
             Expression::InstantiateStruct { span, .. } => *span,
             Expression::AccessField { full_span, .. } => *full_span,
+            Expression::MethodCall { full_span, .. } => *full_span,
+            Expression::IndexCall { full_span, .. } => *full_span,
             Expression::List { span, .. } => *span,
             Expression::TypedHole(span, _) => *span,
         }
@@ -804,6 +900,23 @@ pub enum Statement<'a> {
     DefineVariable(DefineVariable<'a>),
     DefineFunction {
         function_name: &'a str,
+        decorators: Vec<Decorator<'a>>,
+        type_parameters: Vec<(&'a str, Option<TypeParameterBound>)>,
+        parameters: Vec<(
+            Span,                   // span of the parameter
+            &'a str,                // parameter name
+            Option<TypeAnnotation>, // parameter type annotation
+            Markup,                 // readable parameter type
+        )>,
+        body: Option<Expression<'a>>,
+        local_variables: Vec<DefineVariable<'a>>,
+        fn_type: TypeScheme,
+        return_type_annotation: Option<TypeAnnotation>,
+        readable_return_type: Markup,
+    },
+    DefineMethod {
+        struct_name: CompactString,
+        method_name: &'a str,
         decorators: Vec<Decorator<'a>>,
         type_parameters: Vec<(&'a str, Option<TypeParameterBound>)>,
         parameters: Vec<(
@@ -882,6 +995,15 @@ impl Statement<'_> {
                     Self::create_readable_type(registry, type_scheme, type_annotation, true);
             }
             Statement::DefineFunction {
+                type_parameters,
+                parameters,
+                local_variables,
+                fn_type,
+                return_type_annotation,
+                readable_return_type,
+                ..
+            }
+            | Statement::DefineMethod {
                 type_parameters,
                 parameters,
                 local_variables,
@@ -989,6 +1111,12 @@ impl Statement<'_> {
                 local_variables,
                 fn_type,
                 ..
+            }
+            | Statement::DefineMethod {
+                parameters,
+                local_variables,
+                fn_type,
+                ..
             } => {
                 let mut bindings = Vec::new();
 
@@ -1034,6 +1162,9 @@ impl Expression<'_> {
             Expression::BinaryOperatorForDate { type_scheme, .. } => {
                 type_scheme.unsafe_as_concrete()
             }
+            Expression::DeferredBinaryOperator { type_scheme, .. } => {
+                type_scheme.unsafe_as_concrete()
+            }
             Expression::FunctionCall { type_scheme, .. } => type_scheme.unsafe_as_concrete(),
             Expression::CallableCall { type_scheme, .. } => type_scheme.unsafe_as_concrete(),
             Expression::Boolean(_, _) => Type::Boolean,
@@ -1043,9 +1174,11 @@ impl Expression<'_> {
                 Type::Struct(Box::new(struct_info.clone()))
             }
             Expression::AccessField { field_type, .. } => field_type.unsafe_as_concrete(),
+            Expression::IndexCall { type_scheme, .. } => type_scheme.unsafe_as_concrete(),
             Expression::List { type_scheme, .. } => {
                 Type::List(Box::new(type_scheme.unsafe_as_concrete()))
             }
+            Expression::MethodCall { type_scheme, .. } => type_scheme.unsafe_as_concrete(),
             Expression::TypedHole(_, type_) => type_.unsafe_as_concrete(),
         }
     }
@@ -1058,6 +1191,7 @@ impl Expression<'_> {
             Expression::UnaryOperator { type_scheme, .. } => type_scheme.clone(),
             Expression::BinaryOperator { type_scheme, .. } => type_scheme.clone(),
             Expression::BinaryOperatorForDate { type_scheme, .. } => type_scheme.clone(),
+            Expression::DeferredBinaryOperator { type_scheme, .. } => type_scheme.clone(),
             Expression::FunctionCall { type_scheme, .. } => type_scheme.clone(),
             Expression::CallableCall { type_scheme, .. } => type_scheme.clone(),
             Expression::Boolean(_, _) => TypeScheme::make_quantified(Type::Boolean),
@@ -1067,6 +1201,7 @@ impl Expression<'_> {
                 TypeScheme::make_quantified(Type::Struct(Box::new(struct_info.clone())))
             }
             Expression::AccessField { field_type, .. } => field_type.clone(),
+            Expression::IndexCall { type_scheme, .. } => type_scheme.clone(),
             Expression::List { type_scheme, .. } => match type_scheme {
                 TypeScheme::Concrete(t) => TypeScheme::Concrete(Type::List(Box::new(t.clone()))),
                 TypeScheme::Quantified(ngen, qt) => TypeScheme::Quantified(
@@ -1077,6 +1212,7 @@ impl Expression<'_> {
                     },
                 ),
             },
+            Expression::MethodCall { type_scheme, .. } => type_scheme.clone(),
             Expression::TypedHole(_, type_) => type_.clone(),
         }
     }
@@ -1159,6 +1295,22 @@ fn decorator_markup(decorators: &Vec<Decorator>) -> Markup {
                         }
                         + m::operator(")")
                 }
+                Decorator::BinaryOperator { operator, reverse } => {
+                    let decorator_name = match (operator, reverse) {
+                        (BinaryOperator::Add, false) => "@add",
+                        (BinaryOperator::Sub, false) => "@sub",
+                        (BinaryOperator::Mul, false) => "@mul",
+                        (BinaryOperator::Div, false) => "@div",
+                        (BinaryOperator::Add, true) => "@radd",
+                        (BinaryOperator::Sub, true) => "@rsub",
+                        (BinaryOperator::Mul, true) => "@rmul",
+                        (BinaryOperator::Div, true) => "@rdiv",
+                        _ => unreachable!("unsupported binary operator decorator"),
+                    };
+
+                    m::decorator(decorator_name)
+                }
+                Decorator::Index => m::decorator("@index"),
             }
             + m::nl();
     }
@@ -1239,6 +1391,16 @@ impl PrettyPrint for Statement<'_> {
             }
             Statement::DefineFunction {
                 function_name,
+                type_parameters,
+                parameters,
+                body,
+                local_variables,
+                fn_type,
+                readable_return_type,
+                ..
+            }
+            | Statement::DefineMethod {
+                method_name: function_name,
                 type_parameters,
                 parameters,
                 body,
@@ -1412,11 +1574,14 @@ fn with_parens(expr: &Expression) -> Markup {
         | Expression::String(..)
         | Expression::InstantiateStruct { .. }
         | Expression::AccessField { .. }
+        | Expression::MethodCall { .. }
+        | Expression::IndexCall { .. }
         | Expression::List { .. }
         | Expression::TypedHole(_, _) => expr.pretty_print(),
         Expression::UnaryOperator { .. }
         | Expression::BinaryOperator { .. }
         | Expression::BinaryOperatorForDate { .. }
+        | Expression::DeferredBinaryOperator { .. }
         | Expression::Condition { .. } => m::operator("(") + expr.pretty_print() + m::operator(")"),
     }
 }
@@ -1594,6 +1759,7 @@ impl PrettyPrint for Expression<'_> {
             } => m::operator("!") + with_parens(expr),
             BinaryOperator { op, lhs, rhs, .. } => pretty_print_binop(op, lhs, rhs),
             BinaryOperatorForDate { op, lhs, rhs, .. } => pretty_print_binop(op, lhs, rhs),
+            DeferredBinaryOperator { op, lhs, rhs, .. } => pretty_print_binop(op, lhs, rhs),
             FunctionCall { name, args, .. } => {
                 // Special case: render special temperature conversion functions in their sugar form:
                 if args.len() == 1 {
@@ -1721,6 +1887,36 @@ impl PrettyPrint for Expression<'_> {
                 m::operator("[")
                     + itertools::Itertools::intersperse(
                         elements.iter().map(|e| e.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator("]")
+            }
+            MethodCall {
+                receiver,
+                method_ref,
+                args,
+                ..
+            } => {
+                receiver.pretty_print()
+                    + m::operator(match method_ref.kind {
+                        StructMethodKind::Constructor => "::",
+                        StructMethodKind::Instance => ".",
+                    })
+                    + m::identifier(method_ref.name.to_compact_string())
+                    + m::operator("(")
+                    + itertools::Itertools::intersperse(
+                        args.iter().map(|e: &Expression| e.pretty_print()),
+                        m::operator(",") + m::space(),
+                    )
+                    .sum()
+                    + m::operator(")")
+            }
+            IndexCall { receiver, args, .. } => {
+                receiver.pretty_print()
+                    + m::operator("[")
+                    + itertools::Itertools::intersperse(
+                        args.iter().map(|e: &Expression| e.pretty_print()),
                         m::operator(",") + m::space(),
                     )
                     .sum()
