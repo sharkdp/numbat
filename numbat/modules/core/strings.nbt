@@ -1,6 +1,7 @@
 use core::scalar
 use core::functions
 use core::error
+use core::numbers
 
 @description("The length of a string")
 @example("str_length(\"Numbat\")")
@@ -99,7 +100,11 @@ fn _digit_in_base(base: Scalar, x: Scalar) -> String =
 @description("Convert a number to the given base.")
 @example("42 |> base(16)")
 fn base(b: Scalar, x: Scalar) -> String =
-  if b < 2 || b > 16
+  if is_infinite(x)
+    then error("Infinity has no base-{b} representation")
+  else if is_nan(x)
+    then error("NaN has no base-{b} representation")
+  else if b < 2 || b > 16
     then error("base must be between 2 and 16")
     else if x < 0
       then "-{base(b, -x)}"
