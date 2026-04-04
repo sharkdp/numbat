@@ -4,9 +4,9 @@ expression: output
 input_file: examples/runtime_error/invalid_base.nbt
 ---
 error: runtime error
-    ┌─ Module 'core::strings', File [PRELUDE_FILE]:103:10
+    ┌─ Module 'core::strings', File [PRELUDE_FILE]:108:10
     │
-103 │     then error("base must be between 2 and 16")
+108 │     then error("base must be between 2 and 16")
     │          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     ┌─ <internal:3>:1:1
@@ -18,6 +18,6 @@ error: runtime error
 
 help: Backtrace:
  = 0: error("base must be between 2 and 16")
-   	at base - Module 'core::strings', File [PRELUDE_FILE]:103:10
+   	at base - Module 'core::strings', File [PRELUDE_FILE]:108:10
  = 1: base(-4, 10)
    	at <main> - <internal:3>:1:0
