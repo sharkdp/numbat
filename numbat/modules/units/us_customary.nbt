@@ -43,7 +43,7 @@ unit barrel: Volume = 42 gallon
 
 @name("Board foot")
 @url("https://en.wikipedia.org/wiki/Board_foot")
-@aliases(board_feet, BF: short)
+@aliases(board_feet, BF: short, bf: short)
 unit board_foot: Volume = 144 in^3
 
 @name("US rod")
