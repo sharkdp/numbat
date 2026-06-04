@@ -593,9 +593,34 @@ impl Cli {
             .print_diagnostic(error, colored::control::SHOULD_COLORIZE.should_colorize())
     }
 
+    fn app_dir(base_dir: Option<PathBuf>, xdg_dir: Option<PathBuf>, prefer_xdg: bool) -> PathBuf {
+        let base_dir = if prefer_xdg {
+            xdg_dir.or(base_dir)
+        } else {
+            base_dir
+        };
+
+        base_dir
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("numbat")
+    }
+
+    fn xdg_dir(env_var: &str) -> Option<PathBuf> {
+        if cfg!(target_os = "macos") {
+            env::var_os(env_var)
+                .filter(|value| !value.is_empty())
+                .map(PathBuf::from)
+        } else {
+            None
+        }
+    }
+
     fn get_config_path() -> PathBuf {
-        let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        config_dir.join("numbat")
+        Self::app_dir(
+            dirs::config_dir(),
+            Self::xdg_dir("XDG_CONFIG_HOME"),
+            cfg!(target_os = "macos"),
+        )
     }
 
     fn get_modules_paths() -> Vec<PathBuf> {
@@ -633,9 +658,11 @@ impl Cli {
             return Ok(history_path);
         }
 
-        let data_dir = dirs::data_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("numbat");
+        let data_dir = Self::app_dir(
+            dirs::data_dir(),
+            Self::xdg_dir("XDG_DATA_HOME"),
+            cfg!(target_os = "macos"),
+        );
         fs::create_dir_all(&data_dir).ok();
         Ok(data_dir.join("history"))
     }
@@ -688,5 +715,40 @@ fn main() {
         let mut stdout = termcolor::StandardStream::stderr(termcolor::ColorChoice::Never);
         writeln!(stdout, "{e:#}").unwrap();
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Cli;
+    use std::path::PathBuf;
+
+    #[test]
+    fn app_dir_prefers_xdg_override_when_requested() {
+        let resolved = Cli::app_dir(
+            Some(PathBuf::from("/fallback/config")),
+            Some(PathBuf::from("/xdg/config")),
+            true,
+        );
+
+        assert_eq!(resolved, PathBuf::from("/xdg/config/numbat"));
+    }
+
+    #[test]
+    fn app_dir_uses_platform_default_without_xdg_override() {
+        let resolved = Cli::app_dir(Some(PathBuf::from("/fallback/config")), None, true);
+
+        assert_eq!(resolved, PathBuf::from("/fallback/config/numbat"));
+    }
+
+    #[test]
+    fn app_dir_ignores_xdg_override_when_not_requested() {
+        let resolved = Cli::app_dir(
+            Some(PathBuf::from("/fallback/config")),
+            Some(PathBuf::from("/xdg/config")),
+            false,
+        );
+
+        assert_eq!(resolved, PathBuf::from("/fallback/config/numbat"));
     }
 }
