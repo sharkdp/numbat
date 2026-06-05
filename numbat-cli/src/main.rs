@@ -594,7 +594,12 @@ impl Cli {
     }
 
     fn get_config_path() -> PathBuf {
-        let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        // Respect XDG_CONFIG_HOME if it is set, even on platforms where it is
+        // not the default (macOS, Windows). Many command line tools follow this
+        // convention, see https://github.com/sharkdp/numbat/issues/744.
+        let config_dir = xdg_dir("XDG_CONFIG_HOME")
+            .or_else(dirs::config_dir)
+            .unwrap_or_else(|| PathBuf::from("."));
         config_dir.join("numbat")
     }
 
@@ -633,12 +638,23 @@ impl Cli {
             return Ok(history_path);
         }
 
-        let data_dir = dirs::data_dir()
+        let data_dir = xdg_dir("XDG_DATA_HOME")
+            .or_else(dirs::data_dir)
             .unwrap_or_else(|| PathBuf::from("."))
             .join("numbat");
         fs::create_dir_all(&data_dir).ok();
         Ok(data_dir.join("history"))
     }
+}
+
+/// Return the directory pointed to by the given XDG environment variable, but
+/// only if it is set to a non-empty, absolute path. Per the XDG Base Directory
+/// specification, relative paths must be ignored. This lets users opt into XDG
+/// directories even on platforms where they are not the default (macOS,
+/// Windows).
+fn xdg_dir(env_var: &str) -> Option<PathBuf> {
+    let path = PathBuf::from(env::var_os(env_var)?);
+    path.is_absolute().then_some(path)
 }
 
 fn generate_config() -> Result<()> {
