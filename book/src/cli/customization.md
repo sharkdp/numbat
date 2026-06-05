@@ -18,7 +18,7 @@ Numbat's configuration folder (`<config-path>` above) can be found under:
 |Platform|Path|
 |---|---|
 |Linux|`$HOME/.config/numbat` or `$XDG_CONFIG_HOME/numbat`|
-|macOS|`$HOME/Library/Application Support/numbat`|
+|macOS|`$XDG_CONFIG_HOME/numbat` if set, otherwise `$HOME/Library/Application Support/numbat`|
 |Windows|`C:\Users\Alice\AppData\Roaming\numbat`|
 
 ## Module paths

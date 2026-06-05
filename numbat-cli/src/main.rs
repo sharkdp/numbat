@@ -594,8 +594,7 @@ impl Cli {
     }
 
     fn get_config_path() -> PathBuf {
-        let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        config_dir.join("numbat")
+        preferred_config_dir().join("numbat")
     }
 
     fn get_modules_paths() -> Vec<PathBuf> {
@@ -634,10 +633,35 @@ impl Cli {
         }
 
         let data_dir = dirs::data_dir()
+            .or_else(preferred_macos_xdg_data_dir)
             .unwrap_or_else(|| PathBuf::from("."))
             .join("numbat");
         fs::create_dir_all(&data_dir).ok();
         Ok(data_dir.join("history"))
+    }
+}
+
+fn preferred_config_dir() -> PathBuf {
+    dirs::config_dir()
+        .or_else(preferred_macos_xdg_config_dir)
+        .unwrap_or_else(|| PathBuf::from("."))
+}
+
+fn preferred_macos_xdg_config_dir() -> Option<PathBuf> {
+    preferred_macos_xdg_dir("XDG_CONFIG_HOME")
+}
+
+fn preferred_macos_xdg_data_dir() -> Option<PathBuf> {
+    preferred_macos_xdg_dir("XDG_DATA_HOME")
+}
+
+fn preferred_macos_xdg_dir(name: &str) -> Option<PathBuf> {
+    if cfg!(target_os = "macos") {
+        env::var_os(name)
+            .filter(|value| !value.is_empty())
+            .map(PathBuf::from)
+    } else {
+        None
     }
 }
 
@@ -671,6 +695,46 @@ fn generate_config() -> Result<()> {
     );
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::preferred_macos_xdg_dir;
+    use std::path::PathBuf;
+
+    #[test]
+    fn prefers_xdg_paths_on_macos() {
+        let xdg_config = "/tmp/numbat-xdg-config";
+
+        unsafe {
+            std::env::set_var("XDG_CONFIG_HOME", xdg_config);
+        }
+
+        let path = preferred_macos_xdg_dir("XDG_CONFIG_HOME");
+
+        if cfg!(target_os = "macos") {
+            assert_eq!(path, Some(PathBuf::from(xdg_config)));
+        } else {
+            assert_eq!(path, None);
+        }
+
+        unsafe {
+            std::env::remove_var("XDG_CONFIG_HOME");
+        }
+    }
+
+    #[test]
+    fn ignores_empty_xdg_paths() {
+        unsafe {
+            std::env::set_var("XDG_DATA_HOME", "");
+        }
+
+        assert_eq!(preferred_macos_xdg_dir("XDG_DATA_HOME"), None);
+
+        unsafe {
+            std::env::remove_var("XDG_DATA_HOME");
+        }
+    }
 }
 
 fn main() {
