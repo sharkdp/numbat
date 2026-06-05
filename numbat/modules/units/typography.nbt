@@ -1,0 +1,32 @@
+use units::si
+use units::imperial
+
+### Typographic length units
+
+@name("Point")
+@description("The desktop publishing point (also known as the PostScript point), defined as 1/72 inch.")
+@url("https://en.wikipedia.org/wiki/Point_(typography)")
+@aliases(points, pt: short)
+unit point: Length = inch / 72
+
+@name("Pica")
+@url("https://en.wikipedia.org/wiki/Pica_(typography)")
+@aliases(picas)
+unit pica: Length = 12 point
+
+@name("Didot")
+@description("The metric Didot point, defined as exactly 0.375 mm (so that 1 cicero = 4.5 mm).")
+@url("https://en.wikipedia.org/wiki/Point_(typography)#French_points")
+@aliases(didots)
+unit didot: Length = 0.375 millimeter
+
+@name("Cicero")
+@url("https://en.wikipedia.org/wiki/Cicero_(typography)")
+@aliases(ciceros)
+unit cicero: Length = 12 didot
+
+@name("Q (quarter millimeter)")
+@description("A unit used in Japanese phototypesetting and in CSS, equal to a quarter of a millimeter.")
+@url("https://en.wikipedia.org/wiki/Point_(typography)#Metric_points")
+@aliases(q: short)
+unit Q: Length = millimeter / 4

@@ -74,6 +74,8 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Length` | [Ångström](https://en.wikipedia.org/wiki/Angstrom) | `angstrom`, `angstroms`, `Å`, `Å` |
 | `Length` | [Astronomical unit](https://en.wikipedia.org/wiki/Astronomical_unit) | `astronomicalunit`, `astronomicalunits`, `au`, `AU` |
 | `Length` | [Bohr](https://en.wikipedia.org/wiki/Hartree_atomic_units) | `bohr` <br/> (`use units::hartree`) |
+| `Length` | [Cicero](https://en.wikipedia.org/wiki/Cicero_(typography)) | `cicero`, `ciceros` <br/> (`use units::typography`) |
+| `Length` | [Didot](https://en.wikipedia.org/wiki/Point_(typography)#French_points) | `didot`, `didots` <br/> (`use units::typography`) |
 | `Length` | [Earth radius](https://en.wikipedia.org/wiki/Earth) | `earth_radius` <br/> (`use extra::astronomy`) |
 | `Length` | [Fathom](https://en.wikipedia.org/wiki/Fathom) | `fathom`, `fathoms` |
 | `Length` | [Fermi](https://en.wikipedia.org/wiki/Femtometre) | `fermi` |
@@ -91,7 +93,10 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Length` | [Mile](https://en.wikipedia.org/wiki/Mile) | `mi`, `mile`, `miles` |
 | `Length` | [Nautical Mile](https://en.wikipedia.org/wiki/Nautical_mile) | `nautical_mile`, `nautical_miles`, `NM`, `nmi` |
 | `Length` | [Parsec](https://en.wikipedia.org/wiki/Parsec) | `parsec`, `parsecs`, `pc` |
+| `Length` | [Pica](https://en.wikipedia.org/wiki/Pica_(typography)) | `pica`, `picas` <br/> (`use units::typography`) |
 | `Length` | [Planck length](https://en.wikipedia.org/wiki/Planck_length) | `planck_length` |
+| `Length` | [Point](https://en.wikipedia.org/wiki/Point_(typography)) | `point`, `points`, `pt` <br/> (`use units::typography`) |
+| `Length` | [Q (quarter millimeter)](https://en.wikipedia.org/wiki/Point_(typography)#Metric_points) | `Q`, `q` <br/> (`use units::typography`) |
 | `Length` | [Rack unit](https://en.wikipedia.org/wiki/Rack_unit) | `rackunit`, `rackunits`, `RU`, `U` |
 | `Length` | [US rod](https://en.wikipedia.org/wiki/Rod_(unit)) | `perch`, `rod`, `rods` |
 | `Length` | [Smoot](https://en.wikipedia.org/wiki/Smoot) | `smoot` |
