@@ -1,23 +1,29 @@
-# Typographic length units: point, pica, didot, cicero, Q
+# Typesetting a page of body text
 #
-# These specialised units are not part of the prelude, so we import them.
-# https://en.wikipedia.org/wiki/Point_(typography)
+# Work out the line height from a font size and its "leading" (line spacing),
+# then how many lines fit in the printable height of an A4 page, and give a
+# text-column width in metric units. The typographic units used here are not in
+# the prelude, so we import them.
+# https://en.wikipedia.org/wiki/Leading
 
 use units::typography
 
-# The DTP (PostScript) point is exactly 1/72 inch, and a pica is 12 points.
-assert_eq(1 pica, 12 point, 1 nm)
+# Body text at 11 pt with 125% leading (a common book setting).
+let font_size = 11 pt
+let leading = 1.25
+let line_height = font_size * leading
+
+# Printable height of an A4 page (297 mm tall) with 20 mm top and bottom margins.
+let text_height = 297 mm - 2 * 20 mm
+let lines_per_page = floor(text_height / line_height)
+
+# Book text columns are usually given in picas.
+let column_width = 26 pica
+
+print("Line height:       {line_height -> mm:.2f}")
+print("Column width:      {column_width -> cm:.1f}")
+print("Lines per A4 page: {lines_per_page}")
+
+# Sanity checks on the unit definitions:
 assert_eq(72 point, 1 inch, 1 nm)
-
-# The Didot system: 1 cicero = 12 didot, and 1 didot = 0.375 mm.
-assert_eq(1 cicero, 12 didot, 1 nm)
-assert_eq(1 didot, 0.375 mm, 1 nm)
-
-# The Q unit (used in Japanese phototypesetting) is a quarter of a millimetre.
-assert_eq(1 Q, 0.25 mm, 1 nm)
-
-# A few everyday typographic measures, in metric units:
-print("Body text:   12 pt   = {12 pt -> mm:.3f}")
-print("Text column: 30 pica = {30 pica -> cm:.2f}")
-print("Caption:     8 didot = {8 didot -> mm:.3f}")
-print("JIS heading: 20 Q    = {20 Q -> mm:.1f}")
+assert_eq(1 pica, 12 point, 1 nm)

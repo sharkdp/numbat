@@ -3,7 +3,6 @@ source: numbat/tests/example_snapshots.rs
 expression: output
 input_file: examples/typography.nbt
 ---
-Body text:   12 pt   = 4.233 mm
-Text column: 30 pica = 12.70 cm
-Caption:     8 didot = 3.000 mm
-JIS heading: 20 Q    = 5.0 mm
+Line height:       4.85 mm
+Column width:      11.0 cm
+Lines per A4 page: 52
