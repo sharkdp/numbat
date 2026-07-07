@@ -29,7 +29,7 @@ fn falling_factorial(n: Scalar, k: Scalar) -> Scalar =
 fn binom(n: Scalar, k: Scalar) -> Scalar =
    if !is_integer(k) then
     error("in binom(n, k), k must be an integer")
-  else if k < 0 || (k > n && is_integer(n)) then
+  else if k < 0 || (k > n && is_integer(n) && n >= 0) then
     0
   else
     falling_factorial(n, k) / k!
