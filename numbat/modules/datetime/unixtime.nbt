@@ -23,15 +23,15 @@ fn unixtime(input: DateTime) -> UnixTime = _unixtime_µs(input) * unix_µs -> un
 
 @description("Converts a `DateTime` to a UNIX timestamp in seconds.")
 @example("datetime(\"2022-07-20 21:52 +0200\") -> unixtime_s")
-fn unixtime_s(input: DateTime) -> Scalar = unixtime(input) |> floor_in(unix_s) |> value_of
+fn unixtime_s(input: DateTime) -> Scalar = _unixtime_µs(input) / 1_000_000 |> floor
 
 @description("Converts a `DateTime` to a UNIX timestamp in milliseconds.")
 @example("datetime(\"2022-07-20 21:52:05.123 +0200\") -> unixtime_ms")
-fn unixtime_ms(input: DateTime) -> Scalar = unixtime(input) |> floor_in(unix_ms) |> value_of
+fn unixtime_ms(input: DateTime) -> Scalar = _unixtime_µs(input) / 1_000 |> floor
 
 @description("Converts a `DateTime` to a UNIX timestamp in microseconds.")
 @example("datetime(\"2022-07-20 21:52:05.123456 +0200\") -> unixtime_µs")
-fn unixtime_µs(input: DateTime) -> Scalar = unixtime(input) |> floor_in(unix_µs) |> value_of
+fn unixtime_µs(input: DateTime) -> Scalar = _unixtime_µs(input)
 
 @description("Alias for `unixtime_µs`.")
 fn unixtime_us(input: DateTime) -> Scalar = unixtime_µs(input)

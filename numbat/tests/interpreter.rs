@@ -1025,6 +1025,19 @@ fn test_datetime_runtime_errors() {
 }
 
 #[test]
+fn test_unixtime_ms_roundtrip() {
+    // Regression test for https://github.com/sharkdp/numbat/issues/871
+    expect_output(
+        "from_unixtime_ms(1783591946381) -> unixtime_ms",
+        "1_783_591_946_381",
+    );
+    expect_output(
+        "from_unixtime_ms(1783598716223) -> unixtime_ms",
+        "1_783_598_716_223",
+    );
+}
+
+#[test]
 fn test_user_errors() {
     expect_failure("error(\"test\")", "User error: test");
 
