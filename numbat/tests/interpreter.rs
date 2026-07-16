@@ -182,6 +182,23 @@ fn simple_value() {
 }
 
 #[test]
+fn test_full_simplify_incompatible_group_does_not_panic() {
+    // Regression test for https://github.com/sharkdp/numbat/issues/873:
+    // printing a value whose automatic unit simplification produces a group
+    // that cannot be converted to its target unit used to panic (unwrap on an
+    // Err). full_simplify is best-effort, so such a group must now be left
+    // unsimplified instead of crashing.
+    let output = succeed(
+        "elementary_charge * (magnetic_flux_quantum / planck_time / planck_length) \
+         + elementary_charge * speed_of_light * (magnetic_flux_quantum / planck_length^2)",
+    );
+    assert!(
+        output.contains("planck_length"),
+        "expected the unsimplifiable group to be left as-is, got: {output}"
+    );
+}
+
+#[test]
 fn test_factorial() {
     expect_output("0!", "1");
     expect_output("4!", "24");
