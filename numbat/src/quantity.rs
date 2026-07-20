@@ -237,12 +237,18 @@ impl Quantity {
                 })
             };
 
-            let converted = Quantity::from_unit(group_as_unit)
-                .convert_to(&target_unit)
-                .unwrap();
-
-            simplified_unit = simplified_unit * target_unit;
-            factor = factor * converted.value;
+            match Quantity::from_unit(group_as_unit.clone()).convert_to(&target_unit) {
+                Ok(converted) => {
+                    simplified_unit = simplified_unit * target_unit;
+                    factor = factor * converted.value;
+                }
+                // If this group can not be converted to the chosen target unit,
+                // simplification is best-effort: keep the group's original unit
+                // instead of panicking (issue #873).
+                Err(_) => {
+                    simplified_unit = simplified_unit * group_as_unit;
+                }
+            }
         }
 
         simplified_unit.canonicalize();

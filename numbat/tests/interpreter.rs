@@ -635,6 +635,14 @@ fn test_full_simplify() {
     expect_output("1 dpi * 1 in", "1 dot");
     expect_output("1 mph * 1 hour", "1 mi");
     expect_output("1 dot / 96 dpi", "0.0104167 in");
+
+    // A group whose representative unit is not convertible to the chosen
+    // target unit must not panic during simplification (issue #873).
+    expect_output(
+        "elementary_charge * (magnetic_flux_quantum / planck_time / planck_length) \
+         + elementary_charge * speed_of_light * (magnetic_flux_quantum / planck_length^2)",
+        "1.98645e-25 J·m/planck_length²",
+    );
 }
 
 #[test]
