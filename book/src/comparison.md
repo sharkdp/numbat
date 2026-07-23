@@ -8,28 +8,28 @@ The following table provides a comparison of Numbat with other scientific calcul
 is certainly *not* objective, as we only list criteria that we consider important. If you think that a tool or language is missing
 or misrepresented, please [let us know](https://github.com/sharkdp/numbat/issues).
 
-|                                        | Numbat          | [Qalculate](https://qalculate.github.io/) | [Kalker](https://github.com/PaddiM8/kalker) | [GNU Units](https://www.gnu.org/software/units/) | [Frink](https://frinklang.org/) | [Wolfram Alpha](https://www.wolframalpha.com/) |
+|                                        | Numbat          | [Qalculate](https://qalculate.github.io/) | [Kalker](https://github.com/PaddiM8/kalker) | [GNU Units](https://www.gnu.org/software/units/) | [Frink](https://frinklang.org/) | [Wolfram Alpha](https://www.wolframalpha.com/) | [Woxi](https://woxi.ad-si.com)
 |----------------------------------------|-----------------|-----------|--------|-----------|-------|---------------|
-| FOSS License                           | MIT, Apache-2.0 | GPL-2.0   | MIT    | GPL-3.0   | ❌     | ❌             |
+| FOSS License                           | MIT, Apache-2.0 | GPL-2.0   | MIT    | GPL-3.0   | ❌     | ❌             | AGPL-3.0
 | **Interfaces**                         |                 |           |        |           |       |               |
-| Command-line                           | ✓               | ✓         | ✓    | ✓         | ✓     | ✓             |
-| Web version                            | ✓               | ❌        | ✓     | ❌         | ❌     | ✓             |
-| Graphical                              | ❌              | ✓         | ❌    | ❌         | (✓)   | ✓             |
+| Command-line                           | ✓               | ✓         | ✓    | ✓         | ✓     | ✓             | ✓
+| Web version                            | ✓               | ❌        | ✓     | ❌         | ❌     | ✓             | ✓
+| Graphical                              | ❌              | ✓         | ❌    | ❌         | (✓)   | ✓             | ✓
 | **Units**                              |                 |           |        |           |       |               |
-| Comprehensive list of units            | ✓               | ✓         | ❌    | ✓         | ✓     | ✓             |
-| Custom units                           | ✓               | ✓         | ❌    | ✓         | ✓     | ❌             |
-| Physical dimensions                    | ✓               | ❌        | ❌    | ❌         | ❌     | ❌             |
-| Currency conversions                   | ✓               | ✓         | ❌    | ❌         | ✓     | ✓             |
-| Date and time calculations             | ✓               | ✓         | ❌    | ❌         | ✓     | ✓             |
+| Comprehensive list of units            | ✓               | ✓         | ❌    | ✓         | ✓     | ✓             | ✓
+| Custom units                           | ✓               | ✓         | ❌    | ✓         | ✓     | ❌             | ❌
+| Physical dimensions                    | ✓               | ❌        | ❌    | ❌         | ❌     | ❌             | ❌
+| Currency conversions                   | ✓               | ✓         | ❌    | ❌         | ✓     | ✓             | ✓
+| Date and time calculations             | ✓               | ✓         | ❌    | ❌         | ✓     | ✓             | ✓
 | **Language features**                  |                 |           |        |           |       |               |
-| Custom functions                       | ✓               | ✓        | ✓     | ❌         | ✓     | ❌             |
-| Real programming language              | ✓               | ❌        | ❌     | ❌         | ✓     | ?             |
-| Strongly typed                         | ✓               | ❌        | ❌     | ❌         | ❌     | ❌             |
+| Custom functions                       | ✓               | ✓        | ✓     | ❌         | ✓     | ❌             | ✓
+| Real programming language              | ✓               | ❌        | ❌     | ❌         | ✓     | ?             | ✓
+| Strongly typed                         | ✓               | ❌        | ❌     | ❌         | ❌     | ❌             | ❌
 | **Calculator features**                |                 |           |        |           |       |               |
-| Symbolic calculations                  | ❌               | (✓)        | ❌    | ❌         | (✓)     | ✓             |
-| Hex/Oct/Bin mode                       | ✓               | ✓         | ✓     | ✓         | ✓     | ✓             |
-| Complex numbers                        | ❌ ([#180](https://github.com/sharkdp/numbat/issues/180))  | ✓        | ✓     | ❌         | ✓     | ✓             |
-| Vectors, Matrices                      | ❌               | ✓        | ✓      | ❌         | ✓     | ✓             |
+| Symbolic calculations                  | ❌               | (✓)        | ❌    | ❌         | (✓)     | ✓             | ✓
+| Hex/Oct/Bin mode                       | ✓               | ✓         | ✓     | ✓         | ✓     | ✓             | ✓
+| Complex numbers                        | ❌ ([#180](https://github.com/sharkdp/numbat/issues/180))  | ✓        | ✓     | ❌         | ✓     | ✓             | ✓
+| Vectors, Matrices                      | ❌               | ✓        | ✓      | ❌         | ✓     | ✓             | ✓
 
 ## Detailed comparison
 
@@ -44,6 +44,9 @@ or misrepresented, please [let us know](https://github.com/sharkdp/numbat/issues
 - [Wolfram Alpha](https://www.wolframalpha.com/) is a very powerful tool, but it's focused on single-line queries instead
   of longer computations. The query language lacks a strict syntax (which some might consider a feature). The tool is not
   open source and sometimes has limitations with respect to the number/size of queries you can make.
+- [Woxi](https://woxi.ad-si.com) is an interpreter for the [Wolfram Language](https://www.wolfram.com/language/),
+  which includes more than 6000 standard functions for scientific work across domains such as
+  mathematics, physics, chemistry, and astronomy.
 
 ## Other interesting tools / languages
 
