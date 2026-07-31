@@ -308,8 +308,12 @@ impl Quantity {
                     let (_, target_factor) = target_unit.to_base_unit_representation();
 
                     // Only simplify if conversion factors are equal (within tolerance)
-                    let factors_match = (source_factor.to_f64() - target_factor.to_f64()).abs()
-                        < 1e-9 * source_factor.to_f64().abs().max(1.0);
+                    let scale = source_factor
+                        .to_f64()
+                        .abs()
+                        .max(target_factor.to_f64().abs());
+                    let factors_match = scale == 0.0
+                        || (source_factor.to_f64() - target_factor.to_f64()).abs() < 1e-9 * scale;
 
                     if factors_match && let Ok(converted) = simplified.convert_to(&target_unit) {
                         // Can't get simpler than 1 factor, return immediately
