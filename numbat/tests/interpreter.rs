@@ -662,6 +662,41 @@ fn test_prefixes() {
 }
 
 #[test]
+fn test_units_in_callable_position() {
+    // The callable of a call can be an arbitrary expression, and unit names
+    // inside it need to be recognized just like anywhere else.
+    expect_output(
+        "fn identity(x: Length) -> Length = x
+         fn pick(d: Length) -> Fn[(Length) -> Length] = identity
+         pick(1 metre)(2 metre)",
+        "2 m",
+    );
+
+    // … including prefixed units and aliases
+    expect_output(
+        "fn identity(x: Length) -> Length = x
+         fn pick(d: Length) -> Fn[(Length) -> Length] = identity
+         pick(1 kilometre)(2 m)",
+        "2 m",
+    );
+
+    // … and the °C/°F syntax, which is desugared by the same pass
+    expect_output(
+        "fn identity(x: Length) -> Length = x
+         fn pick(t: Temperature) -> Fn[(Length) -> Length] = identity
+         pick(20 °C)(2 metre)",
+        "2 m",
+    );
+
+    // The callable does not have to be a call itself
+    expect_output(
+        "fn identity(x: Length) -> Length = x
+         (if 1 metre > 0 metre then identity else identity)(2 metre)",
+        "2 m",
+    );
+}
+
+#[test]
 fn test_parse_errors() {
     expect_failure(
         "3kg+",

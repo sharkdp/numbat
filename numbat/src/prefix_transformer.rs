@@ -125,7 +125,8 @@ impl Transformer {
                     };
                 }
             }
-            Expression::FunctionCall { args, .. } => {
+            Expression::FunctionCall { callable, args, .. } => {
+                self.transform_expression(callable);
                 for arg in args {
                     self.transform_expression(arg);
                 }
