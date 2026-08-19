@@ -237,12 +237,22 @@ impl Quantity {
                 })
             };
 
-            let converted = Quantity::from_unit(group_as_unit)
-                .convert_to(&target_unit)
-                .unwrap();
+            let converted = Quantity::from_unit(group_as_unit.clone()).convert_to(&target_unit);
 
-            simplified_unit = simplified_unit * target_unit;
-            factor = factor * converted.value;
+            match converted {
+                Ok(converted) => {
+                    simplified_unit = simplified_unit * target_unit;
+                    factor = factor * converted.value;
+                }
+                Err(_) => {
+                    // This group cannot be converted to its simplified representative. This can
+                    // happen for exotic nested derived units with fractional exponents (see #873).
+                    // Rather than panicking, leave the group un-simplified: the value is unchanged
+                    // because the unit is unchanged, so the result stays correct — just displayed
+                    // in a less-simplified form.
+                    simplified_unit = simplified_unit * group_as_unit;
+                }
+            }
         }
 
         simplified_unit.canonicalize();

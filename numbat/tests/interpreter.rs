@@ -599,6 +599,17 @@ fn test_bohr_radius_regression() {
 }
 
 #[test]
+fn test_simplify_incompatible_units_regression() {
+    // regression test for https://github.com/sharkdp/numbat/issues/873
+    // Printing this quantity used to panic in unit simplification (unwrap on an
+    // `IncompatibleUnits` conversion). It must now evaluate and display without panicking.
+    expect_output(
+        "elementary_charge * (magnetic_flux_quantum / planck_time / planck_length) + elementary_charge * speed_of_light * (magnetic_flux_quantum / planck_length^2)",
+        "1.98645e-25 J·m/planck_length²",
+    );
+}
+
+#[test]
 fn test_full_simplify() {
     expect_output("5 cm/m", "0.05");
     expect_output("hour/second", "3600");
