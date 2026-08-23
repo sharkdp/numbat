@@ -233,7 +233,7 @@ fn replace_equation_delimiters(text_in: &str) -> CompactString {
 
 fn prepare_context(module_path: &Path) -> Context {
     let mut importer = FileSystemImporter::default();
-    importer.add_path(module_path.to_path_buf());
+    importer.add_path(module_path);
     Context::new(importer)
 }
 
