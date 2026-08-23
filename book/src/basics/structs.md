@@ -24,6 +24,23 @@ let tungsten = Element {
 }
 ```
 
+Struct fields can also define default values:
+
+```nbt
+struct PaperSize {
+    width: Length = 210 mm,
+    height: Length = 297 mm,
+}
+```
+
+When instantiating, fields with defaults may be omitted:
+
+```nbt
+let a4 = PaperSize {}
+let custom = PaperSize { width: 100 mm }   # height defaults to 297 mm
+let swapped = PaperSize { height: 400 mm } # order does not matter
+```
+
 Fields can be accessed using dot notation:
 
 ```nbt
@@ -32,6 +49,31 @@ let side_length = cbrt(mass / tungsten.density) -> cm
 
 print("A tungsten cube with a mass of {mass} has a side length of {side_length:.2}.")
 ```
+
+Field access is often enough for simple data, but structs can also define behavior with methods:
+
+```nbt
+struct Element {
+    name: String,
+    atomic_number: Scalar,
+    density: MassDensity,
+
+    fn tungsten() -> Self = Self {
+        name: "Tungsten",
+        atomic_number: 74,
+        density: 19.25 g/cm³,
+    }
+
+    fn cube_side_length(self, mass: Mass) -> Length =
+        cbrt(mass / self.density)
+}
+
+let tungsten = Element::tungsten()
+let side_length = tungsten.cube_side_length(1 kg) -> cm
+print("A 1 kg tungsten cube has side length {side_length:.2}.")
+```
+
+Note that constructor methods can return `Self` or `Element` in this case, but the former is more concise and is preferred by convention.
 
 ## Generic structs
 
@@ -57,3 +99,95 @@ struct Vec<X: Dim> {
 let position = Vec { x: 1 m, y: 2 m }
 let velocity: Vec<Velocity> = Vec { x: 1 m/s, y: 2 m/s }
 ```
+
+Structs with generic type parameters can also have methods that use those type parameters, and methods can introduce additional type parameters of their own:
+
+```nbt
+struct Vec<X: Dim> {
+    x: X,
+    y: X,
+
+    @add
+    fn add(self, rhs: Self) -> Self =
+        Vec { x: self.x + rhs.x, y: self.y + rhs.y }
+
+    @mul
+    fn scale(self, factor: Scalar) -> Self =
+        Vec { x: self.x * factor, y: self.y * factor }
+
+    @rmul
+    fn scale_from_left(self, lhs: Scalar) -> Self =
+        Vec { x: lhs * self.x, y: lhs * self.y }
+
+    fn dot<Y: Dim>(self, other: Vec<Y>) -> X * Y =
+        self.x * other.x + self.y * other.y
+
+    fn new(x: X, y: X) -> Self =
+        Vec { x: x, y: y }
+}
+
+let v1 = Vec::new(1 m, 2 m)
+let v2 = Vec { x: 3 m, y: 4 m }
+let v2_cm = Vec { x: 300 cm, y: 400 cm }
+
+let v3 = v1.scale(2)  # Vec { x: 2 m, y: 4 m }
+let combined = v1 + v2
+let v4 = 2 * v1
+let dp_m = v1.dot(v2)     # 11 m²
+let dp_cm = v1.dot(v2_cm) # 110_000 cm²
+```
+
+Operator overloads are declared on struct instance methods with decorators such as `@add`, `@sub`, `@mul`, and `@div`. The decorator itself is bare; the compiler infers the left-hand side from `self`, the right-hand side from the second parameter, and the result type from the return type:
+
+```nbt
+struct Vec<X: Dim> {
+    x: X,
+    y: X,
+
+    @add
+    fn add(self, rhs: Self) -> Self =
+        Vec { x: self.x + rhs.x, y: self.y + rhs.y }
+
+    @mul
+    fn scale(self, factor: Scalar) -> Self =
+        Vec { x: self.x * factor, y: self.y * factor }
+
+    @rmul
+    fn scale_from_left(self, lhs: Scalar) -> Self =
+        Vec { x: lhs * self.x, y: lhs * self.y }
+}
+
+let v = Vec { x: 3 m, y: 4 m }
+let w = Vec { x: 300 cm, y: 400 cm }
+
+let combined = v + w
+let scaled = v * 2
+let scaled_from_left = 2 * v
+```
+
+Reverse decorators `@radd`, `@rsub`, `@rmul`, and `@rdiv` allow the struct to handle expressions where it appears on the right-hand side. In the example above, `@rmul fn scale_from_left(self, lhs: Scalar)` enables `2 * v`.
+
+Structs can also define indexing behavior with the `@index` decorator on an instance method. The parameters after `self` determine how many index arguments the struct accepts:
+
+```nbt
+struct Grid2 {
+    a: Scalar,
+    b: Scalar,
+    c: Scalar,
+    d: Scalar,
+
+    @index
+    fn get(self, row: Scalar, col: Scalar) -> Scalar =
+        if row == 0 then
+            if col == 0 then self.a else self.b
+        else
+            if col == 0 then self.c else self.d
+}
+
+let g = Grid2 { a: 1, b: 2, c: 3, d: 4 }
+
+assert_eq(g[0, 1], 2)
+assert_eq(g[1, 0], 3)
+```
+
+This is directional and struct-owned, just like operator methods. Builtin lists also support indexing with `xs[i]`.

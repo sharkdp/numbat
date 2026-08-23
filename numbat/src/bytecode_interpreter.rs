@@ -20,7 +20,7 @@ use crate::typed_ast::{
 use crate::unit::{CanonicalName, Unit};
 use crate::unit_registry::{UnitMetadata, UnitRegistry};
 use crate::value::{FunctionReference, Value};
-use crate::vm::{Constant, ExecutionContext, FfiCallArg, FfiCallArgs, Op, Vm};
+use crate::vm::{Constant, ExecutionContext, FfiCallArg, FfiCallArgs, MethodCallable, Op, Vm};
 use crate::{Type, decorator};
 
 #[derive(Debug, Clone, Default)]
@@ -215,6 +215,206 @@ impl BytecodeInterpreter {
                     }),
                 );
             }
+            Expression::DeferredBinaryOperator {
+                op_span,
+                op: operator,
+                lhs,
+                rhs,
+                type_scheme,
+            } => {
+                let lhs_type = lhs.get_type_scheme().to_concrete_type();
+                let rhs_type = rhs.get_type_scheme().to_concrete_type();
+                let output_type = type_scheme.to_concrete_type();
+
+                match (&lhs_type, &rhs_type) {
+                    (Type::DateTime, Type::DateTime) => {
+                        self.compile_expression(lhs);
+                        self.compile_expression(rhs);
+
+                        let second_idx = self.unit_name_to_constant_index.get("second");
+                        self.vm.add_op1(
+                            Op::LoadConstant,
+                            *second_idx.unwrap(),
+                            op_span.unwrap_or_else(|| {
+                                crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
+                            }),
+                        );
+                        self.vm.add_op(
+                            Op::DiffDateTime,
+                            op_span.unwrap_or_else(|| {
+                                crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
+                            }),
+                        );
+                    }
+                    (Type::DateTime, Type::Dimension(dtype)) if dtype.is_time_dimension() => {
+                        self.compile_expression(lhs);
+                        self.compile_expression(rhs);
+
+                        let op = match operator {
+                            BinaryOperator::Add => Op::AddToDateTime,
+                            BinaryOperator::Sub => Op::SubFromDateTime,
+                            _ => unreachable!(),
+                        };
+
+                        self.vm.add_op(
+                            op,
+                            op_span.unwrap_or_else(|| {
+                                crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
+                            }),
+                        );
+                    }
+                    _ if matches!(lhs_type, Type::Struct(_))
+                        || matches!(rhs_type, Type::Struct(_)) =>
+                    {
+                        let canonical_method_name = match (operator, false) {
+                            (BinaryOperator::Add, false) => Some("add"),
+                            (BinaryOperator::Sub, false) => Some("sub"),
+                            (BinaryOperator::Mul, false) => Some("mul"),
+                            (BinaryOperator::Div, false) => Some("div"),
+                            _ => None,
+                        };
+                        let reverse_canonical_method_name = match (operator, true) {
+                            (BinaryOperator::Add, true) => Some("radd"),
+                            (BinaryOperator::Sub, true) => Some("rsub"),
+                            (BinaryOperator::Mul, true) => Some("rmul"),
+                            (BinaryOperator::Div, true) => Some("rdiv"),
+                            _ => None,
+                        };
+
+                        let lhs_match =
+                            match &lhs_type {
+                                Type::Struct(struct_info) => struct_info.methods.iter().find_map(
+                                    |(method_name, method_info)| {
+                                        if let Some(operator_impl) =
+                                            method_info.operator_impl.as_ref()
+                                            && operator_impl.operator == *operator
+                                            && !operator_impl.reverse
+                                            && operator_impl
+                                                .rhs_type
+                                                .equals_ignoring_struct_methods(&rhs_type)
+                                            && operator_impl
+                                                .output_type
+                                                .equals_ignoring_struct_methods(&output_type)
+                                        {
+                                            return Some((false, &struct_info.name, method_name));
+                                        }
+
+                                        canonical_method_name
+                                            .filter(|canonical| method_name.as_str() == *canonical)
+                                            .map(|_| (false, &struct_info.name, method_name))
+                                    },
+                                ),
+                                _ => None,
+                            };
+
+                        let rhs_match = match &rhs_type {
+                            Type::Struct(rhs_struct_info) => rhs_struct_info
+                                .methods
+                                .iter()
+                                .find_map(|(method_name, method_info)| {
+                                    if let Some(operator_impl) = method_info.operator_impl.as_ref()
+                                        && operator_impl.operator == *operator
+                                        && operator_impl.reverse
+                                        && operator_impl
+                                            .rhs_type
+                                            .equals_ignoring_struct_methods(&lhs_type)
+                                        && operator_impl
+                                            .output_type
+                                            .equals_ignoring_struct_methods(&output_type)
+                                    {
+                                        return Some((
+                                            true,
+                                            rhs_struct_info.name.clone(),
+                                            method_name.clone(),
+                                        ));
+                                    }
+
+                                    reverse_canonical_method_name
+                                        .filter(|canonical| method_name.as_str() == *canonical)
+                                        .map(|_| {
+                                            (
+                                                true,
+                                                rhs_struct_info.name.clone(),
+                                                method_name.clone(),
+                                            )
+                                        })
+                                }),
+                            _ => None,
+                        };
+
+                        let (reverse, owner, method_name) = lhs_match
+                            .map(|(reverse, owner, method_name)| {
+                                (reverse, owner.clone(), method_name.clone())
+                            })
+                            .or(rhs_match)
+                            .expect("deferred operator must resolve to a struct method");
+
+                        if reverse {
+                            self.compile_expression(rhs);
+                            self.compile_expression(lhs);
+                        } else {
+                            self.compile_expression(lhs);
+                            self.compile_expression(rhs);
+                        }
+
+                        let arg_count = 2;
+                        let method_callable = self
+                            .vm
+                            .get_method_callable(&owner, &method_name)
+                            .expect("operator method must be registered before call sites");
+
+                        match method_callable {
+                            MethodCallable::Normal(idx) => {
+                                self.vm.add_op2(
+                                    Op::Call,
+                                    idx,
+                                    arg_count,
+                                    lhs.full_span().extend(&rhs.full_span()),
+                                );
+                            }
+                            MethodCallable::Foreign(idx) => {
+                                let call_args_idx = self.vm.add_ffi_call_args(FfiCallArgs {
+                                    args: vec![
+                                        FfiCallArg {
+                                            span: lhs.full_span(),
+                                            type_: lhs.get_type_scheme(),
+                                        },
+                                        FfiCallArg {
+                                            span: rhs.full_span(),
+                                            type_: rhs.get_type_scheme(),
+                                        },
+                                    ],
+                                    return_type: Some(type_scheme.clone()),
+                                });
+                                self.vm.add_op3(
+                                    Op::FFICallFunction,
+                                    idx,
+                                    arg_count,
+                                    call_args_idx,
+                                    lhs.full_span().extend(&rhs.full_span()),
+                                );
+                            }
+                        }
+                    }
+                    _ => {
+                        self.compile_expression(lhs);
+                        self.compile_expression(rhs);
+                        let op = match operator {
+                            BinaryOperator::Add => Op::Add,
+                            BinaryOperator::Sub => Op::Subtract,
+                            BinaryOperator::Mul => Op::Multiply,
+                            BinaryOperator::Div => Op::Divide,
+                            _ => unreachable!("unsupported deferred binary operator"),
+                        };
+                        self.vm.add_op(
+                            op,
+                            op_span.unwrap_or_else(|| {
+                                crate::span::Span::in_between(lhs.full_span(), rhs.full_span())
+                            }),
+                        );
+                    }
+                }
+            }
             Expression::FunctionCall {
                 full_span,
                 name,
@@ -225,6 +425,12 @@ impl BytecodeInterpreter {
                 // Put all arguments on top of the stack
                 for arg in args {
                     self.compile_expression(arg);
+                }
+
+                if self.vm.get_ffi_callable_idx(name).is_none()
+                    && crate::ffi::functions().contains_key(name)
+                {
+                    self.vm.add_foreign_function(name, args.len()..=args.len());
                 }
 
                 if let Some(idx) = self.vm.get_ffi_callable_idx(name) {
@@ -393,6 +599,66 @@ impl BytecodeInterpreter {
 
                 self.vm.add_op1(Op::BuildList, elements.len() as u16, *span);
             }
+            Expression::MethodCall {
+                full_span,
+                receiver,
+                method_ref,
+                args,
+                type_scheme,
+                ..
+            } => {
+                let arg_count: u16 = if method_ref.kind == typed_ast::StructMethodKind::Constructor
+                {
+                    for arg in args {
+                        self.compile_expression(arg);
+                    }
+                    args.len() as u16
+                } else {
+                    self.compile_expression(receiver);
+                    for arg in args {
+                        self.compile_expression(arg);
+                    }
+                    (args.len() + 1) as u16
+                };
+
+                let method_callable = self
+                    .vm
+                    .get_method_callable(&method_ref.owner, method_ref.name)
+                    .expect("method must be registered before call sites are compiled");
+
+                match method_callable {
+                    MethodCallable::Normal(idx) => {
+                        self.vm.add_op2(Op::Call, idx, arg_count, *full_span);
+                    }
+                    MethodCallable::Foreign(idx) => {
+                        let mut ffi_args = Vec::with_capacity(args.len() + 1);
+                        if method_ref.kind == typed_ast::StructMethodKind::Instance {
+                            ffi_args.push(FfiCallArg {
+                                span: receiver.full_span(),
+                                type_: receiver.get_type_scheme(),
+                            });
+                        }
+                        ffi_args.extend(args.iter().map(|a| FfiCallArg {
+                            span: a.full_span(),
+                            type_: a.get_type_scheme(),
+                        }));
+                        let call_args_idx = self.vm.add_ffi_call_args(FfiCallArgs {
+                            args: ffi_args,
+                            return_type: Some(type_scheme.clone()),
+                        });
+                        self.vm.add_op3(
+                            Op::FFICallFunction,
+                            idx,
+                            arg_count,
+                            call_args_idx,
+                            *full_span,
+                        );
+                    }
+                }
+            }
+            Expression::IndexCall { .. } => {
+                unreachable!("index expressions must be resolved before bytecode compilation")
+            }
             Expression::TypedHole(_, _) => {
                 unreachable!("Typed holes cause type inference errors")
             }
@@ -453,8 +719,9 @@ impl BytecodeInterpreter {
                         metadata: LocalMetadata::default(),
                     });
                 }
-                for local_variables in local_variables {
-                    self.compile_define_variable(local_variables);
+
+                for local_variable in local_variables {
+                    self.compile_define_variable(local_variable);
                 }
 
                 self.compile_expression(expr);
@@ -475,11 +742,71 @@ impl BytecodeInterpreter {
             } => {
                 // Declaring a foreign function does not generate any bytecode. But we register
                 // its name and arity here to be able to distinguish it from normal functions.
-
                 self.vm
                     .add_foreign_function(name, parameters.len()..=parameters.len());
 
                 self.functions.insert(name.to_compact_string(), true);
+            }
+            Statement::DefineMethod {
+                struct_name,
+                method_name,
+                parameters,
+                body: Some(expr),
+                local_variables,
+                ..
+            } => {
+                if let Some(idx) = self
+                    .vm
+                    .get_empty_method_function_idx(struct_name, method_name)
+                {
+                    self.vm.begin_reserved_function(idx);
+                } else {
+                    let runtime_name = format!("<method {struct_name}::{method_name}>");
+                    let idx = self.vm.begin_function(&runtime_name);
+                    self.vm
+                        .register_method_function(struct_name, method_name, idx);
+                }
+
+                self.locals.push(vec![]);
+
+                let current_depth = self.current_depth();
+                for parameter in parameters {
+                    self.locals[current_depth].push(Local {
+                        identifiers: [parameter.1.to_compact_string()].into(),
+                        metadata: LocalMetadata::default(),
+                    });
+                }
+
+                for local_variable in local_variables {
+                    self.compile_define_variable(local_variable);
+                }
+
+                self.compile_expression(expr);
+
+                self.vm.add_op(Op::Return, expr.full_span());
+
+                self.locals.pop();
+
+                self.vm.end_function();
+            }
+            Statement::DefineMethod {
+                struct_name,
+                method_name,
+                parameters,
+                body: None,
+                ..
+            } => {
+                // Declaring a foreign function does not generate any bytecode. But we register
+                // its name and arity here to be able to distinguish it from normal functions.
+                self.vm
+                    .add_foreign_function(method_name, parameters.len()..=parameters.len());
+
+                let ffi_idx = self
+                    .vm
+                    .get_ffi_callable_idx(method_name)
+                    .expect("just registered foreign method");
+                self.vm
+                    .register_foreign_method(struct_name, method_name, ffi_idx);
             }
             Statement::DefineDimension(_name, _dexprs) => {
                 // Declaring a dimension is like introducing a new type. The information
@@ -646,6 +973,26 @@ impl BytecodeInterpreter {
         Ok(())
     }
 
+    fn preregister_struct_methods<'a>(&mut self, methods: &[Statement<'a>]) {
+        for statement in methods {
+            let Statement::DefineMethod {
+                struct_name,
+                method_name,
+                body: Some(_),
+                ..
+            } = statement
+            else {
+                continue;
+            };
+
+            let runtime_name = format!("<method {struct_name}::{method_name}>");
+            let idx = self.vm.begin_function(&runtime_name);
+            self.vm
+                .register_method_function(struct_name, method_name, idx);
+            self.vm.end_function();
+        }
+    }
+
     fn run(
         &mut self,
         settings: &mut InterpreterSettings,
@@ -720,8 +1067,34 @@ impl Interpreter for BytecodeInterpreter {
         prefix_transformer: &crate::prefix_transformer::Transformer,
         typechecker: &TypeChecker,
     ) -> Result<InterpreterResult> {
-        for statement in statements {
-            self.compile_statement(statement, typechecker)?;
+        let mut idx = 0;
+        while idx < statements.len() {
+            if let Statement::DefineStruct(struct_info) = &statements[idx] {
+                self.compile_statement(&statements[idx], typechecker)?;
+
+                let mut end = idx + 1;
+                while end < statements.len() {
+                    match &statements[end] {
+                        Statement::DefineMethod {
+                            struct_name,
+                            method_name: _,
+                            ..
+                        } if struct_name == struct_info.name => {
+                            end += 1;
+                        }
+                        _ => break,
+                    }
+                }
+
+                self.preregister_struct_methods(&statements[idx + 1..end]);
+                for statement in &statements[idx + 1..end] {
+                    self.compile_statement(statement, typechecker)?;
+                }
+                idx = end;
+            } else {
+                self.compile_statement(&statements[idx], typechecker)?;
+                idx += 1;
+            }
         }
 
         self.run(settings, prefix_transformer, typechecker)

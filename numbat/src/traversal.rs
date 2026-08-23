@@ -43,6 +43,16 @@ impl ForAllTypeSchemes for Expression<'_> {
                 rhs.for_all_type_schemes(f);
                 f(type_scheme);
             }
+            Expression::DeferredBinaryOperator {
+                lhs,
+                rhs,
+                type_scheme,
+                ..
+            } => {
+                lhs.for_all_type_schemes(f);
+                rhs.for_all_type_schemes(f);
+                f(type_scheme);
+            }
             Expression::FunctionCall {
                 args, type_scheme, ..
             } => {
@@ -95,6 +105,18 @@ impl ForAllTypeSchemes for Expression<'_> {
                 f(struct_type);
                 f(field_type);
             }
+            Expression::IndexCall {
+                receiver,
+                args,
+                type_scheme,
+                ..
+            } => {
+                receiver.for_all_type_schemes(f);
+                for arg in args {
+                    arg.for_all_type_schemes(f);
+                }
+                f(type_scheme);
+            }
             Expression::List {
                 elements,
                 type_scheme,
@@ -102,6 +124,18 @@ impl ForAllTypeSchemes for Expression<'_> {
             } => {
                 for element in elements {
                     element.for_all_type_schemes(f);
+                }
+                f(type_scheme);
+            }
+            Expression::MethodCall {
+                receiver,
+                args,
+                type_scheme,
+                ..
+            } => {
+                receiver.for_all_type_schemes(f);
+                for arg in args {
+                    arg.for_all_type_schemes(f);
                 }
                 f(type_scheme);
             }
@@ -123,6 +157,12 @@ impl ForAllTypeSchemes for Statement<'_> {
                 f(type_scheme);
             }
             Statement::DefineFunction {
+                body,
+                local_variables,
+                fn_type,
+                ..
+            }
+            | Statement::DefineMethod {
                 body,
                 local_variables,
                 fn_type,
@@ -170,6 +210,11 @@ impl ForAllExpressions for Statement<'_> {
                 body,
                 local_variables,
                 ..
+            }
+            | Statement::DefineMethod {
+                body,
+                local_variables,
+                ..
             } => {
                 for local_variable in local_variables {
                     local_variable.expr.for_all_expressions(f);
@@ -207,6 +252,10 @@ impl ForAllExpressions for Expression<'_> {
                 lhs.for_all_expressions(f);
                 rhs.for_all_expressions(f);
             }
+            Expression::DeferredBinaryOperator { lhs, rhs, .. } => {
+                lhs.for_all_expressions(f);
+                rhs.for_all_expressions(f);
+            }
             Expression::FunctionCall { args, .. } => {
                 for arg in args {
                     arg.for_all_expressions(f);
@@ -238,9 +287,21 @@ impl ForAllExpressions for Expression<'_> {
             Expression::AccessField { expr, .. } => {
                 expr.for_all_expressions(f);
             }
+            Expression::IndexCall { receiver, args, .. } => {
+                receiver.for_all_expressions(f);
+                for arg in args {
+                    arg.for_all_expressions(f);
+                }
+            }
             Expression::List { elements, .. } => {
                 for element in elements {
                     element.for_all_expressions(f);
+                }
+            }
+            Expression::MethodCall { receiver, args, .. } => {
+                receiver.for_all_expressions(f);
+                for arg in args {
+                    arg.for_all_expressions(f);
                 }
             }
             Expression::TypedHole(_, _) => {}

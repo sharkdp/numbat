@@ -40,7 +40,7 @@ pub enum Value {
     DateTime(Zoned),
     FunctionReference(FunctionReference),
     FormatSpecifiers(Option<CompactString>),
-    StructInstance(Arc<StructInfo>, Vec<Value>),
+    StructInstance(Arc<StructInfo>, Arc<[Value]>),
     List(NumbatList<Value>),
 }
 
@@ -91,7 +91,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_struct_fields(self) -> Vec<Value> {
+    pub fn unsafe_as_struct_fields(&self) -> &[Value] {
         if let Value::StructInstance(_, values) = self {
             values
         } else {
@@ -134,7 +134,7 @@ impl std::fmt::Display for Value {
                         struct_info
                             .fields
                             .keys()
-                            .zip(values)
+                            .zip(values.iter())
                             .map(|(name, value)| name.to_owned() + ": " + &value.to_string())
                             .join(", ")
                     )
@@ -175,12 +175,16 @@ impl Value {
                     } else {
                         crate::markup::space()
                             + itertools::Itertools::intersperse(
-                                struct_info.fields.keys().zip(values).map(|(name, val)| {
-                                    crate::markup::identifier(name.clone())
-                                        + crate::markup::operator(":")
-                                        + crate::markup::space()
-                                        + val.pretty_print_with(options)
-                                }),
+                                struct_info
+                                    .fields
+                                    .keys()
+                                    .zip(values.iter())
+                                    .map(|(name, val)| {
+                                        crate::markup::identifier(name.clone())
+                                            + crate::markup::operator(":")
+                                            + crate::markup::space()
+                                            + val.pretty_print_with(options)
+                                    }),
                                 crate::markup::operator(",") + crate::markup::space(),
                             )
                             .sum()

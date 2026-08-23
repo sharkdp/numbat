@@ -95,10 +95,11 @@ pub fn _get_chemical_element_data_raw(
             kind: StructKind::Instance(vec![]),
             definition_span: unknown_span,
             fields,
+            methods: IndexMap::new(),
         };
         Ok(Value::StructInstance(
             Arc::new(info),
-            vec![
+            Arc::from(vec![
                 Value::String(element.symbol().into()),
                 Value::String(element.name().into()),
                 Value::Quantity(Quantity::from_scalar(element.atomic_number() as f64)),
@@ -151,7 +152,7 @@ pub fn _get_chemical_element_data_raw(
                         .map(|KiloJoulePerMole(e)| e)
                         .unwrap_or(f64::NAN),
                 )),
-            ],
+            ]),
         ))
     } else {
         Err(Box::new(RuntimeErrorKind::ChemicalElementNotFound(

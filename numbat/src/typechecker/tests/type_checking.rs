@@ -772,6 +772,524 @@ fn generic_structs() {
 }
 
 #[test]
+fn struct_methods() {
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+            fn new(x: A, y: A) -> Self = Point { x: x, y: y }
+            fn get_x(self) -> A = self.x
+            fn translate(self, dx: A, dy: A) -> Self = Point { x: self.x + dx, y: self.y + dy }
+        }
+
+        let p = Point::new(1 a, 2 a)
+        let px: A = p.get_x()
+        let px2: A = p.translate(1 a, 2 a).get_x()
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn new(x: A, y: A) = Point { x: x, y: y }
+            }
+            Point { x: 1 a, y: 1 a }.new()
+            "
+        ),
+        TypeCheckError::ConstructorCalledAsMethod(_, name, struct_name) if name == "new" && struct_name == "Point"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn get_x(self) -> A = self.x
+            }
+            Point::get_x()
+            "
+        ),
+        TypeCheckError::InstanceMethodCalledAsConstructor(_, name, struct_name) if name == "get_x" && struct_name == "Point"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn new(x: A, y: A) = Point { x: x, y: y }
+            }
+            Point::new(1 a)
+            "
+        ),
+        TypeCheckError::WrongArity { .. }
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn get_x(self) -> A = self.x
+            }
+            (1 a).get_x()
+            "
+        ),
+        TypeCheckError::MethodCallOnNonStructType(_, name, Type::Dimension(_)) if name == "get_x"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn get_x(self) -> A = self.x
+            }
+            Point::missing(1 a, 2 a)
+            "
+        ),
+        TypeCheckError::MethodNotFound(_, name, struct_name) if name == "missing" && struct_name == "Point"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn not_self(self: A) -> A = self
+            }
+            "
+        ),
+        TypeCheckError::InvalidSelfParameterType(_, name, struct_name) if name == "not_self" && struct_name == "Point"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn x(self) = self.x
+                fn x() = 1 a
+            }
+            ",
+        ),
+        TypeCheckError::DuplicateMemberInStructDefinition(_, _, name) if name == "x"
+    ));
+
+    assert_successful_typecheck(
+        "
+        struct Box<T> {
+            inner: T,
+            fn new(value: T) -> Self = Box { inner: value }
+            fn get(self) -> T = self.inner
+            fn replace<U>(self, value: U) -> Box<U> = Box { inner: value }
+        }
+
+        let box_a: A = Box::new(1 a).get()
+        let box_scalar: Scalar = Box::new(1 a).replace(3).get()
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Box<T> {
+                inner: T,
+                fn bad<T>(self) -> T = self.inner
+            }
+            "
+        ),
+        TypeCheckError::TypeParameterNameClash(_, name) if name == "T"
+    ));
+
+    assert_successful_typecheck(
+        "
+        struct Box<T> {
+            inner: T,
+            fn into_list(self) -> List<Self> = [self]
+            fn map_self(self, f: Fn[(Self) -> Self]) -> Self = f(self)
+        }
+
+        fn id_box(b) = b
+
+        let xs: List<Box<A>> = Box { inner: 1 a }.into_list()
+        let y: Box<A> = Box { inner: 1 a }.map_self(id_box)
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+        }
+
+        let sum: Point = Point { x: 1 a, y: 2 a } + Point { x: 3 a, y: 4 a }
+        let x: A = sum.x
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Point { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @add
+            fn add_scalar(self, rhs: Scalar) -> Self =
+                Point { x: self.x + rhs * 1 a, y: self.y + rhs * 1 a }
+        }
+
+        let sum_points: Point = Point { x: 1 a, y: 2 a } + Point { x: 3 a, y: 4 a }
+        let shifted: Point = Point { x: 1 a, y: 2 a } + 3
+        let x1: A = sum_points.x
+        let x2: A = shifted.x
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+        }
+
+        struct Shift {
+            amount: A,
+
+            @radd
+            fn add_to_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x + self.amount, y: lhs.y + self.amount }
+        }
+
+        let shifted: Point = Point { x: 1 a, y: 2 a } + Shift { amount: 3 a }
+        let x: A = shifted.x
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Vec2<D: Dim> {
+            x: D,
+            y: D,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Self { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @mul
+            fn scale(self, factor: Scalar) -> Self =
+                Self { x: self.x * factor, y: self.y * factor }
+
+            @rmul
+            fn scale_from_left(self, lhs: Scalar) -> Self =
+                Self { x: lhs * self.x, y: lhs * self.y }
+        }
+
+        let sum: Vec2<A> = Vec2 { x: 1 a, y: 2 a } + Vec2 { x: 3 a, y: 4 a }
+        let scaled: Vec2<A> = Vec2 { x: 1 a, y: 2 a } * 3
+        let reverse_scaled: Vec2<A> = 3 * Vec2 { x: 1 a, y: 2 a }
+        let x1: A = sum.x
+        let x2: A = scaled.x
+        let x3: A = reverse_scaled.x
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Pair {
+            left: Scalar,
+            right: Scalar,
+
+            @index
+            fn get(self, i: Scalar) -> Scalar =
+                if i == 0 then self.left else self.right
+        }
+
+        struct Grid2 {
+            a: Scalar,
+            b: Scalar,
+            c: Scalar,
+            d: Scalar,
+
+            @index
+            fn get(self, row: Scalar, col: Scalar) -> Scalar =
+                if row == 0 then
+                    if col == 0 then self.a else self.b
+                else
+                    if col == 0 then self.c else self.d
+        }
+
+        let first: Scalar = Pair { left: 10, right: 20 }[0]
+        let last: Scalar = Pair { left: 10, right: 20 }[1]
+        let bottom_right: Scalar = Grid2 { a: 1, b: 2, c: 3, d: 4 }[1, 1]
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        let x: Scalar = [10, 20, 30][1]
+        let y: A = [1 a, 2 a, 3 a][2]
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Vec2 {
+            x: Scalar,
+            y: Scalar,
+
+            @add
+            fn add(self, rhs: Self) -> Self =
+                Vec2 { x: self.x + rhs.x, y: self.y + rhs.y }
+
+            @index
+            fn get(self, i: Scalar) -> Scalar =
+                if i == 0 then self.x else self.y
+        }
+
+        let value: Scalar = (Vec2 { x: 1, y: 2 } + Vec2 { x: 3, y: 4 })[1]
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Point {
+            x: A,
+            y: A,
+        }
+
+        struct Offset {
+            amount: A,
+
+            @rsub
+            fn sub_from_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x - self.amount, y: lhs.y - self.amount }
+        }
+
+        struct Scale {
+            factor: Scalar,
+
+            @rmul
+            fn scale_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x * self.factor, y: lhs.y * self.factor }
+        }
+
+        struct Ratio {
+            factor: Scalar,
+
+            @rdiv
+            fn div_point(self, lhs: Point) -> Point =
+                Point { x: lhs.x / self.factor, y: lhs.y / self.factor }
+        }
+
+        let p_sub: Point = Point { x: 5 a, y: 7 a } - Offset { amount: 2 a }
+        let p_mul: Point = Point { x: 2 a, y: 3 a } * Scale { factor: 4 }
+        let p_div: Point = Point { x: 8 a, y: 6 a } / Ratio { factor: 2 }
+        let sub_x: A = p_sub.x
+        let mul_y: A = p_mul.y
+        let div_x: A = p_div.x
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                @add
+                fn make() -> Self = Point { x: 1 a }
+            }
+            "
+        ),
+        TypeCheckError::InvalidOperatorMethodSignature(_, name) if name == "make"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                @index
+                fn make(self) -> A = self.x
+            }
+            "
+        ),
+        TypeCheckError::InvalidIndexMethodSignature(_, name) if name == "make"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point { x: A }
+            struct Shift {
+                amount: A,
+                @radd
+                fn make() -> Shift = Shift { amount: 1 a }
+            }
+            "
+        ),
+        TypeCheckError::InvalidOperatorMethodSignature(_, name) if name == "make"
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+            }
+
+            struct Shift {
+                amount: A,
+
+                @radd
+                fn add_to_point(self, lhs: Point) -> Point =
+                    Point { x: lhs.x + self.amount, y: lhs.y + self.amount }
+            }
+
+            Shift { amount: 3 a } + Point { x: 1 a, y: 2 a }
+            "
+        ),
+        TypeCheckError::IncompatibleTypesInOperator(..)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                @index
+                fn get(self, i: Scalar) -> A = self.x
+            }
+
+            let y = Point { x: 1 a }[1 a]
+            "
+        ),
+        TypeCheckError::IndexMethodNotFound(..)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error("let x = [1, 2][0, 1]"),
+        TypeCheckError::InvalidListIndexArity(_, 2)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error("let x = [1, 2][1 a]"),
+        TypeCheckError::InvalidListIndexType(..)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error("fn id(x: Self) -> Self = x"),
+        TypeCheckError::SelfTypeOutsideStructMethod(_)
+    ));
+
+    assert_successful_typecheck(
+        "
+        struct Flag {
+            n: Scalar,
+            fn even(self) -> Bool =
+                if self.n == 0 then true else Flag { n: self.n - 1 }.odd()
+            fn odd(self) -> Bool =
+                if self.n == 0 then false else Flag { n: self.n - 1 }.even()
+        }
+
+        let x: Bool = Flag { n: 4 }.even()
+        let y: Bool = Flag { n: 5 }.odd()
+        ",
+    );
+
+    assert_successful_typecheck(
+        "
+        struct Inner {
+            x: A,
+        }
+
+        struct Outer<T> {
+            inner: T,
+            fn wrap(value: T) -> Self = Self { inner: value }
+            fn replace<U>(self, value: U) -> Outer<U> = Outer { inner: value }
+        }
+
+        struct OuterPoint {
+            inner: Inner,
+            fn shift(self, dx: A) -> Self = Self { inner: Inner { x: self.inner.x + dx } }
+        }
+
+        struct Counter {
+            value: Scalar,
+            fn new(n: Scalar) -> Self = result
+                where result =
+                    if n == 0 then Self { value: 0 } else Counter::new(n - 1).inc()
+            fn inc(self) -> Self = Self { value: self.value + 1 }
+        }
+
+        let p: A = OuterPoint { inner: Inner { x: 1 a } }.shift(2 a).inner.x
+        let q: Scalar = Outer::wrap(1 a).replace(5).inner
+        let count: Scalar = Counter::new(4).value
+        ",
+    );
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn translate(self, dx: A, dy: A) -> Self = Point { x: self.x + dx, y: self.y + dy }
+            }
+            Point { x: 1 a, y: 2 a }.translate(1 a)
+            "
+        ),
+        TypeCheckError::WrongArity { .. }
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                y: A,
+                fn translate(self, dx: A, dy: A) -> Self = Point { x: self.x + dx, y: self.y + dy }
+            }
+            Point { x: 1 a, y: 2 a }.translate(1 a, 1 b)
+            "
+        ),
+        TypeCheckError::IncompatibleDimensions(..)
+    ));
+
+    assert!(matches!(
+        get_typecheck_error(
+            "
+            struct Point {
+                x: A,
+                fn missing(self: Self) -> Self
+            }
+            "
+        ),
+        TypeCheckError::UnknownForeignFunction(_, name) if name == "missing"
+    ));
+}
+
+#[test]
 fn lists() {
     assert_successful_typecheck("[]");
     assert_successful_typecheck("[1]");

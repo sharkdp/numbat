@@ -122,6 +122,18 @@ pub enum Expression<'a> {
         expr: Box<Expression<'a>>,
         field_name: &'a str,
     },
+    MethodCall {
+        receiver: Box<Expression<'a>>,
+        method_name_span: Span,
+        method_name: &'a str,
+        args: Vec<Expression<'a>>,
+        full_span: Span,
+    },
+    IndexCall {
+        receiver: Box<Expression<'a>>,
+        args: Vec<Expression<'a>>,
+        full_span: Span,
+    },
     List(Span, Vec<Expression<'a>>),
 }
 
@@ -156,6 +168,8 @@ impl Expression<'_> {
             Expression::String(span, _) => *span,
             Expression::InstantiateStruct { full_span, .. } => *full_span,
             Expression::AccessField { full_span, .. } => *full_span,
+            Expression::MethodCall { full_span, .. } => *full_span,
+            Expression::IndexCall { full_span, .. } => *full_span,
             Expression::List(span, _) => *span,
             Expression::TypedHole(span) => *span,
         }
@@ -495,7 +509,8 @@ pub enum Statement<'a> {
         struct_name_span: Span,
         struct_name: &'a str,
         type_parameters: Vec<(Span, &'a str, Option<TypeParameterBound>)>,
-        fields: Vec<(Span, &'a str, TypeAnnotation)>,
+        fields: Vec<(Span, &'a str, TypeAnnotation, Option<Expression<'a>>)>,
+        methods: Vec<Statement<'a>>,
     },
 }
 
@@ -554,11 +569,18 @@ impl Statement<'_> {
             Statement::DefineStruct {
                 struct_name_span,
                 fields,
+                methods,
                 ..
             } => {
                 let mut span = *struct_name_span;
-                if let Some((last_span, _, annotation)) = fields.last() {
+                if let Some((last_span, _, annotation, default_expr)) = fields.last() {
                     span = span.extend(last_span).extend(&annotation.full_span());
+                    if let Some(default_expr) = default_expr {
+                        span = span.extend(&default_expr.full_span());
+                    }
+                }
+                if let Some(method) = methods.last() {
+                    span = span.extend(&method.full_span());
                 }
                 span
             }
@@ -569,6 +591,34 @@ impl Statement<'_> {
 #[cfg(test)]
 pub trait ReplaceSpans {
     fn replace_spans(&self) -> Self;
+}
+
+#[cfg(test)]
+impl ReplaceSpans for Decorator<'_> {
+    fn replace_spans(&self) -> Self {
+        match self {
+            Decorator::MetricPrefixes => Decorator::MetricPrefixes,
+            Decorator::BinaryPrefixes => Decorator::BinaryPrefixes,
+            Decorator::Abbreviation => Decorator::Abbreviation,
+            Decorator::Aliases(aliases) => Decorator::Aliases(
+                aliases
+                    .iter()
+                    .map(|(name, accepts_prefix, _)| (*name, *accepts_prefix, Span::dummy()))
+                    .collect(),
+            ),
+            Decorator::Url(url) => Decorator::Url(url.clone()),
+            Decorator::Name(name) => Decorator::Name(name.clone()),
+            Decorator::Description(description) => Decorator::Description(description.clone()),
+            Decorator::Example(code, description) => {
+                Decorator::Example(code.clone(), description.clone())
+            }
+            Decorator::BinaryOperator { operator, reverse } => Decorator::BinaryOperator {
+                operator: *operator,
+                reverse: *reverse,
+            },
+            Decorator::Index => Decorator::Index,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -716,6 +766,23 @@ impl ReplaceSpans for Expression<'_> {
                 expr: Box::new(expr.replace_spans()),
                 field_name,
             },
+            Expression::MethodCall {
+                receiver,
+                method_name,
+                args,
+                ..
+            } => Expression::MethodCall {
+                receiver: Box::new(receiver.replace_spans()),
+                method_name_span: Span::dummy(),
+                method_name,
+                args: args.iter().map(|a| a.replace_spans()).collect(),
+                full_span: Span::dummy(),
+            },
+            Expression::IndexCall { receiver, args, .. } => Expression::IndexCall {
+                receiver: Box::new(receiver.replace_spans()),
+                args: args.iter().map(|a| a.replace_spans()).collect(),
+                full_span: Span::dummy(),
+            },
             Expression::List(_, elements) => Expression::List(
                 Span::dummy(),
                 elements.iter().map(|e| e.replace_spans()).collect(),
@@ -733,7 +800,11 @@ impl ReplaceSpans for DefineVariable<'_> {
             identifier: self.identifier,
             expr: self.expr.replace_spans(),
             type_annotation: self.type_annotation.as_ref().map(|t| t.replace_spans()),
-            decorators: self.decorators.clone(),
+            decorators: self
+                .decorators
+                .iter()
+                .map(Decorator::replace_spans)
+                .collect(),
         }
     }
 }
@@ -779,7 +850,7 @@ impl ReplaceSpans for Statement<'_> {
                     .map(DefineVariable::replace_spans)
                     .collect(),
                 return_type_annotation: return_type_annotation.as_ref().map(|t| t.replace_spans()),
-                decorators: decorators.clone(),
+                decorators: decorators.iter().map(Decorator::replace_spans).collect(),
             },
             Statement::DefineDimension(_, name, dexprs) => Statement::DefineDimension(
                 Span::dummy(),
@@ -805,7 +876,7 @@ impl ReplaceSpans for Statement<'_> {
                 expr: expr.replace_spans(),
                 type_annotation_span: type_annotation_span.map(|_| Span::dummy()),
                 type_annotation: type_annotation.as_ref().map(|t| t.replace_spans()),
-                decorators: decorators.clone(),
+                decorators: decorators.iter().map(Decorator::replace_spans).collect(),
             },
             Statement::ProcedureCall(_, proc, args) => Statement::ProcedureCall(
                 Span::dummy(),
@@ -819,6 +890,7 @@ impl ReplaceSpans for Statement<'_> {
                 struct_name,
                 type_parameters,
                 fields,
+                methods,
                 ..
             } => Statement::DefineStruct {
                 struct_name_span: Span::dummy(),
@@ -829,8 +901,16 @@ impl ReplaceSpans for Statement<'_> {
                     .collect(),
                 fields: fields
                     .iter()
-                    .map(|(_span, name, type_)| (Span::dummy(), *name, type_.replace_spans()))
+                    .map(|(_span, name, type_, default_expr)| {
+                        (
+                            Span::dummy(),
+                            *name,
+                            type_.replace_spans(),
+                            default_expr.as_ref().map(Expression::replace_spans),
+                        )
+                    })
                     .collect(),
+                methods: methods.iter().map(|m| m.replace_spans()).collect(),
             },
         }
     }

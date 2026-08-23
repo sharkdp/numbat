@@ -36,8 +36,8 @@ assert_eq(velocity(2.0 s), 2.0 s × g0, 1e-3 m/s)
 
 # Differential equations
 
-let t_min = 0 s
-let t_max = 1 s
+let t_min: Time = 0 s
+let t_max: Time = 1 s
 let n_points = 1_000
 
 let μ = 0.7 / s
@@ -51,7 +51,7 @@ fn ode(t, x) = μ x
 
 let result = dsolve_runge_kutta(ode, t_min, t_max, x0, n_points)
 
-fn numerical_solution(t) = element_at(idx, result.ys)
+fn numerical_solution(t: Time) = element_at(idx, result.ys)
   where t_range = t_max - t_min
     and idx = floor((t - t_min) / t_range * (n_points - 1))
 

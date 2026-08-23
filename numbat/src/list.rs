@@ -94,6 +94,15 @@ impl<T> NumbatList<T> {
         let (start, end) = self.view.map_or((0, self.alloc.len()), |view| view);
         self.alloc.iter().skip(start).take(end - start)
     }
+
+    pub fn get(&self, index: usize) -> Option<&T> {
+        let (start, end) = self.view.map_or((0, self.alloc.len()), |view| view);
+        if index >= end - start {
+            None
+        } else {
+            self.alloc.get(start + index)
+        }
+    }
 }
 
 impl<T: Clone> NumbatList<T> {

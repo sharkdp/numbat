@@ -89,6 +89,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
         insert_function!(tail, 1..=1);
         insert_function!(cons, 2..=2);
         insert_function!(cons_end, 2..=2);
+        insert_function!("_list_at", list_at, 2..=2);
 
         // Strings
         insert_function!(str_length, 1..=1);

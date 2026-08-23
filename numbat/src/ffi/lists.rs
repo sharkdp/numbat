@@ -63,3 +63,21 @@ pub fn cons_end(
 
     return_list!(list)
 }
+
+pub fn list_at(
+    _ctx: &mut FfiContext,
+    mut args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
+    let list = list_arg!(args);
+    let index = scalar_arg!(args).to_f64();
+
+    if !index.is_finite() || index < 0.0 || index.fract() != 0.0 {
+        return Err(Box::new(RuntimeErrorKind::InvalidListIndex));
+    }
+
+    let index = index as usize;
+    list.get(index)
+        .cloned()
+        .ok_or_else(|| Box::new(RuntimeErrorKind::ListIndexOutOfBounds(index, list.len())))
+}

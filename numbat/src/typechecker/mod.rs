@@ -12,7 +12,7 @@ pub mod qualified_type;
 mod substitutions;
 pub mod type_scheme;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -28,6 +28,7 @@ use crate::pretty_print::PrettyPrint;
 use crate::span::Span;
 use crate::type_variable::TypeVariable;
 use crate::typed_ast::{self, DType, DTypeFactor, Expression, StructInfo, StructKind, Type};
+use crate::typed_ast::{StructMethodInfo, StructMethodKind};
 use crate::{decorator, ffi, suggestion};
 
 use compact_str::{CompactString, ToCompactString, format_compact};
@@ -190,6 +191,25 @@ pub struct TypeChecker {
 
     name_generator: NameGenerator,
     constraints: ConstraintSet,
+
+    methods: HashMap<CompactString, HashMap<CompactString, MethodInfo>>,
+    checking_struct_method: bool,
+    current_struct_name: Option<CompactString>,
+    non_generic_struct_instances: HashMap<CompactString, StructInfo>,
+}
+
+/// Stores information about a method defined in a struct method section
+#[derive(Clone)]
+struct MethodInfo {
+    signature: FunctionSignature,
+    operator_impl: Option<MethodOperatorInfo>,
+    index_impl: bool,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct MethodOperatorInfo {
+    operator: BinaryOperator,
+    reverse: bool,
 }
 
 struct ElaborationDefinitionArgs<'a, 'b> {
@@ -205,6 +225,464 @@ struct ElaborationDefinitionArgs<'a, 'b> {
 }
 
 impl TypeChecker {
+    fn collect_struct_field_defaults<'a>(
+        statements: &[ast::Statement<'a>],
+    ) -> HashMap<&'a str, Vec<(&'a str, ast::Expression<'a>)>> {
+        let mut defaults = HashMap::new();
+
+        for statement in statements {
+            if let ast::Statement::DefineStruct {
+                struct_name,
+                fields,
+                ..
+            } = statement
+            {
+                let field_defaults = fields
+                    .iter()
+                    .filter_map(|(_, field_name, _, default_expr)| {
+                        default_expr.clone().map(|expr| (*field_name, expr))
+                    })
+                    .collect::<Vec<_>>();
+
+                if !field_defaults.is_empty() {
+                    defaults.insert(*struct_name, field_defaults);
+                }
+            }
+        }
+
+        defaults
+    }
+
+    fn apply_struct_defaults_expression<'a>(
+        expr: &ast::Expression<'a>,
+        defaults: &HashMap<&'a str, Vec<(&'a str, ast::Expression<'a>)>>,
+    ) -> ast::Expression<'a> {
+        match expr {
+            ast::Expression::Scalar(..)
+            | ast::Expression::Identifier(..)
+            | ast::Expression::UnitIdentifier { .. }
+            | ast::Expression::TypedHole(..)
+            | ast::Expression::Boolean(..) => expr.clone(),
+            ast::Expression::UnaryOperator { op, expr, span_op } => {
+                ast::Expression::UnaryOperator {
+                    op: *op,
+                    expr: Box::new(Self::apply_struct_defaults_expression(expr, defaults)),
+                    span_op: *span_op,
+                }
+            }
+            ast::Expression::BinaryOperator {
+                op,
+                lhs,
+                rhs,
+                span_op,
+            } => ast::Expression::BinaryOperator {
+                op: *op,
+                lhs: Box::new(Self::apply_struct_defaults_expression(lhs, defaults)),
+                rhs: Box::new(Self::apply_struct_defaults_expression(rhs, defaults)),
+                span_op: *span_op,
+            },
+            ast::Expression::FunctionCall {
+                ident_span,
+                full_span,
+                callable,
+                args,
+            } => ast::Expression::FunctionCall {
+                ident_span: *ident_span,
+                full_span: *full_span,
+                callable: Box::new(Self::apply_struct_defaults_expression(callable, defaults)),
+                args: args
+                    .iter()
+                    .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
+                    .collect(),
+            },
+            ast::Expression::String(span, parts) => ast::Expression::String(
+                *span,
+                parts
+                    .iter()
+                    .map(|part| match part {
+                        ast::StringPart::Fixed(s) => ast::StringPart::Fixed(s.clone()),
+                        ast::StringPart::Interpolation {
+                            span,
+                            expr,
+                            format_specifiers,
+                        } => ast::StringPart::Interpolation {
+                            span: *span,
+                            expr: Box::new(Self::apply_struct_defaults_expression(expr, defaults)),
+                            format_specifiers: *format_specifiers,
+                        },
+                    })
+                    .collect(),
+            ),
+            ast::Expression::Condition {
+                span,
+                condition,
+                then_expr,
+                else_expr,
+            } => ast::Expression::Condition {
+                span: *span,
+                condition: Box::new(Self::apply_struct_defaults_expression(condition, defaults)),
+                then_expr: Box::new(Self::apply_struct_defaults_expression(then_expr, defaults)),
+                else_expr: Box::new(Self::apply_struct_defaults_expression(else_expr, defaults)),
+            },
+            ast::Expression::InstantiateStruct {
+                full_span,
+                ident_span,
+                name,
+                fields,
+            } => {
+                let mut transformed_fields = fields
+                    .iter()
+                    .map(|(span, field_name, value)| {
+                        (
+                            *span,
+                            *field_name,
+                            Self::apply_struct_defaults_expression(value, defaults),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                if let Some(defaults_for_struct) = defaults.get(name) {
+                    let provided_fields = transformed_fields
+                        .iter()
+                        .map(|(_, field_name, _)| *field_name)
+                        .collect::<HashSet<_>>();
+
+                    for (field_name, default_expr) in defaults_for_struct {
+                        if !provided_fields.contains(field_name) {
+                            transformed_fields.push((
+                                default_expr.full_span(),
+                                *field_name,
+                                Self::apply_struct_defaults_expression(default_expr, defaults),
+                            ));
+                        }
+                    }
+                }
+
+                ast::Expression::InstantiateStruct {
+                    full_span: *full_span,
+                    ident_span: *ident_span,
+                    name,
+                    fields: transformed_fields,
+                }
+            }
+            ast::Expression::AccessField {
+                full_span,
+                ident_span,
+                expr,
+                field_name,
+            } => ast::Expression::AccessField {
+                full_span: *full_span,
+                ident_span: *ident_span,
+                expr: Box::new(Self::apply_struct_defaults_expression(expr, defaults)),
+                field_name,
+            },
+            ast::Expression::MethodCall {
+                receiver,
+                method_name_span,
+                method_name,
+                args,
+                full_span,
+            } => ast::Expression::MethodCall {
+                receiver: Box::new(Self::apply_struct_defaults_expression(receiver, defaults)),
+                method_name_span: *method_name_span,
+                method_name,
+                args: args
+                    .iter()
+                    .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
+                    .collect(),
+                full_span: *full_span,
+            },
+            ast::Expression::IndexCall {
+                receiver,
+                args,
+                full_span,
+            } => ast::Expression::IndexCall {
+                receiver: Box::new(Self::apply_struct_defaults_expression(receiver, defaults)),
+                args: args
+                    .iter()
+                    .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
+                    .collect(),
+                full_span: *full_span,
+            },
+            ast::Expression::List(span, elements) => ast::Expression::List(
+                *span,
+                elements
+                    .iter()
+                    .map(|e| Self::apply_struct_defaults_expression(e, defaults))
+                    .collect(),
+            ),
+        }
+    }
+
+    fn apply_struct_defaults_statement<'a>(
+        statement: &ast::Statement<'a>,
+        defaults: &HashMap<&'a str, Vec<(&'a str, ast::Expression<'a>)>>,
+    ) -> ast::Statement<'a> {
+        match statement {
+            ast::Statement::Expression(expr) => {
+                ast::Statement::Expression(Self::apply_struct_defaults_expression(expr, defaults))
+            }
+            ast::Statement::DefineVariable(variable) => {
+                ast::Statement::DefineVariable(ast::DefineVariable {
+                    identifier_span: variable.identifier_span,
+                    identifier: variable.identifier,
+                    expr: Self::apply_struct_defaults_expression(&variable.expr, defaults),
+                    type_annotation: variable.type_annotation.clone(),
+                    decorators: variable.decorators.clone(),
+                })
+            }
+            ast::Statement::DefineFunction {
+                fn_keyword_span,
+                function_name_span,
+                function_name,
+                type_parameters,
+                parameters,
+                body,
+                local_variables,
+                return_type_annotation,
+                decorators,
+            } => ast::Statement::DefineFunction {
+                fn_keyword_span: *fn_keyword_span,
+                function_name_span: *function_name_span,
+                function_name,
+                type_parameters: type_parameters.clone(),
+                parameters: parameters.clone(),
+                body: body
+                    .as_ref()
+                    .map(|expr| Self::apply_struct_defaults_expression(expr, defaults)),
+                local_variables: local_variables
+                    .iter()
+                    .map(|v| ast::DefineVariable {
+                        identifier_span: v.identifier_span,
+                        identifier: v.identifier,
+                        expr: Self::apply_struct_defaults_expression(&v.expr, defaults),
+                        type_annotation: v.type_annotation.clone(),
+                        decorators: v.decorators.clone(),
+                    })
+                    .collect(),
+                return_type_annotation: return_type_annotation.clone(),
+                decorators: decorators.clone(),
+            },
+            ast::Statement::DefineDimension(span, name, dexprs) => {
+                ast::Statement::DefineDimension(*span, name, dexprs.clone())
+            }
+            ast::Statement::DefineBaseUnit(span, name, type_expr, decorators) => {
+                ast::Statement::DefineBaseUnit(*span, name, type_expr.clone(), decorators.clone())
+            }
+            ast::Statement::DefineDerivedUnit {
+                identifier_span,
+                identifier,
+                expr,
+                type_annotation_span,
+                type_annotation,
+                decorators,
+            } => ast::Statement::DefineDerivedUnit {
+                identifier_span: *identifier_span,
+                identifier,
+                expr: Self::apply_struct_defaults_expression(expr, defaults),
+                type_annotation_span: *type_annotation_span,
+                type_annotation: type_annotation.clone(),
+                decorators: decorators.clone(),
+            },
+            ast::Statement::ProcedureCall(span, kind, args) => ast::Statement::ProcedureCall(
+                *span,
+                kind.clone(),
+                args.iter()
+                    .map(|arg| Self::apply_struct_defaults_expression(arg, defaults))
+                    .collect(),
+            ),
+            ast::Statement::ModuleImport(span, module_path) => {
+                ast::Statement::ModuleImport(*span, module_path.clone())
+            }
+            ast::Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                type_parameters,
+                fields,
+                methods,
+            } => ast::Statement::DefineStruct {
+                struct_name_span: *struct_name_span,
+                struct_name,
+                type_parameters: type_parameters.clone(),
+                fields: fields
+                    .iter()
+                    .map(|(span, field_name, field_type, default_expr)| {
+                        (
+                            *span,
+                            *field_name,
+                            field_type.clone(),
+                            default_expr
+                                .as_ref()
+                                .map(|expr| Self::apply_struct_defaults_expression(expr, defaults)),
+                        )
+                    })
+                    .collect(),
+                methods: methods
+                    .iter()
+                    .map(|method| Self::apply_struct_defaults_statement(method, defaults))
+                    .collect(),
+            },
+        }
+    }
+
+    fn rewrite_self_in_type_expression(
+        type_expression: &mut TypeExpression,
+        struct_name: &str,
+        inside_struct_method: bool,
+        self_type_args: &[TypeAnnotation],
+    ) -> Result<()> {
+        match type_expression {
+            TypeExpression::Unity(_) => Ok(()),
+            TypeExpression::TypeIdentifier(span, name, type_args) => {
+                if name == "Self" {
+                    if !inside_struct_method {
+                        return Err(Box::new(TypeCheckError::SelfTypeOutsideStructMethod(*span)));
+                    }
+                    *name = struct_name.to_compact_string();
+                    *type_args = self_type_args.to_vec();
+                }
+
+                for type_arg in type_args {
+                    Self::rewrite_self_in_type_annotation(
+                        type_arg,
+                        struct_name,
+                        inside_struct_method,
+                        self_type_args,
+                    )?;
+                }
+                Ok(())
+            }
+            TypeExpression::Multiply(_, lhs, rhs) | TypeExpression::Divide(_, lhs, rhs) => {
+                Self::rewrite_self_in_type_expression(
+                    lhs,
+                    struct_name,
+                    inside_struct_method,
+                    self_type_args,
+                )?;
+                Self::rewrite_self_in_type_expression(
+                    rhs,
+                    struct_name,
+                    inside_struct_method,
+                    self_type_args,
+                )
+            }
+            TypeExpression::Power(_, lhs, _, _) => Self::rewrite_self_in_type_expression(
+                lhs,
+                struct_name,
+                inside_struct_method,
+                self_type_args,
+            ),
+        }
+    }
+
+    fn rewrite_self_in_type_annotation(
+        annotation: &mut TypeAnnotation,
+        struct_name: &str,
+        inside_struct_method: bool,
+        self_type_args: &[TypeAnnotation],
+    ) -> Result<()> {
+        match annotation {
+            TypeAnnotation::TypeExpression(type_expression) => {
+                Self::rewrite_self_in_type_expression(
+                    type_expression,
+                    struct_name,
+                    inside_struct_method,
+                    self_type_args,
+                )
+            }
+            TypeAnnotation::Bool(_) | TypeAnnotation::String(_) | TypeAnnotation::DateTime(_) => {
+                Ok(())
+            }
+            TypeAnnotation::Fn(_, parameters, return_type) => {
+                for parameter in parameters {
+                    Self::rewrite_self_in_type_annotation(
+                        parameter,
+                        struct_name,
+                        inside_struct_method,
+                        self_type_args,
+                    )?;
+                }
+                Self::rewrite_self_in_type_annotation(
+                    return_type,
+                    struct_name,
+                    inside_struct_method,
+                    self_type_args,
+                )
+            }
+            TypeAnnotation::List(_, element_type) => Self::rewrite_self_in_type_annotation(
+                element_type,
+                struct_name,
+                inside_struct_method,
+                self_type_args,
+            ),
+        }
+    }
+
+    fn rewrite_self_in_method_signature(
+        method: &mut ast::Statement<'_>,
+        struct_name: &str,
+        self_type_args: &[TypeAnnotation],
+    ) -> Result<()> {
+        let ast::Statement::DefineFunction {
+            parameters,
+            return_type_annotation,
+            local_variables,
+            ..
+        } = method
+        else {
+            return Ok(());
+        };
+
+        for (_, _, parameter_annotation) in parameters {
+            if let Some(annotation) = parameter_annotation {
+                Self::rewrite_self_in_type_annotation(
+                    annotation,
+                    struct_name,
+                    true,
+                    self_type_args,
+                )?;
+            }
+        }
+        if let Some(annotation) = return_type_annotation {
+            Self::rewrite_self_in_type_annotation(annotation, struct_name, true, self_type_args)?;
+        }
+        for local_variable in local_variables {
+            if let Some(annotation) = &mut local_variable.type_annotation {
+                Self::rewrite_self_in_type_annotation(
+                    annotation,
+                    struct_name,
+                    true,
+                    self_type_args,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn rewrite_self_in_method_decorators(
+        method: &mut ast::Statement<'_>,
+        struct_name: &str,
+        self_type_args: &[TypeAnnotation],
+    ) -> Result<()> {
+        let ast::Statement::DefineFunction { decorators, .. } = method else {
+            return Ok(());
+        };
+
+        let _ = (decorators, struct_name, self_type_args);
+
+        Ok(())
+    }
+
+    fn method_operator_impl(decorators: &[decorator::Decorator<'_>]) -> Option<MethodOperatorInfo> {
+        decorator::binary_operator(decorators)
+            .map(|(operator, reverse)| MethodOperatorInfo { operator, reverse })
+    }
+
+    fn method_index_impl(decorators: &[decorator::Decorator<'_>]) -> bool {
+        decorator::index_decorator(decorators)
+    }
+
     fn fresh_type_variable(&mut self) -> Type {
         Type::TVar(self.name_generator.fresh_type_variable())
     }
@@ -215,6 +693,821 @@ impl TypeChecker {
 
     fn add_dtype_constraint(&mut self, type_: &Type) -> TrivialResolution {
         self.constraints.add_dtype_constraint(type_)
+    }
+
+    /// Register a method for a struct
+    fn register_method(
+        &mut self,
+        struct_name: CompactString,
+        method_name: CompactString,
+        signature: FunctionSignature,
+        operator_impl: Option<MethodOperatorInfo>,
+        index_impl: bool,
+    ) {
+        self.methods.entry(struct_name).or_default().insert(
+            method_name,
+            MethodInfo {
+                signature,
+                operator_impl,
+                index_impl,
+            },
+        );
+    }
+
+    /// Look up a method for a struct
+    fn lookup_method(&self, struct_name: &str, method_name: &str) -> Option<&MethodInfo> {
+        self.methods.get(struct_name)?.get(method_name)
+    }
+
+    fn validate_operator_method_decorator(
+        &self,
+        method_kind: StructMethodKind,
+        definition_span: Span,
+        method_name: &str,
+        decorators: &[decorator::Decorator<'_>],
+        fn_type: &TypeScheme,
+        type_parameters: &[(Span, &str, Option<TypeParameterBound>)],
+    ) -> Result<Option<typed_ast::StructMethodOperatorInfo>> {
+        let Some((operator, reverse)) = decorator::binary_operator(decorators) else {
+            return Ok(None);
+        };
+
+        if method_kind != StructMethodKind::Instance {
+            return Err(Box::new(TypeCheckError::InvalidOperatorMethodSignature(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        let (instantiated_fn_type, _) = fn_type
+            .instantiate_for_printing(Some(type_parameters.iter().map(|(_, name, _)| *name)));
+        let Type::Fn(parameter_types, return_type) = instantiated_fn_type.inner else {
+            unreachable!("method type is expected to be a function type");
+        };
+
+        if parameter_types.len() != 2 {
+            return Err(Box::new(TypeCheckError::InvalidOperatorMethodSignature(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        let rhs_type = parameter_types[1].clone();
+        let output_type = return_type.as_ref().clone();
+
+        Ok(Some(typed_ast::StructMethodOperatorInfo {
+            operator,
+            reverse,
+            rhs_type,
+            output_type,
+        }))
+    }
+
+    fn validate_index_method_decorator(
+        &self,
+        method_kind: StructMethodKind,
+        definition_span: Span,
+        method_name: &str,
+        decorators: &[decorator::Decorator<'_>],
+        fn_type: &TypeScheme,
+        type_parameters: &[(Span, &str, Option<TypeParameterBound>)],
+    ) -> Result<bool> {
+        if !decorator::index_decorator(decorators) {
+            return Ok(false);
+        }
+
+        if method_kind != StructMethodKind::Instance {
+            return Err(Box::new(TypeCheckError::InvalidIndexMethodSignature(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        let (instantiated_fn_type, _) = fn_type
+            .instantiate_for_printing(Some(type_parameters.iter().map(|(_, name, _)| *name)));
+        let Type::Fn(parameter_types, _) = instantiated_fn_type.inner else {
+            unreachable!("method type is expected to be a function type");
+        };
+
+        if parameter_types.len() < 2 {
+            return Err(Box::new(TypeCheckError::InvalidIndexMethodSignature(
+                definition_span,
+                method_name.to_string(),
+            )));
+        }
+
+        Ok(true)
+    }
+
+    fn resolve_operator_candidates(
+        &mut self,
+        operator: BinaryOperator,
+        lhs: &Type,
+        rhs: &Type,
+        output: &Type,
+        reverse: bool,
+    ) -> Vec<constraints::Satisfied> {
+        let struct_type = if reverse { rhs } else { lhs };
+        let Some(struct_info) = (match struct_type {
+            Type::Struct(struct_info) => Some(struct_info),
+            _ => None,
+        }) else {
+            return vec![];
+        };
+        let Some(methods) = self.methods.get(&struct_info.name) else {
+            return vec![];
+        };
+
+        let mut candidates = Vec::new();
+        for method_info in methods.values() {
+            let Some(operator_impl) = method_info.operator_impl.as_ref() else {
+                continue;
+            };
+            if operator_impl.operator != operator || operator_impl.reverse != reverse {
+                continue;
+            }
+
+            let qualified_type = match &method_info.signature.fn_type {
+                TypeScheme::Concrete(type_) => {
+                    crate::typechecker::qualified_type::QualifiedType::new(
+                        type_.clone(),
+                        qualified_type::Bounds::none(),
+                    )
+                }
+                TypeScheme::Quantified(_, _) => method_info
+                    .signature
+                    .fn_type
+                    .instantiate(&mut self.name_generator),
+            };
+
+            let Type::Fn(parameter_types, return_type) = qualified_type.inner else {
+                continue;
+            };
+            if parameter_types.len() != 2 {
+                continue;
+            }
+
+            let receiver_type = if reverse { rhs } else { lhs };
+            let other_type = if reverse { lhs } else { rhs };
+
+            let mut constraint_set = ConstraintSet::default();
+            constraint_set
+                .add(Constraint::Equal(
+                    parameter_types[0].clone(),
+                    receiver_type.clone(),
+                ))
+                .ok();
+            constraint_set
+                .add(Constraint::Equal(
+                    parameter_types[1].clone(),
+                    other_type.clone(),
+                ))
+                .ok();
+            constraint_set
+                .add(Constraint::Equal(
+                    return_type.as_ref().clone(),
+                    output.clone(),
+                ))
+                .ok();
+            for bound in qualified_type.bounds.iter() {
+                match bound {
+                    Bound::IsDim(type_) => {
+                        constraint_set.add(Constraint::IsDType(type_.clone())).ok();
+                    }
+                }
+            }
+
+            if let Ok((substitution, dtype_vars)) =
+                constraint_set.solve(|_, _, _, _| None::<constraints::Satisfied>)
+                && dtype_vars.is_empty()
+            {
+                candidates.push(constraints::Satisfied::with_substitution(substitution));
+            }
+        }
+
+        candidates
+    }
+
+    fn try_resolve_binary_operator_constraint(
+        &mut self,
+        operator: BinaryOperator,
+        lhs: &Type,
+        rhs: &Type,
+        output: &Type,
+    ) -> Option<constraints::Satisfied> {
+        let mut candidates = Vec::new();
+
+        match (operator, lhs, rhs) {
+            (
+                BinaryOperator::Add | BinaryOperator::Sub,
+                Type::Dimension(lhs_dtype),
+                Type::Dimension(rhs_dtype),
+            ) if lhs_dtype == rhs_dtype => {
+                let mut constraints = vec![
+                    Constraint::Equal(lhs.clone(), rhs.clone()),
+                    Constraint::Equal(lhs.clone(), output.clone()),
+                ];
+                constraints.push(Constraint::IsDType(lhs.clone()));
+                candidates.push(constraints::Satisfied::with_new_constraints(constraints));
+            }
+            (BinaryOperator::Mul, Type::Dimension(lhs_dtype), Type::Dimension(rhs_dtype)) => {
+                let result = Type::Dimension(lhs_dtype.multiply(rhs_dtype));
+                candidates.push(constraints::Satisfied::with_new_constraints(vec![
+                    Constraint::Equal(output.clone(), result),
+                ]));
+            }
+            (BinaryOperator::Div, Type::Dimension(lhs_dtype), Type::Dimension(rhs_dtype)) => {
+                let result = Type::Dimension(lhs_dtype.divide(rhs_dtype));
+                candidates.push(constraints::Satisfied::with_new_constraints(vec![
+                    Constraint::Equal(output.clone(), result),
+                ]));
+            }
+            _ => {}
+        }
+
+        match (operator, lhs, rhs) {
+            (BinaryOperator::Add, Type::DateTime, Type::Dimension(dtype))
+            | (BinaryOperator::Sub, Type::DateTime, Type::Dimension(dtype))
+                if dtype.is_time_dimension() =>
+            {
+                candidates.push(constraints::Satisfied::with_new_constraints(vec![
+                    Constraint::Equal(output.clone(), Type::DateTime),
+                ]));
+            }
+            (BinaryOperator::Sub, Type::DateTime, Type::DateTime) => {
+                candidates.push(constraints::Satisfied::with_new_constraints(vec![
+                    Constraint::Equal(
+                        output.clone(),
+                        Type::Dimension(DType::base_dimension("Time")),
+                    ),
+                ]));
+            }
+            _ => {}
+        }
+
+        let lhs_candidates = self.resolve_operator_candidates(operator, lhs, rhs, output, false);
+        if lhs_candidates.len() == 1 {
+            return lhs_candidates.into_iter().next();
+        }
+        if lhs_candidates.len() > 1 {
+            return None;
+        }
+
+        let rhs_candidates = self.resolve_operator_candidates(operator, lhs, rhs, output, true);
+        if rhs_candidates.len() == 1 {
+            return rhs_candidates.into_iter().next();
+        }
+
+        if candidates.len() == 1 {
+            candidates.pop()
+        } else {
+            None
+        }
+    }
+
+    fn find_operator_method_call(
+        &mut self,
+        operator: BinaryOperator,
+        lhs: &Type,
+        rhs: &Type,
+        output: &Type,
+    ) -> Option<(bool, CompactString, CompactString)> {
+        let find_match = |this: &mut Self,
+                          struct_type: &Type,
+                          reverse: bool|
+         -> Option<(CompactString, CompactString)> {
+            let Type::Struct(struct_info) = struct_type else {
+                return None;
+            };
+            let methods = this.methods.get(&struct_info.name)?;
+            let receiver_type = if reverse { rhs } else { lhs };
+            let other_type = if reverse { lhs } else { rhs };
+
+            let mut matches = methods.iter().filter_map(|(method_name, method_info)| {
+                let operator_impl = method_info.operator_impl.as_ref()?;
+                if operator_impl.operator != operator || operator_impl.reverse != reverse {
+                    return None;
+                }
+
+                let qualified_type = match &method_info.signature.fn_type {
+                    TypeScheme::Concrete(type_) => {
+                        crate::typechecker::qualified_type::QualifiedType::new(
+                            type_.clone(),
+                            qualified_type::Bounds::none(),
+                        )
+                    }
+                    TypeScheme::Quantified(_, _) => method_info
+                        .signature
+                        .fn_type
+                        .instantiate(&mut this.name_generator),
+                };
+
+                let Type::Fn(parameter_types, return_type) = qualified_type.inner else {
+                    return None;
+                };
+                if parameter_types.len() != 2 {
+                    return None;
+                }
+
+                let mut constraint_set = ConstraintSet::default();
+                if constraint_set
+                    .add(Constraint::Equal(
+                        parameter_types[0].clone(),
+                        receiver_type.clone(),
+                    ))
+                    .is_trivially_violated()
+                {
+                    return None;
+                }
+                if constraint_set
+                    .add(Constraint::Equal(
+                        parameter_types[1].clone(),
+                        other_type.clone(),
+                    ))
+                    .is_trivially_violated()
+                {
+                    return None;
+                }
+                if constraint_set
+                    .add(Constraint::Equal(
+                        return_type.as_ref().clone(),
+                        output.clone(),
+                    ))
+                    .is_trivially_violated()
+                {
+                    return None;
+                }
+
+                if let Ok((_, dtype_vars)) =
+                    constraint_set.solve(|_, _, _, _| None::<constraints::Satisfied>)
+                    && dtype_vars.is_empty()
+                {
+                    Some((struct_info.name.clone(), method_name.clone()))
+                } else {
+                    None
+                }
+            });
+
+            let first = matches.next()?;
+            if matches.next().is_some() {
+                None
+            } else {
+                Some(first)
+            }
+        };
+
+        if let Some((owner, method_name)) = find_match(self, lhs, false) {
+            return Some((false, owner, method_name));
+        }
+
+        find_match(self, rhs, true).map(|(owner, method_name)| (true, owner, method_name))
+    }
+
+    fn find_index_method_call(
+        &mut self,
+        span: Span,
+        receiver_type: &Type,
+        index_types: &[Type],
+    ) -> Result<(CompactString, CompactString)> {
+        let Type::Struct(struct_info) = receiver_type else {
+            return Err(Box::new(TypeCheckError::IndexCallOnNonStructType(
+                span,
+                receiver_type.clone(),
+            )));
+        };
+
+        let Some(methods) = self.methods.get(&struct_info.name) else {
+            return Err(Box::new(TypeCheckError::IndexMethodNotFound(
+                span,
+                struct_info.name.to_string(),
+                index_types.len(),
+            )));
+        };
+
+        let mut matches = vec![];
+        for (method_name, method_info) in methods {
+            if !method_info.index_impl {
+                continue;
+            }
+
+            let qualified_type = match &method_info.signature.fn_type {
+                TypeScheme::Concrete(type_) => {
+                    crate::typechecker::qualified_type::QualifiedType::new(
+                        type_.clone(),
+                        qualified_type::Bounds::none(),
+                    )
+                }
+                TypeScheme::Quantified(_, _) => method_info
+                    .signature
+                    .fn_type
+                    .instantiate(&mut self.name_generator),
+            };
+
+            let Type::Fn(parameter_types, _) = qualified_type.inner else {
+                continue;
+            };
+            if parameter_types.len() != index_types.len() + 1 {
+                continue;
+            }
+
+            let mut constraint_set = ConstraintSet::default();
+            if constraint_set
+                .add(Constraint::Equal(
+                    parameter_types[0].clone(),
+                    receiver_type.clone(),
+                ))
+                .is_trivially_violated()
+            {
+                continue;
+            }
+
+            let mut valid = true;
+            for (parameter_type, index_type) in
+                parameter_types.iter().skip(1).zip(index_types.iter())
+            {
+                if constraint_set
+                    .add(Constraint::Equal(
+                        parameter_type.clone(),
+                        index_type.clone(),
+                    ))
+                    .is_trivially_violated()
+                {
+                    valid = false;
+                    break;
+                }
+            }
+            if !valid {
+                continue;
+            }
+
+            if let Ok((_, dtype_vars)) =
+                constraint_set.solve(|_, _, _, _| None::<constraints::Satisfied>)
+                && dtype_vars.is_empty()
+            {
+                matches.push((struct_info.name.clone(), method_name.clone()));
+            }
+        }
+
+        match matches.len() {
+            0 => Err(Box::new(TypeCheckError::IndexMethodNotFound(
+                span,
+                struct_info.name.to_string(),
+                index_types.len(),
+            ))),
+            1 => Ok(matches.pop().unwrap()),
+            _ => Err(Box::new(TypeCheckError::AmbiguousIndexOverload(
+                span,
+                struct_info.name.to_string(),
+                index_types.len(),
+            ))),
+        }
+    }
+
+    fn resolve_deferred_binary_operator_expression<'a>(
+        &mut self,
+        expr: &mut typed_ast::Expression<'a>,
+    ) -> Result<()> {
+        match expr {
+            typed_ast::Expression::UnaryOperator { expr, .. } => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Expression::BinaryOperator { lhs, rhs, .. }
+            | typed_ast::Expression::BinaryOperatorForDate { lhs, rhs, .. } => {
+                self.resolve_deferred_binary_operator_expression(lhs)?;
+                self.resolve_deferred_binary_operator_expression(rhs)?;
+            }
+            typed_ast::Expression::DeferredBinaryOperator {
+                op_span,
+                op,
+                lhs,
+                rhs,
+                type_scheme,
+            } => {
+                self.resolve_deferred_binary_operator_expression(lhs)?;
+                self.resolve_deferred_binary_operator_expression(rhs)?;
+
+                let lhs_type = lhs.get_type_scheme().to_concrete_type();
+                let rhs_type = rhs.get_type_scheme().to_concrete_type();
+                let output_type = type_scheme.to_concrete_type();
+                let full_span = lhs.full_span().extend(&rhs.full_span());
+
+                let replacement = if lhs_type == Type::DateTime
+                    && (rhs_type == Type::DateTime
+                        || matches!(
+                            rhs_type,
+                            Type::Dimension(ref dtype) if dtype.is_time_dimension()
+                        )) {
+                    typed_ast::Expression::BinaryOperatorForDate {
+                        op_span: *op_span,
+                        op: *op,
+                        lhs: lhs.clone(),
+                        rhs: rhs.clone(),
+                        type_scheme: type_scheme.clone(),
+                    }
+                } else if let Some((reverse, owner, method_name)) =
+                    self.find_operator_method_call(*op, &lhs_type, &rhs_type, &output_type)
+                {
+                    let receiver = if reverse { rhs.clone() } else { lhs.clone() };
+                    let arg = if reverse {
+                        (**lhs).clone()
+                    } else {
+                        (**rhs).clone()
+                    };
+                    let method_name_span = op_span.unwrap_or(full_span);
+
+                    typed_ast::Expression::MethodCall {
+                        full_span,
+                        receiver,
+                        method_ref: typed_ast::MethodRef {
+                            owner,
+                            name: Box::leak(method_name.to_string().into_boxed_str()),
+                            kind: StructMethodKind::Instance,
+                        },
+                        method_name_span,
+                        args: vec![arg],
+                        type_scheme: type_scheme.clone(),
+                    }
+                } else {
+                    typed_ast::Expression::DeferredBinaryOperator {
+                        op_span: *op_span,
+                        op: *op,
+                        lhs: lhs.clone(),
+                        rhs: rhs.clone(),
+                        type_scheme: type_scheme.clone(),
+                    }
+                };
+
+                *expr = replacement;
+            }
+            typed_ast::Expression::FunctionCall { args, .. } => {
+                for arg in args {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+            }
+            typed_ast::Expression::CallableCall { callable, args, .. } => {
+                self.resolve_deferred_binary_operator_expression(callable)?;
+                for arg in args {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+            }
+            typed_ast::Expression::String(_, parts) => {
+                for part in parts {
+                    if let typed_ast::StringPart::Interpolation { expr, .. } = part {
+                        self.resolve_deferred_binary_operator_expression(expr)?;
+                    }
+                }
+            }
+            typed_ast::Expression::Condition {
+                condition,
+                then_expr,
+                else_expr,
+                ..
+            } => {
+                self.resolve_deferred_binary_operator_expression(condition)?;
+                self.resolve_deferred_binary_operator_expression(then_expr)?;
+                self.resolve_deferred_binary_operator_expression(else_expr)?;
+            }
+            typed_ast::Expression::InstantiateStruct { fields, .. } => {
+                for (_, value) in fields {
+                    self.resolve_deferred_binary_operator_expression(value)?;
+                }
+            }
+            typed_ast::Expression::AccessField { expr, .. } => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Expression::MethodCall { receiver, args, .. } => {
+                self.resolve_deferred_binary_operator_expression(receiver)?;
+                for arg in args {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+            }
+            typed_ast::Expression::IndexCall {
+                full_span,
+                receiver,
+                args,
+                type_scheme,
+            } => {
+                self.resolve_deferred_binary_operator_expression(receiver)?;
+                for arg in args.iter_mut() {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+
+                let receiver_type = receiver.get_type_scheme().to_concrete_type();
+
+                if let Type::List(element_type) = &receiver_type {
+                    if args.len() != 1 {
+                        return Err(Box::new(TypeCheckError::InvalidListIndexArity(
+                            *full_span,
+                            args.len(),
+                        )));
+                    }
+
+                    let index_type = args[0].get_type();
+                    if self
+                        .add_equal_constraint(&index_type, &Type::scalar())
+                        .is_trivially_violated()
+                    {
+                        return Err(Box::new(TypeCheckError::InvalidListIndexType(
+                            args[0].full_span(),
+                            index_type,
+                        )));
+                    }
+
+                    let result_type = (**element_type).clone();
+                    *type_scheme = TypeScheme::concrete(result_type);
+                    *expr = typed_ast::Expression::FunctionCall {
+                        full_span: *full_span,
+                        ident_span: *full_span,
+                        name: "_list_at",
+                        args: vec![(**receiver).clone(), args[0].clone()],
+                        type_scheme: type_scheme.clone(),
+                    };
+                } else if let Type::Struct(_) = &receiver_type {
+                    let index_types = args
+                        .iter()
+                        .map(typed_ast::Expression::get_type)
+                        .collect::<Vec<_>>();
+                    let (owner, method_name) =
+                        self.find_index_method_call(*full_span, &receiver_type, &index_types)?;
+
+                    let method = self
+                        .lookup_method(&owner, &method_name)
+                        .ok_or_else(|| {
+                            Box::new(TypeCheckError::IndexMethodNotFound(
+                                *full_span,
+                                owner.to_string(),
+                                index_types.len(),
+                            ))
+                        })?
+                        .clone();
+
+                    let mut method_arguments = Vec::with_capacity(args.len() + 1);
+                    method_arguments.push((**receiver).clone());
+                    method_arguments.extend(args.clone());
+
+                    let method_argument_types = method_arguments
+                        .iter()
+                        .map(typed_ast::Expression::get_type)
+                        .collect::<Vec<_>>();
+
+                    let checked_call = proper_function_call(ProperFunctionCallArgs {
+                        registry: &self.registry,
+                        constraints: &mut self.constraints,
+                        name_generator: &mut self.name_generator,
+                        span: full_span,
+                        full_span,
+                        function_name: &method_name,
+                        signature: &method.signature,
+                        arguments: method_arguments,
+                        argument_types: method_argument_types,
+                    })?;
+
+                    let typed_ast::Expression::FunctionCall { type_scheme, .. } = checked_call
+                    else {
+                        unreachable!("proper function call returns typed function call");
+                    };
+
+                    *expr = typed_ast::Expression::MethodCall {
+                        full_span: *full_span,
+                        receiver: receiver.clone(),
+                        method_ref: typed_ast::MethodRef {
+                            owner,
+                            name: Box::leak(method_name.to_string().into_boxed_str()),
+                            kind: StructMethodKind::Instance,
+                        },
+                        method_name_span: *full_span,
+                        args: args.clone(),
+                        type_scheme,
+                    };
+                } else if receiver_type.is_closed() {
+                    return Err(Box::new(TypeCheckError::IndexCallOnNonStructType(
+                        *full_span,
+                        receiver_type,
+                    )));
+                }
+            }
+            typed_ast::Expression::List { elements, .. } => {
+                for element in elements {
+                    self.resolve_deferred_binary_operator_expression(element)?;
+                }
+            }
+            typed_ast::Expression::Scalar { .. }
+            | typed_ast::Expression::Identifier { .. }
+            | typed_ast::Expression::UnitIdentifier { .. }
+            | typed_ast::Expression::Boolean(..)
+            | typed_ast::Expression::TypedHole(..) => {}
+        }
+
+        Ok(())
+    }
+    fn resolve_deferred_binary_operators<'a>(
+        &mut self,
+        statement: &mut typed_ast::Statement<'a>,
+    ) -> Result<()> {
+        match statement {
+            typed_ast::Statement::Expression(expr) => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Statement::DefineVariable(typed_ast::DefineVariable { expr, .. }) => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Statement::DefineFunction {
+                body,
+                local_variables,
+                ..
+            }
+            | typed_ast::Statement::DefineMethod {
+                body,
+                local_variables,
+                ..
+            } => {
+                for local_variable in local_variables {
+                    self.resolve_deferred_binary_operator_expression(&mut local_variable.expr)?;
+                }
+                if let Some(body) = body {
+                    self.resolve_deferred_binary_operator_expression(body)?;
+                }
+            }
+            typed_ast::Statement::DefineDerivedUnit { expr, .. } => {
+                self.resolve_deferred_binary_operator_expression(expr)?;
+            }
+            typed_ast::Statement::ProcedureCall { args, .. } => {
+                for arg in args {
+                    self.resolve_deferred_binary_operator_expression(arg)?;
+                }
+            }
+            typed_ast::Statement::DefineStruct(_)
+            | typed_ast::Statement::DefineDimension(_, _)
+            | typed_ast::Statement::DefineBaseUnit { .. } => {}
+        }
+
+        Ok(())
+    }
+
+    fn provisional_method_signature(
+        &mut self,
+        method: &ast::Statement<'_>,
+    ) -> Result<FunctionSignature> {
+        let ast::Statement::DefineFunction {
+            function_name_span,
+            function_name,
+            type_parameters,
+            parameters,
+            return_type_annotation,
+            ..
+        } = method
+        else {
+            unreachable!("method members are checked to be functions");
+        };
+
+        let initial_type_parameter_count = self.registry.introduced_type_parameters.len();
+        for (span, type_parameter, bound) in type_parameters {
+            self.registry.introduced_type_parameters.push((
+                *span,
+                (*type_parameter).to_compact_string(),
+                bound.clone(),
+            ));
+        }
+
+        let parameter_types = parameters
+            .iter()
+            .map(|(_, _, annotation)| {
+                annotation
+                    .as_ref()
+                    .map(|a| self.type_from_annotation(a))
+                    .transpose()
+                    .map(|a| a.unwrap_or_else(|| self.fresh_type_variable()))
+            })
+            .collect::<Result<Vec<_>>>();
+
+        let return_type = return_type_annotation
+            .as_ref()
+            .map(|annotation| self.type_from_annotation(annotation))
+            .transpose();
+
+        self.registry
+            .introduced_type_parameters
+            .truncate(initial_type_parameter_count);
+
+        let parameter_types = parameter_types?;
+        let return_type = return_type?.unwrap_or_else(|| self.fresh_type_variable());
+
+        Ok(FunctionSignature {
+            name: (*function_name).to_compact_string(),
+            definition_span: *function_name_span,
+            type_parameters: type_parameters
+                .iter()
+                .map(|(span, name, bound)| (*span, (*name).to_compact_string(), bound.clone()))
+                .collect(),
+            parameters: parameters
+                .iter()
+                .map(|(span, name, annotation)| {
+                    (*span, (*name).to_compact_string(), annotation.clone())
+                })
+                .collect(),
+            return_type_annotation: return_type_annotation.clone(),
+            fn_type: TypeScheme::Concrete(Type::Fn(parameter_types, Box::new(return_type))),
+        })
     }
 
     fn enforce_dtype(&mut self, type_: &Type, span: Span) -> Result<()> {
@@ -233,6 +1526,9 @@ impl TypeChecker {
     }
 
     fn type_from_annotation(&self, annotation: &TypeAnnotation) -> Result<Type> {
+        let mut checked_annotation = annotation.clone();
+        Self::rewrite_self_in_type_annotation(&mut checked_annotation, "", false, &[])?;
+
         match annotation {
             TypeAnnotation::TypeExpression(dexpr) => {
                 if let TypeExpression::TypeIdentifier(span, name, type_args) = dexpr
@@ -263,6 +1559,7 @@ impl TypeChecker {
                             name: struct_info.name.clone(),
                             kind: StructKind::Instance(vec![]),
                             fields: struct_info.fields.clone(),
+                            methods: struct_info.methods.clone(),
                         })));
                     }
 
@@ -280,12 +1577,20 @@ impl TypeChecker {
                     for (_, field_type) in instantiated_fields.values_mut() {
                         field_type.apply(&substitution).ok();
                     }
+                    let mut instantiated_methods = struct_info.methods.clone();
+                    for method_info in instantiated_methods.values_mut() {
+                        if let Some(operator_impl) = &mut method_info.operator_impl {
+                            operator_impl.rhs_type.apply(&substitution).ok();
+                            operator_impl.output_type.apply(&substitution).ok();
+                        }
+                    }
 
                     return Ok(Type::Struct(Box::new(StructInfo {
                         definition_span: struct_info.definition_span,
                         name: struct_info.name.clone(),
                         kind: StructKind::Instance(concrete_type_args),
                         fields: instantiated_fields,
+                        methods: instantiated_methods,
                     })));
                 }
 
@@ -490,38 +1795,44 @@ impl TypeChecker {
                         args: vec![lhs_checked],
                         type_scheme: TypeScheme::concrete(*return_type),
                     }
-                } else if lhs_type == Type::DateTime {
-                    // DateTime types need special handling here, since they're not scalars with dimensions,
-                    // yet some select binary operators can be applied to them
+                } else if matches!(
+                    op,
+                    BinaryOperator::Add
+                        | BinaryOperator::Sub
+                        | BinaryOperator::Mul
+                        | BinaryOperator::Div
+                ) && {
+                    let lhs_overload_candidate =
+                        matches!(lhs_type, Type::DateTime | Type::Struct(_));
+                    let rhs_overload_candidate =
+                        matches!(rhs_type, Type::DateTime | Type::Struct(_));
+                    let lhs_is_time = matches!(
+                        lhs_type,
+                        Type::Dimension(ref dtype) if dtype.is_time_dimension()
+                    );
+                    let rhs_is_time = matches!(
+                        rhs_type,
+                        Type::Dimension(ref dtype) if dtype.is_time_dimension()
+                    );
 
-                    let rhs_is_time = dtype(&rhs_checked)
-                        .ok()
-                        .map(|t| t.is_time_dimension())
-                        .unwrap_or(false);
-                    let rhs_is_datetime = rhs_type == Type::DateTime;
-
-                    if *op == BinaryOperator::Sub && rhs_is_datetime {
-                        let time = DType::base_dimension("Time"); // TODO: error handling
-                        // TODO make sure the "second" unit exists
-
-                        typed_ast::Expression::BinaryOperatorForDate {
-                            op_span: *span_op,
-                            op: *op,
-                            lhs: Box::new(lhs_checked),
-                            rhs: Box::new(rhs_checked),
-                            type_scheme: TypeScheme::concrete(Type::Dimension(time)),
-                        }
-                    } else if (*op == BinaryOperator::Add || *op == BinaryOperator::Sub)
-                        && rhs_is_time
+                    lhs_overload_candidate
+                        || rhs_overload_candidate
+                        || matches!(op, BinaryOperator::Add | BinaryOperator::Sub)
+                            && ((!lhs_type.is_closed() && rhs_is_time)
+                                || (!rhs_type.is_closed() && lhs_is_time))
+                } {
+                    let result_type = self.fresh_type_variable();
+                    if lhs_type.is_closed()
+                        && rhs_type.is_closed()
+                        && self
+                            .try_resolve_binary_operator_constraint(
+                                *op,
+                                &lhs_type,
+                                &rhs_type,
+                                &result_type,
+                            )
+                            .is_none()
                     {
-                        typed_ast::Expression::BinaryOperatorForDate {
-                            op_span: *span_op,
-                            op: *op,
-                            lhs: Box::new(lhs_checked),
-                            rhs: Box::new(rhs_checked),
-                            type_scheme: TypeScheme::concrete(Type::DateTime),
-                        }
-                    } else {
                         return Err(Box::new(TypeCheckError::IncompatibleTypesInOperator(
                             span_op.unwrap_or_else(|| {
                                 ast::Expression::BinaryOperator {
@@ -538,6 +1849,23 @@ impl TypeChecker {
                             rhs_type,
                             rhs.full_span(),
                         )));
+                    }
+
+                    self.constraints
+                        .add(Constraint::HasBinaryOperator(
+                            *op,
+                            lhs_type.clone(),
+                            rhs_type.clone(),
+                            result_type.clone(),
+                        ))
+                        .ok();
+
+                    typed_ast::Expression::DeferredBinaryOperator {
+                        op_span: *span_op,
+                        op: *op,
+                        lhs: Box::new(lhs_checked),
+                        rhs: Box::new(rhs_checked),
+                        type_scheme: TypeScheme::concrete(result_type),
                     }
                 } else {
                     let mut get_type_and_assert_equal_dtypes = || -> Result<Type> {
@@ -1026,27 +2354,44 @@ impl TypeChecker {
                 fields,
             } => {
                 let name = *name;
+                let resolved_name: CompactString = if name == "Self" {
+                    self.current_struct_name.clone().ok_or_else(|| {
+                        Box::new(TypeCheckError::SelfTypeOutsideStructMethod(*ident_span))
+                    })?
+                } else {
+                    name.to_compact_string()
+                };
                 let fields_checked = fields
                     .iter()
                     .map(|(_, n, v)| Ok((*n, self.elaborate_expression(v)?)))
                     .collect::<Result<Vec<_>>>()?;
 
-                let Some(struct_info) = self.structs.get(name).cloned() else {
+                let Some(struct_info) = self.structs.get(&resolved_name).cloned() else {
                     return Err(Box::new(TypeCheckError::UnknownStruct(
                         *ident_span,
-                        name.to_owned(),
+                        resolved_name.to_string(),
                     )));
                 };
 
                 // For generic structs, instantiate type parameters with fresh type variables
                 let instantiated_struct_info = match &struct_info.kind {
                     StructKind::Definition(type_parameters) if type_parameters.is_empty() => {
-                        // Non-generic struct: create instance with empty type arguments
-                        StructInfo {
-                            definition_span: struct_info.definition_span,
-                            name: struct_info.name.clone(),
-                            kind: StructKind::Instance(vec![]),
-                            fields: struct_info.fields.clone(),
+                        // Non-generic struct: cache a single instantiated view and clone cheaply.
+                        if let Some(cached) =
+                            self.non_generic_struct_instances.get(&struct_info.name)
+                        {
+                            cached.clone()
+                        } else {
+                            let instantiated = StructInfo {
+                                definition_span: struct_info.definition_span,
+                                name: struct_info.name.clone(),
+                                kind: StructKind::Instance(vec![]),
+                                fields: struct_info.fields.clone(),
+                                methods: struct_info.methods.clone(),
+                            };
+                            self.non_generic_struct_instances
+                                .insert(struct_info.name.clone(), instantiated.clone());
+                            instantiated
                         }
                     }
                     StructKind::Definition(type_parameters) => {
@@ -1080,6 +2425,13 @@ impl TypeChecker {
                         for (_, field_type) in instantiated_fields.values_mut() {
                             field_type.apply(&substitution).ok();
                         }
+                        let mut instantiated_methods = struct_info.methods.clone();
+                        for method_info in instantiated_methods.values_mut() {
+                            if let Some(operator_impl) = &mut method_info.operator_impl {
+                                operator_impl.rhs_type.apply(&substitution).ok();
+                                operator_impl.output_type.apply(&substitution).ok();
+                            }
+                        }
 
                         StructInfo {
                             definition_span: struct_info.definition_span,
@@ -1088,6 +2440,7 @@ impl TypeChecker {
                                 variables.iter().map(|v| Type::TVar(v.clone())).collect(),
                             ),
                             fields: instantiated_fields,
+                            methods: instantiated_methods,
                         }
                     }
                     StructKind::Instance(_) => {
@@ -1259,6 +2612,282 @@ impl TypeChecker {
             ast::Expression::TypedHole(span) => {
                 let type_ = self.fresh_type_variable();
                 typed_ast::Expression::TypedHole(*span, TypeScheme::concrete(type_))
+            }
+            ast::Expression::MethodCall {
+                receiver,
+                method_name_span,
+                method_name,
+                args,
+                full_span,
+            } => {
+                if let ast::Expression::Identifier(receiver_span, receiver_name) = receiver.as_ref()
+                    && self.structs.contains_key(*receiver_name)
+                {
+                    let struct_info = self
+                        .structs
+                        .get(*receiver_name)
+                        .cloned()
+                        .expect("receiver name was already checked as known struct");
+                    let method_meta = struct_info.methods.get(*method_name).ok_or_else(|| {
+                        Box::new(TypeCheckError::MethodNotFound(
+                            *method_name_span,
+                            method_name.to_string(),
+                            (*receiver_name).to_string(),
+                        ))
+                    })?;
+                    if method_meta.kind == StructMethodKind::Instance {
+                        return Err(Box::new(TypeCheckError::InstanceMethodCalledAsConstructor(
+                            *method_name_span,
+                            method_name.to_string(),
+                            (*receiver_name).to_string(),
+                        )));
+                    }
+
+                    let method = self
+                        .lookup_method(receiver_name, method_name)
+                        .ok_or_else(|| {
+                            Box::new(TypeCheckError::MethodNotFound(
+                                *method_name_span,
+                                method_name.to_string(),
+                                (*receiver_name).to_string(),
+                            ))
+                        })?
+                        .clone();
+
+                    let method_arguments = args
+                        .iter()
+                        .map(|e| self.elaborate_expression(e))
+                        .collect::<Result<Vec<_>>>()?;
+
+                    let method_argument_types = method_arguments
+                        .iter()
+                        .map(typed_ast::Expression::get_type)
+                        .collect::<Vec<_>>();
+
+                    let checked_call = proper_function_call(ProperFunctionCallArgs {
+                        registry: &self.registry,
+                        constraints: &mut self.constraints,
+                        name_generator: &mut self.name_generator,
+                        span: method_name_span,
+                        full_span,
+                        function_name: method_name,
+                        signature: &method.signature,
+                        arguments: method_arguments.clone(),
+                        argument_types: method_argument_types,
+                    })?;
+
+                    let typed_ast::Expression::FunctionCall { type_scheme, .. } = checked_call
+                    else {
+                        unreachable!("proper function call returns typed function call");
+                    };
+
+                    return Ok(typed_ast::Expression::MethodCall {
+                        full_span: *full_span,
+                        receiver: Box::new(typed_ast::Expression::Identifier {
+                            span: *receiver_span,
+                            name: receiver_name,
+                            type_scheme: TypeScheme::concrete(Type::Struct(Box::new(
+                                struct_info.clone(),
+                            ))),
+                        }),
+                        method_ref: typed_ast::MethodRef {
+                            owner: struct_info.name.clone(),
+                            name: method_name,
+                            kind: StructMethodKind::Constructor,
+                        },
+                        method_name_span: *method_name_span,
+                        args: method_arguments,
+                        type_scheme,
+                    });
+                }
+
+                let receiver_checked = self.elaborate_expression(receiver)?;
+                let receiver_type = receiver_checked.get_type();
+
+                let Type::Struct(struct_info) = &receiver_type else {
+                    return Err(Box::new(TypeCheckError::MethodCallOnNonStructType(
+                        *method_name_span,
+                        method_name.to_string(),
+                        receiver_type,
+                    )));
+                };
+
+                let method_meta = struct_info.methods.get(*method_name).ok_or_else(|| {
+                    Box::new(TypeCheckError::MethodNotFound(
+                        *method_name_span,
+                        method_name.to_string(),
+                        struct_info.name.to_string(),
+                    ))
+                })?;
+                if method_meta.kind == StructMethodKind::Constructor {
+                    return Err(Box::new(TypeCheckError::ConstructorCalledAsMethod(
+                        *method_name_span,
+                        method_name.to_string(),
+                        struct_info.name.to_string(),
+                    )));
+                }
+
+                let method = self
+                    .lookup_method(&struct_info.name, method_name)
+                    .ok_or_else(|| {
+                        Box::new(TypeCheckError::MethodNotFound(
+                            *method_name_span,
+                            method_name.to_string(),
+                            struct_info.name.to_string(),
+                        ))
+                    })?
+                    .clone();
+
+                let arguments_checked = args
+                    .iter()
+                    .map(|e| self.elaborate_expression(e))
+                    .collect::<Result<Vec<_>>>()?;
+
+                let mut method_arguments = Vec::with_capacity(arguments_checked.len() + 1);
+                method_arguments.push(receiver_checked.clone());
+                method_arguments.extend(arguments_checked.clone());
+
+                let method_argument_types = method_arguments
+                    .iter()
+                    .map(typed_ast::Expression::get_type)
+                    .collect::<Vec<_>>();
+
+                let checked_call = proper_function_call(ProperFunctionCallArgs {
+                    registry: &self.registry,
+                    constraints: &mut self.constraints,
+                    name_generator: &mut self.name_generator,
+                    span: method_name_span,
+                    full_span,
+                    function_name: method_name,
+                    signature: &method.signature,
+                    arguments: method_arguments,
+                    argument_types: method_argument_types,
+                })?;
+
+                let typed_ast::Expression::FunctionCall { type_scheme, .. } = checked_call else {
+                    unreachable!("proper function call returns typed function call");
+                };
+
+                typed_ast::Expression::MethodCall {
+                    full_span: *full_span,
+                    receiver: Box::new(receiver_checked),
+                    method_ref: typed_ast::MethodRef {
+                        owner: struct_info.name.clone(),
+                        name: method_name,
+                        kind: StructMethodKind::Instance,
+                    },
+                    method_name_span: *method_name_span,
+                    args: arguments_checked,
+                    type_scheme,
+                }
+            }
+            ast::Expression::IndexCall {
+                receiver,
+                args,
+                full_span,
+            } => {
+                let receiver_checked = self.elaborate_expression(receiver)?;
+                let receiver_type = receiver_checked.get_type();
+
+                let arguments_checked = args
+                    .iter()
+                    .map(|e| self.elaborate_expression(e))
+                    .collect::<Result<Vec<_>>>()?;
+
+                if let Type::List(element_type) = &receiver_type {
+                    if arguments_checked.len() != 1 {
+                        return Err(Box::new(TypeCheckError::InvalidListIndexArity(
+                            *full_span,
+                            arguments_checked.len(),
+                        )));
+                    }
+
+                    let index_type = arguments_checked[0].get_type();
+                    if self
+                        .add_equal_constraint(&index_type, &Type::scalar())
+                        .is_trivially_violated()
+                    {
+                        return Err(Box::new(TypeCheckError::InvalidListIndexType(
+                            arguments_checked[0].full_span(),
+                            index_type,
+                        )));
+                    }
+
+                    return Ok(typed_ast::Expression::FunctionCall {
+                        full_span: *full_span,
+                        ident_span: *full_span,
+                        name: "_list_at",
+                        args: vec![
+                            receiver_checked,
+                            arguments_checked.into_iter().next().unwrap(),
+                        ],
+                        type_scheme: TypeScheme::concrete((**element_type).clone()),
+                    });
+                }
+
+                if !receiver_type.is_closed() {
+                    return Ok(typed_ast::Expression::IndexCall {
+                        full_span: *full_span,
+                        receiver: Box::new(receiver_checked),
+                        args: arguments_checked,
+                        type_scheme: TypeScheme::concrete(self.fresh_type_variable()),
+                    });
+                }
+
+                let mut method_arguments = Vec::with_capacity(arguments_checked.len() + 1);
+                method_arguments.push(receiver_checked.clone());
+                method_arguments.extend(arguments_checked.clone());
+
+                let method_argument_types = method_arguments
+                    .iter()
+                    .map(typed_ast::Expression::get_type)
+                    .collect::<Vec<_>>();
+
+                let (owner, method_name) = self.find_index_method_call(
+                    *full_span,
+                    &receiver_type,
+                    &method_argument_types[1..],
+                )?;
+
+                let method = self
+                    .lookup_method(&owner, &method_name)
+                    .ok_or_else(|| {
+                        Box::new(TypeCheckError::IndexMethodNotFound(
+                            *full_span,
+                            owner.to_string(),
+                            method_argument_types.len() - 1,
+                        ))
+                    })?
+                    .clone();
+
+                let checked_call = proper_function_call(ProperFunctionCallArgs {
+                    registry: &self.registry,
+                    constraints: &mut self.constraints,
+                    name_generator: &mut self.name_generator,
+                    span: full_span,
+                    full_span,
+                    function_name: &method_name,
+                    signature: &method.signature,
+                    arguments: method_arguments,
+                    argument_types: method_argument_types,
+                })?;
+
+                let typed_ast::Expression::FunctionCall { type_scheme, .. } = checked_call else {
+                    unreachable!("proper function call returns typed function call");
+                };
+
+                typed_ast::Expression::MethodCall {
+                    full_span: *full_span,
+                    receiver: Box::new(receiver_checked),
+                    method_ref: typed_ast::MethodRef {
+                        owner,
+                        name: Box::leak(method_name.to_string().into_boxed_str()),
+                        kind: StructMethodKind::Instance,
+                    },
+                    method_name_span: *full_span,
+                    args: arguments_checked,
+                    type_scheme,
+                }
             }
         })
     }
@@ -1502,22 +3131,24 @@ impl TypeChecker {
                 decorators,
                 ..
             } => {
-                if body.is_none() {
-                    self.value_namespace
-                        .add_identifier(
-                            function_name.to_compact_string(),
-                            *function_name_span,
-                            CompactString::const_new("foreign function"),
-                        )
-                        .map_err(|err| Box::new(err.into()))?;
-                } else {
-                    self.value_namespace
-                        .add_identifier_allow_override(
-                            function_name.to_compact_string(),
-                            *function_name_span,
-                            CompactString::const_new("function"),
-                        )
-                        .map_err(|err| Box::new(err.into()))?;
+                if !self.checking_struct_method {
+                    if body.is_none() {
+                        self.value_namespace
+                            .add_identifier(
+                                function_name.to_compact_string(),
+                                *function_name_span,
+                                CompactString::const_new("foreign function"),
+                            )
+                            .map_err(|err| Box::new(err.into()))?;
+                    } else {
+                        self.value_namespace
+                            .add_identifier_allow_override(
+                                function_name.to_compact_string(),
+                                *function_name_span,
+                                CompactString::const_new("function"),
+                            )
+                            .map_err(|err| Box::new(err.into()))?;
+                    }
                 }
 
                 // Save the environment and namespaces to avoid polluting
@@ -1737,11 +3368,13 @@ impl TypeChecker {
                 self.value_namespace.restore();
                 self.type_namespace.restore();
                 self.env.restore();
-                self.env.add_function(
-                    function_name.to_compact_string(),
-                    signature.clone(),
-                    metadata.clone(),
-                );
+                if !self.checking_struct_method {
+                    self.env.add_function(
+                        function_name.to_compact_string(),
+                        signature.clone(),
+                        metadata.clone(),
+                    );
+                }
 
                 typed_ast::Statement::DefineFunction {
                     function_name,
@@ -1918,6 +3551,7 @@ impl TypeChecker {
                 struct_name,
                 type_parameters,
                 fields,
+                methods,
             } => {
                 self.type_namespace
                     .add_identifier(
@@ -1957,7 +3591,7 @@ impl TypeChecker {
                         .push((*span, type_parameter.to_compact_string(), bound.clone()));
                 }
 
-                for (span, field, _) in fields {
+                for (span, field, _, _) in fields {
                     if let Some(other_span) = seen_fields.get(field) {
                         return Err(Box::new(TypeCheckError::DuplicateFieldInStructDefinition(
                             *span,
@@ -1967,6 +3601,33 @@ impl TypeChecker {
                     }
 
                     seen_fields.insert(field, *span);
+                }
+
+                let mut seen_member_spans: HashMap<&str, Span> = fields
+                    .iter()
+                    .map(|(span, name, _, _)| (*name, *span))
+                    .collect();
+                for method in methods {
+                    if let ast::Statement::DefineFunction {
+                        function_name_span,
+                        function_name,
+                        ..
+                    } = method
+                        && let Some(previous_span) = seen_member_spans.get(function_name)
+                    {
+                        return Err(Box::new(TypeCheckError::DuplicateMemberInStructDefinition(
+                            *function_name_span,
+                            *previous_span,
+                            (*function_name).to_string(),
+                        )));
+                    } else if let ast::Statement::DefineFunction {
+                        function_name_span,
+                        function_name,
+                        ..
+                    } = method
+                    {
+                        seen_member_spans.insert(function_name, *function_name_span);
+                    }
                 }
 
                 let struct_info = StructInfo {
@@ -1982,16 +3643,47 @@ impl TypeChecker {
                     ),
                     fields: fields
                         .iter()
-                        .map(|(span, name, type_)| {
+                        .map(|(span, name, type_, _)| {
                             Ok((
                                 name.to_compact_string(),
                                 (*span, typechecker_struct.type_from_annotation(type_)?),
                             ))
                         })
                         .collect::<Result<_>>()?,
+                    methods: methods
+                        .iter()
+                        .map(|method| {
+                            let ast::Statement::DefineFunction {
+                                function_name_span,
+                                function_name,
+                                parameters,
+                                ..
+                            } = method
+                            else {
+                                unreachable!("non-function members are rejected earlier");
+                            };
+
+                            let kind = if !parameters.is_empty() && parameters[0].1 == "self" {
+                                StructMethodKind::Instance
+                            } else {
+                                StructMethodKind::Constructor
+                            };
+
+                            (
+                                (*function_name).to_compact_string(),
+                                StructMethodInfo {
+                                    definition_span: *function_name_span,
+                                    kind,
+                                    operator_impl: None,
+                                },
+                            )
+                        })
+                        .collect(),
                 };
                 self.structs
                     .insert(struct_name.to_compact_string(), struct_info.clone());
+                self.non_generic_struct_instances
+                    .remove(&struct_name.to_compact_string());
 
                 typed_ast::Statement::DefineStruct(struct_info)
             }
@@ -2011,26 +3703,44 @@ impl TypeChecker {
         let mut elaborated_statement = self.elaborate_statement(statement)?;
 
         // Solve constraints
-        let (substitution, dtype_variables) =
-            self.constraints.solve().map_err(|inner| match inner {
-                ConstraintSolverError::CouldNotSolve(constraints) => {
-                    TypeCheckError::ConstraintSolverError(statement.full_span(), constraints)
-                }
-                ConstraintSolverError::SubstitutionError(inner) => {
-                    TypeCheckError::SubstitutionError(
-                        elaborated_statement.pretty_print().to_string(),
-                        inner,
-                    )
-                }
-            })?;
+        let mut constraints = std::mem::take(&mut self.constraints);
+        let solve_result = constraints.solve(|op, lhs, rhs, output| {
+            self.try_resolve_binary_operator_constraint(op, lhs, rhs, output)
+        });
+        self.constraints = constraints;
+
+        let (substitution, dtype_variables) = solve_result.map_err(|inner| match inner {
+            ConstraintSolverError::CouldNotSolve(constraints) => {
+                TypeCheckError::ConstraintSolverError(statement.full_span(), constraints)
+            }
+            ConstraintSolverError::SubstitutionError(inner) => TypeCheckError::SubstitutionError(
+                elaborated_statement.pretty_print().to_string(),
+                inner,
+            ),
+        })?;
 
         elaborated_statement.apply(&substitution).map_err(|e| {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
+        self.resolve_deferred_binary_operators(&mut elaborated_statement)?;
 
         self.env.apply(&substitution).map_err(|e| {
             TypeCheckError::SubstitutionError(elaborated_statement.pretty_print().to_string(), e)
         })?;
+        for method_infos in self.methods.values_mut() {
+            for method_info in method_infos.values_mut() {
+                method_info
+                    .signature
+                    .fn_type
+                    .apply(&substitution)
+                    .map_err(|e| {
+                        TypeCheckError::SubstitutionError(
+                            elaborated_statement.pretty_print().to_string(),
+                            e,
+                        )
+                    })?;
+            }
+        }
 
         if let typed_ast::Statement::DefineDerivedUnit {
             expr, type_scheme, ..
@@ -2088,6 +3798,11 @@ impl TypeChecker {
         elaborated_statement.update_readable_types(&self.registry);
 
         self.env.generalize_types(&dtype_variables);
+        for method_infos in self.methods.values_mut() {
+            for method_info in method_infos.values_mut() {
+                method_info.signature.fn_type.generalize(&dtype_variables);
+            }
+        }
 
         // Check if there is a typed hole in the statement
         if let Some((span, type_of_hole)) = elaborated_statement.find_typed_hole()? {
@@ -2124,9 +3839,304 @@ impl TypeChecker {
         statements: &[ast::Statement<'a>],
     ) -> Result<Vec<typed_ast::Statement<'a>>> {
         let mut checked_statements = vec![];
+        let struct_field_defaults = Self::collect_struct_field_defaults(statements);
 
         for statement in statements {
-            checked_statements.push(self.check_statement(statement)?);
+            let statement =
+                Self::apply_struct_defaults_statement(statement, &struct_field_defaults);
+
+            if let ast::Statement::DefineStruct {
+                struct_name_span,
+                struct_name,
+                type_parameters,
+                fields,
+                methods,
+                ..
+            } = &statement
+            {
+                let mut seen_member_spans: HashMap<&str, Span> = fields
+                    .iter()
+                    .map(|(span, name, _, _)| (*name, *span))
+                    .collect();
+                for method in methods {
+                    match method {
+                        ast::Statement::DefineFunction {
+                            function_name_span,
+                            function_name,
+                            ..
+                        } => {
+                            if let Some(previous_span) = seen_member_spans.get(function_name) {
+                                return Err(Box::new(
+                                    TypeCheckError::DuplicateMemberInStructDefinition(
+                                        *function_name_span,
+                                        *previous_span,
+                                        (*function_name).to_string(),
+                                    ),
+                                ));
+                            }
+                            seen_member_spans.insert(function_name, *function_name_span);
+                        }
+                        _ => {
+                            return Err(Box::new(TypeCheckError::InvalidStructMember(
+                                method.full_span(),
+                            )));
+                        }
+                    }
+                }
+
+                let struct_statement_idx = checked_statements.len();
+                checked_statements.push(self.check_statement(&statement)?);
+
+                let mut prepared_methods = vec![];
+
+                for method in methods {
+                    let ast::Statement::DefineFunction { parameters, .. } = method else {
+                        unreachable!("non-function members are rejected above");
+                    };
+
+                    let method_kind = if !parameters.is_empty() && parameters[0].1 == "self" {
+                        StructMethodKind::Instance
+                    } else {
+                        StructMethodKind::Constructor
+                    };
+
+                    let mut method_to_check = method.clone();
+                    if let ast::Statement::DefineFunction {
+                        type_parameters: method_type_parameters,
+                        ..
+                    } = &mut method_to_check
+                    {
+                        let mut merged_type_parameters = type_parameters.clone();
+                        merged_type_parameters.extend(method_type_parameters.clone());
+                        *method_type_parameters = merged_type_parameters;
+                    }
+
+                    if method_kind == StructMethodKind::Instance
+                        && let ast::Statement::DefineFunction { parameters, .. } =
+                            &mut method_to_check
+                        && parameters[0].2.is_none()
+                    {
+                        let self_type_args = type_parameters
+                            .iter()
+                            .map(|(span, name, _)| {
+                                TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                                    *span,
+                                    (*name).to_compact_string(),
+                                    vec![],
+                                ))
+                            })
+                            .collect();
+                        parameters[0].2 = Some(TypeAnnotation::TypeExpression(
+                            TypeExpression::TypeIdentifier(
+                                *struct_name_span,
+                                (*struct_name).to_compact_string(),
+                                self_type_args,
+                            ),
+                        ));
+                    }
+                    let self_type_args: Vec<_> = type_parameters
+                        .iter()
+                        .map(|(span, name, _)| {
+                            TypeAnnotation::TypeExpression(TypeExpression::TypeIdentifier(
+                                *span,
+                                (*name).to_compact_string(),
+                                vec![],
+                            ))
+                        })
+                        .collect();
+                    Self::rewrite_self_in_method_signature(
+                        &mut method_to_check,
+                        struct_name,
+                        &self_type_args,
+                    )?;
+                    Self::rewrite_self_in_method_decorators(
+                        &mut method_to_check,
+                        struct_name,
+                        &self_type_args,
+                    )?;
+
+                    prepared_methods.push((method_to_check, method_kind));
+                }
+
+                for (method_to_check, _method_kind) in &prepared_methods {
+                    let ast::Statement::DefineFunction {
+                        function_name,
+                        decorators,
+                        ..
+                    } = method_to_check
+                    else {
+                        unreachable!("method_to_check is DefineFunction");
+                    };
+
+                    let signature = self.provisional_method_signature(method_to_check)?;
+                    self.register_method(
+                        struct_name.to_compact_string(),
+                        function_name.to_compact_string(),
+                        signature,
+                        Self::method_operator_impl(decorators),
+                        Self::method_index_impl(decorators),
+                    );
+                }
+
+                for (method_to_check, method_kind) in prepared_methods {
+                    self.checking_struct_method = true;
+                    self.current_struct_name = Some(struct_name.to_compact_string());
+                    let checked_method = self.check_statement(&method_to_check);
+                    self.current_struct_name = None;
+                    self.checking_struct_method = false;
+                    let mut checked_method = checked_method?;
+
+                    let ast::Statement::DefineFunction {
+                        function_name_span,
+                        function_name,
+                        type_parameters,
+                        parameters,
+                        return_type_annotation,
+                        ..
+                    } = &method_to_check
+                    else {
+                        unreachable!("method_to_check is DefineFunction");
+                    };
+
+                    let checked_fn_type = match &checked_method {
+                        typed_ast::Statement::DefineFunction { fn_type, .. } => fn_type.clone(),
+                        _ => unreachable!("checked method is DefineFunction"),
+                    };
+
+                    checked_method = match checked_method {
+                        typed_ast::Statement::DefineFunction {
+                            function_name: method_name,
+                            decorators,
+                            type_parameters,
+                            parameters,
+                            body,
+                            local_variables,
+                            fn_type,
+                            return_type_annotation,
+                            readable_return_type,
+                        } => typed_ast::Statement::DefineMethod {
+                            struct_name: struct_name.to_compact_string(),
+                            method_name,
+                            decorators,
+                            type_parameters,
+                            parameters,
+                            body,
+                            local_variables,
+                            fn_type,
+                            return_type_annotation,
+                            readable_return_type,
+                        },
+                        _ => unreachable!("checked method is DefineFunction"),
+                    };
+                    let checked_method_decorators = match &checked_method {
+                        typed_ast::Statement::DefineMethod { decorators, .. } => decorators.clone(),
+                        _ => unreachable!("checked method is DefineMethod"),
+                    };
+
+                    let signature = FunctionSignature {
+                        name: (*function_name).to_compact_string(),
+                        definition_span: *function_name_span,
+                        type_parameters: type_parameters
+                            .iter()
+                            .map(|(span, name, bound)| {
+                                (*span, (*name).to_compact_string(), bound.clone())
+                            })
+                            .collect(),
+                        parameters: parameters
+                            .iter()
+                            .map(|(span, name, annotation)| {
+                                (*span, (*name).to_compact_string(), annotation.clone())
+                            })
+                            .collect(),
+                        return_type_annotation: return_type_annotation.clone(),
+                        fn_type: checked_fn_type,
+                    };
+
+                    let operator_impl = self.validate_operator_method_decorator(
+                        method_kind.clone(),
+                        *function_name_span,
+                        function_name,
+                        &checked_method_decorators,
+                        &signature.fn_type,
+                        &type_parameters
+                            .iter()
+                            .map(|(span, name, bound)| (*span, *name, bound.clone()))
+                            .collect::<Vec<_>>(),
+                    )?;
+                    let index_impl = self.validate_index_method_decorator(
+                        method_kind.clone(),
+                        *function_name_span,
+                        function_name,
+                        &checked_method_decorators,
+                        &signature.fn_type,
+                        &type_parameters
+                            .iter()
+                            .map(|(span, name, bound)| (*span, *name, bound.clone()))
+                            .collect::<Vec<_>>(),
+                    )?;
+
+                    if method_kind == StructMethodKind::Instance {
+                        let fn_type = match &signature.fn_type {
+                            TypeScheme::Concrete(t) => t.clone(),
+                            TypeScheme::Quantified(_, _) => {
+                                signature
+                                    .fn_type
+                                    .instantiate(&mut self.name_generator)
+                                    .inner
+                            }
+                        };
+
+                        let Type::Fn(parameter_types, _) = &fn_type else {
+                            unreachable!("method type is expected to be function type");
+                        };
+
+                        let Some(Type::Struct(self_type)) = parameter_types.first() else {
+                            return Err(Box::new(TypeCheckError::InvalidSelfParameterType(
+                                *struct_name_span,
+                                function_name.to_string(),
+                                struct_name.to_string(),
+                            )));
+                        };
+
+                        if self_type.name.as_str() != *struct_name {
+                            return Err(Box::new(TypeCheckError::InvalidSelfParameterType(
+                                *struct_name_span,
+                                function_name.to_string(),
+                                struct_name.to_string(),
+                            )));
+                        }
+                    }
+
+                    self.register_method(
+                        struct_name.to_compact_string(),
+                        function_name.to_compact_string(),
+                        signature,
+                        Self::method_operator_impl(&checked_method_decorators),
+                        index_impl,
+                    );
+
+                    if let Some(struct_info) = self.structs.get_mut(*struct_name)
+                        && let Some(method_info) = struct_info.methods.get_mut(*function_name)
+                    {
+                        method_info.operator_impl = operator_impl;
+                    }
+
+                    checked_statements.push(checked_method);
+                }
+
+                if let Some(typed_ast::Statement::DefineStruct(struct_info)) =
+                    checked_statements.get_mut(struct_statement_idx)
+                    && let Some(updated_struct_info) = self.structs.get(*struct_name)
+                {
+                    *struct_info = updated_struct_info.clone();
+                }
+                self.non_generic_struct_instances
+                    .remove(&struct_name.to_compact_string());
+
+                continue;
+            }
+
+            checked_statements.push(self.check_statement(&statement)?);
         }
 
         Ok(checked_statements)

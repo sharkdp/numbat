@@ -19,11 +19,12 @@ use crate::value::Value;
 
 #[cfg(feature = "plotting")]
 fn line_plot(mut args: Args) -> Result<Plot, Box<RuntimeErrorKind>> {
-    let mut fields = arg!(args).unsafe_as_struct_fields();
-    let ys = fields.pop().unwrap();
-    let xs = fields.pop().unwrap();
-    let y_label = fields.pop().unwrap().unsafe_as_string();
-    let x_label = fields.pop().unwrap().unsafe_as_string();
+    let plot = arg!(args);
+    let fields = plot.unsafe_as_struct_fields();
+    let x_label = fields[0].clone().unsafe_as_string();
+    let y_label = fields[1].clone().unsafe_as_string();
+    let xs = fields[2].clone();
+    let ys = fields[3].clone();
 
     let xs = xs.unsafe_as_list();
     let ys = ys.unsafe_as_list();
@@ -70,10 +71,11 @@ fn line_plot(mut args: Args) -> Result<Plot, Box<RuntimeErrorKind>> {
 
 #[cfg(feature = "plotting")]
 fn bar_chart(mut args: Args) -> Result<Plot, Box<RuntimeErrorKind>> {
-    let mut fields = arg!(args).unsafe_as_struct_fields();
-    let x_labels = fields.pop().unwrap();
-    let values = fields.pop().unwrap();
-    let value_label = fields.pop().unwrap().unsafe_as_string();
+    let plot = arg!(args);
+    let fields = plot.unsafe_as_struct_fields();
+    let value_label = fields[0].clone().unsafe_as_string();
+    let values = fields[1].clone();
+    let x_labels = fields[2].clone();
 
     let x_labels = x_labels
         .unsafe_as_list()
