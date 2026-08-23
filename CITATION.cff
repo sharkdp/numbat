@@ -16,5 +16,5 @@ abstract: >-
   computations with first class support for physical
   dimensions and units.
 license: MIT
-version: 1.23.0
-date-released: '2026-02-08'
+version: 1.24.0
+date-released: '2026-08-23'
