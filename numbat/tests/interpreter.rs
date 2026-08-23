@@ -635,6 +635,29 @@ fn test_full_simplify() {
     expect_output("1 dpi * 1 in", "1 dot");
     expect_output("1 mph * 1 hour", "1 mi");
     expect_output("1 dot / 96 dpi", "0.0104167 in");
+
+    // Regression test for https://github.com/sharkdp/numbat/issues/873:
+    // nested derived units with fractional exponents must be reduced before
+    // computing the target exponent used for automatic unit simplification.
+    expect_output(
+        r#"
+        fn lorentz_force_law(
+            charge: ElectricCharge,
+            velocity: Velocity,
+            eflux: ElectricFieldStrength,
+            mflux: MagneticFluxDensity,
+        ) -> Force =
+            charge * eflux + charge * velocity * mflux
+
+        lorentz_force_law(
+            elementary_charge,
+            speed_of_light,
+            (magnetic_flux_quantum / planck_time) / planck_length,
+            magnetic_flux_quantum / planck_length^2,
+        )
+        "#,
+        "7.60426e+44 N",
+    );
 }
 
 #[test]

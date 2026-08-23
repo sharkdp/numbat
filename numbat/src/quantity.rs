@@ -191,7 +191,8 @@ impl Quantity {
 
         // Heuristic 3
         let removed_exponent = |u: &UnitFactor| {
-            let base_unit = u.unit_id.base_unit_and_factor().0;
+            // Nested derived units can contain factors that only cancel after reduction.
+            let base_unit = u.unit_id.base_unit_and_factor().0.canonicalized();
             if let Some(first_factor) = base_unit.into_iter().next() {
                 first_factor.exponent
             } else {
