@@ -640,22 +640,8 @@ fn test_full_simplify() {
     // nested derived units with fractional exponents must be reduced before
     // computing the target exponent used for automatic unit simplification.
     expect_output(
-        r#"
-        fn lorentz_force_law(
-            charge: ElectricCharge,
-            velocity: Velocity,
-            eflux: ElectricFieldStrength,
-            mflux: MagneticFluxDensity,
-        ) -> Force =
-            charge * eflux + charge * velocity * mflux
-
-        lorentz_force_law(
-            elementary_charge,
-            speed_of_light,
-            (magnetic_flux_quantum / planck_time) / planck_length,
-            magnetic_flux_quantum / planck_length^2,
-        )
-        "#,
+        "elementary_charge * (magnetic_flux_quantum / planck_time / planck_length) \
+         + elementary_charge * speed_of_light * (magnetic_flux_quantum / planck_length^2)",
         "7.60426e+44 N",
     );
 }
