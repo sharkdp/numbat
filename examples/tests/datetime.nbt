@@ -117,6 +117,10 @@ assert_eq(dt_unixtime_2 -> unixtime_s -> from_unixtime_s -> unixtime_s, 16583467
 assert_eq(dt_unixtime_2 -> unixtime_ms -> from_unixtime_ms -> unixtime_ms, 1658346725123)
 assert_eq(dt_unixtime_2 -> unixtime_µs -> from_unixtime_µs -> unixtime_µs, 1658346725123456)
 
+# Regression test for #871
+assert_eq(from_unixtime_ms(1783591946381) -> unixtime_ms, 1783591946381)
+assert_eq(from_unixtime_ms(1783598716223) -> unixtime_ms, 1783598716223)
+
 
 # Calendar arithmetic
 
