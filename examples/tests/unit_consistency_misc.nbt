@@ -82,3 +82,11 @@ assert_eq(1 PSI, 6.894757 kPa)
 assert_eq(1 atm, 101_325.0 Pa)
 
 assert_eq(1 maxwell, 1e-8 weber)
+
+assert_eq(72 point, 1 inch, 1e-9 inch)
+assert_eq(1 pica, 12 point)
+assert_eq(6 pica, 1 inch, 1e-9 inch)
+assert_eq(20 twip, 1 point, 1e-9 point)
+assert_eq(1440 twip, 1 inch, 1e-9 inch)
+assert_eq(72.27 tex_point, 1 inch, 1e-9 inch)
+assert_eq(1 tex_pica, 12 tex_point)
