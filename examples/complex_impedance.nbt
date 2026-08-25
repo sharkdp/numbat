@@ -1,0 +1,114 @@
+# Complex Impedance in AC Circuits
+#
+# In alternating-current (AC) circuits, resistors, capacitors, and inductors
+# each oppose current flow differently. Their combined effect is described by
+# a complex-valued impedance Z, measured in ohms:
+#
+#   Resistor:  Z_R = R            (purely real)
+#   Capacitor: Z_C = 1 / (i·ω·C) (purely imaginary, negative)
+#   Inductor:  Z_L = i·ω·L       (purely imaginary, positive)
+#
+# where ω = 2π·f is the angular frequency. Complex arithmetic lets us combine
+# these naturally — no separate magnitude/phase bookkeeping needed.
+#
+# This example analyses a series RLC band-pass filter and an RC low-pass filter.
+
+# --- Component values ---
+
+let R₁ = 100 Ω
+let C₁ = 10 nF
+let L₁ = 1 mH
+
+# Resonant frequency: f₀ = 1 / (2π √(LC))
+let f_resonant = 1 / (2π × sqrt(L₁ × C₁))
+
+print("=========================================")
+print("  Series RLC Band-Pass Filter Analysis")
+print("=========================================")
+print()
+print("Components: R = {R₁}, C = {C₁}, L = {L₁}")
+print("Resonant frequency f₀ = {f_resonant -> kHz}")
+print()
+
+# --- Impedance as a function of frequency ---
+# Z = R + iωL + 1/(iωC)
+
+fn Z_total(f: Frequency) -> ElectricResistance =
+    R₁ + i × (2π × f) × L₁ + 1 / (i × (2π × f) × C₁)
+
+# --- Below resonance (capacitive regime) ---
+
+let f_low = f_resonant / 10
+let Z_low = Z_total(f_low)
+
+print("  f = f₀/10 = {f_low -> kHz}  (below resonance)")
+print("    Z   = {Z_low}")
+print("    |Z| = {abs(Z_low)}")
+print("    arg = {arg(Z_low / Ω) -> °}")
+print()
+
+# --- At resonance (purely resistive) ---
+
+let Z_res = Z_total(f_resonant)
+
+print("  f = f₀   = {f_resonant -> kHz}  (at resonance)")
+print("    Z   = {Z_res}")
+print("    |Z| = {abs(Z_res)}")
+print("    arg = {arg(Z_res / Ω) -> °}")
+print()
+
+# At resonance the reactive parts cancel, leaving only the resistance R.
+assert_eq(re(Z_res), R₁, 1 mΩ)
+assert_eq(abs(im(Z_res)), 0 Ω, 1 mΩ)
+
+# --- Above resonance (inductive regime) ---
+
+let f_high = f_resonant × 10
+let Z_high = Z_total(f_high)
+
+print("  f = 10·f₀ = {f_high -> kHz}  (above resonance)")
+print("    Z   = {Z_high}")
+print("    |Z| = {abs(Z_high)}")
+print("    arg = {arg(Z_high / Ω) -> °}")
+print()
+
+# --- RC Low-Pass Filter ---
+#
+# A resistor and capacitor in series form a low-pass filter. The transfer
+# function (voltage divider) is:
+#
+#   H(f) = Z_C / (Z_R + Z_C) = 1 / (1 + i·2π·f·R·C)
+#
+# The gain |H(f)| rolls off above the cutoff frequency f_c = 1/(2π·RC).
+
+print("=========================================")
+print("  RC Low-Pass Filter")
+print("=========================================")
+print()
+
+let R_lp = 1 kΩ
+let C_lp = 100 nF
+let f_cutoff = 1 / (2π × R_lp × C_lp)
+
+print("Components: R = {R_lp}, C = {C_lp}")
+print("Cutoff frequency f_c = {f_cutoff -> kHz}")
+print()
+
+# Complex transfer function
+fn transfer(f: Frequency) -> Scalar = 1 / (1 + i × 2π × f × R_lp × C_lp)
+
+# Gain = |H(f)|
+fn gain(f: Frequency) -> Scalar = abs(transfer(f))
+
+# Phase = arg(transfer(f))
+fn phase(f: Frequency) -> Scalar = arg(transfer(f))
+
+print("  f = f_c/10 :  gain = {gain(f_cutoff / 10)},  phase = {phase(f_cutoff / 10) -> °}")
+print("  f = f_c    :  gain = {gain(f_cutoff)},  phase = {phase(f_cutoff) -> °}")
+print("  f = 10·f_c :  gain = {gain(f_cutoff × 10)},  phase = {phase(f_cutoff × 10) -> °}")
+print()
+
+# At the cutoff frequency the gain is 1/√2 ≈ 0.707 (the −3 dB point)
+# and the phase is −45°.
+assert_eq(gain(f_cutoff), 1 / sqrt(2), 0.001)
+assert_eq(phase(f_cutoff), -45°, 0.01°)

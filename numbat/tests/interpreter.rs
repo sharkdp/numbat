@@ -501,7 +501,7 @@ fn test_temperature_conversions() {
 #[test]
 fn test_other_functions() {
     expect_output("sqrt(4)", "2");
-    expect_output("sqrt(-1)", "NaN");
+    expect_output("sqrt(-1)", "i");
     expect_output("cbrt(27)", "3");
     expect_output("cbrt(-64)", "-4");
     expect_output("log10(100000)", "5");
@@ -513,7 +513,7 @@ fn test_other_functions() {
     expect_output("round(3.1)", "3");
     expect_output("is_nan(NaN)", "true");
     expect_output("is_nan(NaN cm)", "true");
-    expect_output("is_nan(ln(-1))", "true");
+    expect_output("is_nan(ln(-1))", "false");
     expect_output("is_nan(1)", "false");
     expect_output("is_infinite(inf)", "true");
     expect_output("is_infinite(-inf)", "true");

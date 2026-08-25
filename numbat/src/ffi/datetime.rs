@@ -97,7 +97,10 @@ pub fn from_unixtime_us(
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
-    let us = quantity_arg!(args).unsafe_value().to_f64() as i64;
+    let q = quantity_arg!(args);
+    let us = q.unsafe_value().try_as_real().ok_or_else(|| {
+        RuntimeErrorKind::ExpectedRealNumberInFunction("from_unixtime".into())
+    })? as i64;
 
     let dt = Timestamp::from_microsecond(us)
         .map_err(|_| RuntimeErrorKind::DateTimeOutOfRange)?
@@ -112,7 +115,10 @@ fn calendar_add(
     to_span: fn(i64) -> std::result::Result<Span, jiff::Error>,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
     let dt = datetime_arg!(args);
-    let n = quantity_arg!(args).unsafe_value().to_f64();
+    let q = quantity_arg!(args);
+    let n = q.unsafe_value().try_as_real().ok_or_else(|| {
+        RuntimeErrorKind::ExpectedRealNumberInFunction(format!("calendar_add ({unit_name})"))
+    })?;
 
     if n.fract() != 0.0 {
         return Err(Box::new(RuntimeErrorKind::UserError(format!(

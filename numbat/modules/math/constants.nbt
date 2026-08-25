@@ -1,4 +1,5 @@
 use core::scalar
+use core::functions
 
 ### Mathematical
 
@@ -20,6 +21,10 @@ let e = 2.71828182845904523536028747135266250
 @url("https://en.wikipedia.org/wiki/Golden_ratio")
 @aliases(golden_ratio)
 let φ = 1.61803398874989484820458683436563811
+
+@name("Imaginary unit")
+@url("https://en.wikipedia.org/wiki/Imaginary_unit")
+let i = sqrt(-1)
 
 ### Named numbers
 
