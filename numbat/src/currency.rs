@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, Mutex, OnceLock};
 
-use numbat_exchange_rates::parse_exchange_rates;
+use numbat_exchange_rates::{ExchangeRates, parse_exchange_rates};
 
 pub trait CurrencyManager: Send + Sync {
     fn get_rate(&self, currency: &str) -> Option<f64>;
@@ -36,7 +36,7 @@ impl CurrencyManager for NullCurrencyManager {
 #[derive(Debug, Default)]
 pub struct OnDemandCurrencyManager {
     loaded: AtomicBool,
-    rates: OnceLock<Option<numbat_exchange_rates::ExchangeRates>>,
+    rates: OnceLock<Option<ExchangeRates>>,
 }
 
 impl OnDemandCurrencyManager {
@@ -58,8 +58,7 @@ impl OnDemandCurrencyManager {
     }
 
     fn load_rates(&self) {
-        self.rates
-            .get_or_init(numbat_exchange_rates::fetch_exchange_rates);
+        self.rates.get_or_init(fetch_exchange_rates);
     }
 }
 
@@ -113,4 +112,12 @@ pub(crate) fn load_manager() -> Result<Option<String>, CouldNotLoadCurrencyManag
         .try_lock()
         .map_err(|_| CouldNotLoadCurrencyManager)
         .and_then(|m| m.load())
+}
+
+#[cfg(feature = "fetch-exchangerates")]
+use numbat_exchange_rates::fetch_exchange_rates;
+
+#[cfg(not(feature = "fetch-exchangerates"))]
+fn fetch_exchange_rates() -> Option<ExchangeRates> {
+    None
 }
