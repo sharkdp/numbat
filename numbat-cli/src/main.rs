@@ -13,6 +13,7 @@ use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
 use numbat::command::{CommandControlFlow, CommandRunner};
+use numbat::currency::OnDemandCurrencyManager;
 use numbat::diagnostic::{ErrorDiagnostic, ResolverDiagnostic};
 use numbat::module_importer::{BuiltinModuleImporter, ChainedImporter, FileSystemImporter};
 use numbat::pretty_print::PrettyPrint;
@@ -195,10 +196,7 @@ impl Cli {
         if self.config.load_prelude
             && self.config.exchange_rates.fetching_policy != ExchangeRateFetchingPolicy::Never
         {
-            self.context
-                .lock()
-                .unwrap()
-                .load_currency_module_on_demand(true);
+            Context::set_currency_manager(OnDemandCurrencyManager::default());
         }
 
         Ok(())
@@ -296,7 +294,7 @@ impl Cli {
                     == ExchangeRateFetchingPolicy::OnStartup
             {
                 Some(thread::spawn(move || {
-                    numbat::Context::prefetch_exchange_rates();
+                    Context::set_currency_manager(OnDemandCurrencyManager::preloaded());
                 }))
             } else {
                 None

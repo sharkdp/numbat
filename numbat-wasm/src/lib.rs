@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use numbat::buffered_writer::BufferedWriter;
 use numbat::command::{CommandControlFlow, CommandRunner};
+use numbat::currency::OnDemandCurrencyManager;
 use numbat::diagnostic::{ErrorDiagnostic, ResolverDiagnostic};
 use numbat::help::basic_help_markup;
 use numbat::html_formatter::{HtmlFormatter, HtmlWriter};
@@ -86,7 +87,7 @@ impl Numbat {
     }
 
     pub fn set_exchange_rates(&mut self, xml_content: &str) {
-        Context::set_exchange_rates(xml_content);
+        Context::set_currency_manager(OnDemandCurrencyManager::from_xml(xml_content));
         let _ = self
             .ctx
             .interpret("use units::currencies", CodeSource::Internal)
