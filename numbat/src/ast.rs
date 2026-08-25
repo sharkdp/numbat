@@ -567,7 +567,7 @@ impl Statement<'_> {
 }
 
 #[cfg(test)]
-pub trait ReplaceSpans {
+pub(crate) trait ReplaceSpans {
     fn replace_spans(&self) -> Self;
 }
 

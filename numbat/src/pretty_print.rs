@@ -40,7 +40,7 @@ impl PrettyPrint for bool {
     }
 }
 
-pub fn escape_numbat_string(s: &str) -> CompactString {
+pub(crate) fn escape_numbat_string(s: &str) -> CompactString {
     let mut out = CompactString::const_new("");
     for c in s.chars() {
         let replacement = match c {

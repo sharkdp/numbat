@@ -6,7 +6,7 @@ use termcolor::{Color, WriteColor};
 
 pub struct HtmlFormatter;
 
-pub fn html_format(class: Option<&str>, content: &str) -> CompactString {
+pub(crate) fn html_format(class: Option<&str>, content: &str) -> CompactString {
     if content.is_empty() {
         return CompactString::const_new("");
     }

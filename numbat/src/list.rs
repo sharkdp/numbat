@@ -51,11 +51,11 @@ impl<T: PartialEq> PartialEq for NumbatList<T> {
 }
 
 impl<T> NumbatList<T> {
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         if let Some(view) = self.view {
             view.1 - view.0
         } else {
@@ -67,7 +67,7 @@ impl<T> NumbatList<T> {
         Self::default()
     }
 
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub(crate) fn with_capacity(capacity: usize) -> Self {
         Self {
             alloc: Arc::new(VecDeque::with_capacity(capacity)),
             view: None,
@@ -76,7 +76,7 @@ impl<T> NumbatList<T> {
 
     /// Return the tail of the list without the first element.
     /// Return an error if the list is empty.
-    pub fn tail(&mut self) -> Result<(), Box<RuntimeErrorKind>> {
+    pub(crate) fn tail(&mut self) -> Result<(), Box<RuntimeErrorKind>> {
         if self.is_empty() {
             return Err(Box::new(RuntimeErrorKind::EmptyList));
         }
@@ -90,7 +90,7 @@ impl<T> NumbatList<T> {
         Ok(())
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &T> {
         let (start, end) = self.view.map_or((0, self.alloc.len()), |view| view);
         self.alloc.iter().skip(start).take(end - start)
     }
@@ -111,7 +111,7 @@ impl<T: Clone> NumbatList<T> {
     /// Return the first element of the list. If we're the only owner of the list,
     /// drop the list and do not copy anything. If another list is alive, only
     /// clone the value that's being returned.
-    pub fn head(self) -> Option<T> {
+    pub(crate) fn head(self) -> Option<T> {
         let front = self.view.map_or(0, |(start, _end)| start);
         match Arc::try_unwrap(self.alloc) {
             Ok(mut solely_owned) => solely_owned.swap_remove_front(front),
@@ -120,7 +120,7 @@ impl<T: Clone> NumbatList<T> {
     }
 
     /// Allocate if the list is being used by another value at the same time
-    pub fn push_front(&mut self, element: T) {
+    pub(crate) fn push_front(&mut self, element: T) {
         let (view, inner) = self.make_mut();
         if let Some((start, end)) = view {
             // if we were alone on the allocation and had a view of the inner allocation
@@ -139,7 +139,7 @@ impl<T: Clone> NumbatList<T> {
     }
 
     /// Allocate if the list is being used by another value at the same time
-    pub fn push_back(&mut self, element: T) {
+    pub(crate) fn push_back(&mut self, element: T) {
         let (view, inner) = self.make_mut();
         if let Some((_start, end)) = view {
             // if we were alone on the allocation and had a view of the inner allocation

@@ -7,11 +7,11 @@ use crate::pretty_print::FormatOptions;
 /// The default format for displaying DateTime values.
 pub const DEFAULT_DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
-pub fn get_local_timezone_or_utc() -> TimeZone {
+pub(crate) fn get_local_timezone_or_utc() -> TimeZone {
     TimeZone::system()
 }
 
-pub fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
+pub(crate) fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
     if let zoned @ Ok(_) = Zoned::from_str(input) {
         return zoned;
     }
@@ -73,7 +73,7 @@ pub fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {
     Timestamp::from_str(input).map(|ts| ts.to_zoned(get_local_timezone_or_utc()))
 }
 
-pub fn to_string(dt: &Zoned, options: &FormatOptions) -> CompactString {
+pub(crate) fn to_string(dt: &Zoned, options: &FormatOptions) -> CompactString {
     let tz = dt.time_zone();
 
     if dt.time_zone() == &TimeZone::UTC {

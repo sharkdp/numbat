@@ -9,7 +9,7 @@ use compact_str::{CompactString, ToCompactString};
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ModulePath(pub Vec<CompactString>);
+pub struct ModulePath(pub(crate) Vec<CompactString>);
 
 impl std::fmt::Display for ModulePath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -18,7 +18,7 @@ impl std::fmt::Display for ModulePath {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ModulePathBorrowed<'a>(pub Vec<&'a str>);
+pub struct ModulePathBorrowed<'a>(pub(crate) Vec<&'a str>);
 
 #[derive(Debug, Clone)]
 pub enum CodeSource {
@@ -69,7 +69,7 @@ impl Resolver {
         }
     }
 
-    pub fn add_code_source(&mut self, code_source: CodeSource, content: &str) -> usize {
+    pub(crate) fn add_code_source(&mut self, code_source: CodeSource, content: &str) -> usize {
         let code_source_name = match &code_source {
             CodeSource::Text => {
                 self.text_code_source_count += 1;
@@ -138,7 +138,7 @@ impl Resolver {
         Ok(new_program)
     }
 
-    pub fn resolve<'a>(
+    pub(crate) fn resolve<'a>(
         &mut self,
         code: &'a str,
         code_source: CodeSource,
@@ -149,7 +149,7 @@ impl Resolver {
         self.inlining_pass(&statements)
     }
 
-    pub fn get_importer(&self) -> &dyn ModuleImporter {
+    pub(crate) fn get_importer(&self) -> &dyn ModuleImporter {
         self.importer.as_ref()
     }
 }

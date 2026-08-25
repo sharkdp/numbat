@@ -78,7 +78,7 @@ pub struct FormattedString(pub OutputType, pub FormatType, pub CompactStrCow);
 pub struct Markup(pub Vec<FormattedString>);
 
 impl Markup {
-    pub fn from(f: FormattedString) -> Self {
+    pub(crate) fn from(f: FormattedString) -> Self {
         Self(vec![f])
     }
 }
@@ -110,7 +110,7 @@ impl std::iter::Sum for Markup {
     }
 }
 
-pub fn space() -> Markup {
+pub(crate) fn space() -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Whitespace,
@@ -118,11 +118,11 @@ pub fn space() -> Markup {
     ))
 }
 
-pub fn empty() -> Markup {
+pub(crate) fn empty() -> Markup {
     Markup::default()
 }
 
-pub fn whitespace(text: impl Into<CompactStrCow>) -> Markup {
+pub(crate) fn whitespace(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Whitespace,
@@ -130,7 +130,7 @@ pub fn whitespace(text: impl Into<CompactStrCow>) -> Markup {
     ))
 }
 
-pub fn emphasized(text: impl Into<CompactStrCow>) -> Markup {
+pub(crate) fn emphasized(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Emphasized,
@@ -138,7 +138,7 @@ pub fn emphasized(text: impl Into<CompactStrCow>) -> Markup {
     ))
 }
 
-pub fn dimmed(text: impl Into<CompactStrCow>) -> Markup {
+pub(crate) fn dimmed(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Dimmed,
@@ -146,7 +146,7 @@ pub fn dimmed(text: impl Into<CompactStrCow>) -> Markup {
     ))
 }
 
-pub fn text(text: impl Into<CompactStrCow>) -> Markup {
+pub(crate) fn text(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Text,
@@ -154,7 +154,7 @@ pub fn text(text: impl Into<CompactStrCow>) -> Markup {
     ))
 }
 
-pub fn string(text: impl Into<CompactStrCow>) -> Markup {
+pub(crate) fn string(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::String,
@@ -170,7 +170,7 @@ pub fn keyword(text: impl Into<CompactStrCow>) -> Markup {
     ))
 }
 
-pub fn value(text: impl Into<CompactStrCow>) -> Markup {
+pub(crate) fn value(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Value,
@@ -202,7 +202,7 @@ pub fn type_identifier(text: impl Into<CompactStrCow>) -> Markup {
     ))
 }
 
-pub fn operator(text: impl Into<CompactStrCow>) -> Markup {
+pub(crate) fn operator(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Operator,
@@ -210,7 +210,7 @@ pub fn operator(text: impl Into<CompactStrCow>) -> Markup {
     ))
 }
 
-pub fn decorator(text: impl Into<CompactStrCow>) -> Markup {
+pub(crate) fn decorator(text: impl Into<CompactStrCow>) -> Markup {
     Markup::from(FormattedString(
         OutputType::Normal,
         FormatType::Decorator,

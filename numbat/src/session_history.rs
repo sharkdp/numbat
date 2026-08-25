@@ -22,12 +22,12 @@ impl SessionHistory {
 
 #[derive(Debug, Clone, Copy)]
 pub struct SessionHistoryOptions {
-    pub include_err_lines: bool,
-    pub trim_lines: bool,
+    pub(crate) include_err_lines: bool,
+    pub(crate) trim_lines: bool,
 }
 
 impl SessionHistory {
-    pub fn push(&mut self, input: CompactString, result: ParseEvaluationResult) {
+    pub(crate) fn push(&mut self, input: CompactString, result: ParseEvaluationResult) {
         self.0.push(SessionHistoryItem { input, result });
     }
 
@@ -58,7 +58,7 @@ impl SessionHistory {
         Ok(())
     }
 
-    pub fn save(
+    pub(crate) fn save(
         &self,
         dst: impl AsRef<Path>,
         options: SessionHistoryOptions,

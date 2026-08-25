@@ -216,7 +216,7 @@ impl Context {
         &self.prefix_transformer.dimension_names
     }
 
-    pub fn print_environment(&self) -> Markup {
+    pub(crate) fn print_environment(&self) -> Markup {
         let mut output = m::empty();
 
         output += m::emphasized("List of functions:") + m::nl();
@@ -689,7 +689,7 @@ impl Context {
         &self.resolver
     }
 
-    pub fn resolver_mut(&mut self) -> &mut Resolver {
+    pub(crate) fn resolver_mut(&mut self) -> &mut Resolver {
         &mut self.resolver
     }
 
