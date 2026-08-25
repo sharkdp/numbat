@@ -1,0 +1,29 @@
+use units::si
+use units::imperial
+
+### Typographic units
+
+@name("Point")
+@url("https://en.wikipedia.org/wiki/Point_(typography)")
+@aliases(points, pt: short)
+unit point: Length = inch / 72
+
+@name("Pica")
+@url("https://en.wikipedia.org/wiki/Pica_(typography)")
+@aliases(picas)
+unit pica: Length = 12 point
+
+@name("Twip")
+@url("https://en.wikipedia.org/wiki/Twip")
+@aliases(twips)
+unit twip: Length = point / 20
+
+@name("TeX point")
+@url("https://en.wikipedia.org/wiki/Point_(typography)#TeX_point")
+@aliases(tex_points)
+unit tex_point: Length = inch / 72.27
+
+@name("TeX pica")
+@url("https://en.wikipedia.org/wiki/Pica_(typography)")
+@aliases(tex_picas)
+unit tex_pica: Length = 12 tex_point
