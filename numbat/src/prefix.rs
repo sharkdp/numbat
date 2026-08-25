@@ -23,22 +23,22 @@ impl Prefix {
     }
 
     #[cfg(test)]
-    pub fn micro() -> Self {
+    pub(crate) fn micro() -> Self {
         Prefix::Metric(-6)
     }
 
     #[cfg(test)]
-    pub fn milli() -> Self {
+    pub(crate) fn milli() -> Self {
         Prefix::Metric(-3)
     }
 
     #[cfg(test)]
-    pub fn centi() -> Self {
+    pub(crate) fn centi() -> Self {
         Prefix::Metric(-2)
     }
 
     #[cfg(test)]
-    pub fn deci() -> Self {
+    pub(crate) fn deci() -> Self {
         Prefix::Metric(-1)
     }
 
@@ -48,42 +48,42 @@ impl Prefix {
     }
 
     #[cfg(test)]
-    pub fn hecto() -> Self {
+    pub(crate) fn hecto() -> Self {
         Prefix::Metric(2)
     }
 
     #[cfg(test)]
-    pub fn kilo() -> Self {
+    pub(crate) fn kilo() -> Self {
         Prefix::Metric(3)
     }
 
     #[cfg(test)]
-    pub fn mega() -> Self {
+    pub(crate) fn mega() -> Self {
         Prefix::Metric(6)
     }
 
     #[cfg(test)]
-    pub fn giga() -> Self {
+    pub(crate) fn giga() -> Self {
         Prefix::Metric(9)
     }
 
     #[cfg(test)]
-    pub fn tera() -> Self {
+    pub(crate) fn tera() -> Self {
         Prefix::Metric(12)
     }
 
     #[cfg(test)]
-    pub fn kibi() -> Self {
+    pub(crate) fn kibi() -> Self {
         Prefix::Binary(10)
     }
 
     #[cfg(test)]
-    pub fn mebi() -> Self {
+    pub(crate) fn mebi() -> Self {
         Prefix::Binary(20)
     }
 
     #[cfg(test)]
-    pub fn gibi() -> Self {
+    pub(crate) fn gibi() -> Self {
         Prefix::Binary(30)
     }
 

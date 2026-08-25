@@ -157,9 +157,6 @@ pub enum ParseErrorKind {
     #[error("Expected ':' after a field name")]
     ExpectedColonAfterFieldName,
 
-    #[error("Only functions can be called")]
-    CanOnlyCallIdentifier,
-
     #[error("Division by zero in dimension exponent")]
     DivisionByZeroInDimensionExponent,
 
@@ -257,8 +254,8 @@ pub enum ParseErrorKind {
 #[derive(Debug, Clone, Error)]
 #[error("{kind}")]
 pub struct ParseError {
-    pub kind: ParseErrorKind,
-    pub span: Span,
+    pub(crate) kind: ParseErrorKind,
+    pub(crate) span: Span,
 }
 
 impl ParseError {
@@ -2167,7 +2164,7 @@ pub fn parse(input: &str, code_source_id: usize) -> ParseResult<'_> {
 }
 
 #[cfg(test)]
-pub fn parse_dexpr(input: &str) -> TypeExpression {
+pub(crate) fn parse_dexpr(input: &str) -> TypeExpression {
     let tokens = crate::tokenizer::tokenize(input, 0).expect("No tokenizer errors in tests");
     let mut parser = crate::parser::Parser::new();
     let expr = parser

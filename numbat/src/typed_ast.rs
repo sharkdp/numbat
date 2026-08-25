@@ -457,7 +457,7 @@ impl PrettyPrint for Type {
 }
 
 impl Type {
-    pub fn to_readable_type(&self, registry: &DimensionRegistry) -> Markup {
+    pub(crate) fn to_readable_type(&self, registry: &DimensionRegistry) -> Markup {
         match self {
             Type::Dimension(d) => d.to_readable_type(registry),
             Type::Struct(info) => {
@@ -485,15 +485,15 @@ impl Type {
         }
     }
 
-    pub fn scalar() -> Type {
+    pub(crate) fn scalar() -> Type {
         Type::Dimension(DType::scalar())
     }
 
-    pub fn is_dtype(&self) -> bool {
+    pub(crate) fn is_dtype(&self) -> bool {
         matches!(self, Type::Dimension(..))
     }
 
-    pub fn is_fn_type(&self) -> bool {
+    pub(crate) fn is_fn_type(&self) -> bool {
         matches!(self, Type::Fn(..))
     }
 
@@ -844,7 +844,7 @@ pub enum Statement<'a> {
 }
 
 impl Statement<'_> {
-    pub fn as_expression(&self) -> Option<&Expression<'_>> {
+    pub(crate) fn as_expression(&self) -> Option<&Expression<'_>> {
         if let Self::Expression(v) = self {
             Some(v)
         } else {

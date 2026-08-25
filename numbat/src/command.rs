@@ -596,7 +596,7 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
 ///
 /// This can only be successfully constructed if the first word of the input is a valid
 /// command name.
-pub struct CommandParser<'a> {
+pub(crate) struct CommandParser<'a> {
     command_kind: CommandKind,
     /// The words in the input, not including the command itself, which has already been
     /// parsed into `self.command_kind`.
@@ -618,7 +618,7 @@ impl<'a> CommandParser<'a> {
     /// Returns `Some(_)` if the first word of the input is a valid command, `None`
     /// otherwise. This is not aware of commands enabled by a command runner; that check
     /// happens later.
-    pub fn new(input: &'a str, code_source_id: usize) -> Option<Self> {
+    pub(crate) fn new(input: &'a str, code_source_id: usize) -> Option<Self> {
         let mut words: SplitWhitespace<'_> = input.split_whitespace();
         let command_kind = words.next()?.parse().ok()?;
 
@@ -701,7 +701,7 @@ mod test {
     use super::*;
 
     #[derive(Debug, Clone, PartialEq)]
-    pub enum BareCommand<'a> {
+    pub(crate) enum BareCommand<'a> {
         Help { help_kind: HelpKind },
         Info { item: &'a str },
         List { items: Option<ListItems> },

@@ -46,7 +46,7 @@ pub enum Value {
 
 impl Value {
     #[track_caller]
-    pub fn unsafe_as_quantity(self) -> Quantity {
+    pub(crate) fn unsafe_as_quantity(self) -> Quantity {
         if let Value::Quantity(q) = self {
             q
         } else {
@@ -55,7 +55,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_bool(self) -> bool {
+    pub(crate) fn unsafe_as_bool(self) -> bool {
         if let Value::Boolean(b) = self {
             b
         } else {
@@ -64,7 +64,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_string(self) -> CompactString {
+    pub(crate) fn unsafe_as_string(self) -> CompactString {
         if let Value::String(s) = self {
             s
         } else {
@@ -73,7 +73,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_datetime(self) -> jiff::Zoned {
+    pub(crate) fn unsafe_as_datetime(self) -> jiff::Zoned {
         if let Value::DateTime(dt) = self {
             dt
         } else {
@@ -82,7 +82,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_function_reference(self) -> FunctionReference {
+    pub(crate) fn unsafe_as_function_reference(self) -> FunctionReference {
         if let Value::FunctionReference(inner) = self {
             inner
         } else {
@@ -91,7 +91,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_struct_fields(self) -> Vec<Value> {
+    pub(crate) fn unsafe_as_struct_fields(self) -> Vec<Value> {
         if let Value::StructInstance(_, values) = self {
             values
         } else {
@@ -100,7 +100,7 @@ impl Value {
     }
 
     #[track_caller]
-    pub fn unsafe_as_list(self) -> NumbatList<Value> {
+    pub(crate) fn unsafe_as_list(self) -> NumbatList<Value> {
         if let Value::List(values) = self {
             values
         } else {
@@ -157,7 +157,7 @@ impl Value {
         self.pretty_print_with(&FormatOptions::default())
     }
 
-    pub fn pretty_print_with(&self, options: &FormatOptions) -> crate::markup::Markup {
+    pub(crate) fn pretty_print_with(&self, options: &FormatOptions) -> crate::markup::Markup {
         match self {
             Value::Quantity(q) => q.pretty_print_with(options),
             Value::Boolean(b) => b.pretty_print(),

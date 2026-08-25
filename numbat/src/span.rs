@@ -87,7 +87,7 @@ impl Span {
     }
 
     #[cfg(test)]
-    pub fn dummy() -> Span {
+    pub(crate) fn dummy() -> Span {
         Self {
             start: ByteIndex(0),
             end: ByteIndex(0),

@@ -24,8 +24,8 @@ pub use crate::value::Value;
 
 #[derive(Debug, Clone)]
 pub struct RuntimeError {
-    pub kind: RuntimeErrorKind,
-    pub backtrace: Vec<(CompactString, Span)>,
+    pub(crate) kind: RuntimeErrorKind,
+    pub(crate) backtrace: Vec<(CompactString, Span)>,
 }
 
 impl fmt::Display for RuntimeError {
