@@ -94,6 +94,21 @@ impl From<RuntimeError> for CommandError {
     }
 }
 
+impl From<Box<crate::NumbatError>> for CommandError {
+    fn from(err: Box<crate::NumbatError>) -> Self {
+        let runtime = match *err {
+            crate::NumbatError::RuntimeError(e) => e,
+            // The on-demand currency load only surfaces runtime errors; other variants
+            // would indicate a bug in the internal `use units::currencies` module.
+            other => RuntimeError {
+                kind: crate::RuntimeErrorKind::UserError(other.to_string()),
+                backtrace: Vec::new(),
+            },
+        };
+        Self::Runtime(Box::new(runtime))
+    }
+}
+
 impl ErrorDiagnostic for ResolverDiagnostic<'_, CommandError> {
     fn diagnostics(&self) -> Vec<crate::Diagnostic> {
         match self.error {
@@ -527,6 +542,11 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                 CommandControlFlow::Continue
             }
             ParsedCommand::Info { item } => {
+                // `info <currency>` (e.g. `info USD`) needs the currency module loaded,
+                // otherwise the unit is reported as "Not found" until the user performs a
+                // currency calculation. Trigger the same on-demand load as the interpreter.
+                ctx.ensure_currency_module_loaded_for_command(item)
+                    .map_err(|e| Box::new(CommandError::from(e)))?;
                 let markup = ctx.print_info_for_keyword(item);
                 if let Some(print_fn) = self.print_markup.as_mut() {
                     print_fn(&markup);
@@ -534,6 +554,13 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                 CommandControlFlow::Continue
             }
             ParsedCommand::List { items } => {
+                // `list` and `list units` should include currency units, so load the
+                // currency module on demand (mirrors the interpreter's lazy loading).
+                // `list functions/dimensions/variables` never involve currencies.
+                if matches!(items, None | Some(ListItems::Units)) {
+                    ctx.ensure_currencies_loaded_for_list()
+                        .map_err(|e| Box::new(CommandError::from(e)))?;
+                }
                 let markup = match items {
                     None => ctx.print_environment(),
                     Some(ListItems::Functions) => ctx.print_functions(),
@@ -1061,5 +1088,51 @@ mod test {
         );
         test_case(&mut runner, &mut ctx, "quit", CommandControlFlow::Return);
         test_case(&mut runner, &mut ctx, "exit", CommandControlFlow::Return);
+    }
+
+    /// Regression test for https://github.com/sharkdp/numbat/issues/635:
+    /// `info USD` (and `list units`) must trigger the on-demand load of the currency
+    /// module, so currency units are found even before any currency calculation is run.
+    #[test]
+    fn test_info_and_list_load_currencies_on_demand() {
+        use crate::module_importer::BuiltinModuleImporter;
+
+        fn on_demand_ctx() -> Context {
+            Context::use_test_exchange_rates();
+            let mut ctx = Context::new(BuiltinModuleImporter::default());
+            // Load the prelude but deliberately NOT `units::currencies`, exactly as the
+            // CLI does; the module should only be pulled in on demand.
+            let _ = ctx.interpret("use prelude", CodeSource::Internal).unwrap();
+            ctx.load_currency_module_on_demand(true);
+            ctx
+        }
+
+        fn run_capture(ctx: &mut Context, input: &'static str) -> String {
+            let captured = std::rc::Rc::new(std::cell::RefCell::new(String::new()));
+            let sink = captured.clone();
+            let mut runner = CommandRunner::new()
+                .print_with(move |markup| sink.borrow_mut().push_str(&markup.to_string()));
+            let _ = runner
+                .try_run_command(input, ctx, &mut ())
+                .unwrap_or_else(|e| panic!("command `{input}` failed: {e:?}"));
+            captured.borrow().clone()
+        }
+
+        // `info USD` on a fresh session must resolve the currency, not report "Not found".
+        let mut ctx = on_demand_ctx();
+        let info = run_capture(&mut ctx, "info USD");
+        assert!(
+            info.contains("US dollar"),
+            "`info USD` should load currencies on demand, got:\n{info}"
+        );
+        assert!(!info.contains("Not found"), "got:\n{info}");
+
+        // `list units` must include currency units on a fresh session as well.
+        let mut ctx = on_demand_ctx();
+        let units = run_capture(&mut ctx, "list units");
+        assert!(
+            units.contains("dollar"),
+            "`list units` should include currencies, got:\n{units}"
+        );
     }
 }
