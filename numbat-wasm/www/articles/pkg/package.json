@@ -1,0 +1,18 @@
+{
+  "name": "numbat-wasm",
+  "type": "module",
+  "collaborators": [
+    "David Peter <mail@david-peter.de>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "numbat_wasm_bg.wasm",
+    "numbat_wasm.js",
+    "numbat_wasm.d.ts"
+  ],
+  "main": "numbat_wasm.js",
+  "types": "numbat_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
