@@ -100,6 +100,10 @@ environment.systemPackages = [
 ];
 ```
 
+## Android
+
+A mobile app for Android is available on the [Play Store](https://play.google.com/store/apps/details?id=fish.shark.numbat). Source is available [here](https://github.com/sharkdp/numbat-app).
+
 ## From pre-built binaries
 
 Download the latest release for your system from [this page](https://github.com/sharkdp/numbat/releases). Unpack

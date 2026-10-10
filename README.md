@@ -2,7 +2,7 @@
 
 <img src="numbat-wasm/www/numbat.svg">
 
-**[Try online!] • [Documentation] • [Tutorial] • [Syntax reference] • [Installation] • [Discord] • [Development]**
+**[Try online!] • [Documentation] • [Tutorial] • [Syntax reference] • [Installation] • [Mobile app] • [Discord] • [Development]**
 
 [Try online!]: https://numbat.dev/
 [Features]: #key-features
@@ -10,6 +10,7 @@
 [Tutorial]: https://numbat.dev/docs/tutorial/
 [Syntax reference]: https://numbat.dev/docs/examples/example-numbat_syntax/
 [Installation]: https://numbat.dev/docs/cli/installation/
+[Mobile app]: https://github.com/sharkdp/numbat-app#numbat-app
 [Discord]: https://discord.gg/kAaVTsat4D
 [Development]: #development
 
