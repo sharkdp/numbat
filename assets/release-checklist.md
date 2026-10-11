@@ -14,8 +14,7 @@ necessary changes for the upcoming release.
       `numbat/Cargo.toml`, `numbat-cli/Cargo.toml`. Run `cargo build` to update `Cargo.lock`.
       Make sure to `git add` the `Cargo.lock` changes as well.
 - [ ] Update the `numbat` version in `book/src/cli/installation.md`.
-- [ ] Run `deploy.sh` (or at least `build.sh`) in `numbat-wasm/` to
-      update the `Cargo.lock` file.
+- [ ] Run `bash build.sh` in `numbat-wasm/` to update its `Cargo.lock` file.
 - [ ] Update the version and date in `CITATION.cff`.
 
 ## Pre-release checks and updates
@@ -31,7 +30,7 @@ necessary changes for the upcoming release.
 ## Release
 
 - [ ] Create a tag and push it: `git tag vX.Y.Z; git push origin tag vX.Y.Z`.
-      This will trigger the deployment via GitHub Actions.
+      This will trigger binary packaging and release uploads via GitHub Actions.
       REMINDER: If your `origin` is a fork, don't forget to push to e.g. `upstream`
       instead.
 - [ ] Go to https://github.com/sharkdp/numbat/releases/new to create the new
@@ -44,4 +43,18 @@ necessary changes for the upcoming release.
       ```
       cargo publish --workspace
       ```
-- [ ] Deploy the documentation by running `bash book/deploy.sh`.
+- [ ] Publish the web calculator and documentation through
+      [pink-nixos](https://github.com/sharkdp/pink-nixos). Ensure the intended
+      Numbat changes, including generated documentation and the WASM lock file,
+      are committed and pushed to `main`. In the `pink-nixos` checkout:
+      ```sh
+      nix flake update numbat
+      git diff -- flake.lock
+      git add flake.lock
+      git commit -m "Update Numbat website revision"
+      ./deploy.sh
+      ```
+      The deployment requires a clean checkout and builds both the calculator
+      and documentation from the pinned revision. Verify
+      [numbat.dev](https://numbat.dev/) and its
+      [documentation](https://numbat.dev/docs/), then push the `pink-nixos` commit.
