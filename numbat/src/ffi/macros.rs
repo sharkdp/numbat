@@ -56,6 +56,16 @@ macro_rules! return_quantity {
 }
 pub(crate) use return_quantity;
 
+macro_rules! return_complex_scalar {
+    ($re:expr, $im:expr) => {
+        Ok(Value::Quantity(Quantity::new(
+            crate::number::Number::new($re, $im),
+            crate::unit::Unit::scalar(),
+        )))
+    };
+}
+pub(crate) use return_complex_scalar;
+
 macro_rules! return_boolean {
     ($value:expr) => {
         Ok(Value::Boolean($value))

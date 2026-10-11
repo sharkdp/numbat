@@ -258,43 +258,43 @@ mod tests {
     #[test]
     fn test_parse_scalar() {
         let expr = parse_quantity_ast("1.5").unwrap();
-        assert_snapshot!(pp(&expr), @"Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number(1.5))");
+        assert_snapshot!(pp(&expr), @"Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number { re: 1.5, im: 0.0 })");
     }
 
     #[test]
     fn test_parse_negative_scalar() {
         let expr = parse_quantity_ast("-3.14").unwrap();
-        assert_snapshot!(pp(&expr), @"UnaryOperator { op: Negate, expr: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number(3.14)), span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }");
+        assert_snapshot!(pp(&expr), @"UnaryOperator { op: Negate, expr: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number { re: 3.14, im: 0.0 }), span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }");
     }
 
     #[test]
     fn test_parse_scalar_with_unit() {
         let expr = parse_quantity_ast("1.5 km").unwrap();
-        assert_snapshot!(pp(&expr), @r#"BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number(1.5)), rhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, "km"), span_op: Some(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }) }"#);
+        assert_snapshot!(pp(&expr), @r#"BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number { re: 1.5, im: 0.0 }), rhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, "km"), span_op: Some(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }) }"#);
     }
 
     #[test]
     fn test_parse_negative_scalar_with_unit() {
         let expr = parse_quantity_ast("-100 m").unwrap();
-        assert_snapshot!(pp(&expr), @r#"UnaryOperator { op: Negate, expr: BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number(100.0)), rhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, "m"), span_op: Some(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }) }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }"#);
+        assert_snapshot!(pp(&expr), @r#"UnaryOperator { op: Negate, expr: BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number { re: 100.0, im: 0.0 }), rhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, "m"), span_op: Some(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }) }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }"#);
     }
 
     #[test]
     fn test_parse_integer() {
         let expr = parse_quantity_ast("42").unwrap();
-        assert_snapshot!(pp(&expr), @"Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number(42.0))");
+        assert_snapshot!(pp(&expr), @"Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number { re: 42.0, im: 0.0 })");
     }
 
     #[test]
     fn test_parse_double_negation() {
         let expr = parse_quantity_ast("--42").unwrap();
-        assert_snapshot!(pp(&expr), @"UnaryOperator { op: Negate, expr: UnaryOperator { op: Negate, expr: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number(42.0)), span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }");
+        assert_snapshot!(pp(&expr), @"UnaryOperator { op: Negate, expr: UnaryOperator { op: Negate, expr: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number { re: 42.0, im: 0.0 }), span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }");
     }
 
     #[test]
     fn test_parse_triple_negation_with_unit() {
         let expr = parse_quantity_ast("---2 km").unwrap();
-        assert_snapshot!(pp(&expr), @r#"UnaryOperator { op: Negate, expr: UnaryOperator { op: Negate, expr: UnaryOperator { op: Negate, expr: BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number(2.0)), rhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, "km"), span_op: Some(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }) }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }"#);
+        assert_snapshot!(pp(&expr), @r#"UnaryOperator { op: Negate, expr: UnaryOperator { op: Negate, expr: UnaryOperator { op: Negate, expr: BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number { re: 2.0, im: 0.0 }), rhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, "km"), span_op: Some(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }) }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }, span_op: Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 } }"#);
     }
 
     #[test]
@@ -336,7 +336,7 @@ mod tests {
     #[test]
     fn test_parse_explicit_multiplication() {
         let expr = parse_quantity_ast("1.5 * km").unwrap();
-        assert_snapshot!(pp(&expr), @r#"BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number(1.5)), rhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, "km"), span_op: Some(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }) }"#);
+        assert_snapshot!(pp(&expr), @r#"BinaryOperator { op: Mul, lhs: Scalar(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, Number { re: 1.5, im: 0.0 }), rhs: Identifier(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }, "km"), span_op: Some(Span { start: ByteIndex(0), end: ByteIndex(0), code_source_id: 0 }) }"#);
     }
 
     #[test]
