@@ -91,7 +91,7 @@ impl<T> NumbatList<T> {
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = &T> {
-        let (start, end) = self.view.map_or((0, self.alloc.len()), |view| view);
+        let (start, end) = self.view.unwrap_or((0, self.alloc.len()));
         self.alloc.iter().skip(start).take(end - start)
     }
 }
