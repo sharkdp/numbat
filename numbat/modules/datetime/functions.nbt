@@ -6,7 +6,7 @@ use units::time
 @description("Returns the current date and time.")
 fn now() -> DateTime
 
-@description("Parses a string (date and time) into a `DateTime` object. See [here](./date-and-time.md#date-time-formats) for an overview of the supported formats.")
+@description("Parses a string (date and time) into a `DateTime` object. See [here](../../basics/date-and-time.md#date-time-formats) for an overview of the supported formats.")
 @example("datetime(\"2022-07-20T21:52+0200\")")
 @example("datetime(\"2022-07-20 21:52 Europe/Berlin\")")
 @example("datetime(\"2022/07/20 09:52 PM +0200\")")

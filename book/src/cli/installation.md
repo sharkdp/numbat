@@ -30,18 +30,11 @@ sudo apt install numbat
 
 ### Arch Linux
 
-In Arch Linux and Arch based distributions, you can install the
-[prebuilt package of Numbat](https://aur.archlinux.org/packages/numbat-bin) from the AUR for the `x86_64` architecture:
+On Arch Linux, install the [Numbat package](https://archlinux.org/packages/extra/x86_64/numbat/)
+from the official Extra repository:
 
 ``` bash
-yay -S numbat-bin
-```
-
-You can also install the [numbat](https://aur.archlinux.org/packages/numbat)
-AUR package, which will download the source and compile it. It works on all architectures.
-
-``` bash
-yay -S numbat
+sudo pacman -S numbat
 ```
 
 ### Void Linux

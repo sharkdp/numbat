@@ -16,7 +16,7 @@ fn now() -> DateTime
 ```
 
 ### `datetime`
-Parses a string (date and time) into a `DateTime` object. See [here](./date-and-time.md#date-time-formats) for an overview of the supported formats.
+Parses a string (date and time) into a `DateTime` object. See [here](../../basics/date-and-time.md#date-time-formats) for an overview of the supported formats.
 
 ```nbt
 fn datetime(input: String) -> DateTime

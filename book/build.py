@@ -9,6 +9,7 @@ This script:
 
 from concurrent.futures import ThreadPoolExecutor
 import json
+import re
 import subprocess
 from pathlib import Path
 import urllib.parse
@@ -215,7 +216,7 @@ def list_of_functions(inspect_binary, file_name, document):
             links = []
             for section in sections:
                 if title := section.get("title"):
-                    link = title.lower().replace(" ", "-").replace(",", "")
+                    link = re.sub(r"[^\w\s-]", "", title.lower()).replace(" ", "-")
                     links.append(f"[{title}](#{link})")
             print(f"{' · '.join(links)}\n", file=f, flush=True)
 
