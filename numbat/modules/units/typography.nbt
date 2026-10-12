@@ -1,0 +1,21 @@
+use units::si
+use units::imperial
+
+# PostScript/CSS units. Traditional TeX points use 1/72.27 inch instead.
+
+@name("Point (PostScript/CSS)")
+@url("https://www.w3.org/TR/css-values-4/#absolute-lengths")
+@aliases(points, pt: short)
+unit point: Length = inch / 72
+
+@name("Pica (PostScript/CSS)")
+@url("https://www.w3.org/TR/css-values-4/#absolute-lengths")
+@aliases(picas)
+unit pica: Length = 12 point
+
+# Do not alias pica as "pc": Numbat already uses pc for parsec.
+
+@name("Quarter-millimetre")
+@url("https://www.w3.org/TR/css-values-4/#absolute-lengths")
+@abbreviation
+unit Q: Length = mm / 4

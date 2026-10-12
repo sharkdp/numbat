@@ -1,0 +1,18 @@
+use units::typography
+
+# PostScript/CSS typography: point, pica, and quarter-millimetre.
+
+# Points to inches and millimetres.
+assert_eq(72 pt, 1 inch, 1e-10 mm)
+assert_eq(1 point, 25.4 mm / 72, 1e-10 mm)
+
+# Picas to points and inches.
+assert_eq(1 pica, 12 pt, 1e-10 mm)
+assert_eq(6 picas, 1 inch, 1e-10 mm)
+
+# Quarter-millimetres.
+assert_eq(4 Q, 1 mm, 1e-10 mm)
+assert_eq(1 Q, 0.25 mm, 1e-10 mm)
+
+# Example: combine a one-pica margin with 18-point spacing.
+assert_eq(1 pica + 18 pt, 30 pt, 1e-10 mm)
