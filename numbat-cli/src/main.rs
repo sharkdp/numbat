@@ -389,6 +389,7 @@ impl Cli {
                 Err(_) => CommandControlFlow::Return,
             })
             .enable_save(SessionHistory::default())
+            .enable_load()
             .enable_reset()
             .enable_quit();
 
@@ -419,6 +420,33 @@ impl Cli {
                         Ok(cf) => match cf {
                             CommandControlFlow::Continue => continue,
                             CommandControlFlow::Return => return Ok(()),
+                            CommandControlFlow::Load(path) => {
+                                // Release the context lock before interpreting the file:
+                                // parse_and_evaluate acquires it internally.
+                                drop(ctx);
+
+                                let result = match fs::read_to_string(&path) {
+                                    Ok(source) => {
+                                        self.parse_and_evaluate(
+                                            &source,
+                                            CodeSource::File(path.clone()),
+                                            ExecutionMode::Interactive,
+                                            PrettyPrintMode::Never,
+                                        )
+                                        .result
+                                    }
+                                    Err(err) => {
+                                        eprintln!(
+                                            "Could not load source file '{}': {err}",
+                                            path.display()
+                                        );
+                                        Err(())
+                                    }
+                                };
+
+                                cmd_runner.push_to_history(&line, result);
+                                continue;
+                            }
                             CommandControlFlow::Reset => {
                                 *ctx = Self::make_fresh_context();
                                 drop(ctx);
