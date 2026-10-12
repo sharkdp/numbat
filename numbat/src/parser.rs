@@ -1655,6 +1655,7 @@ impl<'a> Parser<'a> {
 
             Ok(Expression::String(span_full_string, parts))
         } else if self.match_exact(tokens, TokenKind::LeftParen).is_some() {
+            let opening_span = self.last(tokens).unwrap().span;
             let inner = self.expression(tokens)?;
 
             if self.match_exact(tokens, TokenKind::RightParen).is_none() {
@@ -1664,7 +1665,8 @@ impl<'a> Parser<'a> {
                 ));
             }
 
-            Ok(inner)
+            let full_span = opening_span.extend(&self.last(tokens).unwrap().span);
+            Ok(Expression::Parenthesized(full_span, Box::new(inner)))
         } else if matches!(
             self.peek(tokens).kind,
             TokenKind::ProcedurePrint | TokenKind::ProcedureAssertEq

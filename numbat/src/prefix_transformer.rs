@@ -44,6 +44,7 @@ impl Transformer {
     pub fn transform_expression(&self, expression: &mut Expression) {
         match expression {
             Expression::Scalar(..) | Expression::Boolean(_, _) | Expression::TypedHole(_) => {}
+            Expression::Parenthesized(_, inner) => self.transform_expression(inner),
             Expression::Identifier(span, identifier) => {
                 if let PrefixParserResult::UnitIdentifier(
                     _definition_span,
@@ -74,9 +75,10 @@ impl Transformer {
                         lhs: inner_lhs,
                         rhs: inner_rhs,
                         span_op: _,
-                    } = expr.as_mut()
+                    } = expr.as_mut().without_parens_mut()
                     && *bin_op == crate::ast::BinaryOperator::Mul
-                    && let Expression::Identifier(rhs_span, ident) = inner_rhs.as_ref()
+                    && let Expression::Identifier(rhs_span, ident) =
+                        inner_rhs.as_ref().without_parens()
                     && let Some(fn_name) = temperature_conversion_function(ident)
                 {
                     // Transform the inner lhs first
@@ -113,7 +115,7 @@ impl Transformer {
                 // Syntactic sugar for entering temperatures in °C or °F. Transform `5 °C`,
                 // which is parsed as 5 * °C, into from_celsius(5).
                 if *op == crate::ast::BinaryOperator::Mul
-                    && let Expression::Identifier(rhs_span, ident) = rhs.as_ref()
+                    && let Expression::Identifier(rhs_span, ident) = rhs.as_ref().without_parens()
                     && let Some(fn_name) = temperature_conversion_function(ident)
                 {
                     let full_span = lhs.full_span().extend(rhs_span);

@@ -188,7 +188,7 @@ impl Environment {
         &self,
         expr: &crate::ast::Expression<'a>,
     ) -> Option<(&'a str, &FunctionSignature)> {
-        match expr {
+        match expr.without_parens() {
             crate::ast::Expression::Identifier(_, name) => self
                 .get_function_info(name)
                 .map(|(signature, _)| (*name, signature)),

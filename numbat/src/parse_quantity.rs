@@ -67,6 +67,7 @@ fn get_expression_type(
     typechecker: &TypeChecker,
 ) -> Result<TypeScheme, QuantityLiteralError> {
     match expr {
+        Expression::Parenthesized(_, inner) => get_expression_type(inner, typechecker),
         Expression::Scalar(_, _) => Ok(TypeScheme::concrete(Type::scalar())),
 
         Expression::BinaryOperator {
@@ -74,7 +75,7 @@ fn get_expression_type(
             rhs,
             ..
         } => {
-            if let Expression::UnitIdentifier { name, .. } = rhs.as_ref() {
+            if let Expression::UnitIdentifier { name, .. } = rhs.as_ref().without_parens() {
                 typechecker.lookup_identifier_type(name).ok_or_else(|| {
                     QuantityLiteralError::NameResolutionError(format!("Unknown unit: {name}"))
                 })
@@ -104,6 +105,7 @@ fn evaluate_quantity_expression(
 ) -> Result<Quantity, QuantityLiteralError> {
     match expr {
         // Plain scalar
+        Expression::Parenthesized(_, inner) => evaluate_quantity_expression(inner, unit_lookup),
         Expression::Scalar(_, n) => Ok(Quantity::from_scalar(n.to_f64())),
 
         // Scalar × Unit
@@ -137,6 +139,7 @@ fn evaluate_quantity_expression(
 /// Extract the scalar value from a Scalar expression.
 fn extract_scalar(expr: &Expression) -> Result<f64, QuantityLiteralError> {
     match expr {
+        Expression::Parenthesized(_, inner) => extract_scalar(inner),
         Expression::Scalar(_, n) => Ok(n.to_f64()),
         _ => Err(QuantityLiteralError::InvalidPattern(
             "Expected scalar".to_string(),
@@ -150,6 +153,7 @@ fn extract_unit(
     unit_lookup: &impl Fn(&str) -> Option<Unit>,
 ) -> Result<Unit, QuantityLiteralError> {
     match expr {
+        Expression::Parenthesized(_, inner) => extract_unit(inner, unit_lookup),
         Expression::UnitIdentifier { prefix, name, .. } => {
             let base_unit = unit_lookup(name).ok_or_else(|| {
                 QuantityLiteralError::NameResolutionError(format!("Unknown unit: {name}"))
@@ -223,6 +227,7 @@ pub fn parse_quantity_ast(input: &str) -> Result<Expression<'_>, QuantityLiteral
 
 fn is_valid_quantity_literal(expr: &Expression) -> bool {
     match expr {
+        Expression::Parenthesized(_, inner) => is_valid_quantity_literal(inner),
         Expression::Scalar(_, _) => true,
 
         // Scalar times unit (implicit or explicit multiplication)

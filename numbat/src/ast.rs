@@ -77,6 +77,7 @@ pub enum StringPart<'a> {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression<'a> {
     Scalar(Span, Number),
+    Parenthesized(Span, Box<Expression<'a>>),
     Identifier(Span, &'a str),
     UnitIdentifier {
         span: Span,
@@ -129,6 +130,7 @@ impl Expression<'_> {
     pub fn full_span(&self) -> Span {
         match self {
             Expression::Scalar(span, _) => *span,
+            Expression::Parenthesized(span, _) => *span,
             Expression::Identifier(span, _) => *span,
             Expression::UnitIdentifier { span, .. } => *span,
             Expression::UnaryOperator {
@@ -161,14 +163,29 @@ impl Expression<'_> {
         }
     }
 
+    /// Ignore grouping parentheses when inspecting expression semantics.
+    pub fn without_parens(&self) -> &Self {
+        match self {
+            Expression::Parenthesized(_, inner) => inner.without_parens(),
+            _ => self,
+        }
+    }
+
+    pub fn without_parens_mut(&mut self) -> &mut Self {
+        match self {
+            Expression::Parenthesized(_, inner) => inner.without_parens_mut(),
+            _ => self,
+        }
+    }
+
     /// Check if this expression is a plain scalar (no negation or other operations).
     pub fn is_scalar(&self) -> bool {
-        matches!(self, Expression::Scalar(_, _))
+        matches!(self.without_parens(), Expression::Scalar(_, _))
     }
 
     /// Check if this expression is an identifier.
     pub fn is_identifier(&self) -> bool {
-        matches!(self, Expression::Identifier(_, _))
+        matches!(self.without_parens(), Expression::Identifier(_, _))
     }
 }
 
@@ -642,6 +659,7 @@ impl ReplaceSpans for Expression<'_> {
     fn replace_spans(&self) -> Self {
         match self {
             Expression::Scalar(_, name) => Expression::Scalar(Span::dummy(), *name),
+            Expression::Parenthesized(_, inner) => inner.replace_spans(),
             Expression::Identifier(_, name) => Expression::Identifier(Span::dummy(), name),
             Expression::UnitIdentifier {
                 prefix,

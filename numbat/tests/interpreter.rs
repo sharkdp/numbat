@@ -138,6 +138,26 @@ fn get_diagnostic_output(code: &str) -> String {
 }
 
 #[test]
+fn parenthesized_source_spans_issue_102() {
+    let code = "meter + ((((second) * 2)))";
+    let rhs = "((((second) * 2)))";
+
+    let NumbatError::TypeCheckError(numbat::TypeCheckError::IncompatibleDimensions(error)) =
+        fail(code)
+    else {
+        panic!("Expected an incompatible-dimensions error");
+    };
+
+    let start = code.find(rhs).unwrap();
+
+    assert_eq!(error.span_actual.start.as_usize(), start);
+    assert_eq!(error.span_actual.end.as_usize(), start + rhs.len());
+
+    expect_output("(2 + 3) * 4", "20");
+    expect_output("((2 + 3)) * 4", "20");
+}
+
+#[test]
 fn simple_value() {
     expect_output("0", "0");
     expect_output("0_0", "0");

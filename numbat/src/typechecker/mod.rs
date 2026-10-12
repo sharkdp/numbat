@@ -349,6 +349,7 @@ impl TypeChecker {
         ast: &ast::Expression<'a>,
     ) -> Result<typed_ast::Expression<'a>> {
         Ok(match ast {
+            ast::Expression::Parenthesized(_, inner) => self.elaborate_expression(inner)?,
             ast::Expression::Scalar(span, n)
                 if n.to_f64().is_zero() || n.to_f64().is_infinite() || n.to_f64().is_nan() =>
             {
