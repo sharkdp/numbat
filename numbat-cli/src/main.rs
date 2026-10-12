@@ -9,6 +9,7 @@ use completer::NumbatCompleter;
 use config::{
     ColorMode, Config, EditMode, ExchangeRateFetchingPolicy, IntroBanner, PrettyPrintMode,
 };
+use etcetera::{BaseStrategy, choose_base_strategy};
 use highlighter::NumbatHighlighter;
 
 use itertools::Itertools;
@@ -594,8 +595,20 @@ impl Cli {
     }
 
     fn get_config_path() -> PathBuf {
-        let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        config_dir.join("numbat")
+        let config_dir = if cfg!(target_os = "macos")
+            && env::var_os("XDG_CONFIG_HOME").is_some_and(|path| Path::new(&path).is_absolute())
+        {
+            choose_base_strategy()
+                .ok()
+                .map(|strategy| strategy.config_dir())
+                .or_else(dirs::config_dir)
+        } else {
+            dirs::config_dir()
+        };
+
+        config_dir
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("numbat")
     }
 
     fn get_modules_paths() -> Vec<PathBuf> {
@@ -633,7 +646,18 @@ impl Cli {
             return Ok(history_path);
         }
 
-        let data_dir = dirs::data_dir()
+        let data_dir = if cfg!(target_os = "macos")
+            && env::var_os("XDG_DATA_HOME").is_some_and(|path| Path::new(&path).is_absolute())
+        {
+            choose_base_strategy()
+                .ok()
+                .map(|strategy| strategy.data_dir())
+                .or_else(dirs::data_dir)
+        } else {
+            dirs::data_dir()
+        };
+
+        let data_dir = data_dir
             .unwrap_or_else(|| PathBuf::from("."))
             .join("numbat");
         fs::create_dir_all(&data_dir).ok();

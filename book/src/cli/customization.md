@@ -18,8 +18,13 @@ Numbat's configuration folder (`<config-path>` above) can be found under:
 |Platform|Path|
 |---|---|
 |Linux|`$HOME/.config/numbat` or `$XDG_CONFIG_HOME/numbat`|
-|macOS|`$HOME/Library/Application Support/numbat`|
+|macOS|`$HOME/Library/Application Support/numbat` or `$XDG_CONFIG_HOME/numbat` when set|
 |Windows|`C:\Users\Alice\AppData\Roaming\numbat`|
+
+On macOS, an absolute `XDG_CONFIG_HOME` overrides the configuration
+directory, and an absolute `XDG_DATA_HOME` overrides the history directory.
+When either variable is unset or relative, its existing macOS default is
+preserved. `NUMBAT_HISTORY` still takes precedence for the history file.
 
 ## Module paths
 

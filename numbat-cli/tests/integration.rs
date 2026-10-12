@@ -171,3 +171,40 @@ fn info_text() {
                 .and(predicates::str::contains("Round to the nearest integer.")),
         );
 }
+
+#[cfg(target_os = "macos")]
+#[test]
+fn macos_xdg_directories_override_native_paths() {
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+
+    let root = std::env::temp_dir().join(format!("numbat-xdg-{}-{unique}", std::process::id()));
+
+    std::fs::create_dir(&root).unwrap();
+
+    let config_home = root.join("config");
+    let data_home = root.join("data");
+
+    numbat()
+        .arg("--generate-config")
+        .env("XDG_CONFIG_HOME", &config_home)
+        .env("XDG_DATA_HOME", &data_home)
+        .assert()
+        .success();
+
+    assert!(config_home.join("numbat/config.toml").is_file());
+
+    numbat()
+        .env("XDG_CONFIG_HOME", &config_home)
+        .env("XDG_DATA_HOME", &data_home)
+        .env_remove("NUMBAT_HISTORY")
+        .write_stdin("")
+        .assert()
+        .success();
+
+    assert!(data_home.join("numbat").is_dir());
+
+    std::fs::remove_dir_all(root).unwrap();
+}
