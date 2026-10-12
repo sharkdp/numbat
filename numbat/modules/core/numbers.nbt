@@ -32,3 +32,16 @@ fn is_nonzero<D: Dim>(value: D) -> Bool = !is_zero(value)
 @example("is_integer(3)")
 @example("is_integer(pi)")
 fn is_integer(x: Scalar) -> Bool = is_zero(fract(x))
+
+@name("Sign function")
+@description("Return -1, 0, or 1 according to the sign of a quantity. NaN is preserved.")
+@example("sgn(-5 m)")
+@url("https://en.wikipedia.org/wiki/Sign_function")
+fn sgn<D: Dim>(value: D) -> Scalar =
+  if is_nan(value)
+    then NaN
+    else if value > 0
+      then 1
+      else if value < 0
+        then -1
+        else 0

@@ -1,3 +1,13 @@
+assert_eq(sgn(-10), -1)
+assert_eq(sgn(0), 0)
+assert_eq(sgn(5), 1)
+assert_eq(sgn(-3 m), -1)
+assert_eq(sgn(0 kg), 0)
+assert_eq(sgn(2 s), 1)
+assert_eq(sgn(inf), 1)
+assert_eq(sgn(-inf), -1)
+assert(is_nan(sgn(NaN)))
+
 # sqrt
 
 assert_eq(sqrt(0), 0)

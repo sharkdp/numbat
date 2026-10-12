@@ -188,6 +188,22 @@ fn is_integer(x: Scalar) -> Bool
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=is%5Finteger%28pi%29){ .md-button }
 
+### `sgn` (Sign function)
+Return -1, 0, or 1 according to the sign of a quantity. NaN is preserved.
+More information [here](https://en.wikipedia.org/wiki/Sign_function).
+
+```nbt
+fn sgn<D: Dim>(value: D) -> Scalar
+```
+
+!!! example "Example"
+    ```nbt
+    sgn(-5 m)
+
+        = -1
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=sgn%28%2D5%20m%29){ .md-button }
+
 ## Quantities
 
 Defined in: `core::quantities`
