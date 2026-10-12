@@ -78,9 +78,9 @@ p.links a {
     --color: #f1f1f0;
     --background: #282a36;
     --size: 1.5;
-    --font: 'Fira Mono', monospace;
+    --font: 'Fira Mono', 'Noto Sans Mono', monospace;
     --link-color: #59f78d;
-    font-family: 'Fira Mono', monospace;
+    font-family: 'Fira Mono', 'Noto Sans Mono', monospace;
 }
 
 .terminal,
@@ -95,7 +95,7 @@ p.links a {
 .cmd,
 .cmd span,
 .cmd div {
-    font-family: 'Fira Mono', monospace;
+    font-family: 'Fira Mono', 'Noto Sans Mono', monospace;
 }
 
 .terminal-output>div {
