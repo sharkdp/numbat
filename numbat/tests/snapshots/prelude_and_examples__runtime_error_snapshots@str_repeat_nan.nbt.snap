@@ -1,0 +1,23 @@
+---
+source: numbat/tests/prelude_and_examples.rs
+expression: output
+input_file: examples/runtime_error/str_repeat_nan.nbt
+---
+error: runtime error
+   ┌─ Module 'core::strings', File [PRELUDE_FILE]:78:10
+   │
+78 │     then error("Cannot repeat a string NaN number of times")
+   │          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   │
+   ┌─ <internal:3>:1:1
+   │
+ 1 │ str_repeat(NaN, "x")
+   │ ^^^^^^^^^^^^^^^^^^^^
+   │
+   = User error: Cannot repeat a string NaN number of times
+
+help: Backtrace:
+ = 0: error("Cannot repeat a string NaN number of times")
+   	at str_repeat - Module 'core::strings', File [PRELUDE_FILE]:78:10
+ = 1: str_repeat(NaN, "x")
+   	at <main> - <internal:3>:1:0

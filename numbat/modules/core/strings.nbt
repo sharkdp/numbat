@@ -72,7 +72,11 @@ fn str_replace(pattern: String, replacement: String, s: String) -> String =
 @description("Repeat the input string `n` times")
 @example("str_repeat(4, \"abc\")")
 fn str_repeat(n: Scalar, a: String) -> String =
-  if n > 0
+  if is_infinite(n)
+    then error("Cannot repeat a string an infinite number of times")
+  else if is_nan(n)
+    then error("Cannot repeat a string NaN number of times")
+  else if n > 0
     then str_append(a, str_repeat(n - 1, a))
     else ""
 
