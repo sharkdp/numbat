@@ -8,7 +8,12 @@ use crate::pretty_print::FormatOptions;
 pub const DEFAULT_DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
 pub(crate) fn get_local_timezone_or_utc() -> TimeZone {
-    TimeZone::system()
+    let timezone = TimeZone::system();
+    if timezone.iana_name().is_some() {
+        timezone
+    } else {
+        TimeZone::UTC
+    }
 }
 
 pub(crate) fn parse_datetime(input: &str) -> Result<Zoned, jiff::Error> {

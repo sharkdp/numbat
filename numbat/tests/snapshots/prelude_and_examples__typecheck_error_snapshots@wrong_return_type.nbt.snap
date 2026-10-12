@@ -4,9 +4,9 @@ expression: output
 input_file: examples/typecheck_error/wrong_return_type.nbt
 ---
 error: identifier clash in definition
-   ┌─ Module 'datetime::functions', File [PRELUDE_FILE]:47:4
+   ┌─ Module 'datetime::functions', File [PRELUDE_FILE]:49:4
    │
-47 │ fn time(input: String) -> DateTime =
+49 │ fn time(input: String) -> DateTime =
    │    ---- Previously defined function here
    │
    ┌─ <internal:3>:1:5

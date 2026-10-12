@@ -104,6 +104,7 @@ pub(crate) fn functions() -> &'static HashMap<&'static str, ForeignFunction> {
         insert_function!(format_datetime, 2..=2);
         insert_function!(get_local_timezone, 0..=0);
         insert_function!(tz, 1..=1);
+        insert_function!(_local, 0..=0);
         insert_function!("_unixtime_µs", unixtime_us, 1..=1);
         insert_function!("_from_unixtime_µs", from_unixtime_us, 1..=1);
 
