@@ -22,6 +22,7 @@ pub struct IncompatibleDimensionsError {
     pub actual_name_for_fix: &'static str,
     pub actual_type: BaseRepresentation,
     pub actual_dimensions: Vec<CompactString>,
+    pub percentage_change_function: Option<&'static str>,
 }
 
 fn pad(a: &str, b: &str) -> (String, String) {
@@ -171,7 +172,12 @@ impl fmt::Display for IncompatibleDimensionsError {
             actual_result_string.trim_start_matches(" × ").trim_end(),
         )?;
 
-        if let Some(fix) = suggested_fix(
+        if let Some(function) = self.percentage_change_function {
+            write!(
+                f,
+                "\n\nSuggested fix: use `quantity |> {function}(percentage)` for percentage changes"
+            )?;
+        } else if let Some(fix) = suggested_fix(
             &self.expected_type,
             &self.actual_type,
             self.actual_name_for_fix,

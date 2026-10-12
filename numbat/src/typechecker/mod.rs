@@ -155,6 +155,7 @@ fn proper_function_call<'a>(
                                 &argument_dtype.to_base_representation(),
                             ),
                             actual_type: argument_dtype.to_base_representation(),
+                            percentage_change_function: None,
                         },
                     )));
                 }
@@ -557,6 +558,33 @@ impl TypeChecker {
                                 span_op: *span_op,
                             }
                             .full_span();
+
+                            let rhs_is_percentage = matches!(
+                                rhs.as_ref(),
+                                ast::Expression::BinaryOperator {
+                                    op: BinaryOperator::Mul,
+                                    rhs: unit,
+                                    ..
+                                } if matches!(
+                                    unit.as_ref(),
+                                    ast::Expression::UnitIdentifier {
+                                        name,
+                                        full_name,
+                                        ..
+                                    } if name.as_str() == "%" || full_name.as_str() == "percent"
+                                )
+                            );
+
+                            let percentage_change_function = if rhs_is_percentage {
+                                match op {
+                                    BinaryOperator::Add => Some("increase_by"),
+                                    BinaryOperator::Sub => Some("decrease_by"),
+                                    _ => None,
+                                }
+                            } else {
+                                None
+                            };
+
                             return Err(Box::new(TypeCheckError::IncompatibleDimensions(
                                 IncompatibleDimensionsError {
                                     span_operation: span_op.unwrap_or(full_span),
@@ -593,6 +621,7 @@ impl TypeChecker {
                                         &rhs_dtype.to_base_representation(),
                                     ),
                                     actual_type: rhs_dtype.to_base_representation(),
+                                    percentage_change_function,
                                 },
                             )));
                         }
@@ -1310,6 +1339,7 @@ impl TypeChecker {
                                     &dexpr_deduced.to_base_representation(),
                                 ),
                                 actual_type: dexpr_deduced.to_base_representation(),
+                                percentage_change_function: None,
                             },
                         )));
                     }
@@ -1690,6 +1720,7 @@ impl TypeChecker {
                                                 &dtype_deduced.to_base_representation(),
                                             ),
                                         actual_type: dtype_deduced.to_base_representation(),
+                                        percentage_change_function: None,
                                     },
                                 )));
                             }
