@@ -641,6 +641,57 @@ impl Cli {
     }
 }
 
+fn config_with_comments(config: &Config) -> Result<String> {
+    let mut comments = std::collections::HashMap::new();
+    let mut section = String::new();
+    let mut pending = Vec::new();
+
+    for line in include_str!("config_comments.toml").lines() {
+        let line = line.trim();
+
+        if line.starts_with('#') {
+            pending.push(line);
+        } else if line.starts_with('[') && line.ends_with(']') {
+            section = line[1..line.len() - 1].to_owned();
+            pending.clear();
+        } else if let Some((key, _)) = line.split_once(" = ") {
+            if !pending.is_empty() {
+                comments.insert(format!("{section}.{}", key.trim()), pending.join("\n"));
+            }
+            pending.clear();
+        } else {
+            pending.clear();
+        }
+    }
+
+    let serialized = toml::to_string(config).context("Error while creating TOML from config")?;
+
+    let mut output = String::new();
+    section.clear();
+
+    for line in serialized.lines() {
+        let trimmed = line.trim();
+
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            section = trimmed[1..trimmed.len() - 1].to_owned();
+        } else if let Some((key, _)) = trimmed.split_once(" = ")
+            && let Some(comment) = comments.get(&format!("{section}.{}", key.trim()))
+        {
+            if !output.is_empty() && !output.ends_with("\n\n") {
+                output.push('\n');
+            }
+
+            output.push_str(comment);
+            output.push('\n');
+        }
+
+        output.push_str(line);
+        output.push('\n');
+    }
+
+    Ok(output)
+}
+
 fn generate_config() -> Result<()> {
     let config_folder_path = Cli::get_config_path();
     let config_file_path = config_folder_path.join("config.toml");
@@ -658,7 +709,7 @@ fn generate_config() -> Result<()> {
     ))?;
 
     let config = Config::default();
-    let content = toml::to_string(&config).context("Error while creating TOML from config")?;
+    let content = config_with_comments(&config)?;
 
     std::fs::write(&config_file_path, content)?;
 
@@ -688,5 +739,41 @@ fn main() {
         let mut stdout = termcolor::StandardStream::stderr(termcolor::ColorChoice::Never);
         writeln!(stdout, "{e:#}").unwrap();
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod config_generation_tests {
+    use super::{Config, config_with_comments};
+
+    #[test]
+    fn generated_config_preserves_defaults_and_includes_comments() {
+        let mut config = Config::default();
+        config.formatting.digit_grouping_threshold = 12;
+
+        let generated = config_with_comments(&config).unwrap();
+        let original = toml::to_string(&config).unwrap();
+
+        assert!(generated.contains("# Controls the welcome message."));
+        assert!(generated.contains("# Digit separator for large integers."));
+        assert!(generated.contains("# When and if to load exchange rates"));
+        assert!(generated.contains("digit-grouping-threshold = 12"));
+
+        let generated_values: toml::Value = toml::from_str(&generated).unwrap();
+        let original_values: toml::Value = toml::from_str(&original).unwrap();
+
+        assert_eq!(generated_values, original_values);
+
+        let documented_comment_count = include_str!("config_comments.toml")
+            .lines()
+            .filter(|line| line.starts_with('#'))
+            .count();
+
+        let generated_comment_count = generated
+            .lines()
+            .filter(|line| line.starts_with('#'))
+            .count();
+
+        assert_eq!(generated_comment_count, documented_comment_count);
     }
 }
