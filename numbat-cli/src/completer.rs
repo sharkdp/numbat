@@ -9,6 +9,40 @@ pub struct NumbatCompleter {
     pub all_timezones: Vec<CompactString>,
 }
 
+// Complete names understood by the `info` command, without call parentheses
+// or unrelated language keywords.
+fn info_completions(line: &str, pos: usize, context: &Context) -> Option<(usize, Vec<Pair>)> {
+    let word_part = line.get(..pos)?.strip_prefix("info ")?;
+
+    // `info` accepts a single name, not an expression.
+    if word_part.chars().any(char::is_whitespace) {
+        return Some((pos, Vec::new()));
+    }
+
+    let mut names: Vec<String> = context
+        .variable_names()
+        .chain(context.function_names())
+        .chain(context.dimension_names().iter().cloned())
+        .chain(context.unit_names().iter().flatten().cloned())
+        .filter(|name| name.starts_with(word_part))
+        .map(|name| name.to_string())
+        .collect();
+
+    names.sort();
+    names.dedup();
+
+    Some((
+        "info ".len(),
+        names
+            .into_iter()
+            .map(|name| Pair {
+                display: name.clone(),
+                replacement: name,
+            })
+            .collect(),
+    ))
+}
+
 impl Completer for NumbatCompleter {
     type Candidate = Pair;
 
@@ -30,6 +64,13 @@ impl Completer for NumbatCompleter {
                         }],
                     ));
                 }
+            }
+        }
+
+        if line.starts_with("info ") {
+            let binding = self.context.lock().unwrap();
+            if let Some(result) = info_completions(line, pos, &binding) {
+                return Ok(result);
             }
         }
 
@@ -133,5 +174,45 @@ impl Completer for NumbatCompleter {
                 })
                 .collect(),
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::info_completions;
+    use numbat::{Context, resolver::CodeSource};
+
+    #[test]
+    fn info_completion_uses_names_without_parentheses_or_keywords() {
+        let mut context = Context::new_without_importer();
+        let (_statements, _result) = context
+            .interpret(
+                "fn is_empty(x) = x\nlet is_example = 1",
+                CodeSource::Internal,
+            )
+            .unwrap();
+
+        let line = "info is_";
+        let (start, candidates) = info_completions(line, line.len(), &context).unwrap();
+
+        assert_eq!(start, "info ".len());
+
+        let replacements: Vec<_> = candidates
+            .iter()
+            .map(|candidate| candidate.replacement.as_str())
+            .collect();
+
+        assert_eq!(replacements, ["is_empty", "is_example"]);
+        assert!(!replacements.iter().any(|name| name.ends_with('(')));
+
+        let (_, all_candidates) = info_completions("info ", "info ".len(), &context).unwrap();
+
+        assert!(
+            !all_candidates
+                .iter()
+                .any(|candidate| candidate.replacement == "let")
+        );
+
+        assert!(info_completions("is_", 3, &context).is_none());
     }
 }
