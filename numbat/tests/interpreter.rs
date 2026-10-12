@@ -616,6 +616,11 @@ fn test_full_simplify() {
 
     expect_output("mph * s/m", "0.44704");
     expect_output("3% * 1kg", "0.03 kg");
+
+    // Regression tests for https://github.com/sharkdp/numbat/issues/854.
+    expect_output("3.2 GHz * 6.3nm", "20.16 m/s");
+    expect_output("6.3nm * 3.2 GHz", "20.16 m/s");
+    expect_output("2 kHz * 3mm", "6 m/s");
     expect_output("m * g / cm", "100 g");
     expect_output("gal/in", "231 in²");
     expect_output(

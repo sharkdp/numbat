@@ -189,6 +189,24 @@ impl Quantity {
             }
         }
 
+        // Cancel prefixes across different factors when their combined scale
+        // is one. For example, GHz * nm can be represented as m/s without
+        // changing its numerical value.
+        let unprefixed_unit = self.unit.without_prefixes();
+        if unprefixed_unit != self.unit {
+            let (base_unit, original_factor) = self.unit.to_base_unit_representation();
+            let (_, unprefixed_factor) = unprefixed_unit.to_base_unit_representation();
+            let scale_ratio = original_factor.to_f64() / unprefixed_factor.to_f64();
+
+            if scale_ratio.is_finite()
+                && (scale_ratio - 1.0).abs() < 1e-12
+                && base_unit.iter().count() <= self.unit.iter().count()
+                && let Ok(converted) = self.convert_to(&base_unit)
+            {
+                return converted;
+            }
+        }
+
         // Heuristic 3
         let removed_exponent = |u: &UnitFactor| {
             // Nested derived units can contain factors that only cancel after reduction.
