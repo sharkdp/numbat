@@ -5,7 +5,7 @@ pub mod buffered_writer;
 mod bytecode_interpreter;
 mod column_formatter;
 pub mod command;
-mod currency;
+pub mod currency;
 pub mod datetime;
 mod decorator;
 pub mod diagnostic;
@@ -56,7 +56,7 @@ use column_formatter::ColumnFormatter;
 use compact_str::CompactString;
 use compact_str::CompactStringExt;
 use compact_str::ToCompactString;
-use currency::ExchangeRatesCache;
+use currency::CurrencyManager;
 use diagnostic::ErrorDiagnostic;
 use dimension::DimensionRegistry;
 use interpreter::Interpreter;
@@ -114,7 +114,6 @@ pub struct Context {
     typechecker: TypeChecker,
     interpreter: BytecodeInterpreter,
     resolver: Resolver,
-    load_currency_module_on_demand: bool,
     terminal_width: Option<usize>,
 }
 
@@ -135,7 +134,6 @@ impl Context {
             typechecker: TypeChecker::default(),
             interpreter: BytecodeInterpreter::new(),
             resolver: Resolver::new(module_importer),
-            load_currency_module_on_demand: false,
             terminal_width: None,
         }
     }
@@ -148,21 +146,8 @@ impl Context {
         self.interpreter.set_debug(activate);
     }
 
-    pub fn load_currency_module_on_demand(&mut self, yes: bool) {
-        self.load_currency_module_on_demand = yes;
-    }
-
-    /// Fill the currency exchange rate cache. This call is blocking.
-    pub fn prefetch_exchange_rates() {
-        let _unused = ExchangeRatesCache::fetch();
-    }
-
-    pub fn set_exchange_rates(xml_content: &str) {
-        ExchangeRatesCache::set_from_xml(xml_content);
-    }
-
-    pub fn use_test_exchange_rates() {
-        ExchangeRatesCache::use_test_rates();
+    pub fn set_currency_manager(currency_manager: impl CurrencyManager + 'static) {
+        currency::set_manager(currency_manager);
     }
 
     pub fn runtime_error(&self, kind: RuntimeErrorKind) -> RuntimeError {
@@ -755,51 +740,29 @@ impl Context {
             self.prefix_transformer = prefix_transformer_old.clone();
             self.typechecker = typechecker_old.clone();
 
-            if self.load_currency_module_on_demand
+            if !currency::is_loaded()
                 && let Err(NumbatError::TypeCheckError(TypeCheckError::UnknownIdentifier(
                     _,
                     identifier,
                     _,
                 ))) = &result
+                && currency::is_known(identifier)
+                && let Some(loader_code) = currency::load_manager().map_err(|_| {
+                    NumbatError::RuntimeError(
+                        self.runtime_error(RuntimeErrorKind::CouldNotLoadExchangeRates),
+                    )
+                })?
             {
-                const CURRENCY_IDENTIFIERS: &[&str] =
-                    &include!(concat!(env!("OUT_DIR"), "/currencies.rs"));
-                if CURRENCY_IDENTIFIERS.contains(&identifier.as_str()) {
-                    let mut no_print_settings = InterpreterSettings {
-                        print_fn: Box::new(
-                            move |_: &m::Markup| { // ignore any print statements when loading this module asynchronously
-                            },
-                        ),
-                    };
+                let _ = self.interpret_with_settings(
+                    &mut InterpreterSettings {
+                        print_fn: Box::new(|_| {}),
+                    },
+                    &loader_code,
+                    CodeSource::Internal,
+                )?;
 
-                    // We also call this from a thread at program startup, so if a user only starts
-                    // to use currencies later on, this will already be available and return immediately.
-                    // Otherwise, we fetch it now and make sure to block on this call.
-                    {
-                        let erc = ExchangeRatesCache::fetch();
-
-                        if erc.is_none() {
-                            return Err(Box::new(NumbatError::RuntimeError(
-                                self.runtime_error(RuntimeErrorKind::CouldNotLoadExchangeRates),
-                            )));
-                        }
-                    }
-
-                    let _ = self.interpret_with_settings(
-                        &mut no_print_settings,
-                        "use units::currencies",
-                        CodeSource::Internal,
-                    )?;
-
-                    // Make sure we do not run into an infinite loop in case loading that
-                    // module did not bring in the required currency unit identifier. This
-                    // can happen if the list of currency identifiers is not in sync with
-                    // what the module actually defines.
-                    self.load_currency_module_on_demand = false;
-
-                    // Now we try to evaluate the user expression again:
-                    return self.interpret_with_settings(settings, code, code_source);
-                }
+                // Now we try to evaluate the user expression again:
+                return self.interpret_with_settings(settings, code, code_source);
             }
         }
 

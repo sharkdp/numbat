@@ -1,7 +1,32 @@
 use std::path::Path;
 
-use numbat::{Context, NumbatError, module_importer::FileSystemImporter, resolver::CodeSource};
+use numbat::{
+    Context, NumbatError,
+    currency::{CouldNotLoadCurrencyManager, CurrencyManager},
+    module_importer::FileSystemImporter,
+    resolver::CodeSource,
+};
 use once_cell::sync::Lazy;
+
+pub struct TestCurrencyManager {}
+
+impl CurrencyManager for TestCurrencyManager {
+    fn get_rate(&self, _: &str) -> Option<f64> {
+        Some(1.)
+    }
+
+    fn is_known(&self, _: &str) -> bool {
+        true
+    }
+
+    fn is_loaded(&self) -> bool {
+        true
+    }
+
+    fn load(&self) -> Result<Option<String>, CouldNotLoadCurrencyManager> {
+        Ok(None)
+    }
+}
 
 pub fn get_test_context_without_prelude() -> Context {
     let module_path = Path::new(
@@ -13,7 +38,7 @@ pub fn get_test_context_without_prelude() -> Context {
     let mut importer = FileSystemImporter::default();
     importer.add_path(module_path);
 
-    Context::use_test_exchange_rates();
+    Context::set_currency_manager(TestCurrencyManager {});
     Context::new(importer)
 }
 
