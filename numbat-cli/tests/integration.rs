@@ -171,3 +171,36 @@ fn info_text() {
                 .and(predicates::str::contains("Round to the nearest integer.")),
         );
 }
+
+#[test]
+fn compact_output_removes_extra_blank_lines() {
+    let default_output = numbat()
+        .args(["--pretty-print=always", "--expression", "1 + 2"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    assert!(default_output.starts_with(b"\n"));
+
+    let compact_output = numbat()
+        .args([
+            "--compact-output",
+            "--pretty-print=always",
+            "--expression",
+            "1 + 2",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let stdout = String::from_utf8(compact_output).unwrap();
+
+    assert!(!stdout.starts_with('\n'));
+    assert!(!stdout.contains("\n\n"));
+    assert!(stdout.contains('3'));
+    assert!(stdout.ends_with('\n'));
+}

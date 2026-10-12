@@ -89,6 +89,10 @@ struct Args {
     #[arg(long, value_name = "WHEN")]
     pretty_print: Option<PrettyPrintMode>,
 
+    /// Reduce extra blank lines in output.
+    #[arg(long)]
+    compact_output: bool,
+
     /// Whether or not coloring should occur.
     #[arg(long, value_name = "WHEN")]
     color: Option<ColorMode>,
@@ -223,6 +227,7 @@ impl Cli {
 
         config.intro_banner = args.intro_banner.unwrap_or(config.intro_banner);
         config.pretty_print = args.pretty_print.unwrap_or(config.pretty_print);
+        config.compact_output |= args.compact_output;
         config.color = args.color.unwrap_or(config.color);
 
         config.enter_repl =
@@ -346,7 +351,9 @@ impl Cli {
         if interactive {
             match self.config.intro_banner {
                 IntroBanner::Long => {
-                    println!();
+                    if !self.config.compact_output {
+                        println!();
+                    }
                     println!(
                         "  █▄░█ █░█ █▀▄▀█ █▄▄ ▄▀█ ▀█▀    Numbat {}",
                         env!("CARGO_PKG_VERSION")
@@ -355,7 +362,9 @@ impl Cli {
                         "  █░▀█ █▄█ █░▀░█ █▄█ █▀█ ░█░    {}",
                         env!("CARGO_PKG_HOMEPAGE")
                     );
-                    println!();
+                    if !self.config.compact_output {
+                        println!();
+                    }
                 }
                 IntroBanner::Short => {
                     println!("Numbat {}", env!("CARGO_PKG_VERSION"));
@@ -514,7 +523,7 @@ impl Cli {
 
         let control_flow = match interpretation_result.map_err(|b| *b) {
             Ok((statements, interpreter_result)) => {
-                if interactive || pretty_print {
+                if (interactive || pretty_print) && !self.config.compact_output {
                     println!();
                 }
 
@@ -522,7 +531,9 @@ impl Cli {
                     for statement in &statements {
                         let repr = ansi_format(&statement.pretty_print(), true);
                         println!("{repr}");
-                        println!();
+                        if !self.config.compact_output {
+                            println!();
+                        }
                     }
                 }
 
@@ -530,7 +541,7 @@ impl Cli {
                 for s in to_be_printed.iter() {
                     println!("{}", ansi_format(s, interactive));
                 }
-                if interactive && !to_be_printed.is_empty() {
+                if interactive && !to_be_printed.is_empty() && !self.config.compact_output {
                     println!();
                 }
 
@@ -546,7 +557,10 @@ impl Cli {
                 );
                 print!("{}", ansi_format(&result_markup, false));
 
-                if (interactive || pretty_print) && interpreter_result.is_value() {
+                if (interactive || pretty_print)
+                    && interpreter_result.is_value()
+                    && !self.config.compact_output
+                {
                     println!();
                 }
 

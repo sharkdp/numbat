@@ -101,6 +101,7 @@ pub struct Config {
     pub intro_banner: IntroBanner,
     pub prompt: CompactString,
     pub pretty_print: PrettyPrintMode,
+    pub compact_output: bool,
     pub color: ColorMode,
     pub edit_mode: EditMode,
 
@@ -123,6 +124,7 @@ impl Default for Config {
             prompt: CompactString::const_new(">>> "),
             intro_banner: IntroBanner::default(),
             pretty_print: PrettyPrintMode::Auto,
+            compact_output: false,
             color: ColorMode::default(),
             edit_mode: EditMode::default(),
             load_prelude: true,
@@ -131,5 +133,18 @@ impl Default for Config {
             exchange_rates: Default::default(),
             enter_repl: true,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Config;
+
+    #[test]
+    fn compact_output_config_defaults_to_false_and_parses_true() {
+        assert!(!Config::default().compact_output);
+
+        let config: Config = toml::from_str("compact-output = true").unwrap();
+        assert!(config.compact_output);
     }
 }

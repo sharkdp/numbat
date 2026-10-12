@@ -63,6 +63,9 @@ prompt = ">>> "
 # only in interactive mode.
 pretty-print = "auto"
 
+# Omit extra blank lines in CLI output. Disabled by default.
+compact-output = false
+
 # Controls the edit mode. Can be "emacs", or "vi".
 edit-mode = "emacs"
 
