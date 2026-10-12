@@ -8,30 +8,37 @@ The following table provides a comparison of Numbat with other scientific calcul
 is certainly *not* objective, as we only list criteria that we consider important. If you think that a tool or language is missing
 or misrepresented, please [let us know](https://github.com/sharkdp/numbat/issues).
 
-|                                        | Numbat          | [Qalculate](https://qalculate.github.io/) | [Kalker](https://github.com/PaddiM8/kalker) | [GNU Units](https://www.gnu.org/software/units/) | [Frink](https://frinklang.org/) | [Wolfram Alpha](https://www.wolframalpha.com/) |
-|----------------------------------------|-----------------|-----------|--------|-----------|-------|---------------|
-| FOSS License                           | MIT, Apache-2.0 | GPL-2.0   | MIT    | GPL-3.0   | ❌     | ❌             |
-| **Interfaces**                         |                 |           |        |           |       |               |
-| Command-line                           | ✓               | ✓         | ✓    | ✓         | ✓     | ✓             |
-| Web version                            | ✓               | ❌        | ✓     | ❌         | ❌     | ✓             |
-| Graphical                              | ❌              | ✓         | ❌    | ❌         | (✓)   | ✓             |
-| **Units**                              |                 |           |        |           |       |               |
-| Comprehensive list of units            | ✓               | ✓         | ❌    | ✓         | ✓     | ✓             |
-| Custom units                           | ✓               | ✓         | ❌    | ✓         | ✓     | ❌             |
-| Physical dimensions                    | ✓               | ❌        | ❌    | ❌         | ❌     | ❌             |
-| Currency conversions                   | ✓               | ✓         | ❌    | ❌         | ✓     | ✓             |
-| Date and time calculations             | ✓               | ✓         | ❌    | ❌         | ✓     | ✓             |
-| **Language features**                  |                 |           |        |           |       |               |
-| Custom functions                       | ✓               | ✓        | ✓     | ❌         | ✓     | ❌             |
-| Real programming language              | ✓               | ❌        | ❌     | ❌         | ✓     | ?             |
-| Strongly typed                         | ✓               | ❌        | ❌     | ❌         | ❌     | ❌             |
-| **Calculator features**                |                 |           |        |           |       |               |
-| Symbolic calculations                  | ❌               | (✓)        | ❌    | ❌         | (✓)     | ✓             |
-| Hex/Oct/Bin mode                       | ✓               | ✓         | ✓     | ✓         | ✓     | ✓             |
-| Complex numbers                        | ❌ ([#180](https://github.com/sharkdp/numbat/issues/180))  | ✓        | ✓     | ❌         | ✓     | ✓             |
-| Vectors, Matrices                      | ❌               | ✓        | ✓      | ❌         | ✓     | ✓             |
+|                                        | Numbat          | [Qalculate](https://qalculate.github.io/) | [Kalker](https://github.com/PaddiM8/kalker) | [GNU Units](https://www.gnu.org/software/units/) | [Frink](https://frinklang.org/) | [Wolfram Alpha](https://www.wolframalpha.com/) | [Fend](https://github.com/printfn/fend) |
+|----------------------------------------|-----------------|-----------|--------|-----------|-------|---------------|------|
+| FOSS License                           | MIT, Apache-2.0 | GPL-2.0   | MIT    | GPL-3.0   | ❌     | ❌             | MIT |
+| **Interfaces**                         |                 |           |        |           |       |               |  |
+| Command-line                           | ✓               | ✓         | ✓    | ✓         | ✓     | ✓             | ✓ |
+| Web version                            | ✓               | ❌        | ✓     | ❌         | ❌     | ✓             | ✓ |
+| Graphical                              | ❌              | ✓         | ❌    | ❌         | (✓)   | ✓             | ❌ |
+| **Units**                              |                 |           |        |           |       |               |  |
+| Comprehensive list of units            | ✓               | ✓         | ❌    | ✓         | ✓     | ✓             | ✓ |
+| Custom units                           | ✓               | ✓         | ❌    | ✓         | ✓     | ❌             | ✓ |
+| Physical dimensions                    | ✓               | ❌        | ❌    | ❌         | ❌     | ❌             | ? |
+| Currency conversions                   | ✓               | ✓         | ❌    | ❌         | ✓     | ✓             | ✓ |
+| Date and time calculations             | ✓               | ✓         | ❌    | ❌         | ✓     | ✓             | ✓ |
+| **Language features**                  |                 |           |        |           |       |               |  |
+| Custom functions                       | ✓               | ✓        | ✓     | ❌         | ✓     | ❌             | ✓ |
+| Real programming language              | ✓               | ❌        | ❌     | ❌         | ✓     | ?             | ? |
+| Strongly typed                         | ✓               | ❌        | ❌     | ❌         | ❌     | ❌             | ? |
+| **Calculator features**                |                 |           |        |           |       |               |  |
+| Symbolic calculations                  | ❌               | (✓)        | ❌    | ❌         | (✓)     | ✓             | ? |
+| Hex/Oct/Bin mode                       | ✓               | ✓         | ✓     | ✓         | ✓     | ✓             | ✓ |
+| Complex numbers                        | ❌ ([#180](https://github.com/sharkdp/numbat/issues/180))  | ✓        | ✓     | ❌         | ✓     | ✓             | ✓ |
+| Vectors, Matrices                      | ❌               | ✓        | ✓      | ❌         | ✓     | ✓             | ? |
 
 ## Detailed comparison
+
+- [Fend](https://github.com/printfn/fend) is an arbitrary-precision
+  calculator with command-line and web interfaces. It supports unit
+  conversions, custom units, complex numbers, dates, and lambda
+  functions. Features marked `?` in its column need further verification
+  against the comparison criteria. Exact fraction output alone does not
+  establish general symbolic algebra support.
 
 - [Qalculate](https://qalculate.github.io/) is a fantastic calculator with a strong support for units and conversions.
   If you don't need the full power of a programming language, Qalculate is probably more feature-complete than Numbat.
