@@ -739,7 +739,26 @@ impl Context {
         let result = self
             .typechecker
             .check(&transformed_statements)
-            .map_err(|err| NumbatError::TypeCheckError(*err));
+            .map_err(|err| {
+                let mut err = *err;
+
+                if let TypeCheckError::UnknownIdentifier(_, name, current_suggestion) = &mut err {
+                    let prefixed_units =
+                        self.prefix_transformer.prefix_parser.prefixed_unit_names();
+
+                    if let Some(better_suggestion) = suggestion::did_you_mean(
+                        prefixed_units
+                            .iter()
+                            .map(String::as_str)
+                            .chain(current_suggestion.as_deref()),
+                        name.as_str(),
+                    ) {
+                        *current_suggestion = Some(better_suggestion);
+                    }
+                }
+
+                NumbatError::TypeCheckError(err)
+            });
 
         if result.is_err() {
             // Reset the state of the prefix transformer to what we had before. This is necessary

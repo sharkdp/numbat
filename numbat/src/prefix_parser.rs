@@ -263,6 +263,40 @@ impl PrefixParser {
         Ok(())
     }
 
+    /// Generate valid prefixed unit names for unknown-identifier suggestions.
+    /// Respect each alias's accepted prefix forms and prefix families.
+    pub fn prefixed_unit_names(&self) -> Vec<String> {
+        let mut names = Vec::new();
+
+        for (unit_name, info) in &self.units {
+            for (prefix_long, prefixes_short, prefix) in Self::prefixes() {
+                if !(prefix.is_metric() && info.metric_prefixes
+                    || prefix.is_binary() && info.binary_prefixes)
+                {
+                    continue;
+                }
+
+                if info.accepts_prefix.long {
+                    let name = format!("{prefix_long}{unit_name}");
+                    if !self.other_identifiers.contains_key(name.as_str()) {
+                        names.push(name);
+                    }
+                }
+
+                if info.accepts_prefix.short {
+                    for prefix_short in *prefixes_short {
+                        let name = format!("{prefix_short}{unit_name}");
+                        if !self.other_identifiers.contains_key(name.as_str()) {
+                            names.push(name);
+                        }
+                    }
+                }
+            }
+        }
+
+        names
+    }
+
     pub fn parse<'a>(&self, input: &'a str) -> PrefixParserResult<'a> {
         // Check if this is a shadowing identifier first (e.g., a function parameter
         // or local variable). This allows parameters like `h` to shadow unit names.

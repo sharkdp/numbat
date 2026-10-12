@@ -138,6 +138,22 @@ fn get_diagnostic_output(code: &str) -> String {
 }
 
 #[test]
+fn test_prefixed_unit_suggestions() {
+    let diagnostic = get_diagnostic_output("Mib");
+    assert!(diagnostic.contains("Did you mean 'MiB'?"), "{diagnostic}");
+
+    let diagnostic = get_diagnostic_output("1 kiolmeter");
+    assert!(
+        diagnostic.contains("Did you mean 'kilometer'?"),
+        "{diagnostic}"
+    );
+
+    // Existing suggestions for unprefixed units must still work.
+    let diagnostic = get_diagnostic_output("1 niles");
+    assert!(diagnostic.contains("Did you mean 'miles'?"), "{diagnostic}");
+}
+
+#[test]
 fn simple_value() {
     expect_output("0", "0");
     expect_output("0_0", "0");
