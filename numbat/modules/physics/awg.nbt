@@ -1,0 +1,20 @@
+use core::functions
+use core::numbers
+use core::error
+use math::constants
+use units::si
+
+# American Wire Gauge for solid, round conductors.
+# Gauge 0 means 1/0; -1, -2 and -3 mean 2/0, 3/0 and 4/0.
+# The area excludes insulation and gaps between strands.
+
+@name("American Wire Gauge")
+@description("Convert an AWG size to the cross-sectional area of a solid, round conductor. Valid integer sizes are -3 (4/0) through 40.")
+@example("12 -> AWG -> mm²")
+@url("https://en.wikipedia.org/wiki/American_wire_gauge")
+fn AWG(gauge: Scalar) -> Area =
+  if !is_finite(gauge) || !is_integer(gauge)
+    then error("AWG gauge must be a finite integer")
+  else if gauge < -3 || gauge > 40
+    then error("AWG gauge must be between -3 (4/0) and 40")
+  else π / 4 × (0.127 mm × 92^((36 - gauge) / 39))^2

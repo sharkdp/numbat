@@ -1,0 +1,14 @@
+use physics::awg
+
+# Reference areas in square millimetres.
+assert_eq(AWG(-3), 107.2193 mm², 0.01 mm²)
+assert_eq(AWG(0), 53.4751 mm², 0.01 mm²)
+assert_eq(AWG(12), 3.3088 mm², 0.001 mm²)
+assert_eq(AWG(20), 0.5176 mm², 0.001 mm²)
+assert_eq(AWG(36), π / 4 × (0.127 mm)^2, 1e-10 mm²)
+
+# The maintainer's proposed conversion syntax.
+assert_eq(12 -> AWG -> mm², 3.3088 mm², 0.001 mm²)
+
+# A larger gauge number corresponds to a smaller conductor.
+assert(AWG(12) > AWG(14))
