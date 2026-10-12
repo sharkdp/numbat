@@ -1610,6 +1610,12 @@ impl<'a> Parser<'a> {
                 inner.span,
                 matches!(inner.kind, TokenKind::True),
             ))
+        } else if let Some(token) = self.match_exact(tokens, TokenKind::RawStringFixed) {
+            let content = &token.lexeme[2..token.lexeme.len() - 1];
+            Ok(Expression::String(
+                token.span,
+                vec![StringPart::Fixed(content.to_compact_string())],
+            ))
         } else if let Some(token) = self.match_exact(tokens, TokenKind::StringFixed) {
             Ok(Expression::String(
                 token.span,

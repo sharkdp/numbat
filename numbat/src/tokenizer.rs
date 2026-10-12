@@ -148,6 +148,8 @@ pub enum TokenKind {
 
     // A normal string without interpolation: `"hello world"`
     StringFixed,
+    // A raw string without interpolation or escape processing: `r"hello"`
+    RawStringFixed,
     // A part of a string which *starts* an interpolation: `"foo = {`
     StringInterpolationStart,
     // A part of a string between two interpolations: `}, and bar = {`
@@ -400,6 +402,24 @@ impl Tokenizer {
         }
 
         Ok(())
+    }
+
+    fn consume_raw_string(&mut self, input: &str) {
+        let mut backslashes = 0;
+
+        while let Some(c) = self.peek(input) {
+            if c == '"' && backslashes % 2 == 0 {
+                break;
+            }
+
+            self.advance(input);
+
+            if c == '\\' {
+                backslashes += 1;
+            } else {
+                backslashes = 0;
+            }
+        }
     }
 
     fn open_scope(&mut self, scope_type: ScopeType) -> Result<()> {
@@ -674,6 +694,23 @@ impl Tokenizer {
             }
             '¹' | '²' | '³' | '⁴' | '⁵' | '⁶' | '⁷' | '⁸' | '⁹' => {
                 TokenKind::UnicodeExponent
+            }
+            'r' if self.peek(input) == Some('"') => {
+                self.advance(input); // Opening quote
+                self.consume_raw_string(input);
+
+                if self.match_char(input, '"') {
+                    TokenKind::RawStringFixed
+                } else {
+                    return Err(TokenizerError {
+                        kind: TokenizerErrorKind::UnterminatedString,
+                        span: Span {
+                            start: self.token_start,
+                            end: self.current,
+                            code_source_id: self.code_source_id,
+                        },
+                    });
+                }
             }
             '"' if self.is_inside_interpolation()
                 && matches!(
@@ -1188,6 +1225,24 @@ fn test_tokenize_numbers() {
     insta::assert_snapshot!(
         tokenize_reduced_pretty("0x1_").unwrap_err(),
         @"Error at index 4: `Expected base-16 digit`"
+    );
+}
+
+#[test]
+fn test_tokenize_raw_strings_issue_442() {
+    for source in [r#"r"{1 + 1}""#, r#"r"\n""#, r#"r"{{}}""#] {
+        let tokens = tokenize(source, 0).unwrap();
+
+        assert_eq!(tokens[0].kind, TokenKind::RawStringFixed);
+        assert_eq!(tokens[0].lexeme, source);
+        assert_eq!(tokens[0].span.start.as_usize(), 0);
+        assert_eq!(tokens[0].span.end.as_usize(), source.len());
+        assert_eq!(tokens[1].kind, TokenKind::Eof);
+    }
+
+    assert_eq!(
+        tokenize(r#"r"unterminated"#, 0).unwrap_err().kind,
+        TokenizerErrorKind::UnterminatedString
     );
 }
 

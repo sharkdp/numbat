@@ -916,6 +916,17 @@ fn test_conditionals() {
 }
 
 #[test]
+fn test_raw_strings_issue_442() {
+    expect_output(r#"str_length(r"{x}")"#, "3");
+    expect_output(r#"str_length(r"{{}}")"#, "4");
+    expect_output(r#"str_length(r"\n")"#, "2");
+    expect_output(r#"str_length("\n")"#, "1");
+    expect_output(r#"str_length(r"\"")"#, "2");
+    expect_output(r#"str_length(r"hello")"#, "5");
+    expect_failure(r#"r"unterminated"#, "Unterminated string");
+}
+
+#[test]
 fn test_string_interpolation() {
     expect_output("\"pi = {pi}!\"", "\"pi = 3.14159!\"");
     expect_output("\"1 + 2 = {1 + 2}\"", "\"1 + 2 = 3\"");
