@@ -296,7 +296,7 @@ jobs:
         case ${{ matrix.job.target }} in
           aarch64-*-linux-*) DPKG_ARCH=arm64 ;;
           arm-*-linux-*hf) DPKG_ARCH=armhf ;;
-          i686-*-linux-*) DPKG_ARCH=i686 ;;
+          i686-*-linux-*) DPKG_ARCH=i386 ;;
           x86_64-*-linux-*) DPKG_ARCH=amd64 ;;
           *) DPKG_ARCH=notset ;;
         esac;
@@ -306,6 +306,70 @@ jobs:
 
         # Binary
         install -Dm755 "${{ steps.bin.outputs.BIN_PATH }}" "${DPKG_DIR}/usr/bin/${{ steps.bin.outputs.BIN_NAME }}"
+
+        # Generate versioned runtime dependencies for dynamically linked GNU builds.
+        # Static musl packages must not acquire a glibc dependency.
+        DPKG_DEPENDS=""
+        case "${{ matrix.job.target }}" in
+          *musl*)
+            ;;
+          *gnu | *gnueabihf)
+            if [ "${DPKG_ARCH}" != "amd64" ]; then
+              if [[ "${DPKG_ARCH}" == "arm64" || "${DPKG_ARCH}" == "armhf" ]]; then
+                . /etc/os-release
+                UBUNTU_SOURCES=/etc/apt/sources.list.d/ubuntu.sources
+                test -f "${UBUNTU_SOURCES}"
+
+                # Ubuntu's normal archive serves amd64/i386; ARM lives in Ubuntu Ports.
+                if grep -q '^Architectures:' "${UBUNTU_SOURCES}"; then
+                  sudo sed -i 's/^Architectures:.*/Architectures: amd64 i386/' "${UBUNTU_SOURCES}"
+                else
+                  sudo sed -i '/^Types: deb$/a Architectures: amd64 i386' "${UBUNTU_SOURCES}"
+                fi
+                grep -q '^Architectures: amd64 i386$' "${UBUNTU_SOURCES}"
+
+                PORTS_LIST=/etc/apt/sources.list.d/numbat-ports.list
+                for SUITE in "${VERSION_CODENAME}" "${VERSION_CODENAME}-updates" "${VERSION_CODENAME}-backports" "${VERSION_CODENAME}-security"; do
+                  printf 'deb [arch=%s signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] http://ports.ubuntu.com/ubuntu-ports %s main restricted universe multiverse\n' "${DPKG_ARCH}" "${SUITE}"
+                done | sudo tee "${PORTS_LIST}" >/dev/null
+              fi
+
+              sudo dpkg --add-architecture "${DPKG_ARCH}"
+              sudo apt-get update
+              sudo apt-get install -y "libc6:${DPKG_ARCH}" "libgcc-s1:${DPKG_ARCH}"
+            fi
+
+            # dpkg-shlibdeps requires a Debian control file even with -O.
+            mkdir -p "${DPKG_STAGING}/debian"
+            cat > "${DPKG_STAGING}/debian/control" <<EOF
+        Source: ${{ needs.crate_metadata.outputs.name }}
+        Maintainer: ${{ needs.crate_metadata.outputs.maintainer }}
+
+        Package: ${DPKG_BASENAME}
+        Architecture: any
+        Description: Numbat dependency analysis
+        EOF
+
+            DPKG_SHLIBDEPS="$(
+              cd "${DPKG_STAGING}"
+              dpkg-shlibdeps -O -e "dpkg/usr/bin/${{ steps.bin.outputs.BIN_NAME }}"
+            )"
+
+            case "${DPKG_SHLIBDEPS}" in
+              shlibs:Depends=*) DPKG_DEPENDS="${DPKG_SHLIBDEPS#shlibs:Depends=}" ;;
+              *) echo "Unexpected dpkg-shlibdeps output: ${DPKG_SHLIBDEPS}" >&2; exit 1 ;;
+            esac
+
+            if [[ "${DPKG_DEPENDS}" != *libc6* ]]; then
+              echo "Missing libc6 dependency: ${DPKG_DEPENDS}" >&2
+              exit 1
+            fi
+            ;;
+          *)
+            echo "Unexpected Linux target: ${{ matrix.job.target }}" >&2
+            exit 1
+            ;;
+        esac
 
         # README and LICENSE
         install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/README.md"
@@ -380,11 +444,24 @@ jobs:
         Description:  Statically typed programming language for scientific computations with first class support for physical dimensions and units
         EOF
 
+        if [ -n "${DPKG_DEPENDS}" ]; then
+          echo "Depends: ${DPKG_DEPENDS}" >> "${DPKG_DIR}/DEBIAN/control"
+        fi
+
         DPKG_PATH="${DPKG_STAGING}/${DPKG_NAME}"
         echo "DPKG_PATH=${DPKG_PATH}" >> $GITHUB_OUTPUT
 
         # build dpkg
         fakeroot dpkg-deb --build "${DPKG_DIR}" "${DPKG_PATH}"
+
+        # Verify the dependency field in the actual packaged artifact.
+        ACTUAL_DEPENDS="$(dpkg-deb --field "${DPKG_PATH}" Depends)"
+        if [ "${ACTUAL_DEPENDS}" != "${DPKG_DEPENDS}" ]; then
+          echo "Package dependencies do not match generated dependencies." >&2
+          echo "Expected: ${DPKG_DEPENDS}" >&2
+          echo "Actual: ${ACTUAL_DEPENDS}" >&2
+          exit 1
+        fi
 
     - name: "Artifact upload: tarball"
       uses: actions/upload-artifact@master
