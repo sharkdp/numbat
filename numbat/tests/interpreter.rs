@@ -518,6 +518,19 @@ fn test_other_functions() {
     expect_output("is_infinite(inf)", "true");
     expect_output("is_infinite(-inf)", "true");
     expect_output("is_infinite(1)", "false");
+
+    for (expression, message) in [
+        ("bin(inf)", "Infinity has no base-2 representation"),
+        ("oct(inf)", "Infinity has no base-8 representation"),
+        ("dec(inf)", "Infinity has no base-10 representation"),
+        ("hex(inf)", "Infinity has no base-16 representation"),
+        ("bin(NaN)", "NaN has no base-2 representation"),
+        ("oct(NaN)", "NaN has no base-8 representation"),
+        ("dec(NaN)", "NaN has no base-10 representation"),
+        ("hex(NaN)", "NaN has no base-16 representation"),
+    ] {
+        expect_failure(expression, message);
+    }
 }
 
 #[test]
