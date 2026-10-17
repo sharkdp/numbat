@@ -25,7 +25,7 @@ numbat = { path = "../numbat", default-features = false, features = [
 html-escape = "0.2.13"
 termcolor = "1.4.1"
 codespan-reporting = "0.12"
-getrandom = { version = "0.3.3", features = ["wasm_js"] }
+getrandom = { version = "0.4.3", features = ["wasm_js"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.50"
