@@ -605,6 +605,22 @@ fn mean<D: Dim>(xs: List<D>) -> D
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=mean%28%5B1%20m%2C%202%20m%2C%20300%20cm%5D%29){ .md-button }
 
+### `geomean` (Geometric mean)
+Calculate the geometric mean of a non-empty list of finite, strictly positive quantities.
+More information [here](https://en.wikipedia.org/wiki/Geometric_mean).
+
+```nbt
+fn geomean<D: Dim>(xs: List<D>) -> D
+```
+
+!!! example "Example"
+    ```nbt
+    geomean([1 m, 4 m, 16 m])
+
+        = 4.0 m    [Length]
+    ```
+    [:material-play-circle: Run this example](https://numbat.dev/?q=geomean%28%5B1%20m%2C%204%20m%2C%2016%20m%5D%29){ .md-button }
+
 ### `variance` (Variance)
 Calculate the population variance of a list of quantities.
 More information [here](https://en.wikipedia.org/wiki/Variance).

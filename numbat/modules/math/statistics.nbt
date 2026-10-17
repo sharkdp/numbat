@@ -1,8 +1,15 @@
 use core::lists
+use core::scalar
+use core::error
+use core::numbers
+use math::transcendental
 
 # TODO: remove these helpers once we support local definitions
 fn _max<D: Dim>(x: D, y: D) -> D = if x > y then x else y
 fn _min<D: Dim>(x: D, y: D) -> D = if x < y then x else y
+
+fn _geomean_log_ratio<D: Dim>(x: D, reference: D) -> Scalar =
+  4 × ln(x^(1/4) / reference^(1/4))
 
 @name("Maximum")
 @description("Get the largest element of a list.")
@@ -25,6 +32,24 @@ fn minimum<D: Dim>(xs: List<D>) -> D =
 @example("mean([1 m, 2 m, 300 cm])")
 @url("https://en.wikipedia.org/wiki/Arithmetic_mean")
 fn mean<D: Dim>(xs: List<D>) -> D = if is_empty(xs) then 0 else sum(xs) / len(xs)
+
+# Sum logarithms of dimensionless ratios to preserve the input dimension
+# without multiplying potentially very large quantities together.
+fn _geomean_log_sum<D: Dim>(xs: List<D>, reference: D) -> Scalar =
+  if is_empty(xs)
+    then 0
+    else if !is_finite(head(xs)) || head(xs) <= 0
+      then error("geomean requires finite, strictly positive values")
+      else _geomean_log_ratio(head(xs), reference) + _geomean_log_sum(tail(xs), reference)
+
+@name("Geometric mean")
+@description("Calculate the geometric mean of a non-empty list of finite, strictly positive quantities.")
+@example("geomean([1 m, 4 m, 16 m])")
+@url("https://en.wikipedia.org/wiki/Geometric_mean")
+fn geomean<D: Dim>(xs: List<D>) -> D =
+  if is_empty(xs)
+    then error("geomean requires a non-empty list")
+    else head(xs) × exp(_geomean_log_sum(xs, head(xs)) / len(xs))
 
 @name("Variance")
 @url("https://en.wikipedia.org/wiki/Variance")

@@ -138,6 +138,21 @@ fn get_diagnostic_output(code: &str) -> String {
 }
 
 #[test]
+fn geometric_mean_errors() {
+    expect_failure("geomean([])", "geomean requires a non-empty list");
+
+    for input in [
+        "geomean([0, 4])",
+        "geomean([-1, 4])",
+        "geomean([1, -4])",
+        "geomean([inf, 4])",
+        "geomean([NaN, 4])",
+    ] {
+        expect_failure(input, "geomean requires finite, strictly positive values");
+    }
+}
+
+#[test]
 fn simple_value() {
     expect_output("0", "0");
     expect_output("0_0", "0");
