@@ -247,6 +247,11 @@ assert_eq(geomean([1 mm, 1 m]), sqrt(1000) mm, 1e-7 mm)
 # The logarithmic implementation avoids overflowing an intermediate product.
 assert_eq(geomean([1e200, 1e200]), 1e200, 1e188)
 
+# A ratio can underflow even when both inputs are finite and positive.
+assert_eq(geomean([1e308, 1e-308]), 1, 1e-10)
+assert_eq(geomean([1e-308, 1e308]), 1, 1e-10)
+assert_eq(geomean([1e308 m, 1e-308 km]), sqrt(1000) m, 1e-9 m)
+
 # variance
 
 assert_eq(variance([]), 0)

@@ -8,6 +8,9 @@ use math::transcendental
 fn _max<D: Dim>(x: D, y: D) -> D = if x > y then x else y
 fn _min<D: Dim>(x: D, y: D) -> D = if x < y then x else y
 
+fn _geomean_log_ratio<D: Dim>(x: D, reference: D) -> Scalar =
+  4 × ln(x^(1/4) / reference^(1/4))
+
 @name("Maximum")
 @description("Get the largest element of a list.")
 @example("maximum([30 cm, 2 m])")
@@ -37,7 +40,7 @@ fn _geomean_log_sum<D: Dim>(xs: List<D>, reference: D) -> Scalar =
     then 0
     else if !is_finite(head(xs)) || head(xs) <= 0
       then error("geomean requires finite, strictly positive values")
-      else ln(head(xs) / reference) + _geomean_log_sum(tail(xs), reference)
+      else _geomean_log_ratio(head(xs), reference) + _geomean_log_sum(tail(xs), reference)
 
 @name("Geometric mean")
 @description("Calculate the geometric mean of a non-empty list of finite, strictly positive quantities.")
