@@ -26,3 +26,20 @@ assert_eq(str_replace("x", "yY", "xxx"), "yYyYyY")
 assert_eq(str_replace(" ", "   ", "a b"), "a   b")
 
 assert_eq(str_repeat(3, "xy"), "xyxyxy")
+
+assert_eq(str_length("héllo"), 5)
+assert_eq(str_length("❤"), 1)
+assert_eq(str_length(chr(0x2764)), 1)
+
+assert_eq(str_slice(0, 2, "héllo"), "hé")
+assert_eq(str_slice(1, 3, "héllo"), "él")
+assert_eq(str_slice(2, 5, "héllo"), "llo")
+assert_eq(str_slice(0, 6, "héllo"), "")
+assert_eq(str_slice(3, 1, "héllo"), "")
+assert_eq(str_slice(2, 2, "héllo"), "")
+
+assert_eq(str_find("llo", "héllo"), 2)
+assert(str_contains("l", "héllo"))
+assert_eq(str_replace("l", "L", "héllo"), "héLLo")
+
+assert_eq(split("a,é,b", ","), ["a", "é", "b"])

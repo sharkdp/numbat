@@ -12,7 +12,7 @@ pub fn str_length(
     mut args: Args,
     _return_type: &TypeScheme,
 ) -> Result<Value, Box<RuntimeErrorKind>> {
-    let len = string_arg!(args).len();
+    let len = string_arg!(args).chars().count();
     return_scalar!(len as f64)
 }
 
@@ -32,6 +32,24 @@ pub fn uppercase(
     return_string!(owned = string_arg!(args).to_uppercase())
 }
 
+// Like `str::get(start..end)`, but `start` and `end` count characters instead of bytes.
+fn char_slice(input: &str, start: usize, end: usize) -> Option<&str> {
+    if start > end {
+        return None;
+    }
+    let mut boundaries = input
+        .char_indices()
+        .map(|(i, _)| i)
+        .chain(std::iter::once(input.len()));
+    let start_byte = boundaries.by_ref().nth(start)?;
+    let end_byte = if end == start {
+        start_byte
+    } else {
+        boundaries.nth(end - start - 1)?
+    };
+    Some(&input[start_byte..end_byte])
+}
+
 pub fn str_slice(
     _ctx: &mut FfiContext,
     mut args: Args,
@@ -41,7 +59,7 @@ pub fn str_slice(
     let end = quantity_arg!(args).unsafe_value().to_f64() as usize;
     let input = string_arg!(args);
 
-    let output = input.get(start..end).unwrap_or_default();
+    let output = char_slice(&input, start, end).unwrap_or_default();
 
     return_string!(borrowed = output)
 }
