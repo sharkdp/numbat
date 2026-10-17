@@ -91,13 +91,18 @@ and — where sensible — units allow for [binary prefixes](https://en.wikipedi
 | `Length` | [Mile](https://en.wikipedia.org/wiki/Mile) | `mi`, `mile`, `miles` |
 | `Length` | [Nautical Mile](https://en.wikipedia.org/wiki/Nautical_mile) | `nautical_mile`, `nautical_miles`, `NM`, `nmi` |
 | `Length` | [Parsec](https://en.wikipedia.org/wiki/Parsec) | `parsec`, `parsecs`, `pc` |
+| `Length` | [Pica](https://en.wikipedia.org/wiki/Pica_(typography)) | `pica`, `picas` |
 | `Length` | [Planck length](https://en.wikipedia.org/wiki/Planck_length) | `planck_length` |
+| `Length` | [Point](https://en.wikipedia.org/wiki/Point_(typography)) | `point`, `points`, `pt` |
 | `Length` | [Rack unit](https://en.wikipedia.org/wiki/Rack_unit) | `rackunit`, `rackunits`, `RU`, `U` |
 | `Length` | [US rod](https://en.wikipedia.org/wiki/Rod_(unit)) | `perch`, `rod`, `rods` |
 | `Length` | [Smoot](https://en.wikipedia.org/wiki/Smoot) | `smoot` |
 | `Length` | [Solar radius](https://en.wikipedia.org/wiki/Sun) | `solar_radius` <br/> (`use extra::astronomy`) |
 | `Length` | [Stoney length](https://en.wikipedia.org/wiki/Stoney_units) | `stoney_length` <br/> (`use units::stoney`) |
+| `Length` | [TeX pica](https://en.wikipedia.org/wiki/Pica_(typography)) | `tex_pica`, `tex_picas` |
+| `Length` | [TeX point](https://en.wikipedia.org/wiki/Point_(typography)#TeX_point) | `tex_point`, `tex_points` |
 | `Length` | [Thousandth of an inch](https://en.wikipedia.org/wiki/Thousandth_of_an_inch) | `mil`, `mils`, `thou` |
+| `Length` | [Twip](https://en.wikipedia.org/wiki/Twip) | `twip`, `twips` |
 | `Length` | [Yard](https://en.wikipedia.org/wiki/Yard) | `yard`, `yards`, `yd` |
 | `Length / Volume` | [Miles per gallon](https://en.wikipedia.org/wiki/Fuel_economy_in_automobiles) | `mpg` |
 | `Length^2` | [darcy](https://en.wikipedia.org/wiki/Darcy_(unit)) | `darcies`, `darcy`, `darcys` |

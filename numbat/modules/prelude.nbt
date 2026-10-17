@@ -31,6 +31,7 @@ use units::cgs
 use units::planck
 use units::fff
 use units::misc
+use units::typography
 use units::humorous
 use units::partsperx
 use units::mixed
