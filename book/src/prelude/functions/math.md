@@ -617,7 +617,7 @@ fn geomean<D: Dim>(xs: List<D>) -> D
     ```nbt
     geomean([1 m, 4 m, 16 m])
 
-        = 4 m    [Length]
+        = 4.0 m    [Length]
     ```
     [:material-play-circle: Run this example](https://numbat.dev/?q=geomean%28%5B1%20m%2C%204%20m%2C%2016%20m%5D%29){ .md-button }
 
