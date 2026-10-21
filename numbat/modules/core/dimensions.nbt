@@ -75,6 +75,7 @@ dimension LuminousFlux = LuminousIntensity × Angle^2
 dimension Illuminance = LuminousFlux / Area
 dimension Luminance = LuminousIntensity / Area
 dimension Irradiance = Power / Area
+dimension Exposure = ElectricCharge / Mass
 
 dimension Activity = 1 / Time
 dimension AbsorbedDose = Energy / Mass
