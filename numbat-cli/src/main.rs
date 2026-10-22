@@ -291,21 +291,15 @@ impl Cli {
         }
 
         if self.config.enter_repl {
-            let mut currency_fetch_thread = if self.config.load_prelude
+            if self.config.load_prelude
                 && self.config.exchange_rates.fetching_policy
                     == ExchangeRateFetchingPolicy::OnStartup
             {
-                Some(thread::spawn(move || {
-                    numbat::Context::prefetch_exchange_rates();
-                }))
-            } else {
-                None
-            };
+                let _: thread::JoinHandle<()> =
+                    thread::spawn(numbat::Context::prefetch_exchange_rates);
+            }
 
             let repl_result = self.repl();
-            if let Some(thread) = currency_fetch_thread.take() {
-                let _ = thread.join();
-            }
             run_result = run_result.and(repl_result);
         }
 
