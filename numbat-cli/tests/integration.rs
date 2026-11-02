@@ -171,3 +171,30 @@ fn info_text() {
                 .and(predicates::str::contains("Round to the nearest integer.")),
         );
 }
+
+#[test]
+fn local_timezone_preserves_posix_rules() {
+    numbat()
+        .env("TZ", "EST5EDT,M3.2.0,M11.1.0")
+        .arg("-e")
+        .arg(
+            "assert_eq(format_datetime(\"%z\", datetime(\"2022-07-20 21:52 +0000\") -> local), \"-0400\")\n\
+             assert_eq(format_datetime(\"%z\", datetime(\"2022-01-20 21:52 +0000\") -> local), \"-0500\")\n\
+             assert_eq(format_datetime(\"%z\", datetime(\"2022-07-20 21:52\")), \"-0400\")",
+        )
+        .assert()
+        .success();
+}
+
+#[test]
+fn local_timezone_falls_back_to_utc_when_detection_fails() {
+    numbat()
+        .env("TZ", "Numbat/Invalid_Time_Zone")
+        .arg("-e")
+        .arg(
+            "assert_eq(format_datetime(\"%z\", datetime(\"2022-07-20 21:52 +0200\") -> local), \"+0000\")\n\
+             assert_eq(get_local_timezone(), \"UTC\")",
+        )
+        .assert()
+        .success();
+}

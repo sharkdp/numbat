@@ -9,10 +9,10 @@ pub const DEFAULT_DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
 pub(crate) fn get_local_timezone_or_utc() -> TimeZone {
     let timezone = TimeZone::system();
-    if timezone.iana_name().is_some() {
-        timezone
-    } else {
+    if timezone.is_unknown() {
         TimeZone::UTC
+    } else {
+        timezone
     }
 }
 

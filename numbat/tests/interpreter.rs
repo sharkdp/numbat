@@ -1044,12 +1044,18 @@ fn test_full_simplify_for_function_calls() {
 
 #[test]
 fn test_lazy_local_timezone_conversion() {
+    let expected = "2022-07-20T19:52:00Z"
+        .parse::<jiff::Timestamp>()
+        .unwrap()
+        .to_zoned(jiff::tz::TimeZone::system())
+        .strftime("%Y-%m-%d %H:%M %z")
+        .to_string();
     expect_output(
         r#"
         let dt = datetime("2022-07-20 21:52 +0200")
-        format_datetime("%Y-%m-%d %H:%M %z", dt -> local) == format_datetime("%Y-%m-%d %H:%M %z", dt -> tz(get_local_timezone()))
+        format_datetime("%Y-%m-%d %H:%M %z", dt -> local)
         "#,
-        "true",
+        format!("\"{expected}\""),
     );
 }
 
