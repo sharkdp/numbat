@@ -172,6 +172,23 @@ fn percentage_change_error_hints() {
     assert!(!unrelated.contains("decrease_by"), "{unrelated}");
     assert!(!unrelated.contains("increase_by"), "{unrelated}");
 
+    // Multiplying a dimensioned quantity by a percentage does not make it a
+    // scalar percentage change.
+    for expression in ["72 m - (3 s * 15)%", "72 m + (3 s * 15)%"] {
+        let dimensioned_percentage = get_error_message(expression);
+        assert!(
+            !dimensioned_percentage.contains("decrease_by")
+                && !dimensioned_percentage.contains("increase_by"),
+            "{dimensioned_percentage}"
+        );
+    }
+    let missing_length = get_error_message("72 m² - (3 m * 15)%");
+    assert!(
+        missing_length
+            .contains("multiply the expression on the right hand side by a `Length` factor"),
+        "{missing_length}"
+    );
+
     expect_output("72 m |> decrease_by(15%)", "61.2 m");
     expect_output("72 m |> increase_by(15%)", "82.8 m");
 }

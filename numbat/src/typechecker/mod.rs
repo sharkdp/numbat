@@ -575,15 +575,16 @@ impl TypeChecker {
                                 )
                             );
 
-                            let percentage_change_function = if rhs_is_percentage {
-                                match op {
-                                    BinaryOperator::Add => Some("increase_by"),
-                                    BinaryOperator::Sub => Some("decrease_by"),
-                                    _ => None,
-                                }
-                            } else {
-                                None
-                            };
+                            let percentage_change_function =
+                                if rhs_is_percentage && rhs_dtype.is_scalar() {
+                                    match op {
+                                        BinaryOperator::Add => Some("increase_by"),
+                                        BinaryOperator::Sub => Some("decrease_by"),
+                                        _ => None,
+                                    }
+                                } else {
+                                    None
+                                };
 
                             return Err(Box::new(TypeCheckError::IncompatibleDimensions(
                                 IncompatibleDimensionsError {
