@@ -425,26 +425,28 @@ impl Cli {
                                 // parse_and_evaluate acquires it internally.
                                 drop(ctx);
 
-                                let result = match fs::read_to_string(&path) {
+                                match fs::read_to_string(&path) {
                                     Ok(source) => {
-                                        self.parse_and_evaluate(
-                                            &source,
-                                            CodeSource::File(path.clone()),
-                                            ExecutionMode::Interactive,
-                                            PrettyPrintMode::Never,
-                                        )
-                                        .result
+                                        let result = self
+                                            .parse_and_evaluate(
+                                                &source,
+                                                CodeSource::File(path.clone()),
+                                                ExecutionMode::Interactive,
+                                                PrettyPrintMode::Never,
+                                            )
+                                            .result;
+                                        // `save` writes executable Numbat source, not REPL
+                                        // commands. Preserve the loaded definitions even if
+                                        // the original file later changes or disappears.
+                                        cmd_runner.push_to_history(&source, result);
                                     }
                                     Err(err) => {
                                         eprintln!(
                                             "Could not load source file '{}': {err}",
                                             path.display()
                                         );
-                                        Err(())
                                     }
-                                };
-
-                                cmd_runner.push_to_history(&line, result);
+                                }
                                 continue;
                             }
                             CommandControlFlow::Reset => {

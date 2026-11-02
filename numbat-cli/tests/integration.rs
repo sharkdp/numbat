@@ -192,6 +192,9 @@ fn load_file_into_repl_and_survive_errors() {
     );
 
     let output = numbat()
+        // An unsupported TERM (such as nextest's `dumb`) makes rustyline
+        // print prompts even when input is piped.
+        .env("TERM", "xterm")
         .args(["--color", "never"])
         .write_stdin(input)
         .output()
@@ -232,4 +235,39 @@ fn load_command_appears_in_help() {
         .assert()
         .success()
         .stdout(predicates::str::contains("load"));
+}
+
+#[test]
+fn loaded_source_is_preserved_when_saving_a_session() {
+    let root = std::env::temp_dir().join(format!(
+        "numbat-load-save-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let source = "fn twice(x: Scalar) -> Scalar = 2 * x\n";
+    std::fs::write(root.join("source.nbt"), source).unwrap();
+
+    numbat()
+        .current_dir(&root)
+        .write_stdin("load missing.nbt\nload source.nbt\ntwice(7)\nsave saved.nbt\nexit\n")
+        .assert()
+        .success();
+
+    // A saved session must remain valid Numbat source, even if the original
+    // loaded file is no longer available.
+    std::fs::remove_file(root.join("source.nbt")).unwrap();
+    let saved = std::fs::read_to_string(root.join("saved.nbt")).unwrap();
+    assert_eq!(saved, format!("{source}twice(7)\n"));
+    numbat()
+        .current_dir(&root)
+        .arg("saved.nbt")
+        .assert()
+        .success()
+        .stdout("14\n");
+
+    std::fs::remove_dir_all(root).unwrap();
 }
