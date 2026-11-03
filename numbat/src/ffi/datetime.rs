@@ -68,6 +68,16 @@ pub fn get_local_timezone(
     return_string!(borrowed = tz_name)
 }
 
+pub fn _local(
+    _ctx: &mut FfiContext,
+    _args: Args,
+    _return_type: &TypeScheme,
+) -> Result<Value, Box<RuntimeErrorKind>> {
+    Ok(Value::FunctionReference(
+        FunctionReference::LocalTzConversion,
+    ))
+}
+
 pub fn tz(
     _ctx: &mut FfiContext,
     mut args: Args,

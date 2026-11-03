@@ -1028,6 +1028,11 @@ impl Vm {
                                 ),
                             }
                         }
+                        FunctionReference::LocalTzConversion => {
+                            let dt = self.pop_datetime();
+                            let tz = crate::datetime::get_local_timezone_or_utc();
+                            self.push(Value::DateTime(dt.with_time_zone(tz)));
+                        }
                         FunctionReference::TzConversion(tz_name) => {
                             // TODO: implement this using a closure, once we have that in the language
 

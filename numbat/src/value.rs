@@ -17,6 +17,8 @@ pub enum FunctionReference {
     Normal(CompactString),
     // TODO: We can get rid of this variant once we implement closures:
     TzConversion(CompactString),
+    // Resolve the system timezone only when this function is used.
+    LocalTzConversion,
 }
 
 impl std::fmt::Display for FunctionReference {
@@ -26,6 +28,11 @@ impl std::fmt::Display for FunctionReference {
             FunctionReference::Normal(name) => write!(f, "<function: {name}>"),
             FunctionReference::TzConversion(tz) => {
                 write!(f, "<builtin timezone conversion function: {tz}>")
+            }
+            FunctionReference::LocalTzConversion => {
+                let tz = crate::datetime::get_local_timezone_or_utc();
+                let name = tz.iana_name().unwrap_or("<unknown timezone>");
+                write!(f, "<builtin timezone conversion function: {name}>")
             }
         }
     }
