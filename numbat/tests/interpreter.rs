@@ -138,6 +138,62 @@ fn get_diagnostic_output(code: &str) -> String {
 }
 
 #[test]
+fn percentage_change_error_hints() {
+    let subtraction = get_error_message("72 m - 15%");
+    assert!(
+        subtraction.contains("Suggested fix: use `quantity |> decrease_by(percentage)`"),
+        "{subtraction}"
+    );
+    assert!(
+        !subtraction.contains("multiply the expression"),
+        "{subtraction}"
+    );
+
+    let addition = get_error_message("72 m + 15%");
+    assert!(
+        addition.contains("Suggested fix: use `quantity |> increase_by(percentage)`"),
+        "{addition}"
+    );
+
+    let diagnostic = get_diagnostic_output("72 m - 15%");
+    assert!(
+        diagnostic.contains("quantity |> decrease_by(percentage)"),
+        "{diagnostic}"
+    );
+
+    let scalar = get_error_message("72 m - 15");
+    assert!(
+        scalar.contains("multiply the expression on the right hand side"),
+        "{scalar}"
+    );
+    assert!(!scalar.contains("decrease_by"), "{scalar}");
+
+    let unrelated = get_error_message("72 m - 3 s");
+    assert!(!unrelated.contains("decrease_by"), "{unrelated}");
+    assert!(!unrelated.contains("increase_by"), "{unrelated}");
+
+    // Multiplying a dimensioned quantity by a percentage does not make it a
+    // scalar percentage change.
+    for expression in ["72 m - (3 s * 15)%", "72 m + (3 s * 15)%"] {
+        let dimensioned_percentage = get_error_message(expression);
+        assert!(
+            !dimensioned_percentage.contains("decrease_by")
+                && !dimensioned_percentage.contains("increase_by"),
+            "{dimensioned_percentage}"
+        );
+    }
+    let missing_length = get_error_message("72 m² - (3 m * 15)%");
+    assert!(
+        missing_length
+            .contains("multiply the expression on the right hand side by a `Length` factor"),
+        "{missing_length}"
+    );
+
+    expect_output("72 m |> decrease_by(15%)", "61.2 m");
+    expect_output("72 m |> increase_by(15%)", "82.8 m");
+}
+
+#[test]
 fn simple_value() {
     expect_output("0", "0");
     expect_output("0_0", "0");
