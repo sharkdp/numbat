@@ -35,8 +35,8 @@ assert_eq(datetime("2024-01-02 07:24:56.789 -0600"), test_date3)
 assert_eq(datetime("2024-07-31 15:24:00 Europe/Berlin"), test_date1)  # CEST (UTC+2)
 assert_eq(datetime("2024-01-02 14:24:56 Europe/Berlin"), test_date2)  # CET  (UTC+1)
 
-assert_eq(datetime("2024-07-31 09:24:00 US/Eastern"), test_date1)  # UTC-4
-assert_eq(datetime("2024-01-02 08:24:56 US/Eastern"), test_date2)  # UTC-5
+assert_eq(datetime("2024-07-31 09:24:00 America/New_York"), test_date1)  # UTC-4
+assert_eq(datetime("2024-01-02 08:24:56 America/New_York"), test_date2)  # UTC-5
 
 
 
@@ -58,8 +58,8 @@ assert_eq(as_string(test_date3 -> UTC),
 
 assert_eq(as_string(test_date3 -> tz("Europe/Berlin")),
           "2024-01-02 14:24:56 CET (UTC +01), Europe/Berlin")
-assert_eq(as_string(test_date3 -> tz("US/Eastern")),
-            "2024-01-02 08:24:56 EST (UTC -05), US/Eastern")
+assert_eq(as_string(test_date3 -> tz("America/New_York")),
+            "2024-01-02 08:24:56 EST (UTC -05), America/New_York")
 assert_eq(as_string(test_date3 -> tz("Asia/Kathmandu")),
             "2024-01-02 19:09:56 (UTC +05:45), Asia/Kathmandu")
 

@@ -138,6 +138,44 @@ fn get_diagnostic_output(code: &str) -> String {
 }
 
 #[test]
+fn geometric_mean_extreme_scale_factors() {
+    for expression in [
+        "abs(geomean([1e-308, 1e308, 1e308]) / 10^(308/3) - 1) < 1e-10",
+        "abs(geomean([1e308, 1e-308, 1e-308]) / 10^(-308/3) - 1) < 1e-10",
+        "abs(geomean([1e-308 m, 1e308 km, 1e308 km]) / (10^(314/3) m) - 1) < 1e-10",
+        "abs(geomean([1e308 km, 1e-308 m, 1e-308 m]) / (10^(-305/3) m) - 1) < 1e-10",
+        "geomean([1.7976931348623157e308, 1.7976931348623157e308]) == 1.7976931348623157e308",
+        "geomean([5e-324, 5e-324]) == 5e-324",
+        "geomean([1e308 m]) == 1e308 m",
+        "geomean([5e-324 m]) == 5e-324 m",
+        "geomean([1.7976931348623157e308 m, 1.7976931348623157e308 m]) == 1.7976931348623157e308 m",
+        "geomean([5e-324 s, 5e-324 s]) == 5e-324 s",
+        "abs(geomean([5e-324, 1.7976931348623157e308, 1.7976931348623157e308]) / geomean([1.7976931348623157e308, 5e-324, 1.7976931348623157e308]) - 1) < 1e-10",
+        "abs(geomean([1.7976931348623157e308, 5e-324, 5e-324]) / geomean([5e-324, 5e-324, 1.7976931348623157e308]) - 1) < 1e-10",
+    ] {
+        expect_output(expression, "true");
+    }
+}
+
+#[test]
+fn geometric_mean_errors() {
+    expect_failure("geomean([])", "geomean requires a non-empty list");
+
+    for input in [
+        "geomean([0, 4])",
+        "geomean([-1, 4])",
+        "geomean([1, -4])",
+        "geomean([inf, 4])",
+        "geomean([NaN, 4])",
+        "geomean([1, 0])",
+        "geomean([1, inf])",
+        "geomean([1, NaN])",
+    ] {
+        expect_failure(input, "geomean requires finite, strictly positive values");
+    }
+}
+
+#[test]
 fn simple_value() {
     expect_output("0", "0");
     expect_output("0_0", "0");
