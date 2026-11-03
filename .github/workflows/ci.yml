@@ -244,6 +244,63 @@ jobs:
         CROSS_BUILD_ENV_PASSTHROUGH: INSTA_WORKSPACE_ROOT
       run: $BUILD_CMD test --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
 
+    - name: Diagnose i686 subprocess execution
+      if: failure() && matrix.job.target == 'i686-unknown-linux-gnu'
+      shell: bash
+      env:
+        INSTA_WORKSPACE_ROOT: ${{ github.workspace }}
+        CROSS_BUILD_ENV_PASSTHROUGH: INSTA_WORKSPACE_ROOT
+      run: |
+        probe=$(mktemp -d "$GITHUB_WORKSPACE/.i686-probe.XXXXXX")
+        trap 'rm -rf "$probe"' EXIT
+        mkdir "$probe/src"
+        cat > "$probe/Cargo.toml" <<'TOML'
+        [package]
+        name = "i686-process-probe"
+        version = "0.0.0"
+        edition = "2021"
+        [workspace]
+        TOML
+        cat > "$probe/src/main.rs" <<'RS'
+        use std::{ffi::CStr, io, process::Command};
+        extern "C" {
+            fn gnu_get_libc_version() -> *const std::ffi::c_char;
+            fn socketpair(domain: i32, kind: i32, protocol: i32, fds: *mut i32) -> i32;
+            fn close(fd: i32) -> i32;
+            fn fork() -> i32;
+            fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32;
+            fn _exit(code: i32) -> !;
+        }
+        fn main() {
+            if std::env::args().any(|arg| arg == "--child") {
+                println!("probe child completed");
+                return;
+            }
+            unsafe {
+                println!("glibc: {}", CStr::from_ptr(gnu_get_libc_version()).to_string_lossy());
+                let mut fds = [-1; 2];
+                let result = socketpair(1, 5 | 0x80000, 0, fds.as_mut_ptr());
+                println!("socketpair: {result}, error: {:?}", if result < 0 { Some(io::Error::last_os_error()) } else { None });
+                if result == 0 { close(fds[0]); close(fds[1]); }
+                let pid = fork();
+                if pid == 0 { _exit(0); }
+                println!("fork: {pid}, error: {:?}", if pid < 0 { Some(io::Error::last_os_error()) } else { None });
+                if pid > 0 { let mut status = 0; println!("waitpid: {}", waitpid(pid, &mut status, 0)); }
+            }
+            let executable = std::env::current_exe().unwrap();
+            let result = Command::new("/linux-runner").arg("i686").arg(executable).arg("--child").output();
+            println!("runner subprocess: {result:?}");
+        }
+        RS
+        for runner in native qemu-user; do
+          echo "Process probe using $runner"
+          timeout 120s env CROSS_TARGET_I686_UNKNOWN_LINUX_GNU_RUNNER="$runner" \
+            cross run --manifest-path "$probe/Cargo.toml" --target i686-unknown-linux-gnu || echo "Probe failed or timed out (status $?)"
+        done
+        echo "Repeat the unchanged CLI integration assertions using the supported QEMU user runner"
+        timeout 300s env CROSS_TARGET_I686_UNKNOWN_LINUX_GNU_RUNNER=qemu-user \
+          cross test --locked --target i686-unknown-linux-gnu -p numbat-cli --test integration
+
     - name: Create tarball
       id: package
       shell: bash
