@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::str::{FromStr, SplitWhitespace};
 
 use compact_str::ToCompactString;
@@ -38,6 +39,7 @@ pub enum CommandKind {
     List,
     Clear,
     Save,
+    Load,
     Reset,
     Quit(QuitAlias),
 }
@@ -53,6 +55,7 @@ impl FromStr for CommandKind {
             "list" => List,
             "clear" => Clear,
             "save" => Save,
+            "load" => Load,
             "reset" => Reset,
             "quit" => Quit(QuitAlias::Quit),
             "exit" => Quit(QuitAlias::Exit),
@@ -73,6 +76,7 @@ pub enum CommandControlFlow {
     Continue,
     Return,
     Reset,
+    Load(PathBuf),
     NotACommand,
 }
 
@@ -122,6 +126,9 @@ enum ParsedCommand<'session, 'input> {
         session_history: &'session SessionHistory,
         dst: &'input str,
     },
+    Load {
+        path: &'input str,
+    },
     Reset,
     Quit,
 }
@@ -130,6 +137,7 @@ pub struct CommandRunner<'a, Editor = ()> {
     print_markup: PrintMarkupFn<'a>,
     clear: ClearFn<'a, Editor>,
     session_history: Option<SessionHistory>,
+    load: Option<()>,
     reset: Option<()>,
     quit: Option<()>,
 }
@@ -142,6 +150,7 @@ impl<Editor> Default for CommandRunner<'_, Editor> {
             print_markup: None,
             clear: None,
             session_history: None,
+            load: None,
             reset: None,
             quit: None,
         }
@@ -168,6 +177,11 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
 
     pub fn enable_save(mut self, session_history: SessionHistory) -> Self {
         self.session_history = Some(session_history);
+        self
+    }
+
+    pub fn enable_load(mut self) -> Self {
+        self.load = Some(());
         self
     }
 
@@ -312,6 +326,15 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
             );
         }
 
+        if self.load.is_some() {
+            output += cmd(
+                "load",
+                ["<path>"],
+                [],
+                "load a Numbat source file into the current session",
+            );
+        }
+
         if self.clear.is_some() {
             output += cmd("clear", [], [], "clear the console output");
         }
@@ -343,6 +366,7 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
             print_markup,
             clear,
             session_history,
+            load,
             reset,
             quit,
         } = self;
@@ -467,6 +491,28 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                     dst,
                 }
             }
+            CommandKind::Load => {
+                if load.is_none() {
+                    return Ok(None);
+                }
+
+                // Everything after the command name is the path, including spaces.
+                let path = line[parser.word_boundaries[0].1 as usize..].trim();
+                let path = path
+                    .strip_prefix('"')
+                    .and_then(|unquoted| unquoted.strip_suffix('"'))
+                    .unwrap_or(path);
+
+                if path.is_empty() {
+                    return Err(Box::new(
+                        parser
+                            .err_at_idx(0, "`load` requires a source file path")
+                            .into(),
+                    ));
+                }
+
+                ParsedCommand::Load { path }
+            }
             CommandKind::Reset => {
                 if reset.is_none() {
                     return Ok(None);
@@ -577,6 +623,7 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                 }
                 CommandControlFlow::Continue
             }
+            ParsedCommand::Load { path } => CommandControlFlow::Load(PathBuf::from(path)),
             ParsedCommand::Reset => {
                 if let Some(clear_fn) = self.clear.as_mut() {
                     let _ = clear_fn(editor);
@@ -707,6 +754,7 @@ mod test {
         List { items: Option<ListItems> },
         Clear,
         Save { dst: &'a str },
+        Load { path: &'a str },
         Reset,
         Quit,
     }
@@ -719,6 +767,7 @@ mod test {
                 ParsedCommand::List { items } => BareCommand::List { items },
                 ParsedCommand::Clear => BareCommand::Clear,
                 ParsedCommand::Save { dst, .. } => BareCommand::Save { dst },
+                ParsedCommand::Load { path } => BareCommand::Load { path },
                 ParsedCommand::Reset => BareCommand::Reset,
                 ParsedCommand::Quit => BareCommand::Quit,
             }
@@ -730,6 +779,7 @@ mod test {
             .print_with(|_| {})
             .enable_clear(|_| CommandControlFlow::Continue)
             .enable_save(SessionHistory::new())
+            .enable_load()
             .enable_reset()
             .enable_quit()
     }
@@ -843,6 +893,9 @@ mod test {
         assert!(parser("save").is_some());
         assert!(parser("save arg").is_some());
         assert!(parser("save arg1 arg2").is_some());
+
+        assert!(parser("load").is_some());
+        assert!(parser("load example.nbt").is_some());
 
         assert!(parser("reset").is_some());
         assert!(parser("reset arg").is_some());
@@ -1017,6 +1070,35 @@ mod test {
         );
         expect_ok(&runner, &mut ctx, "save .", BareCommand::Save { dst: "." });
         expect_fail(&runner, &mut ctx, "save arg1 arg2");
+
+        expect_fail(&runner, &mut ctx, "load");
+        expect_fail(&runner, &mut ctx, "load   ");
+        expect_fail(&runner, &mut ctx, "load \"\"");
+
+        expect_ok(
+            &runner,
+            &mut ctx,
+            "load example.nbt",
+            BareCommand::Load {
+                path: "example.nbt",
+            },
+        );
+        expect_ok(
+            &runner,
+            &mut ctx,
+            "load folder/my calculations.nbt",
+            BareCommand::Load {
+                path: "folder/my calculations.nbt",
+            },
+        );
+        expect_ok(
+            &runner,
+            &mut ctx,
+            "load \"folder/my calculations.nbt\"",
+            BareCommand::Load {
+                path: "folder/my calculations.nbt",
+            },
+        );
     }
 
     #[test]
@@ -1057,6 +1139,12 @@ mod test {
             &mut runner,
             &mut ctx,
             "save dst",
+            CommandControlFlow::NotACommand,
+        );
+        test_case(
+            &mut runner,
+            &mut ctx,
+            "load example.nbt",
             CommandControlFlow::NotACommand,
         );
         test_case(&mut runner, &mut ctx, "quit", CommandControlFlow::Return);

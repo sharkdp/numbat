@@ -1,0 +1,1 @@
+fn issue573_twice(x: Scalar) -> Scalar = 2 * x

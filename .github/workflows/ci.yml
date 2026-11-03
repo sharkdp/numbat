@@ -238,6 +238,12 @@ jobs:
 
     - name: Run tests
       shell: bash
+      env:
+        # Avoid spawning target-side Cargo to locate the snapshot workspace.
+        INSTA_WORKSPACE_ROOT: ${{ github.workspace }}
+        CROSS_BUILD_ENV_PASSTHROUGH: INSTA_WORKSPACE_ROOT
+        # Native i686 socketpair is unavailable on some hosted runners.
+        CROSS_TARGET_I686_UNKNOWN_LINUX_GNU_RUNNER: qemu-user
       run: $BUILD_CMD test --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
 
     - name: Create tarball

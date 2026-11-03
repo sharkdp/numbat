@@ -171,3 +171,103 @@ fn info_text() {
                 .and(predicates::str::contains("Round to the nearest integer.")),
         );
 }
+
+#[test]
+fn load_file_into_repl_and_survive_errors() {
+    let examples = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("examples");
+
+    let valid = examples.join("issue573 calculations.nbt");
+    let invalid = examples.join("issue573 invalid.nbt");
+    let missing = examples.join("issue573 missing file.nbt");
+
+    assert!(!missing.exists());
+
+    let input = format!(
+        "load \"{}\"\nissue573_twice(7)\nload {}\nissue573_twice(8)\nload {}\nissue573_twice(9)\nexit\n",
+        valid.display(),
+        missing.display(),
+        invalid.display(),
+    );
+
+    let output = numbat()
+        // An unsupported TERM (such as nextest's `dumb`) makes rustyline
+        // print prompts even when input is piped.
+        .env("TERM", "xterm")
+        .args(["--color", "never"])
+        .write_stdin(input)
+        .output()
+        .expect("Numbat CLI should start");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    assert!(
+        output.status.success(),
+        "REPL exited unexpectedly:\nstdout: {stdout}\nstderr: {stderr}"
+    );
+
+    let results: Vec<_> = stdout
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+
+    assert_eq!(results, ["14", "16", "18"]);
+
+    assert!(
+        stderr.contains("Could not load source file")
+            && stderr.contains(&missing.to_string_lossy().to_string()),
+        "Missing-file diagnostic not found: {stderr}"
+    );
+
+    assert!(
+        stderr.contains("while parsing") && stderr.contains(&invalid.to_string_lossy().to_string()),
+        "Invalid-source diagnostic not found: {stderr}"
+    );
+}
+
+#[test]
+fn load_command_appears_in_help() {
+    numbat()
+        .write_stdin("help commands\nexit\n")
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("load"));
+}
+
+#[test]
+fn loaded_source_is_preserved_when_saving_a_session() {
+    let root = std::env::temp_dir().join(format!(
+        "numbat-load-save-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let source = "fn twice(x: Scalar) -> Scalar = 2 * x\n";
+    std::fs::write(root.join("source.nbt"), source).unwrap();
+
+    numbat()
+        .current_dir(&root)
+        .write_stdin("load missing.nbt\nload source.nbt\ntwice(7)\nsave saved.nbt\nexit\n")
+        .assert()
+        .success();
+
+    // A saved session must remain valid Numbat source, even if the original
+    // loaded file is no longer available.
+    std::fs::remove_file(root.join("source.nbt")).unwrap();
+    let saved = std::fs::read_to_string(root.join("saved.nbt")).unwrap();
+    assert_eq!(saved, format!("{source}twice(7)\n"));
+    numbat()
+        .current_dir(&root)
+        .arg("saved.nbt")
+        .assert()
+        .success()
+        .stdout("14\n");
+
+    std::fs::remove_dir_all(root).unwrap();
+}
