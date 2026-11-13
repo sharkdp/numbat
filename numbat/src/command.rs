@@ -285,7 +285,7 @@ impl<'a, Editor> CommandRunner<'a, Editor> {
                 m::text("show all currently defined ")
                     + m_arg("functions")
                     + m::text(", ")
-                    + m_arg("definitions")
+                    + m_arg("dimensions")
                     + m::text(", ")
                     + m_arg("variables")
                     + m::text(", or ")
