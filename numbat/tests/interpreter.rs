@@ -590,6 +590,8 @@ fn test_misc_examples() {
     expect_output("let b = \";\"\nb", "\";\"");
     expect_output("let a = 3m; 5; a", "3 m");
     expect_output("let a = 3m\n5\na", "3 m");
+    expect_output("let a = 3m;\n5;\na", "3 m");
+    expect_output("let a = 3m;\n\n5;\na;\n", "3 m");
 }
 
 #[test]
