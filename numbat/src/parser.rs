@@ -2,7 +2,7 @@
 //!
 //! Grammar:
 //! ```txt
-//! prog            ::=   statement ((";" | "\n"+) statement)*
+//! prog            ::=   statement ((";" "\n"* | "\n"+) statement)*
 //! statement       ::=   variable_decl | struct_decl | function_decl | dimension_decl | unit_decl | module_import | procedure_call | expression
 //!
 //! variable_decl   ::=   "let" identifier ( ":" type_annotation ) ? "=" expression
@@ -323,6 +323,8 @@ impl<'a> Parser<'a> {
                 }
                 TokenKind::Semicolon => {
                     self.advance(tokens);
+                    // Allow a semicolon at the end of a line
+                    self.skip_empty_lines(tokens);
                 }
                 TokenKind::Eof => {
                     break;
