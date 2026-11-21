@@ -698,7 +698,7 @@ fn falling_factorial(n: Scalar, k: Scalar) -> Scalar
     [:material-play-circle: Run this example](https://numbat.dev/?q=falling%5Ffactorial%284%2C%202%29){ .md-button }
 
 ### `binom` (Binomial coefficient)
-Equal to falling_factorial(n, k)/k!, this is the coefficient of \( x^k \) in the series expansion of \( (1+x)^n \) (see “binomial series”). If n is an integer, then this this is the number of k-element subsets of a set of size n, often read "n choose k". k must always be an integer.
+Equal to falling_factorial(n, k)/k!, this is the coefficient of \( x^k \) in the series expansion of \( (1+x)^n \) (see “binomial series”). If n is an integer, then this is the number of k-element subsets of a set of size n, often read "n choose k". k must always be an integer.
 More information [here](https://en.wikipedia.org/wiki/Binomial_coefficient).
 
 ```nbt
