@@ -125,7 +125,7 @@ This can be useful to make sure that intermediate results do not change during a
 <p></p>
 
 Numbat is a scientific calculator. It's not a computer algebra system that solves differential equations
-or computes intergrals. Try [WolframAlpha](http://www.wolframalpha.com/) instead.<br>
+or computes integrals. Try [WolframAlpha](http://www.wolframalpha.com/) instead.<br>
 There is no graphical user interface with buttons like `x²`, `1/x` or `DEG/RAD`.
 [Qalculate!](http://qalculate.github.io/) is a fantastic tool that supports both text as well as graphical
 input.<br>
